@@ -352,12 +352,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         _crf_layers = []
 
         for label_name in self._crf_layer_order:
-            if (
-                label_name == ENTITY_ATTRIBUTE_TYPE
-                and self.component_config[BILOU_FLAG]
-            ):
-                # If BILOU tagging is enabled use the BILOU format for the entity label
-                tag_id_index_mapping = bilou_utils.build_tag_id_dict(training_data)
+            if self.component_config[BILOU_FLAG]:
+                tag_id_index_mapping = bilou_utils.build_tag_id_dict(
+                    training_data, label_name
+                )
             else:
                 tag_id_index_mapping = self._tag_id_index_mapping_for(
                     label_name, training_data.entity_examples
@@ -619,13 +617,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return model_data
 
     def _tag_ids_for_crf(self, example: Message, crf_layer: CRFLayer) -> np.ndarray:
-        if (
-            crf_layer.label_name == ENTITY_ATTRIBUTE_TYPE
-            and self.component_config[BILOU_FLAG]
-        ):
-            # If BILOU tagging is enabled we use the BILOU format for the
-            # entity labels
-            _tags = bilou_utils.tags_to_ids(example, crf_layer.tags_to_ids)
+        if self.component_config[BILOU_FLAG]:
+            _tags = bilou_utils.bilou_tags_to_ids(
+                example, crf_layer.tags_to_ids, crf_layer.label_name
+            )
         else:
             _tags = []
             for t in example.get(TOKENS_NAMES[TEXT]):
@@ -817,10 +812,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             predictions = predict_out[f"e_{crf_layer.label_name}_ids"].numpy()
             tags = [crf_layer.ids_to_tags[p] for p in predictions[0]]
 
-            if (
-                crf_layer.label_name == ENTITY_ATTRIBUTE_TYPE
-                and self.component_config[BILOU_FLAG]
-            ):
+            if self.component_config[BILOU_FLAG]:
                 tags = bilou_utils.remove_bilou_prefixes(tags)
 
             predicted_tags[crf_layer.label_name] = tags

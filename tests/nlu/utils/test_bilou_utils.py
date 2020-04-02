@@ -48,7 +48,7 @@ def test_tags_to_ids():
 
     tag_id_dict = {"O": 0, "U-location": 1, "B-organisation": 2, "L-organisation": 3}
 
-    tags = bilou_utils.tags_to_ids(message, tag_id_dict)
+    tags = bilou_utils.bilou_tags_to_ids(message, tag_id_dict)
 
     assert tags == [1, 0, 0, 0, 0, 2, 3]
 
