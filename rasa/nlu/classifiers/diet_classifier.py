@@ -1301,10 +1301,6 @@ class DIET(RasaModel):
             self._tf_layers[f"crf.{name}"] = layers.CRF(
                 num_tags, self.config[REGULARIZATION_CONSTANT], self.config[SCALE_LOSS]
             )
-            self._tf_layers[f"crf_f1_score.{name}"] = tfa.metrics.F1Score(
-                num_classes=num_tags - 1,  # `0` prediction is not a prediction
-                average="micro",
-            )
 
     @staticmethod
     def _get_sequence_lengths(mask: tf.Tensor) -> tf.Tensor:
@@ -1421,24 +1417,6 @@ class DIET(RasaModel):
                 return crf_layer.num_tags
         return 0
 
-    def _f1_score_from_ids(
-        self, tag_ids: tf.Tensor, pred_ids: tf.Tensor, mask: tf.Tensor, crf_name: Text
-    ) -> tf.Tensor:
-        """Calculates f1 score for train predictions"""
-
-        mask_bool = tf.cast(mask[:, :, 0], tf.bool)
-        # pick only non padding values and flatten sequences
-        tag_ids_flat = tf.boolean_mask(tag_ids, mask_bool)
-        pred_ids_flat = tf.boolean_mask(pred_ids, mask_bool)
-        # set `0` prediction to not a prediction
-        num_tags = self._num_tags_for_crf_layer(crf_name) - 1
-        tag_ids_flat_one_hot = tf.one_hot(tag_ids_flat - 1, num_tags)
-        pred_ids_flat_one_hot = tf.one_hot(pred_ids_flat - 1, num_tags)
-
-        return self._tf_layers[f"crf_f1_score.{crf_name}"](
-            tag_ids_flat_one_hot, pred_ids_flat_one_hot
-        )
-
     def _mask_loss(
         self,
         outputs: tf.Tensor,
@@ -1485,7 +1463,7 @@ class DIET(RasaModel):
         tag_ids: tf.Tensor,
         mask: tf.Tensor,
         sequence_lengths: tf.Tensor,
-        crf_name: Text,
+        tag_name: Text,
         previous_logits: Optional[tf.Tensor] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
 
@@ -1495,18 +1473,17 @@ class DIET(RasaModel):
         if previous_logits is not None:
             inputs = tf.concat([inputs, previous_logits], axis=-1)
 
-        logits = self._tf_layers[f"embed.{crf_name}.logits"](inputs)
+        logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
 
         # should call first to build weights
-        pred_ids = self._tf_layers[f"crf.{crf_name}"](logits, sequence_lengths)
+        pred_ids = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
         # pytype cannot infer that 'self._tf_layers["crf"]' has the method '.loss'
         # pytype: disable=attribute-error
-        loss = self._tf_layers[f"crf.{crf_name}"].loss(
+        loss = self._tf_layers[f"crf.{tag_name}"].loss(
             logits, tag_ids, sequence_lengths
         )
+        f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask)
         # pytype: enable=attribute-error
-
-        f1 = self._f1_score_from_ids(tag_ids, pred_ids, mask, crf_name)
 
         return loss, f1, logits
 
