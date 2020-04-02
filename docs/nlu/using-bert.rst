@@ -93,7 +93,7 @@ pick up the tokens and feature vectors respectively that are constructed by the 
 .. note::
 
     We strictly use these language models as featurizers, which means that their parameters are not fine-tuned during training of
-    downstream models in your NLU pipeline. This is saves a lot of compute time and the machine learning models 
+    downstream models in your NLU pipeline. This saves a lot of compute time and the machine learning models 
     in the pipeline can typically compensate for the lack of fine-tuning. 
 
 Run the Pipelines
