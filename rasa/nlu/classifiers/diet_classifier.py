@@ -1170,10 +1170,12 @@ class DIET(RasaModel):
             self.config[ENTITY_RECOGNITION]
             and f"{ENTITY_ATTRIBUTE_TYPE}_{TAG_IDS}" not in self.data_signature
         ):
-            raise ValueError(
-                f"No tag ids for entities present. "
-                f"Cannot train '{self.__class__.__name__}' model."
+            raise_warning(
+                f"You specified '{self.__class__.__name__}' to train entities, but "
+                f"no entities are present in the training data. Skip training of "
+                f"entities."
             )
+            self.config[ENTITY_RECOGNITION] = False
 
     def _create_metrics(self) -> None:
         # self.metrics will have the same order as they are created
