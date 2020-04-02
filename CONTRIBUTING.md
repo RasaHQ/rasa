@@ -12,8 +12,7 @@
     - [Draft PRs](#draft-prs)
     - [PRs should be a reasonable length](#prs-should-be-a-reasonable-length)
     - [Code style](#code-style)
-    - [Formatting](#formatting)
-    - [Type Checking](#type-checking)
+    - [Formatting and Type Checking](#### Formatting and Type Checking)
 - [How to open a PR and contribute code to Rasa Open Source](#how-to-open-a-pr-and-contribute-code-to-rasa-open-source)
   - [1. Forking the Rasa Repository](#1-forking-the-rasa-repository)
   - [2. Cloning the Forked Repository Locally](#2-cloning-the-forked-repository-locally)
@@ -87,17 +86,16 @@ If your PR is greater than 500 lines, please consider splitting it into multiple
 #### Code style
 
 To ensure a standardized code style we recommend using formatter black. To ensure our type annotations are correct we also suggest using the type checker pytype.
-Travis is a hosted continuous integration service used to build and test software projects hosted at GitHub. If your code is not formatted properly or doesn't type check, Travis will fail to build.
 
-#### Formatting
+#### Formatting and Type Checking
 
 If you want to automatically format your code on every commit, you can use pre-commit. Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder. This will add a hook to the repository, which reformats files on every commit.
 
 If you want to set it up manually, install black via `pip install -r requirements-dev.txt.` To reformat files execute `make formatter`.
 
-#### Type Checking
-
 If you want to check types on the codebase, install pytype using `pip install -r requirements-dev.txt`. To check the types execute `make types`.
+
+The CI/CD tests that we run can be found in the [continous-integration.yml](https://github.com/RasaHQ/rasa/blob/master/.github/workflows/continous-integration.yml) file. 
 
 ---
 
