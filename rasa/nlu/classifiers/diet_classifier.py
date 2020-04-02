@@ -1255,10 +1255,12 @@ class DIET(RasaModel):
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
+
+        label_lengths = tf.cast(self.tf_label_data[LABEL_SEQ_LENGTH][0], dtype=tf.int32)
+        mask_label = self.compute_mask(label_lengths)
+
         x = self._create_bow(
-            self.tf_label_data[LABEL_FEATURES],
-            self.tf_label_data[LABEL_MASK][0],
-            self.label_name,
+            self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name,
         )
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
 
@@ -1352,13 +1354,17 @@ class DIET(RasaModel):
 
         return loss, f1
 
+    def compute_mask(self, sequence_lengths):
+        mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
+        return tf.expand_dims(mask, -1)
+
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        mask_text = tf_batch_data[TEXT_MASK][0]
-        sequence_lengths = self._get_sequence_lengths(mask_text)
+        sequence_lengths = tf.cast(tf_batch_data[TEXT_SEQ_LENGTH][0], dtype=tf.int32)
+        mask_text = self.compute_mask(sequence_lengths)
 
         (
             text_transformed,
@@ -1387,11 +1393,12 @@ class DIET(RasaModel):
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
 
+            label_lengths = tf.cast(tf_batch_data[LABEL_SEQ_LENGTH][0], dtype=tf.int32)
+            mask_label = self.compute_mask(label_lengths)
+
             label_ids = tf_batch_data[LABEL_IDS][0]
             label = self._create_bow(
-                tf_batch_data[LABEL_FEATURES],
-                tf_batch_data[LABEL_MASK][0],
-                self.label_name,
+                tf_batch_data[LABEL_FEATURES], mask_label, self.label_name,
             )
             loss, acc = self._calculate_label_loss(cls, label, label_ids)
             self.intent_loss.update_state(loss)
@@ -1417,8 +1424,8 @@ class DIET(RasaModel):
             batch_in, self.predict_data_signature
         )
 
-        mask_text = tf_batch_data[TEXT_MASK][0]
-        sequence_lengths = self._get_sequence_lengths(mask_text)
+        sequence_lengths = tf.cast(tf_batch_data[TEXT_SEQ_LENGTH][0], dtype=tf.int32)
+        mask_text = self.compute_mask(sequence_lengths)
 
         text_transformed, _, _, _ = self._create_sequence(
             tf_batch_data[TEXT_FEATURES], mask_text, self.text_name
