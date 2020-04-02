@@ -1,5 +1,5 @@
 :desc: Find out how to use pre-trained embeddings from language models implemented in HuggingFace's Transformers
-       like BERT, GPT-2, etc. inside Rasa NLU.
+       like BERT, GPT-2, etc. inside Rasa NLU to add more Modern Deep Learning Techniques to your Chatbot.
 
 Using BERT inside Rasa NLU
 ==========================
@@ -93,7 +93,8 @@ pick up the tokens and feature vectors respectively that are constructed by the 
 .. note::
 
     We strictly use these language models as featurizers, which means that their parameters are not fine-tuned during training of
-    downstream models in your NLU pipeline.
+    downstream models in your NLU pipeline. This is saves a lot of compute time and the machine learning models 
+    in the pipeline can typically compensate for the lack of fine-tuning. 
 
 Run the Pipelines
 -----------------
