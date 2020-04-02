@@ -103,7 +103,7 @@ an action server image, see :ref:`building-an-action-server-image`.
           command:
             - run
         app:
-          image: <your action server image>
+          image: <image:tag>
           expose: 5055
 
 The ``expose: 5005`` is what allows the ``rasa`` service to reach the ``app`` service on that port.
