@@ -74,14 +74,22 @@ def bilou_tags_to_ids(
     return _tags
 
 
-def _get_bilou_key_for_tag(tag_name):
+def _get_bilou_key_for_tag(tag_name: Text) -> Text:
+    """Get the message key for the BILOU tagging format of the provided tag name.
+
+    Args:
+        tag_name: the tag name
+
+    Returns:
+        the message key to store the BILOU tags
+    """
     if tag_name == ENTITY_ATTRIBUTE_ROLE:
-        bilou_key = BILOU_ENTITIES_ROLE
-    elif tag_name == ENTITY_ATTRIBUTE_GROUP:
-        bilou_key = BILOU_ENTITIES_GROUP
-    else:
-        bilou_key = BILOU_ENTITIES
-    return bilou_key
+        return BILOU_ENTITIES_ROLE
+
+    if tag_name == ENTITY_ATTRIBUTE_GROUP:
+        return BILOU_ENTITIES_GROUP
+
+    return BILOU_ENTITIES
 
 
 def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
