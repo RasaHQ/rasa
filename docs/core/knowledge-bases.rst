@@ -209,6 +209,9 @@ base to the constructor of ``ActionQueryKnowledgeBase``.
 
 .. code-block:: python
 
+    from rasa_sdk.knowledge_base.storage import InMemoryKnowledgeBase
+    from rasa_sdk.knowledge_base.actions import ActionQueryKnowledgeBase
+
     class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         def __init__(self):
             knowledge_base = InMemoryKnowledgeBase("data.json")
