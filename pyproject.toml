@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "1.9.0"
+version = "1.9.4"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -104,7 +104,6 @@ cloudpickle = "~1.2.0"
 multidict = "^4.6"
 aiohttp = "~3.6"
 questionary = "~1.5.1"
-prompt-toolkit = "^2.0"
 python-socketio = "~4.4"
 python-engineio = "~3.11"
 pydot = "~1.4"

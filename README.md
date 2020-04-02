@@ -9,11 +9,13 @@
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git.svg?type=shield)](https://app.fossa.com/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git?ref=badge_shield)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/orgs/RasaHQ/projects/23)
 
-<img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
+<img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png">
 
 Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contexual assistants on:
 - Facebook Messenger
 - Slack
+- Google Hangouts
+- Webex Teams
 - Microsoft Bot Framework
 - Rocket.Chat
 - Mattermost
@@ -71,9 +73,7 @@ questions.
 - [License](#license)
 
 ### How to contribute
-We are very happy to receive and merge your contributions. You can
-find more information about how to contribute to Rasa (in lots of
-different ways!) [here](http://rasa.com/community/contribute).
+We are very happy to receive and merge your contributions into this repository! 
 
 To contribute via pull request, follow these steps:
 
@@ -81,6 +81,11 @@ To contribute via pull request, follow these steps:
    have a look at the [contributor board](https://github.com/orgs/RasaHQ/projects/23))
 2. Write your code, tests and documentation, and format them with ``black``
 3. Create a pull request describing your changes
+
+For more detailed instructions on how to contribute code, check out these [code contributor guidelines](CONTRIBUTING.md).
+
+You can find more information about how to contribute to Rasa (in lots of
+different ways!) [on our website.](http://rasa.com/community/contribute).
 
 Your pull request will be reviewed by a maintainer, who will get
 back to you about any necessary changes or questions. You will
@@ -154,7 +159,10 @@ Releasing a new version is quite simple, as the packages are build and distribut
 
 *Release steps*:
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
+    - For Rasa SDK that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
+    - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
 2. Switch to the branch you want to cut the release from (`master` in case of a major / minor, the current feature branch for patch releases) 
+    - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
 3. Run `make release`
 4. Create a PR against master or the release branch (e.g. `1.2.x`)
 5. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
