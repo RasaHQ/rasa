@@ -1,0 +1,1 @@
+Remove ``prompt-toolkit`` from dependencies because it's not a direct dependency.
