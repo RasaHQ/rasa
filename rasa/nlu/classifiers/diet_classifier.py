@@ -1461,7 +1461,6 @@ class DIET(RasaModel):
         previous_logits: Optional[tf.Tensor] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
 
-        sequence_lengths = sequence_lengths - 1  # remove cls token
         tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
 
         if previous_logits is not None:
@@ -1513,47 +1512,76 @@ class DIET(RasaModel):
             losses.append(loss)
 
         if self.config[INTENT_CLASSIFICATION]:
-            # get _cls_ vector for intent classification
-            cls = self._last_token(text_transformed, sequence_lengths)
-
-            label_ids = tf_batch_data[LABEL_IDS][0]
-            label = self._create_bow(
-                tf_batch_data[LABEL_FEATURES],
-                tf_batch_data[LABEL_MASK][0],
-                self.label_name,
+            loss = self._batch_loss_intent(
+                sequence_lengths, text_transformed, tf_batch_data
             )
-            loss, acc = self._calculate_label_loss(cls, label, label_ids)
-            self.intent_loss.update_state(loss)
-            self.response_acc.update_state(acc)
             losses.append(loss)
 
         if self.config[ENTITY_RECOGNITION]:
-            prev_logits = None
-
-            for crf_layer in self._crf_layers:
-                if crf_layer.num_tags == 0:
-                    continue
-
-                tag_ids = tf_batch_data[f"{crf_layer.tag_name}_{TAG_IDS}"][0]
-
-                loss, f1, _logits = self._calculate_entity_loss(
-                    text_transformed,
-                    tag_ids,
-                    mask_text,
-                    sequence_lengths,
-                    crf_layer.tag_name,
-                    prev_logits,
-                )
-
-                if crf_layer.tag_name == ENTITY_ATTRIBUTE_TYPE:
-                    # use the logits from the entity type CRF as input for the role
-                    # and group CRF
-                    prev_logits = _logits
-
-                self._update_entity_metrics(loss, f1, crf_layer.tag_name)
-                losses.append(loss)
+            losses += self._batch_loss_entities(
+                mask_text, sequence_lengths, text_transformed, tf_batch_data
+            )
 
         return tf.math.add_n(losses)
+
+    def _batch_loss_intent(
+        self,
+        sequence_lengths: tf.Tensor,
+        text_transformed: tf.Tensor,
+        tf_batch_data: tf.Tensor,
+    ) -> tf.Tensor:
+        # get _cls_ vector for intent classification
+        cls = self._last_token(text_transformed, sequence_lengths)
+
+        label_ids = tf_batch_data[LABEL_IDS][0]
+        label = self._create_bow(
+            tf_batch_data[LABEL_FEATURES], tf_batch_data[LABEL_MASK][0], self.label_name
+        )
+
+        loss, acc = self._calculate_label_loss(cls, label, label_ids)
+
+        self.intent_loss.update_state(loss)
+        self.response_acc.update_state(acc)
+
+        return loss
+
+    def _batch_loss_entities(
+        self,
+        mask_text: tf.Tensor,
+        sequence_lengths: tf.Tensor,
+        text_transformed: tf.Tensor,
+        tf_batch_data: Dict[Text, List[tf.Tensor]],
+    ) -> List[tf.Tensor]:
+        losses = []
+        prev_logits = None
+
+        sequence_lengths = sequence_lengths - 1  # remove cls token
+
+        for crf_layer in self._crf_layers:
+            if crf_layer.num_tags == 0:
+                continue
+
+            tag_ids = tf_batch_data[f"{crf_layer.tag_name}_{TAG_IDS}"][0]
+
+            loss, f1, _logits = self._calculate_entity_loss(
+                text_transformed,
+                tag_ids,
+                mask_text,
+                sequence_lengths,
+                crf_layer.tag_name,
+                prev_logits,
+            )
+
+            if crf_layer.tag_name == ENTITY_ATTRIBUTE_TYPE:
+                # use the logits from the entity type CRF as input for the role
+                # and group CRF
+                prev_logits = _logits
+
+            self._update_entity_metrics(loss, f1, crf_layer.tag_name)
+
+            losses.append(loss)
+
+        return losses
 
     def _update_entity_metrics(self, loss: tf.Tensor, f1: tf.Tensor, tag_name: Text):
         if tag_name == ENTITY_ATTRIBUTE_TYPE:
@@ -1580,22 +1608,25 @@ class DIET(RasaModel):
             tf_batch_data[TEXT_FEATURES], mask_text, self.text_name
         )
 
-        out = {}
+        predictions: Dict[Text, tf.Tensor] = {}
 
         if self.config[INTENT_CLASSIFICATION]:
-            self._batch_predict_intents(out, sequence_lengths, text_transformed)
+            predictions.update(
+                self._batch_predict_intents(sequence_lengths, text_transformed)
+            )
 
         if self.config[ENTITY_RECOGNITION]:
-            self._batch_predict_entities(out, sequence_lengths, text_transformed)
+            predictions.update(
+                self._batch_predict_entities(sequence_lengths, text_transformed)
+            )
 
-        return out
+        return predictions
 
     def _batch_predict_entities(
-        self,
-        out: Dict[Text, Any],
-        sequence_lengths: tf.Tensor,
-        text_transformed: tf.Tensor,
-    ) -> None:
+        self, sequence_lengths: tf.Tensor, text_transformed: tf.Tensor
+    ) -> Dict[Text, tf.Tensor]:
+        predictions: Dict[Text, tf.Tensor] = {}
+
         prev_logits = None
 
         for crf_layers in self._crf_layers:
@@ -1612,19 +1643,19 @@ class DIET(RasaModel):
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
             pred_ids = self._tf_layers[f"crf.{name}"](_logits, sequence_lengths - 1)
 
-            out[f"e_{name}_ids"] = pred_ids
+            predictions[f"e_{name}_ids"] = pred_ids
 
             if name == ENTITY_ATTRIBUTE_TYPE:
                 # use the logits from the entity type CRF as input for the role
                 # and group CRF
                 prev_logits = _logits
 
+        return predictions
+
     def _batch_predict_intents(
-        self,
-        out: Dict[Text, Any],
-        sequence_lengths: tf.Tensor,
-        text_transformed: tf.Tensor,
-    ) -> None:
+        self, sequence_lengths: tf.Tensor, text_transformed: tf.Tensor
+    ) -> Dict[Text, tf.Tensor]:
+
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels()
 
@@ -1643,7 +1674,7 @@ class DIET(RasaModel):
         )
         # pytype: enable=attribute-error
 
-        out["i_scores"] = scores
+        return {"i_scores": scores}
 
 
 # pytype: enable=key-error
