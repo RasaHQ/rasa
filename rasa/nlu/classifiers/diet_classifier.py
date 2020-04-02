@@ -955,9 +955,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.index_label_id_mapping.pkl",
             self.index_label_id_mapping,
         )
-        layers = [l._asdict() for l in self._crf_layers]
+        crf_layers = [l._asdict() for l in self._crf_layers]
         io_utils.dump_obj_as_json_to_file(
-            model_dir / f"{file_name}.crf_layers.pkl", layers
+            model_dir / f"{file_name}.crf_layers.pkl", crf_layers
         )
 
         return {"file": file_name}
