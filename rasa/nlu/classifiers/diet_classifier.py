@@ -1411,12 +1411,6 @@ class DIET(RasaModel):
         indices = tf.stack([batch_index, last_sequence_index], axis=1)
         return tf.gather_nd(x, indices)
 
-    def _num_tags_for_crf_layer(self, name: Text) -> int:
-        for crf_layer in self._crf_layers:
-            if crf_layer.tag_name == name:
-                return crf_layer.num_tags
-        return 0
-
     def _mask_loss(
         self,
         outputs: tf.Tensor,
@@ -1587,46 +1581,69 @@ class DIET(RasaModel):
         )
 
         out = {}
+
         if self.config[INTENT_CLASSIFICATION]:
-            if self.all_labels_embed is None:
-                _, self.all_labels_embed = self._create_all_labels()
-
-            # get _cls_ vector for intent classification
-            cls = self._last_token(text_transformed, sequence_lengths)
-            cls_embed = self._tf_layers[f"embed.{TEXT}"](cls)
-
-            # pytype cannot infer that 'self._tf_layers[f"loss.{LABEL}"]' has methods
-            # like '.sim' or '.confidence_from_sim'
-            # pytype: disable=attribute-error
-            sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
-                cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
-            )
-            scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-                sim_all, self.config[SIMILARITY_TYPE]
-            )
-            # pytype: enable=attribute-error
-            out["i_scores"] = scores
+            self._batch_predict_intents(out, sequence_lengths, text_transformed)
 
         if self.config[ENTITY_RECOGNITION]:
-            prev_logits = None
-            for crf_layers in self._crf_layers:
-                if crf_layers.num_tags == 0:
-                    continue
+            self._batch_predict_entities(out, sequence_lengths, text_transformed)
 
-                name = crf_layers.tag_name
-                _input = text_transformed
-                if prev_logits is not None:
-                    _input = tf.concat([_input, prev_logits], axis=-1)
-
-                _logits = self._tf_layers[f"embed.{name}.logits"](_input)
-                pred_ids = self._tf_layers[f"crf.{name}"](_logits, sequence_lengths - 1)
-                out[f"e_{name}_ids"] = pred_ids
-
-                if name == ENTITY_ATTRIBUTE_TYPE:
-                    # use the logits from the entity type CRF as input for the role
-                    # and group CRF
-                    prev_logits = _logits
         return out
+
+    def _batch_predict_entities(
+        self,
+        out: Dict[Text, Any],
+        sequence_lengths: tf.Tensor,
+        text_transformed: tf.Tensor,
+    ) -> None:
+        prev_logits = None
+
+        for crf_layers in self._crf_layers:
+            # skip crf layer if it was not trained
+            if crf_layers.num_tags == 0:
+                continue
+
+            name = crf_layers.tag_name
+            _input = text_transformed
+
+            if prev_logits is not None:
+                _input = tf.concat([_input, prev_logits], axis=-1)
+
+            _logits = self._tf_layers[f"embed.{name}.logits"](_input)
+            pred_ids = self._tf_layers[f"crf.{name}"](_logits, sequence_lengths - 1)
+
+            out[f"e_{name}_ids"] = pred_ids
+
+            if name == ENTITY_ATTRIBUTE_TYPE:
+                # use the logits from the entity type CRF as input for the role
+                # and group CRF
+                prev_logits = _logits
+
+    def _batch_predict_intents(
+        self,
+        out: Dict[Text, Any],
+        sequence_lengths: tf.Tensor,
+        text_transformed: tf.Tensor,
+    ) -> None:
+        if self.all_labels_embed is None:
+            _, self.all_labels_embed = self._create_all_labels()
+
+        # get _cls_ vector for intent classification
+        cls = self._last_token(text_transformed, sequence_lengths)
+        cls_embed = self._tf_layers[f"embed.{TEXT}"](cls)
+
+        # pytype cannot infer that 'self._tf_layers[f"loss.{LABEL}"]' has methods
+        # like '.sim' or '.confidence_from_sim'
+        # pytype: disable=attribute-error
+        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+            cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
+        )
+        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
+            sim_all, self.config[SIMILARITY_TYPE]
+        )
+        # pytype: enable=attribute-error
+
+        out["i_scores"] = scores
 
 
 # pytype: enable=key-error
