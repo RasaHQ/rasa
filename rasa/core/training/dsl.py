@@ -6,7 +6,6 @@ import re
 from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
 
 import rasa.utils.io as io_utils
-from rasa import data
 from rasa.constants import DOCS_BASE_URL, DOCS_URL_STORIES, DOCS_URL_DOMAINS
 from rasa.core import utils
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
@@ -76,7 +75,7 @@ class EndToEndReader(MarkdownReader):
 
 
 class StoryStepBuilder:
-    def __init__(self, name, source_name):
+    def __init__(self, name: Text, source_name: Text):
         self.name = name
         self.source_name = source_name
         self.story_steps = []
@@ -180,7 +179,7 @@ class StoryFileReader:
         domain: Optional[Domain] = None,
         template_vars: Optional[Dict] = None,
         use_e2e: bool = False,
-        source_name=None,
+        source_name: Text = None,
     ):
         self.story_steps = []
         self.current_step_builder: Optional[StoryStepBuilder] = None
@@ -258,9 +257,8 @@ class StoryFileReader:
         try:
             with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
                 lines = f.readlines()
-            source_name = data.get_source_file_name(filename)
             reader = StoryFileReader(
-                interpreter, domain, template_variables, use_e2e, source_name
+                interpreter, domain, template_variables, use_e2e, filename
             )
             return await reader.process_lines(lines)
         except ValueError as err:
@@ -400,7 +398,7 @@ class StoryFileReader:
             self.current_step_builder.flush()
             self.story_steps.extend(self.current_step_builder.story_steps)
 
-    def new_story_part(self, name, source_name):
+    def new_story_part(self, name: Text, source_name: Text):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name)
 

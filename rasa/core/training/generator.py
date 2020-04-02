@@ -521,17 +521,11 @@ class TrainingDataGenerator:
                 # contribute to the trackers events
                 if tracker.sender_id:
                     if step.block_name not in tracker.sender_id.split(" > "):
-                        new_sender = (
-                            tracker.sender_id
-                            + " > "
-                            + step.block_name
-                            + " > "
-                            + step.source_name
-                        )
+                        new_sender = f"{tracker.sender_id} > {step.block_name} > {step.source_name}"
                     else:
                         new_sender = tracker.sender_id
                 else:
-                    new_sender = step.block_name + " > " + step.source_name
+                    new_sender = f"{step.block_name} > {step.source_name}"
                 trackers.append(tracker.copy(new_sender))
 
         end_trackers = []
