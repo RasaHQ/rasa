@@ -161,7 +161,6 @@ def test_hangouts_extract_functions():
     assert input_channel._extract_message(req) == "/removed"
 
 
-@pytest.mark.asyncio
 async def test_hangouts_output_channel_functions():
 
     from rasa.core.channels.hangouts import HangoutsOutput
