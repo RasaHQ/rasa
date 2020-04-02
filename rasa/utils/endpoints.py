@@ -2,6 +2,7 @@ import logging
 import os
 
 import aiohttp
+from aiohttp.client_exceptions import ContentTypeError
 from typing import Any, Optional, Text, Dict
 
 from sanic.request import Request
@@ -119,10 +120,9 @@ class EndpointConfig:
         method: Text = "post",
         subpath: Optional[Text] = None,
         content_type: Optional[Text] = "application/json",
-        return_method: Text = "json",
         **kwargs: Any,
-    ):
-        """Send a HTTP request to the endpoint.
+    ) -> Optional[Any]:
+        """Send a HTTP request to the endpoint. Return json response, if available.
 
         All additional arguments will get passed through
         to aiohttp's `session.request`."""
@@ -144,12 +144,15 @@ class EndpointConfig:
                 headers=headers,
                 params=self.combine_parameters(kwargs),
                 **kwargs,
-            ) as resp:
-                if resp.status >= 400:
+            ) as response:
+                if response.status >= 400:
                     raise ClientResponseError(
-                        resp.status, resp.reason, await resp.content.read()
+                        response.status, response.reason, await response.content.read()
                     )
-                return await getattr(resp, return_method)()
+                try:
+                    return await response.json()
+                except ContentTypeError:
+                    return None
 
     @classmethod
     def from_dict(cls, data) -> "EndpointConfig":
