@@ -435,7 +435,7 @@ class DIET2DIET(DIET):
         sequence_lengths_label = tf.cast(
             self.tf_label_data[LABEL_SEQ_LENGTH][0], dtype=tf.int32
         )
-        mask_label = self.compute_mask(sequence_lengths_label)
+        mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
             self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name
@@ -454,7 +454,7 @@ class DIET2DIET(DIET):
         sequence_lengths_text = tf.cast(
             tf_batch_data[TEXT_SEQ_LENGTH][0], dtype=tf.int32
         )
-        mask_text = self.compute_mask(sequence_lengths_text)
+        mask_text = self._compute_mask(sequence_lengths_text)
 
         (
             text_transformed,
@@ -472,7 +472,7 @@ class DIET2DIET(DIET):
         sequence_lengths_label = tf.cast(
             tf_batch_data[LABEL_SEQ_LENGTH][0], dtype=tf.int32
         )
-        mask_label = self.compute_mask(sequence_lengths_label)
+        mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
             tf_batch_data[LABEL_FEATURES], mask_label, self.label_name
@@ -515,7 +515,7 @@ class DIET2DIET(DIET):
         sequence_lengths_text = tf.cast(
             tf_batch_data[TEXT_SEQ_LENGTH][0], dtype=tf.int32
         )
-        mask_text = self.compute_mask(sequence_lengths_text)
+        mask_text = self._compute_mask(sequence_lengths_text)
 
         text_transformed, _, _, _ = self._create_sequence(
             tf_batch_data[TEXT_FEATURES], mask_text, self.text_name
