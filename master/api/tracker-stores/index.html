@@ -422,7 +422,7 @@ rename it to <code class="docutils literal notranslate"><span class="pre">oracle
 Copy the following into a file called <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code>:</p>
 <blockquote>
 <div><pre class="literal-block">
-FROM rasa/rasa:1.9.4-full
+FROM rasa/rasa:1.9.5-full
 
 # Switch to root user to install packages
 USER root
@@ -445,7 +445,7 @@ USER 1001
 <p>Then build the docker image:</p>
 <blockquote>
 <div><pre class="literal-block">
-docker build . -t rasa-oracle:1.9.4-oracle-full
+docker build . -t rasa-oracle:1.9.5-oracle-full
 </pre>
 </div></blockquote>
 <p class="last">Now you can configure the tracker store in the <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> as described above,

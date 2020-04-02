@@ -281,15 +281,14 @@
 To deploy Rasa X and your assistant together, see the <a class="reference internal" href="../../how-to-deploy/#recommended-deployment-methods"><span class="std std-ref">Recommended Deployment Methods</span></a>.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#installing-docker" id="id3">Installing Docker</a></li>
-<li><a class="reference internal" href="#configuring-channels" id="id4">Configuring Channels</a></li>
-<li><a class="reference internal" href="#using-docker-compose-to-run-multiple-services" id="id5">Using Docker Compose to Run Multiple Services</a></li>
-<li><a class="reference internal" href="#building-an-action-server-image" id="id6">Building an Action Server Image</a></li>
-<li><a class="reference internal" href="#configuring-a-tracker-store" id="id7">Configuring a Tracker Store</a></li>
+<li><a class="reference internal" href="#installing-docker" id="id2">Installing Docker</a></li>
+<li><a class="reference internal" href="#configuring-channels" id="id3">Configuring Channels</a></li>
+<li><a class="reference internal" href="#using-docker-compose-to-run-multiple-services" id="id4">Using Docker Compose to Run Multiple Services</a></li>
+<li><a class="reference internal" href="#configuring-a-tracker-store" id="id5">Configuring a Tracker Store</a></li>
 </ul>
 </div>
 <div class="section" id="installing-docker">
-<h2><a class="toc-backref" href="#id3">Installing Docker</a><a class="headerlink" href="#installing-docker" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2">Installing Docker</a><a class="headerlink" href="#installing-docker" title="Permalink to this headline">¶</a></h2>
 <p>If you’re not sure if you have Docker installed, you can check by running:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker -v <span class="o">&amp;&amp;</span> docker-compose -v
@@ -304,7 +303,7 @@ install Docker.
 See <a class="reference external" href="https://docs.docker.com/install/">Docker Installation</a> for details.</p>
 </div>
 <div class="section" id="configuring-channels">
-<span id="docker-compose-configuring-channels"></span><h2><a class="toc-backref" href="#id4">Configuring Channels</a><a class="headerlink" href="#configuring-channels" title="Permalink to this headline">¶</a></h2>
+<span id="docker-compose-configuring-channels"></span><h2><a class="toc-backref" href="#id3">Configuring Channels</a><a class="headerlink" href="#configuring-channels" title="Permalink to this headline">¶</a></h2>
 <p>To run your AI assistant in production, don’t forget to configure your required
 <a class="reference internal" href="../../messaging-and-voice-channels/#messaging-and-voice-channels"><span class="std std-ref">Messaging and Voice Channels</span></a> in <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>. For example, to add a
 REST channel, uncomment this section in the <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>:</p>
@@ -318,7 +317,7 @@ REST channel, uncomment this section in the <code class="docutils literal notran
 <p>The REST channel will open your bot up to incoming requests at the <code class="docutils literal notranslate"><span class="pre">/webhooks/rest/webhook</span></code> endpoint.</p>
 </div>
 <div class="section" id="using-docker-compose-to-run-multiple-services">
-<h2><a class="toc-backref" href="#id5">Using Docker Compose to Run Multiple Services</a><a class="headerlink" href="#using-docker-compose-to-run-multiple-services" title="Permalink to this headline">¶</a></h2>
+<span id="running-multiple-services"></span><h2><a class="toc-backref" href="#id4">Using Docker Compose to Run Multiple Services</a><a class="headerlink" href="#using-docker-compose-to-run-multiple-services" title="Permalink to this headline">¶</a></h2>
 <p>Docker Compose provides an easy way to run multiple containers together without
 having to run multiple commands or configure networks. This is essential when you
 want to deploy an assistant that also has an action server.</p>
@@ -334,7 +333,7 @@ want to deploy an assistant that also has an action server.</p>
 version: '3.0'
 services:
   rasa:
-    image: rasa/rasa:1.9.4-full
+    image: rasa/rasa:1.9.5-full
     ports:
       - 5005:5005
     volumes:
@@ -348,13 +347,13 @@ want to use.
 Each container is declared as a <code class="docutils literal notranslate"><span class="pre">service</span></code> within the <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>.
 The first service is the <code class="docutils literal notranslate"><span class="pre">rasa</span></code> service, which runs your Rasa server.</p>
 <p>To add the action server, add the image of your action server code. To learn how to deploy
-an action server image, see <a class="reference internal" href="#building-an-action-server-image"><span class="std std-ref">Building an Action Server Image</span></a>.</p>
+an action server image, see <a class="reference internal" href="../../how-to-deploy/#building-an-action-server-image"><span class="std std-ref">Building an Action Server Image</span></a>.</p>
 <blockquote>
 <div><pre class="literal-block">
 version: '3.0'
 services:
   rasa:
-    image: rasa/rasa:1.9.4-full
+    image: rasa/rasa:1.9.5-full
     ports:
       - 5005:5005
     volumes:
@@ -362,7 +361,7 @@ services:
     command:
       - run
   app:
-    image: &lt;your action server image&gt;
+    image: &lt;image:tag&gt;
     expose: 5055
 </pre>
 </div></blockquote>
@@ -390,108 +389,8 @@ corresponds to a <a class="reference internal" href="#docker-compose-configuring
 </div>
 </div></blockquote>
 </div>
-<div class="section" id="building-an-action-server-image">
-<span id="id2"></span><h2><a class="toc-backref" href="#id6">Building an Action Server Image</a><a class="headerlink" href="#building-an-action-server-image" title="Permalink to this headline">¶</a></h2>
-<p>If you build an image that includes your action code and store it in a container registry, you can run it locally
-or as part of your deployment, without having to move code between servers.
-In addition, you can add any additional dependencies of systems or Python libraries
-that are part of your action code but not included in the base <code class="docutils literal notranslate"><span class="pre">rasa/rasa-sdk</span></code> image.</p>
-<p>This documentation assumes you are pushing your images to <a class="reference external" href="https://hub.docker.com/">DockerHub</a>.
-DockerHub will let you host multiple public repositories and
-one private repository for free. Be sure to first <a class="reference external" href="https://hub.docker.com/signup/">create an account</a>
-and <a class="reference external" href="https://hub.docker.com/signup/">create a repository</a> to store your images. You could also push images to
-a different Docker registry, such as <a class="reference external" href="https://cloud.google.com/container-registry">Google Container Registry</a>,
-<a class="reference external" href="https://aws.amazon.com/ecr/">Amazon Elastic Container Registry</a>, or
-<a class="reference external" href="https://azure.microsoft.com/en-us/services/container-registry/">Azure Container Registry</a>.</p>
-<p>To create your image:</p>
-<blockquote>
-<div><ol class="arabic">
-<li><p class="first">Move your actions code to a folder <code class="docutils literal notranslate"><span class="pre">actions</span></code> in your project directory.
-Make sure to also add an empty <code class="docutils literal notranslate"><span class="pre">actions/__init__.py</span></code> file:</p>
-<blockquote>
-<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir actions
-mv actions.py actions/actions.py
-touch actions/__init__.py  <span class="c1"># the init file indicates actions.py is a python module</span>
-</pre></div>
-</div>
-</div></blockquote>
-<p>The <code class="docutils literal notranslate"><span class="pre">rasa/rasa-sdk</span></code> image will automatically look for the actions in <code class="docutils literal notranslate"><span class="pre">actions/actions.py</span></code>.</p>
-</li>
-<li><p class="first">If your actions have any extra dependencies, create a list of them in a file,
-<code class="docutils literal notranslate"><span class="pre">actions/requirements-actions.txt</span></code>.</p>
-</li>
-<li><p class="first">Create a file named <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> in your project directory,
-in which you’ll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
-For example:</p>
-<blockquote>
-<div><pre class="literal-block">
-# Extend the official Rasa SDK image
-FROM rasa/rasa-sdk:1.9.0
-
-# Use subdirectory as working directory
-WORKDIR /app
-
-# Copy any additional custom requirements
-COPY actions/requirements-actions.txt ./
-
-# Change back to root user to install dependencies
-USER root
-
-# Install extra requirements for actions code, if necessary (otherwise comment this out)
-RUN pip install -r requirements-actions.txt
-
-# Copy actions folder to working directory
-COPY ./actions /app/actions
-
-# By best practices, don't run the code with root user
-USER 1001
-</pre>
-</div></blockquote>
-</li>
-</ol>
-</div></blockquote>
-<p>You can then build the image via the following command:</p>
-<blockquote>
-<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker build . -t &lt;account_username&gt;/&lt;repository_name&gt;:&lt;custom_image_tag&gt;
-</pre></div>
-</div>
-</div></blockquote>
-<p>The <code class="docutils literal notranslate"><span class="pre">&lt;custom_image_tag&gt;</span></code> should reference how this image will be different from others. For
-example, you could version or date your tags, as well as create different tags that have different code for production
-and development servers. You should create a new tag any time you update your code and want to re-deploy it.</p>
-<p>If you are using Docker Compose locally, you can use this image directly in your
-<code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>:</p>
-<blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">version</span><span class="p p-Indicator">:</span> <span class="s">&#39;3.0&#39;</span>
-<span class="l l-Scalar l-Scalar-Plain">services</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">app</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;account_username&gt;/&lt;repository_name&gt;:&lt;custom_image_tag&gt;</span>
-</pre></div>
-</div>
-</div></blockquote>
-<p>If you’re building this image to make it available from another server,
-for example a Rasa X or Rasa Enterprise deployment, you should push the image to a cloud repository.
-You can push the image to DockerHub via:</p>
-<blockquote>
-<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker login --username &lt;account_username&gt; --password &lt;account_password&gt;
-docker push &lt;account_username&gt;/&lt;repository_name&gt;:&lt;custom_image_tag&gt;
-</pre></div>
-</div>
-</div></blockquote>
-<p>To authenticate and push images to a different container registry, please refer to the documentation of
-your chosen container registry.</p>
-<p>Then, reference the new image tag in your <code class="docutils literal notranslate"><span class="pre">docker-compose.override.yml</span></code>:</p>
-<blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">version</span><span class="p p-Indicator">:</span> <span class="s">&#39;3.0&#39;</span>
-<span class="l l-Scalar l-Scalar-Plain">services</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">app</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;account_username&gt;/&lt;repository_name&gt;:&lt;custom_image_tag&gt;</span>
-</pre></div>
-</div>
-</div></blockquote>
-</div>
 <div class="section" id="configuring-a-tracker-store">
-<h2><a class="toc-backref" href="#id7">Configuring a Tracker Store</a><a class="headerlink" href="#configuring-a-tracker-store" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id5">Configuring a Tracker Store</a><a class="headerlink" href="#configuring-a-tracker-store" title="Permalink to this headline">¶</a></h2>
 <p>By default, all conversations are saved in memory. This means that all
 conversations are lost as soon as you restart the Rasa server.
 If you want to persist your conversations, you can use a different
