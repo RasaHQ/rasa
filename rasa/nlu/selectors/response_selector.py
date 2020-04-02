@@ -432,8 +432,10 @@ class DIET2DIET(DIET):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        mask_label = self.tf_label_data[LABEL_MASK][0]
-        sequence_lengths_label = self._get_sequence_lengths(mask_label)
+        sequence_lengths_label = tf.cast(
+            self.tf_label_data[LABEL_SEQ_LENGTH][0], dtype=tf.int32
+        )
+        mask_label = self.compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
             self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name
@@ -449,8 +451,10 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        mask_text = tf_batch_data[TEXT_MASK][0]
-        sequence_lengths_text = self._get_sequence_lengths(mask_text)
+        sequence_lengths_text = tf.cast(
+            tf_batch_data[TEXT_SEQ_LENGTH][0], dtype=tf.int32
+        )
+        mask_text = self.compute_mask(sequence_lengths_text)
 
         (
             text_transformed,
@@ -465,8 +469,10 @@ class DIET2DIET(DIET):
             sequence_ids=True,
         )
 
-        mask_label = tf_batch_data[LABEL_MASK][0]
-        sequence_lengths_label = self._get_sequence_lengths(mask_label)
+        sequence_lengths_label = tf.cast(
+            tf_batch_data[LABEL_SEQ_LENGTH][0], dtype=tf.int32
+        )
+        mask_label = self.compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
             tf_batch_data[LABEL_FEATURES], mask_label, self.label_name
@@ -506,8 +512,10 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
-        mask_text = tf_batch_data[TEXT_MASK][0]
-        sequence_lengths_text = self._get_sequence_lengths(mask_text)
+        sequence_lengths_text = tf.cast(
+            tf_batch_data[TEXT_SEQ_LENGTH][0], dtype=tf.int32
+        )
+        mask_text = self.compute_mask(sequence_lengths_text)
 
         text_transformed, _, _, _ = self._create_sequence(
             tf_batch_data[TEXT_FEATURES], mask_text, self.text_name

@@ -160,6 +160,20 @@ class RasaModelData:
                 self.data[key].append(mask)
                 break
 
+    def add_lengths(self, key: Text, from_key: Text):
+        if not self.data.get(from_key):
+            return
+
+        self.data[key] = []
+
+        for data in self.data[from_key]:
+            if data.size > 0:
+                # explicitly add last dimension to mask
+                # to track correctly dynamic sequences
+                lengths = np.array([x.shape[0] for x in data])
+                self.data[key].append(lengths)
+                break
+
     def split(
         self, number_of_test_examples: int, random_seed: int
     ) -> Tuple["RasaModelData", "RasaModelData"]:
