@@ -99,9 +99,11 @@ LABEL_MASK = f"{LABEL}_mask"
 LABEL_IDS = f"{LABEL}_ids"
 TAG_IDS = "tag_ids"
 
+POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
-class CRFLayer(NamedTuple):
-    """CRF layer to use during entity prediction."""
+
+class EntityTagSpec(NamedTuple):
+    """Specification of an entity tag present in the training data."""
 
     tag_name: Text
     ids_to_tags: Dict[int, Text]
@@ -288,7 +290,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
-        crf_layers: Optional[List[CRFLayer]] = None,
+        entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
     ) -> None:
         """Declare instance variables with default values."""
@@ -306,16 +308,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # transform numbers to labels
         self.index_label_id_mapping = index_label_id_mapping
 
-        if crf_layers is not None:
-            self._crf_layers = crf_layers
+        if entity_tag_specs is not None:
+            self._entity_tag_specs = entity_tag_specs
         else:
-            self._crf_layers = []
-
-        self._crf_layer_order = [
-            ENTITY_ATTRIBUTE_TYPE,
-            ENTITY_ATTRIBUTE_ROLE,
-            ENTITY_ATTRIBUTE_GROUP,
-        ]
+            self._entity_tag_specs = []
 
         self.model = model
 
@@ -348,12 +344,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _invert_mapping(mapping: Dict) -> Dict:
         return {value: key for key, value in mapping.items()}
 
-    def _create_crf_layers(self, training_data: TrainingData) -> List[CRFLayer]:
-        """Create CRF layers with their respective tag id mappings."""
+    def _create_entity_tag_specs(
+        self, training_data: TrainingData
+    ) -> List[EntityTagSpec]:
+        """Create entity tag specifications with their respective tag id mappings."""
 
-        _crf_layers = []
+        _tag_specs = []
 
-        for tag_name in self._crf_layer_order:
+        for tag_name in POSSIBLE_TAGS:
             if self.component_config[BILOU_FLAG]:
                 tag_id_index_mapping = bilou_utils.build_tag_id_dict(
                     training_data, tag_name
@@ -364,8 +362,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 )
 
             if tag_id_index_mapping:
-                _crf_layers.append(
-                    CRFLayer(
+                _tag_specs.append(
+                    EntityTagSpec(
                         tag_name=tag_name,
                         tags_to_ids=tag_id_index_mapping,
                         ids_to_tags=self._invert_mapping(tag_id_index_mapping),
@@ -373,7 +371,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     )
                 )
 
-        return _crf_layers
+        return _tag_specs
 
     @staticmethod
     def _tag_id_index_mapping_for(
@@ -563,32 +561,32 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         Y_sparse = []
         Y_dense = []
         label_ids = []
-        crf_tag_ids = defaultdict(list)
+        tag_name_to_tag_ids = defaultdict(list)
 
-        for e in training_data:
-            if label_attribute is None or e.get(label_attribute):
-                _sparse, _dense = self._extract_features(e, TEXT)
+        for example in training_data:
+            if label_attribute is None or example.get(label_attribute):
+                _sparse, _dense = self._extract_features(example, TEXT)
                 if _sparse is not None:
                     X_sparse.append(_sparse)
                 if _dense is not None:
                     X_dense.append(_dense)
 
-            if e.get(label_attribute):
-                _sparse, _dense = self._extract_features(e, label_attribute)
+            if example.get(label_attribute):
+                _sparse, _dense = self._extract_features(example, label_attribute)
                 if _sparse is not None:
                     Y_sparse.append(_sparse)
                 if _dense is not None:
                     Y_dense.append(_dense)
 
                 if label_id_dict:
-                    label_ids.append(label_id_dict[e.get(label_attribute)])
+                    label_ids.append(label_id_dict[example.get(label_attribute)])
 
             if self.component_config.get(ENTITY_RECOGNITION):
-                for crf_layer in self._crf_layers:
-                    if not crf_layer.tags_to_ids:
+                for tag_spec in self._entity_tag_specs:
+                    if not tag_spec.tags_to_ids:
                         continue
-                    crf_tag_ids[crf_layer.tag_name].append(
-                        self._tag_ids_for_crf(e, crf_layer)
+                    tag_name_to_tag_ids[tag_spec.tag_name].append(
+                        self._tag_ids_for_crf(example, tag_spec)
                     )
 
         X_sparse = np.array(X_sparse)
@@ -596,8 +594,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         Y_sparse = np.array(Y_sparse)
         Y_dense = np.array(Y_dense)
         label_ids = np.array(label_ids)
-        crf_tag_ids = {
-            tag_name: np.array(tag_ids) for tag_name, tag_ids in crf_tag_ids.items()
+        tag_name_to_tag_ids = {
+            tag_name: np.array(tag_ids)
+            for tag_name, tag_ids in tag_name_to_tag_ids.items()
         }
 
         model_data = RasaModelData(label_key=self.label_key)
@@ -612,7 +611,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         model_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
-        for tag_name, tag_ids in crf_tag_ids.items():
+        for tag_name, tag_ids in tag_name_to_tag_ids.items():
             model_data.add_features(f"{tag_name}_{TAG_IDS}", [tag_ids])
 
         model_data.add_mask(TEXT_MASK, TEXT_FEATURES)
@@ -620,21 +619,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return model_data
 
-    def _tag_ids_for_crf(self, example: Message, crf_layer: CRFLayer) -> np.ndarray:
-        """Create a np.array containing the tag ids of the given message for the given
-        CRFLayer.
-        """
+    def _tag_ids_for_crf(self, example: Message, tag_spec: EntityTagSpec) -> np.ndarray:
+        """Create a np.array containing the tag ids of the given message."""
         if self.component_config[BILOU_FLAG]:
             _tags = bilou_utils.bilou_tags_to_ids(
-                example, crf_layer.tags_to_ids, crf_layer.tag_name
+                example, tag_spec.tags_to_ids, tag_spec.tag_name
             )
         else:
             _tags = []
-            for t in example.get(TOKENS_NAMES[TEXT]):
+            for token in example.get(TOKENS_NAMES[TEXT]):
                 _tag = determine_token_labels(
-                    t, example.get(ENTITIES), attribute_key=crf_layer.tag_name
+                    token, example.get(ENTITIES), attribute_key=tag_spec.tag_name
                 )
-                _tags.append(crf_layer.tags_to_ids[_tag])
+                _tags.append(tag_spec.tags_to_ids[_tag])
+
         # transpose to have seq_len x 1
         return np.array([_tags]).T
 
@@ -662,7 +660,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             training_data, label_id_index_mapping, attribute=INTENT
         )
 
-        self._crf_layers = self._create_crf_layers(training_data)
+        self._entity_tag_specs = self._create_entity_tag_specs(training_data)
 
         label_attribute = (
             INTENT if self.component_config[INTENT_CLASSIFICATION] else None
@@ -713,7 +711,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,
-            crf_layers=self._crf_layers,
+            entity_tag_specs=self._entity_tag_specs,
             config=self.component_config,
         )
 
@@ -815,14 +813,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> Dict[Text, List[Text]]:
         predicted_tags = {}
 
-        for crf_layer in self._crf_layers:
-            predictions = predict_out[f"e_{crf_layer.tag_name}_ids"].numpy()
-            tags = [crf_layer.ids_to_tags[p] for p in predictions[0]]
+        for tag_spec in self._entity_tag_specs:
+            predictions = predict_out[f"e_{tag_spec.tag_name}_ids"].numpy()
+            tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
 
             if self.component_config[BILOU_FLAG]:
                 tags = bilou_utils.remove_bilou_prefixes(tags)
 
-            predicted_tags[crf_layer.tag_name] = tags
+            predicted_tags[tag_spec.tag_name] = tags
 
         return predicted_tags
 
@@ -955,9 +953,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.index_label_id_mapping.pkl",
             self.index_label_id_mapping,
         )
-        crf_layers = [l._asdict() for l in self._crf_layers]
+        entity_tag_specs = [l._asdict() for l in self._entity_tag_specs]
         io_utils.dump_obj_as_json_to_file(
-            model_dir / f"{file_name}.crf_layers.pkl", crf_layers
+            model_dir / f"{file_name}.entity_tag_specs.pkl", entity_tag_specs
         )
 
         return {"file": file_name}
@@ -982,7 +980,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         (
             index_label_id_mapping,
-            crf_layers,
+            entity_tag_specs,
             label_data,
             meta,
             data_example,
@@ -990,12 +988,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         meta = train_utils.update_similarity_type(meta)
 
-        model = cls._load_model(crf_layers, label_data, meta, data_example, model_dir)
+        model = cls._load_model(
+            entity_tag_specs, label_data, meta, data_example, model_dir
+        )
 
         return cls(
             component_config=meta,
             index_label_id_mapping=index_label_id_mapping,
-            crf_layers=crf_layers,
+            entity_tag_specs=entity_tag_specs,
             model=model,
         )
 
@@ -1010,17 +1010,19 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         index_label_id_mapping = io_utils.json_unpickle(
             model_dir / f"{file_name}.index_label_id_mapping.pkl"
         )
-        crf_layers = io_utils.read_json_file(model_dir / f"{file_name}.crf_layers.pkl")
-        crf_layers = [
-            CRFLayer(
-                tag_name=crf_layer["tag_name"],
+        entity_tag_specs = io_utils.read_json_file(
+            model_dir / f"{file_name}.entity_tag_specs.pkl"
+        )
+        entity_tag_specs = [
+            EntityTagSpec(
+                tag_name=tag_spec["tag_name"],
                 ids_to_tags={
-                    int(key): value for key, value in crf_layer["ids_to_tags"].items()
+                    int(key): value for key, value in tag_spec["ids_to_tags"].items()
                 },
                 tags_to_ids={},
-                num_tags=crf_layer["num_tags"],
+                num_tags=tag_spec["num_tags"],
             )
-            for crf_layer in crf_layers
+            for tag_spec in entity_tag_specs
         ]
 
         # jsonpickle converts dictionary keys to strings
@@ -1028,12 +1030,18 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             int(key): value for key, value in index_label_id_mapping.items()
         }
 
-        return (index_label_id_mapping, crf_layers, label_data, meta, data_example)
+        return (
+            index_label_id_mapping,
+            entity_tag_specs,
+            label_data,
+            meta,
+            data_example,
+        )
 
     @classmethod
     def _load_model(
         cls,
-        crf_layers: List[CRFLayer],
+        entity_tag_specs: List[EntityTagSpec],
         label_data: RasaModelData,
         meta: Dict[Text, Any],
         data_example: Dict[Text, List[np.ndarray]],
@@ -1050,7 +1058,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_data_example,
             data_signature=model_data_example.get_signature(),
             label_data=label_data,
-            crf_layers=crf_layers,
+            entity_tag_specs=entity_tag_specs,
             config=meta,
         )
 
@@ -1078,7 +1086,7 @@ class DIET(RasaModel):
         self,
         data_signature: Dict[Text, List[FeatureSignature]],
         label_data: RasaModelData,
-        crf_layers: Optional[List[CRFLayer]],
+        entity_tag_specs: Optional[List[EntityTagSpec]],
         config: Dict[Text, Any],
     ) -> None:
         super().__init__(
@@ -1103,7 +1111,7 @@ class DIET(RasaModel):
         self.tf_label_data = self.batch_to_model_data_format(
             label_batch, label_data.get_signature()
         )
-        self._crf_layers = crf_layers
+        self._entity_tag_specs = self._ordered_tag_specs(entity_tag_specs)
 
         # tf objects
         self._tf_layers: Dict[Text : tf.keras.layers.Layer] = {}
@@ -1115,6 +1123,26 @@ class DIET(RasaModel):
         self._update_metrics_to_log()
 
         self.all_labels_embed = None  # needed for efficient prediction
+
+    @staticmethod
+    def _ordered_tag_specs(
+        entity_tag_specs: List[EntityTagSpec]
+    ) -> List[EntityTagSpec]:
+        """Ensure that order of entity tag specs matches CRF layer order."""
+        crf_order = [
+            ENTITY_ATTRIBUTE_TYPE,
+            ENTITY_ATTRIBUTE_ROLE,
+            ENTITY_ATTRIBUTE_GROUP,
+        ]
+
+        ordered_tag_spec = []
+
+        for tag_name in crf_order:
+            for tag_spec in entity_tag_specs:
+                if tag_name == tag_spec.tag_name:
+                    ordered_tag_spec.append(tag_spec)
+
+        return ordered_tag_spec
 
     def _check_data(self) -> None:
         if TEXT_FEATURES not in self.data_signature:
@@ -1168,9 +1196,9 @@ class DIET(RasaModel):
         if self.config[INTENT_CLASSIFICATION]:
             self.metrics_to_log += ["i_loss", "i_acc"]
         if self.config[ENTITY_RECOGNITION]:
-            for crf_layer in self._crf_layers:
-                if crf_layer.num_tags != 0:
-                    name = crf_layer.tag_name
+            for tag_spec in self._entity_tag_specs:
+                if tag_spec.num_tags != 0:
+                    name = tag_spec.tag_name
                     self.metrics_to_log += [f"{name}_loss", f"{name}_f1"]
 
     def _prepare_layers(self) -> None:
@@ -1292,9 +1320,9 @@ class DIET(RasaModel):
         self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
     def _prepare_entity_recognition_layers(self) -> None:
-        for crf_layer in self._crf_layers:
-            name = crf_layer.tag_name
-            num_tags = crf_layer.num_tags
+        for tag_spec in self._entity_tag_specs:
+            name = tag_spec.tag_name
+            num_tags = tag_spec.num_tags
             self._tf_layers[f"embed.{name}.logits"] = layers.Embed(
                 num_tags, self.config[REGULARIZATION_CONSTANT], f"logits.{name}"
             )
@@ -1557,27 +1585,27 @@ class DIET(RasaModel):
 
         sequence_lengths = sequence_lengths - 1  # remove cls token
 
-        for crf_layer in self._crf_layers:
-            if crf_layer.num_tags == 0:
+        for tag_spec in self._entity_tag_specs:
+            if tag_spec.num_tags == 0:
                 continue
 
-            tag_ids = tf_batch_data[f"{crf_layer.tag_name}_{TAG_IDS}"][0]
+            tag_ids = tf_batch_data[f"{tag_spec.tag_name}_{TAG_IDS}"][0]
 
             loss, f1, _logits = self._calculate_entity_loss(
                 text_transformed,
                 tag_ids,
                 mask_text,
                 sequence_lengths,
-                crf_layer.tag_name,
+                tag_spec.tag_name,
                 prev_logits,
             )
 
-            if crf_layer.tag_name == ENTITY_ATTRIBUTE_TYPE:
+            if tag_spec.tag_name == ENTITY_ATTRIBUTE_TYPE:
                 # use the logits from the entity type CRF as input for the role
                 # and group CRF
                 prev_logits = _logits
 
-            self._update_entity_metrics(loss, f1, crf_layer.tag_name)
+            self._update_entity_metrics(loss, f1, tag_spec.tag_name)
 
             losses.append(loss)
 
@@ -1629,12 +1657,12 @@ class DIET(RasaModel):
 
         prev_logits = None
 
-        for crf_layers in self._crf_layers:
+        for tag_spec in self._entity_tag_specs:
             # skip crf layer if it was not trained
-            if crf_layers.num_tags == 0:
+            if tag_spec.num_tags == 0:
                 continue
 
-            name = crf_layers.tag_name
+            name = tag_spec.tag_name
             _input = text_transformed
 
             if prev_logits is not None:
