@@ -98,7 +98,8 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
     Args:
         tags: the list of tags
 
-    Returns: list of tags without BILOU prefix
+    Returns:
+        list of tags without BILOU prefix
     """
     return [entity_name_from_tag(t) for t in tags]
 
