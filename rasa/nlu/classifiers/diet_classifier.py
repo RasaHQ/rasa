@@ -87,10 +87,10 @@ logger = logging.getLogger(__name__)
 
 TEXT_FEATURES = f"{TEXT}_features"
 LABEL_FEATURES = f"{LABEL}_features"
-TEXT_MASK = f"{TEXT}_mask"
-LABEL_MASK = f"{LABEL}_mask"
 LABEL_IDS = f"{LABEL}_ids"
 TAG_IDS = "tag_ids"
+TEXT_SEQ_LENGTH = f"{TEXT}_lengths"
+LABEL_SEQ_LENGTH = f"{LABEL}_lengths"
 
 
 class DIETClassifier(IntentClassifier, EntityExtractor):
@@ -484,7 +484,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # to track correctly dynamic sequences
         label_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
 
-        label_data.add_mask(LABEL_MASK, LABEL_FEATURES)
+        label_data.add_lengths(LABEL_SEQ_LENGTH, LABEL_FEATURES)
 
         return label_data
 
@@ -558,8 +558,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
         model_data.add_features(TAG_IDS, [tag_ids])
 
-        model_data.add_mask(TEXT_MASK, TEXT_FEATURES)
-        model_data.add_mask(LABEL_MASK, LABEL_FEATURES)
+        model_data.add_lengths(TEXT_SEQ_LENGTH, TEXT_FEATURES)
+        model_data.add_lengths(LABEL_SEQ_LENGTH, LABEL_FEATURES)
 
         return model_data
 

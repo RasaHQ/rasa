@@ -17,9 +17,9 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     TEXT_FEATURES,
     LABEL_FEATURES,
-    TEXT_MASK,
-    LABEL_MASK,
     LABEL_IDS,
+    TEXT_SEQ_LENGTH,
+    LABEL_SEQ_LENGTH,
 )
 from rasa.utils.tensorflow.constants import (
     LABEL,
