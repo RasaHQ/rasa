@@ -17,6 +17,75 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.0-alpha1] - 2020-04-03
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Features
+--------
+- `#3765 <https://github.com/rasahq/rasa/issues/3765>`_: Add support for composite entities in Rasa NLU.
+
+  Composite entities allow you to define a role and/or group label in addition to the entity type.
+  Use the role label if an entity can play different roles in your assistant.
+  For example, a city can be a destination or a departure city.
+  The group label can be use to group multiple entities together.
+  For example, you could group different pizza orders together, so that you know what toppings goes with which pizza and
+  what size which pizza has.
+  For more details see :ref:`composite-entities`.
+
+  To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
+  We updated the tracker method ``get_latest_entity_values`` to take an optional role/group label.
+  If you want to use a form, you can add the specific role/group label of interest to the slot mapping function
+  ``from_entity`` (see :ref:`forms``).
+
+  .. note::
+
+      Composite entities are currently just supported by the :ref:``diet-classifier``.
+- `#5465 <https://github.com/rasahq/rasa/issues/5465>`_: Update training data format for NLU to support composite entities.
+
+  You can now specify synonyms, roles, and groups of entities using the following data format:
+  Markdown:
+  .. code-block:: none
+
+      [LA]{"entity": "location", "role": "city", "group": "CA", "value": "Los Angeles"}
+
+  JSON:
+  .. code-block:: none
+
+      "entities": [
+          {
+              "start": 10,
+              "end": 12,
+              "value": "Los Angeles",
+              "entity": "location",
+              "role": "city",
+              "group": "CA",
+          }
+
+  The markdown format ``[LA](location:Los Angeles)`` is deprecated. To update your training data file just
+  execute the following command on the terminal of your choice:
+  ``sed -i .deprecated -E 's/\[(.*)\]\((.*):(.*)\)/\[\1\]\{"entity": "\2", "value": "\3"\}/g' nlu.md``
+
+  For more information about the new data format see :ref:`training-data-format`.
+
+Bugfixes
+--------
+- `#5230 <https://github.com/rasahq/rasa/issues/5230>`_: Fixed issue where posting to certain callback channel URLs would return a 500 error on successful posts due to invalid response format
+- `#5475 <https://github.com/rasahq/rasa/issues/5475>`_: One word can just have one entity label.
+
+  If you are using, for example, ``ConveRTTokenizer`` words can be split into multiple tokens.
+  Our entity extractors assign entity labels per token. So, it might happen, that a word, that was split into two tokens,
+  got assigned two different entity labels. This is now fixed. One word can just have one entity label at a time.
+- `#5509 <https://github.com/rasahq/rasa/issues/5509>`_: An entity label should always cover a complete word.
+
+  If you are using, for example, ``ConveRTTokenizer`` words can be split into multiple tokens.
+  Our entity extractors assign entity labels per token. So, it might happen, that just a part of a word has
+  an entity label. This is now fixed. An entity label always covers a complete word.
+
+Miscellaneous internal changes
+------------------------------
+- #5556
+
+
 [1.9.5] - 2020-04-01
 ^^^^^^^^^^^^^^^^^^^^
 
