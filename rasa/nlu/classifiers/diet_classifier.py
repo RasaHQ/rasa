@@ -1252,7 +1252,7 @@ class DIET(RasaModel):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        label_lengths = tf.cast(self.tf_label_data[LABEL_SEQ_LENGTH][0], dtype=tf.int32)
+        label_lengths = self.sequence_lengths_for(self.tf_label_data[LABEL_SEQ_LENGTH][0])
         mask_label = self._compute_mask(label_lengths)
 
         x = self._create_bow(
@@ -1350,18 +1350,22 @@ class DIET(RasaModel):
 
         return loss, f1
 
-    def _compute_mask(self, sequence_lengths: tf.Tensor) -> tf.Tensor:
+    @staticmethod
+    def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
         mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
         # explicitly add last dimension to mask
         # to track correctly dynamic sequences
         return tf.expand_dims(mask, -1)
+
+    def sequence_lengths_for(self, sequence_lengths: tf.Tensor) -> tf.Tensor:
+        return tf.cast(sequence_lengths, dtype=tf.int32)
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        sequence_lengths = tf.cast(tf_batch_data[TEXT_SEQ_LENGTH][0], dtype=tf.int32)
+        sequence_lengths = self.sequence_lengths_for(tf_batch_data[TEXT_SEQ_LENGTH][0])
         mask_text = self._compute_mask(sequence_lengths)
 
         (
@@ -1391,7 +1395,7 @@ class DIET(RasaModel):
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
 
-            label_lengths = tf.cast(tf_batch_data[LABEL_SEQ_LENGTH][0], dtype=tf.int32)
+            label_lengths = self.sequence_lengths_for(tf_batch_data[LABEL_SEQ_LENGTH][0])
             mask_label = self._compute_mask(label_lengths)
 
             label_ids = tf_batch_data[LABEL_IDS][0]
@@ -1422,7 +1426,7 @@ class DIET(RasaModel):
             batch_in, self.predict_data_signature
         )
 
-        sequence_lengths = tf.cast(tf_batch_data[TEXT_SEQ_LENGTH][0], dtype=tf.int32)
+        sequence_lengths = self.sequence_lengths_for(tf_batch_data[TEXT_SEQ_LENGTH][0])
         mask_text = self._compute_mask(sequence_lengths)
 
         text_transformed, _, _, _ = self._create_sequence(
