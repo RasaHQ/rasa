@@ -951,7 +951,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.index_label_id_mapping.pkl",
             self.index_label_id_mapping,
         )
-        entity_tag_specs = [l._asdict() for l in self._entity_tag_specs]
+
+        entity_tag_specs = (
+            [l._asdict() for l in self._entity_tag_specs]
+            if self._entity_tag_specs
+            else []
+        )
         io_utils.dump_obj_as_json_to_file(
             model_dir / f"{file_name}.entity_tag_specs.pkl", entity_tag_specs
         )
