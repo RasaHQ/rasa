@@ -145,9 +145,7 @@ class RasaModelData:
         self.num_examples = self.number_of_examples()
 
     def add_lengths(self, key: Text, from_key: Text) -> None:
-        """
-        Adds np.array of lengths of sequences to data under given key
-        """
+        """Adds np.array of lengths of sequences to data under given key."""
         if not self.data.get(from_key):
             return
 
