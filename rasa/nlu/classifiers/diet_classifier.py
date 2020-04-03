@@ -1126,7 +1126,7 @@ class DIET(RasaModel):
 
     @staticmethod
     def _ordered_tag_specs(
-        entity_tag_specs: List[EntityTagSpec]
+        entity_tag_specs: List[EntityTagSpec],
     ) -> List[EntityTagSpec]:
         """Ensure that order of entity tag specs matches CRF layer order."""
         crf_order = [
