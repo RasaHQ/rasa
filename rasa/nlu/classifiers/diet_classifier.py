@@ -308,10 +308,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # transform numbers to labels
         self.index_label_id_mapping = index_label_id_mapping
 
-        if entity_tag_specs is not None:
-            self._entity_tag_specs = entity_tag_specs
-        else:
-            self._entity_tag_specs = []
+        self._entity_tag_specs = entity_tag_specs
 
         self.model = model
 
@@ -553,6 +550,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         training_data: List[Message],
         label_id_dict: Optional[Dict[Text, int]] = None,
         label_attribute: Optional[Text] = None,
+        training: bool = True,
     ) -> RasaModelData:
         """Prepare data for training and create a RasaModelData object"""
 
@@ -571,7 +569,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 if _dense is not None:
                     X_dense.append(_dense)
 
-            if example.get(label_attribute):
+            # only add features for intent labels during training
+            if training and example.get(label_attribute):
                 _sparse, _dense = self._extract_features(example, label_attribute)
                 if _sparse is not None:
                     Y_sparse.append(_sparse)
@@ -581,10 +580,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 if label_id_dict:
                     label_ids.append(label_id_dict[example.get(label_attribute)])
 
-            if self.component_config.get(ENTITY_RECOGNITION):
+            # only add tag_ids during training
+            if training and self.component_config.get(ENTITY_RECOGNITION):
                 for tag_spec in self._entity_tag_specs:
-                    if not tag_spec.tags_to_ids:
-                        continue
                     tag_name_to_tag_ids[tag_spec.tag_name].append(
                         self._tag_ids_for_crf(example, tag_spec)
                     )
@@ -734,7 +732,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             return None
 
         # create session data from message and convert it into a batch of 1
-        model_data = self._create_model_data([message])
+        model_data = self._create_model_data([message], training=False)
 
         return self.model.predict(model_data)
 
@@ -1019,7 +1017,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 ids_to_tags={
                     int(key): value for key, value in tag_spec["ids_to_tags"].items()
                 },
-                tags_to_ids={},
+                tags_to_ids={
+                    key: int(value) for key, value in tag_spec["tags_to_ids"].items()
+                },
                 num_tags=tag_spec["num_tags"],
             )
             for tag_spec in entity_tag_specs
@@ -1111,6 +1111,7 @@ class DIET(RasaModel):
         self.tf_label_data = self.batch_to_model_data_format(
             label_batch, label_data.get_signature()
         )
+
         self._entity_tag_specs = self._ordered_tag_specs(entity_tag_specs)
 
         # tf objects
@@ -1126,9 +1127,12 @@ class DIET(RasaModel):
 
     @staticmethod
     def _ordered_tag_specs(
-        entity_tag_specs: List[EntityTagSpec],
+        entity_tag_specs: Optional[List[EntityTagSpec]],
     ) -> List[EntityTagSpec]:
         """Ensure that order of entity tag specs matches CRF layer order."""
+        if entity_tag_specs is None:
+            return []
+
         crf_order = [
             ENTITY_ATTRIBUTE_TYPE,
             ENTITY_ATTRIBUTE_ROLE,
