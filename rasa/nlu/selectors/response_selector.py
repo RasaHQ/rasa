@@ -20,6 +20,7 @@ from rasa.nlu.classifiers.diet_classifier import (
     TEXT_MASK,
     LABEL_MASK,
     LABEL_IDS,
+    EntityTagSpec,
 )
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -207,7 +208,7 @@ class ResponseSelector(DIETClassifier):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
-        index_tag_id_mapping: Optional[Dict[int, Text]] = None,
+        entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
     ) -> None:
@@ -221,7 +222,7 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent_mapping = retrieval_intent_mapping or {}
 
         super().__init__(
-            component_config, index_label_id_mapping, index_tag_id_mapping, model
+            component_config, index_label_id_mapping, entity_tag_specs, model
         )
 
     @property

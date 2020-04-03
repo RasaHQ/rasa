@@ -8,8 +8,9 @@ RESPONSE = "response"
 
 ENTITIES = "entities"
 BILOU_ENTITIES = "bilou_entities"
+BILOU_ENTITIES_ROLE = "bilou_entities_role"
+BILOU_ENTITIES_GROUP = "bilou_entities_group"
 NO_ENTITY_TAG = "O"
-
 ENTITY_ATTRIBUTE_TYPE = "entity"
 ENTITY_ATTRIBUTE_GROUP = "group"
 ENTITY_ATTRIBUTE_ROLE = "role"

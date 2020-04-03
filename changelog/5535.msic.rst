@@ -1,0 +1,1 @@
+Update the ``DIETClassifier`` to support composite entities.
