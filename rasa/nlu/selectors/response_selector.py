@@ -432,8 +432,8 @@ class DIET2DIET(DIET):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        sequence_lengths_label = tf.cast(
-            self.tf_label_data[LABEL_SEQ_LENGTH][0], dtype=tf.int32
+        sequence_lengths_label = self.sequence_lengths_for(
+            self.tf_label_data[LABEL_SEQ_LENGTH][0]
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
@@ -451,8 +451,8 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        sequence_lengths_text = tf.cast(
-            tf_batch_data[TEXT_SEQ_LENGTH][0], dtype=tf.int32
+        sequence_lengths_text = self.sequence_lengths_for(
+            tf_batch_data[TEXT_SEQ_LENGTH][0]
         )
         mask_text = self._compute_mask(sequence_lengths_text)
 
@@ -469,8 +469,8 @@ class DIET2DIET(DIET):
             sequence_ids=True,
         )
 
-        sequence_lengths_label = tf.cast(
-            tf_batch_data[LABEL_SEQ_LENGTH][0], dtype=tf.int32
+        sequence_lengths_label = self.sequence_lengths_for(
+            tf_batch_data[LABEL_SEQ_LENGTH][0]
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
@@ -512,8 +512,8 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
-        sequence_lengths_text = tf.cast(
-            tf_batch_data[TEXT_SEQ_LENGTH][0], dtype=tf.int32
+        sequence_lengths_text = self.sequence_lengths_for(
+            tf_batch_data[TEXT_SEQ_LENGTH][0]
         )
         mask_text = self._compute_mask(sequence_lengths_text)
 
