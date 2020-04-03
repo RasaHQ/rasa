@@ -1252,7 +1252,9 @@ class DIET(RasaModel):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        label_lengths = self.sequence_lengths_for(self.tf_label_data[LABEL_SEQ_LENGTH][0])
+        label_lengths = self.sequence_lengths_for(
+            self.tf_label_data[LABEL_SEQ_LENGTH][0]
+        )
         mask_label = self._compute_mask(label_lengths)
 
         x = self._create_bow(
@@ -1395,7 +1397,9 @@ class DIET(RasaModel):
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
 
-            label_lengths = self.sequence_lengths_for(tf_batch_data[LABEL_SEQ_LENGTH][0])
+            label_lengths = self.sequence_lengths_for(
+                tf_batch_data[LABEL_SEQ_LENGTH][0]
+            )
             mask_label = self._compute_mask(label_lengths)
 
             label_ids = tf_batch_data[LABEL_IDS][0]
