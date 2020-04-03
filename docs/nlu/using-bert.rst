@@ -168,8 +168,8 @@ Observations
 ~~~~~~~~~~~~
 
 On all fronts we see that the heavy model with the ``BERT`` embeddings performs better.
-More specifically, the performance gain for intent classification is marginal but it deserves mentioning that the effect
-is more pronounced in the case of entity recognition.
+The performance gain for intent classification is marginal but entity recognition has
+improved substantially. 
 
 BERT in Practice
 ----------------
