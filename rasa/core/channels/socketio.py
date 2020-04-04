@@ -44,7 +44,7 @@ class SocketIOOutput(OutputChannel):
         """Send a message through this channel."""
 
         for message_part in text.strip().split("\n\n"):
-            await self._send_message(self.sid, {"text": message_part})
+            await self._send_message(recipient_id, {"text": message_part})
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
@@ -52,7 +52,7 @@ class SocketIOOutput(OutputChannel):
         """Sends an image to the output"""
 
         message = {"attachment": {"type": "image", "payload": {"src": image}}}
-        await self._send_message(self.sid, message)
+        await self._send_message(recipient_id, message)
 
     async def send_text_with_buttons(
         self,
@@ -80,7 +80,7 @@ class SocketIOOutput(OutputChannel):
             )
 
         for message in messages:
-            await self._send_message(self.sid, message)
+            await self._send_message(recipient_id, message)
 
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
@@ -95,14 +95,14 @@ class SocketIOOutput(OutputChannel):
                 }
             }
 
-            await self._send_message(self.sid, message)
+            await self._send_message(recipient_id, message)
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends custom json to the output"""
 
-        json_message.setdefault("room", self.sid)
+        json_message.setdefault("room", recipient_id)
 
         await self.sio.emit(self.bot_message_evt, **json_message)
 
@@ -110,11 +110,13 @@ class SocketIOOutput(OutputChannel):
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends an attachment to the user."""
-        await self._send_message(self.sid, {"attachment": attachment})
+        await self._send_message(recipient_id, {"attachment": attachment})
 
 
 class SocketIOInput(InputChannel):
     """A socket.io input channel."""
+
+    sio = None
 
     @classmethod
     def name(cls) -> Text:
@@ -145,6 +147,9 @@ class SocketIOInput(InputChannel):
         self.namespace = namespace
         self.socketio_path = socketio_path
 
+    def get_output_channel(self) -> Optional["OutputChannel"]:
+        return SocketIOOutput(SocketIOInput.sio , None, self.bot_message_evt)
+
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -154,6 +159,9 @@ class SocketIOInput(InputChannel):
         socketio_webhook = SocketBlueprint(
             sio, self.socketio_path, "socketio_webhook", __name__
         )
+
+        # make sio object static to use in get_output_channel
+        SocketIOInput.sio = sio
 
         @socketio_webhook.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
