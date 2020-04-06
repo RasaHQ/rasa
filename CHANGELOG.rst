@@ -35,7 +35,7 @@ Features
   To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
   We updated the tracker method ``get_latest_entity_values`` to take an optional role/group label.
   If you want to use a form, you can add the specific role/group label of interest to the slot mapping function
-  ``from_entity`` (see :ref:`forms``).
+  ``from_entity`` (see :ref:`forms`).
 
   .. note::
 
@@ -44,11 +44,13 @@ Features
 
   You can now specify synonyms, roles, and groups of entities using the following data format:
   Markdown:
+
   .. code-block:: none
 
       [LA]{"entity": "location", "role": "city", "group": "CA", "value": "Los Angeles"}
 
   JSON:
+
   .. code-block:: none
 
       "entities": [
@@ -60,6 +62,7 @@ Features
               "role": "city",
               "group": "CA",
           }
+      ]
 
   The markdown format ``[LA](location:Los Angeles)`` is deprecated. To update your training data file just
   execute the following command on the terminal of your choice:
