@@ -287,14 +287,17 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         self.interpreter = Interpreter.load(self.model_directory)
 
-MODEL_NAME_PREFIX = "nlu"
 
 def find_same(action_name, attribute, training_data):
-        for ex in training_data.training_examples:
-            if ex.as_dict()['text'] == action_name and ex.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
-                example = ex
-                break
-        return example
+    for ex in training_data.training_examples:
+        if (
+            ex.as_dict()["text"] == action_name
+            and ex.get(SPARSE_FEATURE_NAMES[attribute]) is not None
+        ):
+            example = ex
+            break
+    return example
+
 
 class RasaE2EInterpreter(NaturalLanguageInterpreter):
     def __init__(self,):
@@ -314,7 +317,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
     def prepare_training_data(self, trackers_as_states, trackers_as_actions, domain):
         training_examples = []
         for tracker in trackers_as_states:
-            for state in tracker: 
+            for state in tracker:
                 if state and not state == {}:
                     training_examples.append(state["prev_action"])
                     if "user" in state.keys():
@@ -326,7 +329,9 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         training_data.training_examples += training_examples
         return training_data
 
-    def prepare_training_data_and_train(self, trackers_as_states, trackers_as_actions, output_path, domain):
+    def prepare_training_data_and_train(
+        self, trackers_as_states, trackers_as_actions, output_path, domain
+    ):
         """
         Trains the vertorizers from real data;
         Preliminary for when the featurizer is to be used for raw text;
@@ -334,22 +339,27 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
              - trackers_as_states: real data as a dictionary
              - trackers_as_actions: output label
         """
-        training_data = self.prepare_training_data(trackers_as_states, trackers_as_actions, domain)
+        training_data = self.prepare_training_data(
+            trackers_as_states, trackers_as_actions, domain
+        )
 
         self.interpreter = self.train(training_data)
 
-        ## Not so clever fix for now; 
-        ## TODO: properly encode everything in place; 
+        ## Not so clever fix for now;
+        ## TODO: properly encode everything in place;
         for tracker in trackers_as_states:
             for state in tracker:
                 if state:
                     for key in state.keys():
                         if isinstance(state[key], Message):
-                            if state[key].get(SPARSE_FEATURE_NAMES[TEXT]) is None and state[key].get(DENSE_FEATURE_NAMES[TEXT]) is None:                           
-                                name = state[key].as_dict()['text']
+                            if (
+                                state[key].get(SPARSE_FEATURE_NAMES[TEXT]) is None
+                                and state[key].get(DENSE_FEATURE_NAMES[TEXT]) is None
+                            ):
+                                name = state[key].as_dict()["text"]
                                 example = find_same(name, TEXT, training_data)
                                 state[key] = example
-        self.trainer.persist(output_path, fixed_model_name='nlu')
+        self.trainer.persist(output_path, fixed_model_name="nlu")
 
         # return interp
 

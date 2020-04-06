@@ -116,9 +116,7 @@ class MessageProcessor:
         else:
             return None
 
-    async def predict_next(
-        self, sender_id: Text, interpreter: Optional[RasaE2EInterpreter]
-    ) -> Optional[Dict[Text, Any]]:
+    async def predict_next(self, sender_id: Text) -> Optional[Dict[Text, Any]]:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
@@ -137,10 +135,7 @@ class MessageProcessor:
                 docs=DOCS_URL_POLICIES,
             )
             return None
-
-        probabilities, policy = self._get_next_action_probabilities(
-            tracker, interpreter
-        )
+        probabilities, policy = self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
         scores = [
@@ -295,7 +290,7 @@ class MessageProcessor:
         return tracker
 
     def predict_next_action(
-        self, tracker: DialogueStateTracker, interpreter: Optional[RasaE2EInterpreter]
+        self, tracker: DialogueStateTracker
     ) -> Tuple[Action, Text, float]:
         """Predicts the next action the bot should take after seeing x.
 
@@ -543,7 +538,6 @@ class MessageProcessor:
         self,
         output_channel: OutputChannel,
         tracker: DialogueStateTracker,
-        interpreter: Optional[RasaE2EInterpreter],
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -556,7 +550,7 @@ class MessageProcessor:
             and num_predicted_actions < self.max_number_of_predictions
         ):
             # this actually just calls the policy's method by the same name
-            action, policy, confidence = self.predict_next_action(tracker, interpreter)
+            action, policy, confidence = self.predict_next_action(tracker)
 
             should_predict_another_action = await self._run_action(
                 action, tracker, output_channel, self.nlg, policy, confidence

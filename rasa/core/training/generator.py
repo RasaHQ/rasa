@@ -404,6 +404,7 @@ class TrainingDataGenerator:
                 active_trackers = self._create_start_trackers_for_augmentation(
                     story_end_trackers
                 )
+
         finished_trackers.extend(story_end_trackers)
         self._issue_unused_checkpoint_notification(previous_unused)
         logger.debug("Found {} training trackers.".format(len(finished_trackers)))
@@ -537,7 +538,6 @@ class TrainingDataGenerator:
         data while processing the story step."""
 
         events = step.explicit_events(self.domain)
-        # events = step.events
 
         trackers = []
         if events:  # small optimization
