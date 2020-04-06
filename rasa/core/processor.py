@@ -117,7 +117,7 @@ class MessageProcessor:
             return None
 
     async def predict_next(
-        self, sender_id: Text, interpreter: Optional[RasaCoreInterpreter]
+        self, sender_id: Text, interpreter: Optional[RasaE2EInterpreter]
     ) -> Optional[Dict[Text, Any]]:
 
         # we have a Tracker instance for each user
@@ -293,7 +293,7 @@ class MessageProcessor:
         return tracker
 
     def predict_next_action(
-        self, tracker: DialogueStateTracker, interpreter: Optional[RasaCoreInterpreter]
+        self, tracker: DialogueStateTracker, interpreter: Optional[RasaE2EInterpreter]
     ) -> Tuple[Action, Text, float]:
         """Predicts the next action the bot should take after seeing x.
 
@@ -781,7 +781,7 @@ class MessageProcessor:
             return None, None
 
     def _get_next_action_probabilities(
-        self, tracker: DialogueStateTracker, interpreter: Optional[RasaCoreInterpreter]
+        self, tracker: DialogueStateTracker, interpreter: Optional[RasaE2EInterpreter]
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Collect predictions from ensemble and return action and predictions."""
 

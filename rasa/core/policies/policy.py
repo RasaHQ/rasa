@@ -11,7 +11,6 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
-from rasa.core.interpreter import RasaCoreInterpreter
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 

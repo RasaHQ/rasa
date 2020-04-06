@@ -92,7 +92,6 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         super().__init__()
         self.interpreter = RasaE2EInterpreter()
 
-
     def _extract_features(
         self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
