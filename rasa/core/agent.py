@@ -26,7 +26,6 @@ from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import (
     NaturalLanguageInterpreter,
     RegexInterpreter,
-    RasaCoreInterpreter,
 )
 from rasa.core.lock_store import LockStore, InMemoryLockStore
 from rasa.core.nlg import NaturalLanguageGenerator

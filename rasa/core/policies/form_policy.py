@@ -9,7 +9,7 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY
-from rasa.core.interpreter import RasaCoreInterpreter
+from rasa.core.interpreter import RasaE2EInterpreter
 
 
 if typing.TYPE_CHECKING:
@@ -149,7 +149,7 @@ class FormPolicy(MemoizationPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: Optional[RasaCoreInterpreter],
+        interpreter: Optional[RasaE2EInterpreter],
     ) -> List[float]:
         """Predicts the corresponding form action if there is an active form"""
         result = self._default_predictions(domain)

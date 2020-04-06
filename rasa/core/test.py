@@ -11,7 +11,7 @@ from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.interpreter import RegexInterpreter, RasaCoreInterpreter
+from rasa.core.interpreter import RegexInterpreter, RasaE2EInterpreter
 from rasa.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
@@ -549,6 +549,27 @@ async def test(
         targets, predictions = evaluation_store.serialise()
         report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)
 
+        print('OLD NUMBERS')
+        print(precision)
+        print(f1)
+        print(accuracy)
+
+        print('NEW NUMBERS')
+        new_targets = []
+        new_predictions = []
+        for j, action in enumerate(targets):
+            if not action == 'action_listen':
+                new_targets.append(action)
+                new_predictions.append(predictions[j])
+
+        report, precision, f1, accuracy = get_evaluation_metrics(new_targets, new_predictions)
+        print('NEW NUMBERS')
+        print(precision)
+        print(f1)
+        print(accuracy)
+
+
+
     if out_directory:
         plot_story_evaluation(
             evaluation_store.action_targets,
@@ -583,7 +604,7 @@ def log_evaluation_table(
     f1,
     accuracy,
     in_training_data_fraction,
-    include_report=True,
+    include_report=False,
 ):  # pragma: no cover
     """Log the sklearn evaluation metrics."""
     logger.info(f"Evaluation Results on {name} level:")
@@ -624,7 +645,7 @@ def plot_story_evaluation(
         f1,
         accuracy,
         in_training_data_fraction,
-        include_report=True,
+        include_report=False,
     )
 
     if disable_plotting:
