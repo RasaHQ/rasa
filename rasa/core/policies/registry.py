@@ -17,6 +17,9 @@ from rasa.core.policies.keras_policy import KerasPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 
 # noinspection PyUnresolvedReferences
+from rasa.core.policies.inferred_mapping_policy import InferredMappingPolicy
+
+# noinspection PyUnresolvedReferences
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 
 # noinspection PyUnresolvedReferences
