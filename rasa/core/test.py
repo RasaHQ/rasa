@@ -303,6 +303,7 @@ def _collect_action_executed_predictions(
 
     gold = event.action_name
 
+
     if circuit_breaker_tripped:
         predicted = "circuit breaker tripped"
         policy = None
@@ -381,6 +382,7 @@ def _predict_tracker_actions(
                 confidence,
             ) = _collect_action_executed_predictions(
 <<<<<<< HEAD
+<<<<<<< HEAD
                 processor,
                 partial_tracker,
                 event,
@@ -389,6 +391,12 @@ def _predict_tracker_actions(
 =======
                 processor, partial_tracker, event, fail_on_prediction_errors, agent.interpreter
 >>>>>>> pass interpreter through steps for testing
+=======
+                processor,
+                partial_tracker,
+                event,
+                fail_on_prediction_errors
+>>>>>>> small fix
             )
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(
@@ -527,6 +535,7 @@ async def test(
 ):
     """Run the evaluation of the stories, optionally plot the results."""
     from rasa.nlu.test import get_evaluation_metrics
+
     # change of interpreters: preprocess with the simplest one but pass into processing
     # the one which has full NLU pipeline
 
@@ -548,27 +557,6 @@ async def test(
 
         targets, predictions = evaluation_store.serialise()
         report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)
-
-        print('OLD NUMBERS')
-        print(precision)
-        print(f1)
-        print(accuracy)
-
-        print('NEW NUMBERS')
-        new_targets = []
-        new_predictions = []
-        for j, action in enumerate(targets):
-            if not action == 'action_listen':
-                new_targets.append(action)
-                new_predictions.append(predictions[j])
-
-        report, precision, f1, accuracy = get_evaluation_metrics(new_targets, new_predictions)
-        print('NEW NUMBERS')
-        print(precision)
-        print(f1)
-        print(accuracy)
-
-
 
     if out_directory:
         plot_story_evaluation(
