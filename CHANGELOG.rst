@@ -17,6 +17,35 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.9.5] - 2020-04-01
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#5533 <https://github.com/rasahq/rasa/issues/5533>`_: Support for
+  `PostgreSQL schemas <https://www.postgresql.org/docs/11/ddl-schemas.html>`_ in
+  :ref:`sql-tracker-store`. The ``SQLTrackerStore``
+  accesses schemas defined by the ``POSTGRESQL_SCHEMA`` environment variable if
+  connected to a PostgreSQL database.
+
+  The schema is added to the connection string option's ``-csearch_path`` key, e.g.
+  ``-options=-csearch_path=<SCHEMA_NAME>`` (see
+  `<https://www.postgresql.org/docs/11/contrib-dblink-connect.html>`_ for more details).
+  As before, if no ``POSTGRESQL_SCHEMA`` is defined, Rasa uses the database's default
+  schema (``public``).
+
+  The schema has to exist in the database before connecting, i.e. it needs to have been
+  created with
+
+  .. code-block:: postgresql
+
+    CREATE SCHEMA schema_name;
+
+Bugfixes
+--------
+- `#5547 <https://github.com/rasahq/rasa/issues/5547>`_: Fixed ambiguous logging in ``DIETClassifier`` by adding the name of the calling class to the log message.
+
+
 [1.9.4] - 2020-03-30
 ^^^^^^^^^^^^^^^^^^^^
 
