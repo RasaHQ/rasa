@@ -134,7 +134,7 @@ class FallbackPolicy(Policy):
         return result
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain,
+        self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
         """Predicts a fallback action.
 
