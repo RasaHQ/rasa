@@ -387,9 +387,7 @@ class TEDPolicy(Policy):
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        training_data = self.featurize_for_training(
-            training_trackers, domain, **kwargs
-        )
+        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
         self._label_data = self._create_label_data(domain)
         # self._label_data = self._create_label_data_e2e(label_data)
@@ -407,7 +405,6 @@ class TEDPolicy(Policy):
 
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
-
 
         self.model = TED(
             model_data.get_signature(),
@@ -724,7 +721,6 @@ class TED(RasaModel):
         all_labels_embed = self._embed_label(all_labels)
 
         return all_labels, all_labels_embed
-
 
     @staticmethod
     def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
