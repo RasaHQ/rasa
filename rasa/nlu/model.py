@@ -183,7 +183,10 @@ class Trainer:
             )
 
         # data gets modified internally during the training - hence the copy
-        working_data = copy.deepcopy(data)
+        if kwargs['no_copy']:
+            working_data = data
+        else:
+            working_data = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
             logger.info(f"Starting to train component {component.name}")
