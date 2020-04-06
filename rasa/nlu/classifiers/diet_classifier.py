@@ -80,6 +80,7 @@ from rasa.utils.tensorflow.constants import (
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_LEVEL,
+    MODEL_CHECKPOINT_DIR,
 )
 
 
@@ -217,6 +218,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
+        # Directory to store model checkpoints
+        # Ends up with the best model during training
+        MODEL_CHECKPOINT_DIR: None,
     }
 
     # init helpers
@@ -806,7 +810,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         io_utils.create_directory_for_file(tf_model_file)
 
-        self.model.save(str(tf_model_file))
+        if self.model.best_model_file is not None:
+            self.model.copy_best(str(tf_model_file))
+        else:
+            self.model.save(str(tf_model_file))
 
         io_utils.pickle_dump(
             model_dir / f"{file_name}.data_example.pkl", self.data_example
@@ -952,6 +959,7 @@ class DIET(RasaModel):
             random_seed=config[RANDOM_SEED],
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
             tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
+            model_checkpoint_dir=config[MODEL_CHECKPOINT_DIR]
         )
 
         self.config = config

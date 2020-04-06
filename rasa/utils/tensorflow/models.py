@@ -3,11 +3,15 @@ import datetime
 import tensorflow as tf
 import numpy as np
 import logging
+import os
+import shutil
 from collections import defaultdict
+from pathlib import Path
 from typing import List, Text, Dict, Tuple, Union, Optional, Callable
 
 from tensorflow_core.python.ops.summary_ops_v2 import ResourceSummaryWriter
 from tqdm import tqdm
+from rasa.constants import NLU_CHECKPOINT_MODEL_NAME
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import SEQUENCE, TENSORBOARD_LOG_LEVEL
@@ -30,6 +34,7 @@ class RasaModel(tf.keras.models.Model):
         random_seed: Optional[int] = None,
         tensorboard_log_dir: Optional[Text] = None,
         tensorboard_log_level: Optional[Text] = "epoch",
+        model_checkpoint_dir: Optional[Text] = None,
         **kwargs,
     ) -> None:
         """Initialize the RasaModel.
@@ -52,6 +57,10 @@ class RasaModel(tf.keras.models.Model):
         self.test_summary_writer = None
         self.model_summary_file = None
         self.tensorboard_log_on_epochs = True
+
+        self.best_metrics_so_far = {}
+        self.best_model_file = os.path.join(model_checkpoint_dir, f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model") if \
+            model_checkpoint_dir is not None else None
 
         self._set_up_tensorboard_writer(tensorboard_log_level, tensorboard_log_dir)
 
@@ -130,6 +139,7 @@ class RasaModel(tf.keras.models.Model):
         ) = self._get_tf_evaluation_functions(eager, evaluation_model_data)
 
         val_results = {}  # validation is not performed every epoch
+        best_model_file = None
         progress_bar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         training_steps = 0
@@ -170,6 +180,9 @@ class RasaModel(tf.keras.models.Model):
                         )
 
                     val_results = self._get_metric_results(prefix="val_")
+                    improved = self._update_best_metrics_so_far(val_results)
+                    if improved:
+                        self.save(self.best_model_file, overwrite=True)
 
                 postfix_dict.update(val_results)
 
@@ -212,8 +225,21 @@ class RasaModel(tf.keras.models.Model):
         self._training = False  # needed for eager mode
         return self._predict_function(batch_in)
 
-    def save(self, model_file_name: Text) -> None:
-        self.save_weights(model_file_name, save_format="tf")
+    def save(self, model_file_name: Text, overwrite: bool = True) -> None:
+        self.save_weights(model_file_name, overwrite=overwrite, save_format="tf")
+
+    def copy_best(self, model_file_name: Text) -> None:
+        ckp_dir, ckp_file = os.path.split(self.best_model_file)
+        ckp_path = Path(ckp_dir)
+
+        for f in ckp_path.glob(f'{ckp_file}*'):
+            shutil.copyfile(f, model_file_name + f.suffix)
+
+        # Generate the tf2 checkpoint file
+        dest_path, dest_file = os.path.split(model_file_name)
+        with open(os.path.join(ckp_dir, 'checkpoint')) as in_file, open(os.path.join(dest_path, 'checkpoint'), 'w') as out_file:
+            for line in in_file:
+                out_file.write(line.replace(ckp_file, dest_file))
 
     @classmethod
     def load(
@@ -356,6 +382,21 @@ class RasaModel(tf.keras.models.Model):
                 for metric in self.metrics:
                     if metric.name in self.metrics_to_log:
                         tf.summary.scalar(metric.name, metric.result(), step=step)
+
+    def _update_best_metrics_so_far(
+            self, curr_results: Dict[Text, float]
+    ) -> bool:
+        if len(self.best_metrics_so_far) <= 0: # Init with actual result keys
+            keys = filter(lambda k: True if (k.endswith('_acc') or k.endswith('_f1')) else False, curr_results.keys())
+            for key in keys:
+                self.best_metrics_so_far[key] = curr_results[key]
+            all_improved = True
+        else:
+            all_improved = all([curr_results[key] > self.best_metrics_so_far[key] for key in self.best_metrics_so_far.keys()])
+            if all_improved:
+                for key in self.best_metrics_so_far.keys():
+                    self.best_metrics_so_far[key] = curr_results[key]
+        return all_improved
 
     @staticmethod
     def _should_evaluate(

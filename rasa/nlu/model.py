@@ -6,15 +6,13 @@ from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
 from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
-
-MODEL_NAME_PREFIX = "nlu_"
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +203,7 @@ class Trainer:
         persistor: Optional[Persistor] = None,
         fixed_model_name: Text = None,
         persist_nlu_training_data: bool = False,
+        best_model_file: Text = None
     ) -> Text:
         """Persist all components of the pipeline to the passed path.
 
@@ -216,7 +215,7 @@ class Trainer:
         if fixed_model_name:
             model_name = fixed_model_name
         else:
-            model_name = MODEL_NAME_PREFIX + timestamp
+            model_name = NLU_MODEL_NAME_PREFIX + timestamp
 
         path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)
