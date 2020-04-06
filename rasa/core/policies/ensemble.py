@@ -362,7 +362,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         is_augmented = policy_name.endswith("_" + AugmentedMemoizationPolicy.__name__)
         # also check if confidence is 0, than it cannot be count as prediction
         return not (is_memo or is_augmented) or max_confidence == 0.0
-
     @staticmethod
     def _is_not_mapping_policy(
         policy_name: Text, max_confidence: Optional[float] = None

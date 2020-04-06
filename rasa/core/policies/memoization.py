@@ -190,9 +190,7 @@ class MemoizationPolicy(Policy):
         return self._recall_states(states)
 
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
+        self, tracker: DialogueStateTracker, domain: Domain,
     ) -> List[float]:
         """Predicts the next action the bot should take after seeing the tracker.
 
