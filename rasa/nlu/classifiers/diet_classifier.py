@@ -659,8 +659,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _predict(self, message: Message) -> Optional[Dict[Text, tf.Tensor]]:
         if self.model is None:
             logger.debug(
-                "There is no trained model: component is either not trained or "
-                "didn't receive enough training data."
+                f"There is no trained model for '{self.__class__.__name__}': The "
+                f"component is either not trained or didn't receive enough training "
+                f"data."
             )
             return None
 
@@ -839,8 +840,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         if not model_dir or not meta.get("file"):
             logger.debug(
-                f"Failed to load model. "
-                f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?"
+                f"Failed to load model for '{cls.__name__}'. "
+                f"Maybe you did not provide enough training data and no model was "
+                f"trained or the path '{os.path.abspath(model_dir)}' doesn't exist?"
             )
             return cls(component_config=meta)
 

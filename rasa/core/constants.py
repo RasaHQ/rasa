@@ -65,3 +65,11 @@ DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
 # RabbitMQ message property header added to events published using `rasa export`
 RASA_EXPORT_PROCESS_ID_HEADER_NAME = "rasa-export-process-id"
+
+# Name of the environment variable defining the PostgreSQL schema to access. See
+# https://www.postgresql.org/docs/9.1/ddl-schemas.html for more details.
+POSTGRESQL_SCHEMA = "POSTGRESQL_SCHEMA"
+
+# Names of the environment variables defining PostgreSQL pool size and max overflow
+POSTGRESQL_POOL_SIZE = "SQL_POOL_SIZE"
+POSTGRESQL_MAX_OVERFLOW = "SQL_MAX_OVERFLOW"
