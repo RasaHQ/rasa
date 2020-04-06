@@ -524,6 +524,7 @@ async def test(
 ):
     """Run the evaluation of the stories, optionally plot the results."""
     from rasa.nlu.test import get_evaluation_metrics
+
     # change of interpreters: preprocess with the simplest one but pass into processing
     # the one which has full NLU pipeline
 
@@ -549,27 +550,6 @@ async def test(
 
         targets, predictions = evaluation_store.serialise()
         report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)
-
-        print('OLD NUMBERS')
-        print(precision)
-        print(f1)
-        print(accuracy)
-
-        print('NEW NUMBERS')
-        new_targets = []
-        new_predictions = []
-        for j, action in enumerate(targets):
-            if not action == 'action_listen':
-                new_targets.append(action)
-                new_predictions.append(predictions[j])
-
-        report, precision, f1, accuracy = get_evaluation_metrics(new_targets, new_predictions)
-        print('NEW NUMBERS')
-        print(precision)
-        print(f1)
-        print(accuracy)
-
-
 
     if out_directory:
         plot_story_evaluation(

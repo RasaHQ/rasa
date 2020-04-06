@@ -297,9 +297,7 @@ class MessageProcessor:
         This should be overwritten by more advanced policies to use
         ML to predict the action. Returns the index of the next action."""
 
-        action_confidences, policy = self._get_next_action_probabilities(
-            tracker, interpreter
-        )
+        action_confidences, policy = self._get_next_action_probabilities(tracker)
 
         max_confidence_index = int(np.argmax(action_confidences))
         action = self.domain.action_for_index(
@@ -777,9 +775,7 @@ class MessageProcessor:
         else:
             return None, None
 
-    def _get_next_action_probabilities(
-        self, tracker: DialogueStateTracker, interpreter: Optional[RasaE2EInterpreter]
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    def _get_next_action_probabilities(self, tracker: DialogueStateTracker) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Collect predictions from ensemble and return action and predictions."""
 
         followup_action = tracker.followup_action
