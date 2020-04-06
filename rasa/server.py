@@ -771,6 +771,10 @@ def create_app(
             stories_path = os.path.join(temp_dir, "stories.md")
             rasa.utils.io.write_text_file(rjs["stories"], stories_path)
 
+        if "responses" in rjs:
+            responses_path = os.path.join(temp_dir, "responses.md")
+            rasa.utils.io.write_text_file(rjs["responses"], responses_path)
+
         domain_path = DEFAULT_DOMAIN_PATH
         if "domain" in rjs:
             domain_path = os.path.join(temp_dir, "domain.yml")
