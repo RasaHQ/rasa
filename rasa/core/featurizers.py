@@ -202,10 +202,6 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         return sparse_features #, dense_features
 
 
-
-
-
-
 class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
@@ -732,6 +728,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         self.state_featurizer.interpreter.interpreter = Interpreter(
             self.state_featurizer.interpreter.trainer.pipeline, []
         ).load(os.path.join(os.path.dirname(self.path), "nlu"))
+
 
         trackers_as_states_modified = []
         for tracker in trackers_as_states:

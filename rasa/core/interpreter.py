@@ -329,7 +329,6 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         training_data.training_examples += training_examples
         return training_data
 
-
     def prepare_training_data_and_train(
         self, trackers_as_states, trackers_as_actions, output_path, domain
     ):
@@ -362,7 +361,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
                                 name = state[key].as_dict()["text"]
                                 example = find_same(name, TEXT, training_data)
                                 state[key] = example
-        self.trainer.persist(output_path, fixed_model_name='nlu')
+        self.trainer.persist(output_path, fixed_model_name="nlu")
 
 
 def _create_from_endpoint_config(

@@ -538,7 +538,6 @@ class TrainingDataGenerator:
         data while processing the story step."""
 
         events = step.explicit_events(self.domain)
-        # events = step.events
 
         trackers = []
         if events:  # small optimization
