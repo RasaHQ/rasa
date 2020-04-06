@@ -323,7 +323,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
 
         config = config.load()
         self.trainer = Trainer(config)
-        self.interpreter = Interpreter(self.trainer.pipeline, {})
+        self.interpreter = None
 
     def prepare_training_data(self, trackers_as_states, trackers_as_actions, domain):
         training_examples = []
