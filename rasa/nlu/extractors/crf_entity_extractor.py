@@ -452,7 +452,9 @@ class CRFEntityExtractor(EntityExtractor):
 
         return {"file": file_names}
 
-    def _sentence_to_features(self, sentence: List[CRFToken]) -> List[Dict[Text, Any]]:
+    def _sentence_to_features(
+        self, sentence: List[CRFToken], tag_features: Optional[List[Text]] = None
+    ) -> List[Dict[Text, Any]]:
         """Convert a word into discrete features in self.crf_features,
         including word before and word after."""
 
@@ -495,6 +497,9 @@ class CRFEntityExtractor(EntityExtractor):
                             # append each feature to a feature vector
                             value = self.function_dict[feature](word)
                             word_features[prefix + ":" + feature] = value
+
+                    if tag_features:
+                        word_features[f"{prefix}:entity"] = tag_features[word_idx + f_i]
 
             sentence_features.append(word_features)
         return sentence_features
