@@ -13,7 +13,6 @@ intents:
 
 entities:
   - cuisine
-  - num_people
   - number
   - feedback
   - seating

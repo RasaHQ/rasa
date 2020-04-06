@@ -20,7 +20,6 @@ from rasa.core.events import (
     ActionReverted,
     UserUtteranceReverted,
     SessionStarted,
-    Event,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,

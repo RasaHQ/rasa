@@ -9,6 +9,13 @@ from rasa.nlu.constants import (
     TEXT,
     BILOU_ENTITIES,
     NO_ENTITY_TAG,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
+    BILOU_ENTITIES_GROUP,
+    BILOU_ENTITIES_ROLE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
 )
 
 BILOU_PREFIXES = ["B-", "I-", "U-", "L-"]
@@ -40,24 +47,49 @@ def entity_name_from_tag(tag: Text) -> Text:
     return tag
 
 
-def tags_to_ids(message: Message, tag_id_dict: Dict[Text, int]) -> List[int]:
+def bilou_tags_to_ids(
+    message: Message,
+    tag_id_dict: Dict[Text, int],
+    tag_name: Text = ENTITY_ATTRIBUTE_TYPE,
+) -> List[int]:
     """Maps the entity tags of the message to the ids of the provided dict.
 
     Args:
         message: the message
         tag_id_dict: mapping of tags to ids
+        tag_name: tag name of interest
 
     Returns: a list of tag ids
     """
-    if message.get(BILOU_ENTITIES):
+    bilou_key = _get_bilou_key_for_tag(tag_name)
+
+    if message.get(bilou_key):
         _tags = [
             tag_id_dict[_tag] if _tag in tag_id_dict else tag_id_dict[NO_ENTITY_TAG]
-            for _tag in message.get(BILOU_ENTITIES)
+            for _tag in message.get(bilou_key)
         ]
     else:
         _tags = [tag_id_dict[NO_ENTITY_TAG] for _ in message.get(TOKENS_NAMES[TEXT])]
 
     return _tags
+
+
+def _get_bilou_key_for_tag(tag_name: Text) -> Text:
+    """Get the message key for the BILOU tagging format of the provided tag name.
+
+    Args:
+        tag_name: the tag name
+
+    Returns:
+        the message key to store the BILOU tags
+    """
+    if tag_name == ENTITY_ATTRIBUTE_ROLE:
+        return BILOU_ENTITIES_ROLE
+
+    if tag_name == ENTITY_ATTRIBUTE_GROUP:
+        return BILOU_ENTITIES_GROUP
+
+    return BILOU_ENTITIES
 
 
 def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
@@ -66,27 +98,36 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
     Args:
         tags: the list of tags
 
-    Returns: list of tags without BILOU prefix
+    Returns:
+        list of tags without BILOU prefix
     """
     return [entity_name_from_tag(t) for t in tags]
 
 
-def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
+def build_tag_id_dict(
+    training_data: TrainingData, tag_name: Text = ENTITY_ATTRIBUTE_TYPE
+) -> Optional[Dict[Text, int]]:
     """Create a mapping of unique tags to ids.
 
     Args:
         training_data: the training data
+        tag_name: tag name of interest
 
     Returns: a mapping of tags to ids
     """
+    bilou_key = _get_bilou_key_for_tag(tag_name)
+
     distinct_tags = set(
         [
             entity_name_from_tag(e)
             for example in training_data.training_examples
-            if example.get(BILOU_ENTITIES)
-            for e in example.get(BILOU_ENTITIES)
+            if example.get(bilou_key)
+            for e in example.get(bilou_key)
         ]
     ) - {NO_ENTITY_TAG}
+
+    if not distinct_tags:
+        return None
 
     tag_id_dict = {
         f"{prefix}{tag}": idx_1 * len(BILOU_PREFIXES) + idx_2 + 1
@@ -118,23 +159,34 @@ def apply_bilou_schema(
         if not include_cls_token:
             tokens = tokens[:-1]
 
-        entities = map_message_entities(message)
-        output = bilou_tags_from_offsets(tokens, entities)
+        for attribute, message_key in [
+            (ENTITY_ATTRIBUTE_TYPE, BILOU_ENTITIES),
+            (ENTITY_ATTRIBUTE_ROLE, BILOU_ENTITIES_ROLE),
+            (ENTITY_ATTRIBUTE_GROUP, BILOU_ENTITIES_GROUP),
+        ]:
+            entities = map_message_entities(message, attribute)
+            output = bilou_tags_from_offsets(tokens, entities)
+            message.set(message_key, output)
 
-        message.set(BILOU_ENTITIES, output)
 
-
-def map_message_entities(message: Message) -> List[Tuple[int, int, Text]]:
+def map_message_entities(
+    message: Message, attribute_key: Text = ENTITY_ATTRIBUTE_TYPE
+) -> List[Tuple[int, int, Text]]:
     """Maps the entities of the given message to their start, end, and tag values.
 
     Args:
         message: the message
+        attribute_key: key of tag value to use
 
     Returns: a list of start, end, and tag value tuples
     """
 
     def convert_entity(entity: Dict[Text, Any]) -> Tuple[int, int, Text]:
-        return entity["start"], entity["end"], entity["entity"]
+        return (
+            entity[ENTITY_ATTRIBUTE_START],
+            entity[ENTITY_ATTRIBUTE_END],
+            entity.get(attribute_key) or NO_ENTITY_TAG,
+        )
 
     return [convert_entity(entity) for entity in message.get(ENTITIES, [])]
 

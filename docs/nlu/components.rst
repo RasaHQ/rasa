@@ -1626,8 +1626,6 @@ DIETClassifier
           set ``weight_sparsity`` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
           to learn.
 
-    |
-
     .. container:: toggle
 
         .. container:: header

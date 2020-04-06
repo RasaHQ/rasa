@@ -130,7 +130,7 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
         return yaml_parser.load(content) or {}
 
 
-def read_file(filename: Text, encoding: Text = DEFAULT_ENCODING) -> Any:
+def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) -> Any:
     """Read text from a file."""
 
     try:
@@ -140,7 +140,7 @@ def read_file(filename: Text, encoding: Text = DEFAULT_ENCODING) -> Any:
         raise ValueError(f"File '{filename}' does not exist.")
 
 
-def read_json_file(filename: Text) -> Any:
+def read_json_file(filename: Union[Text, Path]) -> Any:
     """Read json from a file."""
     content = read_file(filename)
     try:
@@ -152,7 +152,7 @@ def read_json_file(filename: Text) -> Any:
         )
 
 
-def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
+def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
     """Dump an object as a json string to a file."""
 
     write_text_file(json.dumps(obj, indent=2), filename)

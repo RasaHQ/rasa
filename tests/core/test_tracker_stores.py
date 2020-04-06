@@ -1,12 +1,20 @@
 import logging
 import tempfile
+from contextlib import contextmanager
 
 import pytest
+import sqlalchemy
 import uuid
+
+from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
-from typing import Tuple, Text, Type, Dict, List
+from sqlalchemy.dialects.postgresql.base import PGDialect
+from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+from sqlalchemy.dialects.oracle.base import OracleDialect
+from sqlalchemy.engine.url import URL
+from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
 from unittest.mock import Mock
 
 import rasa.core.tracker_store
@@ -15,6 +23,7 @@ from rasa.core.actions.action import (
     ACTION_SESSION_START_NAME,
 )
 from rasa.core.channels.channel import UserMessage
+from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.core.domain import Domain
 from rasa.core.events import (
     SlotSet,
@@ -601,6 +610,164 @@ def test_tracker_store_retrieve_without_session_started_events(
 
     assert len(tracker.events) == 4
     assert all(event == tracker.events[i] for i, event in enumerate(events))
+
+
+def test_session_scope_error(
+    monkeypatch: MonkeyPatch, capsys: CaptureFixture, default_domain: Domain
+):
+    tracker_store = SQLTrackerStore(default_domain)
+    tracker_store.sessionmaker = Mock()
+
+    requested_schema = uuid.uuid4().hex
+
+    # `ensure_schema_exists()` raises `ValueError`
+    mocked_ensure_schema_exists = Mock(side_effect=ValueError(requested_schema))
+    monkeypatch.setattr(
+        rasa.core.tracker_store, "ensure_schema_exists", mocked_ensure_schema_exists,
+    )
+
+    # `SystemExit` is triggered by failing `ensure_schema_exists()`
+    with pytest.raises(SystemExit):
+        with tracker_store.session_scope() as _:
+            pass
+
+    # error message is printed
+    assert (
+        f"Requested PostgreSQL schema '{requested_schema}' was not found in the "
+        f"database." in capsys.readouterr()[0]
+    )
+
+
+@pytest.mark.parametrize(
+    "url,is_postgres_url",
+    [
+        (f"{PGDialect.name}://admin:pw@localhost:5432/rasa", True),
+        (f"{SQLiteDialect.name}:///", False),
+        (URL(PGDialect.name), True),
+        (URL(SQLiteDialect.name), False),
+    ],
+)
+def test_is_postgres_url(url: Union[Text, URL], is_postgres_url: bool):
+    assert rasa.core.tracker_store.is_postgresql_url(url) == is_postgres_url
+
+
+def set_or_delete_postgresql_schema_env_var(
+    monkeypatch: MonkeyPatch, value: Optional[Text]
+) -> None:
+    """Set `POSTGRESQL_SCHEMA` environment variable using `MonkeyPatch`.
+
+    Args:
+        monkeypatch: Instance of `MonkeyPatch` to use for patching.
+        value: Value of the `POSTGRESQL_SCHEMA` environment variable to set.
+    """
+    if value is None:
+        monkeypatch.delenv(POSTGRESQL_SCHEMA, raising=False)
+    else:
+        monkeypatch.setenv(POSTGRESQL_SCHEMA, value)
+
+
+@pytest.mark.parametrize(
+    "url,schema_env,kwargs",
+    [
+        # postgres without schema
+        (
+            f"{PGDialect.name}://admin:pw@localhost:5432/rasa",
+            None,
+            {
+                "pool_size": rasa.core.tracker_store.POSTGRESQL_DEFAULT_POOL_SIZE,
+                "max_overflow": rasa.core.tracker_store.POSTGRESQL_DEFAULT_MAX_OVERFLOW,
+            },
+        ),
+        # postgres with schema
+        (
+            f"{PGDialect.name}://admin:pw@localhost:5432/rasa",
+            "schema1",
+            {
+                "connect_args": {"options": "-csearch_path=schema1"},
+                "pool_size": rasa.core.tracker_store.POSTGRESQL_DEFAULT_POOL_SIZE,
+                "max_overflow": rasa.core.tracker_store.POSTGRESQL_DEFAULT_MAX_OVERFLOW,
+            },
+        ),
+        # oracle without schema
+        (f"{OracleDialect.name}://admin:pw@localhost:5432/rasa", None, {}),
+        # oracle with schema
+        (f"{OracleDialect.name}://admin:pw@localhost:5432/rasa", "schema1", {}),
+        # sqlite
+        (f"{SQLiteDialect.name}:///", None, {}),
+    ],
+)
+def test_create_engine_kwargs(
+    monkeypatch: MonkeyPatch,
+    url: Union[Text, URL],
+    schema_env: Optional[Text],
+    kwargs: Dict[Text, Dict[Text, Union[Text, int]]],
+):
+    set_or_delete_postgresql_schema_env_var(monkeypatch, schema_env)
+
+    assert rasa.core.tracker_store.create_engine_kwargs(url) == kwargs
+
+
+@contextmanager
+def does_not_raise():
+    """Contextmanager to be used when an expression is not expected to raise an
+    exception.
+
+    This contextmanager can be used in parametrized tests, where some input objects
+    are expected to raise and others are not.
+
+    Example:
+
+        @pytest.mark.parametrize(
+            "a,b,raises_context",
+            [
+                # 5/6 is a legal divison
+                (5, 6, does_not_raise()),
+                # 5/0 raises a `ZeroDivisionError`
+                (5, 0, pytest.raises(ZeroDivisionError)),
+            ],
+        )
+        def test_divide(
+            a: int, b: int, raises_context: ContextManager,
+        ):
+            with raises_context:
+                _ = a / b
+
+    """
+    yield
+
+
+@pytest.mark.parametrize(
+    "is_postgres,schema_env,schema_exists,raises_context",
+    [
+        (True, "schema1", True, does_not_raise()),
+        (True, "schema1", False, pytest.raises(ValueError)),
+        (False, "schema1", False, does_not_raise()),
+        (True, None, False, does_not_raise()),
+        (False, None, False, does_not_raise()),
+    ],
+)
+def test_ensure_schema_exists(
+    monkeypatch: MonkeyPatch,
+    is_postgres: bool,
+    schema_env: Optional[Text],
+    schema_exists: bool,
+    raises_context: ContextManager,
+):
+    set_or_delete_postgresql_schema_env_var(monkeypatch, schema_env)
+    monkeypatch.setattr(
+        rasa.core.tracker_store, "is_postgresql_url", lambda _: is_postgres
+    )
+    monkeypatch.setattr(sqlalchemy, "exists", Mock())
+
+    # mock the `session.query().scalar()` query which returns whether the schema
+    # exists in the db
+    scalar = Mock(return_value=schema_exists)
+    query = Mock(scalar=scalar)
+    session = Mock()
+    session.query = Mock(return_value=query)
+
+    with raises_context:
+        rasa.core.tracker_store.ensure_schema_exists(session)
 
 
 def test_current_state_without_events(default_domain: Domain):
