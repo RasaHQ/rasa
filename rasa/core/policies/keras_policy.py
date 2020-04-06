@@ -171,6 +171,7 @@ class KerasPolicy(Policy):
         training_data = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
+
         # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
