@@ -10,7 +10,6 @@ from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY
 
-
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
@@ -138,7 +137,7 @@ class FormPolicy(MemoizationPolicy):
         return state_is_unhappy
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain,
+        self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
         """Predicts the corresponding form action if there is an active form"""
         result = self._default_predictions(domain)
