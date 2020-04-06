@@ -356,8 +356,8 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         training_data = self.prepare_training_data(
             trackers_as_states, trackers_as_actions, domain
         )
-
-        self.interpreter = self.train(training_data)
+        kwargs = {'no_copy': True}
+        self.interpreter = self.trainer.train(training_data, **kwargs)
 
         ## Not so clever fix for now;
         ## TODO: properly encode everything in place;
@@ -374,32 +374,6 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
                                 example = find_same(name, TEXT, training_data)
                                 state[key] = example
         self.trainer.persist(output_path, fixed_model_name="nlu")
-
-        # return interp
-
-    def train(self, data: TrainingData, **kwargs: Any) -> "Interpreter":
-        """Trains the underlying pipeline using the provided training data."""
-
-        self.training_data = data
-
-        self.training_data.validate()
-
-        context = kwargs
-
-        for component in self.trainer.pipeline:
-            updates = component.provide_context()
-            if updates:
-                context.update(updates)
-
-        for i, component in enumerate(self.trainer.pipeline):
-            logger.info(f"Starting to train component {component.name}")
-            component.prepare_partial_processing(self.trainer.pipeline[:i], context)
-            updates = component.train(data, self.trainer.config, **context)
-            logger.info("Finished training component.")
-            if updates:
-                context.update(updates)
-
-        return Interpreter(self.trainer.pipeline, context)
 
 
 def _create_from_endpoint_config(
