@@ -88,13 +88,10 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 @pytest.fixture(scope="session")
 async def trained_moodbot_path(tmpdir_factory: TempdirFactory) -> Text:
     output = tmpdir_factory.mktemp("moodbot").strpath
-    tmp_config_file = os.path.join(output, "config.yml")
-
-    update_number_of_epochs("examples/moodbot/config.yml", tmp_config_file)
 
     return await train_async(
         domain="examples/moodbot/domain.yml",
-        config=tmp_config_file,
+        config="examples/moodbot/config.yml",
         training_files="examples/moodbot/data/",
         output_path=MOODBOT_MODEL_PATH,
     )
