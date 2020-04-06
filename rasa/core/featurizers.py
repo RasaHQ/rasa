@@ -21,7 +21,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
 )
 import scipy.sparse
 
-from rasa.core.interpreter import RasaCoreInterpreter
+from rasa.core.interpreter import RasaE2EInterpreter
 from rasa.nlu.model import Trainer
 from rasa.nlu.constants import CLS_TOKEN, SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, RESPONSE, TEXT
 from rasa.nlu.training_data import Message, TrainingData
@@ -80,11 +80,11 @@ class SingleStateFeaturizer:
         raise NotImplementedError("Featurizer must implement encoding actions.")
 
 
-class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
+class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self) -> None:
 
         super().__init__()
-        self.interpreter = RasaCoreInterpreter()
+        self.interpreter = RasaE2EInterpreter()
 
     def _extract_features(
         self, message: Message, attribute: Text
@@ -321,8 +321,6 @@ class TrackerFeaturizer:
         **kwargs
     ) -> DialogueTrainingData:
         """Create training data."""
-        import copy
-        from rasa.core.interpreter import find_same
 
         if self.state_featurizer is None:
             raise ValueError(
@@ -335,7 +333,8 @@ class TrackerFeaturizer:
             trackers_as_actions,
         ) = self.training_states_and_actions_e2e(trackers, domain)
 
-        interpreter = self.state_featurizer.interpreter.prepare_training_data_and_train(trackers_as_states, trackers_as_actions, self.state_featurizer.interpreter, kwargs['output_path_nlu'], domain)
+        self.state_featurizer.interpreter.prepare_training_data_and_train(trackers_as_states, trackers_as_actions, kwargs['output_path_nlu'], domain)
+
 
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states)

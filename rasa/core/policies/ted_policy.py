@@ -17,13 +17,13 @@ from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
-    BOWSingleStateFeaturizer,
+    E2ESingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.interpreter import RasaCoreInterpreter
+from rasa.core.interpreter import RasaE2EInterpreter
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -105,7 +105,7 @@ class TEDPolicy(Policy):
         # list.
         HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: []},
         # Number of units in transformer
-        TRANSFORMER_SIZE: 128,
+        TRANSFORMER_SIZE: 512,
         # Number of transformer layers
         NUM_TRANSFORMER_LAYERS: 1,
         # Number of attention heads in transformer
@@ -129,7 +129,7 @@ class TEDPolicy(Policy):
         RANDOM_SEED: None,
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
-        EMBEDDING_DIMENSION: 20,
+        EMBEDDING_DIMENSION: 100,
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
@@ -180,10 +180,10 @@ class TEDPolicy(Policy):
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         if max_history is None:
-            return FullDialogueTrackerFeaturizer(BOWSingleStateFeaturizer())
+            return FullDialogueTrackerFeaturizer(E2ESingleStateFeaturizer())
         else:
             return MaxHistoryTrackerFeaturizer(
-                BOWSingleStateFeaturizer(), max_history=max_history
+                E2ESingleStateFeaturizer(), max_history=max_history
             )
 
     def __init__(
@@ -386,7 +386,7 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: Optional[RasaCoreInterpreter],
+        interpreter: Optional[RasaE2EInterpreter],
     ) -> List[float]:
         """Predict the next action the bot should take.
 
@@ -609,7 +609,7 @@ class TED(RasaModel):
             self.data_signature["dialogue_features"],
             "dialogue_features",
             self.config[REGULARIZATION_CONSTANT],
-            self.data_signature["dialogue_features"][0][1][-1],
+            100,
         )
 
         for is_sparse, shape in self.data_signature["label_features"]:
@@ -622,7 +622,7 @@ class TED(RasaModel):
             self.data_signature["label_features"],
             "label_features",
             self.config[REGULARIZATION_CONSTANT],
-            self.data_signature["label_features"][0][1][-1],
+            100,
         )
 
         self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(

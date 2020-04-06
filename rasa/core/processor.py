@@ -48,7 +48,7 @@ from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
-from rasa.core.interpreter import RasaCoreInterpreter
+from rasa.core.interpreter import RasaE2EInterpreter
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ class MessageProcessor:
             return None
 
     async def predict_next(
-        self, sender_id: Text, interpreter: Optional[RasaCoreInterpreter]
+        self, sender_id: Text, interpreter: Optional[RasaE2EInterpreter]
     ) -> Optional[Dict[Text, Any]]:
 
         # we have a Tracker instance for each user
@@ -263,7 +263,7 @@ class MessageProcessor:
         return tracker
 
     def predict_next_action(
-        self, tracker: DialogueStateTracker, interpreter: Optional[RasaCoreInterpreter]
+        self, tracker: DialogueStateTracker, interpreter: Optional[RasaE2EInterpreter]
     ) -> Tuple[Action, Text, float]:
         """Predicts the next action the bot should take after seeing x.
 
@@ -491,7 +491,7 @@ class MessageProcessor:
         self,
         output_channel: OutputChannel,
         tracker: DialogueStateTracker,
-        interpreter: Optional[RasaCoreInterpreter],
+        interpreter: Optional[RasaE2EInterpreter],
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -744,7 +744,7 @@ class MessageProcessor:
             return None, None
 
     def _get_next_action_probabilities(
-        self, tracker: DialogueStateTracker, interpreter: Optional[RasaCoreInterpreter]
+        self, tracker: DialogueStateTracker, interpreter: Optional[RasaE2EInterpreter]
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Collect predictions from ensemble and return action and predictions."""
 

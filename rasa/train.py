@@ -18,7 +18,6 @@ from rasa.cli.utils import (
     print_color,
 )
 from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CORE_SUBDIRECTORY_NAME
-from rasa.core.interpreter import RasaCoreInterpreter
 
 def train(
     domain: Text,
@@ -353,7 +352,6 @@ async def _train_core_with_validated_data(
         domain, config = await asyncio.gather(
             file_importer.get_domain(), file_importer.get_config()
         )
-        interpreter = RasaCoreInterpreter()
         additional_arguments['output_path_nlu'] = os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
         await rasa.core.train(
             domain_file=domain,
@@ -361,7 +359,6 @@ async def _train_core_with_validated_data(
             output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
             policy_config=config,
             additional_arguments=additional_arguments,
-            interpreter=interpreter,
         )
         print_color("Core model training completed.", color=bcolors.OKBLUE)
 

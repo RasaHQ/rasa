@@ -13,7 +13,7 @@ from rasa.constants import (
 from rasa.cli.utils import print_error, print_warning
 import rasa.utils.common as utils
 from rasa.exceptions import ModelNotFound
-from rasa.core.interpreter import RasaCoreInterpreter
+from rasa.core.interpreter import RasaE2EInterpreter
 
 
 logger = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ def test_core(
                 "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
                 "evaluation."
             )
-    _interpreter = RasaCoreInterpreter()
+    _interpreter = RasaE2EInterpreter()
     _interpreter.interpreter = _interpreter.interpreter.load(os.path.join(core_path, 'nlu'))
 
     _agent = Agent.load(unpacked_model, interpreter=_interpreter)
