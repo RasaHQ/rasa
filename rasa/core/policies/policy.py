@@ -6,12 +6,11 @@ import rasa.utils.common
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
-    BOWSingleStateFeaturizer,
+    E2ESingleStateFeaturizer,
 )
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
-from rasa.core.interpreter import RasaCoreInterpreter
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 
@@ -23,7 +22,7 @@ class Policy:
 
     @staticmethod
     def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(BOWSingleStateFeaturizer())
+        return MaxHistoryTrackerFeaturizer(E2ESingleStateFeaturizer())
 
     @classmethod
     def _create_featurizer(cls, featurizer=None) -> TrackerFeaturizer:

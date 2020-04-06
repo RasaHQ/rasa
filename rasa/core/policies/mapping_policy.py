@@ -23,7 +23,7 @@ from rasa.core.events import ActionExecuted
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
-from rasa.core.interpreter import RasaCoreInterpreter
+from rasa.core.interpreter import RasaE2EInterpreter
 from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
@@ -78,7 +78,7 @@ class MappingPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: Optional[RasaCoreInterpreter],
+        interpreter: Optional[RasaE2EInterpreter],
         output_path,
         **kwargs: Any,
     ) -> None:
@@ -90,7 +90,7 @@ class MappingPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: Optional[RasaCoreInterpreter],
+        interpreter: Optional[RasaE2EInterpreter],
     ) -> List[float]:
         """Predicts the assigned action.
 

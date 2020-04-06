@@ -296,7 +296,7 @@ def find_same(action_name, attribute, training_data):
                 break
         return example
 
-class RasaCoreInterpreter(NaturalLanguageInterpreter):
+class RasaE2EInterpreter(NaturalLanguageInterpreter):
     def __init__(self,):
         self._load_interpreter()
 
@@ -326,7 +326,7 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
         training_data.training_examples += training_examples
         return training_data
 
-    def prepare_training_data_and_train(self, trackers_as_states, trackers_as_actions, interpreter, output_path, domain):
+    def prepare_training_data_and_train(self, trackers_as_states, trackers_as_actions, output_path, domain):
         """
         Trains the vertorizers from real data;
         Preliminary for when the featurizer is to be used for raw text;
@@ -334,9 +334,9 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
              - trackers_as_states: real data as a dictionary
              - trackers_as_actions: output label
         """
-        tr_data = self.prepare_training_data(trackers_as_states, trackers_as_actions, domain)
+        training_data = self.prepare_training_data(trackers_as_states, trackers_as_actions, domain)
 
-        interp = interpreter.train(tr_data, output_path)
+        self.interpreter = self.train(training_data)
 
         ## Not so clever fix for now; 
         ## TODO: properly encode everything in place; 
@@ -347,12 +347,13 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
                         if isinstance(state[key], Message):
                             if state[key].get(SPARSE_FEATURE_NAMES[TEXT]) is None and state[key].get(DENSE_FEATURE_NAMES[TEXT]) is None:                           
                                 name = state[key].as_dict()['text']
-                                example = find_same(name, TEXT, tr_data)
+                                example = find_same(name, TEXT, training_data)
                                 state[key] = example
+        self.trainer.persist(output_path, fixed_model_name='nlu')
 
-        return interp
+        # return interp
 
-    def train(self, data: TrainingData, path, **kwargs: Any) -> "Interpreter":
+    def train(self, data: TrainingData, **kwargs: Any) -> "Interpreter":
         """Trains the underlying pipeline using the provided training data."""
 
         self.training_data = data
@@ -374,55 +375,7 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
             if updates:
                 context.update(updates)
 
-        # wrong place for persist; temporary solution; 
-        self.persist(path)
-
         return Interpreter(self.trainer.pipeline, context)
-
-    @staticmethod
-    def _file_name(index: int, name: Text) -> Text:
-        return f"component_{index}_{name}"
-
-    def persist(
-        self,
-        path: Text,
-        fixed_model_name: Text = None,
-        persist_nlu_training_data: bool = False,
-    ) -> Text:
-        """Persist all components of the pipeline to the passed path.
-
-        Returns the directory of the persisted model."""
-        metadata = {"language": self.trainer.config["language"], "pipeline": []}
-
-        if fixed_model_name:
-            model_name = fixed_model_name
-        else:
-            model_name = MODEL_NAME_PREFIX
-
-        path = os.path.abspath(path)
-        dir_name = os.path.join(path, model_name)
-
-        rasa.utils.io.create_directory(dir_name)
-
-        if self.trainer.training_data and persist_nlu_training_data:
-            metadata.update(self.trainer.training_data.persist(dir_name))
-
-        for i, component in enumerate(self.trainer.pipeline):
-            file_name = self.trainer._file_name(i, component.name)
-            update = component.persist(file_name, dir_name)
-            component_meta = component.component_config
-            if update:
-                component_meta.update(update)
-            component_meta["class"] = utils.module_path_from_object(component)
-
-            metadata["pipeline"].append(component_meta)
-
-        Metadata(metadata, dir_name).persist(dir_name)
-
-        logger.info(
-            "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
-        )
-        return dir_name
 
 
 def _create_from_endpoint_config(

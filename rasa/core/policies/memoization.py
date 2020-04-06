@@ -14,7 +14,7 @@ from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.interpreter import RasaCoreInterpreter
+from rasa.core.interpreter import RasaE2EInterpreter
 from rasa.utils.common import is_logging_disabled
 from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
@@ -160,7 +160,7 @@ class MemoizationPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: Optional[RasaCoreInterpreter],
+        interpreter: Optional[RasaE2EInterpreter],
         output_path,
         **kwargs: Any,
     ) -> None:
@@ -196,7 +196,7 @@ class MemoizationPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: Optional[RasaCoreInterpreter],
+        interpreter: Optional[RasaE2EInterpreter],
     ) -> List[float]:
         """Predicts the next action the bot should take after seeing the tracker.
 
