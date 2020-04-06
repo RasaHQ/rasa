@@ -20,7 +20,6 @@ from rasa.core.trackers import DialogueStateTracker
 import rasa.utils.common as common_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.core.interpreter import RasaE2EInterpreter
 
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
@@ -163,8 +162,6 @@ class KerasPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: Optional[RasaE2EInterpreter],
-        output_path,
         **kwargs: Any,
     ) -> None:
 
@@ -209,7 +206,6 @@ class KerasPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: Optional[RasaE2EInterpreter],
     ) -> List[float]:
 
         # noinspection PyPep8Naming

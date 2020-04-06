@@ -804,5 +804,5 @@ class MessageProcessor:
                 )
 
         return self.policy_ensemble.probabilities_using_best_policy(
-            tracker, self.domain, interpreter
+            tracker, self.domain
         )
