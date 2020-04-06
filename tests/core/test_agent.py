@@ -42,7 +42,7 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
 
 
 @pytest.fixture()
-def model_server(loop, sanic_client, trained_moodbot_path):
+def model_server(loop, sanic_client, trained_moodbot_path: Text):
     app = model_server_app(trained_moodbot_path, model_hash="somehash")
     return loop.run_until_complete(sanic_client(app))
 
@@ -171,6 +171,10 @@ async def test_agent_with_model_server_in_thread(
     jobs.kill_scheduler()
 
 
+@pytest.mark.skip(
+    reason="Cause of 'Error: Compressed file ended before the end-of-stream marker was "
+    "reached'?"
+)
 async def test_wait_time_between_pulls_without_interval(model_server, monkeypatch):
     monkeypatch.setattr(
         "rasa.core.agent.schedule_model_pulling", lambda *args: 1 / 0
