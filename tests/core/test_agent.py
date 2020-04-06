@@ -171,10 +171,6 @@ async def test_agent_with_model_server_in_thread(
     jobs.kill_scheduler()
 
 
-@pytest.mark.skip(
-    reason="Cause of 'Error: Compressed file ended before the end-of-stream marker was "
-    "reached'?"
-)
 async def test_wait_time_between_pulls_without_interval(model_server, monkeypatch):
     monkeypatch.setattr(
         "rasa.core.agent.schedule_model_pulling", lambda *args: 1 / 0
