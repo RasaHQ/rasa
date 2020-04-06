@@ -86,9 +86,7 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path(tmpdir_factory: TempdirFactory) -> Text:
-    output = tmpdir_factory.mktemp("moodbot").strpath
-
+async def trained_moodbot_path() -> Text:
     return await train_async(
         domain="examples/moodbot/domain.yml",
         config="examples/moodbot/config.yml",

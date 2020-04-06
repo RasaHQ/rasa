@@ -6,7 +6,7 @@ pipeline:
   - name: "SpacyFeaturizer"
   - name: "DIETClassifier"
     entity_recognition: False
-    epochs: 100
+    epochs: 50
 
 policies:
   - name: TEDPolicy
