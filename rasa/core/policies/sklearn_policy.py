@@ -161,9 +161,7 @@ class SklearnPolicy(Policy):
         return y_filled
 
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
+        self, tracker: DialogueStateTracker, domain: Domain,
     ) -> List[float]:
         X = self.featurizer.create_X([tracker], domain)
         Xt = self._preprocess_data(X)

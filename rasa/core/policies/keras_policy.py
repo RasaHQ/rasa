@@ -203,9 +203,7 @@ class KerasPolicy(Policy):
         logger.debug("Done fitting Keras Policy model.")
 
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
+        self, tracker: DialogueStateTracker, domain: Domain,
     ) -> List[float]:
 
         # noinspection PyPep8Naming
