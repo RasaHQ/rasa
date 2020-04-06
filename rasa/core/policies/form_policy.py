@@ -82,9 +82,9 @@ class FormPolicy(MemoizationPolicy):
             action_before_listen = None
         else:
             action_before_listen = {
-                prob.action_name: 1.0
+                state_name: prob
                 for state_name, prob in states[0].items()
-                if PREV_PREFIX in state_name
+                if PREV_PREFIX in state_name and prob > 0
             }
 
         return [action_before_listen, states[-1]]

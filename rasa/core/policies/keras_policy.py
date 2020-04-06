@@ -169,7 +169,7 @@ class KerasPolicy(Policy):
         tf.random.set_seed(self.random_seed)
 
         training_data = self.featurize_for_training(
-            training_trackers, domain, interpreter, **kwargs
+            training_trackers, domain, **kwargs
         )
         # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
@@ -203,7 +203,7 @@ class KerasPolicy(Policy):
         logger.debug("Done fitting Keras Policy model.")
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain,
+        self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
 
         # noinspection PyPep8Naming
