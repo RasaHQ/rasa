@@ -27,7 +27,6 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
-from rasa.core.interpreter import RasaE2EInterpreter
 from rasa.utils.common import class_from_module_path, raise_warning
 
 logger = logging.getLogger(__name__)
@@ -252,11 +251,8 @@ class PolicyEnsemble:
         policies = []
         for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = registry.policy_from_module_path(policy_name)
-            print(policy_cls)
             dir_name = f"policy_{i}_{policy_cls.__name__}"
-            print(dir_name)
             policy_path = os.path.join(path, dir_name)
-            print(policy_path)
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
