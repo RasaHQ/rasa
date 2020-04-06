@@ -356,9 +356,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return not (is_memo or is_augmented)
 
     def probabilities_using_best_policy(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain
+        self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         import numpy as np
 

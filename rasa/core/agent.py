@@ -23,10 +23,7 @@ from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
-from rasa.core.interpreter import (
-    NaturalLanguageInterpreter,
-    RegexInterpreter,
-)
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import LockStore, InMemoryLockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
@@ -707,9 +704,7 @@ class Agent:
 
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
-        self.policy_ensemble.train(
-            training_trackers, self.domain, **kwargs
-        )
+        self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
         self._set_fingerprint()
 
     def handle_channels(
