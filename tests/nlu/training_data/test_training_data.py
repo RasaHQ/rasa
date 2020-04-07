@@ -93,6 +93,26 @@ def test_lookup_table_md():
     ]
 
 
+def test_composite_entities_data():
+    td = training_data.load_data("data/test/demo-rasa-composite-entities.md")
+    assert not td.is_empty()
+    assert len(td.entity_examples) == 16
+    assert len(td.intent_examples) == 51
+    assert len(td.training_examples) == 51
+    assert td.entity_synonyms == {"chines": "chinese"}
+    assert td.intents == {
+        "order_pizza",
+        "restaurant_search",
+        "chitchat",
+        "greet",
+        "goodbye",
+        "affirm",
+    }
+    assert td.entities == {"location", "cuisine", "topping", "size"}
+    assert td.entity_groups == {"1", "2"}
+    assert td.entity_roles == {"european", "asian", "latin america"}
+
+
 @pytest.mark.parametrize(
     "files",
     [
