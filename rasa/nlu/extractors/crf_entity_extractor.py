@@ -251,7 +251,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         tags = {ENTITY_ATTRIBUTE_TYPE: tags}
 
-        return self._convert_tags_to_entities(message.text, tokens, tags, confidences)
+        return self.convert_tags_to_entities(message.text, tokens, tags, confidences)
 
     @classmethod
     def load(

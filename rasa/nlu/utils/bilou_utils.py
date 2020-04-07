@@ -270,7 +270,13 @@ def _handle_not_an_entity(
             bilou[n] = missing
 
 
-def check_consistent_bilou_tagging(predicted_tags: List[Text]):
+def check_consistent_bilou_tagging(predicted_tags: List[Text]) -> None:
+    """
+    Check if predicted tags follow the BILOU tagging schema.
+
+    Args:
+        predicted_tags: list of predicted tags
+    """
 
     last_tag = NO_ENTITY_TAG
     entity_found = False
@@ -289,8 +295,7 @@ def check_consistent_bilou_tagging(predicted_tags: List[Text]):
             continue
 
         if prefix == "B":
-            if tag != last_tag:
-                # "L-" entity tag missing
+            if entity_found:
                 logger.debug(f"Missing 'L-{last_tag}'.")
             entity_found = True
 

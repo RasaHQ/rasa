@@ -1,3 +1,6 @@
+import logging
+from typing import Text, List, Optional
+
 import pytest
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
@@ -139,3 +142,37 @@ def test_apply_bilou_schema():
         "U-location",
         "O",
     ]
+
+
+@pytest.mark.parametrize(
+    "tags, message",
+    [
+        (["O", "B-person", "I-person", "L-person", "O", "U-person", "O"], None),
+        (
+            ["O", "B-person", "B-person", "L-person", "O", "U-person", "O"],
+            "Missing 'L-person'",
+        ),
+        (
+            ["O", "O", "I-person", "L-person", "O", "U-person", "O"],
+            "Entity starts with 'I-person' instead of 'B-person'.",
+        ),
+        (
+            ["O", "L-person", "I-person", "L-person", "O", "U-person", "O"],
+            "Entity starts with 'L-person' instead of 'B-person'.",
+        ),
+        (["O", "U-person", "B-location", "L-location", "O", "U-person", "O"], None),
+        (
+            ["O", "U-person", "B-location", "U-person", "O", "U-person", "O"],
+            "Missing 'L-location'",
+        ),
+    ],
+)
+def test_entity_name_from_tag(tags: List[Text], message: Optional[Text], caplog):
+    with caplog.at_level(logging.DEBUG):
+        bilou_utils.check_consistent_bilou_tagging(tags)
+
+    if message:
+        assert len(caplog.records) > 0
+        assert message in caplog.text
+    else:
+        assert len(caplog.records) == 0

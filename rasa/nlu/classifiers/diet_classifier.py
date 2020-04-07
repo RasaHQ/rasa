@@ -798,7 +798,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         predicted_tags = self._entity_label_to_tags(predict_out)
 
-        entities = self._convert_tags_to_entities(
+        entities = self.convert_tags_to_entities(
             message.text, message.get(TOKENS_NAMES[TEXT], []), predicted_tags
         )
 

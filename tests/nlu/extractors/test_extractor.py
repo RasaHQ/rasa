@@ -2,6 +2,8 @@ from typing import Any, Text, Dict, List
 
 import pytest
 
+from nlu.constants import TEXT
+from nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
@@ -245,3 +247,76 @@ def test_clean_up_entities(
     updated_entities = extractor.clean_up_entities(message, entities, keep)
 
     assert updated_entities == expected_entities
+
+
+@pytest.mark.parametrize(
+    "text, tags, confidences, expected_entities",
+    [
+        (
+            "I am flying from San Fransisco to Amsterdam",
+            {
+                "entity": ["O", "O", "O", "O", "city", "city", "O", "city"],
+                "role": ["O", "O", "O", "O", "from", "from", "O", "to"],
+            },
+            {"entity": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89]},
+            [
+                {
+                    "entity": "city",
+                    "start": 17,
+                    "end": 30,
+                    "value": "San Fransisco",
+                    "role": "from",
+                    "confidence": 0.78,
+                },
+                {
+                    "entity": "city",
+                    "start": 34,
+                    "end": 43,
+                    "value": "Amsterdam",
+                    "role": "to",
+                    "confidence": 0.89,
+                },
+            ],
+        ),
+        (
+            "I am flying from San Fransisco to Amsterdam",
+            {
+                "entity": ["O", "O", "O", "O", "city", "city", "O", "city"],
+                "group": ["O", "O", "O", "O", "1", "1", "O", "1"],
+            },
+            None,
+            [
+                {
+                    "entity": "city",
+                    "start": 17,
+                    "end": 30,
+                    "value": "San Fransisco",
+                    "group": "1",
+                },
+                {
+                    "entity": "city",
+                    "start": 34,
+                    "end": 43,
+                    "value": "Amsterdam",
+                    "group": "1",
+                },
+            ],
+        ),
+    ],
+)
+def test_convert_tags_to_entities(
+    text: Text,
+    tags: Dict[Text, List[Text]],
+    confidences: Dict[Text, List[float]],
+    expected_entities: List[Dict[Text, Any]],
+):
+    extractor = EntityExtractor()
+    tokenizer = WhitespaceTokenizer()
+
+    message = Message(text)
+    tokens = tokenizer.tokenize(message, TEXT)
+
+    actual_entities = extractor.convert_tags_to_entities(
+        text, tokens, tags, confidences
+    )
+    assert actual_entities == expected_entities
