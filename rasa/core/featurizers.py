@@ -504,7 +504,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the max_history with -1.
     """
 
-    MAX_HISTORY_DEFAULT = 5
+    MAX_HISTORY_DEFAULT = None
 
     def __init__(
         self,
@@ -529,7 +529,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         """
 
         slice_end = len(states)
-        slice_start = max(0, slice_end - slice_length)
+        if slice_length == None:
+            slice_start = 0
+        else:
+            slice_start = max(0, slice_end - slice_length)
         # noinspection PyTypeChecker
         state_features = states[slice_start:]
         return state_features
