@@ -1,0 +1,3 @@
+Add confusion matrix and "confused_with" to response selection evaluation
+
+If you are using ResponseSelectors, they now produce similiar outputs during NLU evaluation. Misclassfied responses are listed in a "confused_with" attribute in the evaluation report. Similiarily, a confusion matrix of all responses is plotted.
