@@ -674,10 +674,11 @@ class TED(RasaModel):
         )
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
-        all_labels = self.tf_label_data[LABEL_FEATURES][0]
-        if isinstance(all_labels, tf.SparseTensor):
-            all_labels = self._tf_layers["sparse_to_dense.label_features"](all_labels)
-            all_labels = tf.squeeze(all_labels, axis=1)
+        all_labels = self.tf_label_data[LABEL_FEATURES]
+        all_labels = self._combine_sparse_dense_features(
+            all_labels, LABEL_FEATURES
+        )
+        all_labels = tf.squeeze(all_labels, axis=1)
         all_labels_embed = self._embed_label(all_labels)
 
         return all_labels, all_labels_embed
@@ -687,13 +688,6 @@ class TED(RasaModel):
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Create dialogue level embedding and mask."""
 
-        # mask different length sequences
-        # if there is at least one `-1` it should be masked
-
-        if isinstance(dialogue_in, tf.SparseTensor):
-            dialogue_in = self._tf_layers["sparse_to_dense.dialogue_features"](
-                dialogue_in
-            )
         mask = tf.sign(tf.reduce_max(dialogue_in, axis=-1) + 1)
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
@@ -755,15 +749,16 @@ class TED(RasaModel):
             tf.squeeze(batch["dialog_lengths"], axis=0), tf.int32
         )
 
-        label_in = batch[LABEL_FEATURES][0]
+        label_in = batch[LABEL_FEATURES]
 
         dialogue_in = self._combine_sparse_dense_features(
             batch[DIALOGUE_FEATURES], DIALOGUE_FEATURES
         )
 
-        if isinstance(label_in, tf.SparseTensor):
-            label_in = self._tf_layers["sparse_to_dense.label_features"](label_in)
-            label_in = tf.squeeze(label_in, axis=1)
+        label_in = self._combine_sparse_dense_features(
+            label_in, LABEL_FEATURES
+        )
+        label_in = tf.squeeze(label_in, axis=1)
 
         if self.max_history_tracker_featurizer_used:
             # add time dimension if max history featurizer is used
