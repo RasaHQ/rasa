@@ -1,3 +1,7 @@
+from typing import Dict, Text
+
+import pytest
+
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
@@ -99,7 +103,7 @@ def test_crf_json_from_BILOU(spacy_nlp):
     tokenizer = SpacyTokenizer()
     tokenizer.process(message)
 
-    r = ext._from_crf_to_json(
+    r = ext._create_entities(
         message,
         [
             {"O": 1.0},
@@ -143,7 +147,7 @@ def test_crf_json_from_non_BILOU(spacy_nlp):
     tokenizer = SpacyTokenizer()
     tokenizer.process(message)
 
-    rs = ext._from_crf_to_json(
+    rs = ext._create_entities(
         message,
         [
             {"O": 1.0},
@@ -157,101 +161,14 @@ def test_crf_json_from_non_BILOU(spacy_nlp):
         ],
     )
 
-    # non BILOU will split multi-word entities - hence 5
-    assert len(rs) == 5, "There should be five entities"
+    assert len(rs) == 2
 
     for r in rs:
         assert r["confidence"]  # confidence should exist
         del r["confidence"]
 
-    assert rs[0] == {"start": 9, "end": 13, "value": "home", "entity": "what"}
-    assert rs[1] == {"start": 14, "end": 22, "value": "cleaning", "entity": "what"}
-    assert rs[2] == {"start": 23, "end": 28, "value": "close", "entity": "where"}
-    assert rs[3] == {"start": 28, "end": 29, "value": "-", "entity": "where"}
-    assert rs[4] == {"start": 29, "end": 31, "value": "by", "entity": "where"}
-
-
-def test_crf_create_entity_dict(spacy_nlp):
-    crf_extractor = CRFEntityExtractor()
-    spacy_tokenizer = SpacyTokenizer()
-    white_space_tokenizer = WhitespaceTokenizer()
-
-    examples = [
-        {
-            "message": Message(
-                "where is St. Michael's Hospital?",
-                {
-                    "intent": "search_location",
-                    "entities": [
-                        {
-                            "start": 9,
-                            "end": 31,
-                            "value": "St. Michael's Hospital",
-                            "entity": "hospital",
-                            "SpacyTokenizer": {
-                                "entity_start_token_idx": 2,
-                                "entity_end_token_idx": 5,
-                            },
-                            "WhitespaceTokenizer": {
-                                "entity_start_token_idx": 2,
-                                "entity_end_token_idx": 5,
-                            },
-                        }
-                    ],
-                    SPACY_DOCS[TEXT]: spacy_nlp("where is St. Michael's Hospital?"),
-                },
-            )
-        },
-        {
-            "message": Message(
-                "where is Children's Hospital?",
-                {
-                    "intent": "search_location",
-                    "entities": [
-                        {
-                            "start": 9,
-                            "end": 28,
-                            "value": "Children's Hospital",
-                            "entity": "hospital",
-                            "SpacyTokenizer": {
-                                "entity_start_token_idx": 2,
-                                "entity_end_token_idx": 4,
-                            },
-                            "WhitespaceTokenizer": {
-                                "entity_start_token_idx": 2,
-                                "entity_end_token_idx": 4,
-                            },
-                        }
-                    ],
-                    SPACY_DOCS[TEXT]: spacy_nlp("where is Children's Hospital?"),
-                },
-            )
-        },
-    ]
-    for ex in examples:
-        # spacy tokenizers receives a Doc as input and whitespace tokenizer receives a text
-        spacy_tokens = spacy_tokenizer.tokenize(ex["message"], TEXT)
-        white_space_tokens = white_space_tokenizer.tokenize(ex["message"], TEXT)
-        for tokenizer, tokens in [
-            ("SpacyTokenizer", spacy_tokens),
-            ("WhitespaceTokenizer", white_space_tokens),
-        ]:
-            for entity in ex["message"].get("entities"):
-                parsed_entities = crf_extractor._create_entity_dict(
-                    ex["message"],
-                    tokens,
-                    entity[tokenizer]["entity_start_token_idx"],
-                    entity[tokenizer]["entity_end_token_idx"],
-                    entity["entity"],
-                    0.8,
-                )
-                assert parsed_entities == {
-                    "start": entity["start"],
-                    "end": entity["end"],
-                    "value": entity["value"],
-                    "entity": entity["entity"],
-                    "confidence": 0.8,
-                }
+    assert rs[0] == {"start": 9, "end": 22, "value": "home cleaning", "entity": "what"}
+    assert rs[1] == {"start": 23, "end": 31, "value": "close-by", "entity": "where"}
 
 
 def test_crf_use_dense_features(spacy_nlp):
@@ -294,3 +211,26 @@ def test_crf_use_dense_features(spacy_nlp):
             features[0]["0:text_dense_features"]["text_dense_features"][str(i)]
             == message.data.get("text_dense_features")[0][i]
         )
+
+
+@pytest.mark.parametrize(
+    "entity_predictions, expected_label, expected_confidence",
+    [
+        ({"O": 0.34, "B-person": 0.03, "I-person": 0.85}, "I-person", 0.88),
+        ({"O": 0.99, "person": 0.03}, "O", 0.99),
+        (None, "", 0.0),
+    ],
+)
+def test__most_likely_entity(
+    entity_predictions: Dict[Text, float],
+    expected_label: Text,
+    expected_confidence: float,
+):
+    crf_extractor = CRFEntityExtractor({"BILOU_flag": True})
+
+    actual_label, actual_confidence = crf_extractor._most_likely_entity(
+        entity_predictions
+    )
+
+    assert actual_label == expected_label
+    assert actual_confidence == expected_confidence

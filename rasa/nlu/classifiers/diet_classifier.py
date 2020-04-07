@@ -1549,17 +1549,6 @@ class DIET(RasaModel):
             self.entity_role_loss.update_state(loss)
             self.entity_role_f1.update_state(f1)
 
-    def _update_entity_metrics(self, loss: tf.Tensor, f1: tf.Tensor, crf_name: Text):
-        if crf_name == ENTITY_ATTRIBUTE_TYPE:
-            self.entity_loss.update_state(loss)
-            self.entity_f1.update_state(f1)
-        elif crf_name == ENTITY_ATTRIBUTE_GROUP:
-            self.entity_group_loss.update_state(loss)
-            self.entity_group_f1.update_state(f1)
-        elif crf_name == ENTITY_ATTRIBUTE_ROLE:
-            self.entity_role_loss.update_state(loss)
-            self.entity_role_f1.update_state(f1)
-
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:

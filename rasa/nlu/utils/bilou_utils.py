@@ -38,7 +38,7 @@ def bilou_prefix_from_tag(tag: Text) -> Optional[Text]:
     return None
 
 
-def entity_name_from_tag(tag: Text) -> Text:
+def tag_without_prefix(tag: Text) -> Text:
     """Remove the BILOU prefix from the given tag.
 
     Args:
@@ -105,7 +105,7 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
     Returns:
         list of tags without BILOU prefix
     """
-    return [entity_name_from_tag(t) for t in tags]
+    return [tag_without_prefix(t) for t in tags]
 
 
 def build_tag_id_dict(
@@ -123,7 +123,7 @@ def build_tag_id_dict(
 
     distinct_tags = set(
         [
-            entity_name_from_tag(e)
+            tag_without_prefix(e)
             for example in training_data.training_examples
             if example.get(bilou_key)
             for e in example.get(bilou_key)
@@ -283,7 +283,7 @@ def check_consistent_bilou_tagging(predicted_tags: List[Text]) -> None:
 
     for predicted_tag in predicted_tags:
         prefix = bilou_prefix_from_tag(predicted_tag)
-        tag = entity_name_from_tag(predicted_tag)
+        tag = tag_without_prefix(predicted_tag)
 
         if not prefix:
             if entity_found:

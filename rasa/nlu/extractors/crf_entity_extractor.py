@@ -35,9 +35,6 @@ if typing.TYPE_CHECKING:
     from sklearn_crfsuite import CRF
 
 
-ENTITY_LABELS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_GROUP, ENTITY_ATTRIBUTE_ROLE]
-
-
 class CRFToken(NamedTuple):
     text: Text
     pos_tag: Text
@@ -99,9 +96,9 @@ class CRFEntityExtractor(EntityExtractor):
         "suffix2": lambda crf_token: crf_token.text[-2:],
         "suffix1": lambda crf_token: crf_token.text[-1:],
         "bias": lambda crf_token: "bias",
-        "pos": lambda crf_token: crf_token.tag,
-        "pos2": lambda crf_token: crf_token.tag[:2]
-        if crf_token.tag is not None
+        "pos": lambda crf_token: crf_token.pos_tag,
+        "pos2": lambda crf_token: crf_token.pos_tag[:2]
+        if crf_token.pos_tag is not None
         else None,
         "upper": lambda crf_token: crf_token.text.isupper(),
         "digit": lambda crf_token: crf_token.text.isdigit(),
@@ -118,6 +115,12 @@ class CRFEntityExtractor(EntityExtractor):
         super().__init__(component_config)
 
         self.entity_taggers = entity_taggers
+
+        self.crf_order = [
+            ENTITY_ATTRIBUTE_TYPE,
+            ENTITY_ATTRIBUTE_ROLE,
+            ENTITY_ATTRIBUTE_GROUP,
+        ]
 
         self._validate_configuration()
 
@@ -153,9 +156,6 @@ class CRFEntityExtractor(EntityExtractor):
         entity_examples = self.filter_trainable_entities(
             training_data.training_examples
         )
-
-        # convert the dataset into features
-        # this will train on ALL examples, even the ones without annotations
         dataset = self._create_dataset(entity_examples)
 
         self._train_model(dataset)
@@ -173,7 +173,8 @@ class CRFEntityExtractor(EntityExtractor):
         return dataset
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        entities = self.add_extractor_name(self.extract_entities(message))
+        entities = self.extract_entities(message)
+        entities = self.add_extractor_name(entities)
         entities = self.clean_up_entities(message, entities)
         message.set(ENTITIES, message.get(ENTITIES, []) + entities, add_to_output=True)
 
@@ -187,49 +188,50 @@ class CRFEntityExtractor(EntityExtractor):
         predictions = self.entity_taggers[
             ENTITY_ATTRIBUTE_TYPE
         ].predict_marginals_single(features)
-        return self._from_crf_to_json(message, predictions)
 
-    def most_likely_entity(
-        self, token_idx: int, entities: List[Dict[Text, float]]
+        return self._create_entities(message, predictions)
+
+    def _most_likely_entity(
+        self, entity_predictions: Optional[Dict[Text, float]]
     ) -> Tuple[Text, float]:
         """Get the entity label with the highest confidence.
 
         Args:
-            token_idx: the token index
-            entities: list of entity labels and confidence values for a number of tokens
+            entity_predictions: mapping of entity label to confidence value
 
         Returns:
             The entity label and confidence value.
-
         """
-        if len(entities) > token_idx:
-            entity_probs = entities[token_idx]
-        else:
-            entity_probs = None
-
-        if entity_probs is None:
+        if entity_predictions is None:
             return "", 0.0
 
-        label = max(entity_probs, key=lambda key: entity_probs[key])
+        label = max(entity_predictions, key=lambda key: entity_predictions[key])
 
         if self.component_config["BILOU_flag"]:
-            # if we are using bilou flags, we will combine the prob
+            # if we are using BILOU flags, we will combine the prob
             # of the B, I, L and U tags for an entity (so if we have a
             # score of 60% for `B-address` and 40% and 30%
             # for `I-address`, we will return 70%)
             return (
                 label,
-                sum([v for k, v in entity_probs.items() if k[2:] == label[2:]]),
+                sum(
+                    [
+                        _confidence
+                        for _label, _confidence in entity_predictions.items()
+                        if bilou_utils.tag_without_prefix(label)
+                        == bilou_utils.tag_without_prefix(_label)
+                    ]
+                ),
             )
         else:
-            return label, entity_probs[label]
+            return label, entity_predictions[label]
 
     @staticmethod
     def _tokens_without_cls(message: Message) -> List[Token]:
         # [:-1] to remove the CLS token from the list of tokens
         return message.get(TOKENS_NAMES[TEXT])[:-1]
 
-    def _from_crf_to_json(
+    def _create_entities(
         self, message: Message, predictions: List[Dict[Text, float]]
     ) -> List[Dict[Text, Any]]:
 
@@ -241,7 +243,7 @@ class CRFEntityExtractor(EntityExtractor):
             )
 
         tag_confidence_list = [
-            self.most_likely_entity(idx, predictions) for idx in range(len(predictions))
+            self._most_likely_entity(prediction) for prediction in predictions
         ]
         confidences = {ENTITY_ATTRIBUTE_TYPE: [x[1] for x in tag_confidence_list]}
         tags = [x[0] for x in tag_confidence_list]
@@ -451,7 +453,7 @@ class CRFEntityExtractor(EntityExtractor):
         tokens = self._tokens_without_cls(message)
         entity_labels = {}
 
-        for name in ENTITY_LABELS:
+        for name in self.crf_order:
             if name == ENTITY_ATTRIBUTE_TYPE and self.component_config["BILOU_flag"]:
                 # If BILOU tagging is enabled we use the BILOU format for the
                 # entity labels
@@ -476,7 +478,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         self.entity_taggers = {}
 
-        for name in ENTITY_LABELS:
+        for name in self.crf_order:
             X_train = [self._sentence_to_features(sentence) for sentence in df_train]
             y_train = [
                 self._sentence_to_labels(sentence, name) for sentence in df_train

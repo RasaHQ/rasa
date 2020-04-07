@@ -20,7 +20,7 @@ from rasa.nlu.training_data import TrainingData, Message
     ],
 )
 def test_entity_name_from_tag(tag, expected):
-    actual = bilou_utils.entity_name_from_tag(tag)
+    actual = bilou_utils.tag_without_prefix(tag)
 
     assert actual == expected
 
