@@ -8,7 +8,14 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import rasa.nlu.utils
 from rasa.utils.common import raise_warning, lazy_property
-from rasa.nlu.constants import RESPONSE, RESPONSE_KEY_ATTRIBUTE, NO_ENTITY_TAG
+from rasa.nlu.constants import (
+    RESPONSE,
+    RESPONSE_KEY_ATTRIBUTE,
+    NO_ENTITY_TAG,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+)
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
@@ -158,26 +165,47 @@ class TrainingData:
     @lazy_property
     def entities(self) -> Set[Text]:
         """Returns the set of entity types in the training data."""
-        entity_types = [e.get("entity") for e in self.sorted_entities()]
+        entity_types = [e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()]
         return set(entity_types)
 
     @lazy_property
     def entity_roles(self) -> Set[Text]:
         """Returns the set of entity roles in the training data."""
-        entity_types = [e.get("role") for e in self.sorted_entities() if "role" in e]
+        entity_types = [
+            e.get(ENTITY_ATTRIBUTE_ROLE)
+            for e in self.sorted_entities()
+            if ENTITY_ATTRIBUTE_ROLE in e
+        ]
         return set(entity_types) - {NO_ENTITY_TAG}
 
     @lazy_property
     def entity_groups(self) -> Set[Text]:
         """Returns the set of entity groups in the training data."""
-        entity_types = [e.get("group") for e in self.sorted_entities() if "group" in e]
+        entity_types = [
+            e.get(ENTITY_ATTRIBUTE_GROUP)
+            for e in self.sorted_entities()
+            if ENTITY_ATTRIBUTE_GROUP in e
+        ]
         return set(entity_types) - {NO_ENTITY_TAG}
 
     @lazy_property
     def examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
-        entity_types = [e.get("entity") for e in self.sorted_entities()]
-        return dict(Counter(entity_types))
+
+        entities = []
+
+        def _append_entity(attribute: Text) -> None:
+            if attribute in entity:
+                _value = entity.get(attribute)
+                if _value is not None and _value != NO_ENTITY_TAG:
+                    entities.append(f"{attribute} '{_value}'")
+
+        for entity in self.sorted_entities():
+            _append_entity(ENTITY_ATTRIBUTE_TYPE)
+            _append_entity(ENTITY_ATTRIBUTE_ROLE)
+            _append_entity(ENTITY_ATTRIBUTE_GROUP)
+
+        return dict(Counter(entities))
 
     def sort_regex_features(self) -> None:
         """Sorts regex features lexicographically by name+pattern"""
@@ -343,10 +371,10 @@ class TrainingData:
                 )
 
         # emit warnings for entities with only a few training samples
-        for entity_type, count in self.examples_per_entity.items():
+        for entity, count in self.examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
                 raise_warning(
-                    f"Entity '{entity_type}' has only {count} training examples! "
+                    f"Entity {entity} has only {count} training examples! "
                     f"The minimum is {self.MIN_EXAMPLES_PER_ENTITY}, because of "
                     f"this the training may fail."
                 )
