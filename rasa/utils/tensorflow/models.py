@@ -181,7 +181,7 @@ class RasaModel(tf.keras.models.Model):
 
                     val_results = self._get_metric_results(prefix="val_")
                     improved = self._update_best_metrics_so_far(val_results)
-                    if improved:
+                    if improved and self.best_model_file is not None:
                         self.save(self.best_model_file, overwrite=True)
 
                 postfix_dict.update(val_results)
