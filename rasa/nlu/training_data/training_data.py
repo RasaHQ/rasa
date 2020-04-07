@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import rasa.nlu.utils
 from rasa.utils.common import raise_warning, lazy_property
-from rasa.nlu.constants import RESPONSE, RESPONSE_KEY_ATTRIBUTE
+from rasa.nlu.constants import RESPONSE, RESPONSE_KEY_ATTRIBUTE, NO_ENTITY_TAG
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
@@ -160,6 +160,18 @@ class TrainingData:
         """Returns the set of entity types in the training data."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]
         return set(entity_types)
+
+    @lazy_property
+    def entity_roles(self) -> Set[Text]:
+        """Returns the set of entity roles in the training data."""
+        entity_types = [e.get("role") for e in self.sorted_entities() if "role" in e]
+        return set(entity_types) - {NO_ENTITY_TAG}
+
+    @lazy_property
+    def entity_groups(self) -> Set[Text]:
+        """Returns the set of entity groups in the training data."""
+        entity_types = [e.get("group") for e in self.sorted_entities() if "group" in e]
+        return set(entity_types) - {NO_ENTITY_TAG}
 
     @lazy_property
     def examples_per_entity(self) -> Dict[Text, int]:
@@ -405,20 +417,27 @@ class TrainingData:
         return test, train
 
     def print_stats(self) -> None:
+        logger.info("Training data stats:")
         logger.info(
-            "Training data stats: \n"
-            + "\t- intent examples: {} ({} distinct intents)\n".format(
-                len(self.intent_examples), len(self.intents)
-            )
-            + "\t- Found intents: {}\n".format(list_to_str(self.intents))
-            + "\t- Number of response examples: {} ({} distinct response)\n".format(
-                len(self.response_examples), len(self.responses)
-            )
-            + "\t- entity examples: {} ({} distinct entities)\n".format(
-                len(self.entity_examples), len(self.entities)
-            )
-            + "\t- found entities: {}\n".format(list_to_str(self.entities))
+            f"Number of intent examples: {len(self.intent_examples)} "
+            f"({len(self.intents)} distinct intents)"
         )
+        if self.intents:
+            logger.info(f"  Found intents: {list_to_str(self.intents)}")
+        logger.info(
+            f"Number of response examples: {len(self.response_examples)} "
+            f"({len(self.responses)} distinct responses)"
+        )
+        logger.info(
+            f"Number of entity examples: {len(self.entity_examples)} "
+            f"({len(self.entities)} distinct entities)"
+        )
+        if self.entities:
+            logger.info(f"  Found entity types: {list_to_str(self.entities)}")
+        if self.entity_roles:
+            logger.info(f"  Found entity roles: {list_to_str(self.entity_roles)}")
+        if self.entity_groups:
+            logger.info(f"  Found entity groups: {list_to_str(self.entity_groups)}")
 
     def is_empty(self) -> bool:
         """Checks if any training data was loaded."""

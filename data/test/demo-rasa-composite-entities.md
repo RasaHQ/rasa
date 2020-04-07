@@ -2,11 +2,11 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-  - [intent:affirm](#intentaffirm)
-  - [intent:goodbye](#intentgoodbye)
-  - [intent:greet](#intentgreet)
-  - [intent:chitchat](#intentchitchat)
-  - [intent:restaurant_search](#intentrestaurant_search)
+- [intent:affirm](#intentaffirm)
+- [intent:goodbye](#intentgoodbye)
+- [intent:greet](#intentgreet)
+- [intent:chitchat](#intentchitchat)
+- [intent:restaurant_search](#intentrestaurant_search)
 - [intent:order_pizza](#intentorder_pizza)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -67,7 +67,7 @@
 - I am looking for [mexican indian fusion](cuisine)
 - [central](location) [indian]{"entity": "cuisine", "role": "asian"} restaurant
 
-# intent:order_pizza
+## intent:order_pizza
 - i want a [large]{"entity": "size", "group": "1"} pizza with [tomato]{"entity": "topping", "group": "1"} and a [small]{"entity": "size", "group": "2"} pizza with [bacon]{"entity": "topping", "group": "2"}
 - one [large]{"entity": "size", "group": "1"} with [pepperoni]{"entity": "topping", "group": "1"} and a [medium]{"entity": "size", "group": "2"} with [mushrooms]{"entity": "topping", "group": "2"}
 - I would like a [medium]{"entity": "size", "group": "1"} standard pizza and a [medium]{"entity": "size", "group": "2"} pizza with [extra cheese]{"entity": "topping", "group": "2"}
