@@ -2,7 +2,20 @@ from typing import Any, Dict, List, Text, Tuple, Optional, Union
 
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
-from rasa.nlu.constants import EXTRACTOR, ENTITIES, TOKENS_NAMES, TEXT
+from rasa.nlu.constants import (
+    EXTRACTOR,
+    ENTITIES,
+    TOKENS_NAMES,
+    TEXT,
+    NO_ENTITY_TAG,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_CONFIDENCE,
+)
 from rasa.nlu.training_data import Message
 
 
@@ -333,3 +346,110 @@ class EntityExtractor(Component):
             )
 
         return filtered
+
+    def _convert_tags_to_entities(
+        self,
+        text: Text,
+        tokens: List[Token],
+        tags: Dict[Text, List[Text]],
+        confidences: Optional[Dict[Text, List[float]]] = None,
+    ) -> List[Dict[Text, Any]]:
+        """
+        Converts predicted tags into proper entities.
+
+        Args:
+            text: the text of the message
+            tokens: list of tokens
+            tags: predicted tags
+            confidences: confidences of predicted tags
+
+        Returns:
+            list of proper entities
+        """
+        entities = []
+
+        last_entity_tag = NO_ENTITY_TAG
+        last_role_tag = NO_ENTITY_TAG
+        last_group_tag = NO_ENTITY_TAG
+
+        for idx, token in enumerate(tokens):
+            current_entity_tag = self._get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
+            current_group_tag = self._get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
+            current_role_tag = self._get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
+            confidence = (
+                confidences[ENTITY_ATTRIBUTE_TYPE][idx] if confidences else None
+            )
+
+            if current_entity_tag == NO_ENTITY_TAG:
+                last_entity_tag = NO_ENTITY_TAG
+                continue
+
+            new_tag_found = (
+                last_entity_tag != current_entity_tag
+                or last_group_tag != current_group_tag
+                or last_role_tag != current_role_tag
+            )
+            belongs_to_last_entity = (
+                last_entity_tag == current_entity_tag
+                and last_group_tag == current_group_tag
+                and last_role_tag == current_role_tag
+            )
+
+            if new_tag_found:
+                entity = self._create_new_entity(
+                    tags,
+                    current_entity_tag,
+                    current_group_tag,
+                    current_role_tag,
+                    token,
+                    confidence,
+                )
+                entities.append(entity)
+            elif belongs_to_last_entity:
+                entities[-1][ENTITY_ATTRIBUTE_END] = token.end
+                if confidence:
+                    entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE] = min(
+                        entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE], confidence
+                    )
+
+            last_entity_tag = current_entity_tag
+            last_group_tag = current_group_tag
+            last_role_tag = current_role_tag
+
+        for entity in entities:
+            entity[ENTITY_ATTRIBUTE_VALUE] = text[
+                entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
+            ]
+
+        return entities
+
+    @staticmethod
+    def _get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text, idx: int) -> Text:
+        if tag_name in tags:
+            return tags[tag_name][idx]
+        return NO_ENTITY_TAG
+
+    @staticmethod
+    def _create_new_entity(
+        tags: Dict[Text, List[Text]],
+        entity_tag: Text,
+        group_tag: Text,
+        role_tag: Text,
+        token: Token,
+        confidence: Optional[float],
+    ):
+        entity = {
+            ENTITY_ATTRIBUTE_TYPE: entity_tag,
+            ENTITY_ATTRIBUTE_START: token.start,
+            ENTITY_ATTRIBUTE_END: token.end,
+        }
+
+        if confidence:
+            entity[ENTITY_ATTRIBUTE_CONFIDENCE] = confidence
+
+        if ENTITY_ATTRIBUTE_ROLE in tags:
+            entity[ENTITY_ATTRIBUTE_ROLE] = role_tag
+        if ENTITY_ATTRIBUTE_GROUP in tags:
+            entity[ENTITY_ATTRIBUTE_GROUP] = group_tag
+
+        return entity

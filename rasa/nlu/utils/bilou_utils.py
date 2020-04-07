@@ -1,3 +1,4 @@
+import logging
 from typing import List, Tuple, Text, Optional, Dict, Set, Any
 
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -17,6 +18,9 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
+
+logger = logging.getLogger(__name__)
+
 
 BILOU_PREFIXES = ["B-", "I-", "U-", "L-"]
 
@@ -264,3 +268,51 @@ def _handle_not_an_entity(
                 break
         else:
             bilou[n] = missing
+
+
+def check_consistent_bilou_tagging(predicted_tags: List[Text]):
+
+    last_tag = NO_ENTITY_TAG
+    entity_found = False
+
+    for predicted_tag in predicted_tags:
+        prefix = bilou_prefix_from_tag(predicted_tag)
+        tag = entity_name_from_tag(predicted_tag)
+
+        if not prefix:
+            if entity_found:
+                # "L-" entity tag missing
+                logger.debug(f"Missing 'L-{last_tag}'.")
+
+            entity_found = False
+            last_tag = NO_ENTITY_TAG
+            continue
+
+        if prefix == "B":
+            if tag != last_tag:
+                # "L-" entity tag missing
+                logger.debug(f"Missing 'L-{last_tag}'.")
+            entity_found = True
+
+        elif prefix == "I":
+            if tag != last_tag:
+                logger.debug(
+                    f"Conflicting entities: Found 'I-{tag}', but last seen '{last_tag}'."
+                )
+            if not entity_found:
+                logger.debug(f"Entity starts with 'I-{tag}' instead of 'B-{tag}'.")
+
+        elif prefix == "U":
+            if entity_found:
+                logger.debug(f"Missing 'L-{last_tag}'.")
+
+        elif prefix == "L":
+            if tag != last_tag:
+                logger.debug(
+                    f"Conflicting entities: Found 'L-{tag}', but last seen '{last_tag}'."
+                )
+            if not entity_found:
+                logger.debug(f"Entity starts with 'L-{tag}' instead of 'B-{tag}'.")
+            entity_found = False
+
+        last_tag = tag

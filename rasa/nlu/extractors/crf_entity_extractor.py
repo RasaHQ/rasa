@@ -3,7 +3,7 @@ import os
 import typing
 
 import numpy as np
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, NamedTuple, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, NamedTuple, Type
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.utils.common as common_utils
@@ -44,8 +44,8 @@ class CRFToken(NamedTuple):
     pattern: Dict[Text, Any]
     dense_features: np.ndarray
     entity_label: Text
-    role_label: Optional[Text]
-    group_label: Optional[Text]
+    entity_role_label: Text
+    entity_group_label: Text
 
 
 class CRFEntityExtractor(EntityExtractor):
@@ -155,8 +155,7 @@ class CRFEntityExtractor(EntityExtractor):
         )
 
         # convert the dataset into features
-        # this will train on ALL examples, even the ones
-        # without annotations
+        # this will train on ALL examples, even the ones without annotations
         dataset = self._create_dataset(entity_examples)
 
         self._train_model(dataset)
@@ -169,7 +168,7 @@ class CRFEntityExtractor(EntityExtractor):
                 # check correct annotation during training
                 self._check_correct_annotation(example)
 
-            dataset.append(self._from_text_to_crf(example))
+            dataset.append(self._convert_to_crf_tokens(example))
 
         return dataset
 
@@ -185,14 +184,14 @@ class CRFEntityExtractor(EntityExtractor):
 
         dataset = self._create_dataset([message])
         features = self._sentence_to_features(dataset[0])
-        entities = self.entity_taggers[ENTITY_ATTRIBUTE_TYPE].predict_marginals_single(
-            features
-        )
-        return self._from_crf_to_json(message, entities)
+        predictions = self.entity_taggers[
+            ENTITY_ATTRIBUTE_TYPE
+        ].predict_marginals_single(features)
+        return self._from_crf_to_json(message, predictions)
 
     def most_likely_entity(
         self, token_idx: int, entities: List[Dict[Text, float]]
-    ) -> Tuple[Text, Any]:
+    ) -> Tuple[Text, float]:
         """Get the entity label with the highest confidence.
 
         Args:
@@ -226,192 +225,33 @@ class CRFEntityExtractor(EntityExtractor):
             return label, entity_probs[label]
 
     @staticmethod
-    def _create_entity_dict(
-        message: Message,
-        tokens: List[Token],
-        start: int,
-        end: int,
-        entity: str,
-        confidence: float,
-    ) -> Dict[Text, Any]:
-
-        _start = tokens[start].start
-        _end = tokens[end].end
-        value = tokens[start].text
-        value += "".join(
-            [
-                message.text[tokens[i - 1].end : tokens[i].start] + tokens[i].text
-                for i in range(start + 1, end + 1)
-            ]
-        )
-
-        return {
-            "start": _start,
-            "end": _end,
-            "value": value,
-            "entity": entity,
-            "confidence": confidence,
-        }
-
-    @staticmethod
     def _tokens_without_cls(message: Message) -> List[Token]:
         # [:-1] to remove the CLS token from the list of tokens
         return message.get(TOKENS_NAMES[TEXT])[:-1]
 
-    def _find_bilou_end(self, word_idx, entities) -> Any:
-        ent_word_idx = word_idx + 1
-        finished = False
-
-        # get information about the first word, tagged with `B-...`
-        label, confidence = self.most_likely_entity(word_idx, entities)
-        entity_label = bilou_utils.entity_name_from_tag(label)
-
-        while not finished:
-            label, label_confidence = self.most_likely_entity(ent_word_idx, entities)
-
-            confidence = min(confidence, label_confidence)
-
-            if label[2:] != entity_label:
-                # words are not tagged the same entity class
-                logger.debug(
-                    "Inconsistent BILOU tagging found, B- tag, L- "
-                    "tag pair encloses multiple entity classes.i.e. "
-                    "[B-a, I-b, L-a] instead of [B-a, I-a, L-a].\n"
-                    "Assuming B- class is correct."
-                )
-
-            if label.startswith("L-"):
-                # end of the entity
-                finished = True
-            elif label.startswith("I-"):
-                # middle part of the entity
-                ent_word_idx += 1
-            else:
-                # entity not closed by an L- tag
-                finished = True
-                ent_word_idx -= 1
-                logger.debug(
-                    "Inconsistent BILOU tagging found, B- tag not "
-                    "closed by L- tag, i.e [B-a, I-a, O] instead of "
-                    "[B-a, L-a, O].\nAssuming last tag is L-"
-                )
-        return ent_word_idx, confidence
-
-    def _handle_bilou_label(
-        self, word_idx: int, entities: List[Any]
-    ) -> Tuple[Any, Any, Any]:
-        label, confidence = self.most_likely_entity(word_idx, entities)
-        entity_label = bilou_utils.entity_name_from_tag(label)
-
-        if bilou_utils.bilou_prefix_from_tag(label) == "U":
-            return word_idx, confidence, entity_label
-
-        elif bilou_utils.bilou_prefix_from_tag(label) == "B":
-            # start of multi word-entity need to represent whole extent
-            ent_word_idx, confidence = self._find_bilou_end(word_idx, entities)
-            return ent_word_idx, confidence, entity_label
-
-        else:
-            return None, None, None
-
     def _from_crf_to_json(
-        self, message: Message, entities: List[Any]
+        self, message: Message, predictions: List[Dict[Text, float]]
     ) -> List[Dict[Text, Any]]:
 
         tokens = self._tokens_without_cls(message)
 
-        if len(tokens) != len(entities):
+        if len(tokens) != len(predictions):
             raise Exception(
                 "Inconsistency in amount of tokens between crfsuite and message"
             )
 
+        tag_confidence_list = [
+            self.most_likely_entity(idx, predictions) for idx in range(len(predictions))
+        ]
+        confidences = {ENTITY_ATTRIBUTE_TYPE: [x[1] for x in tag_confidence_list]}
+        tags = [x[0] for x in tag_confidence_list]
+
         if self.component_config["BILOU_flag"]:
             tags = bilou_utils.remove_bilou_prefixes(tags)
 
-        entities = self._convert_tags_to_entities(
-            message.text, message.get(TOKENS_NAMES[TEXT], []), tags
-        )
+        tags = {ENTITY_ATTRIBUTE_TYPE: tags}
 
-        if self.component_config["BILOU_flag"]:
-            return self._convert_bilou_tagging_to_entity_result(
-                message, tokens, entities
-            )
-        else:
-            # not using BILOU tagging scheme, multi-word entities are split.
-            return self._convert_simple_tagging_to_entity_result(tokens, entities)
-
-    @staticmethod
-    def _convert_tags_to_entities(
-        text: Text, tokens: List[Token], tags: List[Text]
-    ) -> List[Dict[Text, Any]]:
-        entities = []
-        last_tag = NO_ENTITY_TAG
-        for token, tag in zip(tokens, tags):
-            if tag == NO_ENTITY_TAG:
-                last_tag = tag
-                continue
-
-            # new tag found
-            if last_tag != tag:
-                entity = {
-                    "entity": tag,
-                    "start": token.start,
-                    "end": token.end,
-                    "extractor": "DIET",
-                }
-                entities.append(entity)
-
-            # belongs to last entity
-            elif last_tag == tag:
-                entities[-1]["end"] = token.end
-
-            last_tag = tag
-
-        for entity in entities:
-            entity["value"] = text[entity["start"] : entity["end"]]
-
-        return entities
-
-    def _convert_bilou_tagging_to_entity_result(
-        self, message: Message, tokens: List[Token], entities: List[Dict[Text, float]]
-    ):
-        # using the BILOU tagging scheme
-        json_ents = []
-        word_idx = 0
-        while word_idx < len(tokens):
-            end_idx, confidence, entity_label = self._handle_bilou_label(
-                word_idx, entities
-            )
-
-            if end_idx is not None:
-                ent = self._create_entity_dict(
-                    message, tokens, word_idx, end_idx, entity_label, confidence
-                )
-                json_ents.append(ent)
-                word_idx = end_idx + 1
-            else:
-                word_idx += 1
-        return json_ents
-
-    def _convert_simple_tagging_to_entity_result(
-        self, tokens: List[Union[Token, Any]], entities: List[Any]
-    ) -> List[Dict[Text, Any]]:
-        json_ents = []
-
-        for word_idx in range(len(tokens)):
-            entity_label, confidence = self.most_likely_entity(word_idx, entities)
-            word = tokens[word_idx]
-            if entity_label != NO_ENTITY_TAG:
-                ent = {
-                    "start": word.start,
-                    "end": word.end,
-                    "value": word.text,
-                    "entity": entity_label,
-                    "confidence": confidence,
-                }
-                json_ents.append(ent)
-
-        return json_ents
+        return self._convert_tags_to_entities(message.text, tokens, tags, confidences)
 
     @classmethod
     def load(
@@ -507,9 +347,9 @@ class CRFEntityExtractor(EntityExtractor):
     @staticmethod
     def _sentence_to_labels(sentence: List[CRFToken], label_name: Text) -> List[Text]:
         if label_name == ENTITY_ATTRIBUTE_ROLE:
-            return [crf_token.role_label for crf_token in sentence]
+            return [crf_token.entity_role_label for crf_token in sentence]
         if label_name == ENTITY_ATTRIBUTE_GROUP:
-            return [crf_token.group_label for crf_token in sentence]
+            return [crf_token.entity_group_label for crf_token in sentence]
 
         return [crf_token.entity_label for crf_token in sentence]
 
@@ -573,7 +413,7 @@ class CRFEntityExtractor(EntityExtractor):
             features_out.append(converted)
         return features_out
 
-    def _from_text_to_crf(self, message: Message) -> List[CRFToken]:
+    def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:
         """Takes a sentence and switches it to crfsuite format."""
         from rasa.nlu.test import determine_token_labels
 
@@ -585,9 +425,9 @@ class CRFEntityExtractor(EntityExtractor):
 
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
-            entity = self._get_label_for(entity_labels, i, ENTITY_ATTRIBUTE_TYPE)
-            role = self._get_label_for(entity_labels, i, ENTITY_ATTRIBUTE_ROLE)
-            group = self._get_label_for(entity_labels, i, ENTITY_ATTRIBUTE_GROUP)
+            entity = entity_labels[ENTITY_ATTRIBUTE_TYPE][i]
+            group = entity_labels[ENTITY_ATTRIBUTE_GROUP][i]
+            role = entity_labels[ENTITY_ATTRIBUTE_ROLE][i]
             tag = token.get(POS_TAG_KEY)
             dense_features = (
                 text_dense_features[i] if text_dense_features is not None else []
@@ -598,24 +438,14 @@ class CRFEntityExtractor(EntityExtractor):
                     text=token.text,
                     pos_tag=tag,
                     entity_label=entity,
-                    group_label=group,
-                    role_label=role,
+                    entity_group_label=group,
+                    entity_role_label=role,
                     pattern=pattern,
                     dense_features=dense_features,
                 )
             )
 
         return crf_format
-
-    def _get_label_for(
-        self, entity_labels: Dict[Text, List[Text]], idx: int, name: Text
-    ) -> Text:
-        label = entity_labels[name][idx]
-
-        if label == NO_ENTITY_TAG:
-            return "N/A"
-
-        return label
 
     def _get_entity_labels(self, message: Message) -> Dict[Text, List[Text]]:
         tokens = self._tokens_without_cls(message)
