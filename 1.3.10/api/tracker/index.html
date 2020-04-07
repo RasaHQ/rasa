@@ -489,9 +489,8 @@ should be excluded from the results. Can be used to skip
 
 <dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.get_latest_entity_values">
-<code class="descname">get_latest_entity_values</code><span class="sig-paren">(</span><em>entity_type</em>, <em>entity_role=None</em>, <em>entity_group=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get entity values found for the passed entity type and optional role and
-group in latest message.</p>
+<code class="descname">get_latest_entity_values</code><span class="sig-paren">(</span><em>entity_type</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get entity values found for the passed entity name in latest msg.</p>
 <p>If you are only interested in the first entity of a given type use
 <cite>next(tracker.get_latest_entity_values(“my_entity_name”), None)</cite>.
 If no entity is found <cite>None</cite> is the default result.</p>
@@ -499,18 +498,7 @@ If no entity is found <cite>None</cite> is the default result.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>entity_type</strong> – the entity type of interest</li>
-<li><strong>entity_role</strong> – optional entity role of interest</li>
-<li><strong>entity_group</strong> – optional entity group of interest</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Entity values.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
-</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</td>
 </tr>
 </tbody>
 </table>
