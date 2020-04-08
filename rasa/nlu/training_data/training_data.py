@@ -109,7 +109,9 @@ class TrainingData:
     def sanitize_examples(examples: List[Message]) -> List[Message]:
         """Makes sure the training data is clean.
 
-        Remove trailing whitespaces from intent and response annotations and drop duplicate examples."""
+        Remove trailing whitespaces from intent and response annotations and drop
+        duplicate examples.
+        """
 
         for ex in examples:
             if ex.get("intent"):
@@ -194,16 +196,16 @@ class TrainingData:
 
         entities = []
 
-        def _append_entity(attribute: Text) -> None:
+        def _append_entity(entity: Dict[Text, Any], attribute: Text) -> None:
             if attribute in entity:
                 _value = entity.get(attribute)
                 if _value is not None and _value != NO_ENTITY_TAG:
                     entities.append(f"{attribute} '{_value}'")
 
         for entity in self.sorted_entities():
-            _append_entity(ENTITY_ATTRIBUTE_TYPE)
-            _append_entity(ENTITY_ATTRIBUTE_ROLE)
-            _append_entity(ENTITY_ATTRIBUTE_GROUP)
+            _append_entity(entity, ENTITY_ATTRIBUTE_TYPE)
+            _append_entity(entity, ENTITY_ATTRIBUTE_ROLE)
+            _append_entity(entity, ENTITY_ATTRIBUTE_GROUP)
 
         return dict(Counter(entities))
 
@@ -217,8 +219,8 @@ class TrainingData:
         """Set response phrase for all examples by looking up NLG stories"""
         for example in self.training_examples:
             response_key = example.get(RESPONSE_KEY_ATTRIBUTE)
-            # if response_key is None, that means the corresponding intent is not a retrieval intent
-            # and hence no response text needs to be fetched.
+            # if response_key is None, that means the corresponding intent is not a
+            # retrieval intent and hence no response text needs to be fetched.
             # If response_key is set, fetch the corresponding response text
             if response_key:
                 # look for corresponding bot utterance

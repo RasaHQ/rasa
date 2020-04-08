@@ -385,7 +385,7 @@ def cmp_dict_list(firsts, seconds):
                 del seconds[idx]
                 break
         else:
-            others = ", ".join([e.text for e in seconds])
+            others = ", ".join(e.text for e in seconds)
             assert False, f"Failed to find message {a.text} in {others}"
     return not seconds
 
