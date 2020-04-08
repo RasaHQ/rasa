@@ -65,5 +65,3 @@ DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
 # RabbitMQ message property header added to events published using `rasa export`
 RASA_EXPORT_PROCESS_ID_HEADER_NAME = "rasa-export-process-id"
-
-CIRCUIT_BREAKER_TRIPPED = "circuit breaker tripped"

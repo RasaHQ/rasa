@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 import rasa.utils.io
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
-from rasa.core.constants import CIRCUIT_BREAKER_TRIPPED
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
@@ -302,7 +301,7 @@ def _collect_action_executed_predictions(
     gold = event.action_name
 
     if circuit_breaker_tripped:
-        predicted = CIRCUIT_BREAKER_TRIPPED
+        predicted = "circuit breaker tripped"
         policy = None
         confidence = None
     else:
