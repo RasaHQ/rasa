@@ -431,10 +431,16 @@ async def _train_nlu_async(
 
     training_datas = await file_importer.get_nlu_data()
     if training_datas.is_empty():
-        print_error(
-            "No NLU data given. Please provide NLU data in order to train "
-            "a Rasa NLU model using the '--nlu' argument."
-        )
+        if nlu_data:
+            print_error(
+                f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
+                "Please verify the data format."
+            )
+        else:
+            print_error(
+                "No NLU data given. Please provide NLU data in order to train "
+                "a Rasa NLU model using the '--nlu' argument."
+            )
         return
 
     return await _train_nlu_with_validated_data(

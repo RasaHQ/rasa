@@ -1,0 +1,1 @@
+Fixed misleading error message for a situation when ``rasa train nlu --nlu`` is given a file with a wrong format.
