@@ -502,7 +502,7 @@ class MessageProcessor:
 
     def is_action_limit_reached(
         self, num_predicted_actions: int, should_predict_another_action: bool
-    ):
+    ) -> bool:
         """Check whether the maximum number of predictions has been met"""
         return (
             num_predicted_actions >= self.max_number_of_predictions
