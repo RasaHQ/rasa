@@ -85,7 +85,6 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
 
 
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
-
     test_stories = await _generate_trackers(
         "data/test_evaluations/form-end-to-end-stories.md", form_bot_agent, use_e2e=True
     )
