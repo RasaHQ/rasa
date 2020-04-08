@@ -98,7 +98,6 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
 
 
 async def test_end_to_evaluation_trips_circuit_breaker():
-
     agent = Agent(
         domain="data/test_domains/default.yml",
         policies=[MemoizationPolicy(max_history=11)],
