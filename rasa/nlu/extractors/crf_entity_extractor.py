@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, NamedTuple, Type
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.utils.common as common_utils
-from nlu.test import determine_token_labels
+from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
