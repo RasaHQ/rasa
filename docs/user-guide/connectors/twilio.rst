@@ -30,17 +30,16 @@ You need to set up a Twilio account.
   3. Now you can use the ``Account SID``, ``Auth Token``, and the phone
      number you purchased in your ``credentials.yml``.
 
-For more information, see the `Twilio REST API
-<https://www.twilio.com/docs/iam/api>`_.
+For more information, see the `Twilio REST API <https://www.twilio.com/docs/iam/api>`_.
 
 
 Connecting to WhatsApp
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 You can deploy a Rasa Open Source assistant to WhatsApp through Twilio. However, to do so, you have
-to have a `WhatsApp Business<https://www.whatsapp.com/business/>`_ profile. Associate
+to have a `WhatsApp Business <https://www.whatsapp.com/business/>`_ profile. Associate
 your Whatsapp Business profile with the phone number you purchased through Twilio to
-access the `Twilio API for WhatsApp<https://www.twilio.com/whatsapp>`_.
+access the `Twilio API for WhatsApp <https://www.twilio.com/whatsapp>`_.
 
 
 Applying the Credentials
