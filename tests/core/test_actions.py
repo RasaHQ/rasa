@@ -510,6 +510,21 @@ async def test_action_session_start_without_slots(
     assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
 
 
+async def test_action_session_start_with_metada(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    template_sender_tracker: DialogueStateTracker,
+    default_domain: Domain,
+):
+    template_sender_tracker.events.append(
+        SessionStarted(metadata={"metadataTestKey": "metadataTestValue"})
+    )
+
+    await test_action_session_start_without_slots(
+        default_channel, template_nlg, template_sender_tracker, default_domain
+    )
+
+
 @pytest.mark.parametrize(
     "session_config, expected_events",
     [
