@@ -153,7 +153,7 @@ pygments = "==2.2.0"
 sphinxcontrib-httpdomain = "==1.6.1"
 sphinxcontrib-websupport = "==1.1.0"
 sphinxcontrib-trio = "==1.0.2"
-sphinx-tabs = "==1.1.11"
+sphinx-tabs = "==1.1.13"
 sphinx-autodoc-typehints = "==1.6.0"
 rasabaster = "^0.7.23"
 

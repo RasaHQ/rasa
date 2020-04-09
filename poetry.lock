@@ -2585,7 +2585,7 @@ description = "Tab views for Sphinx"
 name = "sphinx-tabs"
 optional = false
 python-versions = "*"
-version = "1.1.11"
+version = "1.1.13"
 
 [package.dependencies]
 sphinx = ">=1.4"
@@ -4746,7 +4746,7 @@ sphinx-autodoc-typehints = [
 ]
 sphinx-rtd-theme = []
 sphinx-tabs = [
-    {file = "sphinx-tabs-1.1.11.tar.gz", hash = "sha256:9434b544142502d627b95fbc6d3064462338eaaa2c45ed0af43925fefbc2d904"},
+    {file = "sphinx-tabs-1.1.13.tar.gz", hash = "sha256:7ad881daa4d18799b254db4aa7feeb9d30256cbccf7d4f3de746d9fcc14e0196"},
 ]
 sphinxcontrib-applehelp = [
     {file = "sphinxcontrib-applehelp-1.0.2.tar.gz", hash = "sha256:a072735ec80e7675e3f432fcae8610ecf509c5f1869d17e2eecff44389cdbc58"},
