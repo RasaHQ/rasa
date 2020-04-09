@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Event Brokers</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Lock Stores" href="../lock-stores/" />
@@ -246,8 +245,6 @@ you to stream events to a message broker." />
               <a href="../../../1.4.6/api/event-brokers/">1.4.6</a>
               <a href="../../../1.3.10/api/event-brokers/">1.3.10</a>
               <a href="../../../1.2.9/api/event-brokers/">1.2.9</a>
-              <a href="../../../1.1.8/api/event-brokers/">1.1.8</a>
-              <a href="../../../1.0.9/api/event-brokers/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -293,10 +290,10 @@ service. The event broker publishes messages to a message streaming service,
 also known as a message broker, to forward Rasa <a class="reference internal" href="../events/#events"><span class="std std-ref">Events</span></a> from the Rasa server to other services.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#format" id="id4">Format</a></li>
-<li><a class="reference internal" href="#pika-event-broker" id="id5">Pika Event Broker</a></li>
-<li><a class="reference internal" href="#kafka-event-broker" id="id6">Kafka Event Broker</a></li>
-<li><a class="reference internal" href="#sql-event-broker" id="id7">SQL Event Broker</a></li>
+<li><p><a class="reference internal" href="#format" id="id4">Format</a></p></li>
+<li><p><a class="reference internal" href="#pika-event-broker" id="id5">Pika Event Broker</a></p></li>
+<li><p><a class="reference internal" href="#kafka-event-broker" id="id6">Kafka Event Broker</a></p></li>
+<li><p><a class="reference internal" href="#sql-event-broker" id="id7">SQL Event Broker</a></p></li>
 </ul>
 </div>
 <div class="section" id="format">
@@ -326,9 +323,9 @@ types, check out the <a class="reference internal" href="../events/#events"><spa
 <a class="reference external" href="https://www.rabbitmq.com">RabbitMQ</a>.</p>
 <div class="contents local topic" id="id2">
 <ul class="simple">
-<li><a class="reference internal" href="#adding-a-pika-event-broker-using-the-endpoint-configuration" id="id8">Adding a Pika Event Broker Using the Endpoint Configuration</a></li>
-<li><a class="reference internal" href="#adding-a-pika-event-broker-in-python" id="id9">Adding a Pika Event Broker in Python</a></li>
-<li><a class="reference internal" href="#implementing-a-pika-event-consumer" id="id10">Implementing a Pika Event Consumer</a></li>
+<li><p><a class="reference internal" href="#adding-a-pika-event-broker-using-the-endpoint-configuration" id="id8">Adding a Pika Event Broker Using the Endpoint Configuration</a></p></li>
+<li><p><a class="reference internal" href="#adding-a-pika-event-broker-in-python" id="id9">Adding a Pika Event Broker in Python</a></p></li>
+<li><p><a class="reference internal" href="#implementing-a-pika-event-consumer" id="id10">Implementing a Pika Event Consumer</a></p></li>
 </ul>
 </div>
 <div class="section" id="adding-a-pika-event-broker-using-the-endpoint-configuration">
@@ -405,10 +402,10 @@ example:</p>
 events. In this example we are going to use the <a class="reference external" href="https://kafka-python.readthedocs.io/en/master/usage.html">python-kafka</a> library, a Kafka client written in Python.</p>
 <div class="contents local topic" id="id3">
 <ul class="simple">
-<li><a class="reference internal" href="#adding-a-kafka-event-broker-using-the-endpoint-configuration" id="id11">Adding a Kafka Event Broker Using the Endpoint Configuration</a></li>
-<li><a class="reference internal" href="#adding-a-kafka-broker-in-python" id="id12">Adding a Kafka Broker in Python</a></li>
-<li><a class="reference internal" href="#authentication-and-authorization" id="id13">Authentication and Authorization</a></li>
-<li><a class="reference internal" href="#implementing-a-kafka-event-consumer" id="id14">Implementing a Kafka Event Consumer</a></li>
+<li><p><a class="reference internal" href="#adding-a-kafka-event-broker-using-the-endpoint-configuration" id="id11">Adding a Kafka Event Broker Using the Endpoint Configuration</a></p></li>
+<li><p><a class="reference internal" href="#adding-a-kafka-broker-in-python" id="id12">Adding a Kafka Broker in Python</a></p></li>
+<li><p><a class="reference internal" href="#authentication-and-authorization" id="id13">Authentication and Authorization</a></p></li>
+<li><p><a class="reference internal" href="#implementing-a-kafka-event-consumer" id="id14">Implementing a Kafka Event Consumer</a></p></li>
 </ul>
 </div>
 <div class="section" id="adding-a-kafka-event-broker-using-the-endpoint-configuration">

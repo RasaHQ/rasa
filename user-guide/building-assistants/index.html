@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Tutorial: Building Assistants</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Command Line Interface" href="../command-line-interface/" />
@@ -241,8 +240,6 @@
               <a href="../.././1.4.6/index/">1.4.6</a>
               <a href="../.././1.3.10/index/">1.3.10</a>
               <a href="../.././1.2.9/index/">1.2.9</a>
-              <a href="../.././1.1.8/index/">1.1.8</a>
-              <a href="../.././1.0.9/index/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -282,26 +279,31 @@ now walk through building a basic FAQ chatbot and then build a bot that can hand
 contextual conversations.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#building-a-simple-faq-assistant" id="id8">Building a simple FAQ assistant</a><ul>
-<li><a class="reference internal" href="#memoization-policy" id="id9">Memoization Policy</a></li>
-<li><a class="reference internal" href="#response-selectors" id="id10">Response Selectors</a></li>
+<li><p><a class="reference internal" href="#building-a-simple-faq-assistant" id="id8">Building a simple FAQ assistant</a></p>
+<ul>
+<li><p><a class="reference internal" href="#memoization-policy" id="id9">Memoization Policy</a></p></li>
+<li><p><a class="reference internal" href="#response-selectors" id="id10">Response Selectors</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#building-a-contextual-assistant" id="id11">Building a contextual assistant</a><ul>
-<li><a class="reference internal" href="#handling-business-logic" id="id12">Handling business logic</a></li>
-<li><a class="reference internal" href="#handling-unexpected-user-input" id="id13">Handling unexpected user input</a><ul>
-<li><a class="reference internal" href="#generic-interjections" id="id14">Generic interjections</a></li>
-<li><a class="reference internal" href="#contextual-questions" id="id15">Contextual questions</a></li>
+<li><p><a class="reference internal" href="#building-a-contextual-assistant" id="id11">Building a contextual assistant</a></p>
+<ul>
+<li><p><a class="reference internal" href="#handling-business-logic" id="id12">Handling business logic</a></p></li>
+<li><p><a class="reference internal" href="#handling-unexpected-user-input" id="id13">Handling unexpected user input</a></p>
+<ul>
+<li><p><a class="reference internal" href="#generic-interjections" id="id14">Generic interjections</a></p></li>
+<li><p><a class="reference internal" href="#contextual-questions" id="id15">Contextual questions</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#failing-gracefully" id="id16">Failing gracefully</a><ul>
-<li><a class="reference internal" href="#fallback-policy" id="id17">Fallback policy</a></li>
-<li><a class="reference internal" href="#out-of-scope-intent" id="id18">Out of scope intent</a></li>
+<li><p><a class="reference internal" href="#failing-gracefully" id="id16">Failing gracefully</a></p>
+<ul>
+<li><p><a class="reference internal" href="#fallback-policy" id="id17">Fallback policy</a></p></li>
+<li><p><a class="reference internal" href="#out-of-scope-intent" id="id18">Out of scope intent</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#more-complex-contextual-conversations" id="id19">More complex contextual conversations</a><ul>
-<li><a class="reference internal" href="#augmentedmemoizationpolicy" id="id20">AugmentedMemoizationPolicy</a></li>
-<li><a class="reference internal" href="#using-ml-to-generalise" id="id21">Using ML to generalise</a></li>
+<li><p><a class="reference internal" href="#more-complex-contextual-conversations" id="id19">More complex contextual conversations</a></p>
+<ul>
+<li><p><a class="reference internal" href="#augmentedmemoizationpolicy" id="id20">AugmentedMemoizationPolicy</a></p></li>
+<li><p><a class="reference internal" href="#using-ml-to-generalise" id="id21">Using ML to generalise</a></p></li>
 </ul>
 </li>
 </ul>
@@ -316,8 +318,8 @@ build a basic FAQ assistant using features of Rasa designed specifically for thi
 <p>In this section we’re going to cover the following topics:</p>
 <blockquote>
 <div><ul class="simple">
-<li><a class="reference external" href="respond-with-memoization-policy">Responding to simple intents</a> with the MemoizationPolicy</li>
-<li><a class="reference external" href="faqs-response-selector">Handling FAQs</a> using the ResponseSelector</li>
+<li><p><a class="reference external" href="respond-with-memoization-policy">Responding to simple intents</a> with the MemoizationPolicy</p></li>
+<li><p><a class="reference external" href="faqs-response-selector">Handling FAQs</a> using the ResponseSelector</p></li>
 </ul>
 </div></blockquote>
 <p>We’re going to use content from <a class="reference external" href="https://github.com/RasaHQ/rasa-demo">Sara</a>, the Rasa
@@ -347,8 +349,8 @@ to pay attention to the last message the user sent, and therefore we’ll set th
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The MappingPolicy is there because it handles the logic of the <code class="docutils literal notranslate"><span class="pre">/restart</span></code> intent,
+<p class="admonition-title">Note</p>
+<p>The MappingPolicy is there because it handles the logic of the <code class="docutils literal notranslate"><span class="pre">/restart</span></code> intent,
 which allows you to clear the conversation history and start fresh.</p>
 </div>
 <p>Now that we’ve defined our policies, we can add some stories for the <code class="docutils literal notranslate"><span class="pre">goodbye</span></code>, <code class="docutils literal notranslate"><span class="pre">thank</span></code> and <code class="docutils literal notranslate"><span class="pre">greet</span></code>
@@ -570,16 +572,16 @@ rasa shell
 <p>Using the features we described in this tutorial, you can easily build a context-less assistant.
 When you’re ready to enhance your assistant with context, check out <a class="reference internal" href="#tutorial-contextual-assistants"><span class="std std-ref">Building a contextual assistant</span></a>.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
+<p class="admonition-title">Note</p>
 <p>Here’s a minimal checklist of files we modified to build a basic FAQ assistant:</p>
-<blockquote class="last">
+<blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>: Add NLU training data for <code class="docutils literal notranslate"><span class="pre">faq/</span></code> intents</li>
-<li><code class="docutils literal notranslate"><span class="pre">data/responses.md</span></code>: Add responses associated with <code class="docutils literal notranslate"><span class="pre">faq/</span></code> intents</li>
-<li><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>: Add <code class="docutils literal notranslate"><span class="pre">ReponseSelector</span></code> in your NLU pipeline</li>
-<li><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>: Add a retrieval action <code class="docutils literal notranslate"><span class="pre">respond_faq</span></code> and intent <code class="docutils literal notranslate"><span class="pre">faq</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>: Add a simple story for FAQs</li>
-<li><code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code>: Add E2E test stories for your FAQs</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>: Add NLU training data for <code class="docutils literal notranslate"><span class="pre">faq/</span></code> intents</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/responses.md</span></code>: Add responses associated with <code class="docutils literal notranslate"><span class="pre">faq/</span></code> intents</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>: Add <code class="docutils literal notranslate"><span class="pre">ReponseSelector</span></code> in your NLU pipeline</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>: Add a retrieval action <code class="docutils literal notranslate"><span class="pre">respond_faq</span></code> and intent <code class="docutils literal notranslate"><span class="pre">faq</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>: Add a simple story for FAQs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code>: Add E2E test stories for your FAQs</p></li>
 </ul>
 </div></blockquote>
 </div>
@@ -592,10 +594,10 @@ your bot to handle contextual conversations.</p>
 <p>In this tutorial we’re going to cover a variety of topics:</p>
 <blockquote>
 <div><ul class="simple">
-<li><a class="reference internal" href="#handling-business-logic"><span class="std std-ref">Handling business logic</span></a></li>
-<li><a class="reference internal" href="#handling-unexpected-user-input"><span class="std std-ref">Handling unexpected user input</span></a></li>
-<li><a class="reference internal" href="#failing-gracefully"><span class="std std-ref">Failing gracefully</span></a></li>
-<li><a class="reference internal" href="#more-complex-contextual-conversations"><span class="std std-ref">More complex contextual conversations</span></a></li>
+<li><p><a class="reference internal" href="#handling-business-logic"><span class="std std-ref">Handling business logic</span></a></p></li>
+<li><p><a class="reference internal" href="#handling-unexpected-user-input"><span class="std std-ref">Handling unexpected user input</span></a></p></li>
+<li><p><a class="reference internal" href="#failing-gracefully"><span class="std std-ref">Failing gracefully</span></a></p></li>
+<li><p><a class="reference internal" href="#more-complex-contextual-conversations"><span class="std std-ref">More complex contextual conversations</span></a></p></li>
 </ul>
 </div></blockquote>
 <p>Please make sure you’ve got all the data from the <a class="reference internal" href="#build-faq-assistant"><span class="std std-ref">Building a simple FAQ assistant</span></a> section before starting this part.
@@ -622,12 +624,12 @@ works by predicting the form as the next action until all information is gathere
 our sales team, and for this we need to gather the following pieces of information:</p>
 <blockquote>
 <div><ul class="simple">
-<li>Their job</li>
-<li>Their bot use case</li>
-<li>Their name</li>
-<li>Their email</li>
-<li>Their budget</li>
-<li>Their company</li>
+<li><p>Their job</p></li>
+<li><p>Their bot use case</p></li>
+<li><p>Their name</p></li>
+<li><p>Their email</p></li>
+<li><p>Their budget</p></li>
+<li><p>Their company</p></li>
 </ul>
 </div></blockquote>
 <p>We will start by defining the <code class="docutils literal notranslate"><span class="pre">SalesForm</span></code> as a new class in the file called <code class="docutils literal notranslate"><span class="pre">actions.py</span></code>.
@@ -768,8 +770,8 @@ data to your NLU file:</p>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Entities like <code class="docutils literal notranslate"><span class="pre">business_email</span></code> and <code class="docutils literal notranslate"><span class="pre">budget</span></code> would usually be handled by pretrained entity extractors
+<p class="admonition-title">Note</p>
+<p>Entities like <code class="docutils literal notranslate"><span class="pre">business_email</span></code> and <code class="docutils literal notranslate"><span class="pre">budget</span></code> would usually be handled by pretrained entity extractors
 (e.g. <a class="reference internal" href="../../nlu/components/#ducklinghttpextractor"><span class="std std-ref">DucklingHTTPExtractor</span></a> or <a class="reference internal" href="../../nlu/components/#spacyentityextractor"><span class="std std-ref">SpacyEntityExtractor</span></a>), but for this tutorial
 we want to avoid any additional setup.</p>
 </div>
@@ -851,42 +853,39 @@ business logic. Read more about this <a class="reference external" href="https:/
 However, you should make sure not to handle any unhappy paths inside the form. These
 should be handled by writing regular stories, so your model can learn this behaviour.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
+<p class="admonition-title">Note</p>
 <p>Here’s a minimal checklist of files we modified to handle business logic using a form action:</p>
-<blockquote class="last">
+<blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>: Define the form action, including the <code class="docutils literal notranslate"><span class="pre">required_slots</span></code>, <code class="docutils literal notranslate"><span class="pre">slot_mappings</span></code> and <code class="docutils literal notranslate"><span class="pre">submit</span></code> methods</li>
-<li><dl class="first docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>:</dt>
-<dd><ul class="first last">
-<li>Add examples for an intent to activate the form</li>
-<li>Add examples for an <code class="docutils literal notranslate"><span class="pre">inform</span></code> intent to fill the form</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>: Define the form action, including the <code class="docutils literal notranslate"><span class="pre">required_slots</span></code>, <code class="docutils literal notranslate"><span class="pre">slot_mappings</span></code> and <code class="docutils literal notranslate"><span class="pre">submit</span></code> methods</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>:</dt><dd><ul>
+<li><p>Add examples for an intent to activate the form</p></li>
+<li><p>Add examples for an <code class="docutils literal notranslate"><span class="pre">inform</span></code> intent to fill the form</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><dl class="first docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</dt>
-<dd><ul class="first last">
-<li>Add all slots required by the form</li>
-<li>Add <code class="docutils literal notranslate"><span class="pre">utter_ask_{slot}</span></code> responses for all required slots</li>
-<li>Add your form action to the <code class="docutils literal notranslate"><span class="pre">forms</span></code> section</li>
-<li>Add all intents and entities from your NLU training data</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</dt><dd><ul>
+<li><p>Add all slots required by the form</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">utter_ask_{slot}</span></code> responses for all required slots</p></li>
+<li><p>Add your form action to the <code class="docutils literal notranslate"><span class="pre">forms</span></code> section</p></li>
+<li><p>Add all intents and entities from your NLU training data</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>: Add a story for the form</li>
-<li><dl class="first docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</dt>
-<dd><ul class="first last">
-<li>Add the <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> to your policies</li>
-<li>Add entity extractors to your pipeline</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>: Add a story for the form</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</dt><dd><ul>
+<li><p>Add the <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> to your policies</p></li>
+<li><p>Add entity extractors to your pipeline</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>: Define the <code class="docutils literal notranslate"><span class="pre">action_endpoint</span></code></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>: Define the <code class="docutils literal notranslate"><span class="pre">action_endpoint</span></code></p></li>
 </ul>
 </div></blockquote>
 </div>
@@ -1050,34 +1049,32 @@ rasa shell
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">You will need to add a story for each of the values of the <code class="docutils literal notranslate"><span class="pre">requested_slot</span></code> slot
+<p class="admonition-title">Note</p>
+<p>You will need to add a story for each of the values of the <code class="docutils literal notranslate"><span class="pre">requested_slot</span></code> slot
 for the bot to handle every case of “Why do you need to know that”</p>
 </div>
 <p>Don’t forget to add a few end to end stories to your <code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code> for testing as well.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
+<p class="admonition-title">Note</p>
 <p>Here’s a minimal checklist of  of files we modified to handle unexpected user input:</p>
-<blockquote class="last">
+<blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>: Define <code class="docutils literal notranslate"><span class="pre">action_greet</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>: Add training data for an <code class="docutils literal notranslate"><span class="pre">explain</span></code> intent</li>
-<li><dl class="first docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</dt>
-<dd><ul class="first last">
-<li>Map intent <code class="docutils literal notranslate"><span class="pre">greet</span></code> to  <code class="docutils literal notranslate"><span class="pre">action_greet_user</span></code></li>
-<li>Make <code class="docutils literal notranslate"><span class="pre">requested_slot</span></code> a categorical slots with all required slots as values</li>
-<li>Add the <code class="docutils literal notranslate"><span class="pre">explain</span></code> intent</li>
-<li>Add responses for contextual question interruptions</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>: Define <code class="docutils literal notranslate"><span class="pre">action_greet</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>: Add training data for an <code class="docutils literal notranslate"><span class="pre">explain</span></code> intent</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</dt><dd><ul>
+<li><p>Map intent <code class="docutils literal notranslate"><span class="pre">greet</span></code> to  <code class="docutils literal notranslate"><span class="pre">action_greet_user</span></code></p></li>
+<li><p>Make <code class="docutils literal notranslate"><span class="pre">requested_slot</span></code> a categorical slots with all required slots as values</p></li>
+<li><p>Add the <code class="docutils literal notranslate"><span class="pre">explain</span></code> intent</p></li>
+<li><p>Add responses for contextual question interruptions</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><dl class="first docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>:</dt>
-<dd><ul class="first last">
-<li>Remove stories using mapped intents if you have them</li>
-<li>Add stories with FAQ &amp; contextual interruptions in the middle of filling a form</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>:</dt><dd><ul>
+<li><p>Remove stories using mapped intents if you have them</p></li>
+<li><p>Add stories with FAQ &amp; contextual interruptions in the middle of filling a form</p></li>
 </ul>
 </dd>
 </dl>
@@ -1159,47 +1156,42 @@ let’s say the user asks “I want to apply for a job at Rasa”, we can then r
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
+<p class="admonition-title">Note</p>
 <p>Here’s a minimal checklist of files we modified to help our assistant fail gracefully:</p>
-<blockquote class="last">
+<blockquote>
 <div><ul class="simple">
-<li><dl class="first docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>:</dt>
-<dd><ul class="first last">
-<li>Add training data for the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent &amp; any specific out of scope intents that you want to handle seperately</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>:</dt><dd><ul>
+<li><p>Add training data for the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent &amp; any specific out of scope intents that you want to handle seperately</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><dl class="first docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>:</dt>
-<dd><ul class="first last">
-<li>Add stories for any specific out of scope intents</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>:</dt><dd><ul>
+<li><p>Add stories for any specific out of scope intents</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><dl class="first docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</dt>
-<dd><ul class="first last">
-<li>Add the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent &amp; any specific out of scope intents</li>
-<li>Add an <code class="docutils literal notranslate"><span class="pre">utter_out_of_scope</span></code> response &amp; responses for any specific out of scope intents</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</dt><dd><ul>
+<li><p>Add the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent &amp; any specific out of scope intents</p></li>
+<li><p>Add an <code class="docutils literal notranslate"><span class="pre">utter_out_of_scope</span></code> response &amp; responses for any specific out of scope intents</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><dl class="first docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>:</dt>
-<dd><ul class="first last">
-<li>Customise <code class="docutils literal notranslate"><span class="pre">ActionDefaultAskAffirmation</span></code> to suggest intents for the user to choose from</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>:</dt><dd><ul>
+<li><p>Customise <code class="docutils literal notranslate"><span class="pre">ActionDefaultAskAffirmation</span></code> to suggest intents for the user to choose from</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><dl class="first docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</dt>
-<dd><ul class="first last">
-<li>Add the TwoStageFallbackPolicy to the <code class="docutils literal notranslate"><span class="pre">policies</span></code> section</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</dt><dd><ul>
+<li><p>Add the TwoStageFallbackPolicy to the <code class="docutils literal notranslate"><span class="pre">policies</span></code> section</p></li>
 </ul>
 </dd>
 </dl>
