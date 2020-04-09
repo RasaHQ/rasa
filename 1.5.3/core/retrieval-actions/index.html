@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Retrieval Actions</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Interactive Learning" href="../interactive-learning/" />
@@ -237,8 +236,6 @@ in open source bot framework Rasa." />
               <a href="../../../1.4.6/core/retrieval-actions/">1.4.6</a>
               <a href="../../../1.3.10/core/retrieval-actions/">1.3.10</a>
               <a href="../../../1.2.9/index/">1.2.9</a>
-              <a href="../../../1.1.8/index/">1.1.8</a>
-              <a href="../../../1.0.9/index/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -277,8 +274,8 @@ in open source bot framework Rasa." />
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/core/retrieval-actions.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This feature is experimental.
+<p class="admonition-title">Warning</p>
+<p>This feature is experimental.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.
 If you have feedback (positive or negative) please share it with us on the <a class="reference external" href="https://forum.rasa.com">forum</a>.
@@ -286,18 +283,18 @@ Also, currently we do not support adding new annotations in Rasa X if your train
 Once we have gathered enough feedback and we’re happy with the training data format, we’ll add support for training response retrieval models in Rasa X.</p>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">There is an in-depth blog post <a class="reference external" href="https://blog.rasa.com/response-retrieval-models/">here</a> about how to use retrieval
+<p class="admonition-title">Note</p>
+<p>There is an in-depth blog post <a class="reference external" href="https://blog.rasa.com/response-retrieval-models/">here</a> about how to use retrieval
 actions for handling single turn interactions.</p>
 </div>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#about" id="id3">About</a></li>
-<li><a class="reference internal" href="#training-data" id="id4">Training Data</a></li>
-<li><a class="reference internal" href="#config-file" id="id5">Config File</a></li>
-<li><a class="reference internal" href="#domain" id="id6">Domain</a></li>
-<li><a class="reference internal" href="#multiple-retrieval-actions" id="id7">Multiple Retrieval Actions</a></li>
-<li><a class="reference internal" href="#parsing-response-selector-output" id="id8">Parsing Response Selector Output</a></li>
+<li><p><a class="reference internal" href="#about" id="id3">About</a></p></li>
+<li><p><a class="reference internal" href="#training-data" id="id4">Training Data</a></p></li>
+<li><p><a class="reference internal" href="#config-file" id="id5">Config File</a></p></li>
+<li><p><a class="reference internal" href="#domain" id="id6">Domain</a></p></li>
+<li><p><a class="reference internal" href="#multiple-retrieval-actions" id="id7">Multiple Retrieval Actions</a></p></li>
+<li><p><a class="reference internal" href="#parsing-response-selector-output" id="id8">Parsing Response Selector Output</a></p></li>
 </ul>
 </div>
 <div class="section" id="about">
@@ -359,14 +356,14 @@ One important thing to remember is that the retrieval model uses the text of the
 to select the correct one. If you change the text of these responses, you have to retrain your retrieval model!
 This is a key difference to the response templates in your domain file.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The file containing response texts must exist as a separate file inside the training data directory passed
+<p class="admonition-title">Note</p>
+<p>The file containing response texts must exist as a separate file inside the training data directory passed
 to the training process. The contents of it cannot be a part of the file which contains training data for other
 components of NLU.</p>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">As shown in the above examples, <code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifier. Make sure not to
+<p class="admonition-title">Note</p>
+<p>As shown in the above examples, <code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifier. Make sure not to
 use it in the name of your intents.</p>
 </div>
 </div>
@@ -375,14 +372,14 @@ use it in the name of your intents.</p>
 <p>You need to include the <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">Response Selector</span></a> component in your config. The component needs a tokenizer, a featurizer and an
 intent classifier to operate on the user message before it can predict a response and hence these
 components should be placed before <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> in the NLU configuration. An example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">intent_split_symbol</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
+  <span class="nt">intent_split_symbol</span><span class="p">:</span> <span class="s">&quot;_&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -393,7 +390,7 @@ to the retrieval action.
 The correct action name in this case is <code class="docutils literal notranslate"><span class="pre">respond_chitchat</span></code>. The prefix <code class="docutils literal notranslate"><span class="pre">respond_</span></code> is mandatory to identify it as a
 retrieval action. Another example - correct action name for <code class="docutils literal notranslate"><span class="pre">faq/ask_policy</span></code> would be <code class="docutils literal notranslate"><span class="pre">respond_faq</span></code>
 To include this in your domain, add it to the list of actions:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">actions</span><span class="p">:</span>
   <span class="l l-Scalar l-Scalar-Plain">...</span>
   <span class="l l-Scalar l-Scalar-Plain">- respond_chitchat</span>
   <span class="l l-Scalar l-Scalar-Plain">- respond_faq</span>
@@ -421,31 +418,31 @@ like <code class="docutils literal notranslate"><span class="pre">chitchat/ask_w
 Rasa supports adding multiple <code class="docutils literal notranslate"><span class="pre">RetrievalActions</span></code> like <code class="docutils literal notranslate"><span class="pre">respond_chitchat</span></code> and <code class="docutils literal notranslate"><span class="pre">respond_returns_policy</span></code>
 To train separate retrieval models for each of the intents, you need to include a separate <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code>
 component in the config:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">intent_split_symbol</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">retrieval_intent</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">chitchat</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">retrieval_intent</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">faq</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
+  <span class="nt">intent_split_symbol</span><span class="p">:</span> <span class="s">&quot;_&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
+  <span class="nt">retrieval_intent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">chitchat</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
+  <span class="nt">retrieval_intent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">faq</span>
 </pre></div>
 </div>
-<dl class="docutils">
-<dt>You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single</dt>
-<dd><code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> component and leaving the <code class="docutils literal notranslate"><span class="pre">retrieval_intent</span></code> to its default value(None):</dd>
+<dl class="simple">
+<dt>You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single</dt><dd><p><code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> component and leaving the <code class="docutils literal notranslate"><span class="pre">retrieval_intent</span></code> to its default value(None):</p>
+</dd>
 </dl>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">intent_split_symbol</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
+  <span class="nt">intent_split_symbol</span><span class="p">:</span> <span class="s">&quot;_&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
 </pre></div>
 </div>
 <p>In this case, the response selector will be trained on examples from both <code class="docutils literal notranslate"><span class="pre">chitchat/{x}</span></code> and <code class="docutils literal notranslate"><span class="pre">faq/{x}</span></code> and will be
@@ -462,8 +459,8 @@ each response selector. Each response selector is identified by <code class="doc
 and stores two properties -</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">response</span></code>: The predicted response text and the prediction confidence.</li>
-<li><code class="docutils literal notranslate"><span class="pre">ranking</span></code>: Ranking with confidences of top 10 candidate responses.</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">response</span></code>: The predicted response text and the prediction confidence.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ranking</span></code>: Ranking with confidences of top 10 candidate responses.</p></li>
 </ul>
 </div></blockquote>
 <p>Example result:</p>

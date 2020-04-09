@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Mattermost</title>
     <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../../genindex/" />
     <link rel="search" title="Search" href="../../../search/" />
     <link rel="next" title="Google Hangouts Chat" href="../hangouts/" />
@@ -241,8 +240,6 @@
               <a href="../../../../1.4.6/user-guide/connectors/mattermost/">1.4.6</a>
               <a href="../../../../1.3.10/user-guide/connectors/mattermost/">1.3.10</a>
               <a href="../../../../1.2.9/user-guide/connectors/mattermost/">1.2.9</a>
-              <a href="../../../../1.1.8/user-guide/connectors/mattermost/">1.1.8</a>
-              <a href="../../../../1.0.9/user-guide/connectors/mattermost/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -290,19 +287,19 @@ your bot to get your token required for the <cite>credentials.yml</cite> file.</
 <p><strong>How to set up the outgoing webhook:</strong></p>
 <blockquote>
 <div><ol class="arabic simple">
-<li>To create the Mattermost outgoing webhook, login to your Mattermost
-team site and go to <strong>Main Menu &gt; Integrations &gt; Outgoing Webhooks</strong>.</li>
-<li>Click <strong>Add outgoing webhook</strong>.</li>
-<li>Fill out the details including the channel you want the bot in.
+<li><p>To create the Mattermost outgoing webhook, login to your Mattermost
+team site and go to <strong>Main Menu &gt; Integrations &gt; Outgoing Webhooks</strong>.</p></li>
+<li><p>Click <strong>Add outgoing webhook</strong>.</p></li>
+<li><p>Fill out the details including the channel you want the bot in.
 You will need to ensure the <strong>trigger words</strong> section is set up
 with <code class="docutils literal notranslate"><span class="pre">&#64;yourbotname</span></code> so that the bot doesn’t trigger on everything
-that is said.</li>
-<li>The <strong>Content Type</strong> must be set to <code class="docutils literal notranslate"><span class="pre">application/json</span></code>.</li>
-<li>Make sure <strong>trigger when</strong> is set to value
-<strong>first word matches a trigger word exactly</strong>.</li>
-<li>The callback url needs to be either your localhost address for Rasa, or your ngrok url where you
+that is said.</p></li>
+<li><p>The <strong>Content Type</strong> must be set to <code class="docutils literal notranslate"><span class="pre">application/json</span></code>.</p></li>
+<li><p>Make sure <strong>trigger when</strong> is set to value
+<strong>first word matches a trigger word exactly</strong>.</p></li>
+<li><p>The callback url needs to be either your localhost address for Rasa, or your ngrok url where you
 have your webhook running in Core or your public address, e.g.
-<code class="docutils literal notranslate"><span class="pre">http://test.example.com/webhooks/mattermost/webhook</span></code> or <code class="docutils literal notranslate"><span class="pre">http://localhost:5005/webhooks/mattermost/webhook</span></code>.</li>
+<code class="docutils literal notranslate"><span class="pre">http://test.example.com/webhooks/mattermost/webhook</span></code> or <code class="docutils literal notranslate"><span class="pre">http://localhost:5005/webhooks/mattermost/webhook</span></code>.</p></li>
 </ol>
 </div></blockquote>
 <p>For more detailed steps, visit the
@@ -316,10 +313,10 @@ run script, e.g. using:</p>
 </pre></div>
 </div>
 <p>you need to supply a <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> with the following content:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">mattermost</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://chat.example.com/api/v4&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">token</span><span class="p p-Indicator">:</span> <span class="s">&quot;xxxxx&quot;</span> <span class="c1">#  the token for the bot account from creating the bot step.</span>
-  <span class="l l-Scalar l-Scalar-Plain">webhook_url</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://server.example.com/webhooks/mattermost/webhook&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">mattermost</span><span class="p">:</span>
+  <span class="nt">url</span><span class="p">:</span> <span class="s">&quot;https://chat.example.com/api/v4&quot;</span>
+  <span class="nt">token</span><span class="p">:</span> <span class="s">&quot;xxxxx&quot;</span> <span class="c1">#  the token for the bot account from creating the bot step.</span>
+  <span class="nt">webhook_url</span><span class="p">:</span> <span class="s">&quot;https://server.example.com/webhooks/mattermost/webhook&quot;</span>
 </pre></div>
 </div>
 <p>The endpoint for receiving Mattermost channel messages
