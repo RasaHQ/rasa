@@ -11,10 +11,18 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    BATCH_SIZES,
+    BATCH_SIZE,
     BATCH_STRATEGY,
     EPOCHS,
     RANDOM_SEED,
+    LEARNING_RATE,
+    LEARNING_SCHEDULE,
+    WARMUP_PROPORTION,
+    PICK_MULTIPLIER,
+    WARMUP_EPOCHS,
+    END_MULTIPLIER,
+    DECAY_POWER,
+    DECAY_EPOCHS,
     RANKING_LENGTH,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -88,7 +96,7 @@ class EmbeddingPolicy(TEDPolicy):
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
-        BATCH_SIZES: [8, 32],
+        BATCH_SIZE: [8, 32],
         # Strategy used when creating batches.
         # Can be either 'sequence' or 'balanced'.
         BATCH_STRATEGY: BALANCED,
@@ -96,6 +104,17 @@ class EmbeddingPolicy(TEDPolicy):
         EPOCHS: 1,
         # Set random seed to any 'int' to get reproducible results
         RANDOM_SEED: None,
+        # Initial learning rate for the optimizer
+        LEARNING_RATE: 0.001,
+        # warmup-decay learning schedule, serves as a multiplier to learning_rate
+        LEARNING_SCHEDULE: {
+            WARMUP_PROPORTION: 0.0,
+            WARMUP_EPOCHS: None,
+            PICK_MULTIPLIER: 1.0,
+            END_MULTIPLIER: 1.0,
+            DECAY_POWER: 1.0,
+            DECAY_EPOCHS: None,
+        },
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,

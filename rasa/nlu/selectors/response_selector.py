@@ -28,11 +28,18 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    BATCH_SIZES,
+    BATCH_SIZE,
     BATCH_STRATEGY,
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
+    LEARNING_SCHEDULE,
+    WARMUP_PROPORTION,
+    PICK_MULTIPLIER,
+    WARMUP_EPOCHS,
+    DECAY_EPOCHS,
+    END_MULTIPLIER,
+    DECAY_POWER,
     DENSE_DIMENSION,
     RANKING_LENGTH,
     LOSS_TYPE,
@@ -130,7 +137,7 @@ class ResponseSelector(DIETClassifier):
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
-        BATCH_SIZES: [64, 256],
+        BATCH_SIZE: [64, 256],
         # Strategy used when creating batches.
         # Can be either 'sequence' or 'balanced'.
         BATCH_STRATEGY: BALANCED,
@@ -140,6 +147,15 @@ class ResponseSelector(DIETClassifier):
         RANDOM_SEED: None,
         # Initial learning rate for the optimizer
         LEARNING_RATE: 0.001,
+        # warmup-decay learning schedule, serves as a multiplier to learning_rate
+        LEARNING_SCHEDULE: {
+            WARMUP_PROPORTION: 0.0,
+            WARMUP_EPOCHS: None,
+            PICK_MULTIPLIER: 1.0,
+            END_MULTIPLIER: 1.0,
+            DECAY_POWER: 1.0,
+            DECAY_EPOCHS: None,
+        },
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
@@ -180,7 +196,7 @@ class ResponseSelector(DIETClassifier):
         # Dropout rate for attention
         DROP_RATE_ATTENTION: 0,
         # If 'True' apply dropout to sparse tensors
-        SPARSE_INPUT_DROPOUT: False,
+        SPARSE_INPUT_DROPOUT: True,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
         # Small values may hurt performance, e.g. model accuracy.

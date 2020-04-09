@@ -1,5 +1,6 @@
 import logging
 
+import math
 import numpy as np
 import scipy.sparse
 import tensorflow as tf
@@ -406,7 +407,7 @@ class RasaModelData:
             # after balancing, number of examples increased
             num_examples = self.number_of_examples(data)
 
-        num_batches = num_examples // batch_size + int(num_examples % batch_size > 0)
+        num_batches = math.ceil(num_examples / batch_size)
 
         for batch_num in range(num_batches):
             start = batch_num * batch_size

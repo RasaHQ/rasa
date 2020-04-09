@@ -417,12 +417,19 @@ def _scale_loss(log_likelihood: tf.Tensor) -> tf.Tensor:
     """
 
     p = tf.math.exp(log_likelihood)
+
+    scales = tf.pow((1 - p) / 0.5, 4)
+    # tf.print('---')
+    # tf.print(scales)
+    # tf.print(scales / tf.reduce_sum(scales))
+
+    return tf.stop_gradient(scales)  # / tf.reduce_sum(scale))
     # only scale loss if some examples are already learned
-    return tf.cond(
-        tf.reduce_max(p) > 0.5,
-        lambda: tf.stop_gradient(tf.pow((1 - p) / 0.5, 4)),
-        lambda: tf.ones_like(p),
-    )
+    # return tf.cond(
+    #     tf.reduce_max(p) > 0.5,
+    #     lambda: tf.stop_gradient(tf.pow((1 - p) / 0.5, 4)),
+    #     lambda: tf.ones_like(p),
+    # )
 
 
 class CRF(tf.keras.layers.Layer):
@@ -500,7 +507,8 @@ class CRF(tf.keras.layers.Layer):
         )
         loss = -log_likelihood
         if self.scale_loss:
-            loss *= _scale_loss(log_likelihood)
+            scales = _scale_loss(log_likelihood)
+            return tf.reduce_sum(loss * scales) / tf.reduce_sum(scales)
 
         return tf.reduce_mean(loss)
 
@@ -543,7 +551,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         scale_loss: bool,
         name: Optional[Text] = None,
         parallel_iterations: int = 1000,
-        same_sampling: bool = False,
+        same_sampling: bool = True,
     ) -> None:
         super().__init__(name=name)
         self.num_neg = num_neg
@@ -828,7 +836,11 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         if self.scale_loss:
             # in case of cross entropy log_likelihood = -loss
-            loss *= _scale_loss(-loss)
+            scales = _scale_loss(-loss)
+        else:
+            scales = tf.ones_like(loss)
+
+        loss *= scales
 
         if mask is not None:
             loss *= mask
@@ -836,12 +848,16 @@ class DotProductLoss(tf.keras.layers.Layer):
         if len(loss.shape) == 2:
             # average over the sequence
             if mask is not None:
-                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
+                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(
+                    scales * mask, axis=-1
+                )
             else:
-                loss = tf.reduce_mean(loss, axis=-1)
+                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(scales, axis=-1)
+            # average the loss over the batch
+            return tf.reduce_mean(loss)
 
         # average the loss over the batch
-        return tf.reduce_mean(loss)
+        return tf.reduce_sum(loss) / tf.reduce_sum(scales)
 
     @property
     def _chosen_loss(self) -> Callable:

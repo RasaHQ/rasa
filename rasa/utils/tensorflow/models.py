@@ -4,13 +4,23 @@ import tensorflow as tf
 import numpy as np
 import logging
 from collections import defaultdict
-from typing import List, Text, Dict, Tuple, Union, Optional, Callable
+from typing import List, Text, Dict, Tuple, Union, Optional, Callable, Any
 
 from tensorflow_core.python.ops.summary_ops_v2 import ResourceSummaryWriter
 from tqdm import tqdm
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
-from rasa.utils.tensorflow.constants import SEQUENCE, TENSORBOARD_LOG_LEVEL
+from rasa.utils.tensorflow.constants import (
+    SEQUENCE,
+    TENSORBOARD_LOG_LEVEL,
+    WARMUP_PROPORTION,
+    PICK_MULTIPLIER,
+    WARMUP_EPOCHS,
+    END_MULTIPLIER,
+    DECAY_POWER,
+    DECAY_EPOCHS,
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +108,7 @@ class RasaModel(tf.keras.models.Model):
         evaluate_on_num_examples: int,
         evaluate_every_num_epochs: int,
         batch_strategy: Text,
+        learning_schedule: Optional[Dict[Text, Any]] = None,
         silent: bool = False,
         eager: bool = False,
     ) -> None:
@@ -133,11 +144,13 @@ class RasaModel(tf.keras.models.Model):
         progress_bar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         training_steps = 0
+        learning_schedule = self._update_learning_schedule(learning_schedule, epochs)
 
         for epoch in progress_bar:
             epoch_batch_size = self.linearly_increasing_batch_size(
                 epoch, batch_size, epochs
             )
+            learning_multiplier = self._learning_multiplier(learning_schedule, epoch)
 
             training_steps = self._batch_loop(
                 train_dataset_function,
@@ -145,6 +158,7 @@ class RasaModel(tf.keras.models.Model):
                 epoch_batch_size,
                 True,
                 training_steps,
+                learning_multiplier,
                 self.train_summary_writer,
             )
 
@@ -161,7 +175,7 @@ class RasaModel(tf.keras.models.Model):
                         epoch_batch_size,
                         False,
                         training_steps,
-                        self.test_summary_writer,
+                        writer=self.test_summary_writer,
                     )
 
                     if self.tensorboard_log_on_epochs:
@@ -183,12 +197,14 @@ class RasaModel(tf.keras.models.Model):
             logger.info("Finished training.")
 
     def train_on_batch(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self,
+        batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        learning_multiplier: tf.Tensor,
     ) -> None:
         """Train on batch"""
 
         with tf.GradientTape() as tape:
-            total_loss = self._total_batch_loss(batch_in)
+            total_loss = self._total_batch_loss(batch_in) * learning_multiplier
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
@@ -239,6 +255,46 @@ class RasaModel(tf.keras.models.Model):
         logger.debug("Finished loading the model.")
         return model
 
+    @staticmethod
+    def _update_learning_schedule(
+        learning_schedule: Dict[Text, Any], epochs: int
+    ) -> Dict[Text, Any]:
+        if learning_schedule and learning_schedule.get(WARMUP_EPOCHS) is None:
+            learning_schedule[WARMUP_EPOCHS] = (
+                learning_schedule[WARMUP_PROPORTION] * epochs
+            )
+        if learning_schedule and learning_schedule.get(DECAY_EPOCHS) is None:
+            learning_schedule[DECAY_EPOCHS] = epochs - learning_schedule[WARMUP_EPOCHS]
+
+        return learning_schedule
+
+    @staticmethod
+    def _learning_multiplier(
+        learning_schedule: Dict[Text, Any], epoch: int
+    ) -> tf.Tensor:
+        if not learning_schedule:
+            return tf.constant(1.0)
+
+        if epoch < learning_schedule[WARMUP_EPOCHS]:
+            multiplier = (
+                learning_schedule[PICK_MULTIPLIER]
+                * float(epoch + 1)
+                / float(learning_schedule[WARMUP_EPOCHS])
+            )
+        elif epoch > learning_schedule[DECAY_EPOCHS] + learning_schedule[WARMUP_EPOCHS]:
+            multiplier = learning_schedule[END_MULTIPLIER]
+        else:
+            relative_time = float(epoch - learning_schedule[WARMUP_EPOCHS]) / float(
+                learning_schedule[DECAY_EPOCHS]
+            )
+            multiplier = (
+                (learning_schedule[PICK_MULTIPLIER] - learning_schedule[END_MULTIPLIER])
+                * (1 - relative_time) ** learning_schedule[DECAY_POWER]
+                + learning_schedule[END_MULTIPLIER]
+            )
+
+        return tf.constant(multiplier)
+
     def _total_batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
@@ -257,18 +313,20 @@ class RasaModel(tf.keras.models.Model):
         call_model_function: Callable,
         batch_size: int,
         training: bool,
-        offset: int,
+        step: int,
+        learning_multiplier: Optional[tf.Tensor] = None,
         writer: Optional[ResourceSummaryWriter] = None,
     ) -> int:
         """Run on batches"""
 
         self.reset_metrics()
 
-        step = offset
-
         self._training = training  # needed for eager mode
         for batch_in in dataset_function(batch_size):
-            call_model_function(batch_in)
+            if self._training:
+                call_model_function(batch_in, learning_multiplier)
+            else:
+                call_model_function(batch_in)
 
             if not self.tensorboard_log_on_epochs:
                 self._log_metrics_for_tensorboard(step, writer)
@@ -277,8 +335,8 @@ class RasaModel(tf.keras.models.Model):
 
         return step
 
-    @staticmethod
     def _get_tf_call_model_function(
+        self,
         dataset_function: Callable,
         call_model_function: Callable,
         eager: bool,
@@ -292,10 +350,22 @@ class RasaModel(tf.keras.models.Model):
         logger.debug(f"Building tensorflow {phase} graph...")
 
         init_dataset = dataset_function(1)
-        tf_call_model_function = tf.function(
-            call_model_function, input_signature=[init_dataset.element_spec]
-        )
-        tf_call_model_function(next(iter(init_dataset)))
+        learning_multiplier = tf.constant(0.0)
+
+        if self._training:
+            input_signature = [
+                init_dataset.element_spec,
+                tf.TensorSpec.from_tensor(learning_multiplier),
+            ]
+        else:
+            input_signature = [init_dataset.element_spec]
+
+        tf_call_model_function = tf.function(call_model_function, input_signature)
+
+        if self._training:
+            tf_call_model_function(next(iter(init_dataset)), learning_multiplier)
+        else:
+            tf_call_model_function(next(iter(init_dataset)))
 
         logger.debug(f"Finished building tensorflow {phase} graph.")
 

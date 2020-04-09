@@ -12,11 +12,20 @@ KEY_RELATIVE_ATTENTION = "use_key_relative_attention"
 VALUE_RELATIVE_ATTENTION = "use_value_relative_attention"
 MAX_RELATIVE_POSITION = "max_relative_position"
 
-BATCH_SIZES = "batch_size"
+BATCH_SIZE = "batch_size"
 BATCH_STRATEGY = "batch_strategy"
 EPOCHS = "epochs"
 RANDOM_SEED = "random_seed"
+
 LEARNING_RATE = "learning_rate"
+
+LEARNING_SCHEDULE = "learning_schedule"
+WARMUP_PROPORTION = "warmup_proportion"
+WARMUP_EPOCHS = "warmup_epochs"
+PICK_MULTIPLIER = "pick_multiplier"
+END_MULTIPLIER = "end_multiplier"
+DECAY_POWER = "decay_power"
+DECAY_EPOCHS = "decay_epochs"
 
 DENSE_DIMENSION = "dense_dimension"
 EMBEDDING_DIMENSION = "embedding_dimension"

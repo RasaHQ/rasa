@@ -11,11 +11,18 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES,
     SHARE_HIDDEN_LAYERS,
     NUM_TRANSFORMER_LAYERS,
-    BATCH_SIZES,
+    BATCH_SIZE,
     BATCH_STRATEGY,
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
+    LEARNING_SCHEDULE,
+    WARMUP_PROPORTION,
+    PICK_MULTIPLIER,
+    WARMUP_EPOCHS,
+    DECAY_EPOCHS,
+    END_MULTIPLIER,
+    DECAY_POWER,
     DENSE_DIMENSION,
     RANKING_LENGTH,
     LOSS_TYPE,
@@ -78,7 +85,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
-        BATCH_SIZES: [64, 256],
+        BATCH_SIZE: [64, 256],
         # Strategy used when creating batches.
         # Can be either 'sequence' or 'balanced'.
         BATCH_STRATEGY: BALANCED,
@@ -88,6 +95,15 @@ class EmbeddingIntentClassifier(DIETClassifier):
         RANDOM_SEED: None,
         # Initial learning rate for the optimizer
         LEARNING_RATE: 0.001,
+        # warmup-decay learning schedule, serves as a multiplier to learning_rate
+        LEARNING_SCHEDULE: {
+            WARMUP_PROPORTION: 0.0,
+            WARMUP_EPOCHS: None,
+            PICK_MULTIPLIER: 1.0,
+            END_MULTIPLIER: 1.0,
+            DECAY_POWER: 1.0,
+            DECAY_EPOCHS: None,
+        },
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
