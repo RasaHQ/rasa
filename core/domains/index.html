@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Domains</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Responses" href="../responses/" />
@@ -244,6 +245,8 @@ AI Assistants and chatbots using open source bot framework Rasa." />
               <a href="../.././1.4.6/core/domains/">1.4.6</a>
               <a href="../.././1.3.10/core/domains/">1.3.10</a>
               <a href="../.././1.2.9/core/domains/">1.2.9</a>
+              <a href="../.././1.1.8/core/domains/">1.1.8</a>
+              <a href="../.././1.0.9/core/domains/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -284,16 +287,16 @@ your bot should know about. Optionally, it can also include <code class="docutil
 for the things your bot can say.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#an-example-of-a-domain" id="id3">An example of a Domain</a></p></li>
-<li><p><a class="reference internal" href="#custom-actions-and-slots" id="id4">Custom Actions and Slots</a></p></li>
-<li><p><a class="reference internal" href="#responses" id="id5">Responses</a></p></li>
-<li><p><a class="reference internal" href="#images-and-buttons" id="id6">Images and Buttons</a></p></li>
-<li><p><a class="reference internal" href="#custom-output-payloads" id="id7">Custom Output Payloads</a></p></li>
-<li><p><a class="reference internal" href="#channel-specific-responses" id="id8">Channel-Specific Responses</a></p></li>
-<li><p><a class="reference internal" href="#variables" id="id9">Variables</a></p></li>
-<li><p><a class="reference internal" href="#variations" id="id10">Variations</a></p></li>
-<li><p><a class="reference internal" href="#ignoring-entities-for-certain-intents" id="id11">Ignoring entities for certain intents</a></p></li>
-<li><p><a class="reference internal" href="#session-configuration" id="id12">Session configuration</a></p></li>
+<li><a class="reference internal" href="#an-example-of-a-domain" id="id3">An example of a Domain</a></li>
+<li><a class="reference internal" href="#custom-actions-and-slots" id="id4">Custom Actions and Slots</a></li>
+<li><a class="reference internal" href="#responses" id="id5">Responses</a></li>
+<li><a class="reference internal" href="#images-and-buttons" id="id6">Images and Buttons</a></li>
+<li><a class="reference internal" href="#custom-output-payloads" id="id7">Custom Output Payloads</a></li>
+<li><a class="reference internal" href="#channel-specific-responses" id="id8">Channel-Specific Responses</a></li>
+<li><a class="reference internal" href="#variables" id="id9">Variables</a></li>
+<li><a class="reference internal" href="#variations" id="id10">Variations</a></li>
+<li><a class="reference internal" href="#ignoring-entities-for-certain-intents" id="id11">Ignoring entities for certain intents</a></li>
+<li><a class="reference internal" href="#session-configuration" id="id12">Session configuration</a></li>
 </ul>
 </div>
 <div class="section" id="an-example-of-a-domain">
@@ -363,10 +366,10 @@ Rasa Core, along with syntax for including them in your domain file.</p>
 <p><a class="reference internal" href="../actions/#actions"><span class="std std-ref">Actions</span></a> are the things your bot can actually do.
 For example, an action could:</p>
 <ul class="simple">
-<li><p>respond to a user,</p></li>
-<li><p>make an external API call,</p></li>
-<li><p>query a database, or</p></li>
-<li><p>just about anything!</p></li>
+<li>respond to a user,</li>
+<li>make an external API call,</li>
+<li>query a database, or</li>
+<li>just about anything!</li>
 </ul>
 </div>
 <div class="section" id="custom-actions-and-slots">
@@ -393,7 +396,7 @@ see <a class="reference internal" href="../actions/#custom-actions"><span class=
 <p>Responses are messages the bot will send back to the user. There are
 two ways to use these responses:</p>
 <ol class="arabic">
-<li><p>If the name of the response starts with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>, the response can
+<li><p class="first">If the name of the response starts with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>, the response can
 directly be used as an action. You would add the response
 to the domain:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">responses</span><span class="p p-Indicator">:</span>
@@ -411,7 +414,7 @@ stories:</p>
 <p>When <code class="docutils literal notranslate"><span class="pre">utter_greet</span></code> is run as an action, it will send the message from
 the response back to the user.</p>
 </li>
-<li><p>You can use the responses to generate response messages from your
+<li><p class="first">You can use the responses to generate response messages from your
 custom actions using the dispatcher:
 <code class="docutils literal notranslate"><span class="pre">dispatcher.utter_message(template=&quot;utter_greet&quot;)</span></code>.
 This allows you to separate the logic of generating
@@ -449,8 +452,8 @@ buttons as well:</p>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Please keep in mind that it is up to the implementation of the output
+<p class="first admonition-title">Note</p>
+<p class="last">Please keep in mind that it is up to the implementation of the output
 channel on how to display the defined buttons. The command line, for
 example, can’t display buttons or images, but tries to mimic them by
 printing the options.</p>
@@ -527,7 +530,7 @@ have a response like this:</p>
 <p>Rasa will automatically fill that variable with a value found in a slot called
 <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
 <p>In custom code, you can retrieve a response by using:</p>
-<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ActionCustom</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ActionCustom</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
       <span class="k">return</span> <span class="s2">&quot;action_custom&quot;</span>
 
@@ -584,8 +587,8 @@ an intent where you don’t care about the entities being picked up. If you list
 your intents as normal without this parameter, the entities will be
 featurized as normal.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you really want these entities not to influence action prediction we
+<p class="first admonition-title">Note</p>
+<p class="last">If you really want these entities not to influence action prediction we
 suggest you make the slots with the same name of type <code class="docutils literal notranslate"><span class="pre">unfeaturized</span></code>.</p>
 </div>
 </div>
@@ -595,9 +598,9 @@ suggest you make the slots with the same name of type <code class="docutils lite
 Conversation sessions can begin in three ways:</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li><p>the user begins the conversation with the assistant,</p></li>
-<li><p>the user sends their first message after a configurable period of inactivity, or</p></li>
-<li><p>a manual session start is triggered with the <code class="docutils literal notranslate"><span class="pre">/session_start</span></code> intent message.</p></li>
+<li>the user begins the conversation with the assistant,</li>
+<li>the user sends their first message after a configurable period of inactivity, or</li>
+<li>a manual session start is triggered with the <code class="docutils literal notranslate"><span class="pre">/session_start</span></code> intent message.</li>
 </ol>
 </div></blockquote>
 <p>You can define the period of inactivity after which a new conversation
@@ -617,8 +620,8 @@ into the new session. Setting the value of <code class="docutils literal notrans
 that sessions will not end (note that the <code class="docutils literal notranslate"><span class="pre">action_session_start</span></code> action will still
 be triggered at the very beginning of conversations).</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>A session start triggers the default action <code class="docutils literal notranslate"><span class="pre">action_session_start</span></code>. Its default
+<p class="first admonition-title">Note</p>
+<p class="last">A session start triggers the default action <code class="docutils literal notranslate"><span class="pre">action_session_start</span></code>. Its default
 implementation moves all existing slots into the new session. Note that all
 conversations begin with an <code class="docutils literal notranslate"><span class="pre">action_session_start</span></code>. Overriding this action could
 for instance be used to initialise the tracker with slots from an external API

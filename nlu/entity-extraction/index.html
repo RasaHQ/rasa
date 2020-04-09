@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Entity Extraction</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="The Rasa Core Dialogue Engine" href="../../core/about/" />
@@ -248,6 +249,8 @@ AI assistants" />
               <a href="../.././1.4.6/nlu/entity-extraction/">1.4.6</a>
               <a href="../.././1.3.10/nlu/entity-extraction/">1.3.10</a>
               <a href="../.././1.2.9/nlu/entity-extraction/">1.2.9</a>
+              <a href="../.././1.1.8/nlu/entity-extraction/">1.1.8</a>
+              <a href="../.././1.0.9/nlu/entity-extraction/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -285,62 +288,62 @@ AI assistants" />
   </div><p>Entity extraction involves parsing user messages for required pieces of information. Rasa Open Source
 provides entity extractors for custom entities as well as pre-trained ones like dates and locations.
 Here is a summary of the available extractors and what they are used for:</p>
-<table class="docutils align-default">
+<table border="1" class="docutils">
 <colgroup>
-<col style="width: 25%" />
-<col style="width: 17%" />
-<col style="width: 24%" />
-<col style="width: 33%" />
+<col width="25%" />
+<col width="17%" />
+<col width="24%" />
+<col width="33%" />
 </colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Component</p></th>
-<th class="head"><p>Requires</p></th>
-<th class="head"><p>Model</p></th>
-<th class="head"><p>Notes</p></th>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Component</th>
+<th class="head">Requires</th>
+<th class="head">Model</th>
+<th class="head">Notes</th>
 </tr>
 </thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></p></td>
-<td><p>sklearn-crfsuite</p></td>
-<td><p>conditional random field</p></td>
-<td><p>good for training custom entities</p></td>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></td>
+<td>sklearn-crfsuite</td>
+<td>conditional random field</td>
+<td>good for training custom entities</td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code></p></td>
-<td><p>spaCy</p></td>
-<td><p>averaged perceptron</p></td>
-<td><p>provides pre-trained entities</p></td>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code></td>
+<td>spaCy</td>
+<td>averaged perceptron</td>
+<td>provides pre-trained entities</td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DucklingHTTPExtractor</span></code></p></td>
-<td><p>running duckling</p></td>
-<td><p>context-free grammar</p></td>
-<td><p>provides pre-trained entities</p></td>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">DucklingHTTPExtractor</span></code></td>
+<td>running duckling</td>
+<td>context-free grammar</td>
+<td>provides pre-trained entities</td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MitieEntityExtractor</span></code></p></td>
-<td><p>MITIE</p></td>
-<td><p>structured SVM</p></td>
-<td><p>good for training custom entities</p></td>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">MitieEntityExtractor</span></code></td>
+<td>MITIE</td>
+<td>structured SVM</td>
+<td>good for training custom entities</td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">EntitySynonymMapper</span></code></p></td>
-<td><p>existing entities</p></td>
-<td><p>N/A</p></td>
-<td><p>maps known synonyms</p></td>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">EntitySynonymMapper</span></code></td>
+<td>existing entities</td>
+<td>N/A</td>
+<td>maps known synonyms</td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code></p></td>
-<td></td>
-<td><p>conditional random field
-on top of a transformer</p></td>
-<td><p>good for training custom entities</p></td>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code></td>
+<td>&#160;</td>
+<td>conditional random field
+on top of a transformer</td>
+<td>good for training custom entities</td>
 </tr>
 </tbody>
 </table>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#the-entity-object" id="id2">The “entity” Object</a></p></li>
-<li><p><a class="reference internal" href="#custom-entities" id="id3">Custom Entities</a></p></li>
-<li><p><a class="reference internal" href="#extracting-places-dates-people-organisations" id="id4">Extracting Places, Dates, People, Organisations</a></p></li>
-<li><p><a class="reference internal" href="#dates-amounts-of-money-durations-distances-ordinals" id="id5">Dates, Amounts of Money, Durations, Distances, Ordinals</a></p></li>
-<li><p><a class="reference internal" href="#regular-expressions-regex" id="id6">Regular Expressions (regex)</a></p></li>
-<li><p><a class="reference internal" href="#passing-custom-features-to-crfentityextractor" id="id7">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a></p></li>
+<li><a class="reference internal" href="#the-entity-object" id="id2">The “entity” Object</a></li>
+<li><a class="reference internal" href="#custom-entities" id="id3">Custom Entities</a></li>
+<li><a class="reference internal" href="#extracting-places-dates-people-organisations" id="id4">Extracting Places, Dates, People, Organisations</a></li>
+<li><a class="reference internal" href="#dates-amounts-of-money-durations-distances-ordinals" id="id5">Dates, Amounts of Money, Durations, Distances, Ordinals</a></li>
+<li><a class="reference internal" href="#regular-expressions-regex" id="id6">Regular Expressions (regex)</a></li>
+<li><a class="reference internal" href="#passing-custom-features-to-crfentityextractor" id="id7">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a></li>
 </ul>
 </div>
 <div class="section" id="the-entity-object">
@@ -370,8 +373,8 @@ exactly. Instead it will return the trained synonym.</p>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">confidence</span></code> will be set by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component. The
+<p class="first admonition-title">Note</p>
+<p class="last">The <code class="docutils literal notranslate"><span class="pre">confidence</span></code> will be set by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component. The
 <code class="docutils literal notranslate"><span class="pre">DucklingHTTPExtractor</span></code> will always return <code class="docutils literal notranslate"><span class="pre">1</span></code>. The <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> extractor
 and <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> do not provide this information and returns <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
 </div>
