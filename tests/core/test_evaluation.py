@@ -130,3 +130,4 @@ async def test_end_to_evaluation_trips_circuit_breaker():
     assert (
         story_evaluation.evaluation_store.action_predictions == circuit_trip_predicted
     )
+    assert num_stories == 1

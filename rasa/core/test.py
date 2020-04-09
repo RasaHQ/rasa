@@ -686,7 +686,7 @@ async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
 
 
 def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
-
+    """Plot NLU model comparison graph"""
     graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
 
     _plot_curve(
@@ -699,7 +699,7 @@ def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
 
 
 def plot_core_results(output: Text, number_of_examples: List[int]) -> None:
-
+    """Plot core model comparison graph"""
     graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
 
     _plot_curve(
