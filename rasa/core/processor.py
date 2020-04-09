@@ -183,6 +183,7 @@ class MessageProcessor:
         If a new tracker is created, `action_session_start` is run.
 
         Args:
+            metadata: Data sent from client associated with the incoming user message.
             output_channel: Output channel associated with the incoming user message.
             sender_id: Conversation ID for which to fetch the tracker.
 
