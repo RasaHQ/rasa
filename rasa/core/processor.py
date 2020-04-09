@@ -36,6 +36,7 @@ from rasa.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
+    SessionStarted
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -175,7 +176,7 @@ class MessageProcessor:
             )
 
     async def get_tracker_with_session_start(
-        self, sender_id: Text, output_channel: Optional[OutputChannel] = None
+        self, sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None
     ) -> Optional[DialogueStateTracker]:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
@@ -192,6 +193,9 @@ class MessageProcessor:
         tracker = self.get_tracker(sender_id)
         if not tracker:
             return None
+
+        if metadata:
+            tracker.events.append(SessionStarted(metadata=metadata))
 
         await self._update_tracker_session(tracker, output_channel)
 
@@ -233,7 +237,7 @@ class MessageProcessor:
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.get_tracker_with_session_start(
-            message.sender_id, message.output_channel
+            message.sender_id, message.output_channel, message.metadata
         )
 
         if tracker:
