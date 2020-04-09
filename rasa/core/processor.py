@@ -176,7 +176,9 @@ class MessageProcessor:
             )
 
     async def get_tracker_with_session_start(
-        self, sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None
+        self, sender_id: Text,
+        output_channel: Optional[OutputChannel] = None,
+        metadata: Optional[Dict] = None
     ) -> Optional[DialogueStateTracker]:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
