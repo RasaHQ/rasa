@@ -76,7 +76,11 @@ class TrainingData:
         )
 
     def filter_training_examples(self, condition: Callable[[Message], bool]):
-        """Filter training examples """
+        """Filter training examples.
+
+        Args:
+            - condition: A function that will be applied to filter training examples.
+        """
 
         training_examples = []
         for ex in self.training_examples:
