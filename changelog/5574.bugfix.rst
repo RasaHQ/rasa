@@ -1,0 +1,1 @@
+Fixed issue where metadata was not being sent with the tracker from session_start event when calling action server.
