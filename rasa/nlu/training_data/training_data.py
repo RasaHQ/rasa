@@ -4,7 +4,7 @@ import random
 from collections import Counter, OrderedDict
 from copy import deepcopy
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
 import rasa.nlu.utils
 from rasa.utils.common import raise_warning, lazy_property
@@ -75,12 +75,12 @@ class TrainingData:
             nlg_stories,
         )
 
-    def filter_by_intent(self, intent: Text):
+    def filter_training_examples(self, condition: Callable[[Message], bool]):
         """Filter training examples """
 
         training_examples = []
         for ex in self.training_examples:
-            if ex.get("intent") == intent:
+            if condition(ex):
                 training_examples.append(ex)
 
         return TrainingData(
