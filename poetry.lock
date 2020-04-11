@@ -2690,10 +2690,10 @@ description = "Make Sphinx better at documenting Python functions and methods"
 name = "sphinxcontrib-trio"
 optional = false
 python-versions = "*"
-version = "1.0.2"
+version = "1.1.1"
 
 [package.dependencies]
-sphinx = "*"
+sphinx = ">=1.7"
 
 [[package]]
 category = "dev"
@@ -4781,8 +4781,8 @@ sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib_serializinghtml-1.1.4-py2.py3-none-any.whl", hash = "sha256:f242a81d423f59617a8e5cf16f5d4d74e28ee9a66f9e5b637a18082991db5a9a"},
 ]
 sphinxcontrib-trio = [
-    {file = "sphinxcontrib-trio-1.0.2.tar.gz", hash = "sha256:fccb369ae1e2ef6fd397e1e2b1d777113ae88e5737955019b8524df7fc093e5f"},
-    {file = "sphinxcontrib_trio-1.0.2-py3-none-any.whl", hash = "sha256:92fd88a6ead8d385f1c69fa8a51a4032fd3f6ac5535382b6f4dc9975f1de4ee5"},
+    {file = "sphinxcontrib-trio-1.1.1.tar.gz", hash = "sha256:e93fbd6839c8b3c3084d8b2023418c692ca621c13df85f9fe54d0f95ff6c3ef4"},
+    {file = "sphinxcontrib_trio-1.1.1-py3-none-any.whl", hash = "sha256:cc538ccbfbcedeb91ba645f844f893e1faa18037b3368c10b04f975812a3413f"},
 ]
 sphinxcontrib-versioning = []
 sphinxcontrib-websupport = [
