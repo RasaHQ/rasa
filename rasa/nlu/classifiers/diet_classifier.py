@@ -1231,6 +1231,7 @@ class DIET(RasaModel):
         masked_lm_loss: bool = False,
         sequence_ids: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
+
         if sequence_ids:
             seq_ids = self._features_as_seq_ids(features, name)
         else:
@@ -1252,7 +1253,6 @@ class DIET(RasaModel):
         outputs = self._tf_layers[f"{name}_transformer"](
             inputs, 1 - mask, self._training
         )
-        outputs = tfa.activations.gelu(outputs)
 
         return outputs, inputs, seq_ids, lm_mask_bool
 
@@ -1323,6 +1323,7 @@ class DIET(RasaModel):
     def _calculate_label_loss(
         self, a: tf.Tensor, b: tf.Tensor, label_ids: tf.Tensor
     ) -> tf.Tensor:
+
         all_label_ids, all_labels_embed = self._create_all_labels()
 
         a_embed = self._tf_layers[f"embed.{TEXT}"](a)
