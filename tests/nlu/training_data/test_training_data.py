@@ -196,7 +196,9 @@ def test_demo_data_filter_out_retrieval_intents(files):
     td1 = td.filter_training_examples(lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is None)
     assert len(td1.training_examples) == 42
 
-    td2 = td.filter_training_examples(lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is not None)
+    td2 = td.filter_training_examples(
+        lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is not None
+    )
     assert len(td2.training_examples) == 4
 
     # make sure filtering operation doesn't mutate the source training data
