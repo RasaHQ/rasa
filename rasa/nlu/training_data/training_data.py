@@ -75,7 +75,9 @@ class TrainingData:
             nlg_stories,
         )
 
-    def filter_training_examples(self, condition: Callable[[Message], bool]) -> "TrainingData":
+    def filter_training_examples(
+        self, condition: Callable[[Message], bool]
+    ) -> "TrainingData":
         """Filter training examples.
 
         Args:
@@ -102,9 +104,7 @@ class TrainingData:
             DeprecationWarning,
             stacklevel=2,
         )
-        return self.filter_training_examples(
-            lambda ex: intent == ex.get("intent")
-        )
+        return self.filter_training_examples(lambda ex: intent == ex.get("intent"))
 
     def __hash__(self) -> int:
         from rasa.core import utils as core_utils
