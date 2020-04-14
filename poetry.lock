@@ -2037,7 +2037,7 @@ description = "Socket.IO server"
 name = "python-socketio"
 optional = false
 python-versions = "*"
-version = "4.4.0"
+version = "4.5.1"
 
 [package.dependencies]
 python-engineio = ">=3.9.0"
@@ -4480,8 +4480,8 @@ python-jose = [
     {file = "python_jose-3.1.0-py2.py3-none-any.whl", hash = "sha256:1ac4caf4bfebd5a70cf5bd82702ed850db69b0b6e1d0ae7368e5f99ac01c9571"},
 ]
 python-socketio = [
-    {file = "python-socketio-4.4.0.tar.gz", hash = "sha256:48cba5b827ac665dbf923a4f5ec590812aed5299a831fc43576a9af346272534"},
-    {file = "python_socketio-4.4.0-py2.py3-none-any.whl", hash = "sha256:af6c23c35497960f82106e36688123ecb52ad5a77d0ca27954ff3811c4d9d562"},
+    {file = "python-socketio-4.5.1.tar.gz", hash = "sha256:149b98c33f8c3d09273fb4ebeb83781e4dc9411b56b27d9f058bec1bd1ed74b7"},
+    {file = "python_socketio-4.5.1-py2.py3-none-any.whl", hash = "sha256:81280cbbb7018d8ecdd006bf6025979733d347c0f2612282c1e21f6ed7d3b55b"},
 ]
 python-telegram-bot = [
     {file = "python-telegram-bot-11.1.0.tar.gz", hash = "sha256:cca4e32ebb8da7fdf35ab2fa2b3edd441211364819c5592fc253acdb7561ea5b"},
