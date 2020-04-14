@@ -626,9 +626,9 @@ class TransformerEncoder(tf.keras.layers.Layer):
         # if normalization is done in encoding layers, then it should also be done
         # on the output, since the output can grow very large, being the sum of
         # a whole stack of unnormalized layer outputs.
-        normalized_output = self._layer_norm(x)  # (batch_size, length, units)
+        final_output = self._layer_norm(x)  # (batch_size, length, units)
 
         # Apply final activation
-        final_output = tfa.activations.gelu(normalized_output)
+        final_output = tfa.activations.gelu(final_output)
 
         return final_output

@@ -103,7 +103,10 @@ class DenseForSparse(tf.keras.layers.Dense):
 
     def __init__(self, reg_lambda: float = 0, **kwargs: Any) -> None:
 
-        regularizer = None
+        if reg_lambda > 0:
+            regularizer = tf.keras.regularizers.l2(reg_lambda)
+        else:
+            regularizer = None
 
         super().__init__(kernel_regularizer=regularizer, **kwargs)
 
