@@ -422,7 +422,9 @@ The <code class="docutils literal notranslate"><span class="pre">slot_mappings</
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">&quot;cuisine&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_entity</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="s2">&quot;cuisine&quot;</span><span class="p">,</span> <span class="n">not_intent</span><span class="o">=</span><span class="s2">&quot;chitchat&quot;</span><span class="p">),</span>
         <span class="s2">&quot;num_people&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">from_entity</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;inform&quot;</span><span class="p">,</span> <span class="s2">&quot;request_restaurant&quot;</span><span class="p">]),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_entity</span><span class="p">(</span>
+                <span class="n">entity</span><span class="o">=</span><span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;inform&quot;</span><span class="p">,</span> <span class="s2">&quot;request_restaurant&quot;</span><span class="p">]</span>
+            <span class="p">),</span>
         <span class="p">],</span>
         <span class="s2">&quot;outdoor_seating&quot;</span><span class="p">:</span> <span class="p">[</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">from_entity</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="s2">&quot;seating&quot;</span><span class="p">),</span>
