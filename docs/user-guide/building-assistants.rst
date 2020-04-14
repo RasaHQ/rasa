@@ -155,9 +155,10 @@ For example:
 
 
 While it's good to test the bot interactively, we should also add end to end test cases that
-can later be included as part of our CI/CD system. `End to end stories <https://rasa.com/docs/rasa/user-guide/testing-your-assistant/#end-to-end-testing>`_
-include NLU data, so that both components of Rasa can be tested.  Create a file called
-``test_stories.md`` in the root directory with some test cases:
+can later be included as part of a :ref:`CI/CD system <setting-up-ci-cd>`. End-to-end :ref:`test conversations <end-to-end-testing>`
+include NLU data, so that both components of Rasa can be tested. The file
+``tests/conversation_tests.md`` contains example test conversations. Delete all the test conversations and replace
+them with some test conversations for your assistant so far:
 
 .. code-block:: md
 
@@ -185,7 +186,7 @@ To test our model against the test file, run the command:
 
 .. code-block:: bash
 
-   rasa test --e2e --stories test_stories.md
+   rasa test --stories tests/conversation_tests.md
 
 The test command will produce a directory named ``results``. It should contain a file
 called ``failed_stories.md``, where any test cases that failed will be printed. It will
