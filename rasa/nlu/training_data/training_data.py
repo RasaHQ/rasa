@@ -75,7 +75,7 @@ class TrainingData:
             nlg_stories,
         )
 
-    def filter_training_examples(self, condition: Callable[[Message], bool]):
+    def filter_training_examples(self, condition: Callable[[Message], bool]) -> "TrainingData":
         """Filter training examples.
 
         Args:
@@ -94,7 +94,7 @@ class TrainingData:
             self.lookup_tables,
         )
 
-    def filter_by_intent(self, intent: Text):
+    def filter_by_intent(self, intent: Text) -> "TrainingData":
         """Filter training examples."""
         raise_warning(
             "The `filter_by_intent` function is deprecated. "
@@ -102,7 +102,7 @@ class TrainingData:
             DeprecationWarning,
             stacklevel=2,
         )
-        self.filter_training_examples(
+        return self.filter_training_examples(
             lambda ex: intent == ex.get("intent")
         )
 
