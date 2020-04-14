@@ -20,7 +20,7 @@ Getting Credentials
 
   2. Activate the following features:
 
-    - `Interactive Components <https://api.slack.com/reference/block-kit/interactive-components>`_ (if your bot uses any, e.g. buttons)
+    - Interactivity & Shortcuts > Interactivity (if your bot uses any `interactive components <https://api.slack.com/reference/block-kit/interactive-components>`_ , e.g. buttons)
     - Event subscriptions > Subscribe to bot events: chat.write, message.channels, message.groups, message.im & message.mpim
     - App Home
       - Always Show My Bot as Online
