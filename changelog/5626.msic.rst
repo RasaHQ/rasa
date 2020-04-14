@@ -1,0 +1,1 @@
+Move ``tfa.activations.gelu(x)`` from ``DIETClassifier`` to transformer block.
