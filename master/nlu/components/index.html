@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Components</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Entity Extraction" href="../entity-extraction/" />
@@ -245,6 +246,8 @@ Natural Language Understanding pipeline" />
               <a href="../../../1.4.6/nlu/components/">1.4.6</a>
               <a href="../../../1.3.10/nlu/components/">1.3.10</a>
               <a href="../../../1.2.9/nlu/components/">1.2.9</a>
+              <a href="../../../1.1.8/nlu/components/">1.1.8</a>
+              <a href="../../../1.0.9/nlu/components/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -287,61 +290,54 @@ component in Rasa Open Source. If you want to build a custom component, check
 out <a class="reference internal" href="../../api/custom-nlu-components/#custom-nlu-components"><span class="std std-ref">Custom NLU Components</span></a>.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#word-vector-sources" id="id26">Word Vector Sources</a></p>
-<ul>
-<li><p><a class="reference internal" href="#mitienlp" id="id27">MitieNLP</a></p></li>
-<li><p><a class="reference internal" href="#spacynlp" id="id28">SpacyNLP</a></p></li>
-<li><p><a class="reference internal" href="#hftransformersnlp" id="id29">HFTransformersNLP</a></p></li>
+<li><a class="reference internal" href="#word-vector-sources" id="id26">Word Vector Sources</a><ul>
+<li><a class="reference internal" href="#mitienlp" id="id27">MitieNLP</a></li>
+<li><a class="reference internal" href="#spacynlp" id="id28">SpacyNLP</a></li>
+<li><a class="reference internal" href="#hftransformersnlp" id="id29">HFTransformersNLP</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#tokenizers" id="id30">Tokenizers</a></p>
-<ul>
-<li><p><a class="reference internal" href="#whitespacetokenizer" id="id31">WhitespaceTokenizer</a></p></li>
-<li><p><a class="reference internal" href="#jiebatokenizer" id="id32">JiebaTokenizer</a></p></li>
-<li><p><a class="reference internal" href="#mitietokenizer" id="id33">MitieTokenizer</a></p></li>
-<li><p><a class="reference internal" href="#spacytokenizer" id="id34">SpacyTokenizer</a></p></li>
-<li><p><a class="reference internal" href="#converttokenizer" id="id35">ConveRTTokenizer</a></p></li>
-<li><p><a class="reference internal" href="#languagemodeltokenizer" id="id36">LanguageModelTokenizer</a></p></li>
+<li><a class="reference internal" href="#tokenizers" id="id30">Tokenizers</a><ul>
+<li><a class="reference internal" href="#whitespacetokenizer" id="id31">WhitespaceTokenizer</a></li>
+<li><a class="reference internal" href="#jiebatokenizer" id="id32">JiebaTokenizer</a></li>
+<li><a class="reference internal" href="#mitietokenizer" id="id33">MitieTokenizer</a></li>
+<li><a class="reference internal" href="#spacytokenizer" id="id34">SpacyTokenizer</a></li>
+<li><a class="reference internal" href="#converttokenizer" id="id35">ConveRTTokenizer</a></li>
+<li><a class="reference internal" href="#languagemodeltokenizer" id="id36">LanguageModelTokenizer</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#text-featurizers" id="id37">Text Featurizers</a></p>
-<ul>
-<li><p><a class="reference internal" href="#mitiefeaturizer" id="id38">MitieFeaturizer</a></p></li>
-<li><p><a class="reference internal" href="#spacyfeaturizer" id="id39">SpacyFeaturizer</a></p></li>
-<li><p><a class="reference internal" href="#convertfeaturizer" id="id40">ConveRTFeaturizer</a></p></li>
-<li><p><a class="reference internal" href="#languagemodelfeaturizer" id="id41">LanguageModelFeaturizer</a></p></li>
-<li><p><a class="reference internal" href="#regexfeaturizer" id="id42">RegexFeaturizer</a></p></li>
-<li><p><a class="reference internal" href="#countvectorsfeaturizer" id="id43">CountVectorsFeaturizer</a></p></li>
-<li><p><a class="reference internal" href="#lexicalsyntacticfeaturizer" id="id44">LexicalSyntacticFeaturizer</a></p></li>
+<li><a class="reference internal" href="#text-featurizers" id="id37">Text Featurizers</a><ul>
+<li><a class="reference internal" href="#mitiefeaturizer" id="id38">MitieFeaturizer</a></li>
+<li><a class="reference internal" href="#spacyfeaturizer" id="id39">SpacyFeaturizer</a></li>
+<li><a class="reference internal" href="#convertfeaturizer" id="id40">ConveRTFeaturizer</a></li>
+<li><a class="reference internal" href="#languagemodelfeaturizer" id="id41">LanguageModelFeaturizer</a></li>
+<li><a class="reference internal" href="#regexfeaturizer" id="id42">RegexFeaturizer</a></li>
+<li><a class="reference internal" href="#countvectorsfeaturizer" id="id43">CountVectorsFeaturizer</a></li>
+<li><a class="reference internal" href="#lexicalsyntacticfeaturizer" id="id44">LexicalSyntacticFeaturizer</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#intent-classifiers" id="id45">Intent Classifiers</a></p>
-<ul>
-<li><p><a class="reference internal" href="#mitieintentclassifier" id="id46">MitieIntentClassifier</a></p></li>
-<li><p><a class="reference internal" href="#sklearnintentclassifier" id="id47">SklearnIntentClassifier</a></p></li>
-<li><p><a class="reference internal" href="#embeddingintentclassifier" id="id48">EmbeddingIntentClassifier</a></p></li>
-<li><p><a class="reference internal" href="#keywordintentclassifier" id="id49">KeywordIntentClassifier</a></p></li>
-<li><p><a class="reference internal" href="#dietclassifier" id="id50">DIETClassifier</a></p></li>
+<li><a class="reference internal" href="#intent-classifiers" id="id45">Intent Classifiers</a><ul>
+<li><a class="reference internal" href="#mitieintentclassifier" id="id46">MitieIntentClassifier</a></li>
+<li><a class="reference internal" href="#sklearnintentclassifier" id="id47">SklearnIntentClassifier</a></li>
+<li><a class="reference internal" href="#embeddingintentclassifier" id="id48">EmbeddingIntentClassifier</a></li>
+<li><a class="reference internal" href="#keywordintentclassifier" id="id49">KeywordIntentClassifier</a></li>
+<li><a class="reference internal" href="#dietclassifier" id="id50">DIETClassifier</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#entity-extractors" id="id51">Entity Extractors</a></p>
-<ul>
-<li><p><a class="reference internal" href="#mitieentityextractor" id="id52">MitieEntityExtractor</a></p></li>
-<li><p><a class="reference internal" href="#spacyentityextractor" id="id53">SpacyEntityExtractor</a></p></li>
-<li><p><a class="reference internal" href="#entitysynonymmapper" id="id54">EntitySynonymMapper</a></p></li>
-<li><p><a class="reference internal" href="#crfentityextractor" id="id55">CRFEntityExtractor</a></p></li>
-<li><p><a class="reference internal" href="#ducklinghttpextractor" id="id56">DucklingHTTPExtractor</a></p></li>
-<li><p><a class="reference internal" href="#id20" id="id57">DIETClassifier</a></p></li>
+<li><a class="reference internal" href="#entity-extractors" id="id51">Entity Extractors</a><ul>
+<li><a class="reference internal" href="#mitieentityextractor" id="id52">MitieEntityExtractor</a></li>
+<li><a class="reference internal" href="#spacyentityextractor" id="id53">SpacyEntityExtractor</a></li>
+<li><a class="reference internal" href="#entitysynonymmapper" id="id54">EntitySynonymMapper</a></li>
+<li><a class="reference internal" href="#crfentityextractor" id="id55">CRFEntityExtractor</a></li>
+<li><a class="reference internal" href="#ducklinghttpextractor" id="id56">DucklingHTTPExtractor</a></li>
+<li><a class="reference internal" href="#id20" id="id57">DIETClassifier</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#selectors" id="id58">Selectors</a></p>
-<ul>
-<li><p><a class="reference internal" href="#responseselector" id="id59">ResponseSelector</a></p></li>
+<li><a class="reference internal" href="#selectors" id="id58">Selectors</a><ul>
+<li><a class="reference internal" href="#responseselector" id="id59">ResponseSelector</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#combined-entity-extractors-and-intent-classifiers" id="id60">Combined Entity Extractors and Intent Classifiers</a></p>
-<ul>
-<li><p><a class="reference internal" href="#diet-classifier" id="id61">DIETClassifier</a></p></li>
+<li><a class="reference internal" href="#combined-entity-extractors-and-intent-classifiers" id="id60">Combined Entity Extractors and Intent Classifiers</a><ul>
+<li><a class="reference internal" href="#diet-classifier" id="id61">DIETClassifier</a></li>
 </ul>
 </li>
 </ul>
@@ -352,101 +348,111 @@ out <a class="reference internal" href="../../api/custom-nlu-components/#custom-
 word vectors in your pipeline.</p>
 <div class="section" id="mitienlp">
 <span id="id2"></span><h3><a class="toc-backref" href="#id27">MitieNLP</a><a class="headerlink" href="#mitienlp" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>MITIE initializer</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p>Nothing</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p>Nothing</p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>Initializes MITIE structures. Every MITIE component relies on this,
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">MITIE initializer</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Initializes MITIE structures. Every MITIE component relies on this,
 hence this should be put at the beginning
 of every pipeline that uses any MITIE components.</p>
-</dd>
-<dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><p>The MITIE library needs a language model file, that <strong>must</strong> be specified in
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">The MITIE library needs a language model file, that <strong>must</strong> be specified in
 the configuration:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieNLP&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieNLP&quot;</span>
   <span class="c1"># language model to load</span>
-  <span class="nt">model</span><span class="p">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
 </pre></div>
 </div>
-<p>For more information where to get that file from, head over to
+<p class="last">For more information where to get that file from, head over to
 <a class="reference internal" href="../../user-guide/installation/#install-mitie"><span class="std std-ref">installing MITIE</span></a>.</p>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="spacynlp">
 <span id="id3"></span><h3><a class="toc-backref" href="#id28">SpacyNLP</a><a class="headerlink" href="#spacynlp" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>spaCy language initializer</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p>Nothing</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p>Nothing</p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>Initializes spaCy structures. Every spaCy component relies on this, hence this should be put at the beginning
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">spaCy language initializer</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Initializes spaCy structures. Every spaCy component relies on this, hence this should be put at the beginning
 of every pipeline that uses any spaCy components.</p>
-</dd>
-<dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><p>You need to specify the language model to use.
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">You need to specify the language model to use.
 By default the language configured in the pipeline will be used as the language model name.
 If the spaCy model to be used has a name that is different from the language tag (<code class="docutils literal notranslate"><span class="pre">&quot;en&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;de&quot;</span></code>, etc.),
 the model name can be specified using the configuration variable <code class="docutils literal notranslate"><span class="pre">model</span></code>.
 The name will be passed to <code class="docutils literal notranslate"><span class="pre">spacy.load(name)</span></code>.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyNLP&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyNLP&quot;</span>
   <span class="c1"># language model to load</span>
-  <span class="nt">model</span><span class="p">:</span> <span class="s">&quot;en_core_web_md&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;en_core_web_md&quot;</span>
 
   <span class="c1"># when retrieving word vectors, this will decide if the casing</span>
   <span class="c1"># of the word is relevant. E.g. `hello` and `Hello` will</span>
   <span class="c1"># retrieve the same vector, if set to `False`. For some</span>
   <span class="c1"># applications and models it makes sense to differentiate</span>
   <span class="c1"># between these two words, therefore setting this to `True`.</span>
-  <span class="nt">case_sensitive</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+  <span class="l l-Scalar l-Scalar-Plain">case_sensitive</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
 </pre></div>
 </div>
-<p>For more information on how to download the spaCy models, head over to
+<p class="last">For more information on how to download the spaCy models, head over to
 <a class="reference internal" href="../../user-guide/installation/#install-spacy"><span class="std std-ref">installing SpaCy</span></a>.</p>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="hftransformersnlp">
 <span id="id4"></span><h3><a class="toc-backref" href="#id29">HFTransformersNLP</a><a class="headerlink" href="#hftransformersnlp" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>HuggingFace’s Transformers based pre-trained language model initializer</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p>Nothing</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p>Nothing</p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>Initializes specified pre-trained language model from HuggingFace’s <a class="reference external" href="https://huggingface.co/transformers/">Transformers library</a>.  The component applies language model specific tokenization and
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">HuggingFace’s Transformers based pre-trained language model initializer</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Initializes specified pre-trained language model from HuggingFace’s <a class="reference external" href="https://huggingface.co/transformers/">Transformers library</a>.  The component applies language model specific tokenization and
 featurization to compute sequence and sentence level representations for each example in the training data.
 Include <a class="reference internal" href="#languagemodeltokenizer"><span class="std std-ref">LanguageModelTokenizer</span></a> and <a class="reference internal" href="#languagemodelfeaturizer"><span class="std std-ref">LanguageModelFeaturizer</span></a> to utilize the output of this
 component for downstream NLU models.</p>
 <blockquote>
 <div><div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>To use <code class="docutils literal notranslate"><span class="pre">HFTransformersNLP</span></code> component, install Rasa Open Source with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[transformers]</span></code>.</p>
+<p class="first admonition-title">Note</p>
+<p class="last">To use <code class="docutils literal notranslate"><span class="pre">HFTransformersNLP</span></code> component, install Rasa Open Source with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[transformers]</span></code>.</p>
 </div>
 </div></blockquote>
-</dd>
-<dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><p>You should specify what language model to load via the parameter <code class="docutils literal notranslate"><span class="pre">model_name</span></code>. See the below table for the
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">You should specify what language model to load via the parameter <code class="docutils literal notranslate"><span class="pre">model_name</span></code>. See the below table for the
 available language models.
 Additionally, you can also specify the architecture variation of the chosen language model by specifying the
 parameter <code class="docutils literal notranslate"><span class="pre">model_weights</span></code>.
@@ -472,20 +478,22 @@ If left empty, it uses the default model architecture that original Transformers
 </pre></div>
 </div>
 <p>The following configuration loads the language model BERT:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">HFTransformersNLP</span>
+<div class="last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">HFTransformersNLP</span>
     <span class="c1"># Name of the language model to use</span>
-    <span class="nt">model_name</span><span class="p">:</span> <span class="s">&quot;bert&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">model_name</span><span class="p p-Indicator">:</span> <span class="s">&quot;bert&quot;</span>
     <span class="c1"># Pre-Trained weights to be loaded</span>
-    <span class="nt">model_weights</span><span class="p">:</span> <span class="s">&quot;bert-base-uncased&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">model_weights</span><span class="p p-Indicator">:</span> <span class="s">&quot;bert-base-uncased&quot;</span>
 
     <span class="c1"># An optional path to a specific directory to download and cache the pre-trained model weights.</span>
     <span class="c1"># The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .</span>
-    <span class="nt">cache_dir</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">null</span>
+    <span class="l l-Scalar l-Scalar-Plain">cache_dir</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">null</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="section" id="tokenizers">
@@ -494,14 +502,15 @@ If left empty, it uses the default model architecture that original Transformers
 If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
 modeling hierarchical intent structure, use the following flags with any tokenizer:</p>
 <ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">intent_tokenization_flag</span></code> indicates whether to tokenize intent labels or not. Set it to <code class="docutils literal notranslate"><span class="pre">True</span></code>, so that intent
-labels are tokenized.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code> sets the delimiter string to split the intent labels, default is underscore
+<li><p class="first"><code class="docutils literal notranslate"><span class="pre">intent_tokenization_flag</span></code> indicates whether to tokenize intent labels or not. Set it to <code class="docutils literal notranslate"><span class="pre">True</span></code>, so that intent
+labels are tokenized.</p>
+</li>
+<li><p class="first"><code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code> sets the delimiter string to split the intent labels, default is underscore
 (<code class="docutils literal notranslate"><span class="pre">_</span></code>).</p>
 <blockquote>
 <div><div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>All tokenizers add an additional token <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> to the end of the list of tokens when tokenizing
+<p class="first admonition-title">Note</p>
+<p class="last">All tokenizers add an additional token <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> to the end of the list of tokens when tokenizing
 text and responses.</p>
 </div>
 </div></blockquote>
@@ -509,24 +518,26 @@ text and responses.</p>
 </ul>
 <div class="section" id="whitespacetokenizer">
 <span id="id6"></span><h3><a class="toc-backref" href="#id31">WhitespaceTokenizer</a><a class="headerlink" href="#whitespacetokenizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Tokenizer using whitespaces as a separator</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p>Nothing</p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>Creates a token for every whitespace separated character sequence.</p>
-</dd>
-<dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><p>Make the tokenizer case insensitive by adding the <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">False</span></code> option, the
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Tokenizer using whitespaces as a separator</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates a token for every whitespace separated character sequence.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">Make the tokenizer case insensitive by adding the <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">False</span></code> option, the
 default being <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">True</span></code>.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
+<div class="last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
   <span class="c1"># Flag to check whether to split intents</span>
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
@@ -535,127 +546,143 @@ default being <code class="docutils literal notranslate"><span class="pre">case_
   <span class="s">&quot;case_sensitive&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="jiebatokenizer">
 <h3><a class="toc-backref" href="#id32">JiebaTokenizer</a><a class="headerlink" href="#jiebatokenizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Tokenizer using Jieba for Chinese language</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p>Nothing</p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>Creates tokens using the Jieba tokenizer specifically for Chinese
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Tokenizer using Jieba for Chinese language</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates tokens using the Jieba tokenizer specifically for Chinese
 language. It will only work for the Chinese language.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>To use <code class="docutils literal notranslate"><span class="pre">JiebaTokenizer</span></code> you need to install Jieba with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">jieba</span></code>.</p>
+<p class="first admonition-title">Note</p>
+<p class="last">To use <code class="docutils literal notranslate"><span class="pre">JiebaTokenizer</span></code> you need to install Jieba with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">jieba</span></code>.</p>
 </div>
-</dd>
-<dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><p>User’s custom dictionary files can be auto loaded by specifying the files’ directory path via <code class="docutils literal notranslate"><span class="pre">dictionary_path</span></code>.
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">User’s custom dictionary files can be auto loaded by specifying the files’ directory path via <code class="docutils literal notranslate"><span class="pre">dictionary_path</span></code>.
 If the <code class="docutils literal notranslate"><span class="pre">dictionary_path</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> (the default), then no custom dictionary will be used.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;JiebaTokenizer&quot;</span>
-  <span class="nt">dictionary_path</span><span class="p">:</span> <span class="s">&quot;path/to/custom/dictionary/dir&quot;</span>
+<div class="last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;JiebaTokenizer&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">dictionary_path</span><span class="p p-Indicator">:</span> <span class="s">&quot;path/to/custom/dictionary/dir&quot;</span>
   <span class="c1"># Flag to check whether to split intents</span>
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="mitietokenizer">
 <h3><a class="toc-backref" href="#id33">MitieTokenizer</a><a class="headerlink" href="#mitietokenizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Tokenizer using MITIE</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#mitienlp"><span class="std std-ref">MitieNLP</span></a></p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>Creates tokens using the MITIE tokenizer.</p>
-</dd>
-<dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieTokenizer&quot;</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Tokenizer using MITIE</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#mitienlp"><span class="std std-ref">MitieNLP</span></a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates tokens using the MITIE tokenizer.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieTokenizer&quot;</span>
   <span class="c1"># Flag to check whether to split intents</span>
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="spacytokenizer">
 <h3><a class="toc-backref" href="#id34">SpacyTokenizer</a><a class="headerlink" href="#spacytokenizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Tokenizer using spaCy</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#spacynlp"><span class="std std-ref">SpacyNLP</span></a></p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>Creates tokens using the spaCy tokenizer.</p>
-</dd>
-<dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyTokenizer&quot;</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Tokenizer using spaCy</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#spacynlp"><span class="std std-ref">SpacyNLP</span></a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates tokens using the spaCy tokenizer.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyTokenizer&quot;</span>
   <span class="c1"># Flag to check whether to split intents</span>
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="converttokenizer">
 <span id="id7"></span><h3><a class="toc-backref" href="#id35">ConveRTTokenizer</a><a class="headerlink" href="#converttokenizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Tokenizer using <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models#convert">ConveRT</a> model.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p>Nothing</p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>Creates tokens using the ConveRT tokenizer. Must be used whenever the <a class="reference internal" href="#convertfeaturizer"><span class="std std-ref">ConveRTFeaturizer</span></a> is used.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Tokenizer using <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models#convert">ConveRT</a> model.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates tokens using the ConveRT tokenizer. Must be used whenever the <a class="reference internal" href="#convertfeaturizer"><span class="std std-ref">ConveRTFeaturizer</span></a> is used.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Since <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> model is trained only on an English corpus of conversations, this tokenizer should only
+<p class="first admonition-title">Note</p>
+<p class="last">Since <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> model is trained only on an English corpus of conversations, this tokenizer should only
 be used if your training data is in English language.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>To use <code class="docutils literal notranslate"><span class="pre">ConveRTTokenizer</span></code>, install Rasa Open Source with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[convert]</span></code>.</p>
+<p class="first admonition-title">Note</p>
+<p class="last">To use <code class="docutils literal notranslate"><span class="pre">ConveRTTokenizer</span></code>, install Rasa Open Source with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[convert]</span></code>.</p>
 </div>
-</dd>
-<dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><p>Make the tokenizer case insensitive by adding the <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">False</span></code> option, the
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">Make the tokenizer case insensitive by adding the <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">False</span></code> option, the
 default being <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">True</span></code>.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ConveRTTokenizer&quot;</span>
+<div class="last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ConveRTTokenizer&quot;</span>
   <span class="c1"># Flag to check whether to split intents</span>
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
@@ -664,36 +691,42 @@ default being <code class="docutils literal notranslate"><span class="pre">case_
   <span class="s">&quot;case_sensitive&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="languagemodeltokenizer">
 <span id="id8"></span><h3><a class="toc-backref" href="#id36">LanguageModelTokenizer</a><a class="headerlink" href="#languagemodeltokenizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Tokenizer from pre-trained language models</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#hftransformersnlp"><span class="std std-ref">HFTransformersNLP</span></a></p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>Creates tokens using the pre-trained language model specified in upstream <a class="reference internal" href="#hftransformersnlp"><span class="std std-ref">HFTransformersNLP</span></a> component.
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Tokenizer from pre-trained language models</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user messages, responses (if present), and intents (if specified)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#hftransformersnlp"><span class="std std-ref">HFTransformersNLP</span></a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates tokens using the pre-trained language model specified in upstream <a class="reference internal" href="#hftransformersnlp"><span class="std std-ref">HFTransformersNLP</span></a> component.
 Must be used whenever the <a class="reference internal" href="#languagemodelfeaturizer"><span class="std std-ref">LanguageModelFeaturizer</span></a> is used.</p>
-</dd>
-<dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;LanguageModelTokenizer&quot;</span>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;LanguageModelTokenizer&quot;</span>
   <span class="c1"># Flag to check whether to split intents</span>
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="section" id="text-featurizers">
@@ -711,165 +744,183 @@ This feature vector can be used in any bag-of-words model.
 The corresponding classifier can therefore decide what kind of features to use.</p>
 <div class="section" id="mitiefeaturizer">
 <span id="id10"></span><h3><a class="toc-backref" href="#id38">MitieFeaturizer</a><a class="headerlink" href="#mitiefeaturizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Creates a vector representation of user message and response (if specified) using the MITIE featurizer.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> for user messages and responses</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#mitienlp"><span class="std std-ref">MitieNLP</span></a></p>
-</dd>
-<dt class="field-even">Type</dt>
-<dd class="field-even"><p>Dense featurizer</p>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>Creates features for entity extraction, intent classification, and response classification using the MITIE
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates a vector representation of user message and response (if specified) using the MITIE featurizer.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> for user messages and responses</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#mitienlp"><span class="std std-ref">MitieNLP</span></a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Dense featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for entity extraction, intent classification, and response classification using the MITIE
 featurizer.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>NOT used by the <code class="docutils literal notranslate"><span class="pre">MitieIntentClassifier</span></code> component. But can be used by any component later in the pipeline
+<p class="first admonition-title">Note</p>
+<p class="last">NOT used by the <code class="docutils literal notranslate"><span class="pre">MitieIntentClassifier</span></code> component. But can be used by any component later in the pipeline
 that makes use of <code class="docutils literal notranslate"><span class="pre">dense_features</span></code>.</p>
 </div>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>The sentence vector, i.e. the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token, can be calculated in two different ways, either via
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">The sentence vector, i.e. the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token, can be calculated in two different ways, either via
 mean or via max pooling. You can specify the pooling method in your configuration file with the option <code class="docutils literal notranslate"><span class="pre">pooling</span></code>.
 The default pooling method is set to <code class="docutils literal notranslate"><span class="pre">mean</span></code>.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieFeaturizer&quot;</span>
+<div class="last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieFeaturizer&quot;</span>
   <span class="c1"># Specify what pooling operation should be used to calculate the vector of</span>
   <span class="c1"># the __CLS__ token. Available options: &#39;mean&#39; and &#39;max&#39;.</span>
   <span class="s">&quot;pooling&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;mean&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="spacyfeaturizer">
 <span id="id11"></span><h3><a class="toc-backref" href="#id39">SpacyFeaturizer</a><a class="headerlink" href="#spacyfeaturizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Creates a vector representation of user message and response (if specified) using the spaCy featurizer.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> for user messages and responses</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#spacynlp"><span class="std std-ref">SpacyNLP</span></a></p>
-</dd>
-<dt class="field-even">Type</dt>
-<dd class="field-even"><p>Dense featurizer</p>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>Creates features for entity extraction, intent classification, and response classification using the spaCy
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates a vector representation of user message and response (if specified) using the spaCy featurizer.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> for user messages and responses</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#spacynlp"><span class="std std-ref">SpacyNLP</span></a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Dense featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for entity extraction, intent classification, and response classification using the spaCy
 featurizer.</p>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>The sentence vector, i.e. the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token, can be calculated in two different ways, either via
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">The sentence vector, i.e. the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token, can be calculated in two different ways, either via
 mean or via max pooling. You can specify the pooling method in your configuration file with the option <code class="docutils literal notranslate"><span class="pre">pooling</span></code>.
 The default pooling method is set to <code class="docutils literal notranslate"><span class="pre">mean</span></code>.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
+<div class="last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
   <span class="c1"># Specify what pooling operation should be used to calculate the vector of</span>
   <span class="c1"># the __CLS__ token. Available options: &#39;mean&#39; and &#39;max&#39;.</span>
   <span class="s">&quot;pooling&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;mean&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="convertfeaturizer">
 <span id="id12"></span><h3><a class="toc-backref" href="#id40">ConveRTFeaturizer</a><a class="headerlink" href="#convertfeaturizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Creates a vector representation of user message and response (if specified) using
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates a vector representation of user message and response (if specified) using
 <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models">ConveRT</a> model.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> for user messages and responses</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#converttokenizer"><span class="std std-ref">ConveRTTokenizer</span></a></p>
-</dd>
-<dt class="field-even">Type</dt>
-<dd class="field-even"><p>Dense featurizer</p>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>Creates features for entity extraction, intent classification, and response selection.
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> for user messages and responses</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#converttokenizer"><span class="std std-ref">ConveRTTokenizer</span></a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Dense featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for entity extraction, intent classification, and response selection.
 It uses the <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures">default signature</a> to compute vector
 representations of input text.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Since <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> model is trained only on an English corpus of conversations, this featurizer should only
+<p class="first admonition-title">Note</p>
+<p class="last">Since <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> model is trained only on an English corpus of conversations, this featurizer should only
 be used if your training data is in English language.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>To use <code class="docutils literal notranslate"><span class="pre">ConveRTTokenizer</span></code>, install Rasa Open Source with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[convert]</span></code>.</p>
+<p class="first admonition-title">Note</p>
+<p class="last">To use <code class="docutils literal notranslate"><span class="pre">ConveRTTokenizer</span></code>, install Rasa Open Source with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[convert]</span></code>.</p>
 </div>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="languagemodelfeaturizer">
 <span id="id13"></span><h3><a class="toc-backref" href="#id41">LanguageModelFeaturizer</a><a class="headerlink" href="#languagemodelfeaturizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Creates a vector representation of user message and response (if specified) using a pre-trained language model.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> for user messages and responses</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#hftransformersnlp"><span class="std std-ref">HFTransformersNLP</span></a> and <a class="reference internal" href="#languagemodeltokenizer"><span class="std std-ref">LanguageModelTokenizer</span></a></p>
-</dd>
-<dt class="field-even">Type</dt>
-<dd class="field-even"><p>Dense featurizer</p>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>Creates features for entity extraction, intent classification, and response selection.
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates a vector representation of user message and response (if specified) using a pre-trained language model.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> for user messages and responses</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#hftransformersnlp"><span class="std std-ref">HFTransformersNLP</span></a> and <a class="reference internal" href="#languagemodeltokenizer"><span class="std std-ref">LanguageModelTokenizer</span></a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Dense featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for entity extraction, intent classification, and response selection.
 Uses the pre-trained language model specified in upstream <a class="reference internal" href="#hftransformersnlp"><span class="std std-ref">HFTransformersNLP</span></a> component to compute vector
 representations of input text.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Please make sure that you use a language model which is pre-trained on the same language corpus as that of your
+<p class="first admonition-title">Note</p>
+<p class="last">Please make sure that you use a language model which is pre-trained on the same language corpus as that of your
 training data.</p>
 </div>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>Include <a class="reference internal" href="#hftransformersnlp"><span class="std std-ref">HFTransformersNLP</span></a> and <a class="reference internal" href="#languagemodeltokenizer"><span class="std std-ref">LanguageModelTokenizer</span></a> components before this component. Use
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">Include <a class="reference internal" href="#hftransformersnlp"><span class="std std-ref">HFTransformersNLP</span></a> and <a class="reference internal" href="#languagemodeltokenizer"><span class="std std-ref">LanguageModelTokenizer</span></a> components before this component. Use
 <a class="reference internal" href="#languagemodeltokenizer"><span class="std std-ref">LanguageModelTokenizer</span></a> to ensure tokens are correctly set for all components throughout the pipeline.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;LanguageModelFeaturizer&quot;</span>
+<div class="last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;LanguageModelFeaturizer&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="regexfeaturizer">
 <span id="id14"></span><h3><a class="toc-backref" href="#id42">RegexFeaturizer</a><a class="headerlink" href="#regexfeaturizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Creates a vector representation of user message using regular expressions.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user messages and <code class="docutils literal notranslate"><span class="pre">tokens.pattern</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code></p>
-</dd>
-<dt class="field-even">Type</dt>
-<dd class="field-even"><p>Sparse featurizer</p>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>Creates features for entity extraction and intent classification.
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates a vector representation of user message using regular expressions.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user messages and <code class="docutils literal notranslate"><span class="pre">tokens.pattern</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Sparse featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for entity extraction and intent classification.
 During training the <code class="docutils literal notranslate"><span class="pre">RegexFeaturizer</span></code> creates a list of regular expressions defined in the training
 data format.
 For each regex, a feature will be set marking whether this expression was found in the user message or not.
@@ -877,38 +928,42 @@ All features will later be fed into an intent classifier / entity extractor to s
 the classifier has learned during the training phase, that this set feature indicates a certain intent / entity).
 Regex features for entity extraction are currently only supported by the <a class="reference internal" href="#crfentityextractor"><span class="std std-ref">CRFEntityExtractor</span></a> and the
 <a class="reference internal" href="#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> components!</p>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="countvectorsfeaturizer">
 <span id="id15"></span><h3><a class="toc-backref" href="#id43">CountVectorsFeaturizer</a><a class="headerlink" href="#countvectorsfeaturizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Creates bag-of-words representation of user messages, intents, and responses.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user messages, intents, and responses</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code></p>
-</dd>
-<dt class="field-even">Type</dt>
-<dd class="field-even"><p>Sparse featurizer</p>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>Creates features for intent classification and response selection.
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates bag-of-words representation of user messages, intents, and responses.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user messages, intents, and responses</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Sparse featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for intent classification and response selection.
 Creates bag-of-words representation of user message, intent, and response using
 <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn’s CountVectorizer</a>.
 All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.</p>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>See <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn’s CountVectorizer docs</a>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">See <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn’s CountVectorizer docs</a>
 for detailed description of the configuration parameters.</p>
 <p>This featurizer can be configured to use word or character n-grams, using the <code class="docutils literal notranslate"><span class="pre">analyzer</span></code> configuration parameter.
 By default <code class="docutils literal notranslate"><span class="pre">analyzer</span></code> is set to <code class="docutils literal notranslate"><span class="pre">word</span></code> so word token counts are used as features.
@@ -916,21 +971,21 @@ If you want to use character n-grams, set <code class="docutils literal notransl
 The lower and upper boundaries of the n-grams can be configured via the parameters <code class="docutils literal notranslate"><span class="pre">min_ngram</span></code> and <code class="docutils literal notranslate"><span class="pre">max_ngram</span></code>.
 By default both of them are set to <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Option <code class="docutils literal notranslate"><span class="pre">char_wb</span></code> creates character n-grams only from text inside word boundaries;
+<p class="first admonition-title">Note</p>
+<p class="last">Option <code class="docutils literal notranslate"><span class="pre">char_wb</span></code> creates character n-grams only from text inside word boundaries;
 n-grams at the edges of words are padded with space.
 This option can be used to create <a class="reference external" href="https://arxiv.org/abs/1810.07150">Subword Semantic Hashing</a>.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For character n-grams do not forget to increase <code class="docutils literal notranslate"><span class="pre">min_ngram</span></code> and <code class="docutils literal notranslate"><span class="pre">max_ngram</span></code> parameters.
+<p class="first admonition-title">Note</p>
+<p class="last">For character n-grams do not forget to increase <code class="docutils literal notranslate"><span class="pre">min_ngram</span></code> and <code class="docutils literal notranslate"><span class="pre">max_ngram</span></code> parameters.
 Otherwise the vocabulary will contain only single letters.</p>
 </div>
 <p>Handling Out-Of-Vocabulary (OOV) words:</p>
 <blockquote>
 <div><div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Enabled only if <code class="docutils literal notranslate"><span class="pre">analyzer</span></code> is <code class="docutils literal notranslate"><span class="pre">word</span></code>.</p>
+<p class="first admonition-title">Note</p>
+<p class="last">Enabled only if <code class="docutils literal notranslate"><span class="pre">analyzer</span></code> is <code class="docutils literal notranslate"><span class="pre">word</span></code>.</p>
 </div>
 <p>Since the training is performed on limited vocabulary data, it cannot be guaranteed that during prediction
 an algorithm will not encounter an unknown word (a word that were not seen during training).
@@ -943,23 +998,23 @@ Then an algorithm will likely classify a message with unknown words as this inte
 <p>You can either set the <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> or a list of words <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code>:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> set a keyword for unseen words; if training data contains <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> as words in some
+<li><code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> set a keyword for unseen words; if training data contains <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> as words in some
 messages, during prediction the words that were not seen during training will be substituted with
 provided <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code>; if <code class="docutils literal notranslate"><span class="pre">OOV_token=None</span></code> (default behaviour) words that were not seen during
-training will be ignored during prediction time;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> set a list of words to be treated as <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> during training; if a list of words
+training will be ignored during prediction time;</li>
+<li><code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> set a list of words to be treated as <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> during training; if a list of words
 that should be treated as Out-Of-Vocabulary is known, it can be set to <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> instead of manually
-changing it in training data or using custom preprocessor.</p></li>
+changing it in training data or using custom preprocessor.</li>
 </ul>
 </div></blockquote>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This featurizer creates a bag-of-words representation by <strong>counting</strong> words,
+<p class="first admonition-title">Note</p>
+<p class="last">This featurizer creates a bag-of-words representation by <strong>counting</strong> words,
 so the number of <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> in the sentence might be important.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Providing <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> is optional, training data can contain <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> input manually or by custom
+<p class="first admonition-title">Note</p>
+<p class="last">Providing <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> is optional, training data can contain <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> input manually or by custom
 additional preprocessor.
 Unseen words will be substituted with <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> <strong>only</strong> if this token is present in the training
 data or <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> list is provided.</p>
@@ -968,8 +1023,8 @@ data or <code class="docutils literal notranslate"><span class="pre">OOV_words</
 <p>If you want to share the vocabulary between user messages and intents, you need to set the option
 <code class="docutils literal notranslate"><span class="pre">use_shared_vocab</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code>. In that case a common vocabulary set between tokens in intents and user messages
 is build.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
   <span class="c1"># Analyzer to use, either &#39;word&#39;, &#39;char&#39;, or &#39;char_wb&#39;</span>
   <span class="s">&quot;analyzer&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;word&quot;</span>
   <span class="c1"># Set the lower and upper boundaries for the n-grams</span>
@@ -981,7 +1036,7 @@ is build.</p>
   <span class="s">&quot;use_shared_vocab&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
 </pre></div>
 </div>
-<div class="toggle docutils container">
+<div class="toggle last docutils container">
 <div class="header docutils container">
 <p>The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.</p>
@@ -1034,31 +1089,35 @@ However, additional parameters exist that can be adapted.</p>
 </pre></div>
 </div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="lexicalsyntacticfeaturizer">
 <span id="id16"></span><h3><a class="toc-backref" href="#id44">LexicalSyntacticFeaturizer</a><a class="headerlink" href="#lexicalsyntacticfeaturizer" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Creates lexical and syntactic features for a user message to support entity extraction.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user messages</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code></p>
-</dd>
-<dt class="field-even">Type</dt>
-<dd class="field-even"><p>Sparse featurizer</p>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>Creates features for entity extraction.
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates lexical and syntactic features for a user message to support entity extraction.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user messages</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Sparse featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for entity extraction.
 Moves with a sliding window over every token in the user message and creates features according to the
 configuration (see below). As a default configuration is present, you don’t need to specify a configuration.</p>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>You can configure what kind of lexical and syntactic features the featurizer should extract.
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">You can configure what kind of lexical and syntactic features the featurizer should extract.
 The following features are available:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>==============  ==========================================================================================
 Feature Name    Description
@@ -1087,8 +1146,8 @@ previous tokens, the current token, and the next tokens in the sliding window.
 You define the features as a [before, token, after] array.
 If you want to define features for the token before, the current token, and the token after,
 your features configuration would look like this:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
   <span class="s">&quot;features&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span>
     <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">],</span>
     <span class="p p-Indicator">[</span><span class="s">&quot;BOS&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;EOS&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;digit&quot;</span><span class="p p-Indicator">],</span>
@@ -1097,12 +1156,14 @@ your features configuration would look like this:</p>
 </pre></div>
 </div>
 <p>This configuration is also the default configuration.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you want to make use of <code class="docutils literal notranslate"><span class="pre">pos</span></code> or <code class="docutils literal notranslate"><span class="pre">pos2</span></code> you need to add <code class="docutils literal notranslate"><span class="pre">SpacyTokenizer</span></code> to your pipeline.</p>
+<div class="last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you want to make use of <code class="docutils literal notranslate"><span class="pre">pos</span></code> or <code class="docutils literal notranslate"><span class="pre">pos2</span></code> you need to add <code class="docutils literal notranslate"><span class="pre">SpacyTokenizer</span></code> to your pipeline.</p>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="section" id="intent-classifiers">
@@ -1110,55 +1171,61 @@ your features configuration would look like this:</p>
 <p>Intent classifiers assign one of the intents defined in the domain file to incoming user messages.</p>
 <div class="section" id="mitieintentclassifier">
 <h3><a class="toc-backref" href="#id46">MitieIntentClassifier</a><a class="headerlink" href="#mitieintentclassifier" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>MITIE intent classifier (using a
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">MITIE intent classifier (using a
 <a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py">text categorizer</a>)</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">intent</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user message and <a class="reference internal" href="#mitienlp"><span class="std std-ref">MitieNLP</span></a></p>
-</dd>
-<dt class="field-even">Output-Example</dt>
-<dd class="field-even"><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">intent</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code> for user message and <a class="reference internal" href="#mitienlp"><span class="std std-ref">MitieNLP</span></a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.98343</span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>This classifier uses MITIE to perform intent classification. The underlying classifier
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">This classifier uses MITIE to perform intent classification. The underlying classifier
 is using a multi-class linear SVM with a sparse linear kernel (see
 <a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222">MITIE trainer code</a>).</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This classifier does not rely on any featurizer as it extracts features on its own.</p>
+<p class="first admonition-title">Note</p>
+<p class="last">This classifier does not rely on any featurizer as it extracts features on its own.</p>
 </div>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieIntentClassifier&quot;</span>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieIntentClassifier&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="sklearnintentclassifier">
 <h3><a class="toc-backref" href="#id47">SklearnIntentClassifier</a><a class="headerlink" href="#sklearnintentclassifier" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Sklearn intent classifier</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">intent</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_ranking</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> for user messages</p>
-</dd>
-<dt class="field-even">Output-Example</dt>
-<dd class="field-even"><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Sklearn intent classifier</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">intent</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_ranking</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> for user messages</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.78343</span><span class="p">},</span>
     <span class="nt">&quot;intent_ranking&quot;</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
@@ -1173,27 +1240,27 @@ is using a multi-class linear SVM with a sparse linear kernel (see
 <span class="p">}</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. It also provides
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. It also provides
 rankings of the labels that did not “win”. The <code class="docutils literal notranslate"><span class="pre">SklearnIntentClassifier</span></code> needs to be preceded by a dense
 featurizer in the pipeline. This dense featurizer creates the features used for the classification.
 For more information about the algorithm itself, take a look at the
 <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html">GridSearchCV</a>
 documentation.</p>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>During the training of the SVM a hyperparameter search is run to find the best parameter set.
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">During the training of the SVM a hyperparameter search is run to find the best parameter set.
 In the configuration you can specify the parameters that will get tried.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
+<div class="last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
   <span class="c1"># Specifies the list of regularization values to</span>
   <span class="c1"># cross-validate over for C-SVM.</span>
   <span class="c1"># This is used with the ``kernel`` hyperparameter in GridSearchCV.</span>
-  <span class="nt">C</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">10</span><span class="p p-Indicator">,</span> <span class="nv">20</span><span class="p p-Indicator">,</span> <span class="nv">100</span><span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">C</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">10</span><span class="p p-Indicator">,</span> <span class="nv">20</span><span class="p p-Indicator">,</span> <span class="nv">100</span><span class="p p-Indicator">]</span>
   <span class="c1"># Specifies the kernel to use with C-SVM.</span>
   <span class="c1"># This is used with the ``C`` hyperparameter in GridSearchCV.</span>
-  <span class="nt">kernels</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;linear&quot;</span><span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">kernels</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;linear&quot;</span><span class="p p-Indicator">]</span>
   <span class="c1"># Gamma parameter of the C-SVM.</span>
   <span class="s">&quot;gamma&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">0.1</span><span class="p p-Indicator">]</span>
   <span class="c1"># We try to find a good number of cross folds to use during</span>
@@ -1204,28 +1271,32 @@ In the configuration you can specify the parameters that will get tried.</p>
   <span class="s">&quot;scoring_function&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;f1_weighted&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="embeddingintentclassifier">
 <span id="embedding-intent-classifier"></span><h3><a class="toc-backref" href="#id48">EmbeddingIntentClassifier</a><a class="headerlink" href="#embeddingintentclassifier" title="Permalink to this headline">¶</a></h3>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> is deprecated and should be replaced by <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code>. See
+<p class="first admonition-title">Warning</p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> is deprecated and should be replaced by <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code>. See
 <a class="reference internal" href="../../migration-guide/#migration-to-rasa-1-8"><span class="std std-ref">migration guide</span></a> for more details.</p>
 </div>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Embedding intent classifier for intent classification</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">intent</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_ranking</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> and/or <code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user messages, and optionally the intent</p>
-</dd>
-<dt class="field-even">Output-Example</dt>
-<dd class="field-even"><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Embedding intent classifier for intent classification</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">intent</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_ranking</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> and/or <code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user messages, and optionally the intent</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.78343</span><span class="p">},</span>
     <span class="nt">&quot;intent_ranking&quot;</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
@@ -1240,35 +1311,35 @@ In the configuration you can specify the parameters that will get tried.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>The <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> embeds user inputs and intent labels into the same space.
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">The <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> embeds user inputs and intent labels into the same space.
 Supervised embeddings are trained by maximizing similarity between them.
 This algorithm is based on <a class="reference external" href="https://arxiv.org/abs/1709.03856">StarSpace</a>.
 However, in this implementation the loss function is slightly different and
 additional hidden layers are added together with dropout.
 This algorithm also provides similarity rankings of the labels that did not “win”.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If during prediction time a message contains <strong>only</strong> words unseen during training
+<p class="first admonition-title">Note</p>
+<p class="last">If during prediction time a message contains <strong>only</strong> words unseen during training
 and no Out-Of-Vocabulary preprocessor was used, an empty intent <code class="docutils literal notranslate"><span class="pre">None</span></code> is predicted with confidence
 <code class="docutils literal notranslate"><span class="pre">0.0</span></code>. This might happen if you only use the <a class="reference internal" href="#countvectorsfeaturizer"><span class="std std-ref">CountVectorsFeaturizer</span></a> with a <code class="docutils literal notranslate"><span class="pre">word</span></code> analyzer
 as featurizer. If you use the <code class="docutils literal notranslate"><span class="pre">char_wb</span></code> analyzer, you should always get an intent with a confidence
 value <code class="docutils literal notranslate"><span class="pre">&gt;</span> <span class="pre">0.0</span></code>.</p>
 </div>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>You can define a number of hyperparameters to adapt the model.
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">You can define a number of hyperparameters to adapt the model.
 If you want to adapt your model, start by modifying the following parameters:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">epochs</span></code>:
+<li><code class="docutils literal notranslate"><span class="pre">epochs</span></code>:
 This parameter sets the number of times the algorithm will see the training data (default: <code class="docutils literal notranslate"><span class="pre">300</span></code>).
 One <code class="docutils literal notranslate"><span class="pre">epoch</span></code> is equals to one forward pass and one backward pass of all the training examples.
 Sometimes the model needs more epochs to properly learn.
 Sometimes more epochs don’t influence the performance.
-The lower the number of epochs the faster the model is trained.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes</span></code>:
+The lower the number of epochs the faster the model is trained.</li>
+<li><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes</span></code>:
 This parameter allows you to define the number of feed forward layers and their output
 dimensions for user messages and intents (default: <code class="docutils literal notranslate"><span class="pre">text:</span> <span class="pre">[256,</span> <span class="pre">128],</span> <span class="pre">label:</span> <span class="pre">[]</span></code>).
 Every entry in the list corresponds to a feed forward layer.
@@ -1279,24 +1350,24 @@ dimension of 128. If an empty list is used (default behaviour), no feed forward 
 added.
 Make sure to use only positive integer values. Usually, numbers of power of two are used.
 Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
-value before.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">embedding_dimension</span></code>:
+value before.</li>
+<li><code class="docutils literal notranslate"><span class="pre">embedding_dimension</span></code>:
 This parameter defines the output dimension of the embedding layers used inside the model (default: <code class="docutils literal notranslate"><span class="pre">20</span></code>).
 We are using multiple embeddings layers inside the model architecture.
 For example, the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token and the intent is passed on to an embedding layer before
-they are compared and the loss is calculated.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>:
+they are compared and the loss is calculated.</li>
+<li><code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>:
 This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
 in the model (default: <code class="docutils literal notranslate"><span class="pre">0.0</span></code>). The value should be between 0 and 1. If you set <code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>
 to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
 set <code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code> to 1 as this would result in all kernel weights being 0, i.e. the model is not able
-to learn.</p></li>
+to learn.</li>
 </ul>
 </div></blockquote>
 <div class="line-block">
 <div class="line"><br /></div>
 </div>
-<div class="toggle docutils container">
+<div class="toggle last docutils container">
 <div class="header docutils container">
 <p>The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.</p>
@@ -1384,80 +1455,88 @@ However, additional parameters exist that can be adapted.</p>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> and <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> should
+<p class="first admonition-title">Note</p>
+<p class="last">For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> and <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> should
 be between <code class="docutils literal notranslate"><span class="pre">-1</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>There is an option to use linearly increasing batch size. The idea comes from
+<p class="first admonition-title">Note</p>
+<p class="last">There is an option to use linearly increasing batch size. The idea comes from
 <a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>.
 In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[64,</span> <span class="pre">256]</span></code> (default behaviour).
 If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">64</span></code>.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Parameter <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> is set to a negative value to mimic the original
+<p class="first admonition-title">Note</p>
+<p class="last">Parameter <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> is set to a negative value to mimic the original
 starspace algorithm in the case <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">maximum_positive_similarity</span></code>
 and <code class="docutils literal notranslate"><span class="pre">use_maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">False</span></code>.
 See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starspace paper</a> for details.</p>
 </div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="keywordintentclassifier">
 <span id="keyword-intent-classifier"></span><h3><a class="toc-backref" href="#id49">KeywordIntentClassifier</a><a class="headerlink" href="#keywordintentclassifier" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Simple keyword matching intent classifier, intended for small, short-term projects.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">intent</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p>Nothing</p>
-</dd>
-<dt class="field-even">Output-Example</dt>
-<dd class="field-even"><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Simple keyword matching intent classifier, intended for small, short-term projects.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">intent</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>This classifier works by searching a message for keywords.
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">This classifier works by searching a message for keywords.
 The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user
 message.
 The keywords for an intent are the examples of that intent in the NLU training data.
 This means the entire example is the keyword, not the individual words in the example.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This classifier is intended only for small projects or to get started. If
+<p class="first admonition-title">Note</p>
+<p class="last">This classifier is intended only for small projects or to get started. If
 you have few NLU training data, you can take a look at the recommended pipelines in
 <a class="reference internal" href="../choosing-a-pipeline/#choosing-a-pipeline"><span class="std std-ref">Choosing a Pipeline</span></a>.</p>
 </div>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;KeywordIntentClassifier&quot;</span>
-  <span class="nt">case_sensitive</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;KeywordIntentClassifier&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">case_sensitive</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="dietclassifier">
 <h3><a class="toc-backref" href="#id50">DIETClassifier</a><a class="headerlink" href="#dietclassifier" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list simple">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction</p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>You can find the detailed description of the <a class="reference internal" href="#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> under the section
-<cite>Combined Entity Extractors and Intent Classifiers</cite>.</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body">You can find the detailed description of the <a class="reference internal" href="#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> under the section
+<cite>Combined Entity Extractors and Intent Classifiers</cite>.</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="section" id="entity-extractors">
@@ -1465,18 +1544,20 @@ you have few NLU training data, you can take a look at the recommended pipelines
 <p>Entity extractors extract entities, such as person names or locations, from the user message.</p>
 <div class="section" id="mitieentityextractor">
 <h3><a class="toc-backref" href="#id52">MitieEntityExtractor</a><a class="headerlink" href="#mitieentityextractor" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>MITIE entity extraction (using a <a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp">MITIE NER trainer</a>)</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">entities</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#mitienlp"><span class="std std-ref">MitieNLP</span></a> and <code class="docutils literal notranslate"><span class="pre">tokens</span></code></p>
-</dd>
-<dt class="field-even">Output-Example</dt>
-<dd class="field-even"><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">MITIE entity extraction (using a <a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp">MITIE NER trainer</a>)</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">entities</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#mitienlp"><span class="std std-ref">MitieNLP</span></a> and <code class="docutils literal notranslate"><span class="pre">tokens</span></code></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;New York City&quot;</span><span class="p">,</span>
         <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
@@ -1488,38 +1569,42 @@ you have few NLU training data, you can take a look at the recommended pipelines
 <span class="p">}</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">MitieEntityExtractor</span></code> uses the MITIE entity extraction to find entities in a message. The underlying classifier
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">MitieEntityExtractor</span></code> uses the MITIE entity extraction to find entities in a message. The underlying classifier
 is using a multi class linear SVM with a sparse linear kernel and custom features.
 The MITIE component does not provide entity confidence values.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This entity extractor does not rely on any featurizer as it extracts features on its own.</p>
+<p class="first admonition-title">Note</p>
+<p class="last">This entity extractor does not rely on any featurizer as it extracts features on its own.</p>
 </div>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieEntityExtractor&quot;</span>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieEntityExtractor&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="spacyentityextractor">
 <span id="id17"></span><h3><a class="toc-backref" href="#id53">SpacyEntityExtractor</a><a class="headerlink" href="#spacyentityextractor" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>spaCy entity extraction</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">entities</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#spacynlp"><span class="std std-ref">SpacyNLP</span></a></p>
-</dd>
-<dt class="field-even">Output-Example</dt>
-<dd class="field-even"><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">spaCy entity extraction</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">entities</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#spacynlp"><span class="std std-ref">SpacyNLP</span></a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;New York City&quot;</span><span class="p">,</span>
         <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
@@ -1531,40 +1616,44 @@ The MITIE component does not provide entity confidence values.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>Using spaCy this component predicts the entities of a message. spaCy uses a statistical BILOU transition model.
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Using spaCy this component predicts the entities of a message. spaCy uses a statistical BILOU transition model.
 As of now, this component can only use the spaCy builtin entity extraction models and can not be retrained.
 This extractor does not provide any confidence scores.</p>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>Configure which dimensions, i.e. entity types, the spaCy component
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">Configure which dimensions, i.e. entity types, the spaCy component
 should extract. A full list of available dimensions can be found in
 the <a class="reference external" href="https://spacy.io/api/annotation#section-named-entities">spaCy documentation</a>.
 Leaving the dimensions option unspecified will extract all available dimensions.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyEntityExtractor&quot;</span>
+<div class="last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyEntityExtractor&quot;</span>
   <span class="c1"># dimensions to extract</span>
-  <span class="nt">dimensions</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;PERSON&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;LOC&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;ORG&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;PRODUCT&quot;</span><span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">dimensions</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;PERSON&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;LOC&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;ORG&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;PRODUCT&quot;</span><span class="p p-Indicator">]</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="entitysynonymmapper">
 <h3><a class="toc-backref" href="#id54">EntitySynonymMapper</a><a class="headerlink" href="#entitysynonymmapper" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Maps synonymous entity values to the same value.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p>Modifies existing entities that previous entity extraction components found.</p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p>Nothing</p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>If the training data contains defined synonyms, this component will make sure that detected entity values will
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Maps synonymous entity values to the same value.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">Modifies existing entities that previous entity extraction components found.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">If the training data contains defined synonyms, this component will make sure that detected entity values will
 be mapped to the same value. For example, if your training data contains the following examples:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
     <span class="p">{</span>
@@ -1593,29 +1682,33 @@ be mapped to the same value. For example, if your training data contains the fol
 <p>This component will allow you to map the entities <code class="docutils literal notranslate"><span class="pre">New</span> <span class="pre">York</span> <span class="pre">City</span></code> and <code class="docutils literal notranslate"><span class="pre">NYC</span></code> to <code class="docutils literal notranslate"><span class="pre">nyc</span></code>. The entity
 extraction will return <code class="docutils literal notranslate"><span class="pre">nyc</span></code> even though the message contains <code class="docutils literal notranslate"><span class="pre">NYC</span></code>. When this component changes an
 existing entity, it appends itself to the processor list of this entity.</p>
-</dd>
-<dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="crfentityextractor">
 <span id="id18"></span><h3><a class="toc-backref" href="#id55">CRFEntityExtractor</a><a class="headerlink" href="#crfentityextractor" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Conditional random field (CRF) entity extraction</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">entities</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">tokens</span></code> and <code class="docutils literal notranslate"><span class="pre">dense_features</span></code> (optional)</p>
-</dd>
-<dt class="field-even">Output-Example</dt>
-<dd class="field-even"><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Conditional random field (CRF) entity extraction</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">entities</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">tokens</span></code> and <code class="docutils literal notranslate"><span class="pre">dense_features</span></code> (optional)</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;New York City&quot;</span><span class="p">,</span>
         <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
@@ -1627,16 +1720,16 @@ existing entity, it appends itself to the processor list of this entity.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>This component implements a conditional random fields (CRF) to do named entity recognition.
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">This component implements a conditional random fields (CRF) to do named entity recognition.
 CRFs can be thought of as an undirected Markov chain where the time steps are words
 and the states are entity classes. Features of the words (capitalisation, POS tagging,
 etc.) give probabilities to certain entity classes, as are transitions between
 neighbouring entity tags: the most likely set of tags is then calculated and returned.</p>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> has a list of default features to use.
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> has a list of default features to use.
 However, you can overwrite the default configuration.
 The following features are available:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>==============  ==========================================================================================
@@ -1667,11 +1760,11 @@ You define the features as [before, token, after] array.</p>
 <p>Additional you can set a flag to determine whether to use the BILOU tagging schema or not.</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">BILOU_flag</span></code> determines whether to use BILOU tagging or not. Default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><code class="docutils literal notranslate"><span class="pre">BILOU_flag</span></code> determines whether to use BILOU tagging or not. Default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</li>
 </ul>
 </div></blockquote>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
   <span class="c1"># BILOU_flag determines whether to use BILOU tagging or not.</span>
   <span class="s">&quot;BILOU_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
   <span class="c1"># features to extract in the sliding window</span>
@@ -1701,31 +1794,35 @@ You define the features as [before, token, after] array.</p>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If POS features are used (<code class="docutils literal notranslate"><span class="pre">pos</span></code> or <code class="docutils literal notranslate"><span class="pre">pos2`),</span> <span class="pre">you</span> <span class="pre">need</span> <span class="pre">to</span> <span class="pre">have</span> <span class="pre">``SpacyTokenizer</span></code> in your pipeline.</p>
+<p class="first admonition-title">Note</p>
+<p class="last">If POS features are used (<code class="docutils literal notranslate"><span class="pre">pos</span></code> or <code class="docutils literal notranslate"><span class="pre">pos2`),</span> <span class="pre">you</span> <span class="pre">need</span> <span class="pre">to</span> <span class="pre">have</span> <span class="pre">``SpacyTokenizer</span></code> in your pipeline.</p>
 </div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If “<code class="docutils literal notranslate"><span class="pre">pattern`</span> <span class="pre">features</span> <span class="pre">are</span> <span class="pre">used,</span> <span class="pre">you</span> <span class="pre">need</span> <span class="pre">to</span> <span class="pre">have</span> <span class="pre">``RegexFeaturizer</span></code> in your pipeline.</p>
+<div class="last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If “<code class="docutils literal notranslate"><span class="pre">pattern`</span> <span class="pre">features</span> <span class="pre">are</span> <span class="pre">used,</span> <span class="pre">you</span> <span class="pre">need</span> <span class="pre">to</span> <span class="pre">have</span> <span class="pre">``RegexFeaturizer</span></code> in your pipeline.</p>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="ducklinghttpextractor">
 <span id="id19"></span><h3><a class="toc-backref" href="#id56">DucklingHTTPExtractor</a><a class="headerlink" href="#ducklinghttpextractor" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Duckling lets you extract common entities like dates,
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Duckling lets you extract common entities like dates,
 amounts of money, distances, and others in a number of languages.</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">entities</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p>Nothing</p>
-</dd>
-<dt class="field-even">Output-Example</dt>
-<dd class="field-even"><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">entities</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">Nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span>
         <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">53</span><span class="p">,</span>
         <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;time&quot;</span><span class="p">,</span>
@@ -1737,9 +1834,9 @@ amounts of money, distances, and others in a number of languages.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>To use this component you need to run a duckling server. The easiest
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">To use this component you need to run a duckling server. The easiest
 option is to spin up a docker container using
 <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">-p</span> <span class="pre">8000:8000</span> <span class="pre">rasa/duckling</span></code>.</p>
 <p>Alternatively, you can <a class="reference external" href="https://github.com/facebook/duckling#quickstart">install duckling directly on your
@@ -1753,43 +1850,47 @@ for the duckling component, the component will extract two entities: <code class
 situation, your application would have to decide which entity type is be the correct one.
 The extractor will always return <cite>1.0</cite> as a confidence, as it is a rule
 based system.</p>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>Configure which dimensions, i.e. entity types, the duckling component
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">Configure which dimensions, i.e. entity types, the duckling component
 should extract. A full list of available dimensions can be found in
 the <a class="reference external" href="https://duckling.wit.ai/">duckling documentation</a>.
 Leaving the dimensions option unspecified will extract all available dimensions.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;DucklingHTTPExtractor&quot;</span>
+<div class="last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;DucklingHTTPExtractor&quot;</span>
   <span class="c1"># url of the running duckling server</span>
-  <span class="nt">url</span><span class="p">:</span> <span class="s">&quot;http://localhost:8000&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="s">&quot;http://localhost:8000&quot;</span>
   <span class="c1"># dimensions to extract</span>
-  <span class="nt">dimensions</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;time&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;number&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;amount-of-money&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;distance&quot;</span><span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">dimensions</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;time&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;number&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;amount-of-money&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;distance&quot;</span><span class="p p-Indicator">]</span>
   <span class="c1"># allows you to configure the locale, by default the language is</span>
   <span class="c1"># used</span>
-  <span class="nt">locale</span><span class="p">:</span> <span class="s">&quot;de_DE&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">locale</span><span class="p p-Indicator">:</span> <span class="s">&quot;de_DE&quot;</span>
   <span class="c1"># if not set the default timezone of Duckling is going to be used</span>
   <span class="c1"># needed to calculate dates from relative expressions like &quot;tomorrow&quot;</span>
-  <span class="nt">timezone</span><span class="p">:</span> <span class="s">&quot;Europe/Berlin&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">timezone</span><span class="p p-Indicator">:</span> <span class="s">&quot;Europe/Berlin&quot;</span>
   <span class="c1"># Timeout for receiving response from http url of the running duckling server</span>
   <span class="c1"># if not set the default timeout of duckling http url is set to 3 seconds.</span>
-  <span class="nt">timeout </span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
+  <span class="l l-Scalar l-Scalar-Plain">timeout</span> <span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
 </pre></div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="id20">
 <h3><a class="toc-backref" href="#id57">DIETClassifier</a><a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list simple">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction</p>
-</dd>
-<dt class="field-even">Description</dt>
-<dd class="field-even"><p>You can find the detailed description of the <a class="reference internal" href="#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> under the section
-<cite>Combined Entity Extractors and Intent Classifiers</cite>.</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body">You can find the detailed description of the <a class="reference internal" href="#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> under the section
+<cite>Combined Entity Extractors and Intent Classifiers</cite>.</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="section" id="selectors">
@@ -1797,18 +1898,20 @@ Leaving the dimensions option unspecified will extract all available dimensions.
 <p>Selectors predict a bot response from a set of candidate responses.</p>
 <div class="section" id="responseselector">
 <span id="response-selector"></span><h3><a class="toc-backref" href="#id59">ResponseSelector</a><a class="headerlink" href="#responseselector" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Response Selector</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p>A dictionary with key as <code class="docutils literal notranslate"><span class="pre">direct_response_intent</span></code> and value containing <code class="docutils literal notranslate"><span class="pre">response</span></code> and <code class="docutils literal notranslate"><span class="pre">ranking</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> and/or <code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user messages and response</p>
-</dd>
-<dt class="field-even">Output-Example</dt>
-<dd class="field-even"><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Response Selector</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">A dictionary with key as <code class="docutils literal notranslate"><span class="pre">direct_response_intent</span></code> and value containing <code class="docutils literal notranslate"><span class="pre">response</span></code> and <code class="docutils literal notranslate"><span class="pre">ranking</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> and/or <code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user messages and response</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;response_selector&quot;</span><span class="p">:</span> <span class="p">{</span>
       <span class="nt">&quot;faq&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;response&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.7356462617</span><span class="p">,</span> <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Supports 3.5, 3.6 and 3.7, recommended version is 3.6&quot;</span><span class="p">},</span>
@@ -1821,33 +1924,33 @@ Leaving the dimensions option unspecified will extract all available dimensions.
 <span class="p">}</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>Response Selector component can be used to build a response retrieval model to directly predict a bot response from
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Response Selector component can be used to build a response retrieval model to directly predict a bot response from
 a set of candidate responses. The prediction of this model is used by <a class="reference internal" href="../../core/retrieval-actions/#retrieval-actions"><span class="std std-ref">Retrieval Actions</span></a>.
 It embeds user inputs and response labels into the same space and follows the exact same
 neural network architecture and optimization as the <a class="reference internal" href="#diet-classifier"><span class="std std-ref">DIETClassifier</span></a>.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If during prediction time a message contains <strong>only</strong> words unseen during training
+<p class="first admonition-title">Note</p>
+<p class="last">If during prediction time a message contains <strong>only</strong> words unseen during training
 and no Out-Of-Vocabulary preprocessor was used, an empty response <code class="docutils literal notranslate"><span class="pre">None</span></code> is predicted with confidence
 <code class="docutils literal notranslate"><span class="pre">0.0</span></code>. This might happen if you only use the <a class="reference internal" href="#countvectorsfeaturizer"><span class="std std-ref">CountVectorsFeaturizer</span></a> with a <code class="docutils literal notranslate"><span class="pre">word</span></code> analyzer
 as featurizer. If you use the <code class="docutils literal notranslate"><span class="pre">char_wb</span></code> analyzer, you should always get a response with a confidence
 value <code class="docutils literal notranslate"><span class="pre">&gt;</span> <span class="pre">0.0</span></code>.</p>
 </div>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>The algorithm includes almost all the hyperparameters that <a class="reference internal" href="#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> uses.
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">The algorithm includes almost all the hyperparameters that <a class="reference internal" href="#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> uses.
 If you want to adapt your model, start by modifying the following parameters:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">epochs</span></code>:
+<li><code class="docutils literal notranslate"><span class="pre">epochs</span></code>:
 This parameter sets the number of times the algorithm will see the training data (default: <code class="docutils literal notranslate"><span class="pre">300</span></code>).
 One <code class="docutils literal notranslate"><span class="pre">epoch</span></code> is equals to one forward pass and one backward pass of all the training examples.
 Sometimes the model needs more epochs to properly learn.
 Sometimes more epochs don’t influence the performance.
-The lower the number of epochs the faster the model is trained.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes</span></code>:
+The lower the number of epochs the faster the model is trained.</li>
+<li><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes</span></code>:
 This parameter allows you to define the number of feed forward layers and their output
 dimensions for user messages and intents (default: <code class="docutils literal notranslate"><span class="pre">text:</span> <span class="pre">[256,</span> <span class="pre">128],</span> <span class="pre">label:</span> <span class="pre">[256,</span> <span class="pre">128]</span></code>).
 Every entry in the list corresponds to a feed forward layer.
@@ -1858,24 +1961,24 @@ dimension of 128. If an empty list is used (default behaviour), no feed forward 
 added.
 Make sure to use only positive integer values. Usually, numbers of power of two are used.
 Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
-value before.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">embedding_dimension</span></code>:
+value before.</li>
+<li><code class="docutils literal notranslate"><span class="pre">embedding_dimension</span></code>:
 This parameter defines the output dimension of the embedding layers used inside the model (default: <code class="docutils literal notranslate"><span class="pre">20</span></code>).
 We are using multiple embeddings layers inside the model architecture.
 For example, the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token and the intent is passed on to an embedding layer before
-they are compared and the loss is calculated.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">number_of_transformer_layers</span></code>:
+they are compared and the loss is calculated.</li>
+<li><code class="docutils literal notranslate"><span class="pre">number_of_transformer_layers</span></code>:
 This parameter sets the number of transformer layers to use (default: <code class="docutils literal notranslate"><span class="pre">0</span></code>).
-The number of transformer layers corresponds to the transformer blocks to use for the model.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>:
+The number of transformer layers corresponds to the transformer blocks to use for the model.</li>
+<li><code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>:
 This parameter sets the number of units in the transformer (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>).
-The vectors coming out of the transformers will have the given <code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>:
+The vectors coming out of the transformers will have the given <code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>:
 This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
 in the model (default: <code class="docutils literal notranslate"><span class="pre">0.8</span></code>). The value should be between 0 and 1. If you set <code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>
 to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
 set <code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code> to 1 as this would result in all kernel weights being 0, i.e. the model is not able
-to learn.</p></li>
+to learn.</li>
 </ul>
 </div></blockquote>
 <div class="line-block">
@@ -1887,7 +1990,7 @@ Default is <code class="docutils literal notranslate"><span class="pre">None</sp
 <div class="line-block">
 <div class="line"><br /></div>
 </div>
-<div class="toggle docutils container">
+<div class="toggle last docutils container">
 <div class="header docutils container">
 <p>The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.</p>
@@ -1998,45 +2101,49 @@ However, additional parameters exist that can be adapted.</p>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> and <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> should
+<p class="first admonition-title">Note</p>
+<p class="last">For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> and <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> should
 be between <code class="docutils literal notranslate"><span class="pre">-1</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>There is an option to use linearly increasing batch size. The idea comes from
+<p class="first admonition-title">Note</p>
+<p class="last">There is an option to use linearly increasing batch size. The idea comes from
 <a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>.
 In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[64,</span> <span class="pre">256]</span></code> (default behaviour).
 If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">64</span></code>.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Parameter <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> is set to a negative value to mimic the original
+<p class="first admonition-title">Note</p>
+<p class="last">Parameter <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> is set to a negative value to mimic the original
 starspace algorithm in the case <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">maximum_positive_similarity</span></code>
 and <code class="docutils literal notranslate"><span class="pre">use_maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">False</span></code>.
 See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starspace paper</a> for details.</p>
 </div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="section" id="combined-entity-extractors-and-intent-classifiers">
 <h2><a class="toc-backref" href="#id60">Combined Entity Extractors and Intent Classifiers</a><a class="headerlink" href="#combined-entity-extractors-and-intent-classifiers" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="diet-classifier">
 <span id="id23"></span><h3><a class="toc-backref" href="#id61">DIETClassifier</a><a class="headerlink" href="#diet-classifier" title="Permalink to this headline">¶</a></h3>
-<dl class="field-list">
-<dt class="field-odd">Short</dt>
-<dd class="field-odd"><p>Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction</p>
-</dd>
-<dt class="field-even">Outputs</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">entities</span></code>, <code class="docutils literal notranslate"><span class="pre">intent</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_ranking</span></code></p>
-</dd>
-<dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> and/or <code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user message and optionally the intent</p>
-</dd>
-<dt class="field-even">Output-Example</dt>
-<dd class="field-even"><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">entities</span></code>, <code class="docutils literal notranslate"><span class="pre">intent</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_ranking</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">dense_features</span></code> and/or <code class="docutils literal notranslate"><span class="pre">sparse_features</span></code> for user message and optionally the intent</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.8343</span><span class="p">},</span>
     <span class="nt">&quot;intent_ranking&quot;</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
@@ -2059,9 +2166,9 @@ See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starsp
 <span class="p">}</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-odd">Description</dt>
-<dd class="field-odd"><p>DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
 recognition. The architecture is based on a transformer which is shared for both tasks.
 A sequence of entity labels is predicted through a Conditional Random Field (CRF) tagging layer on top of the
 transformer output sequence corresponding to the input sequence of tokens.
@@ -2072,16 +2179,16 @@ minimize similarities with negative samples.</p>
 <a class="reference external" href="https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb">videos</a> where we explain the model
 architecture in detail.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If during prediction time a message contains <strong>only</strong> words unseen during training
+<p class="first admonition-title">Note</p>
+<p class="last">If during prediction time a message contains <strong>only</strong> words unseen during training
 and no Out-Of-Vocabulary preprocessor was used, an empty intent <code class="docutils literal notranslate"><span class="pre">None</span></code> is predicted with confidence
 <code class="docutils literal notranslate"><span class="pre">0.0</span></code>. This might happen if you only use the <a class="reference internal" href="#countvectorsfeaturizer"><span class="std std-ref">CountVectorsFeaturizer</span></a> with a <code class="docutils literal notranslate"><span class="pre">word</span></code> analyzer
 as featurizer. If you use the <code class="docutils literal notranslate"><span class="pre">char_wb</span></code> analyzer, you should always get an intent with a confidence
 value <code class="docutils literal notranslate"><span class="pre">&gt;</span> <span class="pre">0.0</span></code>.</p>
 </div>
-</dd>
-<dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>If you want to use the <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> just for intent classification, set <code class="docutils literal notranslate"><span class="pre">entity_recognition</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">If you want to use the <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> just for intent classification, set <code class="docutils literal notranslate"><span class="pre">entity_recognition</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.
 If you want to do only entity recognition, set <code class="docutils literal notranslate"><span class="pre">intent_classification</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.
 By default <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> does both, i.e. <code class="docutils literal notranslate"><span class="pre">entity_recognition</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_classification</span></code> are set to
 <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
@@ -2089,13 +2196,13 @@ By default <code class="docutils literal notranslate"><span class="pre">DIETClas
 If you want to adapt your model, start by modifying the following parameters:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">epochs</span></code>:
+<li><code class="docutils literal notranslate"><span class="pre">epochs</span></code>:
 This parameter sets the number of times the algorithm will see the training data (default: <code class="docutils literal notranslate"><span class="pre">300</span></code>).
 One <code class="docutils literal notranslate"><span class="pre">epoch</span></code> is equals to one forward pass and one backward pass of all the training examples.
 Sometimes the model needs more epochs to properly learn.
 Sometimes more epochs don’t influence the performance.
-The lower the number of epochs the faster the model is trained.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes</span></code>:
+The lower the number of epochs the faster the model is trained.</li>
+<li><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes</span></code>:
 This parameter allows you to define the number of feed forward layers and their output
 dimensions for user messages and intents (default: <code class="docutils literal notranslate"><span class="pre">text:</span> <span class="pre">[],</span> <span class="pre">label:</span> <span class="pre">[]</span></code>).
 Every entry in the list corresponds to a feed forward layer.
@@ -2106,27 +2213,27 @@ dimension of 128. If an empty list is used (default behaviour), no feed forward 
 added.
 Make sure to use only positive integer values. Usually, numbers of power of two are used.
 Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
-value before.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">embedding_dimension</span></code>:
+value before.</li>
+<li><code class="docutils literal notranslate"><span class="pre">embedding_dimension</span></code>:
 This parameter defines the output dimension of the embedding layers used inside the model (default: <code class="docutils literal notranslate"><span class="pre">20</span></code>).
 We are using multiple embeddings layers inside the model architecture.
 For example, the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token and the intent is passed on to an embedding layer before
-they are compared and the loss is calculated.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">number_of_transformer_layers</span></code>:
+they are compared and the loss is calculated.</li>
+<li><code class="docutils literal notranslate"><span class="pre">number_of_transformer_layers</span></code>:
 This parameter sets the number of transformer layers to use (default: <code class="docutils literal notranslate"><span class="pre">2</span></code>).
-The number of transformer layers corresponds to the transformer blocks to use for the model.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>:
+The number of transformer layers corresponds to the transformer blocks to use for the model.</li>
+<li><code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>:
 This parameter sets the number of units in the transformer (default: <code class="docutils literal notranslate"><span class="pre">256</span></code>).
-The vectors coming out of the transformers will have the given <code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>:
+The vectors coming out of the transformers will have the given <code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>:
 This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
 in the model (default: <code class="docutils literal notranslate"><span class="pre">0.8</span></code>). The value should be between 0 and 1. If you set <code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>
 to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
 set <code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code> to 1 as this would result in all kernel weights being 0, i.e. the model is not able
-to learn.</p></li>
+to learn.</li>
 </ul>
 </div></blockquote>
-<div class="toggle docutils container">
+<div class="toggle last docutils container">
 <div class="header docutils container">
 <p>The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.</p>
@@ -2242,27 +2349,29 @@ However, additional parameters exist that can be adapted.</p>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> and <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> should
+<p class="first admonition-title">Note</p>
+<p class="last">For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> and <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> should
 be between <code class="docutils literal notranslate"><span class="pre">-1</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>There is an option to use linearly increasing batch size. The idea comes from
+<p class="first admonition-title">Note</p>
+<p class="last">There is an option to use linearly increasing batch size. The idea comes from
 <a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>.
 In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[64,</span> <span class="pre">256]</span></code> (default behaviour).
 If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">64</span></code>.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Parameter <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> is set to a negative value to mimic the original
+<p class="first admonition-title">Note</p>
+<p class="last">Parameter <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> is set to a negative value to mimic the original
 starspace algorithm in the case <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">maximum_positive_similarity</span></code>
 and <code class="docutils literal notranslate"><span class="pre">use_maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">False</span></code>.
 See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starspace paper</a> for details.</p>
 </div>
 </div>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>

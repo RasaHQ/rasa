@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Tracker</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Tracker Stores" href="../tracker-stores/" />
@@ -248,6 +249,8 @@ the box." />
               <a href="../../../1.4.6/api/tracker/">1.4.6</a>
               <a href="../../../1.3.10/api/tracker/">1.3.10</a>
               <a href="../../../1.2.9/api/tracker/">1.2.9</a>
+              <a href="../../../1.1.8/api/tracker/">1.1.8</a>
+              <a href="../../../1.0.9/api/tracker/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -288,367 +291,456 @@ check out the docs on <a class="reference internal" href="../../core/domains/#se
 
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/rasa/core/trackers.py" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST DOCSTRING EDITS</a>
-  </div><dl class="py class">
+  </div><dl class="class">
 <dt id="rasa.core.trackers.DialogueStateTracker">
-<em class="property">class </em><code class="sig-prename descclassname">rasa.core.trackers.</code><code class="sig-name descname">DialogueStateTracker</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sender_id</span></em>, <em class="sig-param"><span class="n">slots</span></em>, <em class="sig-param"><span class="n">max_event_history</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.trackers.</code><code class="descname">DialogueStateTracker</code><span class="sig-paren">(</span><em>sender_id</em>, <em>slots</em>, <em>max_event_history=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Maintains the state of a conversation.</p>
 <p>The field max_event_history will only give you these last events,
 it can be set in the tracker_store</p>
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.applied_events">
-<code class="sig-name descname">applied_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.applied_events" title="Permalink to this definition">¶</a></dt>
+<code class="descname">applied_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.applied_events" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns all actions that should be applied - w/o reverted events.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.as_dialogue">
-<code class="sig-name descname">as_dialogue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.as_dialogue" title="Permalink to this definition">¶</a></dt>
+<code class="descname">as_dialogue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.as_dialogue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a <code class="docutils literal notranslate"><span class="pre">Dialogue</span></code> object containing all of the turns.</p>
 <p>This can be serialised and later used to recover the state
 of this tracker exactly.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dialogue</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dialogue</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.change_form_to">
-<code class="sig-name descname">change_form_to</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">form_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.change_form_to" title="Permalink to this definition">¶</a></dt>
+<code class="descname">change_form_to</code><span class="sig-paren">(</span><em>form_name</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.change_form_to" title="Permalink to this definition">¶</a></dt>
 <dd><p>Activate or deactivate a form</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.clear_followup_action">
-<code class="sig-name descname">clear_followup_action</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.clear_followup_action" title="Permalink to this definition">¶</a></dt>
+<code class="descname">clear_followup_action</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.clear_followup_action" title="Permalink to this definition">¶</a></dt>
 <dd><p>Clears follow up action when it was executed.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.copy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a duplicate of this tracker</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.current_slot_values">
-<code class="sig-name descname">current_slot_values</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.current_slot_values" title="Permalink to this definition">¶</a></dt>
+<code class="descname">current_slot_values</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.current_slot_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the currently set values of the slots</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.current_state">
-<code class="sig-name descname">current_state</code><span class="sig-paren">(</span><em class="sig-param">event_verbosity=&lt;EventVerbosity.NONE: 1&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.current_state" title="Permalink to this definition">¶</a></dt>
+<code class="descname">current_state</code><span class="sig-paren">(</span><em>event_verbosity=&lt;EventVerbosity.NONE: 1&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.current_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the current tracker state as an object.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.events_after_latest_restart">
-<code class="sig-name descname">events_after_latest_restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.events_after_latest_restart" title="Permalink to this definition">¶</a></dt>
+<code class="descname">events_after_latest_restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.events_after_latest_restart" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a list of events after the most recent restart.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.export_stories">
-<code class="sig-name descname">export_stories</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">e2e</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.export_stories" title="Permalink to this definition">¶</a></dt>
+<code class="descname">export_stories</code><span class="sig-paren">(</span><em>e2e=False</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.export_stories" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dump the tracker as a story in the Rasa Core story format.</p>
 <p>Returns the dumped tracker as a string.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.export_stories_to_file">
-<code class="sig-name descname">export_stories_to_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">export_path</span><span class="o">=</span><span class="default_value">'debug.md'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.export_stories_to_file" title="Permalink to this definition">¶</a></dt>
+<code class="descname">export_stories_to_file</code><span class="sig-paren">(</span><em>export_path='debug.md'</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.export_stories_to_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dump the tracker as a story to a file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="classmethod">
 <dt id="rasa.core.trackers.DialogueStateTracker.from_dict">
-<em class="property">classmethod </em><code class="sig-name descname">from_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sender_id</span></em>, <em class="sig-param"><span class="n">events_as_dict</span></em>, <em class="sig-param"><span class="n">slots</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">max_event_history</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.from_dict" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">from_dict</code><span class="sig-paren">(</span><em>sender_id</em>, <em>events_as_dict</em>, <em>slots=None</em>, <em>max_event_history=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.from_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a tracker from dump.</p>
 <p>The dump should be an array of dumped events. When restoring
 the tracker, these events will be replayed to recreate the state.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.generate_all_prior_trackers">
-<code class="sig-name descname">generate_all_prior_trackers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.generate_all_prior_trackers" title="Permalink to this definition">¶</a></dt>
+<code class="descname">generate_all_prior_trackers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.generate_all_prior_trackers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a generator of the previous trackers of this tracker.</p>
 <p>The resulting array is representing the trackers before each action.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code>[<a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code>[<a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.get_last_event_for">
-<code class="sig-name descname">get_last_event_for</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event_type</span></em>, <em class="sig-param"><span class="n">action_names_to_exclude</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">skip</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_last_event_for" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_last_event_for</code><span class="sig-paren">(</span><em>event_type</em>, <em>action_names_to_exclude=None</em>, <em>skip=0</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_last_event_for" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets the last event of a given type which was actually applied.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>event_type</strong> – The type of event you want to find.</p></li>
-<li><p><strong>action_names_to_exclude</strong> – Events of type <cite>ActionExecuted</cite> which
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>event_type</strong> – The type of event you want to find.</li>
+<li><strong>action_names_to_exclude</strong> – Events of type <cite>ActionExecuted</cite> which
 should be excluded from the results. Can be used to skip
-<cite>action_listen</cite> events.</p></li>
-<li><p><strong>skip</strong> – Skips n possible results before return an event.</p></li>
+<cite>action_listen</cite> events.</li>
+<li><strong>skip</strong> – Skips n possible results before return an event.</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>event which matched the query or <cite>None</cite> if no event matched.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">event which matched the query or <cite>None</cite> if no event matched.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.get_latest_entity_values">
-<code class="sig-name descname">get_latest_entity_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entity_type</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_latest_entity_values</code><span class="sig-paren">(</span><em>entity_type</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get entity values found for the passed entity name in latest msg.</p>
 <p>If you are only interested in the first entity of a given type use
 <cite>next(tracker.get_latest_entity_values(“my_entity_name”), None)</cite>.
 If no entity is found <cite>None</cite> is the default result.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.get_latest_input_channel">
-<code class="sig-name descname">get_latest_input_channel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_latest_input_channel" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_latest_input_channel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_latest_input_channel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the name of the input_channel of the latest UserUttered event</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.get_slot">
-<code class="sig-name descname">get_slot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_slot" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_slot</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_slot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves the value of a slot.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.idx_after_latest_restart">
-<code class="sig-name descname">idx_after_latest_restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.idx_after_latest_restart" title="Permalink to this definition">¶</a></dt>
+<code class="descname">idx_after_latest_restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.idx_after_latest_restart" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the idx of the most recent restart in the list of events.</p>
 <p>If the conversation has not been restarted, <code class="docutils literal notranslate"><span class="pre">0</span></code> is returned.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.init_copy">
-<code class="sig-name descname">init_copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.init_copy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">init_copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.init_copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a new state tracker with the same initial values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.is_paused">
-<code class="sig-name descname">is_paused</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.is_paused" title="Permalink to this definition">¶</a></dt>
+<code class="descname">is_paused</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.is_paused" title="Permalink to this definition">¶</a></dt>
 <dd><p>State whether the tracker is currently paused.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.last_executed_action_has">
-<code class="sig-name descname">last_executed_action_has</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">skip</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.last_executed_action_has" title="Permalink to this definition">¶</a></dt>
+<code class="descname">last_executed_action_has</code><span class="sig-paren">(</span><em>name</em>, <em>skip=0</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.last_executed_action_has" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns whether last <cite>ActionExecuted</cite> event had a specific name.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – Name of the event which should be matched.</p></li>
-<li><p><strong>skip</strong> – Skips n possible results in between.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – Name of the event which should be matched.</li>
+<li><strong>skip</strong> – Skips n possible results in between.</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><cite>True</cite> if last executed action had name <cite>name</cite>, otherwise <cite>False</cite>.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><cite>True</cite> if last executed action had name <cite>name</cite>, otherwise <cite>False</cite>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.past_states">
-<code class="sig-name descname">past_states</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.past_states" title="Permalink to this definition">¶</a></dt>
+<code class="descname">past_states</code><span class="sig-paren">(</span><em>domain</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.past_states" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate the past states of this tracker based on the history.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">deque</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">deque</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.recreate_from_dialogue">
-<code class="sig-name descname">recreate_from_dialogue</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dialogue</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.recreate_from_dialogue" title="Permalink to this definition">¶</a></dt>
+<code class="descname">recreate_from_dialogue</code><span class="sig-paren">(</span><em>dialogue</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.recreate_from_dialogue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use a serialised <cite>Dialogue</cite> to update the trackers state.</p>
 <p>This uses the state as is persisted in a <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code>. If the
 tracker is blank before calling this method, the final state will be
 identical to the tracker from which the dialogue was created.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.reject_action">
-<code class="sig-name descname">reject_action</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">action_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.reject_action" title="Permalink to this definition">¶</a></dt>
+<code class="descname">reject_action</code><span class="sig-paren">(</span><em>action_name</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.reject_action" title="Permalink to this definition">¶</a></dt>
 <dd><p>Notify active form that it was rejected</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.replay_events">
-<code class="sig-name descname">replay_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.replay_events" title="Permalink to this definition">¶</a></dt>
+<code class="descname">replay_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.replay_events" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update the tracker based on a list of events.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.set_form_validation">
-<code class="sig-name descname">set_form_validation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">validate</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.set_form_validation" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_form_validation</code><span class="sig-paren">(</span><em>validate</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.set_form_validation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Toggle form validation</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.set_latest_action_name">
-<code class="sig-name descname">set_latest_action_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">action_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.set_latest_action_name" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_latest_action_name</code><span class="sig-paren">(</span><em>action_name</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.set_latest_action_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set latest action name
 and reset form validation and rejection parameters</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.travel_back_in_time">
-<code class="sig-name descname">travel_back_in_time</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_time</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.travel_back_in_time" title="Permalink to this definition">¶</a></dt>
+<code class="descname">travel_back_in_time</code><span class="sig-paren">(</span><em>target_time</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.travel_back_in_time" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a new tracker with a state at a specific timestamp.</p>
 <p>A new tracker will be created and all events previous to the
 passed time stamp will be replayed. Events that occur exactly
 at the target time will be included.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.trigger_followup_action">
-<code class="sig-name descname">trigger_followup_action</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">action</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.trigger_followup_action" title="Permalink to this definition">¶</a></dt>
+<code class="descname">trigger_followup_action</code><span class="sig-paren">(</span><em>action</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.trigger_followup_action" title="Permalink to this definition">¶</a></dt>
 <dd><p>Triggers another action following the execution of the current.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.trackers.DialogueStateTracker.update">
-<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em>, <em class="sig-param"><span class="n">domain</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.update" title="Permalink to this definition">¶</a></dt>
+<code class="descname">update</code><span class="sig-paren">(</span><em>event</em>, <em>domain=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.update" title="Permalink to this definition">¶</a></dt>
 <dd><p>Modify the state of the tracker according to an <code class="docutils literal notranslate"><span class="pre">Event</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>

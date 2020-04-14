@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Responses</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Actions" href="../actions/" />
@@ -233,6 +234,8 @@ responses using Rasa as an open source chat assistant platform." />
               <a href="../../../1.4.6/core/responses/">1.4.6</a>
               <a href="../../../1.3.10/core/responses/">1.3.10</a>
               <a href="../../../1.2.9/core/responses/">1.2.9</a>
+              <a href="../../../1.1.8/core/responses/">1.1.8</a>
+              <a href="../../../1.0.9/core/responses/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -277,8 +280,8 @@ should execute. These actions
 can use utterances to send messages back to the user.</p>
 <p>There are two ways to manage these utterances:</p>
 <ol class="arabic simple">
-<li><p>Include your assistant utterances in your domain file, or</p></li>
-<li><p>Use an external service to generate the responses.</p></li>
+<li>Include your assistant utterances in your domain file, or</li>
+<li>Use an external service to generate the responses.</li>
 </ol>
 <div class="section" id="including-the-utterances-in-the-domain">
 <h2>Including the utterances in the domain<a class="headerlink" href="#including-the-utterances-in-the-domain" title="Permalink to this headline">¶</a></h2>
@@ -286,7 +289,7 @@ can use utterances to send messages back to the user.</p>
 This file then contains references to all your custom actions,
 available entities, slots and intents.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># all hashtags are comments :)</span>
-<span class="nt">intents</span><span class="p">:</span>
+<span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span>
  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">default</span>
  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">goodbye</span>
@@ -298,27 +301,27 @@ available entities, slots and intents.</p>
  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">why</span>
  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">next_intent</span>
 
-<span class="nt">entities</span><span class="p">:</span>
+<span class="l l-Scalar l-Scalar-Plain">entities</span><span class="p p-Indicator">:</span>
  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span>
 
-<span class="nt">slots</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span>
-    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+<span class="l l-Scalar l-Scalar-Plain">slots</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
 
-<span class="nt">templates</span><span class="p">:</span>
-  <span class="nt">utter_greet</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;hey</span><span class="nv"> </span><span class="s">there</span><span class="nv"> </span><span class="s">{name}!&quot;</span>  <span class="c1"># {name} will be filled by slot (same name) or by custom action</span>
-  <span class="nt">utter_channel</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;this</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">default</span><span class="nv"> </span><span class="s">channel&quot;</span>
-    <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;you&#39;re</span><span class="nv"> </span><span class="s">talking</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">me</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">slack!&quot;</span>  <span class="c1"># if you define channel-specific utterances, the bot will pick</span>
-      <span class="nt">channel</span><span class="p">:</span> <span class="s">&quot;slack&quot;</span>                        <span class="c1"># from those when talking on that specific channel</span>
-  <span class="nt">utter_goodbye</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;goodbye</span><span class="nv"> </span><span class="s">😢&quot;</span>   <span class="c1"># multiple templates - bot will randomly pick one of them</span>
-    <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;bye</span><span class="nv"> </span><span class="s">bye</span><span class="nv"> </span><span class="s">😢&quot;</span>
-  <span class="nt">utter_default</span><span class="p">:</span>   <span class="c1"># utterance sent by action_default_fallback</span>
-    <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;sorry,</span><span class="nv"> </span><span class="s">I</span><span class="nv"> </span><span class="s">didn&#39;t</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">that,</span><span class="nv"> </span><span class="s">can</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">rephrase</span><span class="nv"> </span><span class="s">it?&quot;</span>
+<span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;hey</span><span class="nv"> </span><span class="s">there</span><span class="nv"> </span><span class="s">{name}!&quot;</span>  <span class="c1"># {name} will be filled by slot (same name) or by custom action</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_channel</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;this</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">default</span><span class="nv"> </span><span class="s">channel&quot;</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;you&#39;re</span><span class="nv"> </span><span class="s">talking</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">me</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">slack!&quot;</span>  <span class="c1"># if you define channel-specific utterances, the bot will pick</span>
+      <span class="l l-Scalar l-Scalar-Plain">channel</span><span class="p p-Indicator">:</span> <span class="s">&quot;slack&quot;</span>                        <span class="c1"># from those when talking on that specific channel</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;goodbye</span><span class="nv"> </span><span class="s">😢&quot;</span>   <span class="c1"># multiple templates - bot will randomly pick one of them</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;bye</span><span class="nv"> </span><span class="s">bye</span><span class="nv"> </span><span class="s">😢&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_default</span><span class="p p-Indicator">:</span>   <span class="c1"># utterance sent by action_default_fallback</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;sorry,</span><span class="nv"> </span><span class="s">I</span><span class="nv"> </span><span class="s">didn&#39;t</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">that,</span><span class="nv"> </span><span class="s">can</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">rephrase</span><span class="nv"> </span><span class="s">it?&quot;</span>
 
-<span class="nt">actions</span><span class="p">:</span>
+<span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_default</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span>
@@ -343,8 +346,8 @@ are generated outside of Rasa Core.</p>
 external HTTP server with a <code class="docutils literal notranslate"><span class="pre">POST</span></code> request. To configure this endpoint,
 you need to create an <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> and pass it either to the <code class="docutils literal notranslate"><span class="pre">run</span></code>
 or <code class="docutils literal notranslate"><span class="pre">server</span></code> script. The content of the <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> should be</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">nlg</span><span class="p">:</span>
-  <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://localhost:5055/nlg</span>    <span class="c1"># url of the nlg endpoint</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">nlg</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">http://localhost:5055/nlg</span>    <span class="c1"># url of the nlg endpoint</span>
   <span class="c1"># you can also specify additional parameters, if you need them:</span>
   <span class="c1"># headers:</span>
   <span class="c1">#   my-custom-header: value</span>
@@ -353,13 +356,13 @@ or <code class="docutils literal notranslate"><span class="pre">server</span></c
   <span class="c1">#   username: user</span>
   <span class="c1">#   password: pass</span>
 <span class="c1"># example of redis external tracker store config</span>
-<span class="nt">tracker_store</span><span class="p">:</span>
-  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">redis</span>
-  <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">localhost</span>
-  <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">6379</span>
-  <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
-  <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">password</span>
-  <span class="nt">record_exp</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30000</span>
+<span class="l l-Scalar l-Scalar-Plain">tracker_store</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">redis</span>
+  <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">localhost</span>
+  <span class="l l-Scalar l-Scalar-Plain">port</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">6379</span>
+  <span class="l l-Scalar l-Scalar-Plain">db</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">password</span>
+  <span class="l l-Scalar l-Scalar-Plain">record_exp</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">30000</span>
 <span class="c1"># example of mongoDB external tracker store config</span>
 <span class="c1">#tracker_store:</span>
   <span class="c1">#type: mongod</span>

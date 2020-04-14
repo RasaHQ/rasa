@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Small Talk</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Completing Tasks" href="../completing-tasks/" />
@@ -248,6 +249,8 @@ platform." />
               <a href="../.././1.4.6/dialogue-elements/small-talk/">1.4.6</a>
               <a href="../.././1.3.10/dialogue-elements/small-talk/">1.3.10</a>
               <a href="../.././1.2.9/dialogue-elements/small-talk/">1.2.9</a>
+              <a href="../.././1.1.8/dialogue-elements/small-talk/">1.1.8</a>
+              <a href="../.././1.0.9/dialogue-elements/small-talk/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -287,10 +290,10 @@ but doesn’t directly relate to the user’s goal. This includes greetings,
 acknowledgements, reactions, and off-topic chitchat.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#greetings" id="id3">Greetings</a></p></li>
-<li><p><a class="reference internal" href="#acknowledgements" id="id4">Acknowledgements</a></p></li>
-<li><p><a class="reference internal" href="#chitchat" id="id5">Chitchat</a></p></li>
-<li><p><a class="reference internal" href="#insults" id="id6">Insults</a></p></li>
+<li><a class="reference internal" href="#greetings" id="id3">Greetings</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id4">Acknowledgements</a></li>
+<li><a class="reference internal" href="#chitchat" id="id5">Chitchat</a></li>
+<li><a class="reference internal" href="#insults" id="id6">Insults</a></li>
 </ul>
 </div>
 <div class="section" id="greetings">
@@ -360,14 +363,14 @@ acknowledgements, reactions, and off-topic chitchat.</p>
 for each of these. If you always want the same responses, you can use the <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code>
 to trigger these responses when the corresponding intent is predicted.</p>
 <p>In your domain file, add the <code class="docutils literal notranslate"><span class="pre">triggers</span></code> metadata to the relevant intents:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intents</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">greet</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt">triggers</span><span class="p">:</span> <span class="nv">utter_greet</span><span class="p p-Indicator">}</span>
-  <span class="p p-Indicator">-</span> <span class="nt">goodbye</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt">triggers</span><span class="p">:</span> <span class="nv">utter_goodbye</span><span class="p p-Indicator">}</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span><span class="nv">triggers</span><span class="p p-Indicator">:</span> <span class="nv">utter_greet</span><span class="p p-Indicator">}</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">goodbye</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span><span class="nv">triggers</span><span class="p p-Indicator">:</span> <span class="nv">utter_goodbye</span><span class="p p-Indicator">}</span>
 </pre></div>
 </div>
 <p>And make sure the mapping policy is present in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MappingPolicy&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MappingPolicy&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">...</span>
 </pre></div>
 </div>
@@ -570,13 +573,13 @@ You can read more about this topic in <a class="reference external" href="https:
 </div><p>The simplest approach is to create a single <code class="docutils literal notranslate"><span class="pre">insult</span></code> intent and use the mapping policy
 to respond to it:</p>
 <p>In your domain file:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intents</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">insult</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt">triggers</span><span class="p">:</span> <span class="nv">utter_respond_insult</span><span class="p p-Indicator">}</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">insult</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span><span class="nv">triggers</span><span class="p p-Indicator">:</span> <span class="nv">utter_respond_insult</span><span class="p p-Indicator">}</span>
 </pre></div>
 </div>
 <p>And in your configuration file:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MappingPolicy&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MappingPolicy&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">...</span>
 </pre></div>
 </div>

@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Glossary</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex/" />
     <link rel="search" title="Search" href="../search/" />
     <link rel="prev" title="Rasa as open source alternative to IBM Watson - Migration Tips" href="../migrate-from/ibm-watson-to-rasa/" />
@@ -239,6 +240,8 @@
               <a href=".././1.4.6/glossary/">1.4.6</a>
               <a href=".././1.3.10/glossary/">1.3.10</a>
               <a href=".././1.2.9/glossary/">1.2.9</a>
+              <a href=".././1.1.8/index/">1.1.8</a>
+              <a href=".././1.0.9/index/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -270,63 +273,71 @@
 
 <div class="section" id="glossary">
 <span id="id1"></span><h1>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h1>
-<dl class="glossary">
-<dt id="term-Action"><a class="reference internal" href="../core/actions/#actions"><span class="std std-ref">Action</span></a></dt><dd><p>A single step that a bot takes in a conversation (e.g. calling an API or sending a response back to the user).</p>
+<dl class="glossary docutils">
+<dt id="term-action"><a class="reference internal" href="../core/actions/#actions"><span class="std std-ref">Action</span></a></dt>
+<dd>A single step that a bot takes in a conversation (e.g. calling an API or sending a response back to the user).</dd>
+<dt id="term-annotation">Annotation</dt>
+<dd>Adding labels to messages and conversations so that they can be used to train a model.</dd>
+<dt id="term-cms">CMS</dt>
+<dd>A Content Management System (CMS) can be used to store bot responses externally instead of directly including it as part of the domain.  This provides more flexibility in changing them as they are not tightly-coupled with the training data.</dd>
+<dt id="term-custom-action"><a class="reference internal" href="../core/actions/#custom-actions"><span class="std std-ref">Custom Action</span></a></dt>
+<dd>An action written by a Rasa developer that can run arbitrary code mainly to interact with the outside world.</dd>
+<dt id="term-default-action"><a class="reference internal" href="../core/actions/#default-actions"><span class="std std-ref">Default Action</span></a></dt>
+<dd>A built-in action that comes with predefined functionality.</dd>
+<dt id="term-domain"><a class="reference internal" href="../core/domains/#domains"><span class="std std-ref">Domain</span></a></dt>
+<dd><p class="first">Defines the inputs and outputs of an assistant.</p>
+<p class="last">It includes a list of all the intents, entities, slots, actions, and forms that the assistant knows about.</p>
 </dd>
-<dt id="term-Annotation">Annotation</dt><dd><p>Adding labels to messages and conversations so that they can be used to train a model.</p>
+<dt id="term-entity"><a class="reference internal" href="../nlu/entity-extraction/#entity-extraction"><span class="std std-ref">Entity</span></a></dt>
+<dd><p class="first">Structured information that can be extracted from a user message.</p>
+<p class="last">For example a telephone number, a person’s name, a location, the name of a product</p>
 </dd>
-<dt id="term-CMS">CMS</dt><dd><p>A Content Management System (CMS) can be used to store bot responses externally instead of directly including it as part of the domain.  This provides more flexibility in changing them as they are not tightly-coupled with the training data.</p>
+<dt id="term-event"><a class="reference internal" href="../api/events/#events"><span class="std std-ref">Event</span></a></dt>
+<dd>All conversations in Rasa are represented as a sequence of events. For instance, a <code class="docutils literal notranslate"><span class="pre">UserUttered</span></code> represents a user entering a message, and an <code class="docutils literal notranslate"><span class="pre">ActionExecuted</span></code> represents the assistant executing an action. You can learn more about them <a class="reference internal" href="../api/events/#events"><span class="std std-ref">here</span></a>.</dd>
+<dt id="term-form"><a class="reference internal" href="../core/forms/#forms"><span class="std std-ref">Form</span></a></dt>
+<dd><p class="first">A type of custom action that asks the user for multiple pieces of information.</p>
+<p class="last">For example, if you need a city, a cuisine, and a price range to recommend a restaurant, you can create  a restaurant form to do that. You can describe any business logic inside a form. For example, if you want to ask for a particular neighbourhood if a user mentions a large city like Los Angeles, you can write that logic inside the form.</p>
 </dd>
-<dt id="term-Custom-Action"><a class="reference internal" href="../core/actions/#custom-actions"><span class="std std-ref">Custom Action</span></a></dt><dd><p>An action written by a Rasa developer that can run arbitrary code mainly to interact with the outside world.</p>
+<dt id="term-happy-unhappy-paths">Happy / Unhappy Paths</dt>
+<dd>If your assistant asks a user for some information and the user provides it, we call that a happy path. Unhappy paths are all the possible edge cases of a bot. For example, the user refusing to give some input, changing the topic of conversation, or correcting something they said earlier.</dd>
+<dt id="term-intent">Intent</dt>
+<dd>Something that a user is trying to convey or accomplish (e,g., greeting, specifying a location).</dd>
+<dt id="term-interactive-learning"><a class="reference internal" href="../core/interactive-learning/#interactive-learning"><span class="std std-ref">Interactive Learning</span></a></dt>
+<dd><p class="first">A mode of training the bot where the user provides feedback to the bot while talking to it.</p>
+<p class="last">This is a powerful way to write complicated stories by enabling users to explore what a bot can do and easily fix any mistakes it makes.</p>
 </dd>
-<dt id="term-Default-Action"><a class="reference internal" href="../core/actions/#default-actions"><span class="std std-ref">Default Action</span></a></dt><dd><p>A built-in action that comes with predefined functionality.</p>
+<dt id="term-minimum-viable-assistant">Minimum viable assistant</dt>
+<dd>A basic assistant that can handle the most important happy path stories.</dd>
+<dt id="term-nlg">NLG</dt>
+<dd><p class="first">Natural Language Generation (NLG) is the process of generating natural language messages to send to a user.</p>
+<p class="last">Rasa uses a simple template-based approach for NLG. Data-driven approaches (such as neural NLG) can be implemented by creating a custom NLG component.</p>
 </dd>
-<dt id="term-Domain"><a class="reference internal" href="../core/domains/#domains"><span class="std std-ref">Domain</span></a></dt><dd><p>Defines the inputs and outputs of an assistant.</p>
-<p>It includes a list of all the intents, entities, slots, actions, and forms that the assistant knows about.</p>
+<dt id="term-rasa-nlu"><a class="reference internal" href="../nlu/about/#about-rasa-nlu"><span class="std std-ref">Rasa NLU</span></a></dt>
+<dd><p class="first">Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.</p>
+<p class="last">Rasa NLU is the part of Rasa that performs intent classification and entity extraction.</p>
 </dd>
-<dt id="term-Entity"><a class="reference internal" href="../nlu/entity-extraction/#entity-extraction"><span class="std std-ref">Entity</span></a></dt><dd><p>Structured information that can be extracted from a user message.</p>
-<p>For example a telephone number, a person’s name, a location, the name of a product</p>
+<dt id="term-pipeline"><a class="reference internal" href="../nlu/choosing-a-pipeline/#choosing-a-pipeline"><span class="std std-ref">Pipeline</span></a></dt>
+<dd>A Rasa bot’s NLU system is defined by a pipeline, which is a list of NLU components (see “Rasa NLU Component”) in a particular order. A user input is processed by each component one by one before finally giving out the structured output.</dd>
+<dt id="term-policy"><a class="reference internal" href="../core/policies/#policies"><span class="std std-ref">Policy</span></a></dt>
+<dd>Policies make decisions on how conversation flow should proceed. At every turn, the policy which predicts the next action with the highest confidence will be used.  A Core model can have multiple policies included, and the policy whose prediction has the highest confidence decides the next action to be taken.</dd>
+<dt id="term-rasa-core"><a class="reference internal" href="../core/about/#about-rasa-core"><span class="std std-ref">Rasa Core</span></a></dt>
+<dd>The dialogue engine that decides on what to do next in a conversation based on the context.</dd>
+<dt id="term-rasa-nlu-component"><a class="reference internal" href="../nlu/components/#components"><span class="std std-ref">Rasa NLU Component</span></a></dt>
+<dd><p class="first">An element in the Rasa NLU pipeline (see “Pipeline”).</p>
+<p class="last">Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.</p>
 </dd>
-<dt id="term-Event"><a class="reference internal" href="../api/events/#events"><span class="std std-ref">Event</span></a></dt><dd><p>All conversations in Rasa are represented as a sequence of events. For instance, a <code class="docutils literal notranslate"><span class="pre">UserUttered</span></code> represents a user entering a message, and an <code class="docutils literal notranslate"><span class="pre">ActionExecuted</span></code> represents the assistant executing an action. You can learn more about them <a class="reference internal" href="../api/events/#events"><span class="std std-ref">here</span></a>.</p>
+<dt id="term-slot"><a class="reference internal" href="../core/slots/#slots"><span class="std std-ref">Slot</span></a></dt>
+<dd>A key-value store that Rasa uses to track information over the course of a conversation.</dd>
+<dt id="term-story"><a class="reference internal" href="../core/stories/#stories"><span class="std std-ref">Story</span></a></dt>
+<dd>A conversation between a user and a bot annotated with the intent / entities of the users’ messages as well as the sequence of actions to be performed by the bot</dd>
+<dt id="term-template-response-utterance"><a class="reference internal" href="../core/responses/#responses"><span class="std std-ref">Template / Response / Utterance</span></a></dt>
+<dd>A message template that is used to respond to a user. This can include text, buttons, images, and other attachments.</dd>
+<dt id="term-user-goal">User Goal</dt>
+<dd><p class="first">A goal that a user wants to achieve.</p>
+<p class="last">For example, a user may have the goal of booking a table at a restaurant. Another user may just want to make small talk.  Sometimes, the user expresses their goal with a single message, e.g. “I want to book a table at a restaurant”. Other times the assistant may have to ask a few questions to understand how to help the user.  Note: Many other places refer to the user goal as the “intent”, but in Rasa terminology, an intent is associated with every user message.</p>
 </dd>
-<dt id="term-Form"><a class="reference internal" href="../core/forms/#forms"><span class="std std-ref">Form</span></a></dt><dd><p>A type of custom action that asks the user for multiple pieces of information.</p>
-<p>For example, if you need a city, a cuisine, and a price range to recommend a restaurant, you can create  a restaurant form to do that. You can describe any business logic inside a form. For example, if you want to ask for a particular neighbourhood if a user mentions a large city like Los Angeles, you can write that logic inside the form.</p>
-</dd>
-<dt id="term-Happy-Unhappy-Paths">Happy / Unhappy Paths</dt><dd><p>If your assistant asks a user for some information and the user provides it, we call that a happy path. Unhappy paths are all the possible edge cases of a bot. For example, the user refusing to give some input, changing the topic of conversation, or correcting something they said earlier.</p>
-</dd>
-<dt id="term-Intent">Intent</dt><dd><p>Something that a user is trying to convey or accomplish (e,g., greeting, specifying a location).</p>
-</dd>
-<dt id="term-Interactive-Learning"><a class="reference internal" href="../core/interactive-learning/#interactive-learning"><span class="std std-ref">Interactive Learning</span></a></dt><dd><p>A mode of training the bot where the user provides feedback to the bot while talking to it.</p>
-<p>This is a powerful way to write complicated stories by enabling users to explore what a bot can do and easily fix any mistakes it makes.</p>
-</dd>
-<dt id="term-Minimum-viable-assistant">Minimum viable assistant</dt><dd><p>A basic assistant that can handle the most important happy path stories.</p>
-</dd>
-<dt id="term-NLG">NLG</dt><dd><p>Natural Language Generation (NLG) is the process of generating natural language messages to send to a user.</p>
-<p>Rasa uses a simple template-based approach for NLG. Data-driven approaches (such as neural NLG) can be implemented by creating a custom NLG component.</p>
-</dd>
-<dt id="term-Rasa-NLU"><a class="reference internal" href="../nlu/about/#about-rasa-nlu"><span class="std std-ref">Rasa NLU</span></a></dt><dd><p>Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.</p>
-<p>Rasa NLU is the part of Rasa that performs intent classification and entity extraction.</p>
-</dd>
-<dt id="term-Pipeline"><a class="reference internal" href="../nlu/choosing-a-pipeline/#choosing-a-pipeline"><span class="std std-ref">Pipeline</span></a></dt><dd><p>A Rasa bot’s NLU system is defined by a pipeline, which is a list of NLU components (see “Rasa NLU Component”) in a particular order. A user input is processed by each component one by one before finally giving out the structured output.</p>
-</dd>
-<dt id="term-Policy"><a class="reference internal" href="../core/policies/#policies"><span class="std std-ref">Policy</span></a></dt><dd><p>Policies make decisions on how conversation flow should proceed. At every turn, the policy which predicts the next action with the highest confidence will be used.  A Core model can have multiple policies included, and the policy whose prediction has the highest confidence decides the next action to be taken.</p>
-</dd>
-<dt id="term-Rasa-Core"><a class="reference internal" href="../core/about/#about-rasa-core"><span class="std std-ref">Rasa Core</span></a></dt><dd><p>The dialogue engine that decides on what to do next in a conversation based on the context.</p>
-</dd>
-<dt id="term-Rasa-NLU-Component"><a class="reference internal" href="../nlu/components/#components"><span class="std std-ref">Rasa NLU Component</span></a></dt><dd><p>An element in the Rasa NLU pipeline (see “Pipeline”).</p>
-<p>Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.</p>
-</dd>
-<dt id="term-Slot"><a class="reference internal" href="../core/slots/#slots"><span class="std std-ref">Slot</span></a></dt><dd><p>A key-value store that Rasa uses to track information over the course of a conversation.</p>
-</dd>
-<dt id="term-Story"><a class="reference internal" href="../core/stories/#stories"><span class="std std-ref">Story</span></a></dt><dd><p>A conversation between a user and a bot annotated with the intent / entities of the users’ messages as well as the sequence of actions to be performed by the bot</p>
-</dd>
-<dt id="term-Template-Response-Utterance"><a class="reference internal" href="../core/responses/#responses"><span class="std std-ref">Template / Response / Utterance</span></a></dt><dd><p>A message template that is used to respond to a user. This can include text, buttons, images, and other attachments.</p>
-</dd>
-<dt id="term-User-Goal">User Goal</dt><dd><p>A goal that a user wants to achieve.</p>
-<p>For example, a user may have the goal of booking a table at a restaurant. Another user may just want to make small talk.  Sometimes, the user expresses their goal with a single message, e.g. “I want to book a table at a restaurant”. Other times the assistant may have to ask a few questions to understand how to help the user.  Note: Many other places refer to the user goal as the “intent”, but in Rasa terminology, an intent is associated with every user message.</p>
-</dd>
-<dt id="term-Word-embedding-Word-vector">Word embedding / Word vector</dt><dd><p>A vector of floating point numbers which represent the meaning of a word. Words which have similar meanings should have vectors which point in almost the same direction.  Word embeddings are often used as an input to machine learning algorithms.</p>
-</dd>
+<dt id="term-word-embedding-word-vector">Word embedding / Word vector</dt>
+<dd>A vector of floating point numbers which represent the meaning of a word. Words which have similar meanings should have vectors which point in almost the same direction.  Word embeddings are often used as an input to machine learning algorithms.</dd>
 </dl>
 </div>
 
