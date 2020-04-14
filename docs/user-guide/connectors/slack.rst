@@ -21,6 +21,8 @@ Getting Credentials
   2. Activate the following features:
 
     - Interactivity & Shortcuts > Interactivity (if your bot uses any `interactive components <https://api.slack.com/reference/block-kit/interactive-components>`_ , e.g. buttons)
+      - Add your Rasa request URL ``http://<host>:<port>/webhooks/slack/webhook``, replacing
+     the host and port with the appropriate values that point to your Rasa X or Rasa Open Source deployment.
     - Event subscriptions > Subscribe to bot events: message.channels, message.groups, message.im & message.mpim
     - App Home > Always Show My Bot as Online
 
@@ -29,9 +31,8 @@ Getting Credentials
      to provide this value in your credentials later in these instructions. It should start
      with ``xoxb``.
 
-  4. The endpoint for receiving Slack messages is ``http://<host>:<port>/webhooks/slack/webhook``, replacing
-     the host and port with the appropriate values that point to your Rasa X or Rasa Open Source deployment. This is the URL you should add in the "OAuth & Permissions" 
-     "Redirect URLs" and "Interactivity & Shortcuts"
+  4. In the "OAuth & Permissions > Redirect URLs" enter the endpoint for receiving Slack messages. This is 
+     the same URL you entered above for Interactivity & Shortcuts -``http://<host>:<port>/webhooks/slack/webhook``.  
      
   5. Go to the "Event Subscriptions" section, turn on the "Enable Events" and add the endpoint here also.
 
