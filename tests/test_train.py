@@ -149,3 +149,19 @@ def test_train_nlu_wrong_format_error_message(
 
     captured = capsys.readouterr()
     assert "Please verify the data format" in captured.out
+
+
+def test_train_nlu_no_nlu_file_error_message(
+    capsys: CaptureFixture,
+    tmp_path: Text,
+    monkeypatch: MonkeyPatch,
+    default_stack_config: Text,
+):
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+
+    train_nlu(
+        default_stack_config, "", output="test_train_nlu_temp_files_models",
+    )
+
+    captured = capsys.readouterr()
+    assert "No NLU data given" in captured.out
