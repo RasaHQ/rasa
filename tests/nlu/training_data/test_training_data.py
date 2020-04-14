@@ -173,6 +173,7 @@ def test_demo_data(files):
         {"name": "zipcode", "pattern": r"[0-9]{5}"},
     ]
 
+
 @pytest.mark.parametrize(
     "files",
     [
