@@ -94,6 +94,18 @@ class TrainingData:
             self.lookup_tables,
         )
 
+    def filter_by_intent(self, intent: Text):
+        """Filter training examples."""
+        raise_warning(
+            "The `filter_by_intent` function is deprecated. "
+            "Please use `filter_training_examples` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.filter_training_examples(
+            lambda ex: intent == ex.get("intent")
+        )
+
     def __hash__(self) -> int:
         from rasa.core import utils as core_utils
 
