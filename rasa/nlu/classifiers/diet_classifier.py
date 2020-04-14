@@ -1250,7 +1250,6 @@ class DIET(RasaModel):
         outputs = self._tf_layers[f"{name}_transformer"](
             transformer_inputs, 1 - mask, self._training
         )
-        outputs = tfa.activations.gelu(outputs)
 
         return outputs, inputs, seq_ids, lm_mask_bool
 
