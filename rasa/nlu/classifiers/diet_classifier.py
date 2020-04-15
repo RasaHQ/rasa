@@ -1250,6 +1250,10 @@ class DIET(RasaModel):
             inputs, 1 - mask, self._training
         )
 
+        if self.config[TRANSFORMER_SIZE] > 0:
+            # apply activation
+            outputs = tfa.activations.gelu(outputs)
+
         return outputs, inputs, seq_ids, lm_mask_bool
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:

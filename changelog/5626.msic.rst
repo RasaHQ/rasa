@@ -1,1 +1,1 @@
-Move ``tfa.activations.gelu(x)`` from ``DIETClassifier`` to transformer block.
+Apply ``tfa.activations.gelu(x)`` only if min 1 transformer block is used in ``DIETClassifier``.
