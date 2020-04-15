@@ -1,3 +1,19 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [intent:greet](#intentgreet)
+- [intent:request_restaurant](#intentrequest_restaurant)
+- [intent:affirm](#intentaffirm)
+- [intent:deny](#intentdeny)
+- [intent:inform](#intentinform)
+- [intent:thankyou](#intentthankyou)
+- [intent:chitchat](#intentchitchat)
+- [intent:stop](#intentstop)
+- [intent:bot_challenge](#intentbot_challenge)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## intent:greet
 - Hi
 - Hey
@@ -81,27 +97,27 @@
 - no this does not work for me
 
 ## intent:inform
-- [afghan](cuisine) food
-- how bout [asian oriental](cuisine)
-- what about [indian](cuisine) food
-- uh how about [turkish](cuisine) type of food
-- um [english](cuisine)
+- [afghan]{"entity": "cuisine", "role": "asian"} food
+- how bout [asian oriental]{"entity": "cuisine", "role": "asian"}
+- what about [indian]{"entity": "cuisine", "role": "asian"} food
+- uh how about [turkish]{"entity": "cuisine", "role": "asian"} type of food
+- um [english]{"entity": "cuisine", "role": "european"}
 - im looking for [tuscan](cuisine) food
-- id like [moroccan](cuisine) food
-- [seafood](cuisine)
-- [french](cuisine) food
-- serves [british](cuisine) food
+- id like [moroccan]{"entity": "cuisine", "role": "asian"} food
+- [seafood]{"entity": "cuisine", "role": "asian"}
+- [french]{"entity": "cuisine", "role": "european"} food
+- serves [british]{"entity": "cuisine", "role": "european"} food
 - id like [canapes](cuisine)
-- serving [jamaican](cuisine) food
-- um what about [italian](cuisine) food
-- im looking for [corsica](cuisine) food
+- serving [jamaican]{"entity": "cuisine", "role": "asian"} food
+- um what about [italian]{"entity": "cuisine", "role": "european"} food
+- im looking for [corsica]{"entity": "cuisine", "role": "asian"} food
 - im looking for [world](cuisine) food
 -  serves [french](cuisine) food
-- how about [indian](cuisine) food
-- can i get [chinese](cuisine) food
-- [irish](cuisine) food
-- [english](cuisine) food
-- [spanish](cuisine) food
+- how about [indian]{"entity": "cuisine", "role": "asian"} food
+- can i get [chinese]{"entity": "cuisine", "role": "asian"} food
+- [irish]{"entity": "cuisine", "role": "european"} food
+- [english]{"entity": "cuisine", "role": "european"} food
+- [spanish]{"entity": "cuisine", "role": "european"} food
 - how bout one that serves [portuguese](cuisine) food and is cheap
 - [german](cuisine)
 - [korean](cuisine) food

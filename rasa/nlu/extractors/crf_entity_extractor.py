@@ -104,6 +104,7 @@ class CRFEntityExtractor(EntityExtractor):
         "digit": lambda crf_token: crf_token.text.isdigit(),
         "pattern": lambda crf_token: crf_token.pattern,
         "text_dense_features": lambda crf_token: crf_token.dense_features,
+        "entity": lambda crf_token: crf_token.entity_label,
     }
 
     def __init__(
@@ -164,7 +165,7 @@ class CRFEntityExtractor(EntityExtractor):
         dataset = []
 
         for example in examples:
-            if example.get("entities"):
+            if example.get(ENTITIES):
                 # check correct annotation during training
                 self._check_correct_annotation(example)
 
@@ -295,7 +296,7 @@ class CRFEntityExtractor(EntityExtractor):
         return {"file": file_names}
 
     def _sentence_to_features(
-        self, sentence: List[CRFToken], tag_features: Optional[List[Text]] = None
+        self, sentence: List[CRFToken], include_entity_label: bool = False
     ) -> List[Dict[Text, Any]]:
         """Convert a word into discrete features in self.crf_features,
         including word before and word after."""
@@ -323,6 +324,10 @@ class CRFEntityExtractor(EntityExtractor):
                     f_i_from_zero = f_i + half_span
                     prefix = prefixes[f_i_from_zero]
                     features = configured_features[f_i_from_zero]
+
+                    if include_entity_label:
+                        features.append("entity")
+
                     for feature in features:
                         if feature == "pattern":
                             # add all regexes as a feature
@@ -339,9 +344,6 @@ class CRFEntityExtractor(EntityExtractor):
                             # append each feature to a feature vector
                             value = self.function_dict[feature](word)
                             word_features[prefix + ":" + feature] = value
-
-                    if tag_features:
-                        word_features[f"{prefix}:entity"] = tag_features[word_idx + f_i]
 
             sentence_features.append(word_features)
         return sentence_features
@@ -479,7 +481,11 @@ class CRFEntityExtractor(EntityExtractor):
         self.entity_taggers = {}
 
         for name in self.crf_order:
-            X_train = [self._sentence_to_features(sentence) for sentence in df_train]
+            include_label_features = name != ENTITY_ATTRIBUTE_TYPE
+            X_train = [
+                self._sentence_to_features(sentence, include_label_features)
+                for sentence in df_train
+            ]
             y_train = [
                 self._sentence_to_labels(sentence, name) for sentence in df_train
             ]
