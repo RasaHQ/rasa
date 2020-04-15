@@ -347,7 +347,7 @@ class EntityExtractor(Component):
 
         return filtered
 
-    def convert_tags_to_entities(
+    def create_entities(
         self,
         text: Text,
         tokens: List[Token],

@@ -103,7 +103,7 @@ def test_crf_json_from_BILOU(spacy_nlp):
     tokenizer = SpacyTokenizer()
     tokenizer.process(message)
 
-    r = ext._create_entities(
+    r = ext._tag_confidences(
         message,
         [
             {"O": 1.0},
@@ -147,7 +147,7 @@ def test_crf_json_from_non_BILOU(spacy_nlp):
     tokenizer = SpacyTokenizer()
     tokenizer.process(message)
 
-    rs = ext._create_entities(
+    rs = ext._tag_confidences(
         message,
         [
             {"O": 1.0},

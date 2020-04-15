@@ -26,7 +26,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
 )
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_URL_COMPONENTS
+from rasa.constants import DOCS_URL_COMPONENTS
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +168,8 @@ class CRFEntityExtractor(EntityExtractor):
         entity_examples = self.filter_trainable_entities(
             training_data.training_examples
         )
-        dataset = self._create_dataset(entity_examples)
+
+        dataset = [self._convert_to_crf_tokens(example) for example in entity_examples]
 
         self._train_model(dataset)
 
@@ -186,18 +187,6 @@ class CRFEntityExtractor(EntityExtractor):
 
         self.crf_order = _crf_order
 
-    def _create_dataset(self, examples: List[Message]) -> List[List[CRFToken]]:
-        dataset = []
-
-        for example in examples:
-            if example.get(ENTITIES):
-                # check correct annotation during training
-                self._check_correct_annotation(example)
-
-            dataset.append(self._convert_to_crf_tokens(example))
-
-        return dataset
-
     def process(self, message: Message, **kwargs: Any) -> None:
         entities = self.extract_entities(message)
         entities = self.add_extractor_name(entities)
@@ -205,23 +194,27 @@ class CRFEntityExtractor(EntityExtractor):
         message.set(ENTITIES, message.get(ENTITIES, []) + entities, add_to_output=True)
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
-        """Take a sentence and return entities in json format"""
+        """Extract entities from the given message using the trained model(s)."""
+
         if self.entity_taggers is None:
             return []
 
+        tokens = self.tokens_without_cls(message)
         crf_tokens = self._convert_to_crf_tokens(message)
 
         predictions = {}
-        for name, entity_tagger in self.entity_taggers.items():
-            include_tag_features = name != ENTITY_ATTRIBUTE_TYPE
+        for tag_name, entity_tagger in self.entity_taggers.items():
+            include_tag_features = tag_name != ENTITY_ATTRIBUTE_TYPE
 
             if include_tag_features:
                 self._add_tag_to_crf_token(crf_tokens, predictions)
 
             features = self._sentence_to_features(crf_tokens, include_tag_features)
-            predictions[name] = entity_tagger.predict_marginals_single(features)
+            predictions[tag_name] = entity_tagger.predict_marginals_single(features)
 
-        return self._create_entities(message, predictions)
+        tags, confidences = self._tag_confidences(tokens, predictions)
+
+        return self.create_entities(message.text, tokens, tags, confidences)
 
     def _add_tag_to_crf_token(
         self,
@@ -231,72 +224,68 @@ class CRFEntityExtractor(EntityExtractor):
         """Add predicted entity tags to CRF tokens."""
 
         if ENTITY_ATTRIBUTE_TYPE in predictions:
-            tag_confidence_list = [
-                self._most_likely_tag(prediction)
-                for prediction in predictions[ENTITY_ATTRIBUTE_TYPE]
-            ]
-            for tag_conf, token in zip(tag_confidence_list, crf_tokens):
-                token.entity_tag = tag_conf[0]
+            _tags, _ = self._most_likely_tag(predictions[ENTITY_ATTRIBUTE_TYPE])
+            for tag, token in zip(_tags, crf_tokens):
+                token.entity_tag = tag
 
     def _most_likely_tag(
-        self, predictions: Optional[Dict[Text, float]]
-    ) -> Tuple[Text, float]:
-        """Get the entity tag with the highest confidence.
+        self, predictions: List[Dict[Text, float]]
+    ) -> Tuple[List[Text], List[float]]:
+        """Get the entity tags with the highest confidence.
 
         Args:
-            predictions: mapping of entity tag to confidence value
+            predictions: list of mappings from entity tag to confidence value
 
         Returns:
-            The entity tag and confidence value.
+            List of entity tags and confidence values.
         """
-        if predictions is None:
-            return "", 0.0
+        _tags = []
+        _confidences = []
 
-        tag = max(predictions, key=lambda key: predictions[key])
+        for token_predictions in predictions:
+            tag = max(token_predictions, key=lambda key: token_predictions[key])
+            _tags.append(tag)
 
-        if self.component_config["BILOU_flag"]:
-            # if we are using BILOU flags, we will sum up the prob
-            # of the B, I, L and U tags for an entity
-            return (
-                tag,
-                sum(
-                    [
-                        _confidence
-                        for _tag, _confidence in predictions.items()
-                        if bilou_utils.tag_without_prefix(tag)
-                        == bilou_utils.tag_without_prefix(_tag)
-                    ]
-                ),
-            )
-        else:
-            return tag, predictions[tag]
+            if self.component_config["BILOU_flag"]:
+                # if we are using BILOU flags, we will sum up the prob
+                # of the B, I, L and U tags for an entity
+                _confidences.append(
+                    sum(
+                        [
+                            _confidence
+                            for _tag, _confidence in token_predictions.items()
+                            if bilou_utils.tag_without_prefix(tag)
+                            == bilou_utils.tag_without_prefix(_tag)
+                        ]
+                    )
+                )
+            else:
+                _confidences.append(token_predictions[tag])
 
-    def _create_entities(
-        self, message: Message, predictions: Dict[Text, List[Dict[Text, float]]]
-    ) -> List[Dict[Text, Any]]:
-        tokens = self.tokens_without_cls(message)
+        return _tags, _confidences
 
+    def _tag_confidences(
+        self, tokens: List[Token], predictions: Dict[Text, List[Dict[Text, float]]]
+    ) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]:
+        """Get most likely tag predictions with confidence values for tokens."""
         tags = {}
         confidences = {}
 
-        for name, predicted_tags in predictions.items():
+        for tag_name, predicted_tags in predictions.items():
             if len(tokens) != len(predicted_tags):
                 raise Exception(
                     "Inconsistency in amount of tokens between crfsuite and message"
                 )
 
-            tag_confidence_list = [
-                self._most_likely_tag(prediction) for prediction in predicted_tags
-            ]
-            confidences[name] = [x[1] for x in tag_confidence_list]
-            _tags = [x[0] for x in tag_confidence_list]
+            _tags, _confidences = self._most_likely_tag(predicted_tags)
 
             if self.component_config["BILOU_flag"]:
                 _tags = bilou_utils.remove_bilou_prefixes(_tags)
 
-            tags[name] = _tags
+            confidences[tag_name] = _confidences
+            tags[tag_name] = _tags
 
-        return self.convert_tags_to_entities(message.text, tokens, tags, confidences)
+        return tags, confidences
 
     @classmethod
     def load(
@@ -340,8 +329,8 @@ class CRFEntityExtractor(EntityExtractor):
     def _sentence_to_features(
         self, sentence: List[CRFToken], include_tag_features: bool = False
     ) -> List[Dict[Text, Any]]:
-        """Convert a word into discrete features in self.crf_features,
-        including word before and word after."""
+        """Convert a word into discrete features including word before and word
+        after."""
 
         configured_features = self.component_config["features"]
         sentence_features = []
@@ -393,6 +382,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     @staticmethod
     def _sentence_to_tags(sentence: List[CRFToken], tag_name: Text) -> List[Text]:
+        """Return the list of tags for the given tag name."""
         if tag_name == ENTITY_ATTRIBUTE_ROLE:
             return [crf_token.entity_role_tag for crf_token in sentence]
         if tag_name == ENTITY_ATTRIBUTE_GROUP:
@@ -401,37 +391,16 @@ class CRFEntityExtractor(EntityExtractor):
         return [crf_token.entity_tag for crf_token in sentence]
 
     @staticmethod
-    def _check_correct_annotation(message: Message) -> None:
-        entities = bilou_utils.map_message_entities(message)
-
-        # collect badly annotated examples
-        collected = []
-        for token, entitiy in zip(message.get(TOKENS_NAMES[TEXT]), entities):
-            if entitiy == "-":
-                collected.append(token)
-            elif collected:
-                collected_text = " ".join([t.text for t in collected])
-                common_utils.raise_warning(
-                    f"Misaligned entity annotation for '{collected_text}' "
-                    f"in sentence '{message.text}' with intent "
-                    f"'{message.get('intent')}'. "
-                    f"Make sure the start and end values of the "
-                    f"annotated training examples end at token "
-                    f"boundaries (e.g. don't include trailing "
-                    f"whitespaces or punctuation).",
-                    docs=DOCS_URL_TRAINING_DATA_NLU,
-                )
-                collected = []
-
-    @staticmethod
-    def __pattern_of_token(message: Message, i: int) -> Dict:
+    def _pattern_of_token(message: Message, i: int) -> Dict:
         if message.get(TOKENS_NAMES[TEXT]) is not None:
             return message.get(TOKENS_NAMES[TEXT])[i].get("pattern", {})
         else:
             return {}
 
     @staticmethod
-    def __get_dense_features(message: Message) -> Optional[List[Any]]:
+    def _get_dense_features(message: Message) -> Optional[List[Any]]:
+        """Convert dense features to python-crfsuite feature format."""
+
         features = message.get(DENSE_FEATURE_NAMES[TEXT])
 
         if features is None:
@@ -461,19 +430,19 @@ class CRFEntityExtractor(EntityExtractor):
         return features_out
 
     def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:
-        """Takes a sentence and switches it to crfsuite format."""
+        """Takes a sentence and converts it to crfsuite format."""
 
         crf_format = []
         tokens = self.tokens_without_cls(message)
 
-        text_dense_features = self.__get_dense_features(message)
+        text_dense_features = self._get_dense_features(message)
         tags = self._get_tags(message)
 
         for i, token in enumerate(tokens):
-            pattern = self.__pattern_of_token(message, i)
-            entity = self.__get_tag_for(tags, i, ENTITY_ATTRIBUTE_TYPE)
-            group = self.__get_tag_for(tags, i, ENTITY_ATTRIBUTE_GROUP)
-            role = self.__get_tag_for(tags, i, ENTITY_ATTRIBUTE_ROLE)
+            pattern = self._pattern_of_token(message, i)
+            entity = self._get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, i)
+            group = self._get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, i)
+            role = self._get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, i)
             pos_tag = token.get(POS_TAG_KEY)
             dense_features = (
                 text_dense_features[i] if text_dense_features is not None else []
@@ -493,13 +462,8 @@ class CRFEntityExtractor(EntityExtractor):
 
         return crf_format
 
-    @staticmethod
-    def __get_tag_for(
-        tags: Dict[Text, List[Text]], token_idx: int, tag_name: Text
-    ) -> Optional[Text]:
-        return tags[tag_name][token_idx] if tag_name in tags else None
-
     def _get_tags(self, message: Message) -> Dict[Text, List[Text]]:
+        """Get assigned entity tags of message."""
         tokens = self.tokens_without_cls(message)
         tags = {}
 

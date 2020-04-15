@@ -216,7 +216,7 @@ def bilou_tags_from_offsets(
     start_pos_to_token_idx = {token.start: i for i, token in enumerate(tokens)}
     end_pos_to_token_idx = {token.end: i for i, token in enumerate(tokens)}
 
-    bilou = ["-" for _ in tokens]
+    bilou = [NO_ENTITY_TAG for _ in tokens]
 
     # Handle entity cases
     _add_bilou_tags_to_entities(

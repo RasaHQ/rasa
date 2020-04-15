@@ -316,7 +316,5 @@ def test_convert_tags_to_entities(
     message = Message(text)
     tokens = tokenizer.tokenize(message, TEXT)
 
-    actual_entities = extractor.convert_tags_to_entities(
-        text, tokens, tags, confidences
-    )
+    actual_entities = extractor.create_entities(text, tokens, tags, confidences)
     assert actual_entities == expected_entities
