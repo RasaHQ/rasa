@@ -17,6 +17,19 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.9.6] - 2020-04-15
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5426 <https://github.com/rasahq/rasa/issues/5426>`_: Fix `rasa test nlu` plotting when using multiple runs.
+- `#5489 <https://github.com/rasahq/rasa/issues/5489>`_: Fixed issue where ``max_number_of_predictions`` was not considered when running end-to-end testing.
+
+Miscellaneous internal changes
+------------------------------
+- #5626
+
+
 [1.9.5] - 2020-04-01
 ^^^^^^^^^^^^^^^^^^^^
 
