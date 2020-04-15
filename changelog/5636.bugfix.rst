@@ -1,0 +1,1 @@
+Add dropout before FFNN after sparse for dense layer in ``DIETClassifier``
