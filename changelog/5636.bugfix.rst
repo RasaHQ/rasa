@@ -1,0 +1,4 @@
+Update dependencies based on the ``dependabot`` check.
+
+Correctly specify the minimum supported Python version because the fixed version of ``prompt-toolkit``
+requires Python 3.6.1.

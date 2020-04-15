@@ -3280,7 +3280,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "fecc181aff343f50fe4446ff0aef2b50cb502c0a5577a6bd09b57ae34202a7be"
+content-hash = "71e8e7f52da67ee69af7c838fabe877f19180dffaacb8da52410b25014fce83c"
 python-versions = "^3.6.1"
 
 [metadata.files]
