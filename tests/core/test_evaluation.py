@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import rasa.utils.io
 from rasa.core.test import _generate_trackers, collect_story_predictions, test
 
 # we need this import to ignore the warning...
@@ -91,3 +92,22 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     )
 
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+
+
+async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
+    stories_path = str(tmpdir / "failed_stories.md")
+
+    await test(
+        stories=E2E_STORY_FILE_UNKNOWN_ENTITY,
+        agent=default_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=False,
+    )
+
+    failed_stories = rasa.utils.io.read_file(stories_path)
+
+    assert (
+        "## simple_story_with_unknown_entity (data/test_evaluations/story_unknown_entity.md)"
+        in failed_stories
+    )

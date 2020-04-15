@@ -81,7 +81,9 @@ class TrackerWithCachedStates(DialogueStateTracker):
             self.is_augmented,
         )
 
-    def copy(self, sender_id: Text = "") -> "TrackerWithCachedStates":
+    def copy(
+        self, sender_id: Text = "", sender_source: Text = ""
+    ) -> "TrackerWithCachedStates":
         """Creates a duplicate of this tracker.
 
         A new tracker will be created and all events
@@ -92,6 +94,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         tracker = self.init_copy()
         tracker.sender_id = sender_id
+        tracker.sender_source = sender_source
 
         for event in self.events:
             tracker.update(event, skip_states=True)
@@ -521,12 +524,12 @@ class TrainingDataGenerator:
                 # contribute to the trackers events
                 if tracker.sender_id:
                     if step.block_name not in tracker.sender_id.split(" > "):
-                        new_sender = f"{tracker.sender_id} > {step.block_name} > {step.source_name}"
+                        new_sender = tracker.sender_id + " > " + step.block_name
                     else:
                         new_sender = tracker.sender_id
                 else:
-                    new_sender = f"{step.block_name} > {step.source_name}"
-                trackers.append(tracker.copy(new_sender))
+                    new_sender = step.block_name
+                trackers.append(tracker.copy(new_sender, step.source_name))
 
         end_trackers = []
         for event in events:

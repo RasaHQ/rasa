@@ -348,7 +348,10 @@ def _predict_tracker_actions(
     events = list(tracker.events)
 
     partial_tracker = DialogueStateTracker.from_events(
-        tracker.sender_id, events[:1], agent.domain.slots
+        tracker.sender_id,
+        events[:1],
+        agent.domain.slots,
+        sender_source=tracker.sender_source,
     )
 
     tracker_actions = []
@@ -477,7 +480,7 @@ def log_failed_stories(failed, out_directory):
             f.write("<!-- All stories passed -->")
         else:
             for failure in failed:
-                f.write(failure.export_stories())
+                f.write(failure.export_stories(include_source=True))
                 f.write("\n\n")
 
 
