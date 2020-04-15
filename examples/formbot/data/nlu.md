@@ -97,27 +97,27 @@
 - no this does not work for me
 
 ## intent:inform
-- [afghan]{"entity": "cuisine", "role": "asian"} food
-- how bout [asian oriental]{"entity": "cuisine", "role": "asian"}
-- what about [indian]{"entity": "cuisine", "role": "asian"} food
-- uh how about [turkish]{"entity": "cuisine", "role": "asian"} type of food
-- um [english]{"entity": "cuisine", "role": "european"}
+- [afghan](cuisine) food
+- how bout [asian oriental](cuisine)
+- what about [indian](cuisine) food
+- uh how about [turkish](cuisine) type of food
+- um [english](cuisine)
 - im looking for [tuscan](cuisine) food
-- id like [moroccan]{"entity": "cuisine", "role": "asian"} food
-- [seafood]{"entity": "cuisine", "role": "asian"}
-- [french]{"entity": "cuisine", "role": "european"} food
-- serves [british]{"entity": "cuisine", "role": "european"} food
+- id like [moroccan](cuisine) food
+- [seafood](cuisine)
+- [french](cuisine) food
+- serves [british](cuisine) food
 - id like [canapes](cuisine)
-- serving [jamaican]{"entity": "cuisine", "role": "asian"} food
-- um what about [italian]{"entity": "cuisine", "role": "european"} food
-- im looking for [corsica]{"entity": "cuisine", "role": "asian"} food
+- serving [jamaican](cuisine) food
+- um what about [italian](cuisine) food
+- im looking for [corsica](cuisine) food
 - im looking for [world](cuisine) food
 -  serves [french](cuisine) food
-- how about [indian]{"entity": "cuisine", "role": "asian"} food
-- can i get [chinese]{"entity": "cuisine", "role": "asian"} food
-- [irish]{"entity": "cuisine", "role": "european"} food
-- [english]{"entity": "cuisine", "role": "european"} food
-- [spanish]{"entity": "cuisine", "role": "european"} food
+- how about [indian](cuisine) food
+- can i get [chinese](cuisine) food
+- [irish](cuisine) food
+- [english](cuisine) food
+- [spanish](cuisine) food
 - how bout one that serves [portuguese](cuisine) food and is cheap
 - [german](cuisine)
 - [korean](cuisine) food
