@@ -35,10 +35,10 @@
   <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
   <meta property="og:url" content="https://rasa.com/docs/rasa/user-guide/connectors/twilio" />
   
-    <meta name="description" content="Build a Rasa Chat Bot on Twilio" />
-    <meta itemprop="description" content="Build a Rasa Chat Bot on Twilio">
-    <meta name="twitter:description" content="Build a Rasa Chat Bot on Twilio" />
-    <meta property="og:description" content="Build a Rasa Chat Bot on Twilio" />
+    <meta name="description" content="Deploy a Rasa Open Source assistant through text message or WhatsApp via the Twilio connector" />
+    <meta itemprop="description" content="Deploy a Rasa Open Source assistant through text message or WhatsApp via the Twilio connector">
+    <meta name="twitter:description" content="Deploy a Rasa Open Source assistant through text message or WhatsApp via the Twilio connector" />
+    <meta property="og:description" content="Deploy a Rasa Open Source assistant through text message or WhatsApp via the Twilio connector" />
   
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@Rasa_HQ">
@@ -141,6 +141,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../setting-up-ci-cd/">Setting up CI/CD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../validate-files/">Validate Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configuring-http-api/">Configuring the HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../how-to-deploy/">Deploying Your Rasa Assistant</a></li>
@@ -215,12 +216,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.5
+          viewing: 1.9.6
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.9.6/user-guide/connectors/twilio/">1.9.6</a>
               <a href="../../.././1.9.5/user-guide/connectors/twilio/">1.9.5</a>
               <a href="../../.././1.9.4/user-guide/connectors/twilio/">1.9.4</a>
               <a href="../../.././1.9.3/user-guide/connectors/twilio/">1.9.3</a>
@@ -277,10 +279,20 @@
 
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/user-guide/connectors/twilio.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
-  </div><p>You first have to create a Twilio app to get credentials.
-Once you have them you can add these to your <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>.</p>
+  </div><p>You can use the Twilio connector to deploy an assistant that is available over text message.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#getting-credentials" id="id2">Getting Credentials</a><ul>
+<li><a class="reference internal" href="#connecting-to-whatsapp" id="id3">Connecting to WhatsApp</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#applying-the-credentials" id="id4">Applying the Credentials</a></li>
+</ul>
+</div>
 <div class="section" id="getting-credentials">
-<h2>Getting Credentials<a class="headerlink" href="#getting-credentials" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2">Getting Credentials</a><a class="headerlink" href="#getting-credentials" title="Permalink to this headline">¶</a></h2>
+<p>You first have to create a Twilio app to get credentials.
+Once you have them you can add these to your <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>.</p>
 <p><strong>How to get the Twilio credentials:</strong>
 You need to set up a Twilio account.</p>
 <blockquote>
@@ -296,21 +308,25 @@ number you purchased in your <code class="docutils literal notranslate"><span cl
 </ol>
 </div></blockquote>
 <p>For more information, see the <a class="reference external" href="https://www.twilio.com/docs/iam/api">Twilio REST API</a>.</p>
+<div class="section" id="connecting-to-whatsapp">
+<h3><a class="toc-backref" href="#id3">Connecting to WhatsApp</a><a class="headerlink" href="#connecting-to-whatsapp" title="Permalink to this headline">¶</a></h3>
+<p>You can deploy a Rasa Open Source assistant to WhatsApp through Twilio. However, to do so, you have
+to have a <a class="reference external" href="https://www.whatsapp.com/business/">WhatsApp Business</a> profile. Associate
+your Whatsapp Business profile with the phone number you purchased through Twilio to
+access the <a class="reference external" href="https://www.twilio.com/whatsapp">Twilio API for WhatsApp</a>.</p>
 </div>
-<div class="section" id="using-run-script">
-<h2>Using run script<a class="headerlink" href="#using-run-script" title="Permalink to this headline">¶</a></h2>
-<p>If you want to connect to the Twilio input channel using the run
-script, e.g. using:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run
-</pre></div>
 </div>
-<p>you need to supply a <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> with the following content:</p>
+<div class="section" id="applying-the-credentials">
+<h2><a class="toc-backref" href="#id4">Applying the Credentials</a><a class="headerlink" href="#applying-the-credentials" title="Permalink to this headline">¶</a></h2>
+<p>Add the Twilio credentials to your  <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">twilio</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">account_sid</span><span class="p p-Indicator">:</span> <span class="s">&quot;ACbc2dxxxxxxxxxxxx19d54bdcd6e41186&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">auth_token</span><span class="p p-Indicator">:</span> <span class="s">&quot;e231c197493a7122d475b4xxxxxxxxxx&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">twilio_number</span><span class="p p-Indicator">:</span> <span class="s">&quot;+440123456789&quot;</span>
 </pre></div>
 </div>
+<p>Make sure to restart your Rasa Open Source server or container to make changes to
+which connectors are available.</p>
 </div>
 </div>
 

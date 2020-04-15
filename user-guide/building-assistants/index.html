@@ -141,6 +141,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../setting-up-ci-cd/">Setting up CI/CD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../validate-files/">Validate Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuring-http-api/">Configuring the HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../how-to-deploy/">Deploying Your Rasa Assistant</a></li>
@@ -215,12 +216,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.5
+          viewing: 1.9.6
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.9.6/user-guide/building-assistants/">1.9.6</a>
               <a href="../.././1.9.5/user-guide/building-assistants/">1.9.5</a>
               <a href="../.././1.9.4/user-guide/building-assistants/">1.9.4</a>
               <a href="../.././1.9.3/user-guide/building-assistants/">1.9.3</a>
@@ -422,9 +424,10 @@ rasa shell
 <p>For example:</p>
 <img alt="Memoization Policy Conversation" class="align-center" src="../../_images/memoization_policy_convo.png" />
 <p>While it’s good to test the bot interactively, we should also add end to end test cases that
-can later be included as part of our CI/CD system. <a class="reference external" href="https://rasa.com/docs/rasa/user-guide/testing-your-assistant/#end-to-end-testing">End to end stories</a>
-include NLU data, so that both components of Rasa can be tested.  Create a file called
-<code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code> in the root directory with some test cases:</p>
+can later be included as part of a <a class="reference internal" href="../setting-up-ci-cd/#setting-up-ci-cd"><span class="std std-ref">CI/CD system</span></a>. End-to-end <a class="reference internal" href="../testing-your-assistant/#end-to-end-testing"><span class="std std-ref">test conversations</span></a>
+include NLU data, so that both components of Rasa can be tested. The file
+<code class="docutils literal notranslate"><span class="pre">tests/conversation_tests.md</span></code> contains example test conversations. Delete all the test conversations and replace
+them with some test conversations for your assistant so far:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> greet + goodbye
 <span class="k">*</span> greet: Hi!
   <span class="k">-</span> utter_greet
@@ -447,7 +450,7 @@ include NLU data, so that both components of Rasa can be tested.  Create a file 
 </pre></div>
 </div>
 <p>To test our model against the test file, run the command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa <span class="nb">test</span> --e2e --stories test_stories.md
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa <span class="nb">test</span> --stories tests/conversation_tests.md
 </pre></div>
 </div>
 <p>The test command will produce a directory named <code class="docutils literal notranslate"><span class="pre">results</span></code>. It should contain a file

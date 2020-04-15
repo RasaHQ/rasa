@@ -141,6 +141,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../setting-up-ci-cd/">Setting up CI/CD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../validate-files/">Validate Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuring-http-api/">Configuring the HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../how-to-deploy/">Deploying Your Rasa Assistant</a></li>
@@ -215,12 +216,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.5
+          viewing: 1.9.6
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.9.6/user-guide/command-line-interface/">1.9.6</a>
               <a href="../.././1.9.5/user-guide/command-line-interface/">1.9.5</a>
               <a href="../.././1.9.4/user-guide/command-line-interface/">1.9.4</a>
               <a href="../.././1.9.3/user-guide/command-line-interface/">1.9.3</a>
@@ -493,7 +495,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: ee59609b91e94c2c87e6f39c20a8ef89)
+                        generated. (default: 44d223ce5e224c298254c6762b08ed22)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
@@ -572,7 +574,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        d281584bff9a4952a19962db760c23cc)
+                        bcd7b1e3307845f599826f9924b4f262)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
@@ -938,7 +940,14 @@ Python Logging Options:
                         None)
 </pre></div>
 </div>
-<p>This command will attempt to keep the proportions of intents the same in train and test.</p>
+<p>This command will attempt to keep the proportions of intents the same in train and test.
+If you have NLG data for retrieval actions, this will be saved to seperate files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls train_test_split
+
+      nlg_test_data.md     test_data.json
+      nlg_training_data.md training_data.json
+</pre></div>
+</div>
 </div>
 <div class="section" id="convert-data-between-markdown-and-json">
 <h2><a class="toc-backref" href="#id12">Convert Data Between Markdown and JSON</a><a class="headerlink" href="#convert-data-between-markdown-and-json" title="Permalink to this headline">¶</a></h2>

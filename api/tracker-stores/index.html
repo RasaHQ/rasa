@@ -145,6 +145,7 @@ provides implementations for different store types out of the box." />
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/setting-up-ci-cd/">Setting up CI/CD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
@@ -219,12 +220,13 @@ provides implementations for different store types out of the box." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.5
+          viewing: 1.9.6
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.9.6/api/tracker-stores/">1.9.6</a>
               <a href="../.././1.9.5/api/tracker-stores/">1.9.5</a>
               <a href="../.././1.9.4/api/tracker-stores/">1.9.4</a>
               <a href="../.././1.9.3/api/tracker-stores/">1.9.3</a>
@@ -419,7 +421,7 @@ rename it to <code class="docutils literal notranslate"><span class="pre">oracle
 Copy the following into a file called <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code>:</p>
 <blockquote>
 <div><pre class="literal-block">
-FROM rasa/rasa:1.9.5-full
+FROM rasa/rasa:1.9.6-full
 
 # Switch to root user to install packages
 USER root
@@ -442,7 +444,7 @@ USER 1001
 <p>Then build the docker image:</p>
 <blockquote>
 <div><pre class="literal-block">
-docker build . -t rasa-oracle:1.9.5-oracle-full
+docker build . -t rasa-oracle:1.9.6-oracle-full
 </pre>
 </div></blockquote>
 <p class="last">Now you can configure the tracker store in the <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> as described above,
