@@ -4,7 +4,7 @@ import random
 from collections import Counter, OrderedDict
 from copy import deepcopy
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
 import rasa.nlu.utils
 from rasa.utils.common import raise_warning, lazy_property
@@ -15,6 +15,8 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    INTENT,
+    ENTITIES,
 )
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
@@ -82,20 +84,34 @@ class TrainingData:
             nlg_stories,
         )
 
-    def filter_by_intent(self, intent: Text):
-        """Filter training examples """
+    def filter_training_examples(
+        self, condition: Callable[[Message], bool]
+    ) -> "TrainingData":
+        """Filter training examples.
 
-        training_examples = []
-        for ex in self.training_examples:
-            if ex.get("intent") == intent:
-                training_examples.append(ex)
+        Args:
+            condition: A function that will be applied to filter training examples.
+
+        Returns:
+            TrainingData: A TrainingData with filtered training examples.
+        """
 
         return TrainingData(
-            training_examples,
+            list(filter(condition, self.training_examples)),
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
         )
+
+    def filter_by_intent(self, intent: Text) -> "TrainingData":
+        """Filter training examples."""
+        raise_warning(
+            "The `filter_by_intent` function is deprecated. "
+            "Please use `filter_training_examples` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.filter_training_examples(lambda ex: intent == ex.get(INTENT))
 
     def __hash__(self) -> int:
         from rasa.core import utils as core_utils
@@ -114,49 +130,49 @@ class TrainingData:
         """
 
         for ex in examples:
-            if ex.get("intent"):
-                ex.set("intent", ex.get("intent").strip())
+            if ex.get(INTENT):
+                ex.set(INTENT, ex.get(INTENT).strip())
 
-            if ex.get("response"):
-                ex.set("response", ex.get("response").strip())
+            if ex.get(RESPONSE):
+                ex.set(RESPONSE, ex.get(RESPONSE).strip())
 
         return list(OrderedDict.fromkeys(examples))
 
     @lazy_property
     def intent_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get("intent")]
+        return [ex for ex in self.training_examples if ex.get(INTENT)]
 
     @lazy_property
     def response_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get("response")]
+        return [ex for ex in self.training_examples if ex.get(RESPONSE)]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get("entities")]
+        return [ex for ex in self.training_examples if ex.get(ENTITIES)]
 
     @lazy_property
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
-        return {ex.get("intent") for ex in self.training_examples} - {None}
+        return {ex.get(INTENT) for ex in self.training_examples} - {None}
 
     @lazy_property
     def responses(self) -> Set[Text]:
         """Returns the set of responses in the training data."""
-        return {ex.get("response") for ex in self.training_examples} - {None}
+        return {ex.get(RESPONSE) for ex in self.training_examples} - {None}
 
     @lazy_property
     def retrieval_intents(self) -> Set[Text]:
         """Returns the total number of response types in the training data"""
         return {
-            ex.get("intent")
+            ex.get(INTENT)
             for ex in self.training_examples
-            if ex.get("response") is not None
+            if ex.get(RESPONSE) is not None
         }
 
     @lazy_property
     def examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
-        intents = [ex.get("intent") for ex in self.training_examples]
+        intents = [ex.get(INTENT) for ex in self.training_examples]
         return dict(Counter(intents))
 
     @lazy_property
@@ -341,7 +357,7 @@ class TrainingData:
         """Sorts the intent examples by the name of the intent and then response"""
 
         return sorted(
-            self.intent_examples, key=lambda e: (e.get("intent"), e.get("response"))
+            self.intent_examples, key=lambda e: (e.get(INTENT), e.get(RESPONSE))
         )
 
     def validate(self) -> None:
@@ -435,7 +451,7 @@ class TrainingData:
     ) -> Tuple[list, list]:
         train, test = [], []
         for intent, count in self.examples_per_intent.items():
-            ex = [e for e in self.intent_examples if e.data["intent"] == intent]
+            ex = [e for e in self.intent_examples if e.data[INTENT] == intent]
             if random_seed is not None:
                 random.Random(random_seed).shuffle(ex)
             else:

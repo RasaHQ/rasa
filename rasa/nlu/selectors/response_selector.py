@@ -273,7 +273,9 @@ class ResponseSelector(DIETClassifier):
         """
 
         if self.retrieval_intent:
-            training_data = training_data.filter_by_intent(self.retrieval_intent)
+            training_data = training_data.filter_training_examples(
+                lambda ex: self.retrieval_intent == ex.get(INTENT)
+            )
         else:
             # retrieval intent was left to its default value
             logger.info(
