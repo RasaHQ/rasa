@@ -13,7 +13,7 @@ Installation
 Quick Installation
 ~~~~~~~~~~~~~~~~~~
 
-You can install Rasa Open Source using pip (requires Python 3.6 or 3.7).
+You can install Rasa Open Source using pip (requires Python 3.6.1 and higher or Python 3.7).
 
 .. code-block:: bash
 
