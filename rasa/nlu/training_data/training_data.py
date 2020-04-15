@@ -81,16 +81,14 @@ class TrainingData:
         """Filter training examples.
 
         Args:
-            - condition: A function that will be applied to filter training examples.
+            condition: A function that will be applied to filter training examples.
+
+        Returns:
+            TrainingData: filtered TrainingData with
         """
 
-        training_examples = []
-        for ex in self.training_examples:
-            if condition(ex):
-                training_examples.append(ex)
-
         return TrainingData(
-            training_examples,
+            list(filter(condition, self.training_examples)),
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,

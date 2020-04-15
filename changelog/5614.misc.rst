@@ -1,2 +1,2 @@
-Replace ``filter_by_intent`` function with a more general function which filters training
+Replace ``TrainingData.filter_by_intent`` function with a more general function which filters training
 examples using a filtering function.
