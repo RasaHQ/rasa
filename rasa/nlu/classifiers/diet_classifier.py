@@ -1077,6 +1077,9 @@ class DIET(RasaModel):
         self._tf_layers[f"sparse_dropout.{name}"] = layers.SparseDropout(
             rate=self.config[DROP_RATE]
         )
+        self._tf_layers[f"dropout.{name}"] = tf.keras.layers.Dropout(
+            rate=self.config[DROP_RATE]
+        )
         self._prepare_sparse_dense_layers(
             self.data_signature[f"{name}_features"],
             name,
@@ -1185,7 +1188,8 @@ class DIET(RasaModel):
             else:
                 dense_features.append(f)
 
-        return tf.concat(dense_features, axis=-1) * mask
+        outputs = tf.concat(dense_features, axis=-1) * mask
+        return self._tf_layers[f"dropout.{name}"](outputs)
 
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
