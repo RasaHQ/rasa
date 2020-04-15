@@ -1,3 +1,12 @@
+if (!String.prototype.startsWith) {
+  Object.defineProperty(String.prototype, 'startsWith', {
+    value: function(search, pos) {
+      pos = !pos || pos < 0 ? 0 : +pos;
+      return this.substring(pos, pos + search.length) === search;
+    }
+  });
+}
+
 // From http://stackoverflow.com/questions/123999/how-to-tell-if-a-dom-element-is-visible-in-the-current-viewport
 function elementIsInView (el) {
   if (typeof jQuery === "function" && el instanceof jQuery) {

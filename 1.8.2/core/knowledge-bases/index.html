@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Knowledge Base Actions</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Dialogue Elements" href="../../dialogue-elements/dialogue-elements/" />
@@ -242,8 +241,6 @@ in open source bot framework Rasa." />
               <a href="../../../1.4.6/core/knowledge-bases/">1.4.6</a>
               <a href="../../../1.3.10/core/knowledge-bases/">1.3.10</a>
               <a href="../../../1.2.9/index/">1.2.9</a>
-              <a href="../../../1.1.8/index/">1.1.8</a>
-              <a href="../../../1.0.9/index/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -282,31 +279,34 @@ in open source bot framework Rasa." />
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/core/knowledge-bases.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This feature is experimental.
+<p class="admonition-title">Warning</p>
+<p>This feature is experimental.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.
 If you have feedback (positive or negative) please share it with us on the <a class="reference external" href="https://forum.rasa.com">forum</a>.</p>
 </div>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#using-actionqueryknowledgebase" id="id4">Using <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code></a><ul>
-<li><a class="reference internal" href="#create-a-knowledge-base" id="id5">Create a Knowledge Base</a></li>
-<li><a class="reference internal" href="#define-the-nlu-data" id="id6">Define the NLU Data</a></li>
-<li><a class="reference internal" href="#create-an-action-to-query-your-knowledge-base" id="id7">Create an Action to Query your Knowledge Base</a></li>
+<li><p><a class="reference internal" href="#using-actionqueryknowledgebase" id="id4">Using <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code></a></p>
+<ul>
+<li><p><a class="reference internal" href="#create-a-knowledge-base" id="id5">Create a Knowledge Base</a></p></li>
+<li><p><a class="reference internal" href="#define-the-nlu-data" id="id6">Define the NLU Data</a></p></li>
+<li><p><a class="reference internal" href="#create-an-action-to-query-your-knowledge-base" id="id7">Create an Action to Query your Knowledge Base</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#how-it-works" id="id8">How It Works</a><ul>
-<li><a class="reference internal" href="#query-the-knowledge-base-for-objects" id="id9">Query the Knowledge Base for Objects</a></li>
-<li><a class="reference internal" href="#query-the-knowledge-base-for-an-attribute-of-an-object" id="id10">Query the Knowledge Base for an Attribute of an Object</a></li>
-<li><a class="reference internal" href="#resolve-mentions" id="id11">Resolve Mentions</a></li>
+<li><p><a class="reference internal" href="#how-it-works" id="id8">How It Works</a></p>
+<ul>
+<li><p><a class="reference internal" href="#query-the-knowledge-base-for-objects" id="id9">Query the Knowledge Base for Objects</a></p></li>
+<li><p><a class="reference internal" href="#query-the-knowledge-base-for-an-attribute-of-an-object" id="id10">Query the Knowledge Base for an Attribute of an Object</a></p></li>
+<li><p><a class="reference internal" href="#resolve-mentions" id="id11">Resolve Mentions</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#customization" id="id12">Customization</a><ul>
-<li><a class="reference internal" href="#customizing-actionqueryknowledgebase" id="id13">Customizing <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code></a></li>
-<li><a class="reference internal" href="#creating-your-own-knowledge-base-actions" id="id14">Creating Your Own Knowledge Base Actions</a></li>
-<li><a class="reference internal" href="#customizing-the-inmemoryknowledgebase" id="id15">Customizing the <code class="docutils literal notranslate"><span class="pre">InMemoryKnowledgeBase</span></code></a></li>
-<li><a class="reference internal" href="#creating-your-own-knowledge-base" id="id16">Creating Your Own Knowledge Base</a></li>
+<li><p><a class="reference internal" href="#customization" id="id12">Customization</a></p>
+<ul>
+<li><p><a class="reference internal" href="#customizing-actionqueryknowledgebase" id="id13">Customizing <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code></a></p></li>
+<li><p><a class="reference internal" href="#creating-your-own-knowledge-base-actions" id="id14">Creating Your Own Knowledge Base Actions</a></p></li>
+<li><p><a class="reference internal" href="#customizing-the-inmemoryknowledgebase" id="id15">Customizing the <code class="docutils literal notranslate"><span class="pre">InMemoryKnowledgeBase</span></code></a></p></li>
+<li><p><a class="reference internal" href="#creating-your-own-knowledge-base" id="id16">Creating Your Own Knowledge Base</a></p></li>
 </ul>
 </li>
 </ul>
@@ -408,10 +408,10 @@ If it doesn’t, you’ll have to <a class="reference internal" href="#customize
 <h3><a class="toc-backref" href="#id6">Define the NLU Data</a><a class="headerlink" href="#define-the-nlu-data" title="Permalink to this headline">¶</a></h3>
 <p>In this section:</p>
 <ul class="simple">
-<li>we will introduce a new intent, <code class="docutils literal notranslate"><span class="pre">query_knowledge_base</span></code></li>
-<li>we will to annotate <code class="docutils literal notranslate"><span class="pre">mention</span></code> entities so that our model detects indirect mentions of objects like “the
-first one”</li>
-<li>we will use <a class="reference internal" href="../../nlu/training-data-format/#entity-synonyms"><span class="std std-ref">synonyms</span></a> extensively</li>
+<li><p>we will introduce a new intent, <code class="docutils literal notranslate"><span class="pre">query_knowledge_base</span></code></p></li>
+<li><p>we will to annotate <code class="docutils literal notranslate"><span class="pre">mention</span></code> entities so that our model detects indirect mentions of objects like “the
+first one”</p></li>
+<li><p>we will use <a class="reference internal" href="../../nlu/training-data-format/#entity-synonyms"><span class="std std-ref">synonyms</span></a> extensively</p></li>
 </ul>
 <p>For the bot to understand that the user wants to retrieve information from the knowledge base, you need to define
 a new intent. We will call it <code class="docutils literal notranslate"><span class="pre">query_knowledge_base</span></code>.</p>
@@ -441,29 +441,29 @@ You should add examples for every object type that exists in your knowledge base
 <p>In addition to adding a variety of training examples for each query type,
 you need to specify the and annotate the following entities in your training examples:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">object_type</span></code>: Whenever a training example references a specific object type from your knowledge base, the object type should
+<li><p><code class="docutils literal notranslate"><span class="pre">object_type</span></code>: Whenever a training example references a specific object type from your knowledge base, the object type should
 be marked as an entity. Use <a class="reference internal" href="../../nlu/training-data-format/#entity-synonyms"><span class="std std-ref">synonyms</span></a> to map e.g. <code class="docutils literal notranslate"><span class="pre">restaurants</span></code> to <code class="docutils literal notranslate"><span class="pre">restaurant</span></code>, the correct
-object type listed as a key in the knowledge base.</li>
-<li><code class="docutils literal notranslate"><span class="pre">mention</span></code>: If the user refers to an object via “the first one”, “that one”, or “it”, you should mark those terms
+object type listed as a key in the knowledge base.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mention</span></code>: If the user refers to an object via “the first one”, “that one”, or “it”, you should mark those terms
 as <code class="docutils literal notranslate"><span class="pre">mention</span></code>. We also use synonyms to map some of the mentions to symbols. You can learn about that
-in <a class="reference internal" href="#resolve-mentions"><span class="std std-ref">resolving mentions</span></a>.</li>
-<li><code class="docutils literal notranslate"><span class="pre">attribute</span></code>: All attribute names defined in your knowledge base should be identified as <code class="docutils literal notranslate"><span class="pre">attribute</span></code> in the
+in <a class="reference internal" href="#resolve-mentions"><span class="std std-ref">resolving mentions</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">attribute</span></code>: All attribute names defined in your knowledge base should be identified as <code class="docutils literal notranslate"><span class="pre">attribute</span></code> in the
 NLU data. Again, use synonyms to map variations of an attribute name to the one used in the
-knowledge base.</li>
+knowledge base.</p></li>
 </ul>
 <p>Remember to add those entities to your domain file (as entities and slots):</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">entities</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">entities</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">object_type</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mention</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">attribute</span>
 
-<span class="l l-Scalar l-Scalar-Plain">slots</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">object_type</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
-  <span class="l l-Scalar l-Scalar-Plain">mention</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
-  <span class="l l-Scalar l-Scalar-Plain">attribute</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
+<span class="nt">slots</span><span class="p">:</span>
+  <span class="nt">object_type</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
+  <span class="nt">mention</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
+  <span class="nt">attribute</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
 </pre></div>
 </div>
 </div>
@@ -483,13 +483,13 @@ It can be either an <code class="docutils literal notranslate"><span class="pre"
 You can only pull information from one knowledge base, as the usage of multiple knowledge bases at the same time is not supported.</p>
 <p>This is the entirety of the code for this action! The name of the action is <code class="docutils literal notranslate"><span class="pre">action_query_knowledge_base</span></code>.
 Don’t forget to add it to your domain file:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">actions</span><span class="p">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">action_query_knowledge_base</span>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">If you overwrite the default action name <code class="docutils literal notranslate"><span class="pre">action_query_knowledge_base</span></code>, you need to add the following three
+<p class="admonition-title">Note</p>
+<p>If you overwrite the default action name <code class="docutils literal notranslate"><span class="pre">action_query_knowledge_base</span></code>, you need to add the following three
 unfeaturized slots to your domain file: <code class="docutils literal notranslate"><span class="pre">knowledge_base_objects</span></code>, <code class="docutils literal notranslate"><span class="pre">knowledge_base_last_object</span></code>, and
 <code class="docutils literal notranslate"><span class="pre">knowledge_base_last_object_type</span></code>.
 The slots are used internally by <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code>.
@@ -526,12 +526,14 @@ previously set slots to decide what to query for.</p>
 <p>In order to query the knowledge base for any kind of object, the user’s request needs to include the object type.
 Let’s look at an example:</p>
 <blockquote>
-<div><cite>Can you please name some restaurants?</cite></div></blockquote>
+<div><p><cite>Can you please name some restaurants?</cite></p>
+</div></blockquote>
 <p>This question includes the object type of interest: “restaurant.”
 The bot needs to pick up on this entity in order to formulate a query – otherwise the action would not know what objects the user is interested in.</p>
 <p>When the user says something like:</p>
 <blockquote>
-<div><cite>What Italian restaurant options in Berlin do I have?</cite></div></blockquote>
+<div><p><cite>What Italian restaurant options in Berlin do I have?</cite></p>
+</div></blockquote>
 <p>The user wants to obtain a list of restaurants that (1) have Italian cuisine and (2) are located in
 Berlin. If the NER detects those attributes in the request of the user, the action will use those to filter the
 restaurants found in the knowledge base.</p>
@@ -548,7 +550,8 @@ You also need to add those as entities and slots to the domain file.</p>
 attribute of interest.
 For example, if the user asks something like:</p>
 <blockquote>
-<div><cite>What is the cuisine of Berlin Burrito Company?</cite></div></blockquote>
+<div><p><cite>What is the cuisine of Berlin Burrito Company?</cite></p>
+</div></blockquote>
 <p>The user wants to obtain the “cuisine” (attribute of interest) for the restaurant “Berlin Burrito Company” (object of
 interest).</p>
 <p>The attribute and object of interest should be marked as entities in the NLU training data:</p>
@@ -563,16 +566,17 @@ interest).</p>
 Users can either refer to the object of interest by its name, e.g. “Berlin Burrito Company” (representation string
 of the object), or they may refer to a previously listed object via a mention, for example:</p>
 <blockquote>
-<div><cite>What is the cuisine of the second restaurant you mentioned?</cite></div></blockquote>
+<div><p><cite>What is the cuisine of the second restaurant you mentioned?</cite></p>
+</div></blockquote>
 <p>Our action is able to resolve these mentions to the actual object in the knowledge base.
 More specifically, it can resolve two mention types: (1) ordinal mentions, such as “the first one”, and (2)
 mentions such as “it” or “that one”.</p>
 <p><strong>Ordinal Mentions</strong></p>
 <p>When a user refers to an object by its position in a list, it is called an ordinal mention. Here’s an example:</p>
 <ul class="simple">
-<li>User: <cite>What restaurants in Berlin do you know?</cite></li>
-<li>Bot: <cite>Found the following objects of type ‘restaurant’:  1: I due forni  2: PastaBar  3: Berlin Burrito Company</cite></li>
-<li>User: <cite>Does the first one have outside seating?</cite></li>
+<li><p>User: <cite>What restaurants in Berlin do you know?</cite></p></li>
+<li><p>Bot: <cite>Found the following objects of type ‘restaurant’:  1: I due forni  2: PastaBar  3: Berlin Burrito Company</cite></p></li>
+<li><p>User: <cite>Does the first one have outside seating?</cite></p></li>
 </ul>
 <p>The user referred to “I due forni” by the term “the first one”.
 Other ordinal mentions might include “the second one,” “the last one,” “any,” or “3”.</p>
@@ -613,11 +617,11 @@ the actual object “I due forni”.</p>
 <p><strong>Other Mentions</strong></p>
 <p>Take a look at the following conversation:</p>
 <ul class="simple">
-<li>User: <cite>What is the cuisine of PastaBar?</cite></li>
-<li>Bot: <cite>PastaBar has an Italian cuisine.</cite></li>
-<li>User: <cite>Does it have wifi?</cite></li>
-<li>Bot: <cite>Yes.</cite></li>
-<li>User: <cite>Can you give me an address?</cite></li>
+<li><p>User: <cite>What is the cuisine of PastaBar?</cite></p></li>
+<li><p>Bot: <cite>PastaBar has an Italian cuisine.</cite></p></li>
+<li><p>User: <cite>Does it have wifi?</cite></p></li>
+<li><p>Bot: <cite>Yes.</cite></p></li>
+<li><p>User: <cite>Can you give me an address?</cite></p></li>
 </ul>
 <p>In the question “Does it have wifi?”, the user refers to “PastaBar” by the word “it”.
 If the NER detected “it” as the entity <code class="docutils literal notranslate"><span class="pre">mention</span></code>, the knowledge base action would resolve it to the last mentioned
@@ -636,32 +640,36 @@ mentioned object, “PastaBar”.</p>
 <p>You can overwrite the following two functions of <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code> if you’d like to customize what the bot
 says to the user:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">utter_objects()</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">utter_attribute_value()</span></code></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">utter_objects()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">utter_attribute_value()</span></code></p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">utter_objects()</span></code> is used when the user has requested a list of objects.
 Once the bot has retrieved the objects from the knowledge base, it will respond to the user by default with a message, formatted like:</p>
 <blockquote>
-<div><cite>Found the following objects of type ‘restaurant’:</cite>
+<div><p><cite>Found the following objects of type ‘restaurant’:</cite>
 <cite>1: I due forni</cite>
 <cite>2: PastaBar</cite>
-<cite>3: Berlin Burrito Company</cite></div></blockquote>
+<cite>3: Berlin Burrito Company</cite></p>
+</div></blockquote>
 <p>Or, if no objects are found,</p>
 <blockquote>
-<div><cite>I could not find any objects of type ‘restaurant’.</cite></div></blockquote>
+<div><p><cite>I could not find any objects of type ‘restaurant’.</cite></p>
+</div></blockquote>
 <p>If you want to change the utterance format, you can overwrite the method <code class="docutils literal notranslate"><span class="pre">utter_objects()</span></code> in your action.</p>
 <p>The function <code class="docutils literal notranslate"><span class="pre">utter_attribute_value()</span></code> determines what the bot utters when the user is asking for specific information about
 an object.</p>
 <p>If the attribute of interest was found in the knowledge base, the bot will respond with the following utterance:</p>
 <blockquote>
-<div><cite>‘Berlin Burrito Company’ has the value ‘Mexican’ for attribute ‘cuisine’.</cite></div></blockquote>
+<div><p><cite>‘Berlin Burrito Company’ has the value ‘Mexican’ for attribute ‘cuisine’.</cite></p>
+</div></blockquote>
 <p>If no value for the requested attribute was found, the bot will respond with</p>
 <blockquote>
-<div><cite>Did not find a valid value for attribute ‘cuisine’ for object ‘Berlin Burrito Company’.</cite></div></blockquote>
+<div><p><cite>Did not find a valid value for attribute ‘cuisine’ for object ‘Berlin Burrito Company’.</cite></p>
+</div></blockquote>
 <p>If you want to change the bot utterance, you can overwrite the method <code class="docutils literal notranslate"><span class="pre">utter_attribute_value()</span></code>.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">There is a <a class="reference external" href="https://blog.rasa.com/integrating-rasa-with-knowledge-bases/">tutorial</a> on our blog about
+<p class="admonition-title">Note</p>
+<p>There is a <a class="reference external" href="https://blog.rasa.com/integrating-rasa-with-knowledge-bases/">tutorial</a> on our blog about
 how to use knowledge bases in custom actions. The tutorial explains the implementation behind
 <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code> in detail.</p>
 </div>
@@ -671,8 +679,8 @@ how to use knowledge bases in custom actions. The tutorial explains the implemen
 <p><code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code> should allow you to easily get started with integrating knowledge bases into your actions.
 However, the action can only handle two kind of user requests:</p>
 <ul class="simple">
-<li>the user wants to get a list of objects from the knowledge base</li>
-<li>the user wants to get the value of an attribute for a specific object</li>
+<li><p>the user wants to get a list of objects from the knowledge base</p></li>
+<li><p>the user wants to get the value of an attribute for a specific object</p></li>
 </ul>
 <p>The action is not able to compare objects or consider relations between objects in your knowledge base.
 Furthermore, resolving any mention to the last mentioned object in the conversation might not always be optimal.</p>
@@ -690,13 +698,12 @@ it on the <a class="reference external" href="https://forum.rasa.com">forum</a>!
 <p>The class <code class="docutils literal notranslate"><span class="pre">InMemoryKnowledgeBase</span></code> inherits <code class="docutils literal notranslate"><span class="pre">KnowledgeBase</span></code>.
 You can customize your <code class="docutils literal notranslate"><span class="pre">InMemoryKnowledgeBase</span></code> by overwriting the following functions:</p>
 <ul>
-<li><p class="first"><code class="docutils literal notranslate"><span class="pre">get_key_attribute_of_object()</span></code>: To keep track of what object the user was talking about last, we store the value
+<li><p><code class="docutils literal notranslate"><span class="pre">get_key_attribute_of_object()</span></code>: To keep track of what object the user was talking about last, we store the value
 of the key attribute in a specific slot. Every object should have a key attribute that is unique,
 similar to the primary key in a relational database. By default, the name of the key attribute for every object type
 is set to <code class="docutils literal notranslate"><span class="pre">id</span></code>. You can overwrite the name of the key attribute for a specific object type by calling
-<code class="docutils literal notranslate"><span class="pre">set_key_attribute_of_object()</span></code>.</p>
-</li>
-<li><p class="first"><code class="docutils literal notranslate"><span class="pre">get_representation_function_of_object()</span></code>: Let’s focus on the following restaurant:</p>
+<code class="docutils literal notranslate"><span class="pre">set_key_attribute_of_object()</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_representation_function_of_object()</span></code>: Let’s focus on the following restaurant:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
     <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Donath&quot;</span><span class="p">,</span>
@@ -720,7 +727,7 @@ If your object does not have a <code class="docutils literal notranslate"><span 
 ambiguous, you should set a new lambda function for that object type by calling
 <code class="docutils literal notranslate"><span class="pre">set_representation_function_of_object()</span></code>.</p>
 </li>
-<li><p class="first"><code class="docutils literal notranslate"><span class="pre">set_ordinal_mention_mapping()</span></code>: The ordinal mention mapping is needed to resolve an ordinal mention, such as
+<li><p><code class="docutils literal notranslate"><span class="pre">set_ordinal_mention_mapping()</span></code>: The ordinal mention mapping is needed to resolve an ordinal mention, such as
 “second one,” to an object in a list. By default, the ordinal mention mapping looks like this:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="s2">&quot;1&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
@@ -758,8 +765,8 @@ provides more information on what those methods should do.</p>
 <p>You can also customize your knowledge base further, by adapting the methods mentioned in the section
 <a class="reference internal" href="#customize-in-memory-knowledge-base"><span class="std std-ref">Customizing the InMemoryKnowledgeBase</span></a>.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">We wrote a <a class="reference external" href="https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/">blog post</a>
+<p class="admonition-title">Note</p>
+<p>We wrote a <a class="reference external" href="https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/">blog post</a>
 that explains how you can set up your own knowledge base.</p>
 </div>
 </div>
