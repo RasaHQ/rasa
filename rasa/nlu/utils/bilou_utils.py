@@ -65,7 +65,7 @@ def bilou_tags_to_ids(
 
     Returns: a list of tag ids
     """
-    bilou_key = _get_bilou_key_for_tag(tag_name)
+    bilou_key = get_bilou_key_for_tag(tag_name)
 
     if message.get(bilou_key):
         _tags = [
@@ -78,7 +78,7 @@ def bilou_tags_to_ids(
     return _tags
 
 
-def _get_bilou_key_for_tag(tag_name: Text) -> Text:
+def get_bilou_key_for_tag(tag_name: Text) -> Text:
     """Get the message key for the BILOU tagging format of the provided tag name.
 
     Args:
@@ -119,7 +119,7 @@ def build_tag_id_dict(
 
     Returns: a mapping of tags to ids
     """
-    bilou_key = _get_bilou_key_for_tag(tag_name)
+    bilou_key = get_bilou_key_for_tag(tag_name)
 
     distinct_tags = set(
         [
@@ -192,7 +192,9 @@ def map_message_entities(
             entity.get(attribute_key) or NO_ENTITY_TAG,
         )
 
-    return [convert_entity(entity) for entity in message.get(ENTITIES, [])]
+    entities = [convert_entity(entity) for entity in message.get(ENTITIES, [])]
+    # filter out no entity tags
+    return [entity for entity in entities if entity[2] != NO_ENTITY_TAG]
 
 
 def bilou_tags_from_offsets(

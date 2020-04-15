@@ -22,7 +22,6 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     ENTITIES,
     NO_ENTITY_TAG,
-    BILOU_ENTITIES,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
@@ -35,14 +34,24 @@ if typing.TYPE_CHECKING:
     from sklearn_crfsuite import CRF
 
 
-class CRFToken(NamedTuple):
-    text: Text
-    pos_tag: Text
-    pattern: Dict[Text, Any]
-    dense_features: np.ndarray
-    entity_label: Text
-    entity_role_label: Text
-    entity_group_label: Text
+class CRFToken:
+    def __init__(
+        self,
+        text: Text,
+        pos_tag: Text,
+        pattern: Dict[Text, Any],
+        dense_features: np.ndarray,
+        entity_label: Text,
+        entity_role_label: Text,
+        entity_group_label: Text,
+    ):
+        self.text = text
+        self.pos_tag = pos_tag
+        self.pattern = pattern
+        self.dense_features = dense_features
+        self.entity_label = entity_label
+        self.entity_role_label = entity_role_label
+        self.entity_group_label = entity_group_label
 
 
 class CRFEntityExtractor(EntityExtractor):
@@ -153,6 +162,8 @@ class CRFEntityExtractor(EntityExtractor):
         if self.component_config["BILOU_flag"]:
             bilou_utils.apply_bilou_schema(training_data, include_cls_token=False)
 
+        self.crf_order = self._update_crf_order(training_data)
+
         # filter out pre-trained entity examples
         entity_examples = self.filter_trainable_entities(
             training_data.training_examples
@@ -160,6 +171,20 @@ class CRFEntityExtractor(EntityExtractor):
         dataset = self._create_dataset(entity_examples)
 
         self._train_model(dataset)
+
+    def _update_crf_order(self, training_data: TrainingData) -> List[Text]:
+        """Train only CRFs we actually have training data for."""
+        _crfs = []
+
+        for tag_name in self.crf_order:
+            if tag_name == ENTITY_ATTRIBUTE_TYPE and training_data.entities:
+                _crfs.append(ENTITY_ATTRIBUTE_TYPE)
+            elif tag_name == ENTITY_ATTRIBUTE_ROLE and training_data.entity_roles:
+                _crfs.append(ENTITY_ATTRIBUTE_ROLE)
+            elif tag_name == ENTITY_ATTRIBUTE_GROUP and training_data.entity_groups:
+                _crfs.append(ENTITY_ATTRIBUTE_GROUP)
+
+        return _crfs
 
     def _create_dataset(self, examples: List[Message]) -> List[List[CRFToken]]:
         dataset = []
@@ -185,10 +210,20 @@ class CRFEntityExtractor(EntityExtractor):
             return []
 
         dataset = self._create_dataset([message])
-        features = self._sentence_to_features(dataset[0])
-        predictions = self.entity_taggers[
-            ENTITY_ATTRIBUTE_TYPE
-        ].predict_marginals_single(features)
+
+        predictions = {}
+        for name, entity_tagger in self.entity_taggers.items():
+            include_tag_features = name != ENTITY_ATTRIBUTE_TYPE
+            if include_tag_features and ENTITY_ATTRIBUTE_TYPE in predictions:
+                tag_confidence_list = [
+                    self._most_likely_entity(prediction)
+                    for prediction in predictions[ENTITY_ATTRIBUTE_TYPE]
+                ]
+                for tag_conf, token in zip(tag_confidence_list, dataset[0]):
+                    token.entity_label = tag_conf[0]
+
+            features = self._sentence_to_features(dataset[0], include_tag_features)
+            predictions[name] = entity_tagger.predict_marginals_single(features)
 
         return self._create_entities(message, predictions)
 
@@ -233,26 +268,30 @@ class CRFEntityExtractor(EntityExtractor):
         return message.get(TOKENS_NAMES[TEXT])[:-1]
 
     def _create_entities(
-        self, message: Message, predictions: List[Dict[Text, float]]
+        self, message: Message, predictions: Dict[Text, List[Dict[Text, float]]]
     ) -> List[Dict[Text, Any]]:
 
         tokens = self._tokens_without_cls(message)
 
-        if len(tokens) != len(predictions):
-            raise Exception(
-                "Inconsistency in amount of tokens between crfsuite and message"
-            )
+        tags = {}
+        confidences = {}
 
-        tag_confidence_list = [
-            self._most_likely_entity(prediction) for prediction in predictions
-        ]
-        confidences = {ENTITY_ATTRIBUTE_TYPE: [x[1] for x in tag_confidence_list]}
-        tags = [x[0] for x in tag_confidence_list]
+        for name, predicted_tags in predictions.items():
+            if len(tokens) != len(predicted_tags):
+                raise Exception(
+                    "Inconsistency in amount of tokens between crfsuite and message"
+                )
 
-        if self.component_config["BILOU_flag"]:
-            tags = bilou_utils.remove_bilou_prefixes(tags)
+            tag_confidence_list = [
+                self._most_likely_entity(prediction) for prediction in predicted_tags
+            ]
+            confidences[name] = [x[1] for x in tag_confidence_list]
+            _tags = [x[0] for x in tag_confidence_list]
 
-        tags = {ENTITY_ATTRIBUTE_TYPE: tags}
+            if self.component_config["BILOU_flag"]:
+                _tags = bilou_utils.remove_bilou_prefixes(_tags)
+
+            tags[name] = _tags
 
         return self.convert_tags_to_entities(message.text, tokens, tags, confidences)
 
@@ -429,9 +468,21 @@ class CRFEntityExtractor(EntityExtractor):
 
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
-            entity = entity_labels[ENTITY_ATTRIBUTE_TYPE][i]
-            group = entity_labels[ENTITY_ATTRIBUTE_GROUP][i]
-            role = entity_labels[ENTITY_ATTRIBUTE_ROLE][i]
+            entity = (
+                entity_labels[ENTITY_ATTRIBUTE_TYPE][i]
+                if ENTITY_ATTRIBUTE_TYPE in entity_labels
+                else None
+            )
+            group = (
+                entity_labels[ENTITY_ATTRIBUTE_GROUP][i]
+                if ENTITY_ATTRIBUTE_GROUP in entity_labels
+                else None
+            )
+            role = (
+                entity_labels[ENTITY_ATTRIBUTE_ROLE][i]
+                if ENTITY_ATTRIBUTE_ROLE in entity_labels
+                else None
+            )
             tag = token.get(POS_TAG_KEY)
             dense_features = (
                 text_dense_features[i] if text_dense_features is not None else []
@@ -456,11 +507,10 @@ class CRFEntityExtractor(EntityExtractor):
         entity_labels = {}
 
         for name in self.crf_order:
-            if name == ENTITY_ATTRIBUTE_TYPE and self.component_config["BILOU_flag"]:
-                # If BILOU tagging is enabled we use the BILOU format for the
-                # entity labels
-                if message.get(BILOU_ENTITIES):
-                    labels = message.get(BILOU_ENTITIES)
+            if self.component_config["BILOU_flag"]:
+                key = bilou_utils.get_bilou_key_for_tag(name)
+                if message.get(key):
+                    labels = message.get(key)
                 else:
                     labels = [NO_ENTITY_TAG for _ in tokens]
             else:
