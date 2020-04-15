@@ -64,7 +64,7 @@ name = "Miscellaneous internal changes"
 showcontent = false
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.6.1"
 boto3 = "^1.12"
 requests = "^2.23"
 matplotlib = ">=3.1,<3.3"
