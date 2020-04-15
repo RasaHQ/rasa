@@ -209,7 +209,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.entity_taggers is None:
             return []
 
-        crf_tokens = self._create_dataset([message])[0]
+        crf_tokens = self._convert_to_crf_tokens(message)
 
         predictions = {}
         for name, entity_tagger in self.entity_taggers.items():
@@ -232,56 +232,49 @@ class CRFEntityExtractor(EntityExtractor):
 
         if ENTITY_ATTRIBUTE_TYPE in predictions:
             tag_confidence_list = [
-                self._most_likely_entity(prediction)
+                self._most_likely_tag(prediction)
                 for prediction in predictions[ENTITY_ATTRIBUTE_TYPE]
             ]
             for tag_conf, token in zip(tag_confidence_list, crf_tokens):
                 token.entity_tag = tag_conf[0]
 
-    def _most_likely_entity(
-        self, entity_predictions: Optional[Dict[Text, float]]
+    def _most_likely_tag(
+        self, predictions: Optional[Dict[Text, float]]
     ) -> Tuple[Text, float]:
         """Get the entity tag with the highest confidence.
 
         Args:
-            entity_predictions: mapping of entity tag to confidence value
+            predictions: mapping of entity tag to confidence value
 
         Returns:
             The entity tag and confidence value.
         """
-        if entity_predictions is None:
+        if predictions is None:
             return "", 0.0
 
-        tag = max(entity_predictions, key=lambda key: entity_predictions[key])
+        tag = max(predictions, key=lambda key: predictions[key])
 
         if self.component_config["BILOU_flag"]:
-            # if we are using BILOU flags, we will combine the prob
-            # of the B, I, L and U tags for an entity (so if we have a
-            # score of 60% for `B-address` and 40% and 30%
-            # for `I-address`, we will return 70%)
+            # if we are using BILOU flags, we will sum up the prob
+            # of the B, I, L and U tags for an entity
             return (
                 tag,
                 sum(
                     [
                         _confidence
-                        for _tag, _confidence in entity_predictions.items()
+                        for _tag, _confidence in predictions.items()
                         if bilou_utils.tag_without_prefix(tag)
                         == bilou_utils.tag_without_prefix(_tag)
                     ]
                 ),
             )
         else:
-            return tag, entity_predictions[tag]
-
-    @staticmethod
-    def _tokens_without_cls(message: Message) -> List[Token]:
-        # [:-1] to remove the CLS token from the list of tokens
-        return message.get(TOKENS_NAMES[TEXT])[:-1]
+            return tag, predictions[tag]
 
     def _create_entities(
         self, message: Message, predictions: Dict[Text, List[Dict[Text, float]]]
     ) -> List[Dict[Text, Any]]:
-        tokens = self._tokens_without_cls(message)
+        tokens = self.tokens_without_cls(message)
 
         tags = {}
         confidences = {}
@@ -293,7 +286,7 @@ class CRFEntityExtractor(EntityExtractor):
                 )
 
             tag_confidence_list = [
-                self._most_likely_entity(prediction) for prediction in predicted_tags
+                self._most_likely_tag(prediction) for prediction in predicted_tags
             ]
             confidences[name] = [x[1] for x in tag_confidence_list]
             _tags = [x[0] for x in tag_confidence_list]
@@ -471,7 +464,7 @@ class CRFEntityExtractor(EntityExtractor):
         """Takes a sentence and switches it to crfsuite format."""
 
         crf_format = []
-        tokens = self._tokens_without_cls(message)
+        tokens = self.tokens_without_cls(message)
 
         text_dense_features = self.__get_dense_features(message)
         tags = self._get_tags(message)
@@ -507,7 +500,7 @@ class CRFEntityExtractor(EntityExtractor):
         return tags[tag_name][token_idx] if tag_name in tags else None
 
     def _get_tags(self, message: Message) -> Dict[Text, List[Text]]:
-        tokens = self._tokens_without_cls(message)
+        tokens = self.tokens_without_cls(message)
         tags = {}
 
         for tag_name in self.crf_order:

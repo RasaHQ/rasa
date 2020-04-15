@@ -228,9 +228,7 @@ def test__most_likely_entity(
 ):
     crf_extractor = CRFEntityExtractor({"BILOU_flag": True})
 
-    actual_label, actual_confidence = crf_extractor._most_likely_entity(
-        entity_predictions
-    )
+    actual_label, actual_confidence = crf_extractor._most_likely_tag(entity_predictions)
 
     assert actual_label == expected_label
     assert actual_confidence == expected_confidence

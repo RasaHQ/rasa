@@ -34,11 +34,6 @@ class MitieEntityExtractor(EntityExtractor):
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
-    @staticmethod
-    def _tokens_without_cls(message: Message) -> List[Token]:
-        # [:-1] to remove the CLS token from the list of tokens
-        return message.get(TOKENS_NAMES[TEXT])[:-1]
-
     def extract_entities(
         self, text: Text, tokens: List[Token], feature_extractor
     ) -> List[Dict[Text, Any]]:
@@ -102,7 +97,7 @@ class MitieEntityExtractor(EntityExtractor):
         import mitie
 
         text = training_example.text
-        tokens = self._tokens_without_cls(training_example)
+        tokens = self.tokens_without_cls(training_example)
         sample = mitie.ner_training_instance([t.text for t in tokens])
         for ent in training_example.get(ENTITIES, []):
             try:
@@ -139,7 +134,7 @@ class MitieEntityExtractor(EntityExtractor):
             )
 
         ents = self.extract_entities(
-            message.text, self._tokens_without_cls(message), mitie_feature_extractor
+            message.text, self.tokens_without_cls(message), mitie_feature_extractor
         )
         extracted = self.add_extractor_name(ents)
         extracted = self.clean_up_entities(message, extracted)

@@ -453,3 +453,16 @@ class EntityExtractor(Component):
             entity[ENTITY_ATTRIBUTE_GROUP] = group_tag
 
         return entity
+
+    @staticmethod
+    def tokens_without_cls(message: Message) -> List[Token]:
+        """Return tokens of given message without CLS token.
+
+        Args:
+            message: the message
+
+        Returns:
+            List of tokens.
+        """
+        # [:-1] to remove the CLS token from the list of tokens
+        return message.get(TOKENS_NAMES[TEXT])[:-1]
