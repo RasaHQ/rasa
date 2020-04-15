@@ -508,7 +508,9 @@ class CRF(tf.keras.layers.Layer):
         loss = -log_likelihood
         if self.scale_loss:
             scales = _scale_loss(log_likelihood)
-            return tf.reduce_sum(loss * scales) / tf.reduce_sum(scales)
+            return tf.math.divide_no_nan(
+                tf.reduce_sum(loss * scales), tf.reduce_sum(scales)
+            )
 
         return tf.reduce_mean(loss)
 
@@ -852,12 +854,14 @@ class DotProductLoss(tf.keras.layers.Layer):
                     scales * mask, axis=-1
                 )
             else:
-                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(scales, axis=-1)
+                loss = tf.math.divide_no_nan(
+                    tf.reduce_sum(loss, axis=-1), tf.reduce_sum(scales, axis=-1)
+                )
             # average the loss over the batch
             return tf.reduce_mean(loss)
 
         # average the loss over the batch
-        return tf.reduce_sum(loss) / tf.reduce_sum(scales)
+        return tf.math.divide_no_nan(tf.reduce_sum(loss), tf.reduce_sum(scales))
 
     @property
     def _chosen_loss(self) -> Callable:
