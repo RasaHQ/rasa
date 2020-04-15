@@ -59,7 +59,7 @@ class SparseDropout(tf.keras.layers.Dropout):
         return outputs
 
 
-class DenseForSparse(tf.keras.layers.Dense):
+class DenseForSparse(tf.keras.layers.Embedding):
     """Dense layer for sparse input tensor.
 
     Just your regular densely-connected NN layer but for sparse tensors.
@@ -102,12 +102,16 @@ class DenseForSparse(tf.keras.layers.Dense):
     """
 
     def __init__(self, reg_lambda: float = 0, **kwargs: Any) -> None:
+
+        # print(kwargs['name'])
         if reg_lambda > 0:
             regularizer = tf.keras.regularizers.l2(reg_lambda)
         else:
             regularizer = None
 
-        super().__init__(kernel_regularizer=regularizer, **kwargs)
+        # super().__init__(kernel_regularizer=regularizer, **kwargs)
+
+        super().__init__(embeddings_regularizer=regularizer, **kwargs)
 
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         """Apply dense layer to sparse inputs.
@@ -126,19 +130,19 @@ class DenseForSparse(tf.keras.layers.Dense):
 
         # outputs will be 2D
         outputs = tf.sparse.sparse_dense_matmul(
-            tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), self.kernel
+            tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), self.embeddings
         )
 
         if len(inputs.shape) == 3:
             # reshape back
             outputs = tf.reshape(
-                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1)
+                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], self.output_dim)
             )
 
-        if self.use_bias:
-            outputs = tf.nn.bias_add(outputs, self.bias)
-        if self.activation is not None:
-            return self.activation(outputs)
+        # if self.use_bias:
+        #     outputs = tf.nn.bias_add(outputs, self.bias)
+        # if self.activation is not None:
+        #     return self.activation(outputs)
         return outputs
 
 

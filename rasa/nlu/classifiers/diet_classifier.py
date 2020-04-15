@@ -1064,14 +1064,25 @@ class DIET(RasaModel):
                 dense_dim = shape[-1]
 
         if sparse:
+            in_dim = 7884 if name == "text" else 564
+
             self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
-                units=dense_dim, reg_lambda=reg_lambda, name=name
+                input_dim=in_dim, output_dim=dense_dim, name=name, reg_lambda=reg_lambda
             )
+            # self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
+            #     units=dense_dim, reg_lambda=reg_lambda, name=name
+            # )
             if not dense:
                 # create dense labels for the input to use in negative sampling
                 self._tf_layers[f"sparse_to_dense_ids.{name}"] = layers.DenseForSparse(
-                    units=2, trainable=False, name=f"sparse_to_dense_ids.{name}"
+                    input_dim=in_dim,
+                    output_dim=2,
+                    trainable=False,
+                    name=f"sparse_to_dense_ids.{name}",
                 )
+                # self._tf_layers[f"sparse_to_dense_ids.{name}"] = layers.DenseForSparse(
+                #     units=2, trainable=False, name=f"sparse_to_dense_ids.{name}"
+                # )
 
     def _prepare_input_layers(self, name: Text) -> None:
         self._tf_layers[f"sparse_dropout.{name}"] = layers.SparseDropout(
@@ -1181,6 +1192,7 @@ class DIET(RasaModel):
                     _f = self._tf_layers[f"sparse_dropout.{name}"](f, self._training)
                 else:
                     _f = f
+                print(name, _f.shape)
                 dense_features.append(self._tf_layers[f"sparse_to_dense.{name}"](_f))
             else:
                 dense_features.append(f)
@@ -1261,7 +1273,7 @@ class DIET(RasaModel):
         mask_label = self._compute_mask(label_lengths)
 
         x = self._create_bow(
-            self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name,
+            self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name
         )
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
 
@@ -1407,7 +1419,7 @@ class DIET(RasaModel):
 
             label_ids = tf_batch_data[LABEL_IDS][0]
             label = self._create_bow(
-                tf_batch_data[LABEL_FEATURES], mask_label, self.label_name,
+                tf_batch_data[LABEL_FEATURES], mask_label, self.label_name
             )
             loss, acc = self._calculate_label_loss(cls, label, label_ids)
             self.intent_loss.update_state(loss)
