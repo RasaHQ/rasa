@@ -1,7 +1,7 @@
 import pytest
 import tempfile
 
-from rasa.nlu.constants import TEXT
+from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
 from rasa.nlu import training_data
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -154,6 +154,37 @@ def test_demo_data(files):
         {"name": "greet", "pattern": r"hey[^\s]*"},
         {"name": "zipcode", "pattern": r"[0-9]{5}"},
     ]
+
+
+@pytest.mark.parametrize(
+    "files",
+    [
+        [
+            "data/examples/rasa/demo-rasa.json",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+        [
+            "data/examples/rasa/demo-rasa.md",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+    ],
+)
+def test_demo_data_filter_out_retrieval_intents(files):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(files, language="en")
+    assert len(td.training_examples) == 46
+
+    td1 = td.filter_training_examples(lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is None)
+    assert len(td1.training_examples) == 42
+
+    td2 = td.filter_training_examples(
+        lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is not None
+    )
+    assert len(td2.training_examples) == 4
+
+    # make sure filtering operation doesn't mutate the source training data
+    assert len(td.training_examples) == 46
 
 
 @pytest.mark.parametrize(

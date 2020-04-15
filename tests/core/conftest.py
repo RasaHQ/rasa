@@ -37,6 +37,8 @@ DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
 DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.md"
 
+INCORRECT_NLU_DATA = "data/test/markdown_single_sections/incorrect_nlu_format.md"
+
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"

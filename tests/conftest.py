@@ -39,6 +39,7 @@ from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
     END_TO_END_STORY_FILE,
     MOODBOT_MODEL_PATH,
+    INCORRECT_NLU_DATA,
 )
 from tests.utilities import update_number_of_epochs
 
@@ -135,6 +136,11 @@ def default_stack_config() -> Text:
 @pytest.fixture(scope="session")
 def default_nlu_data() -> Text:
     return DEFAULT_NLU_DATA
+
+
+@pytest.fixture(scope="session")
+def incorrect_nlu_data() -> Text:
+    return INCORRECT_NLU_DATA
 
 
 @pytest.fixture(scope="session")
