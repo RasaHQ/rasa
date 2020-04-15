@@ -71,5 +71,5 @@
 - i want a [large]{"entity": "size", "group": "1"} pizza with [tomato]{"entity": "topping", "group": "1"} and a [small]{"entity": "size", "group": "2"} pizza with [bacon]{"entity": "topping", "group": "2"}
 - one [large]{"entity": "size", "group": "1"} with [pepperoni]{"entity": "topping", "group": "1"} and a [medium]{"entity": "size", "group": "2"} with [mushrooms]{"entity": "topping", "group": "2"}
 - I would like a [medium]{"entity": "size", "group": "1"} standard pizza and a [medium]{"entity": "size", "group": "2"} pizza with [extra cheese]{"entity": "topping", "group": "2"}
-- [large]{"entity": "size", "group": "1"} with [onions]{"entity": "topping", "group": "1"} and [small]{"entity": "size", "group": "1"} with [olives]{"entity": "topping", "group": "1"}
+- [large]{"entity": "size", "group": "1"} with [onions]{"entity": "topping", "group": "1"} and [small]{"entity": "size", "group": "2"} with [olives]{"entity": "topping", "group": "2"}
 - a pizza with [onions]{"entity": "topping", "group": "1"} in [medium]{"entity": "size", "group": "1"} and one with [mushrooms]{"entity": "topping", "group": "2"} in [small]{"entity": "size", "group": "2"} please
