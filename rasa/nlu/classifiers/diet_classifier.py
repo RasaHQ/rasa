@@ -1250,7 +1250,7 @@ class DIET(RasaModel):
             inputs, 1 - mask, self._training
         )
 
-        if self.config[TRANSFORMER_SIZE] > 0:
+        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
             # apply activation
             outputs = tfa.activations.gelu(outputs)
 
