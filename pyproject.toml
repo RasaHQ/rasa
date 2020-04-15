@@ -120,7 +120,7 @@ tensorflow-estimator = "2.1.0"
 tensorflow-probability = "~0.7"
 setuptools = ">=41.0.0"
 kafka-python = "^1.4"
-ujson = "^1.35"
+ujson = ">=1.35,<3.0"
 oauth2client = "4.1.3"
 
 [tool.poetry.dev-dependencies]
