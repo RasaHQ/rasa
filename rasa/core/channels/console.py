@@ -63,18 +63,18 @@ def print_bot_output(
         cli_utils.print_color(json.dumps(message.get("custom"), indent=2), color=color)
 
 
-def get_user_input(button_question: questionary.Question) -> Optional[Text]:
+async def get_user_input(button_question: questionary.Question) -> Optional[Text]:
     if button_question is not None:
         response = cli_utils.payload_from_button_question(button_question)
         if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
-            response = get_user_input(None)
+            response = await get_user_input(None)
     else:
-        response = questionary.text(
+        response = await questionary.text(
             "",
             qmark="Your input ->",
             style=Style([("qmark", "#b373d6"), ("", "#b373d6")]),
-        ).ask()
+        ).ask_async()
     return response.strip() if response is not None else None
 
 
@@ -127,7 +127,7 @@ async def record_messages(
     button_question = None
     await asyncio.sleep(0.5)  # Wait for server to start
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = get_user_input(button_question)
+        text = await get_user_input(button_question)
 
         if text == exit_text or text is None:
             break
