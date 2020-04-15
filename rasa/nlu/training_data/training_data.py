@@ -8,12 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
 import rasa.nlu.utils
 from rasa.utils.common import raise_warning, lazy_property
-from rasa.nlu.constants import (
-    ENTITIES,
-    INTENT,
-    RESPONSE,
-    RESPONSE_KEY_ATTRIBUTE
-)
+from rasa.nlu.constants import ENTITIES, INTENT, RESPONSE, RESPONSE_KEY_ATTRIBUTE
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
@@ -89,7 +84,7 @@ class TrainingData:
             condition: A function that will be applied to filter training examples.
 
         Returns:
-            TrainingData: filtered TrainingData with
+            TrainingData: A TrainingData with filtered training examples.
         """
 
         return TrainingData(
