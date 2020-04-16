@@ -17,7 +17,7 @@ from typing import Text, Any, Dict, Union, List, Type, Callable
 
 import ruamel.yaml as yaml
 
-from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
 
 if typing.TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
@@ -110,7 +110,7 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     replace_environment_variables()
 
     yaml_parser = yaml.YAML(typ="safe")
-    yaml_parser.version = "1.2"
+    yaml_parser.version = YAML_VERSION
     yaml_parser.unicode_supplementary = True
 
     # noinspection PyUnresolvedReferences
@@ -235,7 +235,13 @@ def write_yaml_file(data: Dict, filename: Union[Text, Path]) -> None:
         filename: The path to the file which should be written.
     """
     with open(str(filename), "w", encoding=DEFAULT_ENCODING) as outfile:
-        yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True)
+        yaml.dump(
+            data,
+            outfile,
+            default_flow_style=False,
+            allow_unicode=True,
+            version=YAML_VERSION,
+        )
 
 
 def write_text_file(
