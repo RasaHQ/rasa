@@ -15,4 +15,4 @@ If you want to use a form, you can add the specific role/group label of interest
 
 .. note::
 
-    Composite entities are currently just supported by the :ref:``diet-classifier``.
+    Composite entities are currently just supported by the :ref:``diet-classifier`` and :ref:``CRFEntityExtractor``.
