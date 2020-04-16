@@ -150,7 +150,10 @@ class MessageProcessor:
         }
 
     async def _update_tracker_session(
-        self, tracker: DialogueStateTracker, output_channel: OutputChannel
+        self,
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+        metadata: Optional[Dict] = None,
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
@@ -159,6 +162,7 @@ class MessageProcessor:
         restart are considered).
 
         Args:
+            metadata: Data sent from client associated with the incoming user message.
             tracker: Tracker to inspect.
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
@@ -167,6 +171,9 @@ class MessageProcessor:
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
+
+            if metadata:
+                tracker.events.append(SessionStarted(metadata=metadata))
 
             await self._run_action(
                 action=self._get_action(ACTION_SESSION_START_NAME),
@@ -198,10 +205,7 @@ class MessageProcessor:
         if not tracker:
             return None
 
-        if metadata:
-            tracker.events.append(SessionStarted(metadata=metadata))
-
-        await self._update_tracker_session(tracker, output_channel)
+        await self._update_tracker_session(tracker, output_channel, metadata)
 
         return tracker
 
