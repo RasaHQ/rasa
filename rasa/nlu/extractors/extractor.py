@@ -373,9 +373,10 @@ class EntityExtractor(Component):
         last_group_tag = NO_ENTITY_TAG
 
         for idx, token in enumerate(tokens):
-            current_entity_tag = self._get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
-            current_group_tag = self._get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
-            current_role_tag = self._get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
+            current_entity_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
+            current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
+            current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
+            # report only the confidence value of the entity type
             confidence = (
                 confidences[ENTITY_ATTRIBUTE_TYPE][idx] if confidences else None
             )
@@ -397,7 +398,7 @@ class EntityExtractor(Component):
 
             if new_tag_found:
                 entity = self._create_new_entity(
-                    tags,
+                    tags.keys(),
                     current_entity_tag,
                     current_group_tag,
                     current_role_tag,
@@ -408,6 +409,7 @@ class EntityExtractor(Component):
             elif belongs_to_last_entity:
                 entities[-1][ENTITY_ATTRIBUTE_END] = token.end
                 if confidence:
+                    # use the lower confidence value
                     entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE] = min(
                         entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE], confidence
                     )
@@ -424,20 +426,44 @@ class EntityExtractor(Component):
         return entities
 
     @staticmethod
-    def _get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text, idx: int) -> Text:
+    def get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text, idx: int) -> Text:
+        """Get the value of the given tag name from the list of tags.
+
+        Args:
+            tags: mapping of tag name to list of tags
+            tag_name: the tag name of interest
+            idx: the index position of the tag
+
+        Returns:
+            the tag value
+        """
         if tag_name in tags:
             return tags[tag_name][idx]
         return NO_ENTITY_TAG
 
     @staticmethod
     def _create_new_entity(
-        tags: Dict[Text, List[Text]],
+        tag_names: List[Text],
         entity_tag: Text,
         group_tag: Text,
         role_tag: Text,
         token: Token,
         confidence: Optional[float],
     ):
+        """Create a new entity.
+
+        Args:
+            tag_names: the tag names to include in the entity
+            entity_tag: entity type value
+            group_tag: entity group value
+            role_tag: entity role value
+            token: the token
+            confidence: confidence value
+
+        Returns:
+            The entity dict.
+
+        """
         entity = {
             ENTITY_ATTRIBUTE_TYPE: entity_tag,
             ENTITY_ATTRIBUTE_START: token.start,
@@ -447,9 +473,9 @@ class EntityExtractor(Component):
         if confidence:
             entity[ENTITY_ATTRIBUTE_CONFIDENCE] = confidence
 
-        if ENTITY_ATTRIBUTE_ROLE in tags:
+        if ENTITY_ATTRIBUTE_ROLE in tag_names:
             entity[ENTITY_ATTRIBUTE_ROLE] = role_tag
-        if ENTITY_ATTRIBUTE_GROUP in tags:
+        if ENTITY_ATTRIBUTE_GROUP in tag_names:
             entity[ENTITY_ATTRIBUTE_GROUP] = group_tag
 
         return entity

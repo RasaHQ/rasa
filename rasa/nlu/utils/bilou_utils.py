@@ -1,6 +1,7 @@
 import logging
 from typing import List, Tuple, Text, Optional, Dict, Set, Any
 
+from constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
@@ -18,6 +19,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
+from utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +171,7 @@ def apply_bilou_schema(
             (ENTITY_ATTRIBUTE_GROUP, BILOU_ENTITIES_GROUP),
         ]:
             entities = map_message_entities(message, attribute)
-            output = bilou_tags_from_offsets(tokens, entities)
+            output = bilou_tags_from_offsets(message, tokens, entities)
             message.set(message_key, output)
 
 
@@ -198,6 +200,7 @@ def map_message_entities(
 
 
 def bilou_tags_from_offsets(
+    message: Message,
     tokens: List[Token],
     entities: List[Tuple[int, int, Text]],
     missing: Text = NO_ENTITY_TAG,
@@ -205,6 +208,7 @@ def bilou_tags_from_offsets(
     """Creates a list of BILOU tags for the given list of tokens and entities.
 
     Args:
+        message: the message object
         tokens: the list of tokens
         entities: the list of start, end, and tag tuples
         missing: tag for missing entities
@@ -216,7 +220,7 @@ def bilou_tags_from_offsets(
     start_pos_to_token_idx = {token.start: i for i, token in enumerate(tokens)}
     end_pos_to_token_idx = {token.end: i for i, token in enumerate(tokens)}
 
-    bilou = [NO_ENTITY_TAG for _ in tokens]
+    bilou = ["-" for _ in tokens]
 
     # Handle entity cases
     _add_bilou_tags_to_entities(
@@ -227,7 +231,44 @@ def bilou_tags_from_offsets(
     entity_positions = _get_entity_positions(entities)
     _handle_not_an_entity(bilou, tokens, entity_positions, missing)
 
+    # Raise a warning for bad annotations
+    bilou = _correct_bad_annotations(bilou, message, tokens)
+
     return bilou
+
+
+def _correct_bad_annotations(
+    bilou: List[Text], message: Message, tokens: List[Token]
+) -> List[Text]:
+    """Check badly annotated examples.
+
+    Args:
+        bilou: list of bilou entity tags
+        message: the message object
+        tokens: list of tokens
+
+    Returns:
+        updated list of bilou entity tags
+    """
+    collected = []
+    for token, entity in zip(tokens, bilou):
+        if entity == "-":
+            collected.append(token)
+        elif collected:
+            collected_text = " ".join([t.text for t in collected])
+            raise_warning(
+                f"Misaligned entity annotation for '{collected_text}' "
+                f"in sentence '{message.text}' with intent "
+                f"'{message.get('intent')}'. "
+                f"Make sure the start and end values of the "
+                f"annotated training examples end at token "
+                f"boundaries (e.g. don't include trailing "
+                f"whitespaces or punctuation).",
+                docs=DOCS_URL_TRAINING_DATA_NLU,
+            )
+            collected = []
+
+    return [entity if entity != "-" else NO_ENTITY_TAG for entity in bilou]
 
 
 def _add_bilou_tags_to_entities(
@@ -289,8 +330,10 @@ def check_consistent_bilou_tagging(predicted_tags: List[Text]) -> None:
 
         if not prefix:
             if entity_found:
-                # "L-" entity tag missing
-                logger.debug(f"Missing 'L-{last_tag}'.")
+                logger.debug(
+                    f"Inconsistent BILOU tagging schema found. Missing "
+                    f"'L-{last_tag}'."
+                )
 
             entity_found = False
             last_tag = NO_ENTITY_TAG
@@ -298,28 +341,40 @@ def check_consistent_bilou_tagging(predicted_tags: List[Text]) -> None:
 
         if prefix == "B":
             if entity_found:
-                logger.debug(f"Missing 'L-{last_tag}'.")
+                logger.debug(
+                    f"Inconsistent BILOU tagging schema found. Missing 'L-{last_tag}'."
+                )
             entity_found = True
 
         elif prefix == "I":
             if tag != last_tag:
                 logger.debug(
-                    f"Conflicting entities: Found 'I-{tag}', but last seen '{last_tag}'."
+                    f"Inconsistent BILOU tagging schema found. Conflicting entities: "
+                    f"Found 'I-{tag}', but last seen '{last_tag}'."
                 )
             if not entity_found:
-                logger.debug(f"Entity starts with 'I-{tag}' instead of 'B-{tag}'.")
+                logger.debug(
+                    f"Inconsistent BILOU tagging schema found. Entity starts with "
+                    f"'I-{tag}' instead of 'B-{tag}'."
+                )
 
         elif prefix == "U":
             if entity_found:
-                logger.debug(f"Missing 'L-{last_tag}'.")
+                logger.debug(
+                    f"Inconsistent BILOU tagging schema found. Missing 'L-{last_tag}'."
+                )
 
         elif prefix == "L":
             if tag != last_tag:
                 logger.debug(
-                    f"Conflicting entities: Found 'L-{tag}', but last seen '{last_tag}'."
+                    f"Inconsistent BILOU tagging schema found. Conflicting entities: "
+                    f"Found 'L-{tag}', but last seen '{last_tag}'."
                 )
             if not entity_found:
-                logger.debug(f"Entity starts with 'L-{tag}' instead of 'B-{tag}'.")
+                logger.debug(
+                    f"Inconsistent BILOU tagging schema found. Entity starts with "
+                    f"'L-{tag}' instead of 'B-{tag}'."
+                )
             entity_found = False
 
         last_tag = tag

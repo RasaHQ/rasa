@@ -280,6 +280,7 @@ class CRFEntityExtractor(EntityExtractor):
             _tags, _confidences = self._most_likely_tag(predicted_tags)
 
             if self.component_config["BILOU_flag"]:
+                bilou_utils.check_consistent_bilou_tagging(_tags)
                 _tags = bilou_utils.remove_bilou_prefixes(_tags)
 
             confidences[tag_name] = _confidences
@@ -440,9 +441,9 @@ class CRFEntityExtractor(EntityExtractor):
 
         for i, token in enumerate(tokens):
             pattern = self._pattern_of_token(message, i)
-            entity = self._get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, i)
-            group = self._get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, i)
-            role = self._get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, i)
+            entity = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, i)
+            group = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, i)
+            role = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, i)
             pos_tag = token.get(POS_TAG_KEY)
             dense_features = (
                 text_dense_features[i] if text_dense_features is not None else []

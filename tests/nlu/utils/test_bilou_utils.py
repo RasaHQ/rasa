@@ -162,12 +162,18 @@ def test_apply_bilou_schema():
         ),
         (["O", "U-person", "B-location", "L-location", "O", "U-person", "O"], None),
         (
+            ["O", "B-person", "I-location", "L-person", "O", "U-person", "O"],
+            "Entity starts with 'I-location' instead of 'B-location'.",
+        ),
+        (
             ["O", "U-person", "B-location", "U-person", "O", "U-person", "O"],
             "Missing 'L-location'",
         ),
     ],
 )
-def test_entity_name_from_tag(tags: List[Text], message: Optional[Text], caplog):
+def test_check_consistent_bilou_tagging(
+    tags: List[Text], message: Optional[Text], caplog
+):
     with caplog.at_level(logging.DEBUG):
         bilou_utils.check_consistent_bilou_tagging(tags)
 
