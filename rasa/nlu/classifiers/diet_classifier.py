@@ -355,7 +355,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 )
             else:
                 tag_id_index_mapping = self._tag_id_index_mapping_for(
-                    tag_name, training_data.entity_examples
+                    tag_name, training_data
                 )
 
             if tag_id_index_mapping:
@@ -372,18 +372,17 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @staticmethod
     def _tag_id_index_mapping_for(
-        tag_name: Text, entity_examples: List[Message]
+        tag_name: Text, training_data: TrainingData
     ) -> Optional[Dict[Text, int]]:
         """Create mapping from tag name to id."""
-        distinct_tags = (
-            {
-                entity.get(tag_name)
-                for example in entity_examples
-                for entity in example.get(ENTITIES)
-            }
-            - {None}
-            - {NO_ENTITY_TAG}
-        )
+        if tag_name == ENTITY_ATTRIBUTE_ROLE:
+            distinct_tags = training_data.entity_roles
+        elif tag_name == ENTITY_ATTRIBUTE_GROUP:
+            distinct_tags = training_data.entity_groups
+        else:
+            distinct_tags = training_data.entities
+
+        distinct_tags = distinct_tags - {NO_ENTITY_TAG} - {None}
 
         if not distinct_tags:
             return None
