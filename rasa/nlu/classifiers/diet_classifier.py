@@ -1236,14 +1236,15 @@ class DIET(RasaModel):
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 
         if masked_lm_loss:
-            inputs, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
+            transformer_inputs, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
                 inputs, mask, self._training
             )
         else:
+            transformer_inputs = inputs
             lm_mask_bool = None
 
         outputs = self._tf_layers[f"{name}_transformer"](
-            inputs, 1 - mask, self._training
+            transformer_inputs, 1 - mask, self._training
         )
 
         if self.config[NUM_TRANSFORMER_LAYERS] > 0:
