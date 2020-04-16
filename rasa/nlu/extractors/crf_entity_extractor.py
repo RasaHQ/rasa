@@ -441,8 +441,8 @@ class CRFEntityExtractor(EntityExtractor):
         for i, token in enumerate(tokens):
             pattern = self._pattern_of_token(message, i)
             entity = self._get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, i)
-            group = self._get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, i)
-            role = self._get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, i)
+            group = self._get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, i)
+            role = self._get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, i)
             pos_tag = token.get(POS_TAG_KEY)
             dense_features = (
                 text_dense_features[i] if text_dense_features is not None else []
