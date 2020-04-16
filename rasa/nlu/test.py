@@ -37,7 +37,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 
 logger = logging.getLogger(__name__)
@@ -1025,6 +1024,7 @@ def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
     Processors are removed since they do not detect the boundaries themselves.
     """
     from rasa.nlu.extractors.extractor import EntityExtractor
+    from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 
     extractors = set()
     for c in interpreter.pipeline:
