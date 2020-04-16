@@ -1513,8 +1513,8 @@ class DIET(RasaModel):
         tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
 
         if entity_tags is not None:
-            entity_tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
-            inputs = tf.concat([inputs, entity_tags], axis=-1)
+            _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
+            inputs = tf.concat([inputs, _tags], axis=-1)
 
         logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
 
@@ -1691,8 +1691,8 @@ class DIET(RasaModel):
             _input = text_transformed
 
             if entity_tags is not None:
-                entity_tags = self._tf_layers[f"embed.{name}.tags"](entity_tags)
-                _input = tf.concat([_input, entity_tags], axis=-1)
+                _tags = self._tf_layers[f"embed.{name}.tags"](entity_tags)
+                _input = tf.concat([_input, _tags], axis=-1)
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
             pred_ids = self._tf_layers[f"crf.{name}"](_logits, sequence_lengths - 1)
