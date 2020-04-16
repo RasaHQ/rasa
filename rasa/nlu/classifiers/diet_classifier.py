@@ -1332,7 +1332,6 @@ class DIET(RasaModel):
         self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
     def _prepare_entity_recognition_layers(self) -> None:
-        num_entity_tags = 0
         for tag_spec in self._entity_tag_specs:
             name = tag_spec.tag_name
             num_tags = tag_spec.num_tags
@@ -1342,14 +1341,11 @@ class DIET(RasaModel):
             self._tf_layers[f"crf.{name}"] = layers.CRF(
                 num_tags, self.config[REGULARIZATION_CONSTANT], self.config[SCALE_LOSS]
             )
-            if name == ENTITY_ATTRIBUTE_TYPE:
-                num_entity_tags = num_tags
-            else:
-                self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
-                    num_entity_tags,
-                    self.config[REGULARIZATION_CONSTANT],
-                    f"tags.{name}",
-                )
+            self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
+                self.config[EMBEDDING_DIMENSION],
+                self.config[REGULARIZATION_CONSTANT],
+                f"tags.{name}",
+            )
 
     @staticmethod
     def _get_sequence_lengths(mask: tf.Tensor) -> tf.Tensor:
