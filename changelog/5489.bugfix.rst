@@ -1,1 +1,0 @@
-Fixed issue where ``max_number_of_predictions`` was not considered when running end-to-end testing.
