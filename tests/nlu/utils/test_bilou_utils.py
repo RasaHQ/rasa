@@ -163,7 +163,7 @@ def test_apply_bilou_schema():
         (["O", "U-person", "B-location", "L-location", "O", "U-person", "O"], None),
         (
             ["O", "B-person", "I-location", "L-person", "O", "U-person", "O"],
-            "Entity starts with 'I-location' instead of 'B-location'.",
+            "Found 'L-person', but last seen 'location'",
         ),
         (
             ["O", "U-person", "B-location", "U-person", "O", "U-person", "O"],

@@ -225,40 +225,6 @@ def bilou_tags_from_offsets(
     return bilou
 
 
-def _correct_bad_annotations(
-    bilou: List[Text], message: Message, tokens: List[Token]
-) -> List[Text]:
-    """Check badly annotated examples.
-
-    Args:
-        bilou: list of bilou entity tags
-        message: the message object
-        tokens: list of tokens
-
-    Returns:
-        updated list of bilou entity tags
-    """
-    collected = []
-    for token, entity in zip(tokens, bilou):
-        if entity == "-":
-            collected.append(token)
-        elif collected:
-            collected_text = " ".join([t.text for t in collected])
-            common_utils.raise_warning(
-                f"Misaligned entity annotation for '{collected_text}' "
-                f"in sentence '{message.text}' with intent "
-                f"'{message.get('intent')}'. "
-                f"Make sure the start and end values of the "
-                f"annotated training examples end at token "
-                f"boundaries (e.g. don't include trailing "
-                f"whitespaces or punctuation).",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
-            )
-            collected = []
-
-    return [entity if entity != "-" else NO_ENTITY_TAG for entity in bilou]
-
-
 def _add_bilou_tags_to_entities(
     bilou: List[Text],
     entities: List[Tuple[int, int, Text]],
@@ -278,27 +244,6 @@ def _add_bilou_tags_to_entities(
                 for i in range(start_token_idx + 1, end_token_idx):
                     bilou[i] = f"I-{label}"
                 bilou[end_token_idx] = f"L-{label}"
-
-
-def _get_entity_positions(entities: List[Tuple[int, int, Text]]) -> Set[int]:
-    entity_positions = set()
-
-    for start_pos, end_pos, label in entities:
-        for i in range(start_pos, end_pos):
-            entity_positions.add(i)
-
-    return entity_positions
-
-
-def _handle_not_an_entity(
-    bilou: List[Text], tokens: List[Token], entity_positions: Set[int], missing: Text
-):
-    for n, token in enumerate(tokens):
-        for i in range(token.start, token.end):
-            if i in entity_positions:
-                break
-        else:
-            bilou[n] = missing
 
 
 def check_consistent_bilou_tagging(predicted_tags: List[Text]) -> None:
