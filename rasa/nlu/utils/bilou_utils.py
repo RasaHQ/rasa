@@ -1,7 +1,7 @@
 import logging
 from typing import List, Tuple, Text, Optional, Dict, Set, Any
 
-from constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
@@ -19,7 +19,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
-from utils.common import raise_warning
+import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -256,7 +256,7 @@ def _correct_bad_annotations(
             collected.append(token)
         elif collected:
             collected_text = " ".join([t.text for t in collected])
-            raise_warning(
+            common_utils.raise_warning(
                 f"Misaligned entity annotation for '{collected_text}' "
                 f"in sentence '{message.text}' with intent "
                 f"'{message.get('intent')}'. "
@@ -320,6 +320,9 @@ def check_consistent_bilou_tagging(predicted_tags: List[Text]) -> None:
     Args:
         predicted_tags: list of predicted tags
     """
+
+    # TODO we might want to correct cases like B-location I-person L-location ->
+    #  B-location I-location L-location instead of just logging warnings
 
     last_tag = NO_ENTITY_TAG
     entity_found = False

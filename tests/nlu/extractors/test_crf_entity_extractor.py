@@ -145,7 +145,7 @@ def test_crf_use_dense_features(spacy_nlp):
     spacy_featurizer.process(message)
 
     text_data = crf_extractor._convert_to_crf_tokens(message)
-    features = crf_extractor._sentence_to_features(text_data)
+    features = crf_extractor._crf_tokens_to_features(text_data)
 
     assert "0:text_dense_features" in features[0]
     for i in range(0, len(message.data.get("text_dense_features")[0])):
