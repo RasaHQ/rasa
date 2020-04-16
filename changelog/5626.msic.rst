@@ -1,1 +1,0 @@
-Apply ``tfa.activations.gelu(x)`` only if min 1 transformer block is used in ``DIETClassifier``.
