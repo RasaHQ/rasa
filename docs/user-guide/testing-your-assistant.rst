@@ -193,14 +193,6 @@ histogram bars to the right and the red histogram bars
 to the left of the plot.
 
 
-.. warning::
-    If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
-    is that an entity cannot stop or start inside a token.
-    For example, if you have an example for a ``name`` entity
-    like ``[Brian](name)'s house``, this is only valid if your tokenizer splits ``Brian's`` into
-    multiple tokens. A whitespace tokenizer would not work in this case.
-
-
 Response Selection
 ^^^^^^^^^^^^^^^^^^^^^
 
