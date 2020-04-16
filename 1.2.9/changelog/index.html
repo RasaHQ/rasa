@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Rasa Change Log</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex/" />
     <link rel="search" title="Search" href="../search/" />
     <link rel="next" title="Rasa as open source alternative to Google Dialogflow - Migration Guide" href="../migrate-from/google-dialogflow-to-rasa/" />
@@ -230,6 +231,8 @@
               <a href="../../1.4.6/changelog/">1.4.6</a>
               <a href="../../1.3.10/changelog/">1.3.10</a>
               <a href="../../1.2.9/changelog/">1.2.9</a>
+              <a href="../../1.1.8/changelog/">1.1.8</a>
+              <a href="../../1.0.9/changelog/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -286,7 +289,7 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <div class="section" id="id2">
 <h3>Fixed<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Correctly pass SSL flag values to x CLI command</p></li>
+<li>Correctly pass SSL flag values to x CLI command</li>
 </ul>
 </div>
 </div>
@@ -295,8 +298,8 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <div class="section" id="id4">
 <h3>Fixed<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>SQL tracker events are retrieved ordered by timestamps. This fixes interactive
-learning events being shown in the wrong order.</p></li>
+<li>SQL tracker events are retrieved ordered by timestamps. This fixes interactive
+learning events being shown in the wrong order.</li>
 </ul>
 </div>
 </div>
@@ -305,8 +308,8 @@ learning events being shown in the wrong order.</p></li>
 <div class="section" id="id6">
 <h3>Fixed<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Added <code class="docutils literal notranslate"><span class="pre">query</span></code> dictionary argument to <code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> which will be appended
-to the SQL connection URL as query parameters.</p></li>
+<li>Added <code class="docutils literal notranslate"><span class="pre">query</span></code> dictionary argument to <code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> which will be appended
+to the SQL connection URL as query parameters.</li>
 </ul>
 </div>
 </div>
@@ -315,7 +318,7 @@ to the SQL connection URL as query parameters.</p></li>
 <div class="section" id="id8">
 <h3>Fixed<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>fixed bug that occurred when sending template <code class="docutils literal notranslate"><span class="pre">elements</span></code> through a channel that doesn’t support them</p></li>
+<li>fixed bug that occurred when sending template <code class="docutils literal notranslate"><span class="pre">elements</span></code> through a channel that doesn’t support them</li>
 </ul>
 </div>
 </div>
@@ -324,14 +327,14 @@ to the SQL connection URL as query parameters.</p></li>
 <div class="section" id="id10">
 <h3>Added<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>SSL support for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> command. Certificate can be specified using
-<code class="docutils literal notranslate"><span class="pre">--ssl-certificate</span></code> and <code class="docutils literal notranslate"><span class="pre">--ssl-keyfile</span></code>.</p></li>
+<li>SSL support for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> command. Certificate can be specified using
+<code class="docutils literal notranslate"><span class="pre">--ssl-certificate</span></code> and <code class="docutils literal notranslate"><span class="pre">--ssl-keyfile</span></code>.</li>
 </ul>
 </div>
 <div class="section" id="id11">
 <h3>Fixed<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">'/restart'</span></code> will now also restart the bot if the tracker is paused</p></li>
+<li><code class="docutils literal notranslate"><span class="pre">'/restart'</span></code> will now also restart the bot if the tracker is paused</li>
 </ul>
 </div>
 </div>
@@ -340,8 +343,8 @@ to the SQL connection URL as query parameters.</p></li>
 <div class="section" id="id13">
 <h3>Fixed<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>the <code class="docutils literal notranslate"><span class="pre">SocketIO</span></code> input channel now allows accesses from other origins
-(fixes <code class="docutils literal notranslate"><span class="pre">SocketIO</span></code> channel on Rasa X)</p></li>
+<li>the <code class="docutils literal notranslate"><span class="pre">SocketIO</span></code> input channel now allows accesses from other origins
+(fixes <code class="docutils literal notranslate"><span class="pre">SocketIO</span></code> channel on Rasa X)</li>
 </ul>
 </div>
 </div>
@@ -350,16 +353,16 @@ to the SQL connection URL as query parameters.</p></li>
 <div class="section" id="id15">
 <h3>Changed<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>messages with multiple entities are now handled properly with e2e evaluation</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">data/test_evaluations/end_to_end_story.md</span></code> was re-written in the
-restaurantbot domain</p></li>
+<li>messages with multiple entities are now handled properly with e2e evaluation</li>
+<li><code class="docutils literal notranslate"><span class="pre">data/test_evaluations/end_to_end_story.md</span></code> was re-written in the
+restaurantbot domain</li>
 </ul>
 </div>
 <div class="section" id="id16">
 <h3>Fixed<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Free text input was not allowed in the Rasa shell when the response template
-contained buttons, which has now been fixed.</p></li>
+<li>Free text input was not allowed in the Rasa shell when the response template
+contained buttons, which has now been fixed.</li>
 </ul>
 </div>
 </div>
@@ -368,7 +371,7 @@ contained buttons, which has now been fixed.</p></li>
 <div class="section" id="id18">
 <h3>Fixed<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">UserUttered</span></code> events always got the same timestamp</p></li>
+<li><code class="docutils literal notranslate"><span class="pre">UserUttered</span></code> events always got the same timestamp</li>
 </ul>
 </div>
 </div>
@@ -377,14 +380,14 @@ contained buttons, which has now been fixed.</p></li>
 <div class="section" id="id20">
 <h3>Added<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Docs now have an <code class="docutils literal notranslate"><span class="pre">EDIT</span> <span class="pre">THIS</span> <span class="pre">PAGE</span></code> button</p></li>
+<li>Docs now have an <code class="docutils literal notranslate"><span class="pre">EDIT</span> <span class="pre">THIS</span> <span class="pre">PAGE</span></code> button</li>
 </ul>
 </div>
 <div class="section" id="id21">
 <h3>Fixed<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">Flood</span> <span class="pre">control</span> <span class="pre">exceeded</span></code> error in Telegram connector which happened because the
-webhook was set twice</p></li>
+<li><code class="docutils literal notranslate"><span class="pre">Flood</span> <span class="pre">control</span> <span class="pre">exceeded</span></code> error in Telegram connector which happened because the
+webhook was set twice</li>
 </ul>
 </div>
 </div>
@@ -393,33 +396,33 @@ webhook was set twice</p></li>
 <div class="section" id="id23">
 <h3>Added<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>add root route to server started without <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> parameter</p></li>
-<li><p>add <code class="docutils literal notranslate"><span class="pre">--evaluate-model-directory</span></code> to <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code> to evaluate models
-from <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span> <span class="pre">-c</span> <span class="pre">&lt;config-1&gt;</span> <span class="pre">&lt;config-2&gt;</span></code></p></li>
-<li><p>option to send messages to the user by calling
-<code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/conversations/{conversation_id}/execute</span></code></p></li>
+<li>add root route to server started without <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> parameter</li>
+<li>add <code class="docutils literal notranslate"><span class="pre">--evaluate-model-directory</span></code> to <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code> to evaluate models
+from <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span> <span class="pre">-c</span> <span class="pre">&lt;config-1&gt;</span> <span class="pre">&lt;config-2&gt;</span></code></li>
+<li>option to send messages to the user by calling
+<code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/conversations/{conversation_id}/execute</span></code></li>
 </ul>
 </div>
 <div class="section" id="id24">
 <h3>Changed<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">Agent.update_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">Agent.handle_message()</span></code> now work without needing to set a domain
-or a policy ensemble</p></li>
-<li><p>Update pytype to <code class="docutils literal notranslate"><span class="pre">2019.7.11</span></code></p></li>
-<li><p>new event broker class: <code class="docutils literal notranslate"><span class="pre">SQLProducer</span></code>. This event broker is now used when running locally with
-Rasa X</p></li>
-<li><p>API requests are not longer logged to <code class="docutils literal notranslate"><span class="pre">rasa_core.log</span></code> by default in order to avoid
+<li><code class="docutils literal notranslate"><span class="pre">Agent.update_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">Agent.handle_message()</span></code> now work without needing to set a domain
+or a policy ensemble</li>
+<li>Update pytype to <code class="docutils literal notranslate"><span class="pre">2019.7.11</span></code></li>
+<li>new event broker class: <code class="docutils literal notranslate"><span class="pre">SQLProducer</span></code>. This event broker is now used when running locally with
+Rasa X</li>
+<li>API requests are not longer logged to <code class="docutils literal notranslate"><span class="pre">rasa_core.log</span></code> by default in order to avoid
 problems when running on OpenShift (use <code class="docutils literal notranslate"><span class="pre">--log-file</span> <span class="pre">rasa_core.log</span></code> to retain the
-old behavior)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">metadata</span></code> attribute added to <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code></p></li>
+old behavior)</li>
+<li><code class="docutils literal notranslate"><span class="pre">metadata</span></code> attribute added to <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code></li>
 </ul>
 </div>
 <div class="section" id="id25">
 <h3>Fixed<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code> can handle compressed model files</p></li>
-<li><p>Rasa can handle story files containing multi line comments</p></li>
-<li><p>Template will retain <cite>{</cite> if escaped with <cite>{</cite>. e.g. <cite>{{“foo”: {bar}}}</cite> will result in <cite>{“foo”: “replaced value”}</cite></p></li>
+<li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code> can handle compressed model files</li>
+<li>Rasa can handle story files containing multi line comments</li>
+<li>Template will retain <cite>{</cite> if escaped with <cite>{</cite>. e.g. <cite>{{“foo”: {bar}}}</cite> will result in <cite>{“foo”: “replaced value”}</cite></li>
 </ul>
 </div>
 </div>
@@ -428,28 +431,28 @@ old behavior)</p></li>
 <div class="section" id="id27">
 <h3>Added<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">TrainingFileImporter</span></code> interface to support customizing the process of loading
-training data</p></li>
-<li><p>fill slots for custom templates</p></li>
+<li><code class="docutils literal notranslate"><span class="pre">TrainingFileImporter</span></code> interface to support customizing the process of loading
+training data</li>
+<li>fill slots for custom templates</li>
 </ul>
 </div>
 <div class="section" id="id28">
 <h3>Changed<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">Agent.update_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">Agent.handle_message()</span></code> now work without needing to set a domain
-or a policy ensemble</p></li>
-<li><p>update pytype to <code class="docutils literal notranslate"><span class="pre">2019.7.11</span></code></p></li>
+<li><code class="docutils literal notranslate"><span class="pre">Agent.update_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">Agent.handle_message()</span></code> now work without needing to set a domain
+or a policy ensemble</li>
+<li>update pytype to <code class="docutils literal notranslate"><span class="pre">2019.7.11</span></code></li>
 </ul>
 </div>
 <div class="section" id="id29">
 <h3>Fixed<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>interactive learning bug where reverted user utterances were dumped to training data</p></li>
-<li><p>added timeout to terminal input channel to avoid freezing input in case of server
-errors</p></li>
-<li><p>fill slots for image, buttons, quick_replies and attachments in templates</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> in comparison mode stores the model files compressed (<code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> files)</p></li>
-<li><p>slot setting in interactive learning with the TwoStageFallbackPolicy</p></li>
+<li>interactive learning bug where reverted user utterances were dumped to training data</li>
+<li>added timeout to terminal input channel to avoid freezing input in case of server
+errors</li>
+<li>fill slots for image, buttons, quick_replies and attachments in templates</li>
+<li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> in comparison mode stores the model files compressed (<code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> files)</li>
+<li>slot setting in interactive learning with the TwoStageFallbackPolicy</li>
 </ul>
 </div>
 </div>
@@ -458,18 +461,18 @@ errors</p></li>
 <div class="section" id="id31">
 <h3>Added<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>added optional pymongo dependencies <code class="docutils literal notranslate"><span class="pre">[tls,</span> <span class="pre">srv]</span></code> to <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> for better mongodb support</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">case_sensitive</span></code> option added to <code class="docutils literal notranslate"><span class="pre">WhiteSpaceTokenizer</span></code> with <code class="docutils literal notranslate"><span class="pre">true</span></code> as default.</p></li>
+<li>added optional pymongo dependencies <code class="docutils literal notranslate"><span class="pre">[tls,</span> <span class="pre">srv]</span></code> to <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> for better mongodb support</li>
+<li><code class="docutils literal notranslate"><span class="pre">case_sensitive</span></code> option added to <code class="docutils literal notranslate"><span class="pre">WhiteSpaceTokenizer</span></code> with <code class="docutils literal notranslate"><span class="pre">true</span></code> as default.</li>
 </ul>
 </div>
 <div class="section" id="id32">
 <h3>Fixed<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>validation no longer throws an error during interactive learning</p></li>
-<li><p>fixed wrong cleaning of <code class="docutils literal notranslate"><span class="pre">use_entities</span></code> in case it was a list and not <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
-<li><p>updated the server endpoint <code class="docutils literal notranslate"><span class="pre">/model/parse</span></code> to handle also messages with the intent prefix</p></li>
-<li><p>fixed bug where “No model found” message appeared after successfully running the bot</p></li>
-<li><p>debug logs now print to <code class="docutils literal notranslate"><span class="pre">rasa_core.log</span></code> when running <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span> <span class="pre">-vv</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span> <span class="pre">-vv</span></code></p></li>
+<li>validation no longer throws an error during interactive learning</li>
+<li>fixed wrong cleaning of <code class="docutils literal notranslate"><span class="pre">use_entities</span></code> in case it was a list and not <code class="docutils literal notranslate"><span class="pre">True</span></code></li>
+<li>updated the server endpoint <code class="docutils literal notranslate"><span class="pre">/model/parse</span></code> to handle also messages with the intent prefix</li>
+<li>fixed bug where “No model found” message appeared after successfully running the bot</li>
+<li>debug logs now print to <code class="docutils literal notranslate"><span class="pre">rasa_core.log</span></code> when running <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span> <span class="pre">-vv</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span> <span class="pre">-vv</span></code></li>
 </ul>
 </div>
 </div>
@@ -478,24 +481,24 @@ errors</p></li>
 <div class="section" id="id34">
 <h3>Added<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>rest channel supports setting a message’s input_channel through a field
-<code class="docutils literal notranslate"><span class="pre">input_channel</span></code> in the request body</p></li>
+<li>rest channel supports setting a message’s input_channel through a field
+<code class="docutils literal notranslate"><span class="pre">input_channel</span></code> in the request body</li>
 </ul>
 </div>
 <div class="section" id="id35">
 <h3>Changed<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>recommended syntax for empty <code class="docutils literal notranslate"><span class="pre">use_entities</span></code> and <code class="docutils literal notranslate"><span class="pre">ignore_entities</span></code> in the domain file
-has been updated from <code class="docutils literal notranslate"><span class="pre">False</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> to an empty list (<code class="docutils literal notranslate"><span class="pre">[]</span></code>)</p></li>
+<li>recommended syntax for empty <code class="docutils literal notranslate"><span class="pre">use_entities</span></code> and <code class="docutils literal notranslate"><span class="pre">ignore_entities</span></code> in the domain file
+has been updated from <code class="docutils literal notranslate"><span class="pre">False</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> to an empty list (<code class="docutils literal notranslate"><span class="pre">[]</span></code>)</li>
 </ul>
 </div>
 <div class="section" id="id36">
 <h3>Fixed<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> without <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> does not require a local model anymore</p></li>
-<li><p>using <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> with <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> to run a server now prints
-“running Rasa server” instead of “running Rasa Core server”</p></li>
-<li><p>actions, intents, and utterances created in <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> can no longer be empty</p></li>
+<li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> without <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> does not require a local model anymore</li>
+<li>using <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> with <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> to run a server now prints
+“running Rasa server” instead of “running Rasa Core server”</li>
+<li>actions, intents, and utterances created in <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> can no longer be empty</li>
 </ul>
 </div>
 </div>
@@ -504,46 +507,46 @@ has been updated from <code class="docutils literal notranslate"><span class="pr
 <div class="section" id="id38">
 <h3>Added<a class="headerlink" href="#id38" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>debug logging now tells you which tracker store is connected</p></li>
-<li><p>the response of <code class="docutils literal notranslate"><span class="pre">/model/train</span></code> now includes a response header for the trained model filename</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Validator</span></code> class to help developing by checking if the files have any errors</p></li>
-<li><p>project’s code is now linted using flake8</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">info</span></code> log when credentials were provided for multiple channels and channel in
-<code class="docutils literal notranslate"><span class="pre">--connector</span></code> argument was specified at the same time</p></li>
-<li><p>validate export paths in interactive learning</p></li>
+<li>debug logging now tells you which tracker store is connected</li>
+<li>the response of <code class="docutils literal notranslate"><span class="pre">/model/train</span></code> now includes a response header for the trained model filename</li>
+<li><code class="docutils literal notranslate"><span class="pre">Validator</span></code> class to help developing by checking if the files have any errors</li>
+<li>project’s code is now linted using flake8</li>
+<li><code class="docutils literal notranslate"><span class="pre">info</span></code> log when credentials were provided for multiple channels and channel in
+<code class="docutils literal notranslate"><span class="pre">--connector</span></code> argument was specified at the same time</li>
+<li>validate export paths in interactive learning</li>
 </ul>
 </div>
 <div class="section" id="id39">
 <h3>Changed<a class="headerlink" href="#id39" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>deprecate <code class="docutils literal notranslate"><span class="pre">rasa.core.agent.handle_channels(...)`.</span> <span class="pre">Please</span> <span class="pre">use</span> <span class="pre">``rasa.run(...)</span></code>
-or <code class="docutils literal notranslate"><span class="pre">rasa.core.run.configure_app</span></code> instead.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Agent.load()</span></code> also accepts <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> model file</p></li>
+<li>deprecate <code class="docutils literal notranslate"><span class="pre">rasa.core.agent.handle_channels(...)`.</span> <span class="pre">Please</span> <span class="pre">use</span> <span class="pre">``rasa.run(...)</span></code>
+or <code class="docutils literal notranslate"><span class="pre">rasa.core.run.configure_app</span></code> instead.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Agent.load()</span></code> also accepts <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> model file</li>
 </ul>
 </div>
 <div class="section" id="id40">
 <h3>Removed<a class="headerlink" href="#id40" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>revert the stripping of trailing slashes in endpoint URLs since this can lead to
-problems in case the trailing slash is actually wanted</p></li>
-<li><p>starter packs were removed from Github and are therefore no longer tested by Travis script</p></li>
+<li>revert the stripping of trailing slashes in endpoint URLs since this can lead to
+problems in case the trailing slash is actually wanted</li>
+<li>starter packs were removed from Github and are therefore no longer tested by Travis script</li>
 </ul>
 </div>
 <div class="section" id="id41">
 <h3>Fixed<a class="headerlink" href="#id41" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>all temporal model files are now deleted after stopping the Rasa server</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span> <span class="pre">nlu</span></code> now outputs unicode characters instead of <code class="docutils literal notranslate"><span class="pre">\uxxxx</span></code> codes</p></li>
-<li><p>fixed PUT /model with model_server by deserializing the model_server to
-EndpointConfig.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">in</span> <span class="pre">AnySlotDict</span></code> is now <code class="docutils literal notranslate"><span class="pre">True</span></code> for any <code class="docutils literal notranslate"><span class="pre">x</span></code>, which fixes empty slot warnings in
-interactive learning</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code> now also includes NLU files in other formats than the Rasa format</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> no longer crashes without a <code class="docutils literal notranslate"><span class="pre">--domain</span></code> arg</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> now looks for endpoints in <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> if no <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> arg is passed</p></li>
-<li><p>custom files, e.g. custom components and channels, load correctly when using
-the command line interface</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> now works correctly when used as part of a PolicyEnsemble</p></li>
+<li>all temporal model files are now deleted after stopping the Rasa server</li>
+<li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span> <span class="pre">nlu</span></code> now outputs unicode characters instead of <code class="docutils literal notranslate"><span class="pre">\uxxxx</span></code> codes</li>
+<li>fixed PUT /model with model_server by deserializing the model_server to
+EndpointConfig.</li>
+<li><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">in</span> <span class="pre">AnySlotDict</span></code> is now <code class="docutils literal notranslate"><span class="pre">True</span></code> for any <code class="docutils literal notranslate"><span class="pre">x</span></code>, which fixes empty slot warnings in
+interactive learning</li>
+<li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code> now also includes NLU files in other formats than the Rasa format</li>
+<li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> no longer crashes without a <code class="docutils literal notranslate"><span class="pre">--domain</span></code> arg</li>
+<li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> now looks for endpoints in <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> if no <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> arg is passed</li>
+<li>custom files, e.g. custom components and channels, load correctly when using
+the command line interface</li>
+<li><code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> now works correctly when used as part of a PolicyEnsemble</li>
 </ul>
 </div>
 </div>
@@ -552,22 +555,22 @@ the command line interface</p></li>
 <div class="section" id="id43">
 <h3>Added<a class="headerlink" href="#id43" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>unfeaturize single entities</p></li>
-<li><p>added agent readiness check to the <code class="docutils literal notranslate"><span class="pre">/status</span></code> resource</p></li>
+<li>unfeaturize single entities</li>
+<li>added agent readiness check to the <code class="docutils literal notranslate"><span class="pre">/status</span></code> resource</li>
 </ul>
 </div>
 <div class="section" id="id44">
 <h3>Changed<a class="headerlink" href="#id44" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>removed leading underscore from name of ‘_create_initial_project’ function.</p></li>
+<li>removed leading underscore from name of ‘_create_initial_project’ function.</li>
 </ul>
 </div>
 <div class="section" id="id45">
 <h3>Fixed<a class="headerlink" href="#id45" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>fixed bug where facebook quick replies were not rendering</p></li>
-<li><p>take FB quick reply payload rather than text as input</p></li>
-<li><p>fixed bug where <cite>training_data</cite> path in <cite>metadata.json</cite> was an absolute path</p></li>
+<li>fixed bug where facebook quick replies were not rendering</li>
+<li>take FB quick reply payload rather than text as input</li>
+<li>fixed bug where <cite>training_data</cite> path in <cite>metadata.json</cite> was an absolute path</li>
 </ul>
 </div>
 </div>
@@ -576,8 +579,8 @@ the command line interface</p></li>
 <div class="section" id="id47">
 <h3>Fixed<a class="headerlink" href="#id47" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>fixed any inconsistent type annotations in code and some bugs revealed by
-type checker</p></li>
+<li>fixed any inconsistent type annotations in code and some bugs revealed by
+type checker</li>
 </ul>
 </div>
 </div>
@@ -586,7 +589,7 @@ type checker</p></li>
 <div class="section" id="id49">
 <h3>Fixed<a class="headerlink" href="#id49" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>fixed duplicate events appearing in tracker when using a PostgreSQL tracker store</p></li>
+<li>fixed duplicate events appearing in tracker when using a PostgreSQL tracker store</li>
 </ul>
 </div>
 </div>
@@ -595,8 +598,8 @@ type checker</p></li>
 <div class="section" id="id51">
 <h3>Fixed<a class="headerlink" href="#id51" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>fixed compatibility with Rasa SDK</p></li>
-<li><p>bot responses can contain <code class="docutils literal notranslate"><span class="pre">custom</span></code> messages besides other message types</p></li>
+<li>fixed compatibility with Rasa SDK</li>
+<li>bot responses can contain <code class="docutils literal notranslate"><span class="pre">custom</span></code> messages besides other message types</li>
 </ul>
 </div>
 </div>
@@ -605,27 +608,27 @@ type checker</p></li>
 <div class="section" id="id53">
 <h3>Added<a class="headerlink" href="#id53" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>nlu configs can now be directly compared for performance on a dataset
-in <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code></p></li>
+<li>nlu configs can now be directly compared for performance on a dataset
+in <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code></li>
 </ul>
 </div>
 <div class="section" id="id54">
 <h3>Changed<a class="headerlink" href="#id54" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>update the tracker in interactive learning through reverting and appending events
-instead of replacing the tracker</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/conversations/{conversation_id}/tracker/events</span></code> supports a list of events</p></li>
+<li>update the tracker in interactive learning through reverting and appending events
+instead of replacing the tracker</li>
+<li><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/conversations/{conversation_id}/tracker/events</span></code> supports a list of events</li>
 </ul>
 </div>
 <div class="section" id="id55">
 <h3>Fixed<a class="headerlink" href="#id55" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>fixed creation of <code class="docutils literal notranslate"><span class="pre">RasaNLUHttpInterpreter</span></code></p></li>
-<li><p>form actions are included in domain warnings</p></li>
-<li><p>default actions, which are overriden by custom actions and are listed in the
-domain are excluded from domain warnings</p></li>
-<li><p>SQL <code class="docutils literal notranslate"><span class="pre">data</span></code> column type to <code class="docutils literal notranslate"><span class="pre">Text</span></code> for compatibility with MySQL</p></li>
-<li><p>non-featurizer training parameters don’t break <cite>SklearnPolicy</cite> anymore</p></li>
+<li>fixed creation of <code class="docutils literal notranslate"><span class="pre">RasaNLUHttpInterpreter</span></code></li>
+<li>form actions are included in domain warnings</li>
+<li>default actions, which are overriden by custom actions and are listed in the
+domain are excluded from domain warnings</li>
+<li>SQL <code class="docutils literal notranslate"><span class="pre">data</span></code> column type to <code class="docutils literal notranslate"><span class="pre">Text</span></code> for compatibility with MySQL</li>
+<li>non-featurizer training parameters don’t break <cite>SklearnPolicy</cite> anymore</li>
 </ul>
 </div>
 </div>
@@ -634,8 +637,8 @@ domain are excluded from domain warnings</p></li>
 <div class="section" id="id57">
 <h3>Changed<a class="headerlink" href="#id57" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>revert PR #3739 (as this is a breaking change): set <code class="docutils literal notranslate"><span class="pre">PikaProducer</span></code> and
-<code class="docutils literal notranslate"><span class="pre">KafkaProducer</span></code> default queues back to <code class="docutils literal notranslate"><span class="pre">rasa_core_events</span></code></p></li>
+<li>revert PR #3739 (as this is a breaking change): set <code class="docutils literal notranslate"><span class="pre">PikaProducer</span></code> and
+<code class="docutils literal notranslate"><span class="pre">KafkaProducer</span></code> default queues back to <code class="docutils literal notranslate"><span class="pre">rasa_core_events</span></code></li>
 </ul>
 </div>
 </div>
@@ -644,23 +647,23 @@ domain are excluded from domain warnings</p></li>
 <div class="section" id="id59">
 <h3>Added<a class="headerlink" href="#id59" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>support for specifying full database urls in the <code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> configuration</p></li>
-<li><p>maximum number of predictions can be set via the environment variable
-<code class="docutils literal notranslate"><span class="pre">MAX_NUMBER_OF_PREDICTIONS</span></code> (default is 10)</p></li>
+<li>support for specifying full database urls in the <code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> configuration</li>
+<li>maximum number of predictions can be set via the environment variable
+<code class="docutils literal notranslate"><span class="pre">MAX_NUMBER_OF_PREDICTIONS</span></code> (default is 10)</li>
 </ul>
 </div>
 <div class="section" id="id60">
 <h3>Changed<a class="headerlink" href="#id60" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>default <code class="docutils literal notranslate"><span class="pre">PikaProducer</span></code> and <code class="docutils literal notranslate"><span class="pre">KafkaProducer</span></code> queues to <code class="docutils literal notranslate"><span class="pre">rasa_production_events</span></code></p></li>
-<li><p>exclude unfeaturized slots from domain warnings</p></li>
+<li>default <code class="docutils literal notranslate"><span class="pre">PikaProducer</span></code> and <code class="docutils literal notranslate"><span class="pre">KafkaProducer</span></code> queues to <code class="docutils literal notranslate"><span class="pre">rasa_production_events</span></code></li>
+<li>exclude unfeaturized slots from domain warnings</li>
 </ul>
 </div>
 <div class="section" id="id61">
 <h3>Fixed<a class="headerlink" href="#id61" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>loading of additional training data with the <code class="docutils literal notranslate"><span class="pre">SkillSelector</span></code></p></li>
-<li><p>strip trailing slashes in endpoint URLs</p></li>
+<li>loading of additional training data with the <code class="docutils literal notranslate"><span class="pre">SkillSelector</span></code></li>
+<li>strip trailing slashes in endpoint URLs</li>
 </ul>
 </div>
 </div>
@@ -669,15 +672,15 @@ domain are excluded from domain warnings</p></li>
 <div class="section" id="id63">
 <h3>Added<a class="headerlink" href="#id63" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>added argument <code class="docutils literal notranslate"><span class="pre">--rasa-x-port</span></code> to specify the port of Rasa X when running Rasa X locally via <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code></p></li>
+<li>added argument <code class="docutils literal notranslate"><span class="pre">--rasa-x-port</span></code> to specify the port of Rasa X when running Rasa X locally via <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code></li>
 </ul>
 </div>
 <div class="section" id="id64">
 <h3>Fixed<a class="headerlink" href="#id64" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>slack notifications from bots correctly render text</p></li>
-<li><p>fixed usage of <code class="docutils literal notranslate"><span class="pre">--log-file</span></code> argument for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code></p></li>
-<li><p>check if correct tracker store is configured in local mode</p></li>
+<li>slack notifications from bots correctly render text</li>
+<li>fixed usage of <code class="docutils literal notranslate"><span class="pre">--log-file</span></code> argument for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code></li>
+<li>check if correct tracker store is configured in local mode</li>
 </ul>
 </div>
 </div>
@@ -686,7 +689,7 @@ domain are excluded from domain warnings</p></li>
 <div class="section" id="id66">
 <h3>Fixed<a class="headerlink" href="#id66" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>fixed backwards incompatible utils changes</p></li>
+<li>fixed backwards incompatible utils changes</li>
 </ul>
 </div>
 </div>
@@ -695,7 +698,7 @@ domain are excluded from domain warnings</p></li>
 <div class="section" id="id68">
 <h3>Fixed<a class="headerlink" href="#id68" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>fixed spacy being a required dependency (regression)</p></li>
+<li>fixed spacy being a required dependency (regression)</li>
 </ul>
 </div>
 </div>
@@ -704,17 +707,17 @@ domain are excluded from domain warnings</p></li>
 <div class="section" id="id70">
 <h3>Added<a class="headerlink" href="#id70" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>automatic creation of index on the <code class="docutils literal notranslate"><span class="pre">sender_id</span></code> column when using an SQL
+<li>automatic creation of index on the <code class="docutils literal notranslate"><span class="pre">sender_id</span></code> column when using an SQL
 tracker store. If you have an existing data and you are running into performance
 issues, please make sure to add an index manually using
-<code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">INDEX</span> <span class="pre">event_idx_sender_id</span> <span class="pre">ON</span> <span class="pre">events</span> <span class="pre">(sender_id);</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">INDEX</span> <span class="pre">event_idx_sender_id</span> <span class="pre">ON</span> <span class="pre">events</span> <span class="pre">(sender_id);</span></code>.</li>
 </ul>
 </div>
 <div class="section" id="id71">
 <h3>Changed<a class="headerlink" href="#id71" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>NLU evaluation in cross-validation mode now also provides intent/entity reports,
-confusion matrix, etc.</p></li>
+<li>NLU evaluation in cross-validation mode now also provides intent/entity reports,
+confusion matrix, etc.</li>
 </ul>
 </div>
 </div>
@@ -723,9 +726,9 @@ confusion matrix, etc.</p></li>
 <div class="section" id="id73">
 <h3>Fixed<a class="headerlink" href="#id73" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>non-ascii characters render correctly in stories generated from interactive learning</p></li>
-<li><p>validate domain file before usage, e.g. print proper error messages if domain file
-is invalid instead of raising errors</p></li>
+<li>non-ascii characters render correctly in stories generated from interactive learning</li>
+<li>validate domain file before usage, e.g. print proper error messages if domain file
+is invalid instead of raising errors</li>
 </ul>
 </div>
 </div>
@@ -734,19 +737,19 @@ is invalid instead of raising errors</p></li>
 <div class="section" id="id75">
 <h3>Added<a class="headerlink" href="#id75" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>added <code class="docutils literal notranslate"><span class="pre">domain_warnings()</span></code> method to <code class="docutils literal notranslate"><span class="pre">Domain</span></code> which returns a dict containing the
+<li>added <code class="docutils literal notranslate"><span class="pre">domain_warnings()</span></code> method to <code class="docutils literal notranslate"><span class="pre">Domain</span></code> which returns a dict containing the
 diff between supplied {actions, intents, entities, slots} and what’s contained in the
-domain</p></li>
+domain</li>
 </ul>
 </div>
 <div class="section" id="id76">
 <h3>Fixed<a class="headerlink" href="#id76" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>fix lookup table files failed to load issues/3622</p></li>
-<li><p>buttons can now be properly selected during cmdline chat or when in interactive learning</p></li>
-<li><p>set slots correctly when events are added through the API</p></li>
-<li><p>mapping policy no longer ignores NLU threshold</p></li>
-<li><p>mapping policy priority is correctly persisted</p></li>
+<li>fix lookup table files failed to load issues/3622</li>
+<li>buttons can now be properly selected during cmdline chat or when in interactive learning</li>
+<li>set slots correctly when events are added through the API</li>
+<li>mapping policy no longer ignores NLU threshold</li>
+<li>mapping policy priority is correctly persisted</li>
 </ul>
 </div>
 </div>
@@ -755,7 +758,7 @@ domain</p></li>
 <div class="section" id="id78">
 <h3>Fixed<a class="headerlink" href="#id78" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>updated installation command in docs for Rasa X</p></li>
+<li>updated installation command in docs for Rasa X</li>
 </ul>
 </div>
 </div>
@@ -764,87 +767,87 @@ domain</p></li>
 <div class="section" id="id80">
 <h3>Added<a class="headerlink" href="#id80" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>added arguments to set the file paths for interactive training</p></li>
-<li><p>added quick reply representation for command-line output</p></li>
-<li><p>added option to specify custom button type for Facebook buttons</p></li>
-<li><p>added tracker store persisting trackers into a SQL database
-(<code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code>)</p></li>
-<li><p>added rasa command line interface and API</p></li>
-<li><p>Rasa  HTTP training endpoint at <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/jobs</span></code>. This endpoint
-will train a combined Rasa Core and NLU model</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(action_name)</span></code> event to cancel given action_name reminder
-for current user</p></li>
-<li><p>Rasa HTTP intent evaluation endpoint at <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/intentEvaluation</span></code>.
-This endpoints performs an intent evaluation of a Rasa model</p></li>
-<li><p>option to create template for new utterance action in <code class="docutils literal notranslate"><span class="pre">interactive</span> <span class="pre">learning</span></code></p></li>
-<li><p>you can now choose actions previously created in the same session
-in <code class="docutils literal notranslate"><span class="pre">interactive</span> <span class="pre">learning</span></code></p></li>
-<li><p>add formatter ‘black’</p></li>
-<li><p>channel-specific utterances via the <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">&quot;channel&quot;:</span></code> key in utterance templates</p></li>
-<li><p>arbitrary json messages via the <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">&quot;custom&quot;:</span></code> key in utterance templates and
-via <code class="docutils literal notranslate"><span class="pre">utter_custom_json()</span></code> method in custom actions</p></li>
-<li><p>support to load sub skills (domain, stories, nlu data)</p></li>
-<li><p>support to select which sub skills to load through <code class="docutils literal notranslate"><span class="pre">import</span></code> section in
-<code class="docutils literal notranslate"><span class="pre">config.yml</span></code></p></li>
-<li><p>support for spaCy 2.1</p></li>
-<li><p>a model for an agent can now also be loaded from a remote storage</p></li>
-<li><p>log level can be set via environment variable <code class="docutils literal notranslate"><span class="pre">LOG_LEVEL</span></code></p></li>
-<li><p>add <code class="docutils literal notranslate"><span class="pre">--store-uncompressed</span></code> to train command to not compress Rasa model</p></li>
-<li><p>log level of libraries, such as tensorflow, can be set via environment variable <code class="docutils literal notranslate"><span class="pre">LOG_LEVEL_LIBRARIES</span></code></p></li>
-<li><p>if no spaCy model is linked upon building a spaCy pipeline, an appropriate error message
-is now raised with instructions for linking one</p></li>
+<li>added arguments to set the file paths for interactive training</li>
+<li>added quick reply representation for command-line output</li>
+<li>added option to specify custom button type for Facebook buttons</li>
+<li>added tracker store persisting trackers into a SQL database
+(<code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code>)</li>
+<li>added rasa command line interface and API</li>
+<li>Rasa  HTTP training endpoint at <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/jobs</span></code>. This endpoint
+will train a combined Rasa Core and NLU model</li>
+<li><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(action_name)</span></code> event to cancel given action_name reminder
+for current user</li>
+<li>Rasa HTTP intent evaluation endpoint at <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/intentEvaluation</span></code>.
+This endpoints performs an intent evaluation of a Rasa model</li>
+<li>option to create template for new utterance action in <code class="docutils literal notranslate"><span class="pre">interactive</span> <span class="pre">learning</span></code></li>
+<li>you can now choose actions previously created in the same session
+in <code class="docutils literal notranslate"><span class="pre">interactive</span> <span class="pre">learning</span></code></li>
+<li>add formatter ‘black’</li>
+<li>channel-specific utterances via the <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">&quot;channel&quot;:</span></code> key in utterance templates</li>
+<li>arbitrary json messages via the <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">&quot;custom&quot;:</span></code> key in utterance templates and
+via <code class="docutils literal notranslate"><span class="pre">utter_custom_json()</span></code> method in custom actions</li>
+<li>support to load sub skills (domain, stories, nlu data)</li>
+<li>support to select which sub skills to load through <code class="docutils literal notranslate"><span class="pre">import</span></code> section in
+<code class="docutils literal notranslate"><span class="pre">config.yml</span></code></li>
+<li>support for spaCy 2.1</li>
+<li>a model for an agent can now also be loaded from a remote storage</li>
+<li>log level can be set via environment variable <code class="docutils literal notranslate"><span class="pre">LOG_LEVEL</span></code></li>
+<li>add <code class="docutils literal notranslate"><span class="pre">--store-uncompressed</span></code> to train command to not compress Rasa model</li>
+<li>log level of libraries, such as tensorflow, can be set via environment variable <code class="docutils literal notranslate"><span class="pre">LOG_LEVEL_LIBRARIES</span></code></li>
+<li>if no spaCy model is linked upon building a spaCy pipeline, an appropriate error message
+is now raised with instructions for linking one</li>
 </ul>
 </div>
 <div class="section" id="id81">
 <h3>Changed<a class="headerlink" href="#id81" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>renamed all CLI parameters containing any <code class="docutils literal notranslate"><span class="pre">_</span></code> to use dashes <code class="docutils literal notranslate"><span class="pre">-</span></code> instead (GNU standard)</p></li>
-<li><p>renamed <code class="docutils literal notranslate"><span class="pre">rasa_core</span></code> package to <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code></p></li>
-<li><p>for interactive learning only include manually annotated and ner_crf entities in nlu export</p></li>
-<li><p>made <code class="docutils literal notranslate"><span class="pre">message_id</span></code> an additional argument to <code class="docutils literal notranslate"><span class="pre">interpreter.parse</span></code></p></li>
-<li><p>changed removing punctuation logic in <code class="docutils literal notranslate"><span class="pre">WhitespaceTokenizer</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">training_processes</span></code> in the Rasa NLU data router have been renamed to <code class="docutils literal notranslate"><span class="pre">worker_processes</span></code></p></li>
-<li><p>created a common utils package <code class="docutils literal notranslate"><span class="pre">rasa.utils</span></code> for nlu and core, common methods like <code class="docutils literal notranslate"><span class="pre">read_yaml</span></code> moved there</p></li>
-<li><p>removed <code class="docutils literal notranslate"><span class="pre">--num_threads</span></code> from run command (server will be asynchronous but
-running in a single thread)</p></li>
-<li><p>the <code class="docutils literal notranslate"><span class="pre">_check_token()</span></code> method in <code class="docutils literal notranslate"><span class="pre">RasaChat</span></code> now authenticates against <code class="docutils literal notranslate"><span class="pre">/auth/verify</span></code> instead of <code class="docutils literal notranslate"><span class="pre">/user</span></code></p></li>
-<li><p>removed <code class="docutils literal notranslate"><span class="pre">--pre_load</span></code> from run command (Rasa NLU server will just have a maximum of one model and that model will be
-loaded by default)</p></li>
-<li><p>changed file format of a stored trained model from the Rasa NLU server to <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code></p></li>
-<li><p>train command uses fallback config if an invalid config is given</p></li>
-<li><p>test command now compares multiple models if a list of model files is provided for the argument <code class="docutils literal notranslate"><span class="pre">--model</span></code></p></li>
-<li><p>Merged rasa.core and rasa.nlu server into a single server. See swagger file in <code class="docutils literal notranslate"><span class="pre">docs/_static/spec/server.yaml</span></code> for
-available endpoints.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">utter_custom_message()</span></code> method in rasa_core_sdk has been renamed to <code class="docutils literal notranslate"><span class="pre">utter_elements()</span></code></p></li>
-<li><p>updated dependencies. as part of this, models for spacy need to be reinstalled
-for 2.1 (from 2.0)</p></li>
-<li><p>make sure all command line arguments for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> are actually used, removed arguments
-that were not used at all (e.g. <code class="docutils literal notranslate"><span class="pre">--core</span></code> for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code>)</p></li>
+<li>renamed all CLI parameters containing any <code class="docutils literal notranslate"><span class="pre">_</span></code> to use dashes <code class="docutils literal notranslate"><span class="pre">-</span></code> instead (GNU standard)</li>
+<li>renamed <code class="docutils literal notranslate"><span class="pre">rasa_core</span></code> package to <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code></li>
+<li>for interactive learning only include manually annotated and ner_crf entities in nlu export</li>
+<li>made <code class="docutils literal notranslate"><span class="pre">message_id</span></code> an additional argument to <code class="docutils literal notranslate"><span class="pre">interpreter.parse</span></code></li>
+<li>changed removing punctuation logic in <code class="docutils literal notranslate"><span class="pre">WhitespaceTokenizer</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">training_processes</span></code> in the Rasa NLU data router have been renamed to <code class="docutils literal notranslate"><span class="pre">worker_processes</span></code></li>
+<li>created a common utils package <code class="docutils literal notranslate"><span class="pre">rasa.utils</span></code> for nlu and core, common methods like <code class="docutils literal notranslate"><span class="pre">read_yaml</span></code> moved there</li>
+<li>removed <code class="docutils literal notranslate"><span class="pre">--num_threads</span></code> from run command (server will be asynchronous but
+running in a single thread)</li>
+<li>the <code class="docutils literal notranslate"><span class="pre">_check_token()</span></code> method in <code class="docutils literal notranslate"><span class="pre">RasaChat</span></code> now authenticates against <code class="docutils literal notranslate"><span class="pre">/auth/verify</span></code> instead of <code class="docutils literal notranslate"><span class="pre">/user</span></code></li>
+<li>removed <code class="docutils literal notranslate"><span class="pre">--pre_load</span></code> from run command (Rasa NLU server will just have a maximum of one model and that model will be
+loaded by default)</li>
+<li>changed file format of a stored trained model from the Rasa NLU server to <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code></li>
+<li>train command uses fallback config if an invalid config is given</li>
+<li>test command now compares multiple models if a list of model files is provided for the argument <code class="docutils literal notranslate"><span class="pre">--model</span></code></li>
+<li>Merged rasa.core and rasa.nlu server into a single server. See swagger file in <code class="docutils literal notranslate"><span class="pre">docs/_static/spec/server.yaml</span></code> for
+available endpoints.</li>
+<li><code class="docutils literal notranslate"><span class="pre">utter_custom_message()</span></code> method in rasa_core_sdk has been renamed to <code class="docutils literal notranslate"><span class="pre">utter_elements()</span></code></li>
+<li>updated dependencies. as part of this, models for spacy need to be reinstalled
+for 2.1 (from 2.0)</li>
+<li>make sure all command line arguments for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> are actually used, removed arguments
+that were not used at all (e.g. <code class="docutils literal notranslate"><span class="pre">--core</span></code> for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code>)</li>
 </ul>
 </div>
 <div class="section" id="id82">
 <h3>Removed<a class="headerlink" href="#id82" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>removed possibility to execute <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">rasa_core.train</span></code> etc. (e.g. scripts in <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa.nlu</span></code>).
-Use the CLI for rasa instead, e.g. <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code>.</p></li>
-<li><p>removed <code class="docutils literal notranslate"><span class="pre">_sklearn_numpy_warning_fix</span></code> from the <code class="docutils literal notranslate"><span class="pre">SklearnIntentClassifier</span></code></p></li>
-<li><p>removed <code class="docutils literal notranslate"><span class="pre">Dispatcher</span></code> class from core</p></li>
-<li><p>removed projects: the Rasa NLU server now has a maximum of one model at a time loaded.</p></li>
+<li>removed possibility to execute <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">rasa_core.train</span></code> etc. (e.g. scripts in <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa.nlu</span></code>).
+Use the CLI for rasa instead, e.g. <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code>.</li>
+<li>removed <code class="docutils literal notranslate"><span class="pre">_sklearn_numpy_warning_fix</span></code> from the <code class="docutils literal notranslate"><span class="pre">SklearnIntentClassifier</span></code></li>
+<li>removed <code class="docutils literal notranslate"><span class="pre">Dispatcher</span></code> class from core</li>
+<li>removed projects: the Rasa NLU server now has a maximum of one model at a time loaded.</li>
 </ul>
 </div>
 <div class="section" id="id83">
 <h3>Fixed<a class="headerlink" href="#id83" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>evaluating core stories with two stage fallback gave an error, trying to handle None for a policy</p></li>
-<li><p>the <code class="docutils literal notranslate"><span class="pre">/evaluate</span></code> route for the Rasa NLU server now runs evaluation
-in a parallel process, which prevents the currently loaded model unloading</p></li>
-<li><p>added missing implementation of the <code class="docutils literal notranslate"><span class="pre">keys()</span></code> function for the Redis Tracker
-Store</p></li>
-<li><p>in interactive learning: only updates entity values if user changes annotation</p></li>
-<li><p>log options from the command line interface are applied (they overwrite the environment variable)</p></li>
-<li><p>all message arguments (kwargs in dispatcher.utter methods, as well as template args) are now sent through to output channels</p></li>
-<li><p>utterance templates defined in actions are checked for existence upon training a new agent, and a warning
-is thrown before training if one is missing</p></li>
+<li>evaluating core stories with two stage fallback gave an error, trying to handle None for a policy</li>
+<li>the <code class="docutils literal notranslate"><span class="pre">/evaluate</span></code> route for the Rasa NLU server now runs evaluation
+in a parallel process, which prevents the currently loaded model unloading</li>
+<li>added missing implementation of the <code class="docutils literal notranslate"><span class="pre">keys()</span></code> function for the Redis Tracker
+Store</li>
+<li>in interactive learning: only updates entity values if user changes annotation</li>
+<li>log options from the command line interface are applied (they overwrite the environment variable)</li>
+<li>all message arguments (kwargs in dispatcher.utter methods, as well as template args) are now sent through to output channels</li>
+<li>utterance templates defined in actions are checked for existence upon training a new agent, and a warning
+is thrown before training if one is missing</li>
 </ul>
 </div>
 </div>

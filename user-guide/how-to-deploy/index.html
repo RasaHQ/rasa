@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Deploying Your Rasa Assistant</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Building a Rasa Assistant in Docker" href="../docker/building-in-docker/" />
@@ -242,6 +243,8 @@
               <a href="../.././1.4.6/index/">1.4.6</a>
               <a href="../.././1.3.10/index/">1.3.10</a>
               <a href="../.././1.2.9/index/">1.2.9</a>
+              <a href="../.././1.1.8/index/">1.1.8</a>
+              <a href="../.././1.0.9/index/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -280,23 +283,20 @@
 It will allow you to make your assistant available to users and set you up with a production-ready environment.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#when-to-deploy-your-assistant" id="id6">When to Deploy Your Assistant</a></p></li>
-<li><p><a class="reference internal" href="#recommended-deployment-methods" id="id7">Recommended Deployment Methods</a></p>
-<ul>
-<li><p><a class="reference internal" href="#one-line-deploy-script" id="id8">One-Line Deploy Script</a></p></li>
-<li><p><a class="reference internal" href="#kubernetes-openshift" id="id9">Kubernetes/Openshift</a></p></li>
+<li><a class="reference internal" href="#when-to-deploy-your-assistant" id="id6">When to Deploy Your Assistant</a></li>
+<li><a class="reference internal" href="#recommended-deployment-methods" id="id7">Recommended Deployment Methods</a><ul>
+<li><a class="reference internal" href="#one-line-deploy-script" id="id8">One-Line Deploy Script</a></li>
+<li><a class="reference internal" href="#kubernetes-openshift" id="id9">Kubernetes/Openshift</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#alternative-deployment-methods" id="id10">Alternative Deployment Methods</a></p>
-<ul>
-<li><p><a class="reference internal" href="#docker-compose" id="id11">Docker Compose</a></p></li>
-<li><p><a class="reference internal" href="#rasa-open-source-only-deployment" id="id12">Rasa Open Source Only Deployment</a></p></li>
+<li><a class="reference internal" href="#alternative-deployment-methods" id="id10">Alternative Deployment Methods</a><ul>
+<li><a class="reference internal" href="#docker-compose" id="id11">Docker Compose</a></li>
+<li><a class="reference internal" href="#rasa-open-source-only-deployment" id="id12">Rasa Open Source Only Deployment</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#deploying-your-action-server" id="id13">Deploying Your Action Server</a></p>
-<ul>
-<li><p><a class="reference internal" href="#building-an-action-server-image" id="id14">Building an Action Server Image</a></p></li>
-<li><p><a class="reference internal" href="#using-your-custom-action-server-image" id="id15">Using your Custom Action Server Image</a></p></li>
+<li><a class="reference internal" href="#deploying-your-action-server" id="id13">Deploying Your Action Server</a><ul>
+<li><a class="reference internal" href="#building-an-action-server-image" id="id14">Building an Action Server Image</a></li>
+<li><a class="reference internal" href="#using-your-custom-action-server-image" id="id15">Using your Custom Action Server Image</a></li>
 </ul>
 </li>
 </ul>
@@ -322,7 +322,7 @@ allow you to use Rasa X to view conversations and turn them into training data, 
 cluster on your machine with sensible defaults, getting you up and running in one command.</p>
 <blockquote>
 <div><ul>
-<li><p>Default: Make sure you meet the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#hardware-os-requirements">OS Requirements</a>,
+<li><p class="first">Default: Make sure you meet the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#hardware-os-requirements">OS Requirements</a>,
 then run:</p>
 
   <pre class="copyable-snippet">
@@ -333,8 +333,9 @@ curl -s get-rasa-x.rasa.com | sudo bash
     <div class="copyable confirm" id="curl--s-get-rasa-x.rasa.com-|-sudo-bash">copied!</div>
   </pre>
 </li>
-<li><p>Custom: See <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script">Customizing the Script</a>
-in the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script">One-Line Deploy Script</a> docs.</p></li>
+<li><p class="first">Custom: See <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script">Customizing the Script</a>
+in the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script">One-Line Deploy Script</a> docs.</p>
+</li>
 </ul>
 </div></blockquote>
 </div>
@@ -345,9 +346,9 @@ our helm charts is the best option. This provides a scalable architecture that i
 However, you can also customize the Helm charts if you have specific requirements.</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>Default: Read the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/">Deploying in Openshift or Kubernetes</a> docs.</p></li>
-<li><p>Custom: Read the above, as well as the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#advanced-configuration">Advanced Configuration</a>
-documentation, and customize the <a class="reference external" href="https://github.com/RasaHQ/rasa-x-helm">open source Helm charts</a> to your needs.</p></li>
+<li>Default: Read the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/">Deploying in Openshift or Kubernetes</a> docs.</li>
+<li>Custom: Read the above, as well as the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#advanced-configuration">Advanced Configuration</a>
+documentation, and customize the <a class="reference external" href="https://github.com/RasaHQ/rasa-x-helm">open source Helm charts</a> to your needs.</li>
 </ul>
 </div></blockquote>
 </div>
@@ -360,8 +361,8 @@ documentation, and customize the <a class="reference external" href="https://git
 for doing so, as well as manual instructions for any custom setups.</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>Default: Read the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/">Docker Compose Quick Install</a> docs or watch the <a class="reference external" href="https://www.youtube.com/watch?v=IUYdwy8HPVc">Masterclass Video</a> on deploying Rasa X.</p></li>
-<li><p>Custom: Read the docs <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/">Docker Compose Manual Install</a> documentation for full customization options.</p></li>
+<li>Default: Read the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/">Docker Compose Quick Install</a> docs or watch the <a class="reference external" href="https://www.youtube.com/watch?v=IUYdwy8HPVc">Masterclass Video</a> on deploying Rasa X.</li>
+<li>Custom: Read the docs <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/">Docker Compose Manual Install</a> documentation for full customization options.</li>
 </ul>
 </div></blockquote>
 </div>
@@ -389,7 +390,7 @@ that are part of your action code but not included in the base <code class="docu
 <p>To create your image:</p>
 <blockquote>
 <div><ol class="arabic">
-<li><p>Move your actions code to a folder <code class="docutils literal notranslate"><span class="pre">actions</span></code> in your project directory.
+<li><p class="first">Move your actions code to a folder <code class="docutils literal notranslate"><span class="pre">actions</span></code> in your project directory.
 Make sure to also add an empty <code class="docutils literal notranslate"><span class="pre">actions/__init__.py</span></code> file:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir actions
@@ -400,13 +401,15 @@ touch actions/__init__.py  <span class="c1"># the init file indicates actions.py
 </div></blockquote>
 <p>The <code class="docutils literal notranslate"><span class="pre">rasa/rasa-sdk</span></code> image will automatically look for the actions in <code class="docutils literal notranslate"><span class="pre">actions/actions.py</span></code>.</p>
 </li>
-<li><p>If your actions have any extra dependencies, create a list of them in a file,
-<code class="docutils literal notranslate"><span class="pre">actions/requirements-actions.txt</span></code>.</p></li>
-<li><p>Create a file named <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> in your project directory,
+<li><p class="first">If your actions have any extra dependencies, create a list of them in a file,
+<code class="docutils literal notranslate"><span class="pre">actions/requirements-actions.txt</span></code>.</p>
+</li>
+<li><p class="first">Create a file named <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> in your project directory,
 in which you’ll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
 For example:</p>
 <blockquote>
-<div><pre class="literal-block"># Extend the official Rasa SDK image
+<div><pre class="literal-block">
+# Extend the official Rasa SDK image
 FROM rasa/rasa-sdk:1.9.0
 
 # Use subdirectory as working directory
@@ -425,7 +428,8 @@ USER root
 COPY ./actions /app/actions
 
 # By best practices, don't run the code with root user
-USER 1001</pre>
+USER 1001
+</pre>
 </div></blockquote>
 </li>
 </ol>
@@ -464,10 +468,10 @@ your chosen container registry.</p>
 your deployment:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script">One-Line Deployment</a></p></li>
-<li><p><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#adding-a-custom-action-server">Kubernetes or Openshift</a></p></li>
-<li><p><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/#connect-a-custom-action-server">Docker Compose</a></p></li>
-<li><p><a class="reference internal" href="../docker/deploying-in-docker-compose/#running-multiple-services"><span class="std std-ref">Rasa Open Source Only</span></a></p></li>
+<li><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script">One-Line Deployment</a></li>
+<li><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#adding-a-custom-action-server">Kubernetes or Openshift</a></li>
+<li><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/#connect-a-custom-action-server">Docker Compose</a></li>
+<li><a class="reference internal" href="../docker/deploying-in-docker-compose/#running-multiple-services"><span class="std std-ref">Rasa Open Source Only</span></a></li>
 </ul>
 </div></blockquote>
 </div>

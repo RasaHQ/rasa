@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Rasa SDK</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Events" href="../events/" />
@@ -246,6 +247,8 @@ external APIs or improve dialogue with custom actions written in Python." />
               <a href="../.././1.4.6/index/">1.4.6</a>
               <a href="../.././1.3.10/index/">1.3.10</a>
               <a href="../.././1.2.9/index/">1.2.9</a>
+              <a href="../.././1.1.8/index/">1.1.8</a>
+              <a href="../.././1.0.9/index/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -283,15 +286,14 @@ external APIs or improve dialogue with custom actions written in Python." />
   </div><p>Rasa SDK provides the tools you need to write custom actions in python.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#installation" id="id2">Installation</a></p></li>
-<li><p><a class="reference internal" href="#running-the-action-server" id="id3">Running the Action Server</a></p></li>
-<li><p><a class="reference internal" href="#actions" id="id4">Actions</a></p>
-<ul>
-<li><p><a class="reference internal" href="#customising-the-session-start-action" id="id5">Customising the session start action</a></p></li>
+<li><a class="reference internal" href="#installation" id="id2">Installation</a></li>
+<li><a class="reference internal" href="#running-the-action-server" id="id3">Running the Action Server</a></li>
+<li><a class="reference internal" href="#actions" id="id4">Actions</a><ul>
+<li><a class="reference internal" href="#customising-the-session-start-action" id="id5">Customising the session start action</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#events" id="id6">Events</a></p></li>
-<li><p><a class="reference internal" href="#tracker" id="id7">Tracker</a></p></li>
+<li><a class="reference internal" href="#events" id="id6">Events</a></li>
+<li><a class="reference internal" href="#tracker" id="id7">Tracker</a></li>
 </ul>
 </div>
 <div class="section" id="installation">
@@ -301,8 +303,8 @@ external APIs or improve dialogue with custom actions written in Python." />
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You do not need to install <code class="docutils literal notranslate"><span class="pre">rasa</span></code> for your action server.
+<p class="first admonition-title">Note</p>
+<p class="last">You do not need to install <code class="docutils literal notranslate"><span class="pre">rasa</span></code> for your action server.
 E.g. if you are running Rasa in a docker container, it is recommended to
 create a separate container for your action server. In this
 separate container, you only need to install <code class="docutils literal notranslate"><span class="pre">rasa-sdk</span></code>.</p>
@@ -370,7 +372,7 @@ that both need to be overwritten, <code class="docutils literal notranslate"><sp
 <p id="custom-action-example">In a restaurant bot, if the user says “show me a Mexican restaurant”,
 your bot could execute the action <code class="docutils literal notranslate"><span class="pre">ActionCheckRestaurants</span></code>,
 which might look like this:</p>
-<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa_sdk</span> <span class="kn">import</span> <span class="n">Action</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa_sdk</span> <span class="kn">import</span> <span class="n">Action</span>
 <span class="kn">from</span> <span class="nn">rasa_sdk.events</span> <span class="kn">import</span> <span class="n">SlotSet</span>
 
 <span class="k">class</span> <span class="nc">ActionCheckRestaurants</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
@@ -383,10 +385,10 @@ which might look like this:</p>
            <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 
       <span class="n">cuisine</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">get_slot</span><span class="p">(</span><span class="s1">&#39;cuisine&#39;</span><span class="p">)</span>
-      <span class="n">q</span> <span class="o">=</span> <span class="s2">&quot;select * from restaurants where cuisine=&#39;</span><span class="si">{0}</span><span class="s2">&#39; limit 1&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cuisine</span><span class="p">)</span>
+      <span class="n">q</span> <span class="o">=</span> <span class="s2">&quot;select * from restaurants where cuisine=&#39;{0}&#39; limit 1&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cuisine</span><span class="p">)</span>
       <span class="n">result</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
 
-      <span class="k">return</span> <span class="p">[</span><span class="n">SlotSet</span><span class="p">(</span><span class="s2">&quot;matches&quot;</span><span class="p">,</span> <span class="n">result</span> <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[])]</span>
+      <span class="k">return</span> <span class="p">[</span><span class="n">SlotSet</span><span class="p">(</span><span class="s2">&quot;matches&quot;</span><span class="p">,</span> <span class="n">result</span> <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="p">[])]</span>
 </pre></div>
 </div>
 <p>You should add the action name <code class="docutils literal notranslate"><span class="pre">action_check_restaurants</span></code> to
@@ -396,49 +398,57 @@ sent by the user using the <code class="docutils literal notranslate"><span clas
 back to the user with the <code class="docutils literal notranslate"><span class="pre">dispatcher</span></code> object, by calling
 <code class="docutils literal notranslate"><span class="pre">dispatcher.utter_message</span></code>.</p>
 <p>Details of the <code class="docutils literal notranslate"><span class="pre">run()</span></code> method:</p>
-<dl class="py method">
+<dl class="method">
 <dt id="rasa_sdk.Action.run">
-<em class="property">async </em><code class="sig-prename descclassname">Action.</code><code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dispatcher</span></em>, <em class="sig-param"><span class="n">tracker</span></em>, <em class="sig-param"><span class="n">domain</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.Action.run" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Action.</code><code class="descname">run</code><span class="sig-paren">(</span><em>dispatcher</em>, <em>tracker</em>, <em>domain</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.Action.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Execute the side effects of this action.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>dispatcher</strong> – the dispatcher which is used to
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dispatcher</strong> – the dispatcher which is used to
 send messages back to the user. Use
 <code class="docutils literal notranslate"><span class="pre">dipatcher.utter_message()</span></code> or any other
 <code class="docutils literal notranslate"><span class="pre">rasa_sdk.executor.CollectingDispatcher</span></code>
-method.</p></li>
-<li><p><strong>tracker</strong> – the state tracker for the current
+method.</li>
+<li><strong>tracker</strong> – the state tracker for the current
 user. You can access slot values using
 <code class="docutils literal notranslate"><span class="pre">tracker.get_slot(slot_name)</span></code>, the most recent user message
 is <code class="docutils literal notranslate"><span class="pre">tracker.latest_message.text</span></code> and any other
-<code class="docutils literal notranslate"><span class="pre">rasa_sdk.Tracker</span></code> property.</p></li>
-<li><p><strong>domain</strong> – the bot’s domain</p></li>
+<code class="docutils literal notranslate"><span class="pre">rasa_sdk.Tracker</span></code> property.</li>
+<li><strong>domain</strong> – the bot’s domain</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>A dictionary of <code class="docutils literal notranslate"><span class="pre">rasa_sdk.events.Event</span></code> instances that is</dt><dd><p>returned through the endpoint</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>A dictionary of <code class="docutils literal notranslate"><span class="pre">rasa_sdk.events.Event</span></code> instances that is</dt>
+<dd><p class="first last">returned through the endpoint</p>
 </dd>
 </dl>
 </p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <p>Details of the <code class="docutils literal notranslate"><span class="pre">dispatcher.utter_message()</span></code> method:</p>
-<dl class="py method">
+<dl class="method">
 <dt id="rasa_sdk.executor.CollectingDispatcher.utter_message">
-<code class="sig-prename descclassname">CollectingDispatcher.</code><code class="sig-name descname">utter_message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">image</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">json_message</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">template</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">attachment</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">buttons</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">elements</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.executor.CollectingDispatcher.utter_message" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">CollectingDispatcher.</code><code class="descname">utter_message</code><span class="sig-paren">(</span><em>text=None</em>, <em>image=None</em>, <em>json_message=None</em>, <em>template=None</em>, <em>attachment=None</em>, <em>buttons=None</em>, <em>elements=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.executor.CollectingDispatcher.utter_message" title="Permalink to this definition">¶</a></dt>
 <dd><p>“Send a text to the output channel</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <div class="section" id="customising-the-session-start-action">
@@ -447,7 +457,7 @@ is <code class="docutils literal notranslate"><span class="pre">tracker.latest_m
 carry them over into the next session. Let’s say you do not want to carry over all
 slots, but only a user’s name and their phone number. To do that, you’d override the
 <code class="docutils literal notranslate"><span class="pre">action_session_start</span></code> with a custom action that might look like this:</p>
-<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Text</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Text</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
 
 <span class="kn">from</span> <span class="nn">rasa_sdk</span> <span class="kn">import</span> <span class="n">Action</span><span class="p">,</span> <span class="n">Tracker</span>
 <span class="kn">from</span> <span class="nn">rasa_sdk.events</span> <span class="kn">import</span> <span class="n">SlotSet</span><span class="p">,</span> <span class="n">SessionStarted</span><span class="p">,</span> <span class="n">ActionExecuted</span><span class="p">,</span> <span class="n">EventType</span>
@@ -466,12 +476,12 @@ slots, but only a user’s name and their phone number. To do that, you’d over
 
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;phone_number&quot;</span><span class="p">):</span>
             <span class="n">value</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">get_slot</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
                 <span class="n">slots</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SlotSet</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">slots</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+    <span class="n">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dispatcher</span><span class="p">:</span> <span class="n">CollectingDispatcher</span><span class="p">,</span>
         <span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">,</span>
@@ -492,8 +502,8 @@ slots, but only a user’s name and their phone number. To do that, you’d over
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You need to explicitly add <code class="docutils literal notranslate"><span class="pre">action_session_start</span></code> to your domain to override this
+<p class="first admonition-title">Note</p>
+<p class="last">You need to explicitly add <code class="docutils literal notranslate"><span class="pre">action_session_start</span></code> to your domain to override this
 custom action.</p>
 </div>
 </div>
@@ -513,83 +523,101 @@ actions. You can get information about past events and the current state of the
 conversation through <code class="docutils literal notranslate"><span class="pre">Tracker</span></code> attributes and methods.</p>
 <p>The following are available as attributes of a <code class="docutils literal notranslate"><span class="pre">Tracker</span></code> object:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">sender_id</span></code> - The unique ID of person talking to the bot.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">slots</span></code> - The list of slots that can be filled as defined in the
-“ref”<cite>domains</cite>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">latest_message</span></code> - A dictionary containing the attributes of the latest
-message: <code class="docutils literal notranslate"><span class="pre">intent</span></code>, <code class="docutils literal notranslate"><span class="pre">entities</span></code> and <code class="docutils literal notranslate"><span class="pre">text</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">events</span></code> - A list of all previous events.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">active_form</span></code> - The name of the currently active form.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">latest_action_name</span></code> - The name of the last action the bot executed.</p></li>
+<li><code class="docutils literal notranslate"><span class="pre">sender_id</span></code> - The unique ID of person talking to the bot.</li>
+<li><code class="docutils literal notranslate"><span class="pre">slots</span></code> - The list of slots that can be filled as defined in the
+“ref”<cite>domains</cite>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">latest_message</span></code> - A dictionary containing the attributes of the latest
+message: <code class="docutils literal notranslate"><span class="pre">intent</span></code>, <code class="docutils literal notranslate"><span class="pre">entities</span></code> and <code class="docutils literal notranslate"><span class="pre">text</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">events</span></code> - A list of all previous events.</li>
+<li><code class="docutils literal notranslate"><span class="pre">active_form</span></code> - The name of the currently active form.</li>
+<li><code class="docutils literal notranslate"><span class="pre">latest_action_name</span></code> - The name of the last action the bot executed.</li>
 </ul>
 <p>The available methods from the <code class="docutils literal notranslate"><span class="pre">Tracker</span></code> are:</p>
-<dl class="py method">
+<dl class="method">
 <dt id="rasa_sdk.interfaces.Tracker.current_state">
-<code class="sig-prename descclassname">Tracker.</code><code class="sig-name descname">current_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.current_state" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Tracker.</code><code class="descname">current_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.current_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the current tracker state as an object.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa_sdk.interfaces.Tracker.is_paused">
-<code class="sig-prename descclassname">Tracker.</code><code class="sig-name descname">is_paused</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.is_paused" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Tracker.</code><code class="descname">is_paused</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.is_paused" title="Permalink to this definition">¶</a></dt>
 <dd><p>State whether the tracker is currently paused.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa_sdk.interfaces.Tracker.get_latest_entity_values">
-<code class="sig-prename descclassname">Tracker.</code><code class="sig-name descname">get_latest_entity_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entity_type</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Tracker.</code><code class="descname">get_latest_entity_values</code><span class="sig-paren">(</span><em>entity_type</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get entity values found for the passed entity name in latest msg.</p>
 <p>If you are only interested in the first entity of a given type use
 <cite>next(tracker.get_latest_entity_values(“my_entity_name”), None)</cite>.
 If no entity is found <cite>None</cite> is the default result.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa_sdk.interfaces.Tracker.get_latest_input_channel">
-<code class="sig-prename descclassname">Tracker.</code><code class="sig-name descname">get_latest_input_channel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.get_latest_input_channel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Tracker.</code><code class="descname">get_latest_input_channel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.get_latest_input_channel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the name of the input_channel of the latest UserUttered event</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa_sdk.interfaces.Tracker.events_after_latest_restart">
-<code class="sig-prename descclassname">Tracker.</code><code class="sig-name descname">events_after_latest_restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.events_after_latest_restart" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Tracker.</code><code class="descname">events_after_latest_restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.events_after_latest_restart" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a list of events after the most recent restart.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa_sdk.interfaces.Tracker.get_slot">
-<code class="sig-prename descclassname">Tracker.</code><code class="sig-name descname">get_slot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.get_slot" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Tracker.</code><code class="descname">get_slot</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.get_slot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves the value of a slot.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>

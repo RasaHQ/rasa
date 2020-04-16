@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Training Data Importers</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Featurization of Conversations" href="../core-featurization/" />
@@ -246,6 +247,8 @@ writing your own importer." />
               <a href="../../../1.4.6/api/training-data-importers/">1.4.6</a>
               <a href="../../../1.3.10/api/training-data-importers/">1.3.10</a>
               <a href="../../../1.2.9/api/training-data-importers/">1.2.9</a>
+              <a href="../../../1.1.8/api/training-data-importers/">1.1.8</a>
+              <a href="../../../1.0.9/index/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -282,10 +285,10 @@ writing your own importer." />
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/api/training-data-importers.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#rasafileimporter-default" id="id2">RasaFileImporter (default)</a></p></li>
-<li><p><a class="reference internal" href="#multiprojectimporter-experimental" id="id3">MultiProjectImporter (experimental)</a></p></li>
-<li><p><a class="reference internal" href="#writing-a-custom-importer" id="id4">Writing a Custom Importer</a></p></li>
-<li><p><a class="reference internal" href="#trainingdataimporter" id="id5">TrainingDataImporter</a></p></li>
+<li><a class="reference internal" href="#rasafileimporter-default" id="id2">RasaFileImporter (default)</a></li>
+<li><a class="reference internal" href="#multiprojectimporter-experimental" id="id3">MultiProjectImporter (experimental)</a></li>
+<li><a class="reference internal" href="#writing-a-custom-importer" id="id4">Writing a Custom Importer</a></li>
+<li><a class="reference internal" href="#trainingdataimporter" id="id5">TrainingDataImporter</a></li>
 </ul>
 </div>
 <p>By default, you can use command line arguments to specify where Rasa should look
@@ -294,24 +297,24 @@ them to train your assistant.</p>
 <p>If needed, you can also customize <cite>how</cite> Rasa imports training data.
 Potential use cases for this might be:</p>
 <ul class="simple">
-<li><p>using a custom parser to load training data in other formats</p></li>
-<li><p>using different approaches to collect training data (e.g. loading them from different resources)</p></li>
+<li>using a custom parser to load training data in other formats</li>
+<li>using different approaches to collect training data (e.g. loading them from different resources)</li>
 </ul>
 <p>You can instruct Rasa to load and use your custom importer by adding the section
 <code class="docutils literal notranslate"><span class="pre">importers</span></code> to the Rasa configuration file and specifying the importer with its
 full class path:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">importers</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;module.CustomImporter&quot;</span>
-  <span class="nt">parameter1</span><span class="p">:</span> <span class="s">&quot;value&quot;</span>
-  <span class="nt">parameter2</span><span class="p">:</span> <span class="s">&quot;value2&quot;</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;module.AnotherCustomImporter&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">importers</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;module.CustomImporter&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">parameter1</span><span class="p p-Indicator">:</span> <span class="s">&quot;value&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">parameter2</span><span class="p p-Indicator">:</span> <span class="s">&quot;value2&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;module.AnotherCustomImporter&quot;</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">name</span></code> key is used to determine which importer should be loaded. Any extra
 parameters are passed as constructor arguments to the loaded importer.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You can specify multiple importers. Rasa will automatically merge their results.</p>
+<p class="first admonition-title">Note</p>
+<p class="last">You can specify multiple importers. Rasa will automatically merge their results.</p>
 </div>
 <div class="section" id="rasafileimporter-default">
 <h2><a class="toc-backref" href="#id2">RasaFileImporter (default)</a><a class="headerlink" href="#rasafileimporter-default" title="Permalink to this headline">¶</a></h2>
@@ -319,16 +322,16 @@ parameters are passed as constructor arguments to the loaded importer.</p>
 own, you don’t have to specify anything in your configuration file.
 If you want to use it together with other importers, add it to your
 configuration file:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">importers</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;RasaFileImporter&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">importers</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RasaFileImporter&quot;</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="multiprojectimporter-experimental">
 <h2><a class="toc-backref" href="#id3">MultiProjectImporter (experimental)</a><a class="headerlink" href="#multiprojectimporter-experimental" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>This feature is currently experimental and might change or be removed in the future.
+<p class="first admonition-title">Warning</p>
+<p class="last">This feature is currently experimental and might change or be removed in the future.
 Please share your feedback on it in the <a class="reference external" href="https://forum.rasa.com">forum</a> to help
 us making this feature ready for production.</p>
 </div>
@@ -359,18 +362,18 @@ imports the <code class="docutils literal notranslate"><span class="pre">GreetBo
 each project.
 To instruct Rasa to use the <code class="docutils literal notranslate"><span class="pre">MultiProjectImporter</span></code> module, put this section in the config
 file of your root project:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">importers</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MultiProjectImporter</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">importers</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">MultiProjectImporter</span>
 </pre></div>
 </div>
 <p>Then specify which projects you want to import.
 In our example, the <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> in the root project would look like this:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">imports</span><span class="p">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">imports</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">projects/ChitchatBot</span>
 </pre></div>
 </div>
 <p>The configuration file of the <code class="docutils literal notranslate"><span class="pre">ChitchatBot</span></code> in turn references the <code class="docutils literal notranslate"><span class="pre">GreetBot</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">imports</span><span class="p">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">imports</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">../GreetBot</span>
 </pre></div>
 </div>
@@ -382,14 +385,14 @@ These can be anywhere on your file system as long as the file access is permitte
 them, and train a unified AI assistant. The merging of the training data happens during
 runtime, so no additional files with training data are created or visible.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Rasa will use the policy and NLU pipeline configuration of the root project
+<p class="first admonition-title">Note</p>
+<p class="last">Rasa will use the policy and NLU pipeline configuration of the root project
 directory during training. <strong>Policy or NLU configurations of imported projects
 will be ignored.</strong></p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Equal intents, entities, slots, responses, actions and forms will be merged,
+<p class="first admonition-title">Note</p>
+<p class="last">Equal intents, entities, slots, responses, actions and forms will be merged,
 e.g. if two projects have training data for an intent <code class="docutils literal notranslate"><span class="pre">greet</span></code>,
 their training data will be combined.</p>
 </div>
@@ -413,9 +416,9 @@ their training data will be combined.</p>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">config_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">domain_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">training_data_paths</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Text</span><span class="p">],</span> <span class="n">Text</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">config_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">domain_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">training_data_paths</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Text</span><span class="p">],</span> <span class="n">Text</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Constructor of your custom file importer.</span>
@@ -429,36 +432,36 @@ their training data will be combined.</p>
 
         <span class="k">pass</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_domain</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Domain</span><span class="p">:</span>
+    <span class="n">async</span> <span class="k">def</span> <span class="nf">get_domain</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Domain</span><span class="p">:</span>
         <span class="n">path_to_domain_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_custom_get_domain_file</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">Domain</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path_to_domain_file</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_custom_get_domain_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
         <span class="k">pass</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_stories</span><span class="p">(</span>
+    <span class="n">async</span> <span class="k">def</span> <span class="nf">get_stories</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">interpreter</span><span class="p">:</span> <span class="s2">&quot;NaturalLanguageInterpreter&quot;</span> <span class="o">=</span> <span class="n">RegexInterpreter</span><span class="p">(),</span>
-        <span class="n">template_variables</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">use_e2e</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">exclusion_percentage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">template_variables</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">use_e2e</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+        <span class="n">exclusion_percentage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StoryGraph</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">rasa.core.training.dsl</span> <span class="kn">import</span> <span class="n">StoryFileReader</span>
 
         <span class="n">path_to_stories</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_custom_get_story_file</span><span class="p">()</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">StoryFileReader</span><span class="o">.</span><span class="n">read_from_file</span><span class="p">(</span><span class="n">path_to_stories</span><span class="p">,</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_domain</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">await</span> <span class="n">StoryFileReader</span><span class="o">.</span><span class="n">read_from_file</span><span class="p">(</span><span class="n">path_to_stories</span><span class="p">,</span> <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_domain</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="nf">_custom_get_story_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
         <span class="k">pass</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+    <span class="n">async</span> <span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
         <span class="n">path_to_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_custom_get_config_file</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">rasa</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">read_config_file</span><span class="p">(</span><span class="n">path_to_config</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_custom_get_config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
         <span class="k">pass</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_nlu_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">language</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;en&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainingData</span><span class="p">:</span>
+    <span class="n">async</span> <span class="k">def</span> <span class="nf">get_nlu_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">language</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;en&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainingData</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">rasa.nlu.training_data</span> <span class="kn">import</span> <span class="n">loading</span>
 
         <span class="n">path_to_nlu_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_custom_get_nlu_file</span><span class="p">()</span>
@@ -471,77 +474,86 @@ their training data will be combined.</p>
 </div>
 <div class="section" id="trainingdataimporter">
 <span id="training-data-importers-trainingfileimporter"></span><h2><a class="toc-backref" href="#id5">TrainingDataImporter</a><a class="headerlink" href="#trainingdataimporter" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
+<dl class="class">
 <dt id="rasa.importers.importer.TrainingDataImporter">
-<em class="property">class </em><code class="sig-prename descclassname">rasa.importers.importer.</code><code class="sig-name descname">TrainingDataImporter</code><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.importers.importer.</code><code class="descname">TrainingDataImporter</code><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Common interface for different mechanisms to load training data.</p>
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.importers.importer.TrainingDataImporter.get_domain">
-<em class="property">async </em><code class="sig-name descname">get_domain</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_domain" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_domain</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_domain" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves the domain of the bot.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Loaded <code class="docutils literal notranslate"><span class="pre">Domain</span></code>.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Domain</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Loaded <code class="docutils literal notranslate"><span class="pre">Domain</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Domain</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.importers.importer.TrainingDataImporter.get_config">
-<em class="property">async </em><code class="sig-name descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_config" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves the configuration that should be used for the training.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The configuration as dictionary.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[~KT, ~VT]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The configuration as dictionary.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[~KT, ~VT]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.importers.importer.TrainingDataImporter.get_nlu_data">
-<em class="property">async </em><code class="sig-name descname">get_nlu_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">language</span><span class="o">=</span><span class="default_value">'en'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_nlu_data" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_nlu_data</code><span class="sig-paren">(</span><em>language='en'</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_nlu_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves the NLU training data that should be used for training.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>language</strong> – Can be used to only load training data for a certain language.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Loaded NLU <code class="docutils literal notranslate"><span class="pre">TrainingData</span></code>.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingData</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>language</strong> – Can be used to only load training data for a certain language.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Loaded NLU <code class="docutils literal notranslate"><span class="pre">TrainingData</span></code>.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingData</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.importers.importer.TrainingDataImporter.get_stories">
-<em class="property">async </em><code class="sig-name descname">get_stories</code><span class="sig-paren">(</span><em class="sig-param">interpreter=&lt;rasa.core.interpreter.RegexInterpreter object&gt;</em>, <em class="sig-param">template_variables=None</em>, <em class="sig-param">use_e2e=False</em>, <em class="sig-param">exclusion_percentage=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_stories" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_stories</code><span class="sig-paren">(</span><em>interpreter=&lt;rasa.core.interpreter.RegexInterpreter object&gt;</em>, <em>template_variables=None</em>, <em>use_e2e=False</em>, <em>exclusion_percentage=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_stories" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves the stories that should be used for training.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>interpreter</strong> – Interpreter that should be used to parse end to
-end learning annotations.</p></li>
-<li><p><strong>template_variables</strong> – Values of templates that should be replaced while
-reading the story files.</p></li>
-<li><p><strong>use_e2e</strong> – Specifies whether to parse end to end learning annotations.</p></li>
-<li><p><strong>exclusion_percentage</strong> – Amount of training data that should be excluded.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>interpreter</strong> – Interpreter that should be used to parse end to
+end learning annotations.</li>
+<li><strong>template_variables</strong> – Values of templates that should be replaced while
+reading the story files.</li>
+<li><strong>use_e2e</strong> – Specifies whether to parse end to end learning annotations.</li>
+<li><strong>exclusion_percentage</strong> – Amount of training data that should be excluded.</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">StoryGraph</span></code> containing all loaded stories.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">StoryGraph</span></code></p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">StoryGraph</span></code> containing all loaded stories.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">StoryGraph</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
