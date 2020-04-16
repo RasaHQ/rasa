@@ -1332,6 +1332,7 @@ class DIET(RasaModel):
         self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
     def _prepare_entity_recognition_layers(self) -> None:
+        num_entity_tags = 0
         for tag_spec in self._entity_tag_specs:
             name = tag_spec.tag_name
             num_tags = tag_spec.num_tags
@@ -1341,6 +1342,14 @@ class DIET(RasaModel):
             self._tf_layers[f"crf.{name}"] = layers.CRF(
                 num_tags, self.config[REGULARIZATION_CONSTANT], self.config[SCALE_LOSS]
             )
+            if name == ENTITY_ATTRIBUTE_TYPE:
+                num_entity_tags = num_tags
+            else:
+                self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
+                    num_entity_tags,
+                    self.config[REGULARIZATION_CONSTANT],
+                    f"tags.{name}",
+                )
 
     @staticmethod
     def _get_sequence_lengths(mask: tf.Tensor) -> tf.Tensor:
@@ -1504,6 +1513,7 @@ class DIET(RasaModel):
         tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
 
         if entity_tags is not None:
+            entity_tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
             inputs = tf.concat([inputs, entity_tags], axis=-1)
 
         logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
@@ -1681,6 +1691,7 @@ class DIET(RasaModel):
             _input = text_transformed
 
             if entity_tags is not None:
+                entity_tags = self._tf_layers[f"embed.{name}.tags"](entity_tags)
                 _input = tf.concat([_input, entity_tags], axis=-1)
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
