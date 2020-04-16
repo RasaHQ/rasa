@@ -510,7 +510,7 @@ async def test_action_session_start_without_slots(
     assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
 
 
-async def test_action_session_start_with_metada(
+async def test_action_session_start_with_metadata(
     default_channel: CollectingOutputChannel,
     template_nlg: TemplatedNaturalLanguageGenerator,
     template_sender_tracker: DialogueStateTracker,
