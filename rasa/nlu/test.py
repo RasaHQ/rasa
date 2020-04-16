@@ -37,6 +37,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 
 logger = logging.getLogger(__name__)
