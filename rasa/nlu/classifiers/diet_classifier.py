@@ -1500,16 +1500,12 @@ class DIET(RasaModel):
         sequence_lengths: tf.Tensor,
         tag_name: Text,
         entity_tags: Optional[tf.Tensor] = None,
-        num_entity_tags: Optional[int] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
 
         tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
 
         if entity_tags is not None:
-            _tags = tf.one_hot(
-                tf.cast(entity_tags[:, :, 0], tf.int32), depth=num_entity_tags
-            )
-            inputs = tf.concat([inputs, _tags], axis=-1)
+            inputs = tf.concat([inputs, entity_tags], axis=-1)
 
         logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
 
@@ -1602,7 +1598,6 @@ class DIET(RasaModel):
         sequence_lengths = sequence_lengths - 1  # remove cls token
 
         entity_tags = None
-        num_entity_tags = 0
 
         for tag_spec in self._entity_tag_specs:
             if tag_spec.num_tags == 0:
@@ -1617,14 +1612,14 @@ class DIET(RasaModel):
                 sequence_lengths,
                 tag_spec.tag_name,
                 entity_tags,
-                num_entity_tags,
             )
 
             if tag_spec.tag_name == ENTITY_ATTRIBUTE_TYPE:
-                # use the entity type tags as additional input for the role
+                # use the entity tags as additional input for the role
                 # and group CRF
-                entity_tags = tag_ids
-                num_entity_tags = tag_spec.num_tags
+                entity_tags = tf.one_hot(
+                    tf.cast(tag_ids[:, :, 0], tf.int32), depth=tag_spec.num_tags
+                )
 
             self._update_entity_metrics(loss, f1, tag_spec.tag_name)
 
@@ -1677,7 +1672,6 @@ class DIET(RasaModel):
         predictions: Dict[Text, tf.Tensor] = {}
 
         entity_tags = None
-        num_entity_tags = 0
 
         for tag_spec in self._entity_tag_specs:
             # skip crf layer if it was not trained
@@ -1688,10 +1682,7 @@ class DIET(RasaModel):
             _input = text_transformed
 
             if entity_tags is not None:
-                _tags = tf.one_hot(
-                    tf.cast(entity_tags, tf.int32), depth=num_entity_tags
-                )
-                _input = tf.concat([_input, _tags], axis=-1)
+                _input = tf.concat([_input, entity_tags], axis=-1)
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
             pred_ids = self._tf_layers[f"crf.{name}"](_logits, sequence_lengths - 1)
@@ -1699,10 +1690,11 @@ class DIET(RasaModel):
             predictions[f"e_{name}_ids"] = pred_ids
 
             if name == ENTITY_ATTRIBUTE_TYPE:
-                # use the entity type tags as additional input for the role
+                # use the entity tags as additional input for the role
                 # and group CRF
-                entity_tags = pred_ids
-                num_entity_tags = tag_spec.num_tags
+                entity_tags = tf.one_hot(
+                    tf.cast(pred_ids, tf.int32), depth=tag_spec.num_tags
+                )
 
         return predictions
 
