@@ -53,7 +53,7 @@ def mocked_cmd_input(package, text: Text):
     text_generator = itertools.cycle(text)
     i = package.get_user_input
 
-    async def mocked_input(*args, **kwargs):
+    def mocked_input(*args, **kwargs):
         value = next(text_generator)
         print(f"wrote '{value}' to input")
         return value
