@@ -1189,7 +1189,7 @@ class DIET(RasaModel):
                 dense_features.append(f)
 
         outputs = tf.concat(dense_features, axis=-1) * mask
-        return self._tf_layers[f"dropout.{name}"](outputs)
+        return self._tf_layers[f"dropout.{name}"](outputs, self._training)
 
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
