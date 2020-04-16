@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Configuring the HTTP API</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Deploying Your Rasa Assistant" href="../how-to-deploy/" />
@@ -247,8 +246,6 @@ with your backend components." />
               <a href="../../../1.4.6/index/">1.4.6</a>
               <a href="../../../1.3.10/index/">1.3.10</a>
               <a href="../../../1.2.9/index/">1.2.9</a>
-              <a href="../../../1.1.8/index/">1.1.8</a>
-              <a href="../../../1.0.9/index/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -285,16 +282,18 @@ with your backend components." />
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/user-guide/configuring-http-api.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#using-rasa-s-http-api" id="id1">Using Rasa’s HTTP API</a><ul>
-<li><a class="reference internal" href="#fetching-models-from-a-server" id="id2">Fetching Models from a Server</a></li>
-<li><a class="reference internal" href="#fetching-models-from-a-remote-storage" id="id3">Fetching Models from a Remote Storage</a></li>
+<li><p><a class="reference internal" href="#using-rasa-s-http-api" id="id1">Using Rasa’s HTTP API</a></p>
+<ul>
+<li><p><a class="reference internal" href="#fetching-models-from-a-server" id="id2">Fetching Models from a Server</a></p></li>
+<li><p><a class="reference internal" href="#fetching-models-from-a-remote-storage" id="id3">Fetching Models from a Remote Storage</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#configuring-ssl-https" id="id4">Configuring SSL / HTTPS</a></li>
-<li><a class="reference internal" href="#security-considerations" id="id5">Security Considerations</a></li>
-<li><a class="reference internal" href="#endpoint-configuration" id="id6">Endpoint Configuration</a><ul>
-<li><a class="reference internal" href="#connecting-a-tracker-store" id="id7">Connecting a Tracker Store</a></li>
-<li><a class="reference internal" href="#connecting-an-event-broker" id="id8">Connecting an Event Broker</a></li>
+<li><p><a class="reference internal" href="#configuring-ssl-https" id="id4">Configuring SSL / HTTPS</a></p></li>
+<li><p><a class="reference internal" href="#security-considerations" id="id5">Security Considerations</a></p></li>
+<li><p><a class="reference internal" href="#endpoint-configuration" id="id6">Endpoint Configuration</a></p>
+<ul>
+<li><p><a class="reference internal" href="#connecting-a-tracker-store" id="id7">Connecting a Tracker Store</a></p></li>
+<li><p><a class="reference internal" href="#connecting-an-event-broker" id="id8">Connecting an Event Broker</a></p></li>
 </ul>
 </li>
 </ul>
@@ -302,8 +301,8 @@ with your backend components." />
 <div class="section" id="using-rasa-s-http-api">
 <h2><a class="toc-backref" href="#id1">Using Rasa’s HTTP API</a><a class="headerlink" href="#using-rasa-s-http-api" title="Permalink to this headline">¶</a></h2>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The instructions below are relevant for configuring how a model is run
+<p class="admonition-title">Note</p>
+<p>The instructions below are relevant for configuring how a model is run
 within a Docker container or for testing the HTTP API locally. If you
 want to deploy your assistant to users, see <a class="reference internal" href="../how-to-deploy/#deploying-your-rasa-assistant"><span class="std std-ref">Deploying Your Rasa Assistant</span></a>.</p>
 </div>
@@ -315,39 +314,39 @@ trained Rasa model with:</p>
 <p>All the endpoints this API exposes are documented in <a class="reference internal" href="../../api/http-api/#http-api"><span class="std std-ref">HTTP API</span></a>.</p>
 <p>The different parameters are:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">-m</span></code>: the path to the folder containing your Rasa model,</li>
-<li><code class="docutils literal notranslate"><span class="pre">--enable-api</span></code>: enable this additional API, and</li>
-<li><code class="docutils literal notranslate"><span class="pre">--log-file</span></code>: the path to the log file.</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-m</span></code>: the path to the folder containing your Rasa model,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--enable-api</span></code>: enable this additional API, and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--log-file</span></code>: the path to the log file.</p></li>
 </ul>
 <p>Rasa can load your model in three different ways:</p>
 <ol class="arabic simple">
-<li>Fetch the model from a server (see <a class="reference internal" href="#server-fetch-from-server"><span class="std std-ref">Fetching Models from a Server</span></a>), or</li>
-<li>Fetch the model from a remote storage (see <a class="reference internal" href="../cloud-storage/#cloud-storage"><span class="std std-ref">Cloud Storage</span></a>).</li>
-<li>Load the model specified via <code class="docutils literal notranslate"><span class="pre">-m</span></code> from your local storage system,</li>
+<li><p>Fetch the model from a server (see <a class="reference internal" href="#server-fetch-from-server"><span class="std std-ref">Fetching Models from a Server</span></a>), or</p></li>
+<li><p>Fetch the model from a remote storage (see <a class="reference internal" href="../cloud-storage/#cloud-storage"><span class="std std-ref">Cloud Storage</span></a>).</p></li>
+<li><p>Load the model specified via <code class="docutils literal notranslate"><span class="pre">-m</span></code> from your local storage system,</p></li>
 </ol>
 <p>Rasa tries to load a model in the above mentioned order, i.e. it only tries to load your model from your local
 storage system if no model server and no remote storage were configured.</p>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
+<p class="admonition-title">Warning</p>
+<p>Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
 by enabling an authentication method: <a class="reference internal" href="#server-security"><span class="std std-ref">Security Considerations</span></a>.</p>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">If you are using custom actions, make sure your action server is
+<p class="admonition-title">Note</p>
+<p>If you are using custom actions, make sure your action server is
 running (see <a class="reference internal" href="../command-line-interface/#run-action-server"><span class="std std-ref">Start an Action Server</span></a>). If your actions are running
 on a different machine, or you aren’t using the Rasa SDK, make sure
 to update your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> file.</p>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">If you start the server with an NLU-only model, not all the available endpoints
+<p class="admonition-title">Note</p>
+<p>If you start the server with an NLU-only model, not all the available endpoints
 can be called. Be aware that some endpoints will return a 409 status code, as a trained
 Core model is needed to process the request.</p>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">By default, the HTTP server runs as a single process. You can change the number
+<p class="admonition-title">Note</p>
+<p>By default, the HTTP server runs as a single process. You can change the number
 of worker processes using the <code class="docutils literal notranslate"><span class="pre">SANIC_WORKERS</span></code> environment variable. It is
 recommended that you set the number of workers to the number of available CPU cores
 (check out the
@@ -364,19 +363,19 @@ for more details). This will only work in combination with the
 <p>The model server is specified in the endpoint configuration
 (<code class="docutils literal notranslate"><span class="pre">my_endpoints.yml</span></code>), where you specify the server URL Rasa
 regularly queries for zipped Rasa models:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">models</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">http://my-server.com/models/default@latest</span>
-  <span class="l l-Scalar l-Scalar-Plain">wait_time_between_pulls</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>   <span class="c1"># [optional](default: 100)</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">models</span><span class="p">:</span>
+  <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://my-server.com/models/default@latest</span>
+  <span class="nt">wait_time_between_pulls</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>   <span class="c1"># [optional](default: 100)</span>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">If you want to pull the model just once from the server, set
+<p class="admonition-title">Note</p>
+<p>If you want to pull the model just once from the server, set
 <code class="docutils literal notranslate"><span class="pre">wait_time_between_pulls</span></code> to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Your model server must provide zipped Rasa models, and have
+<p class="admonition-title">Note</p>
+<p>Your model server must provide zipped Rasa models, and have
 <code class="docutils literal notranslate"><span class="pre">{&quot;ETag&quot;:</span> <span class="pre">&lt;model_hash_string&gt;}</span></code> as one of its headers. Rasa will
 only download a new model if this model hash has changed.</p>
 </div>
@@ -473,8 +472,8 @@ Then run Rasa with the flag
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">You can use environment variables within configuration files by specifying them with <code class="docutils literal notranslate"><span class="pre">${name</span> <span class="pre">of</span> <span class="pre">environment</span> <span class="pre">variable}</span></code>.
+<p class="admonition-title">Note</p>
+<p>You can use environment variables within configuration files by specifying them with <code class="docutils literal notranslate"><span class="pre">${name</span> <span class="pre">of</span> <span class="pre">environment</span> <span class="pre">variable}</span></code>.
 These placeholders are then replaced by the value of the environment variable.</p>
 </div>
 <div class="section" id="connecting-a-tracker-store">

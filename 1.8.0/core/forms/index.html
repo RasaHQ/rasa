@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Forms</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Retrieval Actions" href="../retrieval-actions/" />
@@ -242,8 +241,6 @@ in open source bot framework Rasa." />
               <a href="../../../1.4.6/core/forms/">1.4.6</a>
               <a href="../../../1.3.10/core/forms/">1.3.10</a>
               <a href="../../../1.2.9/core/forms/">1.2.9</a>
-              <a href="../../../1.1.8/core/forms/">1.1.8</a>
-              <a href="../../../1.0.9/core/forms/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -282,19 +279,19 @@ in open source bot framework Rasa." />
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/core/forms.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">There is an in-depth tutorial <a class="reference external" href="https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/">here</a> about how to use Rasa Forms for slot filling.</p>
+<p class="admonition-title">Note</p>
+<p>There is an in-depth tutorial <a class="reference external" href="https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/">here</a> about how to use Rasa Forms for slot filling.</p>
 </div>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#configuration-file" id="id2">Configuration File</a></li>
-<li><a class="reference internal" href="#form-basics" id="id3">Form Basics</a></li>
-<li><a class="reference internal" href="#custom-slot-mappings" id="id4">Custom slot mappings</a></li>
-<li><a class="reference internal" href="#validating-user-input" id="id5">Validating user input</a></li>
-<li><a class="reference internal" href="#handling-unhappy-paths" id="id6">Handling unhappy paths</a></li>
-<li><a class="reference internal" href="#the-requested-slot-slot" id="id7">The requested_slot slot</a></li>
-<li><a class="reference internal" href="#handling-conditional-slot-logic" id="id8">Handling conditional slot logic</a></li>
-<li><a class="reference internal" href="#debugging" id="id9">Debugging</a></li>
+<li><p><a class="reference internal" href="#configuration-file" id="id2">Configuration File</a></p></li>
+<li><p><a class="reference internal" href="#form-basics" id="id3">Form Basics</a></p></li>
+<li><p><a class="reference internal" href="#custom-slot-mappings" id="id4">Custom slot mappings</a></p></li>
+<li><p><a class="reference internal" href="#validating-user-input" id="id5">Validating user input</a></p></li>
+<li><p><a class="reference internal" href="#handling-unhappy-paths" id="id6">Handling unhappy paths</a></p></li>
+<li><p><a class="reference internal" href="#the-requested-slot-slot" id="id7">The requested_slot slot</a></p></li>
+<li><p><a class="reference internal" href="#handling-conditional-slot-logic" id="id8">Handling conditional slot logic</a></p></li>
+<li><p><a class="reference internal" href="#debugging" id="id9">Debugging</a></p></li>
 </ul>
 </div>
 <p>One of the most common conversation patterns is to collect a few pieces of
@@ -307,9 +304,9 @@ There is a full example using forms in the <code class="docutils literal notrans
 Rasa Core.</p>
 <p>When you define a form, you need to add it to your domain file.
 If your form’s name is <code class="docutils literal notranslate"><span class="pre">restaurant_form</span></code>, your domain would look like this:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">forms</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">forms</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">restaurant_form</span>
-<span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
+<span class="nt">actions</span><span class="p">:</span>
   <span class="l l-Scalar l-Scalar-Plain">...</span>
 </pre></div>
 </div>
@@ -318,8 +315,8 @@ If your form’s name is <code class="docutils literal notranslate"><span class=
 <h2><a class="toc-backref" href="#id2">Configuration File</a><a class="headerlink" href="#configuration-file" title="Permalink to this headline">¶</a></h2>
 <p>To use forms, you also need to include the <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> in your policy
 configuration file. For example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;FormPolicy&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;FormPolicy&quot;</span>
 </pre></div>
 </div>
 <p>see <code class="docutils literal notranslate"><span class="pre">examples/formbot/config.yml</span></code> for an example.</p>
@@ -356,9 +353,9 @@ easiest way to create valid stories is to use <a class="reference internal" href
 Here is an example of what it looks like.
 You need to define three methods:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">name</span></code>: the name of this action</li>
-<li><code class="docutils literal notranslate"><span class="pre">required_slots</span></code>: a list of slots that need to be filled for the <code class="docutils literal notranslate"><span class="pre">submit</span></code> method to work.</li>
-<li><code class="docutils literal notranslate"><span class="pre">submit</span></code>: what to do at the end of the form, when all the slots have been filled.</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: the name of this action</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">required_slots</span></code>: a list of slots that need to be filled for the <code class="docutils literal notranslate"><span class="pre">submit</span></code> method to work.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">submit</span></code>: what to do at the end of the form, when all the slots have been filled.</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Unique identifier of the form&quot;&quot;&quot;</span>
@@ -441,23 +438,23 @@ The <code class="docutils literal notranslate"><span class="pre">slot_mappings</
 </div>
 <p>The predefined functions work as follows:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">self.from_entity(entity=entity_name,</span> <span class="pre">intent=intent_name)</span></code>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.from_entity(entity=entity_name,</span> <span class="pre">intent=intent_name)</span></code>
 will look for an entity called <code class="docutils literal notranslate"><span class="pre">entity_name</span></code> to fill a slot
 <code class="docutils literal notranslate"><span class="pre">slot_name</span></code> regardless of user intent if <code class="docutils literal notranslate"><span class="pre">intent_name</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>
-else only if the users intent is <code class="docutils literal notranslate"><span class="pre">intent_name</span></code>.</li>
-<li><code class="docutils literal notranslate"><span class="pre">self.from_intent(intent=intent_name,</span> <span class="pre">value=value)</span></code>
+else only if the users intent is <code class="docutils literal notranslate"><span class="pre">intent_name</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.from_intent(intent=intent_name,</span> <span class="pre">value=value)</span></code>
 will fill slot <code class="docutils literal notranslate"><span class="pre">slot_name</span></code> with <code class="docutils literal notranslate"><span class="pre">value</span></code> if user intent is <code class="docutils literal notranslate"><span class="pre">intent_name</span></code>.
 To make a boolean slot, take a look at the definition of <code class="docutils literal notranslate"><span class="pre">outdoor_seating</span></code>
 above. Note: Slot will not be filled with user intent of message triggering
-the form action. Use <code class="docutils literal notranslate"><span class="pre">self.from_trigger_intent</span></code> below.</li>
-<li><code class="docutils literal notranslate"><span class="pre">self.from_trigger_intent(intent=intent_name,</span> <span class="pre">value=value)</span></code>
+the form action. Use <code class="docutils literal notranslate"><span class="pre">self.from_trigger_intent</span></code> below.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.from_trigger_intent(intent=intent_name,</span> <span class="pre">value=value)</span></code>
 will fill slot <code class="docutils literal notranslate"><span class="pre">slot_name</span></code> with <code class="docutils literal notranslate"><span class="pre">value</span></code> if form was triggered with user
-intent <code class="docutils literal notranslate"><span class="pre">intent_name</span></code>.</li>
-<li><code class="docutils literal notranslate"><span class="pre">self.from_text(intent=intent_name)</span></code> will use the next
+intent <code class="docutils literal notranslate"><span class="pre">intent_name</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.from_text(intent=intent_name)</span></code> will use the next
 user utterance to fill the text slot <code class="docutils literal notranslate"><span class="pre">slot_name</span></code> regardless of user intent
-if <code class="docutils literal notranslate"><span class="pre">intent_name</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> else only if user intent is <code class="docutils literal notranslate"><span class="pre">intent_name</span></code>.</li>
-<li>If you want to allow a combination of these, provide them as a list as in the
-example above</li>
+if <code class="docutils literal notranslate"><span class="pre">intent_name</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> else only if user intent is <code class="docutils literal notranslate"><span class="pre">intent_name</span></code>.</p></li>
+<li><p>If you want to allow a combination of these, provide them as a list as in the
+example above</p></li>
 </ul>
 </div>
 <div class="section" id="validating-user-input">
@@ -631,7 +628,8 @@ This is a great starting point, but
 you should give your bot to people to test <strong>as soon as possible</strong>. One of the guiding principles
 behind Rasa Core is:</p>
 <blockquote class="pull-quote">
-<div>Learning from real conversations is more important than designing hypothetical ones</div></blockquote>
+<div><p>Learning from real conversations is more important than designing hypothetical ones</p>
+</div></blockquote>
 <p>So don’t try to cover every possibility in your hand-written stories before giving it to testers.
 Real user behavior will always surprise you!</p>
 </div>

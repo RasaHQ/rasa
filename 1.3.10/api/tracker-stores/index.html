@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Tracker Stores</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Event Brokers" href="../event-brokers/" />
@@ -242,8 +241,6 @@ of the box." />
               <a href="../../../1.4.6/api/tracker-stores/">1.4.6</a>
               <a href="../../../1.3.10/api/tracker-stores/">1.3.10</a>
               <a href="../../../1.2.9/api/tracker-stores/">1.2.9</a>
-              <a href="../../../1.1.8/api/tracker-stores/">1.1.8</a>
-              <a href="../../../1.0.9/api/tracker-stores/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -287,67 +284,62 @@ If you want to use another store, you can also build a custom tracker store by e
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="simple">
-<li><a class="reference internal" href="#tracker-stores" id="id2">Tracker Stores</a><ul>
-<li><a class="reference internal" href="#inmemorytrackerstore-default" id="id3">InMemoryTrackerStore (default)</a></li>
-<li><a class="reference internal" href="#sqltrackerstore" id="id4">SQLTrackerStore</a></li>
-<li><a class="reference internal" href="#redistrackerstore" id="id5">RedisTrackerStore</a></li>
-<li><a class="reference internal" href="#mongotrackerstore" id="id6">MongoTrackerStore</a></li>
-<li><a class="reference internal" href="#custom-tracker-store" id="id7">Custom Tracker Store</a></li>
+<li><p><a class="reference internal" href="#tracker-stores" id="id2">Tracker Stores</a></p>
+<ul>
+<li><p><a class="reference internal" href="#inmemorytrackerstore-default" id="id3">InMemoryTrackerStore (default)</a></p></li>
+<li><p><a class="reference internal" href="#sqltrackerstore" id="id4">SQLTrackerStore</a></p></li>
+<li><p><a class="reference internal" href="#redistrackerstore" id="id5">RedisTrackerStore</a></p></li>
+<li><p><a class="reference internal" href="#mongotrackerstore" id="id6">MongoTrackerStore</a></p></li>
+<li><p><a class="reference internal" href="#custom-tracker-store" id="id7">Custom Tracker Store</a></p></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="section" id="inmemorytrackerstore-default">
 <h2><a class="toc-backref" href="#id3">InMemoryTrackerStore (default)</a><a class="headerlink" href="#inmemorytrackerstore-default" title="Permalink to this headline">¶</a></h2>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><cite>InMemoryTrackerStore</cite> is the default tracker store. It is used if no other tracker store is configured.
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p><cite>InMemoryTrackerStore</cite> is the default tracker store. It is used if no other tracker store is configured.
 It stores the conversation history in memory.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">As this store keeps all history in memory the entire history is lost if you restart Rasa Core.</p>
+<p class="admonition-title">Note</p>
+<p>As this store keeps all history in memory the entire history is lost if you restart Rasa Core.</p>
 </div>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first last">To use the <cite>InMemoryTrackerStore</cite> no configuration is needed.</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Configuration</dt>
+<dd class="field-even"><p>To use the <cite>InMemoryTrackerStore</cite> no configuration is needed.</p>
+</dd>
+</dl>
 </div>
 <div class="section" id="sqltrackerstore">
 <h2><a class="toc-backref" href="#id4">SQLTrackerStore</a><a class="headerlink" href="#sqltrackerstore" title="Permalink to this headline">¶</a></h2>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> can be used to store the conversation history in an SQL database.
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> can be used to store the conversation history in an SQL database.
 Storing your trackers this way allows you to query the event database by sender_id, timestamp, action name,
 intent name and typename</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">To set up Rasa Core with SQL the following steps are required:</p>
+</dd>
+<dt class="field-even">Configuration</dt>
+<dd class="field-even"><p>To set up Rasa Core with SQL the following steps are required:</p>
 <ol class="arabic">
-<li><p class="first">Add required configuration to your <cite>endpoints.yml</cite></p>
+<li><p>Add required configuration to your <cite>endpoints.yml</cite></p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tracker_store</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
-    <span class="l l-Scalar l-Scalar-Plain">dialect</span><span class="p p-Indicator">:</span> <span class="s">&quot;sqlite&quot;</span>  <span class="c1"># the dialect used to interact with the db</span>
-    <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="s">&quot;&quot;</span>  <span class="c1"># (optional) host of the sql db, e.g. &quot;localhost&quot;</span>
-    <span class="l l-Scalar l-Scalar-Plain">db</span><span class="p p-Indicator">:</span> <span class="s">&quot;rasa.db&quot;</span>  <span class="c1"># path to your db</span>
-    <span class="l l-Scalar l-Scalar-Plain">username</span><span class="p p-Indicator">:</span>  <span class="c1"># username used for authentication</span>
-    <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span>  <span class="c1"># password used for authentication</span>
-    <span class="l l-Scalar l-Scalar-Plain">query</span><span class="p p-Indicator">:</span> <span class="c1"># optional dictionary to be added as a query string to the connection URL</span>
-      <span class="l l-Scalar l-Scalar-Plain">driver</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-driver</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">tracker_store</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
+    <span class="nt">dialect</span><span class="p">:</span> <span class="s">&quot;sqlite&quot;</span>  <span class="c1"># the dialect used to interact with the db</span>
+    <span class="nt">url</span><span class="p">:</span> <span class="s">&quot;&quot;</span>  <span class="c1"># (optional) host of the sql db, e.g. &quot;localhost&quot;</span>
+    <span class="nt">db</span><span class="p">:</span> <span class="s">&quot;rasa.db&quot;</span>  <span class="c1"># path to your db</span>
+    <span class="nt">username</span><span class="p">:</span>  <span class="c1"># username used for authentication</span>
+    <span class="nt">password</span><span class="p">:</span>  <span class="c1"># password used for authentication</span>
+    <span class="nt">query</span><span class="p">:</span> <span class="c1"># optional dictionary to be added as a query string to the connection URL</span>
+      <span class="nt">driver</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-driver</span>
 </pre></div>
 </div>
 </div></blockquote>
 </li>
 </ol>
 <ol class="arabic" start="3">
-<li><p class="first">To start the Rasa Core server using your SQL backend,
+<li><p>To start the Rasa Core server using your SQL backend,
 add the <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
@@ -356,52 +348,47 @@ add the <code class="docutils literal notranslate"><span class="pre">--endpoints
 </div></blockquote>
 </li>
 </ol>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">domain</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Domain object associated with this tracker store</li>
-<li><code class="docutils literal notranslate"><span class="pre">dialect</span></code> (default: <code class="docutils literal notranslate"><span class="pre">sqlite</span></code>): The dialect used to communicate with your SQL backend.  Consult the <a class="reference external" href="https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls">SQLAlchemy docs</a> for available dialects.</li>
-<li><code class="docutils literal notranslate"><span class="pre">host</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): URL of your SQL server</li>
-<li><code class="docutils literal notranslate"><span class="pre">port</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Port of your SQL server</li>
-<li><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">rasa.db</span></code>): The path to the database to be used</li>
-<li><code class="docutils literal notranslate"><span class="pre">username</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The username which is used for authentication</li>
-<li><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The password which is used for authentication</li>
-<li><code class="docutils literal notranslate"><span class="pre">event_broker</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Event broker to publish events to</li>
-<li><code class="docutils literal notranslate"><span class="pre">login_db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Alternative database name to which initially  connect, and create the database specified by <cite>db</cite> (PostgreSQL only)</li>
-<li><code class="docutils literal notranslate"><span class="pre">query</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect</li>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">domain</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Domain object associated with this tracker store</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dialect</span></code> (default: <code class="docutils literal notranslate"><span class="pre">sqlite</span></code>): The dialect used to communicate with your SQL backend.  Consult the <a class="reference external" href="https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls">SQLAlchemy docs</a> for available dialects.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">host</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): URL of your SQL server</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">port</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Port of your SQL server</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">rasa.db</span></code>): The path to the database to be used</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">username</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The username which is used for authentication</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The password which is used for authentication</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">event_broker</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Event broker to publish events to</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">login_db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Alternative database name to which initially  connect, and create the database specified by <cite>db</cite> (PostgreSQL only)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </div>
 <div class="section" id="redistrackerstore">
 <h2><a class="toc-backref" href="#id5">RedisTrackerStore</a><a class="headerlink" href="#redistrackerstore" title="Permalink to this headline">¶</a></h2>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><cite>RedisTrackerStore</cite> can be used to store the conversation history in <a class="reference external" href="https://redis.io/">Redis</a>.
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p><cite>RedisTrackerStore</cite> can be used to store the conversation history in <a class="reference external" href="https://redis.io/">Redis</a>.
 Redis is a fast in-memory key-value store which can optionally also persist data.</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">To set up Rasa Core with Redis the following steps are required:</p>
+</dd>
+<dt class="field-even">Configuration</dt>
+<dd class="field-even"><p>To set up Rasa Core with Redis the following steps are required:</p>
 <ol class="arabic">
-<li><p class="first">Start your Redis instance</p>
-</li>
-<li><p class="first">Add required configuration to your <cite>endpoints.yml</cite></p>
+<li><p>Start your Redis instance</p></li>
+<li><p>Add required configuration to your <cite>endpoints.yml</cite></p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tracker_store</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">redis</span>
-    <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;url of the redis instance, e.g. localhost&gt;</span>
-    <span class="l l-Scalar l-Scalar-Plain">port</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;port of your redis instance, usually 6379&gt;</span>
-    <span class="l l-Scalar l-Scalar-Plain">db</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;number of your database within redis, e.g. 0&gt;</span>
-    <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;password used for authentication&gt;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">tracker_store</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">redis</span>
+    <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;url of the redis instance, e.g. localhost&gt;</span>
+    <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;port of your redis instance, usually 6379&gt;</span>
+    <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;number of your database within redis, e.g. 0&gt;</span>
+    <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;password used for authentication&gt;</span>
 </pre></div>
 </div>
 </div></blockquote>
 </li>
-<li><p class="first">To start the Rasa Core server using your configured Redis instance,
+<li><p>To start the Rasa Core server using your configured Redis instance,
 add the <code class="code docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
@@ -410,53 +397,47 @@ add the <code class="code docutils literal notranslate"><span class="pre">--endp
 </div></blockquote>
 </li>
 </ol>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">url</span></code> (default: <code class="docutils literal notranslate"><span class="pre">localhost</span></code>): The url of your redis instance</li>
-<li><code class="docutils literal notranslate"><span class="pre">port</span></code> (default: <code class="docutils literal notranslate"><span class="pre">6379</span></code>): The port which redis is running on</li>
-<li><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">0</span></code>): The number of your redis database</li>
-<li><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Password used for authentication
-(<code class="docutils literal notranslate"><span class="pre">None</span></code> equals no authentication)</li>
-<li><code class="docutils literal notranslate"><span class="pre">record_exp</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Record expiry in seconds</li>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">url</span></code> (default: <code class="docutils literal notranslate"><span class="pre">localhost</span></code>): The url of your redis instance</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">port</span></code> (default: <code class="docutils literal notranslate"><span class="pre">6379</span></code>): The port which redis is running on</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">0</span></code>): The number of your redis database</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Password used for authentication
+(<code class="docutils literal notranslate"><span class="pre">None</span></code> equals no authentication)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">record_exp</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Record expiry in seconds</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </div>
 <div class="section" id="mongotrackerstore">
 <h2><a class="toc-backref" href="#id6">MongoTrackerStore</a><a class="headerlink" href="#mongotrackerstore" title="Permalink to this headline">¶</a></h2>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><cite>MongoTrackerStore</cite> can be used to store the conversation history in <a class="reference external" href="https://www.mongodb.com/">Mongo</a>.
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p><cite>MongoTrackerStore</cite> can be used to store the conversation history in <a class="reference external" href="https://www.mongodb.com/">Mongo</a>.
 MongoDB is a free and open-source cross-platform document-oriented NoSQL database.</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><ol class="first arabic">
-<li><p class="first">Start your MongoDB instance.</p>
-</li>
-<li><p class="first">Add required configuration to your <cite>endpoints.yml</cite></p>
+</dd>
+<dt class="field-even">Configuration</dt>
+<dd class="field-even"><ol class="arabic">
+<li><p>Start your MongoDB instance.</p></li>
+<li><p>Add required configuration to your <cite>endpoints.yml</cite></p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tracker_store</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mongod</span>
-    <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;url to your mongo instance, e.g. mongodb://localhost:27017&gt;</span>
-    <span class="l l-Scalar l-Scalar-Plain">db</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;name of the db within your mongo instance, e.g. rasa&gt;</span>
-    <span class="l l-Scalar l-Scalar-Plain">username</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;username used for authentication&gt;</span>
-    <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;password used for authentication&gt;</span>
-    <span class="l l-Scalar l-Scalar-Plain">auth_source</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;database name associated with the user’s credentials&gt;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">tracker_store</span><span class="p">:</span>
+    <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mongod</span>
+    <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;url to your mongo instance, e.g. mongodb://localhost:27017&gt;</span>
+    <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;name of the db within your mongo instance, e.g. rasa&gt;</span>
+    <span class="nt">username</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;username used for authentication&gt;</span>
+    <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;password used for authentication&gt;</span>
+    <span class="nt">auth_source</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;database name associated with the user’s credentials&gt;</span>
 </pre></div>
 </div>
 <p>You can also add more advanced configurations (like enabling ssl) by appending
 a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true</p>
 </div></blockquote>
 </li>
-<li><dl class="first docutils">
-<dt>To start the Rasa Core server using your configured MongoDB instance,</dt>
-<dd><p class="first">add the <code class="code docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
-<blockquote class="last">
+<li><dl>
+<dt>To start the Rasa Core server using your configured MongoDB instance,</dt><dd><p>add the <code class="code docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
+<blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
 </pre></div>
 </div>
@@ -465,59 +446,52 @@ a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true</p>
 </dl>
 </li>
 </ol>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">url</span></code> (default: <code class="docutils literal notranslate"><span class="pre">mongodb://localhost:27017</span></code>): URL of your MongoDB</li>
-<li><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">rasa</span></code>): The database name which should be used</li>
-<li><code class="docutils literal notranslate"><span class="pre">username</span></code> (default: <code class="docutils literal notranslate"><span class="pre">0</span></code>): The username which is used for authentication</li>
-<li><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The password which is used for authentication</li>
-<li><code class="docutils literal notranslate"><span class="pre">collection</span></code> (default: <code class="docutils literal notranslate"><span class="pre">conversations</span></code>): The collection name which is
-used to store the conversations</li>
-<li><code class="docutils literal notranslate"><span class="pre">auth_source</span></code> (default: <code class="docutils literal notranslate"><span class="pre">admin</span></code>): database name associated with the user’s credentials.</li>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">url</span></code> (default: <code class="docutils literal notranslate"><span class="pre">mongodb://localhost:27017</span></code>): URL of your MongoDB</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">rasa</span></code>): The database name which should be used</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">username</span></code> (default: <code class="docutils literal notranslate"><span class="pre">0</span></code>): The username which is used for authentication</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The password which is used for authentication</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">collection</span></code> (default: <code class="docutils literal notranslate"><span class="pre">conversations</span></code>): The collection name which is
+used to store the conversations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">auth_source</span></code> (default: <code class="docutils literal notranslate"><span class="pre">admin</span></code>): database name associated with the user’s credentials.</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </div>
 <div class="section" id="custom-tracker-store">
 <h2><a class="toc-backref" href="#id7">Custom Tracker Store</a><a class="headerlink" href="#custom-tracker-store" title="Permalink to this headline">¶</a></h2>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">If you require a tracker store which is not available out of the box, you can implement your own.
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If you require a tracker store which is not available out of the box, you can implement your own.
 This is done by extending the base class <cite>TrackerStore</cite>.</p>
-<dl class="class">
+<dl class="py class">
 <dt id="rasa.core.tracker_store.TrackerStore">
-<em class="property">class </em><code class="descclassname">rasa.core.tracker_store.</code><code class="descname">TrackerStore</code><span class="sig-paren">(</span><em>domain</em>, <em>event_broker=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.tracker_store.TrackerStore" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">rasa.core.tracker_store.</code><code class="sig-name descname">TrackerStore</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">event_broker</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.tracker_store.TrackerStore" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class to hold all of the TrackerStore classes</p>
 </dd></dl>
 
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Steps:</th><td class="field-body"><ol class="first last arabic">
-<li><p class="first">Extend the <cite>TrackerStore</cite> base class. Note that your constructor has to
-provide a parameter <code class="docutils literal notranslate"><span class="pre">url</span></code>.</p>
-</li>
-<li><p class="first">In your endpoints.yml put in the module path to your custom tracker store
+</dd>
+<dt class="field-even">Steps</dt>
+<dd class="field-even"><ol class="arabic">
+<li><p>Extend the <cite>TrackerStore</cite> base class. Note that your constructor has to
+provide a parameter <code class="docutils literal notranslate"><span class="pre">url</span></code>.</p></li>
+<li><p>In your endpoints.yml put in the module path to your custom tracker store
 and the parameters you require:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tracker_store</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">path.to.your.module.Class</span>
-  <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">localhost</span>
-  <span class="l l-Scalar l-Scalar-Plain">a_parameter</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">a value</span>
-  <span class="l l-Scalar l-Scalar-Plain">another_parameter</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">another value</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">tracker_store</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">path.to.your.module.Class</span>
+  <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">localhost</span>
+  <span class="nt">a_parameter</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">a value</span>
+  <span class="nt">another_parameter</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">another value</span>
 </pre></div>
 </div>
 </div></blockquote>
 </li>
 </ol>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </div>
 </div>
 
