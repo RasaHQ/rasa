@@ -1,1 +1,1 @@
-Add dropout before FFNN after sparse for dense layer in ``DIETClassifier``
+Add dropout between ``FFNN`` and ``DenseForSparse`` layers in ``DIETClassifier``, ``ResponseSelector`` and ``EmbeddingIntentClassifier``
