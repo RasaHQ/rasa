@@ -171,7 +171,7 @@ def apply_bilou_schema(
             (ENTITY_ATTRIBUTE_GROUP, BILOU_ENTITIES_GROUP),
         ]:
             entities = map_message_entities(message, attribute)
-            output = bilou_tags_from_offsets(message, tokens, entities)
+            output = bilou_tags_from_offsets(tokens, entities)
             message.set(message_key, output)
 
 
@@ -200,10 +200,7 @@ def map_message_entities(
 
 
 def bilou_tags_from_offsets(
-    message: Message,
-    tokens: List[Token],
-    entities: List[Tuple[int, int, Text]],
-    missing: Text = NO_ENTITY_TAG,
+    tokens: List[Token], entities: List[Tuple[int, int, Text]]
 ) -> List[Text]:
     """Creates a list of BILOU tags for the given list of tokens and entities.
 
@@ -213,26 +210,17 @@ def bilou_tags_from_offsets(
         entities: the list of start, end, and tag tuples
         missing: tag for missing entities
 
-    Returns: a list of BILOU tags
+    Returns:
+        list of BILOU tags
     """
-    # From spacy.spacy.GoldParse, under MIT License
-
     start_pos_to_token_idx = {token.start: i for i, token in enumerate(tokens)}
     end_pos_to_token_idx = {token.end: i for i, token in enumerate(tokens)}
 
-    bilou = ["-" for _ in tokens]
+    bilou = [NO_ENTITY_TAG for _ in tokens]
 
-    # Handle entity cases
     _add_bilou_tags_to_entities(
         bilou, entities, end_pos_to_token_idx, start_pos_to_token_idx
     )
-
-    # Now distinguish the O cases from ones where we miss the tokenization
-    entity_positions = _get_entity_positions(entities)
-    _handle_not_an_entity(bilou, tokens, entity_positions, missing)
-
-    # Raise a warning for bad annotations
-    bilou = _correct_bad_annotations(bilou, message, tokens)
 
     return bilou
 
@@ -321,7 +309,8 @@ def check_consistent_bilou_tagging(predicted_tags: List[Text]) -> None:
         predicted_tags: list of predicted tags
     """
 
-    # TODO we might want to correct cases like B-location I-person L-location ->
+    # TODO
+    #  we might want to correct cases like B-location I-person L-location ->
     #  B-location I-location L-location instead of just logging warnings
 
     last_tag = NO_ENTITY_TAG
