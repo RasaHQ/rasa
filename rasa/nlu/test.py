@@ -1028,7 +1028,7 @@ def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
     extractors = set()
     for c in interpreter.pipeline:
         if isinstance(c, EntityExtractor):
-            if c.name == "DIETClassifier":
+            if isinstance(c, DIETClassifier):
                 if c.component_config[ENTITY_RECOGNITION]:
                     extractors.add(c.name)
             else:
