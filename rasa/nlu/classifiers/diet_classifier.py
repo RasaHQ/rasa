@@ -6,6 +6,7 @@ import os
 import scipy.sparse
 import tensorflow as tf
 import tensorflow_addons as tfa
+from tensorflow.keras.mixed_precision import experimental as mixed_precision
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
@@ -92,6 +93,13 @@ TAG_IDS = "tag_ids"
 TEXT_SEQ_LENGTH = f"{TEXT}_lengths"
 LABEL_SEQ_LENGTH = f"{LABEL}_lengths"
 
+# policy = mixed_precision.Policy('mixed_float16')
+# mixed_precision.set_policy(policy)
+# print('Compute dtype: %s' % policy.compute_dtype)
+# print('Variable dtype: %s' % policy.variable_dtype)
+tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
+policy = tf.keras.mixed_precision.experimental.Policy('mixed_float16')
+mixed_precision.set_policy(policy)
 
 class DIETClassifier(IntentClassifier, EntityExtractor):
     """DIET (Dual Intent and Entity Transformer) is a multi-task architecture for
@@ -1185,7 +1193,7 @@ class DIET(RasaModel):
             else:
                 dense_features.append(f)
 
-        return tf.concat(dense_features, axis=-1) * mask
+        return tf.cast(tf.concat(dense_features, axis=-1), tf.float32) * mask
 
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
@@ -1409,7 +1417,7 @@ class DIET(RasaModel):
             label = self._create_bow(
                 tf_batch_data[LABEL_FEATURES], mask_label, self.label_name,
             )
-            loss, acc = self._calculate_label_loss(cls, label, label_ids)
+            loss, acc = self._calculate_label_loss(tf.cast(cls, tf.float32), tf.cast(label, tf.float32), label_ids)
             self.intent_loss.update_state(loss)
             self.response_acc.update_state(acc)
             losses.append(loss)

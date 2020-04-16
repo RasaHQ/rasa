@@ -6,6 +6,10 @@ from tensorflow.python.keras import backend as K
 import numpy as np
 from rasa.utils.tensorflow.layers import DenseWithSparseWeights
 
+from tensorflow.keras.mixed_precision import experimental as mixed_precision
+tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
+policy = tf.keras.mixed_precision.experimental.Policy('mixed_float16')
+mixed_precision.set_policy(policy)
 
 # from https://www.tensorflow.org/tutorials/text/transformer
 # and https://github.com/tensorflow/tensor2tensor
@@ -64,19 +68,19 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         # process queries
         self._query_dense_layer = DenseWithSparseWeights(
-            units=units, use_bias=False, sparsity=sparsity
+            units=units, use_bias=False, sparsity=sparsity, dtype = tf.float16
         )
         # process keys
         self._key_dense_layer = DenseWithSparseWeights(
-            units=units, use_bias=False, sparsity=sparsity
+            units=units, use_bias=False, sparsity=sparsity, dtype = tf.float16
         )
         # process values
         self._value_dense_layer = DenseWithSparseWeights(
-            units=units, use_bias=False, sparsity=sparsity
+            units=units, use_bias=False, sparsity=sparsity, dtype = tf.float16
         )
         # process attention output
         self._output_dense_layer = DenseWithSparseWeights(
-            units=units, sparsity=sparsity
+            units=units, sparsity=sparsity, dtype = tf.float16
         )
 
         self._create_relative_embeddings()
@@ -291,12 +295,12 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             matmul_qk += self._matmul_with_relative_keys(query)
 
         # scale matmul_qk
-        dk = tf.cast(tf.shape(key)[-1], tf.float32)
+        dk = tf.cast(tf.shape(key)[-1], tf.float16)
         logits = matmul_qk / tf.math.sqrt(dk)
 
         # add the mask to the scaled tensor.
         if pad_mask is not None:
-            logits += pad_mask * -1e9
+            logits += tf.cast(pad_mask, tf.float16) * -1e9
 
         # apply attention dropout before softmax to maintain attention_weights norm as 1
         if self.attention_dropout_rate > 0:
@@ -422,7 +426,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
     ) -> None:
         super().__init__()
 
-        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype=tf.float16)
         self._mha = MultiHeadAttention(
             units,
             num_heads,
@@ -437,13 +441,13 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         self._dropout = tf.keras.layers.Dropout(dropout_rate)
 
         self._ffn_layers = [
-            tf.keras.layers.LayerNormalization(epsilon=1e-6),
+            tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype=tf.float16),
             DenseWithSparseWeights(
-                units=filter_units, activation=tfa.activations.gelu, sparsity=sparsity
+                units=filter_units, activation=tfa.activations.gelu, sparsity=sparsity, dtype=tf.float16
             ),  # (batch_size, length, filter_units)
             tf.keras.layers.Dropout(dropout_rate),
             DenseWithSparseWeights(
-                units=units, sparsity=sparsity
+                units=units, sparsity=sparsity, dtype=tf.float16
             ),  # (batch_size, length, units)
             tf.keras.layers.Dropout(dropout_rate),
         ]
@@ -532,7 +536,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
         l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
         self._embedding = DenseWithSparseWeights(
-            units=units, kernel_regularizer=l2_regularizer, sparsity=sparsity
+            units=units, kernel_regularizer=l2_regularizer, sparsity=sparsity, dtype=tf.float16
         )
         # positional encoding helpers
         self._angles = self._get_angles()
@@ -557,7 +561,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
             )
             for _ in range(num_layers)
         ]
-        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype=tf.float16)
 
     def _get_angles(self) -> np.ndarray:
         i = np.arange(self.units)[np.newaxis, :]
@@ -606,8 +610,8 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
         # adding embedding and position encoding.
         x = self._embedding(x)  # (batch_size, length, units)
-        x *= tf.math.sqrt(tf.cast(self.units, tf.float32))
-        x += self._positional_encoding(tf.shape(x)[1])
+        x *= tf.math.sqrt(tf.cast(self.units, tf.float16))
+        x += tf.cast(self._positional_encoding(tf.shape(x)[1]), tf.float16)
         x = self._dropout(x, training=training)
 
         if pad_mask is not None:

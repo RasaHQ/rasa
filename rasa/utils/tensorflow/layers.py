@@ -5,6 +5,10 @@ import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 from rasa.utils.tensorflow.constants import SOFTMAX, MARGIN, COSINE, INNER
+from tensorflow.keras.mixed_precision import experimental as mixed_precision
+tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
+policy = tf.keras.mixed_precision.experimental.Policy('mixed_float16')
+mixed_precision.set_policy(policy)
 
 logger = logging.getLogger(__name__)
 
@@ -304,7 +308,7 @@ class Embed(tf.keras.layers.Layer):
             units=embed_dim,
             activation=None,
             kernel_regularizer=regularizer,
-            name=f"embed_layer_{layer_name_suffix}",
+            name=f"embed_layer_{layer_name_suffix}", dtype = tf.float32
         )
 
     # noinspection PyMethodOverriding
@@ -687,7 +691,7 @@ class DotProductLoss(tf.keras.layers.Layer):
     def sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor:
         """Calculate similarity between given tensors."""
 
-        sim = tf.reduce_sum(a * b, axis=-1)
+        sim = tf.reduce_sum(tf.cast(a, dtype = tf.float32) * tf.cast(b, dtype = tf.float32), axis=-1)
         if mask is not None:
             sim *= tf.expand_dims(mask, 2)
 
