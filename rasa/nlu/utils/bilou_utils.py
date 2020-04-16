@@ -121,14 +121,14 @@ def build_tag_id_dict(
     """
     bilou_key = get_bilou_key_for_tag(tag_name)
 
-    distinct_tags = {
+    distinct_tags = set(
         [
             tag_without_prefix(e)
             for example in training_data.training_examples
             if example.get(bilou_key)
             for e in example.get(bilou_key)
         ]
-    } - {NO_ENTITY_TAG}
+    ) - {NO_ENTITY_TAG}
 
     if not distinct_tags:
         return None
