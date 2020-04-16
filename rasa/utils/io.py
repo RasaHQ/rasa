@@ -111,23 +111,21 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
 
     yaml_parser = yaml.YAML(typ="safe")
     yaml_parser.version = YAML_VERSION
-    yaml_parser.unicode_supplementary = True
 
-    # noinspection PyUnresolvedReferences
-    try:
-        return yaml_parser.load(content) or {}
-    except yaml.scanner.ScannerError:
-        # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
-        # unicode sequences that form surrogate pairs. Try converting the input
-        # to a parsable format based on
-        # https://stackoverflow.com/a/52187065/3429596.
+    if _is_ascii(content):
+        # Required to make sure emojis are correctly parsed
         content = (
             content.encode("utf-8")
             .decode("raw_unicode_escape")
             .encode("utf-16", "surrogatepass")
             .decode("utf-16")
         )
-        return yaml_parser.load(content) or {}
+
+    return yaml_parser.load(content) or {}
+
+
+def _is_ascii(text: Text) -> bool:
+    return all(ord(character) < 128 for character in text)
 
 
 def read_file(filename: Text, encoding: Text = DEFAULT_ENCODING) -> Any:
@@ -235,13 +233,7 @@ def write_yaml_file(data: Dict, filename: Union[Text, Path]) -> None:
         filename: The path to the file which should be written.
     """
     with open(str(filename), "w", encoding=DEFAULT_ENCODING) as outfile:
-        yaml.dump(
-            data,
-            outfile,
-            default_flow_style=False,
-            allow_unicode=True,
-            version=YAML_VERSION,
-        )
+        yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True)
 
 
 def write_text_file(
