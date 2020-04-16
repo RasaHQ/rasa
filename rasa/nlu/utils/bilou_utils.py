@@ -1,7 +1,6 @@
 import logging
-from typing import List, Tuple, Text, Optional, Dict, Set, Any
+from typing import List, Tuple, Text, Optional, Dict, Any
 
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
@@ -19,7 +18,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
-import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -123,14 +121,14 @@ def build_tag_id_dict(
     """
     bilou_key = get_bilou_key_for_tag(tag_name)
 
-    distinct_tags = set(
+    distinct_tags = {
         [
             tag_without_prefix(e)
             for example in training_data.training_examples
             if example.get(bilou_key)
             for e in example.get(bilou_key)
         ]
-    ) - {NO_ENTITY_TAG}
+    } - {NO_ENTITY_TAG}
 
     if not distinct_tags:
         return None

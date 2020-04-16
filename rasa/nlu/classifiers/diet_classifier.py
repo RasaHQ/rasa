@@ -17,7 +17,6 @@ from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.test import determine_token_labels
-from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.common import raise_warning
@@ -34,11 +33,8 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_START,
-    ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_VALUE,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.nlu.training_data import TrainingData

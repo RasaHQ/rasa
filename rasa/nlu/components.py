@@ -4,11 +4,7 @@ import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.nlu.constants import (
-    TRAINABLE_EXTRACTORS,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
-)
+from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
@@ -196,7 +192,7 @@ def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Compo
         `True` if any of the `components` are in the `pipeline`, else `False`.
 
     """
-    return any(any([component.name == c for component in pipeline]) for c in components)
+    return any(any(component.name == c for component in pipeline) for c in components)
 
 
 def validate_required_components_from_data(
@@ -274,7 +270,8 @@ def validate_required_components_from_data(
             )
         elif any_components_in_pipeline(["CRFEntityExtractor"], pipeline):
             crf_components = [c for c in pipeline if c.name == "CRFEntityExtractor"]
-            # check to see if any of the possible CRFEntityExtractors will featurize `pattern`
+            # check to see if any of the possible CRFEntityExtractors will
+            # featurize `pattern`
             has_pattern_feature = False
             for crf in crf_components:
                 crf_features = crf.component_config.get("features")
@@ -461,8 +458,8 @@ class Component(metaclass=ComponentMetaclass):
 
         if cached_component:
             return cached_component
-        else:
-            return cls(meta)
+
+        return cls(meta)
 
     @classmethod
     def create(
@@ -692,8 +689,8 @@ class ComponentBuilder:
             and cache_key in self.component_cache
         ):
             return self.component_cache[cache_key], cache_key
-        else:
-            return None, cache_key
+
+        return None, cache_key
 
     def __add_to_cache(self, component: Component, cache_key: Optional[Text]) -> None:
         """Add a component to the cache."""

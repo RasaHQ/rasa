@@ -3,7 +3,7 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.nlu.constants import ENTITIES, TOKENS_NAMES, TEXT
+from rasa.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer

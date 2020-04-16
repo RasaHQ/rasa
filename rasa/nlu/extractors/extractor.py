@@ -398,7 +398,7 @@ class EntityExtractor(Component):
 
             if new_tag_found:
                 entity = self._create_new_entity(
-                    tags.keys(),
+                    list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,
                     current_role_tag,

@@ -252,12 +252,10 @@ class CRFEntityExtractor(EntityExtractor):
                 # of the B, I, L and U tags for an entity
                 _confidences.append(
                     sum(
-                        [
-                            _confidence
-                            for _tag, _confidence in token_predictions.items()
-                            if bilou_utils.tag_without_prefix(tag)
-                            == bilou_utils.tag_without_prefix(_tag)
-                        ]
+                        _confidence
+                        for _tag, _confidence in token_predictions.items()
+                        if bilou_utils.tag_without_prefix(tag)
+                        == bilou_utils.tag_without_prefix(_tag)
                     )
                 )
             else:
@@ -302,6 +300,14 @@ class CRFEntityExtractor(EntityExtractor):
 
         file_names = meta.get("file")
         entity_taggers = {}
+
+        if not file_names:
+            logger.debug(
+                f"Failed to load model for 'CRFEntityExtractor'. "
+                f"Maybe you did not provide enough training data and no model was "
+                f"trained or the path '{os.path.abspath(model_dir)}' doesn't exist?"
+            )
+            return cls(component_config=meta)
 
         for name, file_name in file_names.items():
             model_file = os.path.join(model_dir, file_name)
