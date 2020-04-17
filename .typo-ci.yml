@@ -1,6 +1,6 @@
 # This is a sample .typo-ci.yml file, it's used to configure how Typo CI will behave.
 # Add it to the root of your project and push it to github.
-# ---
+---
 
 # What language dictionaries should it use? Currently Typo CI supports:
 # de
