@@ -1,0 +1,771 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Domains</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Responses" href="../responses/" />
+    <link rel="prev" title="Stories" href="../stories/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Domains" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/core/domains" />
+  
+    <meta name="description" content="Define intents, entities, slots and actions in Rasa to build contextual
+AI Assistants and chatbots using open source bot framework Rasa Stack." />
+    <meta itemprop="description" content="Define intents, entities, slots and actions in Rasa to build contextual
+AI Assistants and chatbots using open source bot framework Rasa Stack.">
+    <meta name="twitter:description" content="Define intents, entities, slots and actions in Rasa to build contextual
+AI Assistants and chatbots using open source bot framework Rasa Stack." />
+    <meta property="og:description" content="Define intents, entities, slots and actions in Rasa to build contextual
+AI Assistants and chatbots using open source bot framework Rasa Stack." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Domains">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css" />
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announcement-banner" data-cookie-id="docsAnnouncementBannerDismissed">
+  New episodes of the Rasa Masterclass are out now!
+  <a href="https://www.youtube.com/watch?v=rlAQWbhwqLA&list=PL75e0qA87dlHQny7z43NduZHPo6qd-cRc" target="_blank">Watch Now</a>
+  <button class="announcement-banner__close">✕</button>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+      	
+          
+      	    <li><a href=/docs/getting-started/>Getting Started</a></li>
+      	  
+      	
+          
+	        
+      	      <li><a href=/docs/rasa/>Rasa Open Source</a></li>
+            
+      	  
+      	
+          
+      	    <li><a href=/docs/rasa-x/>Rasa X</a></li>
+      	  
+      	
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <input type="text" class="search ds-input" placeholder="Search documentation...">
+      </li>
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Rasa Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/evaluating-models/">Evaluating Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/running-the-server/">Running the Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/running-rasa-with-docker/">Running Rasa with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stories/">Stories</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../fallback-actions/">Fallback Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/featurization/">Featurization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Change Log</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.0.9
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.9.6/core/domains/">1.9.6</a>
+              <a href="../../../1.9.5/core/domains/">1.9.5</a>
+              <a href="../../../1.9.4/core/domains/">1.9.4</a>
+              <a href="../../../1.9.3/core/domains/">1.9.3</a>
+              <a href="../../../1.9.2/core/domains/">1.9.2</a>
+              <a href="../../../1.9.1/core/domains/">1.9.1</a>
+              <a href="../../../1.9.0/core/domains/">1.9.0</a>
+              <a href="../../../1.8.3/core/domains/">1.8.3</a>
+              <a href="../../../1.8.2/core/domains/">1.8.2</a>
+              <a href="../../../1.8.1/core/domains/">1.8.1</a>
+              <a href="../../../1.8.0/core/domains/">1.8.0</a>
+              <a href="../../../1.7.4/core/domains/">1.7.4</a>
+              <a href="../../../1.7.3/core/domains/">1.7.3</a>
+              <a href="../../../1.7.2/core/domains/">1.7.2</a>
+              <a href="../../../1.7.1/core/domains/">1.7.1</a>
+              <a href="../../../1.7.0/core/domains/">1.7.0</a>
+              <a href="../../../1.6.2/core/domains/">1.6.2</a>
+              <a href="../../../1.5.3/core/domains/">1.5.3</a>
+              <a href="../../../1.4.6/core/domains/">1.4.6</a>
+              <a href="../../../1.3.10/core/domains/">1.3.10</a>
+              <a href="../../../1.2.9/core/domains/">1.2.9</a>
+              <a href="../../../1.1.8/core/domains/">1.1.8</a>
+              <a href="../../../1.0.9/core/domains/">1.0.9</a>
+          </div>
+          <p>branches</p>
+          <div class="dropdown-content">
+              <a href="../../../master/core/domains/">master</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+    
+    
+
+
+
+    <p class="scv-banner"><a href="../../../1.9.6/core/domains/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.9.6.</a></p>
+<div class="section" id="domains">
+<span id="id1"></span><h1>Domains<a class="headerlink" href="#domains" title="Permalink to this headline">¶</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">Domain</span></code> defines the universe in which your assistant operates.
+It specifies the <code class="docutils literal notranslate"><span class="pre">intents</span></code>, <code class="docutils literal notranslate"><span class="pre">entities</span></code>, <code class="docutils literal notranslate"><span class="pre">slots</span></code>, and <code class="docutils literal notranslate"><span class="pre">actions</span></code>
+your bot should know about. Optionally, it can also include <code class="docutils literal notranslate"><span class="pre">templates</span></code>
+for the things your bot can say.</p>
+<p>As an example, the <code class="docutils literal notranslate"><span class="pre">DefaultDomain</span></code> has the following yaml definition:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">goodbye</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">affirm</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">deny</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mood_great</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mood_unhappy</span>
+
+<span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_cheer_up</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_did_that_help</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_happy</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span>
+
+<span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Hey!</span><span class="nv"> </span><span class="s">How</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">you?&quot;</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">utter_cheer_up</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Here</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">something</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">cheer</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">up:&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://i.imgur.com/nGF1K8f.jpg&quot;</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">utter_did_that_help</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Did</span><span class="nv"> </span><span class="s">that</span><span class="nv"> </span><span class="s">help</span><span class="nv"> </span><span class="s">you?&quot;</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">utter_happy</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Great</span><span class="nv"> </span><span class="s">carry</span><span class="nv"> </span><span class="s">on!&quot;</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Bye&quot;</span>
+</pre></div>
+</div>
+<p><strong>What does this mean?</strong></p>
+<p>Your NLU model will define the <code class="docutils literal notranslate"><span class="pre">intents</span></code> and <code class="docutils literal notranslate"><span class="pre">entities</span></code> that you
+need to include in the domain.</p>
+<p><a class="reference internal" href="../slots/#slots"><span class="std std-ref">Slots</span></a> hold information you want to keep track of during a conversation.
+A categorical slot called <code class="docutils literal notranslate"><span class="pre">risk_level</span></code> would be
+defined like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">slots</span><span class="p p-Indicator">:</span>
+   <span class="l l-Scalar l-Scalar-Plain">risk_level</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">categorical</span>
+      <span class="l l-Scalar l-Scalar-Plain">values</span><span class="p p-Indicator">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">low</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">medium</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">high</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../slots/#slot-classes"><span class="std std-ref">Here</span></a> you can find the full list of slot types defined by
+Rasa Core, along with syntax for including them in your domain file.</p>
+<p><a class="reference internal" href="../actions/#actions"><span class="std std-ref">Actions</span></a> are the things your bot can actually do.
+For example, an action could:</p>
+<ul class="simple">
+<li>respond to a user,</li>
+<li>make an external API call,</li>
+<li>query a database, or</li>
+<li>just about anything!</li>
+</ul>
+<div class="section" id="custom-actions-and-slots">
+<h2>Custom Actions and Slots<a class="headerlink" href="#custom-actions-and-slots" title="Permalink to this headline">¶</a></h2>
+<p>To reference slots in your domain, you need to reference them by
+their <strong>module path</strong>. To reference custom actions, use their <strong>name</strong>.
+For example, if you have a module called <code class="docutils literal notranslate"><span class="pre">my_actions</span></code> containing
+a class <code class="docutils literal notranslate"><span class="pre">MyAwesomeAction</span></code>, and module <code class="docutils literal notranslate"><span class="pre">my_slots</span></code> containing
+<code class="docutils literal notranslate"><span class="pre">MyAwesomeSlot</span></code>, you would add these lines to the domain file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my_custom_action</span>
+  <span class="l l-Scalar l-Scalar-Plain">...</span>
+
+<span class="l l-Scalar l-Scalar-Plain">slots</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my_slots.MyAwesomeSlot</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">name</span></code> function of <code class="docutils literal notranslate"><span class="pre">MyAwesomeAction</span></code> needs to return
+<code class="docutils literal notranslate"><span class="pre">my_custom_action</span></code> in this example (for more details,
+see <a class="reference internal" href="../actions/#custom-actions"><span class="std std-ref">Custom Actions</span></a>).</p>
+</div>
+<div class="section" id="utterance-templates">
+<span id="utter-templates"></span><h2>Utterance templates<a class="headerlink" href="#utterance-templates" title="Permalink to this headline">¶</a></h2>
+<p>Utterance templates are messages the bot will send back to the user. There are
+two ways to use these templates:</p>
+<ol class="arabic">
+<li><p class="first">If the name of the template starts with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>, the utterance can
+directly be used as an action. You would add the utterance template
+to the domain:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Hey!</span><span class="nv"> </span><span class="s">How</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">you?&quot;</span>
+</pre></div>
+</div>
+<p>Afterwards, you can use the template as an action in the
+stories:</p>
+<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="gh">## greet the user</span>
+<span class="vm">* intent_greet</span>
+<span class="vm">  </span>- utter_greet
+</pre></div>
+</div>
+<p>When <code class="docutils literal notranslate"><span class="pre">utter_greet</span></code> is run as an action, it will send the message from
+the template back to the user.</p>
+</li>
+<li><p class="first">You can use the templates to generate response messages from your
+custom actions using the dispatcher:
+<code class="docutils literal notranslate"><span class="pre">dispatcher.utter_template(&quot;utter_greet&quot;,</span> <span class="pre">tracker)</span></code>.
+This allows you to separate the logic of generating
+the messages from the actual copy. In you custom action code, you can
+send a message based on the template like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa_sdk.actions</span> <span class="kn">import</span> <span class="n">Action</span>
+
+<span class="k">class</span> <span class="nc">ActionGreet</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="k">return</span> <span class="s1">&#39;action_greet&#39;</span>
+
+  <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
+      <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_greet&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+      <span class="k">return</span> <span class="p">[]</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<div class="section" id="images-and-buttons">
+<h3>Images and Buttons<a class="headerlink" href="#images-and-buttons" title="Permalink to this headline">¶</a></h3>
+<p>Templates defined in a domain’s yaml file can contain images and
+buttons as well:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Hey!</span><span class="nv"> </span><span class="s">How</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">you?&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">buttons</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">title</span><span class="p p-Indicator">:</span> <span class="s">&quot;great&quot;</span>
+      <span class="l l-Scalar l-Scalar-Plain">payload</span><span class="p p-Indicator">:</span> <span class="s">&quot;great&quot;</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">title</span><span class="p p-Indicator">:</span> <span class="s">&quot;super</span><span class="nv"> </span><span class="s">sad&quot;</span>
+      <span class="l l-Scalar l-Scalar-Plain">payload</span><span class="p p-Indicator">:</span> <span class="s">&quot;super</span><span class="nv"> </span><span class="s">sad&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_cheer_up</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Here</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">something</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">cheer</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">up:&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://i.imgur.com/nGF1K8f.jpg&quot;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Please keep in mind that it is up to the implementation of the output
+channel on how to display the defined buttons. The command line, for
+example, can’t display buttons or images, but tries to mimic them by
+printing the options.</p>
+</div>
+</div>
+<div class="section" id="custom-output-payloads">
+<h3>Custom Output Payloads<a class="headerlink" href="#custom-output-payloads" title="Permalink to this headline">¶</a></h3>
+<p>You can also send any arbitrary output to the output channel using the
+<code class="docutils literal notranslate"><span class="pre">custom:</span></code> key. Note that since the domain is in yaml format, the json
+payload should first be converted to yaml format.</p>
+<p>For example, although date pickers are not a defined parameter in utterance
+templates because they are not supported by most channels, a slack date picker
+can be sent like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_take_bet</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">custom</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">blocks</span><span class="p p-Indicator">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">section</span>
+        <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Make</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">bet</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">when</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">world</span><span class="nv"> </span><span class="s">will</span><span class="nv"> </span><span class="s">end:&quot;</span>
+          <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mrkdwn</span>
+        <span class="l l-Scalar l-Scalar-Plain">accessory</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">datepicker</span>
+          <span class="l l-Scalar l-Scalar-Plain">initial_date</span><span class="p p-Indicator">:</span> <span class="s">&#39;2019-05-21&#39;</span>
+          <span class="l l-Scalar l-Scalar-Plain">placeholder</span><span class="p p-Indicator">:</span>
+            <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">plain_text</span>
+            <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">Select a date</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="channel-specific-utterances">
+<h3>Channel-Specific Utterances<a class="headerlink" href="#channel-specific-utterances" title="Permalink to this headline">¶</a></h3>
+<p>If you have certain utterances that you would like sent only to specific
+channels, you can specify this with the <code class="docutils literal notranslate"><span class="pre">channel:</span></code> key. The value should match
+the name defined in the <code class="docutils literal notranslate"><span class="pre">name()</span></code> method of the channel’s <code class="docutils literal notranslate"><span class="pre">OutputChannel</span></code>
+class. Channel-specific utterances are especially useful if creating custom
+output payloads that will only work in certain channels.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_ask_game</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Which</span><span class="nv"> </span><span class="s">game</span><span class="nv"> </span><span class="s">would</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">like</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">play?&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">channel</span><span class="p p-Indicator">:</span> <span class="s">&quot;slack&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">custom</span><span class="p p-Indicator">:</span>
+      <span class="p p-Indicator">-</span> <span class="c1"># payload for slack dropdown menu to choose a game</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Which</span><span class="nv"> </span><span class="s">game</span><span class="nv"> </span><span class="s">would</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">like</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">play?&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">buttons</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">title</span><span class="p p-Indicator">:</span> <span class="s">&quot;Chess&quot;</span>
+      <span class="l l-Scalar l-Scalar-Plain">payload</span><span class="p p-Indicator">:</span> <span class="s">&#39;/inform{&quot;game&quot;:</span><span class="nv"> </span><span class="s">&quot;chess&quot;}&#39;</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">title</span><span class="p p-Indicator">:</span> <span class="s">&quot;Checkers&quot;</span>
+      <span class="l l-Scalar l-Scalar-Plain">payload</span><span class="p p-Indicator">:</span> <span class="s">&#39;/inform{&quot;game&quot;:</span><span class="nv"> </span><span class="s">&quot;checkers&quot;}&#39;</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">title</span><span class="p p-Indicator">:</span> <span class="s">&quot;Fortnite&quot;</span>
+      <span class="l l-Scalar l-Scalar-Plain">payload</span><span class="p p-Indicator">:</span> <span class="s">&#39;/inform{&quot;game&quot;:</span><span class="nv"> </span><span class="s">&quot;fortnite&quot;}&#39;</span>
+</pre></div>
+</div>
+<p>Each time your bot looks for utterances, it will first check to see if there
+are any channel-specific templates for the connected channel. If there are, it
+will choose <strong>only</strong> from these utterances. If no channel-specific templates are
+found, it will choose from any utterances that do not have a defined <code class="docutils literal notranslate"><span class="pre">channel</span></code>.
+Therefore, it is good practice to always have at least one template for each
+utterance that has no <code class="docutils literal notranslate"><span class="pre">channel</span></code> specified so that your bot can respond in all
+environments, including in the shell and in interactive learning.</p>
+</div>
+<div class="section" id="variables">
+<h3>Variables<a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h3>
+<p>You can also use <strong>variables</strong> in your templates to insert information
+collected during the dialogue. You can either do that in your custom python
+code or by using the automatic slot filling mechanism. For example, if you
+have a template like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Hey,</span><span class="nv"> </span><span class="s">{name}.</span><span class="nv"> </span><span class="s">How</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">you?&quot;</span>
+</pre></div>
+</div>
+<p>Rasa will automatically fill that variable with a value found in a slot called
+<code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
+<p>In custom code, you can retrieve a template by using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ActionCustom</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+   <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="k">return</span> <span class="s2">&quot;action_custom&quot;</span>
+
+   <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
+      <span class="c1"># send utter default template to user</span>
+      <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_default&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+      <span class="c1"># ... other code</span>
+      <span class="k">return</span> <span class="p">[]</span>
+</pre></div>
+</div>
+<p>If the template contains variables denoted with <code class="docutils literal notranslate"><span class="pre">{my_variable}</span></code>
+you can supply values for the fields by passing them as keyword
+arguments to <code class="docutils literal notranslate"><span class="pre">utter_template</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_default&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">my_variable</span><span class="o">=</span><span class="s2">&quot;my text&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="variations">
+<h3>Variations<a class="headerlink" href="#variations" title="Permalink to this headline">¶</a></h3>
+<p>If you want to randomly vary the response sent to the user, you can list
+multiple responses and Rasa will randomly pick one of them, e.g.:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_greeting</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Hey,</span><span class="nv"> </span><span class="s">{name}.</span><span class="nv"> </span><span class="s">How</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">you?&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Hey,</span><span class="nv"> </span><span class="s">{name}.</span><span class="nv"> </span><span class="s">How</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">your</span><span class="nv"> </span><span class="s">day</span><span class="nv"> </span><span class="s">going?&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="ignoring-entities-for-certain-intents">
+<h2>Ignoring entities for certain intents<a class="headerlink" href="#ignoring-entities-for-certain-intents" title="Permalink to this headline">¶</a></h2>
+<p>If you want entities to be ignored for certain intents, you can
+add the <code class="docutils literal notranslate"><span class="pre">use_entities:</span> <span class="pre">false</span></code> parameter to the intent in your domain
+file like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">use_entities</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p>This means that entities for those intents will be unfeaturized and therefore
+will not impact the next action predictions. This is useful when you have
+an intent where you don’t care about the entities being picked up. If you list
+your intents as normal without this parameter, the entities will be
+featurized as normal.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you really want these entities not to influence action prediction we
+suggest you make the slots with the same name of type <code class="docutils literal notranslate"><span class="pre">unfeaturized</span></code>.</p>
+</div>
+</div>
+</div>
+
+
+	    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.js"></script>
+	    <script type="text/javascript"> docsearch({
+	     apiKey: '1f9e0efb89e98543f6613a60f847b176',
+	     indexName: 'rasa',
+	     inputSelector: 'body > div.nav-top > .nav-container > .nav > li > input',
+	     debug: false // Set debug to true if you want to inspect the dropdown
+	    });
+	    </script>
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2019, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+  </body>
+</html>

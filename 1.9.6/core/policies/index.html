@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Policies</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Slots" href="../slots/" />
@@ -250,6 +251,8 @@ require generalization." />
               <a href="../../../1.4.6/core/policies/">1.4.6</a>
               <a href="../../../1.3.10/core/policies/">1.3.10</a>
               <a href="../../../1.2.9/core/policies/">1.2.9</a>
+              <a href="../../../1.1.8/core/policies/">1.1.8</a>
+              <a href="../../../1.0.9/core/policies/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -286,22 +289,21 @@ require generalization." />
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/core/policies.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#configuring-policies" id="id8">Configuring Policies</a></p>
-<ul>
-<li><p><a class="reference internal" href="#max-history" id="id9">Max History</a></p></li>
-<li><p><a class="reference internal" href="#data-augmentation" id="id10">Data Augmentation</a></p></li>
+<li><a class="reference internal" href="#configuring-policies" id="id8">Configuring Policies</a><ul>
+<li><a class="reference internal" href="#max-history" id="id9">Max History</a></li>
+<li><a class="reference internal" href="#data-augmentation" id="id10">Data Augmentation</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#action-selection" id="id11">Action Selection</a></p></li>
-<li><p><a class="reference internal" href="#keras-policy" id="id12">Keras Policy</a></p></li>
-<li><p><a class="reference internal" href="#embedding-policy" id="id13">Embedding Policy</a></p></li>
-<li><p><a class="reference internal" href="#ted-policy" id="id14">TED Policy</a></p></li>
-<li><p><a class="reference internal" href="#mapping-policy" id="id15">Mapping Policy</a></p></li>
-<li><p><a class="reference internal" href="#memoization-policy" id="id16">Memoization Policy</a></p></li>
-<li><p><a class="reference internal" href="#augmented-memoization-policy" id="id17">Augmented Memoization Policy</a></p></li>
-<li><p><a class="reference internal" href="#fallback-policy" id="id18">Fallback Policy</a></p></li>
-<li><p><a class="reference internal" href="#two-stage-fallback-policy" id="id19">Two-Stage Fallback Policy</a></p></li>
-<li><p><a class="reference internal" href="#form-policy" id="id20">Form Policy</a></p></li>
+<li><a class="reference internal" href="#action-selection" id="id11">Action Selection</a></li>
+<li><a class="reference internal" href="#keras-policy" id="id12">Keras Policy</a></li>
+<li><a class="reference internal" href="#embedding-policy" id="id13">Embedding Policy</a></li>
+<li><a class="reference internal" href="#ted-policy" id="id14">TED Policy</a></li>
+<li><a class="reference internal" href="#mapping-policy" id="id15">Mapping Policy</a></li>
+<li><a class="reference internal" href="#memoization-policy" id="id16">Memoization Policy</a></li>
+<li><a class="reference internal" href="#augmented-memoization-policy" id="id17">Augmented Memoization Policy</a></li>
+<li><a class="reference internal" href="#fallback-policy" id="id18">Fallback Policy</a></li>
+<li><a class="reference internal" href="#two-stage-fallback-policy" id="id19">Two-Stage Fallback Policy</a></li>
+<li><a class="reference internal" href="#form-policy" id="id20">Form Policy</a></li>
 </ul>
 </div>
 <div class="section" id="configuring-policies">
@@ -311,8 +313,8 @@ at every step in the conversation.</p>
 <p>There are different policies to choose from, and you can include
 multiple policies in a single <a class="reference internal" href="../../api/agent/#rasa.core.agent.Agent" title="rasa.core.agent.Agent"><code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.core.agent.Agent</span></code></a>.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Per default a maximum of 10 next actions can be predicted
+<p class="first admonition-title">Note</p>
+<p class="last">Per default a maximum of 10 next actions can be predicted
 by the agent after every user message. To update this value
 you can set the environment variable <code class="docutils literal notranslate"><span class="pre">MAX_NUMBER_OF_PREDICTIONS</span></code>
 to the desired number of maximum predictions.</p>
@@ -321,21 +323,21 @@ to the desired number of maximum predictions.</p>
 which you can use to customize the policies your assistant uses.
 In the example below, the last two lines show how to use a custom
 policy class and pass arguments to it.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;KerasPolicy&quot;</span>
-    <span class="nt">featurizer</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MaxHistoryTrackerFeaturizer</span>
-      <span class="nt">max_history</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
-      <span class="nt">state_featurizer</span><span class="p">:</span>
-        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">BinarySingleStateFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MemoizationPolicy&quot;</span>
-    <span class="nt">max_history</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;FallbackPolicy&quot;</span>
-    <span class="nt">nlu_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.4</span>
-    <span class="nt">core_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
-    <span class="nt">fallback_action_name</span><span class="p">:</span> <span class="s">&quot;my_fallback_action&quot;</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;path.to.your.policy.class&quot;</span>
-    <span class="nt">arg1</span><span class="p">:</span> <span class="s">&quot;...&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;KerasPolicy&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">featurizer</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">MaxHistoryTrackerFeaturizer</span>
+      <span class="l l-Scalar l-Scalar-Plain">max_history</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+      <span class="l l-Scalar l-Scalar-Plain">state_featurizer</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">BinarySingleStateFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MemoizationPolicy&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">max_history</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;FallbackPolicy&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">nlu_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.4</span>
+    <span class="l l-Scalar l-Scalar-Plain">core_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="l l-Scalar l-Scalar-Plain">fallback_action_name</span><span class="p p-Indicator">:</span> <span class="s">&quot;my_fallback_action&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;path.to.your.policy.class&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">arg1</span><span class="p p-Indicator">:</span> <span class="s">&quot;...&quot;</span>
 </pre></div>
 </div>
 <div class="section" id="max-history">
@@ -346,8 +348,8 @@ action to take next.</p>
 <p>You can set the <code class="docutils literal notranslate"><span class="pre">max_history</span></code> by passing it to your policy’s <code class="docutils literal notranslate"><span class="pre">Featurizer</span></code>
 in the policy configuration yaml file.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Only the <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code> uses a max history,
+<p class="first admonition-title">Note</p>
+<p class="last">Only the <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code> uses a max history,
 whereas the <code class="docutils literal notranslate"><span class="pre">FullDialogueTrackerFeaturizer</span></code> always looks at
 the full conversation history. See <a class="reference internal" href="../../api/core-featurization/#featurization-conversations"><span class="std std-ref">Featurization of Conversations</span></a> for details.</p>
 </div>
@@ -428,8 +430,8 @@ fallback policies, strictly cannot be used in tandem.</p>
 If your policy is a machine learning policy, it should most likely have priority 1, the same as the Rasa machine
 learning policies.</p>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>All policy priorities are configurable via the <code class="docutils literal notranslate"><span class="pre">priority:</span></code> parameter in the configuration,
+<p class="first admonition-title">Warning</p>
+<p class="last">All policy priorities are configurable via the <code class="docutils literal notranslate"><span class="pre">priority:</span></code> parameter in the configuration,
 but we <strong>do not recommend</strong> changing them outside of specific cases such as custom policies.
 Doing so can lead to unexpected and undesired bot behavior.</p>
 </div>
@@ -445,8 +447,8 @@ The default architecture is based on an LSTM, but you can override the
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Sequential</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Build a keras model and return a compiled model.&quot;&quot;&quot;</span>
 
-    <span class="kn">from</span> <span class="nn">tensorflow.keras.models</span> <span class="kn">import</span> <span class="n">Sequential</span>
-    <span class="kn">from</span> <span class="nn">tensorflow.keras.layers</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.keras.models</span> <span class="k">import</span> <span class="n">Sequential</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.keras.layers</span> <span class="k">import</span> <span class="p">(</span>
         <span class="n">Masking</span><span class="p">,</span>
         <span class="n">LSTM</span><span class="p">,</span>
         <span class="n">Dense</span><span class="p">,</span>
@@ -520,8 +522,8 @@ The default architecture is based on an LSTM, but you can override the
         <span class="p">)</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Fitting model with </span><span class="si">{</span><span class="n">training_data</span><span class="o">.</span><span class="n">num_examples</span><span class="p">()</span><span class="si">}</span><span class="s2"> total samples and a &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;validation split of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">validation_split</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="n">f</span><span class="s2">&quot;Fitting model with {training_data.num_examples()} total samples and a &quot;</span>
+        <span class="n">f</span><span class="s2">&quot;validation split of </span><span class="si">{self.validation_split}</span><span class="s2">.&quot;</span>
     <span class="p">)</span>
 
     <span class="c1"># filter out kwargs that cannot be passed to fit</span>
@@ -552,8 +554,8 @@ set the <code class="docutils literal notranslate"><span class="pre">random_seed
 <span id="id3"></span><h2><a class="toc-backref" href="#id13">Embedding Policy</a><a class="headerlink" href="#embedding-policy" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> was renamed to <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>. Please use <a class="reference internal" href="#ted-policy"><span class="std std-ref">TED Policy</span></a> instead of <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>
+<p class="first admonition-title">Warning</p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> was renamed to <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>. Please use <a class="reference internal" href="#ted-policy"><span class="std std-ref">TED Policy</span></a> instead of <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>
 in your policy configuration. The functionality of the policy stayed the same.</p>
 </div>
 </div></blockquote>
@@ -566,13 +568,13 @@ in your policy configuration. The functionality of the policy stayed the same.</
 following steps:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>concatenate user input (user intent and entities), previous system actions, slots and active forms for each time
-step into an input vector to pre-transformer embedding layer;</p></li>
-<li><p>feed it to transformer;</p></li>
-<li><p>apply a dense layer to the output of the transformer to get embeddings of a dialogue for each time step;</p></li>
-<li><p>apply a dense layer to create embeddings for system actions for each time step;</p></li>
-<li><p>calculate the similarity between the dialogue embedding and embedded system actions.
-This step is based on the <a class="reference external" href="https://arxiv.org/abs/1709.03856">StarSpace</a> idea.</p></li>
+<li>concatenate user input (user intent and entities), previous system actions, slots and active forms for each time
+step into an input vector to pre-transformer embedding layer;</li>
+<li>feed it to transformer;</li>
+<li>apply a dense layer to the output of the transformer to get embeddings of a dialogue for each time step;</li>
+<li>apply a dense layer to create embeddings for system actions for each time step;</li>
+<li>calculate the similarity between the dialogue embedding and embedded system actions.
+This step is based on the <a class="reference external" href="https://arxiv.org/abs/1709.03856">StarSpace</a> idea.</li>
 </ul>
 </div></blockquote>
 <p>It is recommended to use <code class="docutils literal notranslate"><span class="pre">state_featurizer=LabelTokenizerSingleStateFeaturizer(...)</span></code>
@@ -583,13 +585,13 @@ This step is based on the <a class="reference external" href="https://arxiv.org/
 If you want to adapt your model, start by modifying the following parameters:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">epochs</span></code>:
+<li><code class="docutils literal notranslate"><span class="pre">epochs</span></code>:
 This parameter sets the number of times the algorithm will see the training data (default: <code class="docutils literal notranslate"><span class="pre">1</span></code>).
 One <code class="docutils literal notranslate"><span class="pre">epoch</span></code> is equals to one forward pass and one backward pass of all the training examples.
 Sometimes the model needs more epochs to properly learn.
 Sometimes more epochs don’t influence the performance.
-The lower the number of epochs the faster the model is trained.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes</span></code>:
+The lower the number of epochs the faster the model is trained.</li>
+<li><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes</span></code>:
 This parameter allows you to define the number of feed forward layers and their output
 dimensions for dialogues and intents (default: <code class="docutils literal notranslate"><span class="pre">dialogue:</span> <span class="pre">[],</span> <span class="pre">label:</span> <span class="pre">[]</span></code>).
 Every entry in the list corresponds to a feed forward layer.
@@ -600,29 +602,29 @@ dimension of 128. If an empty list is used (default behaviour), no feed forward 
 added.
 Make sure to use only positive integer values. Usually, numbers of power of two are used.
 Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
-value before.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">number_of_transformer_layers</span></code>:
+value before.</li>
+<li><code class="docutils literal notranslate"><span class="pre">number_of_transformer_layers</span></code>:
 This parameter sets the number of transformer layers to use (default: <code class="docutils literal notranslate"><span class="pre">1</span></code>).
-The number of transformer layers corresponds to the transformer blocks to use for the model.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>:
+The number of transformer layers corresponds to the transformer blocks to use for the model.</li>
+<li><code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>:
 This parameter sets the number of units in the transformer (default: <code class="docutils literal notranslate"><span class="pre">128</span></code>).
-The vectors coming out of the transformers will have the given <code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>:
+The vectors coming out of the transformers will have the given <code class="docutils literal notranslate"><span class="pre">transformer_size</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>:
 This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
 in the model (default: <code class="docutils literal notranslate"><span class="pre">0.8</span></code>). The value should be between 0 and 1. If you set <code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code>
 to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
 set <code class="docutils literal notranslate"><span class="pre">weight_sparsity</span></code> to 1 as this would result in all kernel weights being 0, i.e. the model is not able
-to learn.</p></li>
+to learn.</li>
 </ul>
 </div></blockquote>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Pass an appropriate number, for example 50,  of <code class="docutils literal notranslate"><span class="pre">epochs</span></code> to the <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>, otherwise the policy will
+<p class="first admonition-title">Warning</p>
+<p class="last">Pass an appropriate number, for example 50,  of <code class="docutils literal notranslate"><span class="pre">epochs</span></code> to the <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>, otherwise the policy will
 be trained only for <code class="docutils literal notranslate"><span class="pre">1</span></code> epoch.</p>
 </div>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Default <code class="docutils literal notranslate"><span class="pre">max_history</span></code> for this policy is <code class="docutils literal notranslate"><span class="pre">None</span></code> which means it’ll use the
+<p class="first admonition-title">Warning</p>
+<p class="last">Default <code class="docutils literal notranslate"><span class="pre">max_history</span></code> for this policy is <code class="docutils literal notranslate"><span class="pre">None</span></code> which means it’ll use the
 <code class="docutils literal notranslate"><span class="pre">FullDialogueTrackerFeaturizer</span></code>. We recommend to set <code class="docutils literal notranslate"><span class="pre">max_history</span></code> to some finite value in order to
 use <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code> for <strong>faster training</strong>. See <a class="reference internal" href="../../api/core-featurization/#featurization-conversations"><span class="std std-ref">Featurization of Conversations</span></a> for
 details. We recommend to increase <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> for <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code>
@@ -631,9 +633,8 @@ details. We recommend to increase <code class="docutils literal notranslate"><sp
 <div class="toggle docutils container">
 <div class="header docutils container">
 <div class="block docutils container">
-<p>The above configuration parameters are the ones you should configure to fit your model to your data.
-However, additional parameters exist that can be adapted.</p>
-</div>
+The above configuration parameters are the ones you should configure to fit your model to your data.
+However, additional parameters exist that can be adapted.</div>
 </div>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>+---------------------------------+------------------+--------------------------------------------------------------+
 | Parameter                       | Default Value    | Description                                                  |
@@ -728,26 +729,26 @@ However, additional parameters exist that can be adapted.</p>
 </pre></div>
 </div>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>If <code class="docutils literal notranslate"><span class="pre">evaluate_on_number_of_examples</span></code> is non zero, random examples will be picked by stratified split and
+<p class="first admonition-title">Warning</p>
+<p class="last">If <code class="docutils literal notranslate"><span class="pre">evaluate_on_number_of_examples</span></code> is non zero, random examples will be picked by stratified split and
 used as <strong>hold out</strong> validation set, so they will be excluded from training data.
 We suggest to set it to zero if data set contains a lot of unique examples of dialogue turns.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> and <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> should
+<p class="first admonition-title">Note</p>
+<p class="last">For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> and <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> should
 be between <code class="docutils literal notranslate"><span class="pre">-1</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>There is an option to use linearly increasing batch size. The idea comes from
+<p class="first admonition-title">Note</p>
+<p class="last">There is an option to use linearly increasing batch size. The idea comes from
 <a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>. In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g.
 <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[8,</span> <span class="pre">32]</span></code> (default behaviour). If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>,
 e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">8</span></code>.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The parameter <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> is set to a negative value to mimic the original
+<p class="first admonition-title">Note</p>
+<p class="last">The parameter <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> is set to a negative value to mimic the original
 starspace algorithm in the case <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">maximum_positive_similarity</span></code> and
 <code class="docutils literal notranslate"><span class="pre">use_maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">False</span></code>. See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starspace paper</a>
 for details.</p>
@@ -759,9 +760,9 @@ for details.</p>
 <span id="id5"></span><h2><a class="toc-backref" href="#id15">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> can be used to directly map intents to actions. The
 mappings are assigned by giving an intent the property <code class="docutils literal notranslate"><span class="pre">triggers</span></code>, e.g.:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intents</span><span class="p">:</span>
- <span class="p p-Indicator">-</span> <span class="nt">ask_is_bot</span><span class="p">:</span>
-     <span class="nt">triggers</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">action_is_bot</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
+ <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ask_is_bot</span><span class="p p-Indicator">:</span>
+     <span class="l l-Scalar l-Scalar-Plain">triggers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">action_is_bot</span>
 </pre></div>
 </div>
 <p>An intent can only be mapped to at most one action. The bot will run
@@ -789,15 +790,15 @@ simple example that dispatches a bot utterance and then reverts the interaction:
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you use the <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> to predict bot utterance actions directly (e.g.
+<p class="first admonition-title">Note</p>
+<p class="last">If you use the <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> to predict bot utterance actions directly (e.g.
 <code class="docutils literal notranslate"><span class="pre">triggers:</span> <span class="pre">utter_{}</span></code>), these interactions must go in your stories, as in this
 case there is no <code class="docutils literal notranslate"><span class="pre">UserUtteranceReverted()</span></code> and the
 intent and the mapped response action will appear in the dialogue history.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The MappingPolicy is also responsible for executing the default actions <code class="docutils literal notranslate"><span class="pre">action_back</span></code>
+<p class="first admonition-title">Note</p>
+<p class="last">The MappingPolicy is also responsible for executing the default actions <code class="docutils literal notranslate"><span class="pre">action_back</span></code>
 and <code class="docutils literal notranslate"><span class="pre">action_restart</span></code> in response to <code class="docutils literal notranslate"><span class="pre">/back</span></code> and <code class="docutils literal notranslate"><span class="pre">/restart</span></code>. If it is not included
 in your policy example these intents will not work.</p>
 </div>
@@ -818,8 +819,8 @@ of steps in the conversation history and try to find a match in your stories
 with the reduced history. It predicts the next action with confidence <code class="docutils literal notranslate"><span class="pre">1.0</span></code>
 if a match is found, otherwise it predicts <code class="docutils literal notranslate"><span class="pre">None</span></code> with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you have dialogues where some slots that are set during
+<p class="first admonition-title">Note</p>
+<p class="last">If you have dialogues where some slots that are set during
 prediction time might not be set in training stories (e.g. in training
 stories starting with a reminder not all previous slots are set),
 make sure to add the relevant stories without slots to your training
@@ -830,46 +831,46 @@ data as well.</p>
 <span id="id6"></span><h2><a class="toc-backref" href="#id18">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a> if at least one of the following occurs:</p>
 <ol class="arabic simple">
-<li><p>The intent recognition has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>.</p></li>
-<li><p>The highest ranked intent differs in confidence with the second highest
-ranked intent by less than <code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code>.</p></li>
-<li><p>None of the dialogue policies predict an action with confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</p></li>
+<li>The intent recognition has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>.</li>
+<li>The highest ranked intent differs in confidence with the second highest
+ranked intent by less than <code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code>.</li>
+<li>None of the dialogue policies predict an action with confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</li>
 </ol>
 <p><strong>Configuration:</strong></p>
 <blockquote>
 <div><p>The thresholds and fallback action can be adjusted in the policy configuration
 file as parameters of the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;FallbackPolicy&quot;</span>
-    <span class="nt">nlu_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
-    <span class="nt">ambiguity_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
-    <span class="nt">core_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
-    <span class="nt">fallback_action_name</span><span class="p">:</span> <span class="s">&#39;action_default_fallback&#39;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;FallbackPolicy&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">nlu_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="l l-Scalar l-Scalar-Plain">ambiguity_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
+    <span class="l l-Scalar l-Scalar-Plain">core_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="l l-Scalar l-Scalar-Plain">fallback_action_name</span><span class="p p-Indicator">:</span> <span class="s">&#39;action_default_fallback&#39;</span>
 </pre></div>
 </div>
-<table class="docutils align-default">
+<table border="1" class="docutils">
 <colgroup>
-<col style="width: 38%" />
-<col style="width: 62%" />
+<col width="38%" />
+<col width="62%" />
 </colgroup>
-<tbody>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code></p></td>
-<td><p>Min confidence needed to accept an NLU
-prediction</p></td>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code></td>
+<td>Min confidence needed to accept an NLU
+prediction</td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code></p></td>
-<td><p>Min amount by which the confidence of the
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code></td>
+<td>Min amount by which the confidence of the
 top intent must exceed that of the second
-highest ranked intent.</p></td>
+highest ranked intent.</td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></p></td>
-<td><p>Min confidence needed to accept an action
-prediction from Rasa Core</p></td>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></td>
+<td>Min confidence needed to accept an action
+prediction from Rasa Core</td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fallback_action_name</span></code></p></td>
-<td><p>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">fallback_action_name</span></code></td>
+<td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
 to be called if the confidence of intent
-or action is below the respective threshold</p></td>
+or action is below the respective threshold</td>
 </tr>
 </tbody>
 </table>
@@ -887,8 +888,8 @@ or action is below the respective threshold</p></td>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You can include either the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> or the
+<p class="first admonition-title">Note</p>
+<p class="last">You can include either the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> or the
 <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> in your configuration, but not both.</p>
 </div>
 </div></blockquote>
@@ -898,35 +899,35 @@ or action is below the respective threshold</p></td>
 <p>The <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.</p>
 <ul>
-<li><p>If an NLU prediction has a low confidence score or is not significantly higher
+<li><p class="first">If an NLU prediction has a low confidence score or is not significantly higher
 than the second highest ranked prediction, the user is asked to affirm
 the classification of the intent.</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>If they affirm, the story continues as if the intent was classified
-with high confidence from the beginning.</p></li>
-<li><p>If they deny, the user is asked to rephrase their message.</p></li>
+<li>If they affirm, the story continues as if the intent was classified
+with high confidence from the beginning.</li>
+<li>If they deny, the user is asked to rephrase their message.</li>
 </ul>
 </div></blockquote>
 </li>
-<li><p>Rephrasing</p>
+<li><p class="first">Rephrasing</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>If the classification of the rephrased intent was confident, the story
-continues as if the user had this intent from the beginning.</p></li>
-<li><p>If the rephrased intent was not classified with high confidence, the user
-is asked to affirm the classified intent.</p></li>
+<li>If the classification of the rephrased intent was confident, the story
+continues as if the user had this intent from the beginning.</li>
+<li>If the rephrased intent was not classified with high confidence, the user
+is asked to affirm the classified intent.</li>
 </ul>
 </div></blockquote>
 </li>
-<li><p>Second affirmation</p>
+<li><p class="first">Second affirmation</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>If the user affirms the intent, the story continues as if the user had
-this intent from the beginning.</p></li>
-<li><p>If the user denies, the original intent is classified as the specified
+<li>If the user affirms the intent, the story continues as if the user had
+this intent from the beginning.</li>
+<li>If the user denies, the original intent is classified as the specified
 <code class="docutils literal notranslate"><span class="pre">deny_suggestion_intent_name</span></code>, and an ultimate fallback action
-is triggered (e.g. a handoff to a human).</p></li>
+is triggered (e.g. a handoff to a human).</li>
 </ul>
 </div></blockquote>
 </li>
@@ -935,59 +936,59 @@ is triggered (e.g. a handoff to a human).</p></li>
 <blockquote>
 <div><p>To use the <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code>, include the following in your
 policy configuration.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TwoStageFallbackPolicy</span>
-    <span class="nt">nlu_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
-    <span class="nt">ambiguity_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
-    <span class="nt">core_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
-    <span class="nt">fallback_core_action_name</span><span class="p">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
-    <span class="nt">fallback_nlu_action_name</span><span class="p">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
-    <span class="nt">deny_suggestion_intent_name</span><span class="p">:</span> <span class="s">&quot;out_of_scope&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">TwoStageFallbackPolicy</span>
+    <span class="l l-Scalar l-Scalar-Plain">nlu_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="l l-Scalar l-Scalar-Plain">ambiguity_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
+    <span class="l l-Scalar l-Scalar-Plain">core_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="l l-Scalar l-Scalar-Plain">fallback_core_action_name</span><span class="p p-Indicator">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">fallback_nlu_action_name</span><span class="p p-Indicator">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">deny_suggestion_intent_name</span><span class="p p-Indicator">:</span> <span class="s">&quot;out_of_scope&quot;</span>
 </pre></div>
 </div>
-<table class="docutils align-default">
+<table border="1" class="docutils">
 <colgroup>
-<col style="width: 42%" />
-<col style="width: 58%" />
+<col width="42%" />
+<col width="58%" />
 </colgroup>
-<tbody>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code></p></td>
-<td><p>Min confidence needed to accept an NLU
-prediction</p></td>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code></td>
+<td>Min confidence needed to accept an NLU
+prediction</td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code></p></td>
-<td><p>Min amount by which the confidence of the
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code></td>
+<td>Min amount by which the confidence of the
 top intent must exceed that of the second
-highest ranked intent.</p></td>
+highest ranked intent.</td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></p></td>
-<td><p>Min confidence needed to accept an action
-prediction from Rasa Core</p></td>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></td>
+<td>Min confidence needed to accept an action
+prediction from Rasa Core</td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fallback_core_action_name</span></code></p></td>
-<td><p>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">fallback_core_action_name</span></code></td>
+<td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
 to be called if the confidence of Rasa
 Core action prediction is below the
 <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>. This action is
-to propose the recognized intents</p></td>
+to propose the recognized intents</td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fallback_nlu_action_name</span></code></p></td>
-<td><p>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">fallback_nlu_action_name</span></code></td>
+<td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
 to be called if the confidence of Rasa
 NLU intent classification is below the
 <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>. This action is called
-when the user denies the second time</p></td>
+when the user denies the second time</td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">deny_suggestion_intent_name</span></code></p></td>
-<td><p>The name of the intent which is used to
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">deny_suggestion_intent_name</span></code></td>
+<td>The name of the intent which is used to
 detect that the user denies the suggested
-intents</p></td>
+intents</td>
 </tr>
 </tbody>
 </table>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You can include either the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> or the
+<p class="first admonition-title">Note</p>
+<p class="last">You can include either the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> or the
 <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> in your configuration, but not both.</p>
 </div>
 </div></blockquote>

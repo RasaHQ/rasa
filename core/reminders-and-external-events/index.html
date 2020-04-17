@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Reminders and External Events</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Policies" href="../policies/" />
@@ -242,6 +243,8 @@
               <a href="../.././1.4.6/index/">1.4.6</a>
               <a href="../.././1.3.10/index/">1.3.10</a>
               <a href="../.././1.2.9/index/">1.2.9</a>
+              <a href="../.././1.1.8/index/">1.1.8</a>
+              <a href="../.././1.0.9/index/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -283,16 +286,14 @@ You can find a full example assistant that implements these features
 <a class="reference external" href="https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md">here</a>.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#reminders" id="id5">Reminders</a></p>
-<ul>
-<li><p><a class="reference internal" href="#scheduling-reminders" id="id6">Scheduling Reminders</a></p></li>
-<li><p><a class="reference internal" href="#cancelling-reminders" id="id7">Cancelling Reminders</a></p></li>
+<li><a class="reference internal" href="#reminders" id="id5">Reminders</a><ul>
+<li><a class="reference internal" href="#scheduling-reminders" id="id6">Scheduling Reminders</a></li>
+<li><a class="reference internal" href="#cancelling-reminders" id="id7">Cancelling Reminders</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#external-events" id="id8">External Events</a></p>
-<ul>
-<li><p><a class="reference internal" href="#getting-the-conversation-id" id="id9">Getting the Conversation ID</a></p></li>
-<li><p><a class="reference internal" href="#responding-to-external-events" id="id10">Responding to External Events</a></p></li>
+<li><a class="reference internal" href="#external-events" id="id8">External Events</a><ul>
+<li><a class="reference internal" href="#getting-the-conversation-id" id="id9">Getting the Conversation ID</a></li>
+<li><a class="reference internal" href="#responding-to-external-events" id="id10">Responding to External Events</a></li>
 </ul>
 </li>
 </ul>
@@ -367,7 +368,7 @@ We could make this connection by providing training stories (recommended for mor
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 
         <span class="n">name</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">tracker</span><span class="o">.</span><span class="n">get_latest_entity_values</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">),</span> <span class="s2">&quot;someone&quot;</span><span class="p">)</span>
-        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Remember to call </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Remember to call </span><span class="si">{name}</span><span class="s2">!&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="p">[]</span>
 </pre></div>
@@ -375,18 +376,18 @@ We could make this connection by providing training stories (recommended for mor
 <p>Instead of a custom action, we could also have used a simple response template.
 But here we want to make use of the fact that the reminder can carry entities, and we can process the entities in this custom action.</p>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Reminders are cancelled whenever you shutdown your Rasa server.</p>
+<p class="first admonition-title">Warning</p>
+<p class="last">Reminders are cancelled whenever you shutdown your Rasa server.</p>
 </div>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Reminders currently (Rasa 1.8) don’t work in <cite>rasa shell</cite>.
+<p class="first admonition-title">Warning</p>
+<p class="last">Reminders currently (Rasa 1.8) don’t work in <cite>rasa shell</cite>.
 You have to test them with a
 <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/">running Rasa X server</a> instead.</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Proactively reaching out to the user is dependent on the abilities of a channel and
+<p class="first admonition-title">Note</p>
+<p class="last">Proactively reaching out to the user is dependent on the abilities of a channel and
 hence not supported by every channel. If your channel does not support it, consider
 using the <a class="reference internal" href="../../user-guide/connectors/your-own-website/#callbackinput"><span class="std std-ref">CallbackInput</span></a> channel to send messages to a <a class="reference external" href="https://en.wikipedia.org/wiki/Webhook">webhook</a>.</p>
 </div>
@@ -405,7 +406,7 @@ A simple way of adding this functionality to your assistant is to create an inte
         <span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 
-        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Okay, I&#39;ll cancel all your reminders.&quot;</span><span class="p">)</span>
+        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Okay, I&#39;ll cancel all your reminders.&quot;</span><span class="p">)</span>
 
         <span class="c1"># Cancel all reminders</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">ReminderCancelled</span><span class="p">()]</span>
@@ -416,10 +417,10 @@ Alternatively, you may provide some parameters to narrow down the types of remin
 For example,</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(intent=&quot;greet&quot;)</span></code> cancels all reminders with intent <code class="docutils literal notranslate"><span class="pre">greet</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(entities={...})</span></code> cancels all reminders with the given entities</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(&quot;...&quot;)</span></code> cancels the one unique reminder with the given name “<code class="docutils literal notranslate"><span class="pre">...</span></code>” that you supplied
-during its creation</p></li>
+<li><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(intent=&quot;greet&quot;)</span></code> cancels all reminders with intent <code class="docutils literal notranslate"><span class="pre">greet</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(entities={...})</span></code> cancels all reminders with the given entities</li>
+<li><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(&quot;...&quot;)</span></code> cancels the one unique reminder with the given name “<code class="docutils literal notranslate"><span class="pre">...</span></code>” that you supplied
+during its creation</li>
 </ul>
 </div></blockquote>
 </div>
@@ -452,16 +453,16 @@ For example:</p>
         <span class="n">conversation_id</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">sender_id</span>
 
         <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The ID of this conversation is: &quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">conversation_id</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="n">f</span><span class="s2">&quot;The ID of this conversation is: &quot;</span> <span class="n">f</span><span class="s2">&quot;</span><span class="si">{conversation_id}</span><span class="s2">.&quot;</span>
         <span class="p">)</span>
 
         <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Trigger an intent with &quot;</span>
-            <span class="sa">f</span><span class="s1">&#39;curl -H &quot;Content-Type: application/json&quot; &#39;</span>
-            <span class="sa">f</span><span class="s1">&#39;-X POST -d </span><span class="se">\&#39;{{</span><span class="s1">&quot;name&quot;: &quot;EXTERNAL_dry_plant&quot;, &#39;</span>
-            <span class="sa">f</span><span class="s1">&#39;&quot;entities&quot;: </span><span class="se">{{</span><span class="s1">&quot;plant&quot;: &quot;Orchid&quot;</span><span class="se">}}}}\&#39;</span><span class="s1"> &#39;</span>
-            <span class="sa">f</span><span class="s2">&quot;http://localhost:5005/conversations/</span><span class="si">{</span><span class="n">conversation_id</span><span class="si">}</span><span class="s2">/&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;trigger_intent&quot;</span>
+            <span class="n">f</span><span class="s2">&quot;Trigger an intent with &quot;</span>
+            <span class="n">f</span><span class="s1">&#39;curl -H &quot;Content-Type: application/json&quot; &#39;</span>
+            <span class="n">f</span><span class="s1">&#39;-X POST -d </span><span class="se">\&#39;</span><span class="s1">{{&quot;name&quot;: &quot;EXTERNAL_dry_plant&quot;, &#39;</span>
+            <span class="n">f</span><span class="s1">&#39;&quot;entities&quot;: {{&quot;plant&quot;: &quot;Orchid&quot;}}}}</span><span class="se">\&#39;</span><span class="s1"> &#39;</span>
+            <span class="n">f</span><span class="s2">&quot;http://localhost:5005/conversations/</span><span class="si">{conversation_id}</span><span class="s2">/&quot;</span>
+            <span class="n">f</span><span class="s2">&quot;trigger_intent&quot;</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="p">[]</span>
@@ -500,7 +501,7 @@ Here, we start the intent name with <code class="docutils literal notranslate"><
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 
         <span class="n">plant</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">tracker</span><span class="o">.</span><span class="n">get_latest_entity_values</span><span class="p">(</span><span class="s2">&quot;plant&quot;</span><span class="p">),</span> <span class="s2">&quot;someone&quot;</span><span class="p">)</span>
-        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Your </span><span class="si">{</span><span class="n">plant</span><span class="si">}</span><span class="s2"> needs some water!&quot;</span><span class="p">)</span>
+        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Your </span><span class="si">{plant}</span><span class="s2"> needs some water!&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="p">[]</span>
 </pre></div>
