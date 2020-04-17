@@ -2139,10 +2139,10 @@ description = "A configurable sidebar-enabled Sphinx theme"
 name = "rasabaster"
 optional = false
 python-versions = "*"
-version = "0.7.25"
+version = "0.7.26"
 
 [package.dependencies]
-"ruamel.yaml" = "0.15.85"
+"ruamel.yaml" = ">=0.16.10,<0.17.0"
 
 [package.source]
 reference = "rasa-pypi"
@@ -2265,11 +2265,25 @@ description = "ruamel.yaml is a YAML parser/emitter that supports roundtrip pres
 name = "ruamel.yaml"
 optional = false
 python-versions = "*"
-version = "0.15.85"
+version = "0.16.10"
+
+[package.dependencies]
+[package.dependencies."ruamel.yaml.clib"]
+python = "<3.9"
+version = ">=0.1.2"
 
 [package.extras]
 docs = ["ryd"]
 jinja2 = ["ruamel.yaml.jinja2 (>=0.2)"]
+
+[[package]]
+category = "main"
+description = "C version of reader, parser and emitter for ruamel.yaml derived from libyaml"
+marker = "platform_python_implementation == \"CPython\" and python_version < \"3.9\""
+name = "ruamel.yaml.clib"
+optional = false
+python-versions = "*"
+version = "0.2.0"
 
 [[package]]
 category = "main"
@@ -3292,7 +3306,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "23c99b1378288b2648e2a06866bd4e62b305362465c51a5114722467fdc74bf6"
+content-hash = "c9d34948babfa1352b9283f67ed0d767ccf1137d982600b13ab69b3cf92c3a68"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -4587,28 +4601,29 @@ rsa = [
     {file = "rsa-4.0.tar.gz", hash = "sha256:1a836406405730121ae9823e19c6e806c62bbad73f890574fff50efa4122c487"},
 ]
 "ruamel.yaml" = [
-    {file = "ruamel.yaml-0.15.85-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:068e0772d871801393dfb6aa76adece28f0faa25c83ee98e9f6651bfc59d0792"},
-    {file = "ruamel.yaml-0.15.85-cp27-cp27m-manylinux1_x86_64.whl", hash = "sha256:31d9e274986d18e32105434bbb8446ca902a641134ddc7225517e0c7dd9f4b5e"},
-    {file = "ruamel.yaml-0.15.85-cp27-cp27m-win32.whl", hash = "sha256:d3d3371feede753d69962e318266946ee605a3ed99d4d7c1d80a6ffcf757263b"},
-    {file = "ruamel.yaml-0.15.85-cp27-cp27m-win_amd64.whl", hash = "sha256:54ed8554a8873268dffd8dd49676bc1bd719ab30f7675b7f73d7a45e982d14f3"},
-    {file = "ruamel.yaml-0.15.85-cp27-cp27mu-manylinux1_x86_64.whl", hash = "sha256:eb5573a415c900756bc81129ca2a9d15fa1a7daa9b36d7b8aa280c9f98aa79c3"},
-    {file = "ruamel.yaml-0.15.85-cp34-cp34m-macosx_10_6_intel.whl", hash = "sha256:67f22ec171bfed47cdbffa0fcca245af1afc4851fe2d4891452e8e0f2544dbbf"},
-    {file = "ruamel.yaml-0.15.85-cp34-cp34m-manylinux1_x86_64.whl", hash = "sha256:e9781102c2e31fdeb512d251f6c882ca96ac5a3be370b6963e471f4c8de989e9"},
-    {file = "ruamel.yaml-0.15.85-cp34-cp34m-win32.whl", hash = "sha256:71e3b19b17c8eb09a6304082cff9ea44d310a705264f049eb9d90e2772eae15c"},
-    {file = "ruamel.yaml-0.15.85-cp34-cp34m-win_amd64.whl", hash = "sha256:9eb2bd790eecb42917a08a18f9ec4641f84ea99a443056b97eb79380b40a3f6e"},
-    {file = "ruamel.yaml-0.15.85-cp35-cp35m-macosx_10_6_intel.whl", hash = "sha256:0a85836bd6b8ed6b6a73605231402385a7409d54a7d9b8ea14174a502c605f77"},
-    {file = "ruamel.yaml-0.15.85-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:fe29b68d49a440534340c48352960d5052d73f15433430e93ce11498f4c38c86"},
-    {file = "ruamel.yaml-0.15.85-cp35-cp35m-win32.whl", hash = "sha256:8fe90c66aa5bcf32702b8d8fb87d5739f2badddd8d027b062791b4fc04d8f516"},
-    {file = "ruamel.yaml-0.15.85-cp35-cp35m-win_amd64.whl", hash = "sha256:1eb78b47ac656720ebf4d35a8de6bb71c45881842cc0a246aef4d420fa1cf5dd"},
-    {file = "ruamel.yaml-0.15.85-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:3367d2575a0a37e180e0ed8add871f31c81de5e4922cbf08039e567582d01f7f"},
-    {file = "ruamel.yaml-0.15.85-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:1d557adba7d0776d0dba85bd249715e425651fcea4cc58709260296eb8cfc7c3"},
-    {file = "ruamel.yaml-0.15.85-cp36-cp36m-win32.whl", hash = "sha256:fd44a7ddfe4a6d8a46e31766895865cdbe55b4ff7915dd449fb517fe60f64b8b"},
-    {file = "ruamel.yaml-0.15.85-cp36-cp36m-win_amd64.whl", hash = "sha256:24a13355dac9d1869547b96b220491cf5bc7448744b393ed122a7471ff8c03be"},
-    {file = "ruamel.yaml-0.15.85-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:308fa84f6fa107e8cfa7685f8debeb891c75b2597ede5127bd304389e07fdb93"},
-    {file = "ruamel.yaml-0.15.85-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:00994afdd5d08c04e128b84233f8b4ded1f55e1781117aaafb655891183c71c6"},
-    {file = "ruamel.yaml-0.15.85-cp37-cp37m-win32.whl", hash = "sha256:20426a1ed5f11840b9e5737b2e341a8a8a07d14f0abb1eb643c0de7e04858848"},
-    {file = "ruamel.yaml-0.15.85-cp37-cp37m-win_amd64.whl", hash = "sha256:7990c8543ecce9894eef958fa8b02bfb1a14777056b6654876a3dc26df5535b4"},
-    {file = "ruamel.yaml-0.15.85.tar.gz", hash = "sha256:34af6e2f9787acd3937b55c0279f46adff43124c5d72dced84aab6c89d1a960f"},
+    {file = "ruamel.yaml-0.16.10-py2.py3-none-any.whl", hash = "sha256:0962fd7999e064c4865f96fb1e23079075f4a2a14849bcdc5cdba53a24f9759b"},
+    {file = "ruamel.yaml-0.16.10.tar.gz", hash = "sha256:099c644a778bf72ffa00524f78dd0b6476bca94a1da344130f4bf3381ce5b954"},
+]
+"ruamel.yaml.clib" = [
+    {file = "ruamel.yaml.clib-0.2.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:9c6d040d0396c28d3eaaa6cb20152cb3b2f15adf35a0304f4f40a3cf9f1d2448"},
+    {file = "ruamel.yaml.clib-0.2.0-cp27-cp27m-manylinux1_x86_64.whl", hash = "sha256:4d55386129291b96483edcb93b381470f7cd69f97585829b048a3d758d31210a"},
+    {file = "ruamel.yaml.clib-0.2.0-cp27-cp27m-win32.whl", hash = "sha256:8073c8b92b06b572e4057b583c3d01674ceaf32167801fe545a087d7a1e8bf52"},
+    {file = "ruamel.yaml.clib-0.2.0-cp27-cp27m-win_amd64.whl", hash = "sha256:615b0396a7fad02d1f9a0dcf9f01202bf9caefee6265198f252c865f4227fcc6"},
+    {file = "ruamel.yaml.clib-0.2.0-cp27-cp27mu-manylinux1_x86_64.whl", hash = "sha256:a0ff786d2a7dbe55f9544b3f6ebbcc495d7e730df92a08434604f6f470b899c5"},
+    {file = "ruamel.yaml.clib-0.2.0-cp35-cp35m-macosx_10_6_intel.whl", hash = "sha256:ea4362548ee0cbc266949d8a441238d9ad3600ca9910c3fe4e82ee3a50706973"},
+    {file = "ruamel.yaml.clib-0.2.0-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:77556a7aa190be9a2bd83b7ee075d3df5f3c5016d395613671487e79b082d784"},
+    {file = "ruamel.yaml.clib-0.2.0-cp35-cp35m-win32.whl", hash = "sha256:392b7c371312abf27fb549ec2d5e0092f7ef6e6c9f767bfb13e83cb903aca0fd"},
+    {file = "ruamel.yaml.clib-0.2.0-cp35-cp35m-win_amd64.whl", hash = "sha256:ed5b3698a2bb241b7f5cbbe277eaa7fe48b07a58784fba4f75224fd066d253ad"},
+    {file = "ruamel.yaml.clib-0.2.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:7aee724e1ff424757b5bd8f6c5bbdb033a570b2b4683b17ace4dbe61a99a657b"},
+    {file = "ruamel.yaml.clib-0.2.0-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:d0d3ac228c9bbab08134b4004d748cf9f8743504875b3603b3afbb97e3472947"},
+    {file = "ruamel.yaml.clib-0.2.0-cp36-cp36m-win32.whl", hash = "sha256:f9dcc1ae73f36e8059589b601e8e4776b9976effd76c21ad6a855a74318efd6e"},
+    {file = "ruamel.yaml.clib-0.2.0-cp36-cp36m-win_amd64.whl", hash = "sha256:1e77424825caba5553bbade750cec2277ef130647d685c2b38f68bc03453bac6"},
+    {file = "ruamel.yaml.clib-0.2.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:d10e9dd744cf85c219bf747c75194b624cc7a94f0c80ead624b06bfa9f61d3bc"},
+    {file = "ruamel.yaml.clib-0.2.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:550168c02d8de52ee58c3d8a8193d5a8a9491a5e7b2462d27ac5bf63717574c9"},
+    {file = "ruamel.yaml.clib-0.2.0-cp37-cp37m-win32.whl", hash = "sha256:57933a6986a3036257ad7bf283529e7c19c2810ff24c86f4a0cfeb49d2099919"},
+    {file = "ruamel.yaml.clib-0.2.0-cp37-cp37m-win_amd64.whl", hash = "sha256:b1b7fcee6aedcdc7e62c3a73f238b3d080c7ba6650cd808bce8d7761ec484070"},
+    {file = "ruamel.yaml.clib-0.2.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:be018933c2f4ee7de55e7bd7d0d801b3dfb09d21dad0cce8a97995fd3e44be30"},
+    {file = "ruamel.yaml.clib-0.2.0.tar.gz", hash = "sha256:b66832ea8077d9b3f6e311c4a53d06273db5dc2db6e8a908550f3c14d67e718c"},
 ]
 s3transfer = [
     {file = "s3transfer-0.3.3-py2.py3-none-any.whl", hash = "sha256:2482b4259524933a022d59da830f51bd746db62f047d6eb213f2f8855dcb8a13"},
@@ -4806,24 +4821,6 @@ sphinxcontrib-websupport = [
     {file = "sphinxcontrib_websupport-1.1.0-py2.py3-none-any.whl", hash = "sha256:68ca7ff70785cbe1e7bccc71a48b5b6d965d79ca50629606c7861a21b206d9dd"},
 ]
 sqlalchemy = [
-    {file = "SQLAlchemy-1.3.16-cp27-cp27m-macosx_10_13_x86_64.whl", hash = "sha256:8d8c21e9d4efef01351bf28513648ceb988031be4159745a7ad1b3e28c8ff68a"},
-    {file = "SQLAlchemy-1.3.16-cp27-cp27m-win32.whl", hash = "sha256:083e383a1dca8384d0ea6378bd182d83c600ed4ff4ec8247d3b2442cf70db1ad"},
-    {file = "SQLAlchemy-1.3.16-cp27-cp27m-win_amd64.whl", hash = "sha256:128f6179325f7597a46403dde0bf148478f868df44841348dfc8d158e00db1f9"},
-    {file = "SQLAlchemy-1.3.16-cp36-cp36m-macosx_10_13_x86_64.whl", hash = "sha256:6056b671aeda3fc451382e52ab8a753c0d5f66ef2a5ccc8fa5ba7abd20988b4d"},
-    {file = "SQLAlchemy-1.3.16-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:7025c639ce7e170db845e94006cf5f404e243e6fc00d6c86fa19e8ad8d411880"},
-    {file = "SQLAlchemy-1.3.16-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:e18752cecaef61031252ca72031d4d6247b3212ebb84748fc5d1a0d2029c23ea"},
-    {file = "SQLAlchemy-1.3.16-cp36-cp36m-win32.whl", hash = "sha256:0a690a6486658d03cc6a73536d46e796b6570ac1f8a7ec133f9e28c448b69828"},
-    {file = "SQLAlchemy-1.3.16-cp36-cp36m-win_amd64.whl", hash = "sha256:d00b393f05dbd4ecd65c989b7f5a81110eae4baea7a6a4cdd94c20a908d1456e"},
-    {file = "SQLAlchemy-1.3.16-cp37-cp37m-macosx_10_13_x86_64.whl", hash = "sha256:114b6ace30001f056e944cebd46daef38fdb41ebb98f5e5940241a03ed6cad43"},
-    {file = "SQLAlchemy-1.3.16-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:13d48cd8b925b6893a4e59b2dfb3e59a5204fd8c98289aad353af78bd214db49"},
-    {file = "SQLAlchemy-1.3.16-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:211a1ce7e825f7142121144bac76f53ac28b12172716a710f4bf3eab477e730b"},
-    {file = "SQLAlchemy-1.3.16-cp37-cp37m-win32.whl", hash = "sha256:68d78cf4a9dfade2e6cf57c4be19f7b82ed66e67dacf93b32bb390c9bed12749"},
-    {file = "SQLAlchemy-1.3.16-cp37-cp37m-win_amd64.whl", hash = "sha256:2dc57ee80b76813759cccd1a7affedf9c4dbe5b065a91fb6092c9d8151d66078"},
-    {file = "SQLAlchemy-1.3.16-cp38-cp38-macosx_10_13_x86_64.whl", hash = "sha256:43078c7ec0457387c79b8d52fff90a7ad352ca4c7aa841c366238c3e2cf52fdf"},
-    {file = "SQLAlchemy-1.3.16-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:bbb545da054e6297242a1bb1ba88e7a8ffb679f518258d66798ec712b82e4e07"},
-    {file = "SQLAlchemy-1.3.16-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:5b1bf3c2c2dca738235ce08079783ef04f1a7fc5b21cf24adaae77f2da4e73c3"},
-    {file = "SQLAlchemy-1.3.16-cp38-cp38-win32.whl", hash = "sha256:3e625e283eecc15aee5b1ef77203bfb542563fa4a9aa622c7643c7b55438ff49"},
-    {file = "SQLAlchemy-1.3.16-cp38-cp38-win_amd64.whl", hash = "sha256:7d98e0785c4cd7ae30b4a451416db71f5724a1839025544b4edbd92e00b91f0f"},
     {file = "SQLAlchemy-1.3.16.tar.gz", hash = "sha256:7224e126c00b8178dfd227bc337ba5e754b197a3867d33b9f30dc0208f773d70"},
 ]
 srsly = [
