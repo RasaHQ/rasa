@@ -1,6 +1,6 @@
 # This is a sample .typo-ci.yml file, it's used to configure how Typo CI will behave.
 # Add it to the root of your project and push it to github.
----
+# ---
 
 # What language dictionaries should it use? Currently Typo CI supports:
 # de
@@ -15,52 +15,52 @@ dictionaries:
     - en
     - en_GB
 
-# Any files/folders we should ignore?
-excluded_files:
-    - "*.py"
-    - "*.css"
-    - "*.yml"
-    - "*.html"
-    - "*.json"
-    - "*.md"
-    - "CHANGELOG.rst"
-    - "CODE_OF_CONDUCT.md"
-    - "CONTRIBUTING.md"
-    - "Dockerfile"
-    - "LICENSE.txt"
-    - "Makefile"
-    - "NOTICE"
-    - "README.md"
-    - "binder"
-    - "changelog"
-    - "cloudbuild.yaml"
-    - "data"
-    - "docker"
-    - "examples"
-    - "poetry.lock"
-    - "pyproject.toml"
-    - "rasa"
-    - "rasa_core"
-    - "rasa_nlu"
-    - "scripts"
-    - "secrets.tar.enc"
-    - "setup.cfg"
-    - "tests"
-    - ".codeclimate.yml"
-    - ".coveragerc"
-    - ".deepsource.toml"
-    - ".dockerignore"
-    - ".env"
-    - ".git"
-    - ".gitattributes"
-    - ".github"
-    - ".gitignore"
-    - ".pre-commit-config.yaml"
-    - ".typo-ci.yml"
+# # Any files/folders we should ignore?
+# excluded_files:
+#     - "*.py"
+#     - "*.css"
+#     - "*.yml"
+#     - "*.html"
+#     - "*.json"
+#     - "*.md"
+#     - "CHANGELOG.rst"
+#     - "CODE_OF_CONDUCT.md"
+#     - "CONTRIBUTING.md"
+#     - "Dockerfile"
+#     - "LICENSE.txt"
+#     - "Makefile"
+#     - "NOTICE"
+#     - "README.md"
+#     - "binder"
+#     - "changelog"
+#     - "cloudbuild.yaml"
+#     - "data"
+#     - "docker"
+#     - "examples"
+#     - "poetry.lock"
+#     - "pyproject.toml"
+#     - "rasa"
+#     - "rasa_core"
+#     - "rasa_nlu"
+#     - "scripts"
+#     - "secrets.tar.enc"
+#     - "setup.cfg"
+#     - "tests"
+#     - ".codeclimate.yml"
+#     - ".coveragerc"
+#     - ".deepsource.toml"
+#     - ".dockerignore"
+#     - ".env"
+#     - ".git"
+#     - ".gitattributes"
+#     - ".github"
+#     - ".gitignore"
+#     - ".pre-commit-config.yaml"
+#     - ".typo-ci.yml"    
 
-# Any typos we should ignore?
-excluded_words:
-    - typoci
+# # Any typos we should ignore?
+# excluded_words:
+#     - typoci
 
-# Would you like filenames to also be spellchecked?
-spellcheck_filenames: false
+# # Would you like filenames to also be spellchecked?
+# spellcheck_filenames: false
