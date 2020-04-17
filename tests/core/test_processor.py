@@ -510,7 +510,7 @@ async def test_update_tracker_session_with_metadata(
     session_event_idx = tracker.events.index(SessionStarted())
     session_event_metadata = tracker.events[session_event_idx].metadata
 
-    assert metadata == session_event_metadata
+    assert session_event_metadata == metadata
 
 
 # noinspection PyProtectedMember
