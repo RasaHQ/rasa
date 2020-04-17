@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Architecture</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Messaging and Voice Channels" href="../messaging-and-voice-channels/" />
@@ -251,8 +250,6 @@ next action of the AI Assistant." />
               <a href="../../../1.4.6/user-guide/architecture/">1.4.6</a>
               <a href="../../../1.3.10/user-guide/architecture/">1.3.10</a>
               <a href="../../../1.2.9/user-guide/architecture/">1.2.9</a>
-              <a href="../../../1.1.8/user-guide/architecture/">1.1.8</a>
-              <a href="../../../1.0.9/user-guide/architecture/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -297,19 +294,19 @@ responds to a message:</p>
 <img alt="../../_images/rasa-message-processing.png" src="../../_images/rasa-message-processing.png" />
 <p>The steps are:</p>
 <ol class="arabic simple">
-<li>The message is received and passed to an <code class="docutils literal notranslate"><span class="pre">Interpreter</span></code>, which
+<li><p>The message is received and passed to an <code class="docutils literal notranslate"><span class="pre">Interpreter</span></code>, which
 converts it into a dictionary including the original text, the intent,
-and any entities that were found. This part is handled by NLU.</li>
-<li>The <code class="docutils literal notranslate"><span class="pre">Tracker</span></code> is the object which keeps track of conversation state.
-It receives the info that a new message has come in.</li>
-<li>The policy receives the current state of the tracker.</li>
-<li>The policy chooses which action to take next.</li>
-<li>The chosen action is logged by the tracker.</li>
-<li>A response is sent to the user.</li>
+and any entities that were found. This part is handled by NLU.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">Tracker</span></code> is the object which keeps track of conversation state.
+It receives the info that a new message has come in.</p></li>
+<li><p>The policy receives the current state of the tracker.</p></li>
+<li><p>The policy chooses which action to take next.</p></li>
+<li><p>The chosen action is logged by the tracker.</p></li>
+<li><p>A response is sent to the user.</p></li>
 </ol>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Messages can be text typed by a human, or structured input
+<p class="admonition-title">Note</p>
+<p>Messages can be text typed by a human, or structured input
 like a button press.</p>
 </div>
 </div>

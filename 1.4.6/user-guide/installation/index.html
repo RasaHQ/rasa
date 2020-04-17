@@ -1,11 +1,9 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Installation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -15,12 +13,13 @@
     <link rel="stylesheet" type="text/css" href="../../_static/sphinx_tabs/tabs.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <script type="text/javascript" src="../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.js"></script>
-    <script type="text/javascript" src="../../_static/sphinx_tabs/tabs.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.js"></script>
+    <script src="../../_static/sphinx_tabs/tabs.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Rasa Tutorial" href="../rasa-tutorial/" />
@@ -244,8 +243,6 @@ entity extraction and customisation of the language models." />
               <a href="../../../1.4.6/user-guide/installation/">1.4.6</a>
               <a href="../../../1.3.10/user-guide/installation/">1.3.10</a>
               <a href="../../../1.2.9/user-guide/installation/">1.2.9</a>
-              <a href="../../../1.1.8/user-guide/installation/">1.1.8</a>
-              <a href="../../../1.0.9/user-guide/installation/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -290,10 +287,10 @@ entity extraction and customisation of the language models." />
 </pre></div>
 </div>
 <ul class="simple">
-<li>Having trouble installing? Read our <a class="reference internal" href="#installation-guide"><span class="std std-ref">step-by-step installation guide</span></a>.</li>
-<li>You can also <a class="reference internal" href="#build-from-source"><span class="std std-ref">build Rasa from source</span></a>.</li>
-<li>For advanced installation options such as building from source and installation instructions for
-custom pipelines, head over <a class="reference internal" href="#pipeline-dependencies"><span class="std std-ref">here</span></a>.</li>
+<li><p>Having trouble installing? Read our <a class="reference internal" href="#installation-guide"><span class="std std-ref">step-by-step installation guide</span></a>.</p></li>
+<li><p>You can also <a class="reference internal" href="#build-from-source"><span class="std std-ref">build Rasa from source</span></a>.</p></li>
+<li><p>For advanced installation options such as building from source and installation instructions for
+custom pipelines, head over <a class="reference internal" href="#pipeline-dependencies"><span class="std std-ref">here</span></a>.</p></li>
 </ul>
 <p>When you’re done installing, you can head over to the tutorial!</p>
 
@@ -322,15 +319,18 @@ numbers for each step, and you can skip to the next step.</p>
 <div class="ui top attached tabular menu sphinx-menu docutils container">
 <div class="active item sphinx-data-tab-0-0 docutils container">
 <div class="docutils container">
-Ubuntu</div>
+<p>Ubuntu</p>
+</div>
 </div>
 <div class="item sphinx-data-tab-0-1 docutils container">
 <div class="docutils container">
-macOS</div>
+<p>macOS</p>
+</div>
 </div>
 <div class="item sphinx-data-tab-0-2 docutils container">
 <div class="docutils container">
-Windows</div>
+<p>Windows</p>
+</div>
 </div>
 </div>
 <div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-0-0 active docutils container">
@@ -360,8 +360,8 @@ VC++ Build tools in the list.<p>Install <a class="reference external" href="http
 </div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Note that <cite>pip</cite> in this refers to <cite>pip3</cite> as Rasa requires python3. To see which version the <cite>pip</cite>
+<p class="admonition-title">Note</p>
+<p>Note that <cite>pip</cite> in this refers to <cite>pip3</cite> as Rasa requires python3. To see which version the <cite>pip</cite>
 command on your machine calls use <cite>pip –version</cite>.</p>
 </div>
 </div>
@@ -372,11 +372,13 @@ command on your machine calls use <cite>pip –version</cite>.</p>
 <div class="ui top attached tabular menu sphinx-menu docutils container">
 <div class="active item sphinx-data-tab-1-0 docutils container">
 <div class="docutils container">
-Ubuntu / macOS</div>
+<p>Ubuntu / macOS</p>
+</div>
 </div>
 <div class="item sphinx-data-tab-1-1 docutils container">
 <div class="docutils container">
-Windows</div>
+<p>Windows</p>
+</div>
 </div>
 </div>
 <div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-1-0 active docutils container">
@@ -407,11 +409,13 @@ Windows</div>
 <div class="ui top attached tabular menu sphinx-menu docutils container">
 <div class="active item sphinx-data-tab-2-0 docutils container">
 <div class="docutils container">
-Rasa Open Source and Rasa X</div>
+<p>Rasa Open Source and Rasa X</p>
+</div>
 </div>
 <div class="item sphinx-data-tab-2-1 docutils container">
 <div class="docutils container">
-Rasa Open Source only</div>
+<p>Rasa Open Source only</p>
+</div>
 </div>
 </div>
 <div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-2-0 active docutils container">
@@ -474,12 +478,12 @@ for your assistant.</p>
 <p>When you install Rasa Open Source, the dependencies for the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> - TensorFlow
 and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need to be separately installed if you want to use pipelines containing components from those libraries.</p>
 <div class="admonition-just-give-me-everything admonition">
-<p class="first admonition-title">Just give me everything!</p>
+<p class="admonition-title">Just give me everything!</p>
 <p>If you don’t mind the additional dependencies lying around, you can use
 this to install everything.</p>
 <p>You’ll first need to clone the repository and then run the following
 command to install all the packages:</p>
-<div class="last highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install -r alt_requirements/requirements_full.txt
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install -r alt_requirements/requirements_full.txt
 </pre></div>
 </div>
 </div>
@@ -512,8 +516,8 @@ anywhere. If you want to use MITIE, you need to
 tell it where to find this file (in this example it was saved in the
 <code class="docutils literal notranslate"><span class="pre">data</span></code> folder of the project directory).</p>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">Mitie support is likely to be deprecated in a future release.</p>
+<p class="admonition-title">Warning</p>
+<p>Mitie support is likely to be deprecated in a future release.</p>
 </div>
 </div>
 </div>
