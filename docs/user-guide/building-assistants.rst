@@ -636,8 +636,7 @@ use the ``from_text`` method to extract the users whole message:
 
 .. code-block:: python
 
-    def slot_mappings(self) -> Dict[Text: Union[Dict, List[Dict]]]:
-        # type: () -> Dict[Text: Union[Dict, List[Dict]]]
+    def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict[Text, Any]]]]:
         """A dictionary to map required slots to
         - an extracted entity
         - intent: value pairs
