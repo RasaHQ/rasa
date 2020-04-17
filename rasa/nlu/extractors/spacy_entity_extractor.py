@@ -32,13 +32,12 @@ class SpacyEntityExtractor(EntityExtractor):
         spacy_nlp = kwargs.get("spacy_nlp", None)
         doc = spacy_nlp(message.text)
         all_extracted = self.add_extractor_name(self.extract_entities(doc))
+        all_extracted = self.clean_up_entities(message, all_extracted)
         dimensions = self.component_config["dimensions"]
         extracted = SpacyEntityExtractor.filter_irrelevant_entities(
             all_extracted, dimensions
         )
-        message.set(
-            ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True,
-        )
+        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @staticmethod
     def extract_entities(doc: "Doc") -> List[Dict[Text, Any]]:
