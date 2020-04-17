@@ -241,3 +241,4 @@ Example result:
 
 If the ``retrieval_intent`` parameter of a particular response selector was left to its default value,
 the corresponding response selector will be identified as ``default`` in the returned output.
+

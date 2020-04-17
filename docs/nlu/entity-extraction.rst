@@ -163,3 +163,4 @@ A warning will be shown in case the check fails.
 However, ``CRFEntityExtractor`` will continue to train just without the additional custom features.
 In case dense features are present, ``CRFEntityExtractor`` will pass the dense features to ``sklearn_crfsuite``
 and use them for training.
+

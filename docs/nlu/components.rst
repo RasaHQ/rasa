@@ -1756,3 +1756,4 @@ DIETClassifier
                   starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
                   and ``use_maximum_negative_similarity = False``.
                   See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+

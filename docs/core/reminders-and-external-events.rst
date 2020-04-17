@@ -167,3 +167,4 @@ Now, when you are in a conversation with id ``38cc25d7e23e4dde800353751b7c2d3e``
   curl -H "Content-Type: application/json" -X POST -d '{"name": "EXTERNAL_dry_plant", "entities": {"plant": "Orchid"}}' http://localhost:5005/conversations/38cc25d7e23e4dde800353751b7c2d3e/trigger_intent
 
 in the terminal will cause your assistant to say "Your Orchid needs some water!".
+

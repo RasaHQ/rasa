@@ -334,3 +334,4 @@ behind Rasa Core is:
 
 So don't try to cover every possibility in your hand-written stories before giving it to testers.
 Real user behavior will always surprise you!
+

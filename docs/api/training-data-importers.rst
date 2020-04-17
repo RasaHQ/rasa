@@ -230,3 +230,4 @@ TrainingDataImporter
    .. automethod:: get_nlu_data
 
    .. automethod:: get_stories
+

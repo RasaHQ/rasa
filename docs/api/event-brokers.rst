@@ -282,3 +282,4 @@ PostgreSQL databases can be used as well:
 
 With this configuration applied, Rasa will create a table called ``events`` on the database,
 where all events will be added.
+

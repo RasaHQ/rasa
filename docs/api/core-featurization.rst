@@ -117,3 +117,4 @@ should be reshaped to
 ``(num_unique_turns, max_history * num_input_features)``. If numeric
 target class labels are needed instead of one-hot vectors, use
 ``y.argmax(axis=-1)``.
+

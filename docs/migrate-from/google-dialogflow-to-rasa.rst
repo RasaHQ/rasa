@@ -119,3 +119,4 @@ In Dialogflow, there is a concept called ``Fulfillment``. In Rasa we call this a
 
 
 Join the `Rasa Community Forum <https://forum.rasa.com/>`_ and let us know how your migration went!
+

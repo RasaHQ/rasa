@@ -19,3 +19,4 @@ check out the docs on :ref:`session_config`.
 
 .. autoclass:: rasa.core.trackers.DialogueStateTracker
    :members:
+

@@ -168,3 +168,4 @@ for example to display the output of a long running background operation
 or notify the user of an external event.
 To learn more, check out `reminderbot <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_ in
 the Rasa examples directory, or the `docs page on this topic <../../core/external-events-and-reminders>`_.
+

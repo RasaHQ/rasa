@@ -561,3 +561,4 @@ You can also customize your knowledge base further, by adapting the methods ment
 .. note::
    We wrote a `blog post <https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/>`_
    that explains how you can set up your own knowledge base.
+

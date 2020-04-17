@@ -318,3 +318,4 @@ Start a new conversation session
     .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: SessionStarted.apply_to
+

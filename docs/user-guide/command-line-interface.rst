@@ -298,3 +298,4 @@ You can start Rasa X locally by executing
 The following arguments are available for ``rasa x``:
 
 .. program-output:: rasa x --help
+

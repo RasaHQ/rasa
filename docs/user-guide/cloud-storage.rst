@@ -62,3 +62,4 @@ Currently, you are not able to manually specify the path on the cloud storage.
 
 If storing trained models, Rasa will gzip the new model and upload it to the container. If retrieving/loading models
 from the cloud storage, Rasa will download the gzipped model locally and extract the contents to a temporary directory.
+

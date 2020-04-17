@@ -70,3 +70,4 @@ Component
    .. automethod:: partially_process
 
    .. automethod:: can_handle_language
+

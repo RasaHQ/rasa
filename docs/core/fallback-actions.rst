@@ -122,3 +122,4 @@ policy configuration file.
         fallback_core_action_name: "action_default_fallback"
         fallback_nlu_action_name: "action_default_fallback"
         deny_suggestion_intent_name: "out_of_scope"
+

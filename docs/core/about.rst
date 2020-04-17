@@ -53,3 +53,4 @@ The Rasa Core Dialogue Engine
 .. chat-bubble::
    :text: Head over to the <a href="../../user-guide/rasa-tutorial">Rasa Tutorial</a> for an interactive example.
    :sender: user
+

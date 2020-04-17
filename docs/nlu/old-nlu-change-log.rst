@@ -860,3 +860,4 @@ Fixed
 .. _`master`: https://github.com/RasaHQ/rasa_nlu/
 
 .. _`Semantic Versioning`: http://semver.org/
+

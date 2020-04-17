@@ -32,3 +32,4 @@ issues and new features.
 .. image:: /_static/images/intents-user-goals-dialogue-elements.png
 
 
+
