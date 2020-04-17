@@ -1757,4 +1757,3 @@ DIETClassifier
                   and ``use_maximum_negative_similarity = False``.
                   See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
-splingerrr

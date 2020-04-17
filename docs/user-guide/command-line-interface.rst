@@ -299,4 +299,3 @@ The following arguments are available for ``rasa x``:
 
 .. program-output:: rasa x --help
 
-splingerrr

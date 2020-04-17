@@ -217,4 +217,3 @@ into a single file for evaluation. Read more about :ref:`testing-your-assistant`
 .. warning::
     This format is only used for end-to-end evaluation and cannot be used for training.
 
-splingerrr

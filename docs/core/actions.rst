@@ -167,4 +167,3 @@ to the list of actions in your domain:
 Rasa will then call your action endpoint and treat it as every other
 custom action.
 
-splingerrr

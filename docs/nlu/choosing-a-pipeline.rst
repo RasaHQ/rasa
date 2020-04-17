@@ -489,4 +489,3 @@ expand it below.
             .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_mitie_config_2.yml
                 :language: yaml
 
-splingerrr

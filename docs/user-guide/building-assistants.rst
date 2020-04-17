@@ -1143,4 +1143,3 @@ to your training data to continuously improve your bot and help the ML generaliz
 better in future. `Rasa X <https://rasa.com/docs/rasa-x/>`_ is a tool that can help
 you improve your bot and make it more contextual.
 
-splingerrr

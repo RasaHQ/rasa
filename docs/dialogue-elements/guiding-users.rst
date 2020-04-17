@@ -192,4 +192,3 @@ The direct request to speak with a human can be handled using the mapping policy
      intents:
        - request_human: {"triggers": "action_human_handoff"}
 
-splingerrr

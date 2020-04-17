@@ -68,4 +68,3 @@ Your webhook address will look like the following:
   As of writing this, it is set to 40 connections / minute.
 
 
-splingerrr

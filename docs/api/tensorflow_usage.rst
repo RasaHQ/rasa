@@ -60,4 +60,3 @@ You may want to limit the absolute amount of GPU memory that can be used by a Ra
 For example, say you have two visible GPUs(``GPU:0`` and ``GPU:1``) and you want to allocate 1024 MB from the first GPU
 and 2048 MB from the second GPU. You can do this by setting the environment variable ``TF_GPU_MEMORY_ALLOC`` to ``"0:1024, 1:2048"``.
 
-splingerrr

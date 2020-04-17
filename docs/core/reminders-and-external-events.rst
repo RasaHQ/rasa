@@ -168,4 +168,3 @@ Now, when you are in a conversation with id ``38cc25d7e23e4dde800353751b7c2d3e``
 
 in the terminal will cause your assistant to say "Your Orchid needs some water!".
 
-splingerrr

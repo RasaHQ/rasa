@@ -183,4 +183,3 @@ And in your configuration file:
       - name: "MappingPolicy"
       ...
 
-splingerrr

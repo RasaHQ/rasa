@@ -254,4 +254,3 @@ Connecting an Event Broker
 To configure an event broker within your endpoint configuration,
 see :ref:`event-brokers`.
 
-splingerrr

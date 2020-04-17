@@ -28,4 +28,3 @@ and returning structured data like
 
 If you want to use Rasa NLU on its own, see :ref:`using-nlu-only`.
 
-splingerrr

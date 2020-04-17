@@ -184,4 +184,3 @@ There are a few things to consider;
 2. Is accuracy more important or do we care more about latency of bot predictions? If responses from the assistant become much slower as shown in the above example, we may also need to invest in more compute resources.
 3. The ``BERT`` embeddings that we're using here as features can be extended with other featurizers as well. It may still be a good idea to add a :ref:`CountVectorsFeaturizer` to capture words specific to the vocabulary of your domain.
 
-splingerrr

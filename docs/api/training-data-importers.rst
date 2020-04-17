@@ -231,4 +231,3 @@ TrainingDataImporter
 
    .. automethod:: get_stories
 
-splingerrr

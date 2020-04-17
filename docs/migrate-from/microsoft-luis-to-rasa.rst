@@ -110,4 +110,3 @@ LUIS's ``phrase lists`` feature does not currently have an equivalent in Rasa NL
 
 Join the `Rasa Community Forum <https://forum.rasa.com/>`_ and let us know how your migration went!
 
-splingerrr

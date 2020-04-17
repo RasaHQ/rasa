@@ -62,4 +62,3 @@ To do this, run:
 
    curl localhost:5005/model/parse -d '{"text":"hello"}'
 
-splingerrr
