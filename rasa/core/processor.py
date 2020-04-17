@@ -304,7 +304,7 @@ class MessageProcessor:
             max_confidence_index, self.action_endpoint
         )
         logger.debug(
-            f"Predicted next action '{action.name()}' with the confidence "
+            f"Predicted next action \"{action.name()}\" with the confidence "
             f"of {action_confidences[max_confidence_index]:.2f}."
         )
         return action, policy, action_confidences[max_confidence_index]
