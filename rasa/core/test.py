@@ -18,6 +18,8 @@ if typing.TYPE_CHECKING:
 
 import matplotlib
 
+FAILED_STORIES_FILE = "failed_stories.md"
+
 # At first, matplotlib will be initialized with default OS-specific available backend
 # if that didn't happen, we'll try to set it up manually
 if matplotlib.get_backend() is not None:
@@ -474,7 +476,7 @@ def log_failed_stories(failed, out_directory):
     if not out_directory:
         return
     with open(
-        os.path.join(out_directory, "failed_stories.md"), "w", encoding=DEFAULT_ENCODING
+        os.path.join(out_directory, FAILED_STORIES_FILE), "w", encoding=DEFAULT_ENCODING
     ) as f:
         if len(failed) == 0:
             f.write("<!-- All stories passed -->")
