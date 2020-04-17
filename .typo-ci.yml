@@ -16,8 +16,8 @@ dictionaries:
     - en_GB
 
 # # Any files/folders we should ignore?
-# excluded_files:
-#     - "*.py"
+excluded_files:
+    - "*.py"
 #     - "*.css"
 #     - "*.yml"
 #     - "*.html"
