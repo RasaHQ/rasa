@@ -1136,7 +1136,66 @@ def run_evaluation(
             entity_results, extractors, output_directory, successes, errors
         )
 
+    write_prediction_for_hermit_evaluation(
+        entity_results, intent_results, extractors, output_directory
+    )
+
     return result
+
+
+def write_prediction_for_hermit_evaluation(
+    entity_results: List[EntityEvaluationResult],
+    intent_results: List[IntentEvaluationResult],
+    extractors: Set[Text],
+    output_directory: Text,
+) -> None:
+    import json
+
+    out = []
+    aligned_predictions = align_all_entity_predictions(entity_results, extractors)
+
+    for intent_result, e_pred, entity_result in zip(
+        intent_results, aligned_predictions, entity_results
+    ):
+
+        entity_gold = e_pred["target_labels"]
+        entity_pred = e_pred["extractor_labels"]["EmbeddingIntentClassifier"]
+
+        last = "O"
+        for j in range(len(entity_pred)):
+            if entity_pred[j] != "O" and last != entity_pred[j]:
+                last = entity_pred[j]
+                entity_pred[j] = "B-" + entity_pred[j]
+            elif entity_pred[j] != "O" and last == entity_pred[j]:
+                last = entity_pred[j]
+                entity_pred[j] = "I-" + entity_pred[j]
+            else:
+                last = entity_pred[j]
+
+        last = "O"
+        for j in range(len(entity_gold)):
+            if entity_gold[j] != "O" and last != entity_gold[j]:
+                last = entity_gold[j]
+                entity_gold[j] = "B-" + entity_gold[j]
+            elif entity_gold[j] != "O" and last == entity_gold[j]:
+                last = entity_gold[j]
+                entity_gold[j] = "I-" + entity_gold[j]
+            else:
+                last = entity_gold[j]
+
+        obj = {
+            "tokens": [t.text for t in entity_result.tokens],
+            "intent_gold": [intent_result.intent_target for _ in entity_result.tokens],
+            "intent_pred": [
+                intent_result.intent_prediction for _ in entity_result.tokens
+            ],
+            "frame_element_gold": entity_gold,
+            "frame_element_pred": entity_pred,
+        }
+        out.append(obj)
+
+    with open(os.path.join(output_directory, "diet-paper-eval.json"), "w") as outfile:
+        json.dump(out, outfile, indent=2)
 
 
 def generate_folds(
