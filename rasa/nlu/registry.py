@@ -31,6 +31,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
 )
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.sentbert_featurizer import SentBERTFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
@@ -84,6 +85,7 @@ component_classes = [
     CountVectorsFeaturizer,
     ConveRTFeaturizer,
     LanguageModelFeaturizer,
+    SentBERTFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,
