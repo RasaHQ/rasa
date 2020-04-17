@@ -178,9 +178,9 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Free disk space
-        # tries to make sure we do not run out of disk space, see
-        # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
-        run: |
+      # tries to make sure we do not run out of disk space, see
+      # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
+      run: |
         sudo swapoff -a
         sudo rm -f /swapfile
         sudo apt clean
