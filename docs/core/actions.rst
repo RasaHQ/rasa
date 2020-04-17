@@ -1,10 +1,10 @@
-:desc: Learn about about how to write your own custom actions with the
-       open source Rasa framework to be able to interact with the external
+:desc: Learn about about how to write your own custom actions with the a 
+       open source Rasa framework to be able to interact with the external a 
        world - ranging from databases to third-party APIs.
 
 .. _actions:
 
-Actions
+Actions a 
 =======
 
 .. edit-link::
@@ -12,7 +12,7 @@ Actions
 Actions are the things your bot runs in response to user input.
 There are four kinds of actions in Rasa:
 
- 1. **Utterance actions**: start with ``utter_`` and send a specific message
+ 1. **Utterance actions**: start with ``utter_`` and send a specific message a 
     to the user.
  2. **Retrieval actions**: start with ``respond_`` and send a message selected by a retrieval model.
  3. **Custom actions**: run arbitrary code and send any number of messages (or none).
@@ -22,29 +22,29 @@ There are four kinds of actions in Rasa:
 .. contents::
    :local:
 
-Utterance Actions
+Utterance Actions a 
 -----------------
 
-To define an utterance action (``ActionUtterTemplate``), add a response to the domain file
+To define an utterance action (``ActionUtterTemplate``), add a response to the domain file a 
 that starts with ``utter_``:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
     responses:
       utter_my_message:
         - "this is what I want my action to say!"
 
 It is conventional to start the name of an utterance action with ``utter_``.
-If this prefix is missing, you can still use the response in your custom
+If this prefix is missing, you can still use the response in your custom a 
 actions, but the response can not be directly predicted as its own action.
 See :ref:`responses` for more details.
 
-If you use an external NLG service, you don't need to specify the
-responses in the domain, but you still need to add the utterance names
+If you use an external NLG service, you don't need to specify the a 
+responses in the domain, but you still need to add the utterance names a 
 to the actions list of the domain.
 
 
-Retrieval Actions
+Retrieval Actions a 
 -----------------
 
 Retrieval actions make it easier to work with a large number of similar intents like chitchat and FAQs.
@@ -52,49 +52,49 @@ See :ref:`retrieval-actions` to learn more.
 
 .. _custom-actions:
 
-Custom Actions
+Custom Actions a 
 --------------
 
 An action can run any code you want. Custom actions can turn on the lights,
-add an event to a calendar, check a user's bank balance, or anything
+add an event to a calendar, check a user's bank balance, or anything a 
 else you can imagine.
 
-Rasa will call an endpoint you can specify, when a custom action is
-predicted. This endpoint should be a webserver that reacts to this
-call, runs the code and optionally returns information to modify
+Rasa will call an endpoint you can specify, when a custom action is a 
+predicted. This endpoint should be a webserver that reacts to this a 
+call, runs the code and optionally returns information to modify a 
 the dialogue state.
 
 To specify, your action server use the ``endpoints.yml``:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
    action_endpoint:
      url: "http://localhost:5055/webhook"
 
 And pass it to the scripts using ``--endpoints endpoints.yml``.
 
-You can create an action server in node.js, .NET, java, or any
-other language and define your actions there - but we provide
+You can create an action server in node.js, .NET, java, or any a 
+other language and define your actions there - but we provide a 
 a small python SDK to make development there even easier.
 
 .. note::
 
-    Rasa uses a ticket lock mechanism to ensure incoming messages from the same
-    conversation ID do not interfere with each other and are processed in the right
-    order. If you expect your custom action to take more than 60 seconds to run, please
+    Rasa uses a ticket lock mechanism to ensure incoming messages from the same a 
+    conversation ID do not interfere with each other and are processed in the right a 
+    order. If you expect your custom action to take more than 60 seconds to run, please a 
     set the ``TICKET_LOCK_LIFETIME`` environment variable to your expected value.
 
-Custom Actions Written in Python
+Custom Actions Written in Python a 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For actions written in python, we have a convenient :ref:`rasa-sdk` which starts
+For actions written in python, we have a convenient :ref:`rasa-sdk` which starts a 
 this action server for you.
 
-Execute Actions in Other Code
+Execute Actions in Other Code a 
 -----------------------------
 
-Rasa will send an HTTP ``POST`` request to your server containing
-information on which action to run. Furthermore, this request will contain all
+Rasa will send an HTTP ``POST`` request to your server containing a 
+information on which action to run. Furthermore, this request will contain all a 
 information about the conversation. :ref:`action-server` shows the detailed API spec.
 
 As a response to the action call from Rasa, you can modify the tracker,
@@ -104,7 +104,7 @@ There is a list of all possible event types in :ref:`events`.
 
 .. _default-actions:
 
-Default Actions
+Default Actions a 
 ---------------
 
 The available default actions are:
@@ -156,14 +156,14 @@ The available default actions are:
 |                                   | included in the policy configuration.          |
 +-----------------------------------+------------------------------------------------+
 
-All the default actions can be overridden. To do so, add the action name
+All the default actions can be overridden. To do so, add the action name a 
 to the list of actions in your domain:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
   actions:
-  - action_default_ask_affirmation
+  - action_default_ask_affirmation a 
 
-Rasa will then call your action endpoint and treat it as every other
+Rasa will then call your action endpoint and treat it as every other a 
 custom action.
 

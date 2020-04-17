@@ -1,9 +1,9 @@
-:desc: Learn how to integrate open source chatbot platform Rasa into
+:desc: Learn how to integrate open source chatbot platform Rasa into a 
        Jupyter notebooks, alongside all your machine learning code.
 
 .. _jupyter-notebooks:
 
-Jupyter Notebooks
+Jupyter Notebooks a 
 =================
 
 .. edit-link::
@@ -11,41 +11,41 @@ Jupyter Notebooks
 This page contains the most important methods for using Rasa in a Jupyter notebook.
 
 Running asynchronous Rasa code in Jupyter Notebooks requires an extra requirement,
-since Jupyter Notebooks already run on event loops. Install this requirement in
+since Jupyter Notebooks already run on event loops. Install this requirement in a 
 the command line before launching jupyter:
 
-.. code-block:: bash
+.. code-block:: bash a 
 
-   pip install nest_asyncio
+   pip install nest_asyncio a 
 
 Then in the first cell of your notebook, include:
 
 .. runnable::
 
-   import nest_asyncio
+   import nest_asyncio a 
 
    nest_asyncio.apply()
    print("Event loop ready.")
 
 
 First, you need to create a project if you don't already have one.
-To do this, run this cell, which will create the ``test-project`` directory and make it
+To do this, run this cell, which will create the ``test-project`` directory and make it a 
 your working directory:
 
 .. runnable::
 
-   from rasa.cli.scaffold import create_initial_project
-   import os
+   from rasa.cli.scaffold import create_initial_project a 
+   import os a 
 
    project = "test-project"
    create_initial_project(project)
 
-   # move into project directory and show files
+   # move into project directory and show files a 
    os.chdir(project)
    print(os.listdir("."))
 
 
-To train a model, you will have to tell the ``train`` function
+To train a model, you will have to tell the ``train`` function a 
 where to find the relevant files.
 To define variables that contain these paths, run:
 
@@ -61,7 +61,7 @@ To define variables that contain these paths, run:
 
 
 
-Train a Model
+Train a Model a 
 ~~~~~~~~~~~~~
 
 Now we can train a model by passing in the paths to the ``rasa.train`` function.
@@ -72,7 +72,7 @@ When training has finished, ``rasa.train`` returns the path where the trained mo
 
 .. runnable::
 
-   import rasa
+   import rasa a 
 
    model_path = rasa.train(domain, config, [training_files], output)
    print(model_path)
@@ -80,39 +80,39 @@ When training has finished, ``rasa.train`` returns the path where the trained mo
 
 
 
-Chat with your assistant
+Chat with your assistant a 
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To start chatting to an assistant, call the ``chat`` function, passing
+To start chatting to an assistant, call the ``chat`` function, passing a 
 in the path to your saved model:
 
 
 .. runnable::
 
-   from rasa.jupyter import chat
+   from rasa.jupyter import chat a 
    chat(model_path)
 
 
 
-Evaluate your model against test data
+Evaluate your model against test data a 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Rasa has a convenience function for getting your training data.
-Rasa's ``get_core_nlu_directories`` is a function which
-recursively finds all the stories and NLU data files in a directory
+Rasa's ``get_core_nlu_directories`` is a function which a 
+recursively finds all the stories and NLU data files in a directory a 
 and copies them into two temporary directories.
 The return values are the paths to these newly created directories.
 
 .. runnable::
 
-   import rasa.data as data
+   import rasa.data as data a 
    stories_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)
    print(stories_directory, nlu_data_directory)
 
 
 
-To test your model, call the ``test`` function, passing in the path
-to your saved model and directories containing the stories and nlu data
+To test your model, call the ``test`` function, passing in the path a 
+to your saved model and directories containing the stories and nlu data a 
 to evaluate on.
 
 .. runnable::
@@ -123,7 +123,7 @@ to evaluate on.
 
 The results of the core evaluation will be written to a file called ``results``.
 NLU errors will be reported to ``errors.json``.
-Together, they contain information about the accuracy of your model's
+Together, they contain information about the accuracy of your model's a 
 predictions and other metrics.
 
 .. runnable::
@@ -140,5 +140,5 @@ predictions and other metrics.
          print(open("results/failed_stories.md").read())
 
 .. juniper::
-  :language: python
+  :language: python a 
 

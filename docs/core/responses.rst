@@ -1,17 +1,17 @@
-:desc: Read how to define assistant responses or use a service to generate the
+:desc: Read how to define assistant responses or use a service to generate the a 
        responses using Rasa as an open source chat assistant platform.
 
 .. _responses:
 
-Responses
+Responses a 
 =========
 
 .. edit-link::
 
-If you want your assistant to respond to user messages, you need to manage
+If you want your assistant to respond to user messages, you need to manage a 
 these responses. In the training data for your bot,
-your stories, you specify the actions your bot
-should execute. These actions
+your stories, you specify the actions your bot a 
+should execute. These actions a 
 can use responses to send messages back to the user.
 
 There are three ways to manage these responses:
@@ -22,17 +22,17 @@ There are three ways to manage these responses:
 
 .. _in-domain-responses:
 
-Including the responses in the domain
+Including the responses in the domain a 
 --------------------------------------
 
 The default format is to include the responses in your domain file.
 This file then contains references to all your custom actions,
 available entities, slots and intents.
 
-.. literalinclude:: ../../data/test_domains/default_with_slots.yml
-   :language: yaml
+.. literalinclude:: ../../data/test_domains/default_with_slots.yml a 
+   :language: yaml a 
 
-In this example domain file, the section ``responses`` contains the
+In this example domain file, the section ``responses`` contains the a 
 responses the assistant uses to send messages to the user.
 
 .. note::
@@ -46,46 +46,46 @@ responses the assistant uses to send messages to the user.
     section of the domain.yml file. In this example, the ``utter_channel``
     response is not used in a story so it is not listed in that section.
 
-More details about the format of these responses can be found in the
+More details about the format of these responses can be found in the a 
 documentation about the domain file format: :ref:`domain-responses`.
 
 .. _custom-nlg-service:
 
-Creating your own NLG service for bot responses
+Creating your own NLG service for bot responses a 
 -----------------------------------------------
 
-Retraining the bot just to change the text copy can be suboptimal for
-some workflows. That's why Core also allows you to outsource the
+Retraining the bot just to change the text copy can be suboptimal for a 
+some workflows. That's why Core also allows you to outsource the a 
 response generation and separate it from the dialogue learning.
 
-The assistant will still learn to predict actions and to react to user input
-based on past dialogues, but the responses it sends back to the user
+The assistant will still learn to predict actions and to react to user input a 
+based on past dialogues, but the responses it sends back to the user a 
 are generated outside of Rasa Core.
 
-If the assistant wants to send a message to the user, it will call an
+If the assistant wants to send a message to the user, it will call an a 
 external HTTP server with a ``POST`` request. To configure this endpoint,
 you need to create an ``endpoints.yml`` and pass it either to the ``run``
-or ``server`` script. The content of the ``endpoints.yml`` should be
+or ``server`` script. The content of the ``endpoints.yml`` should be a 
 
-.. literalinclude:: ../../data/test_endpoints/example_endpoints.yml
-   :language: yaml
+.. literalinclude:: ../../data/test_endpoints/example_endpoints.yml a 
+   :language: yaml a 
 
-Then pass the ``enable-api`` flag to the ``rasa run`` command when starting
+Then pass the ``enable-api`` flag to the ``rasa run`` command when starting a 
 the server:
 
-.. code-block:: shell
+.. code-block:: shell a 
 
     $ rasa run \
        --enable-api \
        -m examples/babi/models \
        --log-file out.log \
-       --endpoints endpoints.yml
+       --endpoints endpoints.yml a 
 
 
-The body of the ``POST`` request sent to the endpoint will look
+The body of the ``POST`` request sent to the endpoint will look a 
 like this:
 
-.. code-block:: json
+.. code-block:: json a 
 
   {
     "tracker": {
@@ -107,7 +107,7 @@ like this:
       "paused": false,
       "latest_event_time": 1531397673.293572,
       "slots": {
-        "name": null
+        "name": null a 
       },
       "events": [
         {
@@ -145,7 +145,7 @@ like this:
 
 The endpoint then needs to respond with the generated response:
 
-.. code-block:: json
+.. code-block:: json a 
 
   {
       "text": "hey there",
@@ -160,12 +160,12 @@ Rasa will then use this response and sent it back to the user.
 
 .. _external-events:
 
-Proactively Reaching Out to the User with External Events
+Proactively Reaching Out to the User with External Events a 
 ---------------------------------------------------------
 
 You may want to proactively reach out to the user,
-for example to display the output of a long running background operation
+for example to display the output of a long running background operation a 
 or notify the user of an external event.
-To learn more, check out `reminderbot <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_ in
+To learn more, check out `reminderbot <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_ in a 
 the Rasa examples directory, or the `docs page on this topic <../../core/external-events-and-reminders>`_.
 

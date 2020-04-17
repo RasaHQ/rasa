@@ -1,10 +1,10 @@
-:desc: Store information the user provided as well as information from database
-       queries in slots to influence how the machine learning based dialogue
+:desc: Store information the user provided as well as information from database a 
+       queries in slots to influence how the machine learning based dialogue a 
        continues.
 
 .. _slots:
 
-Slots
+Slots a 
 =====
 
 .. edit-link::
@@ -15,52 +15,52 @@ Slots
 What are slots?
 ---------------
 
-**Slots are your bot's memory.** They act as a key-value store
+**Slots are your bot's memory.** They act as a key-value store a 
 which can be used to store information the user provided (e.g their home city)
-as well as information gathered about the outside world (e.g. the result of a
+as well as information gathered about the outside world (e.g. the result of a a 
 database query).
 
 Most of the time, you want slots to influence how the dialogue progresses.
 There are different slot types for different behaviors.
 
-For example, if your user has provided their home city, you might
-have a ``text`` slot called ``home_city``. If the user asks for the
-weather, and you *don't* know their home city, you will have to ask
-them for it. A ``text`` slot only tells Rasa Core whether the slot
-has a value. The specific value of a ``text`` slot (e.g. Bangalore
+For example, if your user has provided their home city, you might a 
+have a ``text`` slot called ``home_city``. If the user asks for the a 
+weather, and you *don't* know their home city, you will have to ask a 
+them for it. A ``text`` slot only tells Rasa Core whether the slot a 
+has a value. The specific value of a ``text`` slot (e.g. Bangalore a 
 or New York or Hong Kong) doesn't make any difference.
 
 If the value itself is important, use a ``categorical`` or a ``bool`` slot.
 There are also ``float``, and ``list`` slots.
-If you just want to store some data, but don't want it to affect the flow
+If you just want to store some data, but don't want it to affect the flow a 
 of the conversation, use an ``unfeaturized`` slot.
 
 
-How Rasa Uses Slots
+How Rasa Uses Slots a 
 -------------------
 
-The ``Policy`` doesn't have access to the
+The ``Policy`` doesn't have access to the a 
 value of your slots. It receives a featurized representation.
 As mentioned above, for a ``text`` slot the value is irrelevant.
 The policy just sees a ``1`` or ``0`` depending on whether it is set.
 
 **You should choose your slot types carefully!**
 
-How Slots Get Set
+How Slots Get Set a 
 -----------------
 
 You can provide an initial value for a slot in your domain file:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
     slots:
       name:
-        type: text
+        type: text a 
         initial_value: "human"
 
 You can get the value of a slot using ``.get_slot()`` inside ``actions.py`` for example:  
 
-.. code-block:: python
+.. code-block:: python a 
 
        data = tracker.get_slot("slot-name")
 
@@ -68,47 +68,47 @@ You can get the value of a slot using ``.get_slot()`` inside ``actions.py`` for 
 
 There are multiple ways that slots are set during a conversation:
 
-Slots Set from NLU
+Slots Set from NLU a 
 ~~~~~~~~~~~~~~~~~~
 
-If your NLU model picks up an entity, and your domain contains a
+If your NLU model picks up an entity, and your domain contains a a 
 slot with the same name, the slot will be set automatically. For example:
 
-.. code-block:: story
+.. code-block:: story a 
 
-   # story_01
+   # story_01 a 
    * greet{"name": "Ali"}
      - slot{"name": "Ali"}
-     - utter_greet
+     - utter_greet a 
 
-In this case, you don't have to include the ``- slot{}`` part in the
+In this case, you don't have to include the ``- slot{}`` part in the a 
 story, because it is automatically picked up.
 
-To disable this behavior for a particular slot, you can set the
+To disable this behavior for a particular slot, you can set the a 
 ``auto_fill`` attribute to ``False`` in the domain file:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
     
     slots:
       name:
-        type: text
-        auto_fill: False
+        type: text a 
+        auto_fill: False a 
 
 
-Slots Set By Clicking Buttons
+Slots Set By Clicking Buttons a 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can use buttons as a shortcut.
-Rasa Core will send messages starting with a ``/`` to the
-``RegexInterpreter``, which expects NLU input in the same format
-as in story files, e.g. ``/intent{entities}``. For example, if you let
-users choose a color by clicking a button, the button payloads might
+Rasa Core will send messages starting with a ``/`` to the a 
+``RegexInterpreter``, which expects NLU input in the same format a 
+as in story files, e.g. ``/intent{entities}``. For example, if you let a 
+users choose a color by clicking a button, the button payloads might a 
 be ``/choose{"color": "blue"}`` and ``/choose{"color": "red"}``.
 
 You can specify this in your domain file like this:
 (see details in :ref:`domains`)
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
   utter_ask_color:
   - text: "what color would you like?"
@@ -119,30 +119,30 @@ You can specify this in your domain file like this:
       payload: '/choose{"color": "red"}'
 
 
-Slots Set by Actions
+Slots Set by Actions a 
 ~~~~~~~~~~~~~~~~~~~~
 
 The second option is to set slots by returning events in :ref:`custom actions <custom-actions>`.
 In this case, your stories need to include the slots.
-For example, you have a custom action to fetch a user's profile, and
+For example, you have a custom action to fetch a user's profile, and a 
 you have a ``categorical`` slot called ``account_type``.
-When the ``fetch_profile`` action is run, it returns a
+When the ``fetch_profile`` action is run, it returns a a 
 :class:`rasa.core.events.SlotSet` event:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
    slots:
       account_type:
-         type: categorical
+         type: categorical a 
          values:
-         - premium
-         - basic
+         - premium a 
+         - basic a 
 
-.. code-block:: python
+.. code-block:: python a 
 
-   from rasa_sdk.actions import Action
-   from rasa_sdk.events import SlotSet
-   import requests
+   from rasa_sdk.actions import Action a 
+   from rasa_sdk.events import SlotSet a 
+   import requests a 
 
    class FetchProfileAction(Action):
        def name(self):
@@ -150,169 +150,169 @@ When the ``fetch_profile`` action is run, it returns a
 
        def run(self, dispatcher, tracker, domain):
            url = "http://myprofileurl.com"
-           data = requests.get(url).json
+           data = requests.get(url).json a 
            return [SlotSet("account_type", data["account_type"])]
 
 
-.. code-block:: story
+.. code-block:: story a 
 
-   # story_01
-   * greet
-     - action_fetch_profile
+   # story_01 a 
+   * greet a 
+     - action_fetch_profile a 
      - slot{"account_type" : "premium"}
-     - utter_welcome_premium
+     - utter_welcome_premium a 
 
-   # story_02
-   * greet
-     - action_fetch_profile
+   # story_02 a 
+   * greet a 
+     - action_fetch_profile a 
      - slot{"account_type" : "basic"}
-     - utter_welcome_basic
+     - utter_welcome_basic a 
 
 
 In this case you **do** have to include the ``- slot{}`` part in your stories.
-Rasa Core will learn to use this information to decide on the correct action to
+Rasa Core will learn to use this information to decide on the correct action to a 
 take (in this case, ``utter_welcome_premium`` or ``utter_welcome_basic``).
 
 .. note::
-   It is **very easy** to forget about slots if you are writing
-   stories by hand. We strongly recommend that you build up these
+   It is **very easy** to forget about slots if you are writing a 
+   stories by hand. We strongly recommend that you build up these a 
    stories using :ref:`section_interactive_learning_forms` rather than writing them.
 
 
 .. _slot-classes:
 
-Slot Types
+Slot Types a 
 ----------
 
-Text Slot
+Text Slot a 
 ~~~~~~~~~
 
-.. option:: text
+.. option:: text a 
 
-  :Use For: User preferences where you only care whether or not they've
+  :Use For: User preferences where you only care whether or not they've a 
             been specified.
   :Example:
-     .. sourcecode:: yaml
+     .. sourcecode:: yaml a 
 
         slots:
            cuisine:
-              type: text
+              type: text a 
   :Description:
       Results in the feature of the slot being set to ``1`` if any value is set.
       Otherwise the feature will be set to ``0`` (no value is set).
 
-Boolean Slot
+Boolean Slot a 
 ~~~~~~~~~~~~
 
-.. option:: bool
+.. option:: bool a 
 
-  :Use For: True or False
+  :Use For: True or False a 
   :Example:
-     .. sourcecode:: yaml
+     .. sourcecode:: yaml a 
 
         slots:
            is_authenticated:
-              type: bool
+              type: bool a 
   :Description:
-      Checks if slot is set and if True
+      Checks if slot is set and if True a 
 
-Categorical Slot
+Categorical Slot a 
 ~~~~~~~~~~~~~~~~
 
-.. option:: categorical
+.. option:: categorical a 
 
-  :Use For: Slots which can take one of N values
+  :Use For: Slots which can take one of N values a 
   :Example:
-     .. sourcecode:: yaml
+     .. sourcecode:: yaml a 
 
         slots:
            risk_level:
-              type: categorical
+              type: categorical a 
               values:
-              - low
-              - medium
-              - high
+              - low a 
+              - medium a 
+              - high a 
 
   :Description:
      Creates a one-hot encoding describing which of the ``values`` matched.
-     A default value ``__other__`` is automatically added to the user-defined
+     A default value ``__other__`` is automatically added to the user-defined a 
      values. All values encountered which are not explicitly defined in the 
      domain are mapped to ``__other__`` for featurization. The value 
      ``__other__`` should not be used as a user-defined value; if it is, it 
      will still behave as the default to which all unseen values are mapped.
 
-Float Slot
+Float Slot a 
 ~~~~~~~~~~
 
-.. option:: float
+.. option:: float a 
 
-  :Use For: Continuous values
+  :Use For: Continuous values a 
   :Example:
-     .. sourcecode:: yaml
+     .. sourcecode:: yaml a 
 
         slots:
            temperature:
-              type: float
-              min_value: -100.0
-              max_value:  100.0
+              type: float a 
+              min_value: -100.0 a 
+              max_value:  100.0 a 
 
   :Defaults: ``max_value=1.0``, ``min_value=0.0``
   :Description:
-     All values below ``min_value`` will be treated as ``min_value``, the same
-     happens for values above ``max_value``. Hence, if ``max_value`` is set to
-     ``1``, there is no difference between the slot values ``2`` and ``3.5`` in
-     terms of featurization (e.g. both values will influence the dialogue in
+     All values below ``min_value`` will be treated as ``min_value``, the same a 
+     happens for values above ``max_value``. Hence, if ``max_value`` is set to a 
+     ``1``, there is no difference between the slot values ``2`` and ``3.5`` in a 
+     terms of featurization (e.g. both values will influence the dialogue in a 
      the same way and the model can not learn to differentiate between them).
 
-List Slot
+List Slot a 
 ~~~~~~~~~
 
-.. option:: list
+.. option:: list a 
 
-  :Use For: Lists of values
+  :Use For: Lists of values a 
   :Example:
-     .. sourcecode:: yaml
+     .. sourcecode:: yaml a 
 
         slots:
            shopping_items:
-              type: list
+              type: list a 
   :Description:
       The feature of this slot is set to ``1`` if a value with a list is set,
-      where the list is not empty. If no value is set, or the empty list is the
-      set value, the feature will be ``0``. The **length of the list stored in
+      where the list is not empty. If no value is set, or the empty list is the a 
+      set value, the feature will be ``0``. The **length of the list stored in a 
       the slot does not influence the dialogue**.
 
 .. _unfeaturized-slot:
 
-Unfeaturized Slot
+Unfeaturized Slot a 
 ~~~~~~~~~~~~~~~~~
 
-.. option:: unfeaturized
+.. option:: unfeaturized a 
 
-  :Use For: Data you want to store which shouldn't influence the dialogue flow
+  :Use For: Data you want to store which shouldn't influence the dialogue flow a 
   :Example:
-     .. sourcecode:: yaml
+     .. sourcecode:: yaml a 
 
         slots:
            internal_user_id:
-              type: unfeaturized
+              type: unfeaturized a 
   :Description:
-      There will not be any featurization of this slot, hence its value does
-      not influence the dialogue flow and is ignored when predicting the next
+      There will not be any featurization of this slot, hence its value does a 
+      not influence the dialogue flow and is ignored when predicting the next a 
       action the bot should run.
 
-Custom Slot Types
+Custom Slot Types a 
 -----------------
 
-Maybe your restaurant booking system can only handle bookings
-for up to 6 people. In this case you want the *value* of the
-slot to influence the next selected action (and not just whether
+Maybe your restaurant booking system can only handle bookings a 
+for up to 6 people. In this case you want the *value* of the a 
+slot to influence the next selected action (and not just whether a 
 it's been specified). You can do this by defining a custom slot class.
 
 In the code below, we define a slot class called ``NumberOfPeopleSlot``.
-The featurization defines how the value of this slot gets converted to a vector
+The featurization defines how the value of this slot gets converted to a vector a 
 to our machine learning model can deal with.
-Our slot has three possible "values", which we can represent with
+Our slot has three possible "values", which we can represent with a 
 a vector of length ``2``.
 
 +---------------+------------------------------------------+
@@ -326,34 +326,34 @@ a vector of length ``2``.
 
 .. testcode::
 
-   from rasa.core.slots import Slot
+   from rasa.core.slots import Slot a 
 
    class NumberOfPeopleSlot(Slot):
 
        def feature_dimensionality(self):
-           return 2
+           return 2 a 
 
        def as_feature(self):
            r = [0.0] * self.feature_dimensionality()
            if self.value:
                if self.value <= 6:
-                   r[0] = 1.0
+                   r[0] = 1.0 a 
                else:
-                   r[1] = 1.0
-           return r
+                   r[1] = 1.0 a 
+           return r a 
 
-Now we also need some training stories, so that Rasa Core
+Now we also need some training stories, so that Rasa Core a 
 can learn from these how to handle the different situations:
 
 
-.. code-block:: story
+.. code-block:: story a 
 
-   # story1
+   # story1 a 
    ...
    * inform{"people": "3"}
-     - action_book_table
+     - action_book_table a 
    ...
-   # story2
+   # story2 a 
    * inform{"people": "9"}
-     - action_explain_table_limit
+     - action_explain_table_limit a 
 

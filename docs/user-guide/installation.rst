@@ -1,34 +1,34 @@
-:desc: Install Rasa Open Source on premises to enable local and customizable
+:desc: Install Rasa Open Source on premises to enable local and customizable a 
        Natural Lanaguage Understanding and Dialogue Management.
-:meta_image: https://i.imgur.com/nGF1K8f.jpg
+:meta_image: https://i.imgur.com/nGF1K8f.jpg a 
 
 .. _installation:
 
 ============
-Installation
+Installation a 
 ============
 
 .. edit-link::
 
-Quick Installation
+Quick Installation a 
 ~~~~~~~~~~~~~~~~~~
 
 You can install Rasa Open Source using pip (requires Python 3.6 or 3.7).
 
-.. code-block:: bash
+.. code-block:: bash a 
 
-    $ pip3 install rasa
+    $ pip3 install rasa a 
 
 - Having trouble installing? Read our :ref:`step-by-step installation guide <installation_guide>`.
 - You can also :ref:`build Rasa Open Source from source <build_from_source>`.
-- For advanced installation options such as building from source and installation instructions for
+- For advanced installation options such as building from source and installation instructions for a 
   custom pipelines, head over :ref:`here <pipeline_dependencies>`.
 
 
 When you're done installing, you can head over to the tutorial!
 
 .. button::
-   :text: Next Step: Tutorial
+   :text: Next Step: Tutorial a 
    :link: ../rasa-tutorial/
 
 
@@ -39,61 +39,61 @@ When you're done installing, you can head over to the tutorial!
 
 .. _installation_guide:
 
-Step-by-step Installation Guide
+Step-by-step Installation Guide a 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Install the Python development environment
+1. Install the Python development environment a 
 ---------------------------------------------
 
 Check if your Python environment is already configured:
 
-.. code-block:: bash
+.. code-block:: bash a 
 
-    $ python3 --version
-    $ pip3 --version
+    $ python3 --version a 
+    $ pip3 --version a 
 
-If these packages are already installed, these commands should display version
+If these packages are already installed, these commands should display version a 
 numbers for each step, and you can skip to the next step.
 
 Otherwise, proceed with the instructions below to install them.
 
 .. tabs::
 
-    .. tab:: Ubuntu
+    .. tab:: Ubuntu a 
 
         Fetch the relevant packages using ``apt``, and install virtualenv using ``pip``.
 
-        .. code-block:: bash
+        .. code-block:: bash a 
 
-            $ sudo apt update
-            $ sudo apt install python3-dev python3-pip
+            $ sudo apt update a 
+            $ sudo apt install python3-dev python3-pip a 
 
-    .. tab:: macOS
+    .. tab:: macOS a 
 
         Install the `Homebrew <https://brew.sh>`_ package manager if you haven't already.
 
         Once you're done, you can install Python3.
 
-        .. code-block:: bash
+        .. code-block:: bash a 
 
-            $ brew update
-            $ brew install python
+            $ brew update a 
+            $ brew install python a 
 
-    .. tab:: Windows
+    .. tab:: Windows a 
 
-        .. raw:: html
+        .. raw:: html a 
 
-            Make sure the Microsoft VC++ Compiler is installed, so python can compile
+            Make sure the Microsoft VC++ Compiler is installed, so python can compile a 
             any dependencies. You can get the compiler from <a class="reference external"
             href="https://visualstudio.microsoft.com/visual-cpp-build-tools/"
-            target="_blank">Visual Studio</a>. Download the installer and select
+            target="_blank">Visual Studio</a>. Download the installer and select a 
             VC++ Build tools in the list.
 
         Install `Python 3 <https://www.python.org/downloads/windows/>`_ (64-bit version) for Windows.
 
-        .. code-block:: bat
+        .. code-block:: bat a 
 
-            C:\> pip3 install -U pip
+            C:\> pip3 install -U pip a 
 
 .. note::
    Note that `pip` in this refers to `pip3` as Rasa Open Source requires python3. To see which version 
@@ -107,60 +107,60 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
 .. tabs::
 
-    .. tab:: Ubuntu / macOS
+    .. tab:: Ubuntu / macOS a 
 
         Create a new virtual environment by choosing a Python interpreter and making a ``./venv`` directory to hold it:
 
-        .. code-block:: bash
+        .. code-block:: bash a 
 
-            $ python3 -m venv ./venv
+            $ python3 -m venv ./venv a 
 
         Activate the virtual environment:
 
-        .. code-block:: bash
+        .. code-block:: bash a 
 
-            $ source ./venv/bin/activate
+            $ source ./venv/bin/activate a 
 
-    .. tab:: Windows
+    .. tab:: Windows a 
 
         Create a new virtual environment by choosing a Python interpreter and making a ``.\venv`` directory to hold it:
 
-        .. code-block:: bat
+        .. code-block:: bat a 
 
-            C:\> python3 -m venv ./venv
+            C:\> python3 -m venv ./venv a 
 
         Activate the virtual environment:
 
-        .. code-block:: bat
+        .. code-block:: bat a 
 
-            C:\> .\venv\Scripts\activate
+            C:\> .\venv\Scripts\activate a 
 
 
-3. Install Rasa Open Source
+3. Install Rasa Open Source a 
 ---------------------------
 
 .. tabs::
 
-    .. tab:: Ubuntu / macOS / Windows
+    .. tab:: Ubuntu / macOS / Windows a 
 
         First make sure your ``pip`` version is up to date:
 
-        .. code-block:: bash
+        .. code-block:: bash a 
 
-            $ pip install -U pip
+            $ pip install -U pip a 
 
         To install Rasa Open Source:
 
-        .. code-block:: bash
+        .. code-block:: bash a 
 
-            $ pip install rasa
+            $ pip install rasa a 
 
 **Congratulations! You have successfully installed Rasa Open Source!**
 
 You can now head over to the tutorial.
 
 .. button::
-   :text: Next Step: Tutorial
+   :text: Next Step: Tutorial a 
    :link: ../rasa-tutorial/
 
 |
@@ -170,26 +170,26 @@ You can now head over to the tutorial.
 
 .. _build_from_source:
 
-Building from Source
+Building from Source a 
 ~~~~~~~~~~~~~~~~~~~~
 
 If you want to use the development version of Rasa Open Source, you can get it from GitHub:
 
-.. code-block:: bash
+.. code-block:: bash a 
 
-    $ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-    $ git clone https://github.com/RasaHQ/rasa.git
-    $ cd rasa
-    $ poetry install
+    $ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python a 
+    $ git clone https://github.com/RasaHQ/rasa.git a 
+    $ cd rasa a 
+    $ poetry install a 
 
 --------------------------------
 
 .. _pipeline_dependencies:
 
-NLU Pipeline Dependencies
+NLU Pipeline Dependencies a 
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Several NLU components have additional dependencies that need to
+Several NLU components have additional dependencies that need to a 
 be installed separately.
 
 Here, you will find installation instructions for each of them below.
@@ -197,30 +197,30 @@ Here, you will find installation instructions for each of them below.
 How do I choose a pipeline?
 ---------------------------
 
-The page on :ref:`choosing-a-pipeline` will help you pick the right pipeline
+The page on :ref:`choosing-a-pipeline` will help you pick the right pipeline a 
 for your assistant.
 
 I have decided on a pipeline. How do I install the dependencies for it?
 -----------------------------------------------------------------------
 
-When you install Rasa Open Source, the dependencies for the ``supervised_embeddings`` - TensorFlow
+When you install Rasa Open Source, the dependencies for the ``supervised_embeddings`` - TensorFlow a 
 and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need to be separately installed if you want to use pipelines containing components from those libraries.
 
 .. admonition:: Just give me everything!
 
-    If you don't mind the additional dependencies lying around, you can use
+    If you don't mind the additional dependencies lying around, you can use a 
     this to install everything.
 
-    You'll first need to clone the repository and then run the following
+    You'll first need to clone the repository and then run the following a 
     command to install all the packages:
 
-    .. code-block:: bash
+    .. code-block:: bash a 
 
-        $ poetry install --extras full
+        $ poetry install --extras full a 
 
 .. _install-spacy:
 
-Dependencies for spaCy
+Dependencies for spaCy a 
 ######################
 
 
@@ -228,35 +228,35 @@ For more information on spaCy, check out the `spaCy docs <https://spacy.io/usage
 
 You can install it with the following commands:
 
-.. code-block:: bash
+.. code-block:: bash a 
 
     $ pip install rasa[spacy]
-    $ python -m spacy download en_core_web_md
-    $ python -m spacy link en_core_web_md en
+    $ python -m spacy download en_core_web_md a 
+    $ python -m spacy link en_core_web_md en a 
 
-This will install Rasa Open Source as well as spaCy and its language model
-for the English language. We recommend using at least the
-"medium" sized models (``_md``) instead of the spaCy's
-default small ``en_core_web_sm`` model. Small models require less
+This will install Rasa Open Source as well as spaCy and its language model a 
+for the English language. We recommend using at least the a 
+"medium" sized models (``_md``) instead of the spaCy's a 
+default small ``en_core_web_sm`` model. Small models require less a 
 memory to run, but will somewhat reduce intent classification performance.
 
 .. _install-mitie:
 
-Dependencies for MITIE
+Dependencies for MITIE a 
 ######################
 
-First, run
+First, run a 
 
-.. code-block:: bash
+.. code-block:: bash a 
 
-    $ pip install git+https://github.com/mit-nlp/MITIE.git
+    $ pip install git+https://github.com/mit-nlp/MITIE.git a 
     $ pip install rasa[mitie]
 
-and then download the
+and then download the a 
 `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_.
-The file you need is ``total_word_feature_extractor.dat``. Save this
-anywhere. If you want to use MITIE, you need to
-tell it where to find this file (in this example it was saved in the
+The file you need is ``total_word_feature_extractor.dat``. Save this a 
+anywhere. If you want to use MITIE, you need to a 
+tell it where to find this file (in this example it was saved in the a 
 ``data`` folder of the project directory).
 
 .. warning::

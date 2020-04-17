@@ -1,46 +1,46 @@
-:desc: Use open source named entity recognition like Spacy or Duckling
-       and customize them according to your needs to build contextual
-       AI assistants
+:desc: Use open source named entity recognition like Spacy or Duckling a 
+       and customize them according to your needs to build contextual a 
+       AI assistants a 
 
 .. _entity-extraction:
 
-Entity Extraction
+Entity Extraction a 
 =================
 
 .. edit-link::
 
-Entity extraction involves parsing user messages for required pieces of information. Rasa Open Source
+Entity extraction involves parsing user messages for required pieces of information. Rasa Open Source a 
 provides entity extractors for custom entities as well as pre-trained ones like dates and locations.
 Here is a summary of the available extractors and what they are used for:
 
 =========================  =================  ========================  =================================
-Component                  Requires           Model           	        Notes
+Component                  Requires           Model           	        Notes a 
 =========================  =================  ========================  =================================
-``CRFEntityExtractor``     sklearn-crfsuite   conditional random field  good for training custom entities
-``SpacyEntityExtractor``   spaCy              averaged perceptron       provides pre-trained entities
-``DucklingHTTPExtractor``  running duckling   context-free grammar      provides pre-trained entities
-``MitieEntityExtractor``   MITIE              structured SVM            good for training custom entities
-``EntitySynonymMapper``    existing entities  N/A                       maps known synonyms
-``DIETClassifier``                            conditional random field
-                                              on top of a transformer   good for training custom entities
+``CRFEntityExtractor``     sklearn-crfsuite   conditional random field  good for training custom entities a 
+``SpacyEntityExtractor``   spaCy              averaged perceptron       provides pre-trained entities a 
+``DucklingHTTPExtractor``  running duckling   context-free grammar      provides pre-trained entities a 
+``MitieEntityExtractor``   MITIE              structured SVM            good for training custom entities a 
+``EntitySynonymMapper``    existing entities  N/A                       maps known synonyms a 
+``DIETClassifier``                            conditional random field a 
+                                              on top of a transformer   good for training custom entities a 
 =========================  =================  ========================  =================================
 
 .. contents::
    :local:
 
-The "entity" Object
+The "entity" Object a 
 ^^^^^^^^^^^^^^^^^^^
 
-After parsing, an entity is returned as a dictionary.  There are two fields that show information
-about how the pipeline impacted the entities returned: the ``extractor`` field
-of an entity tells you which entity extractor found this particular entity, and
-the ``processors`` field contains the name of components that altered this
+After parsing, an entity is returned as a dictionary.  There are two fields that show information a 
+about how the pipeline impacted the entities returned: the ``extractor`` field a 
+of an entity tells you which entity extractor found this particular entity, and a 
+the ``processors`` field contains the name of components that altered this a 
 specific entity.
 
 The use of synonyms can cause the ``value`` field not match the ``text``
 exactly. Instead it will return the trained synonym.
 
-.. code-block:: json
+.. code-block:: json a 
 
     {
       "text": "show me chinese restaurants",
@@ -60,14 +60,14 @@ exactly. Instead it will return the trained synonym.
 
 .. note::
 
-    The ``confidence`` will be set by the ``CRFEntityExtractor`` component. The
-    ``DucklingHTTPExtractor`` will always return ``1``. The ``SpacyEntityExtractor`` extractor
+    The ``confidence`` will be set by the ``CRFEntityExtractor`` component. The a 
+    ``DucklingHTTPExtractor`` will always return ``1``. The ``SpacyEntityExtractor`` extractor a 
     and ``DIETClassifier`` do not provide this information and returns ``null``.
 
 
 Some extractors, like ``duckling``, may include additional information. For example:
 
-.. code-block:: json
+.. code-block:: json a 
 
    {
      "additional_info":{
@@ -92,46 +92,46 @@ Some extractors, like ``duckling``, may include additional information. For exam
    }
 
 
-Custom Entities
+Custom Entities a 
 ^^^^^^^^^^^^^^^
 
 Almost every chatbot and voice app will have some custom entities.
 A restaurant assistant should understand ``chinese`` as a cuisine,
 but to a language-learning assistant it would mean something very different.
-The ``CRFEntityExtractor`` component can learn custom entities in any language, given
+The ``CRFEntityExtractor`` component can learn custom entities in any language, given a 
 some training data.
 See :ref:`training-data-format` for details on how to include entities in your training data.
 
 
-Extracting Places, Dates, People, Organisations
+Extracting Places, Dates, People, Organisations a 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 spaCy has excellent pre-trained named-entity recognisers for a few different languages.
-You can test them out in this
+You can test them out in this a 
 `interactive demo <https://demos.explosion.ai/displacy-ent/>`_.
 We don't recommend that you try to train your own NER using spaCy,
 unless you have a lot of data and know what you are doing.
 Note that some spaCy models are highly case-sensitive.
 
-Dates, Amounts of Money, Durations, Distances, Ordinals
+Dates, Amounts of Money, Durations, Distances, Ordinals a 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The `duckling <https://duckling.wit.ai/>`_ library does a great job
-of turning expressions like "next Thursday at 8pm" into actual datetime
+The `duckling <https://duckling.wit.ai/>`_ library does a great job a 
+of turning expressions like "next Thursday at 8pm" into actual datetime a 
 objects that you can use, e.g.
 
-.. code-block:: python
+.. code-block:: python a 
 
    "next Thursday at 8pm"
    => {"value":"2018-05-31T20:00:00.000+01:00"}
 
 
-The list of supported languages can be found `here
+The list of supported languages can be found `here a 
 <https://github.com/facebook/duckling/tree/master/Duckling/Dimensions>`_.
 Duckling can also handle durations like "two hours",
 amounts of money, distances, and ordinals.
 Fortunately, there is a duckling docker container ready to use,
-that you just need to spin up and connect to Rasa NLU
+that you just need to spin up and connect to Rasa NLU a 
 (see :ref:`DucklingHTTPExtractor`).
 
 
@@ -139,11 +139,11 @@ Regular Expressions (regex)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can use regular expressions to help the CRF model learn to recognize entities.
-In your training data (see :ref:`training-data-format`) you can provide a list of regular expressions, each of which provides
+In your training data (see :ref:`training-data-format`) you can provide a list of regular expressions, each of which provides a 
 the ``CRFEntityExtractor`` with an extra binary feature, which says if the regex was found (1) or not (0).
 
 For example, the names of German streets often end in ``strasse``. By adding this as a regex,
-we are telling the model to pay attention to words ending this way, and will quickly learn to
+we are telling the model to pay attention to words ending this way, and will quickly learn to a 
 associate that with a location entity.
 
 If you just want to match regular expressions exactly, you can do this in your code,
@@ -155,9 +155,9 @@ as a postprocessing step after receiving the response from Rasa NLU.
 Passing Custom Features to ``CRFEntityExtractor``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to pass custom features, such as pre-trained word embeddings, to ``CRFEntityExtractor``, you can
+If you want to pass custom features, such as pre-trained word embeddings, to ``CRFEntityExtractor``, you can a 
 add any dense featurizer to the pipeline before the ``CRFEntityExtractor``.
-``CRFEntityExtractor`` automatically finds the additional dense features and checks if the dense features are an
+``CRFEntityExtractor`` automatically finds the additional dense features and checks if the dense features are an a 
 iterable of ``len(tokens)``, where each entry is a vector.
 A warning will be shown in case the check fails.
 However, ``CRFEntityExtractor`` will continue to train just without the additional custom features.

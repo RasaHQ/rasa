@@ -1,20 +1,20 @@
-:desc: Check out how to make your Rasa assistant available on platforms like
+:desc: Check out how to make your Rasa assistant available on platforms like a 
        Facebook Messenger, Slack, Telegram or even your very own website. 
 
 .. _messaging-and-voice-channels:
 
-Messaging and Voice Channels
+Messaging and Voice Channels a 
 ============================
 
 .. edit-link::
 
-To make your assistant available on a messaging platform you need to provide credentials
+To make your assistant available on a messaging platform you need to provide credentials a 
 in a ``credentials.yml`` file.
-An example file is created when you run ``rasa init``, so it's easiest to edit that file
+An example file is created when you run ``rasa init``, so it's easiest to edit that file a 
 and add your credentials there. Here is an example with Facebook credentials:
 
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
   facebook:
     verify: "rasa-bot"
@@ -26,36 +26,36 @@ Learn how to make your assistant available on:
 
 .. toctree::
    :titlesonly:
-   :maxdepth: 1
+   :maxdepth: 1 a 
 
-   connectors/your-own-website
-   connectors/facebook-messenger
-   connectors/slack
-   connectors/telegram
-   connectors/twilio
-   connectors/microsoft-bot-framework
-   connectors/cisco-webex-teams
-   connectors/rocketchat
-   connectors/mattermost
-   connectors/hangouts
-   connectors/custom-connectors
+   connectors/your-own-website a 
+   connectors/facebook-messenger a 
+   connectors/slack a 
+   connectors/telegram a 
+   connectors/twilio a 
+   connectors/microsoft-bot-framework a 
+   connectors/cisco-webex-teams a 
+   connectors/rocketchat a 
+   connectors/mattermost a 
+   connectors/hangouts a 
+   connectors/custom-connectors a 
 
 
 .. _using-ngrok:
 
-Testing Channels on Your Local Machine with Ngrok
+Testing Channels on Your Local Machine with Ngrok a 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can use `ngrok <https://ngrok.com/>`_ to create a connection to your local
+You can use `ngrok <https://ngrok.com/>`_ to create a connection to your local a 
 computer that is publicly available on the internet.
-You don't need this when running Rasa on a server because, you can set up a domain
+You don't need this when running Rasa on a server because, you can set up a domain a 
 name to point to that server's IP address, or use the IP address itself.
 
 After installing ngrok, run:
 
 .. copyable::
 
-   ngrok http 5005; rasa run
+   ngrok http 5005; rasa run a 
 
 Your webhook address will look like the following:
 

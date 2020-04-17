@@ -1,11 +1,11 @@
-:desc: Learn to handle greetings, off-topic chitchat, and other small talk
-       in your bot using features provided by Rasa's open source chat assistant
+:desc: Learn to handle greetings, off-topic chitchat, and other small talk a 
+       in your bot using features provided by Rasa's open source chat assistant a 
        platform.
 
 .. _small-talk:
 
 ==========
-Small Talk
+Small Talk a 
 ==========
 
 .. edit-link::
@@ -19,7 +19,7 @@ acknowledgements, reactions, and off-topic chitchat.
 
 .. _greetings:
 
-Greetings
+Greetings a 
 ---------
 
 Greetings and goodbyes are some of the simplest interactions. Just about every system needs them.
@@ -27,23 +27,23 @@ Greetings and goodbyes are some of the simplest interactions. Just about every s
 .. conversations::
    examples:
      -
-       - hello
+       - hello a 
        - ( hi, how are you?
      -
        - how are you?
        - ( I am well, and you?
      -
-       - goodbye
+       - goodbye a 
        - ( bye bye!
 
 
-To respond correctly to greetings and goodbyes, you need to define responses
+To respond correctly to greetings and goodbyes, you need to define responses a 
 for each of these. If you always want the same responses, you can use the ``MappingPolicy``
 to trigger these responses when the corresponding intent is predicted.
 
 In your domain file, add the ``triggers`` metadata to the relevant intents:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
    intents:
      - greet: {triggers: utter_greet}
@@ -51,27 +51,27 @@ In your domain file, add the ``triggers`` metadata to the relevant intents:
 
 And make sure the mapping policy is present in your ``config.yml``:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
     policies:
       - name: "MappingPolicy"
       ...
 
-If you want to implement less rigid behaviour, use regular stories
-instead of the mapping policy. For example, if you want to send a special
-response if the user says goodbye immediately after saying hello, remove the
-``triggers`` metadata from the domain file, and include relevant stories in your
+If you want to implement less rigid behaviour, use regular stories a 
+instead of the mapping policy. For example, if you want to send a special a 
+response if the user says goodbye immediately after saying hello, remove the a 
+``triggers`` metadata from the domain file, and include relevant stories in your a 
 training data:
 
-.. code-block:: story
+.. code-block:: story a 
 
-   * greet
-     - utter_greet
-   * goodbye
-     - utter_ask_why_leaving
+   * greet a 
+     - utter_greet a 
+   * goodbye a 
+     - utter_ask_why_leaving a 
 
 
-Acknowledgements
+Acknowledgements a 
 ----------------
 
 Your users will often react to the things your assistant says, and will expect an acknowledgement.
@@ -92,47 +92,47 @@ For the most common reactions, it is worth implementing specific responses.
 
 First, you need NLU data for reactions and acknowledgements:
 
-.. code-block:: md
+.. code-block:: md a 
 
-    ## intent:acknowledge
-    - ok
-    - got it
-    - understood
-    - k
+    ## intent:acknowledge a 
+    - ok a 
+    - got it a 
+    - understood a 
+    - k a 
 
-    ## intent:opinion+positive
+    ## intent:opinion+positive a 
     - nice!
-    - excellent
-    - that's awesome
+    - excellent a 
+    - that's awesome a 
 
-    ## intent:opinion+negative
-    - ugh
-    - that sucks
+    ## intent:opinion+negative a 
+    - ugh a 
+    - that sucks a 
     - woah! that's [expensive](price)
 
 
 And then you need training stories to teach Rasa how to respond:
 
-.. code-block:: story
+.. code-block:: story a 
 
-    ## price reaction
+    ## price reaction a 
     * opinion+negative{"price": "expensive"}
-      - utter_good_value
-      - utter_ask_continue
+      - utter_good_value a 
+      - utter_ask_continue a 
 
-    ## simple acknowledgement
-    * opinion+positive
-      - utter_positive_feedback_reaction
+    ## simple acknowledgement a 
+    * opinion+positive a 
+      - utter_positive_feedback_reaction a 
 
 
-Chitchat
+Chitchat a 
 --------
 
 Your assistant will often receive unexpected or unprompted input.
 We call this chitchat.
-While it's not possible to coherently respond to everything a user
+While it's not possible to coherently respond to everything a user a 
 might say, you can at least acknowledge that the message was received.
-One strategy is to collect training data from your users and define intents
+One strategy is to collect training data from your users and define intents a 
 and responses for some of the more common topics.
 See :ref:`explaining-possibilities` for how to handle out-of-scope input.
 
@@ -140,19 +140,19 @@ See :ref:`explaining-possibilities` for how to handle out-of-scope input.
    examples:
      -
        - will you marry me?
-       - ( no
+       - ( no a 
      -
-       - I can juggle 7 oranges
+       - I can juggle 7 oranges a 
        - ( wow!
      -
-       - aahhh
-       - ( I feel you
+       - aahhh a 
+       - ( I feel you a 
 
 
-Insults
+Insults a 
 -------
 
-Unfortunately users will often abuse your assistant. You should acknowledge the nature of their
+Unfortunately users will often abuse your assistant. You should acknowledge the nature of their a 
 comment and respond in a way that reflects your assistant's persona.
 Responding with a joke can encourage users to continue sending abuse, so consider your responses carefully.
 You can read more about this topic in `this paper <https://www.aclweb.org/anthology/W18-0802>`_.
@@ -161,23 +161,23 @@ You can read more about this topic in `this paper <https://www.aclweb.org/anthol
 .. conversations::
    examples:
      -
-       - stupid bot
-       - ( that's not very nice
+       - stupid bot a 
+       - ( that's not very nice a 
 
 
-The simplest approach is to create a single ``insult`` intent and use the mapping policy
+The simplest approach is to create a single ``insult`` intent and use the mapping policy a 
 to respond to it:
 
 In your domain file:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
     intents:
       - insult: {triggers: utter_respond_insult}
 
 And in your configuration file:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
     policies:
       - name: "MappingPolicy"

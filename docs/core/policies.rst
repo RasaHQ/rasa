@@ -1,10 +1,10 @@
-:desc: Define and train customized policy configurations to optimize your
-       contextual assistant for longer contexts or unseen utterances which
+:desc: Define and train customized policy configurations to optimize your a 
+       contextual assistant for longer contexts or unseen utterances which a 
        require generalization.
 
 .. _policies:
 
-Policies
+Policies a 
 ========
 
 .. edit-link::
@@ -15,52 +15,52 @@ Policies
 
 .. _policy_file:
 
-Configuring Policies
+Configuring Policies a 
 ^^^^^^^^^^^^^^^^^^^^
 
-The :class:`rasa.core.policies.Policy` class decides which action to take
+The :class:`rasa.core.policies.Policy` class decides which action to take a 
 at every step in the conversation.
 
-There are different policies to choose from, and you can include
+There are different policies to choose from, and you can include a 
 multiple policies in a single :class:`rasa.core.agent.Agent`.
 
 .. note::
 
-    Per default a maximum of 10 next actions can be predicted
-    by the agent after every user message. To update this value
+    Per default a maximum of 10 next actions can be predicted a 
+    by the agent after every user message. To update this value a 
     you can set the environment variable ``MAX_NUMBER_OF_PREDICTIONS``
     to the desired number of maximum predictions.
 
 
-Your project's ``config.yml`` file takes a ``policies`` key
+Your project's ``config.yml`` file takes a ``policies`` key a 
 which you can use to customize the policies your assistant uses.
-In the example below, the last two lines show how to use a custom
+In the example below, the last two lines show how to use a custom a 
 policy class and pass arguments to it.
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
   policies:
     - name: "KerasPolicy"
       featurizer:
-      - name: MaxHistoryTrackerFeaturizer
-        max_history: 5
+      - name: MaxHistoryTrackerFeaturizer a 
+        max_history: 5 a 
         state_featurizer:
-          - name: BinarySingleStateFeaturizer
+          - name: BinarySingleStateFeaturizer a 
     - name: "MemoizationPolicy"
-      max_history: 5
+      max_history: 5 a 
     - name: "FallbackPolicy"
-      nlu_threshold: 0.4
-      core_threshold: 0.3
+      nlu_threshold: 0.4 a 
+      core_threshold: 0.3 a 
       fallback_action_name: "my_fallback_action"
     - name: "path.to.your.policy.class"
       arg1: "..."
 
 
-Max History
+Max History a 
 -----------
 
 One important hyperparameter for Rasa Core policies is the ``max_history``.
-This controls how much dialogue history the model looks at to decide which
+This controls how much dialogue history the model looks at to decide which a 
 action to take next.
 
 You can set the ``max_history`` by passing it to your policy's ``Featurizer``
@@ -69,79 +69,79 @@ in the policy configuration yaml file.
 .. note::
 
     Only the ``MaxHistoryTrackerFeaturizer`` uses a max history,
-    whereas the ``FullDialogueTrackerFeaturizer`` always looks at
+    whereas the ``FullDialogueTrackerFeaturizer`` always looks at a 
     the full conversation history. See :ref:`featurization_conversations` for details.
 
-As an example, let's say you have an ``out_of_scope`` intent which
-describes off-topic user messages. If your bot sees this intent multiple
-times in a row, you might want to tell the user what you `can` help them
+As an example, let's say you have an ``out_of_scope`` intent which a 
+describes off-topic user messages. If your bot sees this intent multiple a 
+times in a row, you might want to tell the user what you `can` help them a 
 with. So your story might look like this:
 
-.. code-block:: story
+.. code-block:: story a 
 
-   * out_of_scope
-      - utter_default
-   * out_of_scope
-      - utter_default
-   * out_of_scope
-      - utter_help_message
+   * out_of_scope a 
+      - utter_default a 
+   * out_of_scope a 
+      - utter_default a 
+   * out_of_scope a 
+      - utter_help_message a 
 
 For Rasa Core to learn this pattern, the ``max_history``
 has to be `at least` 4.
 
-If you increase your ``max_history``, your model will become bigger and
-training will take longer. If you have some information that should
-affect the dialogue very far into the future, you should store it as a
+If you increase your ``max_history``, your model will become bigger and a 
+training will take longer. If you have some information that should a 
+affect the dialogue very far into the future, you should store it as a a 
 slot. Slot information is always available for every featurizer.
 
 
-Data Augmentation
+Data Augmentation a 
 -----------------
 
-When you train a model, by default Rasa Core will create
-longer stories by randomly gluing together
+When you train a model, by default Rasa Core will create a 
+longer stories by randomly gluing together a 
 the ones in your stories files.
 This is because if you have stories like:
 
-.. code-block:: story
+.. code-block:: story a 
 
-    # thanks
-    * thankyou
-       - utter_youarewelcome
+    # thanks a 
+    * thankyou a 
+       - utter_youarewelcome a 
 
-    # bye
-    * goodbye
-       - utter_goodbye
+    # bye a 
+    * goodbye a 
+       - utter_goodbye a 
 
 
-You actually want to teach your policy to **ignore** the dialogue history
-when it isn't relevant and just respond with the same action no matter
+You actually want to teach your policy to **ignore** the dialogue history a 
+when it isn't relevant and just respond with the same action no matter a 
 what happened before.
 
 You can alter this behaviour with the ``--augmentation`` flag.
 Which allows you to set the ``augmentation_factor``.
-The ``augmentation_factor`` determines how many augmented stories are
-subsampled during training. The augmented stories are subsampled before training
+The ``augmentation_factor`` determines how many augmented stories are a 
+subsampled during training. The augmented stories are subsampled before training a 
 since their number can quickly become very large, and we want to limit it.
 The number of sampled stories is ``augmentation_factor`` x10.
 By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
 
 ``--augmentation 0`` disables all augmentation behavior.
-The memoization based policies are not affected by augmentation
-(independent of the ``augmentation_factor``) and will automatically
+The memoization based policies are not affected by augmentation a 
+(independent of the ``augmentation_factor``) and will automatically a 
 ignore all augmented stories.
 
-Action Selection
+Action Selection a 
 ^^^^^^^^^^^^^^^^
 
-At every turn, each policy defined in your configuration will
-predict a next action with a certain confidence level. For more information
+At every turn, each policy defined in your configuration will a 
+predict a next action with a certain confidence level. For more information a 
 about how each policy makes its decision, read into the policy's description below.
 The bot's next action is then decided by the policy that predicts with the highest confidence.
 
-In the case that two policies predict with equal confidence (for example, the Memoization
-and Mapping Policies always predict with confidence of either 0 or 1), the priority of the
-policies is considered. Rasa policies have default priorities that are set to ensure the
+In the case that two policies predict with equal confidence (for example, the Memoization a 
+and Mapping Policies always predict with confidence of either 0 or 1), the priority of the a 
+policies is considered. Rasa policies have default priorities that are set to ensure the a 
 expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
 
     | 5. ``FormPolicy``
@@ -150,13 +150,13 @@ expected outcome in the case of a tie. They look like this, where higher numbers
     | 2. ``MappingPolicy``
     | 1. ``TEDPolicy``, ``EmbeddingPolicy``, ``KerasPolicy``, and ``SklearnPolicy``
 
-This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
-above the ``nlu_threshold``, the bot will still fall back. In general, it is not recommended to have more
-than one policy per priority level, and some policies on the same priority level, such as the two
+This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not a 
+above the ``nlu_threshold``, the bot will still fall back. In general, it is not recommended to have more a 
+than one policy per priority level, and some policies on the same priority level, such as the two a 
 fallback policies, strictly cannot be used in tandem.
 
 If you create your own policy, use these priorities as a guide for figuring out the priority of your policy.
-If your policy is a machine learning policy, it should most likely have priority 1, the same as the Rasa machine
+If your policy is a machine learning policy, it should most likely have priority 1, the same as the Rasa machine a 
 learning policies.
 
 .. warning::
@@ -166,35 +166,35 @@ learning policies.
 
 .. _keras_policy:
 
-Keras Policy
+Keras Policy a 
 ^^^^^^^^^^^^
 
-The ``KerasPolicy`` uses a neural network implemented in
+The ``KerasPolicy`` uses a neural network implemented in a 
 `Keras <http://keras.io>`_ to select the next action.
-The default architecture is based on an LSTM, but you can override the
+The default architecture is based on an LSTM, but you can override the a 
 ``KerasPolicy.model_architecture`` method to implement your own architecture.
 
 
-.. literalinclude:: ../../rasa/core/policies/keras_policy.py
-   :dedent: 4
-   :pyobject: KerasPolicy.model_architecture
+.. literalinclude:: ../../rasa/core/policies/keras_policy.py a 
+   :dedent: 4 a 
+   :pyobject: KerasPolicy.model_architecture a 
 
 and the training is run here:
 
-.. literalinclude:: ../../rasa/core/policies/keras_policy.py
-   :dedent: 4
-   :pyobject: KerasPolicy.train
+.. literalinclude:: ../../rasa/core/policies/keras_policy.py a 
+   :dedent: 4 a 
+   :pyobject: KerasPolicy.train a 
 
 You can implement the model of your choice by overriding these methods,
 or initialize ``KerasPolicy`` with pre-defined ``keras model``.
 
-In order to get reproducible training results for the same inputs you can
+In order to get reproducible training results for the same inputs you can a 
 set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer.
 
 
 .. _embedding_policy:
 
-Embedding Policy
+Embedding Policy a 
 ^^^^^^^^^^^^^^^^
 
     .. warning::
@@ -204,16 +204,16 @@ Embedding Policy
 
 .. _ted_policy:
 
-TED Policy
+TED Policy a 
 ^^^^^^^^^^
 
-The Transformer Embedding Dialogue (TED) Policy is described in
+The Transformer Embedding Dialogue (TED) Policy is described in a 
 `our paper <https://arxiv.org/abs/1910.00486>`__.
 
-This policy has a pre-defined architecture, which comprises the
+This policy has a pre-defined architecture, which comprises the a 
 following steps:
 
-    - concatenate user input (user intent and entities), previous system actions, slots and active forms for each time
+    - concatenate user input (user intent and entities), previous system actions, slots and active forms for each time a 
       step into an input vector to pre-transformer embedding layer;
     - feed it to transformer;
     - apply a dense layer to the output of the transformer to get embeddings of a dialogue for each time step;
@@ -236,16 +236,16 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
           Sometimes more epochs don't influence the performance.
           The lower the number of epochs the faster the model is trained.
         - ``hidden_layers_sizes``:
-          This parameter allows you to define the number of feed forward layers and their output
+          This parameter allows you to define the number of feed forward layers and their output a 
           dimensions for dialogues and intents (default: ``dialogue: [], label: []``).
           Every entry in the list corresponds to a feed forward layer.
-          For example, if you set ``dialogue: [256, 128]``, we will add two feed forward layers in front of
-          the transformer. The vectors of the input tokens (coming from the dialogue) will be passed on to those
-          layers. The first layer will have an output dimension of 256 and the second layer will have an output
-          dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
+          For example, if you set ``dialogue: [256, 128]``, we will add two feed forward layers in front of a 
+          the transformer. The vectors of the input tokens (coming from the dialogue) will be passed on to those a 
+          layers. The first layer will have an output dimension of 256 and the second layer will have an output a 
+          dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be a 
           added.
           Make sure to use only positive integer values. Usually, numbers of power of two are used.
-          Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
+          Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the a 
           value before.
         - ``number_of_transformer_layers``:
           This parameter sets the number of transformer layers to use (default: ``1``).
@@ -254,35 +254,35 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
           This parameter sets the number of units in the transformer (default: ``128``).
           The vectors coming out of the transformers will have the given ``transformer_size``.
         - ``weight_sparsity``:
-          This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
+          This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers a 
           in the model (default: ``0.8``). The value should be between 0 and 1. If you set ``weight_sparsity``
-          to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
-          set ``weight_sparsity`` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+          to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not a 
+          set ``weight_sparsity`` to 1 as this would result in all kernel weights being 0, i.e. the model is not able a 
           to learn.
 
     .. warning::
 
-        Pass an appropriate number, for example 50,  of ``epochs`` to the ``TEDPolicy``, otherwise the policy will
+        Pass an appropriate number, for example 50,  of ``epochs`` to the ``TEDPolicy``, otherwise the policy will a 
         be trained only for ``1`` epoch.
 
     .. warning::
 
-        Default ``max_history`` for this policy is ``None`` which means it'll use the
-        ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to some finite value in order to
-        use ``MaxHistoryTrackerFeaturizer`` for **faster training**. See :ref:`featurization_conversations` for
+        Default ``max_history`` for this policy is ``None`` which means it'll use the a 
+        ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to some finite value in order to a 
+        use ``MaxHistoryTrackerFeaturizer`` for **faster training**. See :ref:`featurization_conversations` for a 
         details. We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
         (e.g. ``"batch_size": [32, 64]``)
 
-    .. container:: toggle
+    .. container:: toggle a 
 
-        .. container:: header
+        .. container:: header a 
 
-            .. container:: block
+            .. container:: block a 
 
                 The above configuration parameters are the ones you should configure to fit your model to your data.
                 However, additional parameters exist that can be adapted.
 
-        .. code-block:: none
+        .. code-block:: none a 
 
          +---------------------------------+------------------+--------------------------------------------------------------+
          | Parameter                       | Default Value    | Description                                                  |
@@ -377,61 +377,61 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
 
         .. warning::
 
-            If ``evaluate_on_number_of_examples`` is non zero, random examples will be picked by stratified split and
+            If ``evaluate_on_number_of_examples`` is non zero, random examples will be picked by stratified split and a 
             used as **hold out** validation set, so they will be excluded from training data.
             We suggest to set it to zero if data set contains a lot of unique examples of dialogue turns.
 
         .. note::
 
-            For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
+            For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should a 
             be between ``-1`` and ``1``.
 
         .. note::
 
-            There is an option to use linearly increasing batch size. The idea comes from
+            There is an option to use linearly increasing batch size. The idea comes from a 
             `<https://arxiv.org/abs/1711.00489>`_. In order to do it pass a list to ``batch_size``, e.g.
             ``"batch_size": [8, 32]`` (default behaviour). If constant ``batch_size`` is required, pass an ``int``,
             e.g. ``"batch_size": 8``.
 
         .. note::
 
-            The parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
-            starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity`` and
-            ``use_maximum_negative_similarity = False``. See `starspace paper <https://arxiv.org/abs/1709.03856>`_
+            The parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original a 
+            starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity`` and a 
+            ``use_maximum_negative_similarity = False``. See `starspace paper <https://arxiv.org/abs/1709.03856>`_ a 
             for details.
 
 
 .. _mapping-policy:
 
-Mapping Policy
+Mapping Policy a 
 ^^^^^^^^^^^^^^
 
-The ``MappingPolicy`` can be used to directly map intents to actions. The
+The ``MappingPolicy`` can be used to directly map intents to actions. The a 
 mappings are assigned by giving an intent the property ``triggers``, e.g.:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
   intents:
    - ask_is_bot:
-       triggers: action_is_bot
+       triggers: action_is_bot a 
 
-An intent can only be mapped to at most one action. The bot will run
+An intent can only be mapped to at most one action. The bot will run a 
 the mapped action once it receives a message of the triggering intent. Afterwards,
-it will listen for the next message. With the next
+it will listen for the next message. With the next a 
 user message, normal prediction will resume.
 
-If you do not want your intent-action mapping to affect the dialogue
+If you do not want your intent-action mapping to affect the dialogue a 
 history, the mapped action must return a ``UserUtteranceReverted()``
-event. This will delete the user's latest message, along with any events that
-happened after it, from the dialogue history. This means you should not
+event. This will delete the user's latest message, along with any events that a 
+happened after it, from the dialogue history. This means you should not a 
 include the intent-action interaction in your stories.
 
-For example, if a user asks "Are you a bot?" off-topic in the middle of the
-flow, you probably want to answer without that interaction affecting the next
-action prediction. A triggered custom action can do anything, but here's a
+For example, if a user asks "Are you a bot?" off-topic in the middle of the a 
+flow, you probably want to answer without that interaction affecting the next a 
+action prediction. A triggered custom action can do anything, but here's a a 
 simple example that dispatches a bot utterance and then reverts the interaction:
 
-.. code-block:: python
+.. code-block:: python a 
 
   class ActionIsBot(Action):
   """Revertible mapped action for utter_is_bot"""
@@ -446,48 +446,48 @@ simple example that dispatches a bot utterance and then reverts the interaction:
 .. note::
 
   If you use the ``MappingPolicy`` to predict bot utterance actions directly (e.g.
-  ``triggers: utter_{}``), these interactions must go in your stories, as in this
-  case there is no ``UserUtteranceReverted()`` and the
+  ``triggers: utter_{}``), these interactions must go in your stories, as in this a 
+  case there is no ``UserUtteranceReverted()`` and the a 
   intent and the mapped response action will appear in the dialogue history.
 
 .. note::
 
   The MappingPolicy is also responsible for executing the default actions ``action_back``
-  and ``action_restart`` in response to ``/back`` and ``/restart``. If it is not included
+  and ``action_restart`` in response to ``/back`` and ``/restart``. If it is not included a 
   in your policy example these intents will not work.
 
-Memoization Policy
+Memoization Policy a 
 ^^^^^^^^^^^^^^^^^^
 
-The ``MemoizationPolicy`` just memorizes the conversations in your
+The ``MemoizationPolicy`` just memorizes the conversations in your a 
 training data. It predicts the next action with confidence ``1.0``
-if this exact conversation exists in the training data, otherwise it
+if this exact conversation exists in the training data, otherwise it a 
 predicts ``None`` with confidence ``0.0``.
 
-Augmented Memoization Policy
+Augmented Memoization Policy a 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The ``AugmentedMemoizationPolicy`` remembers examples from training
+The ``AugmentedMemoizationPolicy`` remembers examples from training a 
 stories for up to ``max_history`` turns, just like the ``MemoizationPolicy``.
-Additionally, it has a forgetting mechanism that will forget a certain amount
-of steps in the conversation history and try to find a match in your stories
+Additionally, it has a forgetting mechanism that will forget a certain amount a 
+of steps in the conversation history and try to find a match in your stories a 
 with the reduced history. It predicts the next action with confidence ``1.0``
 if a match is found, otherwise it predicts ``None`` with confidence ``0.0``.
 
 .. note::
 
-  If you have dialogues where some slots that are set during
-  prediction time might not be set in training stories (e.g. in training
+  If you have dialogues where some slots that are set during a 
+  prediction time might not be set in training stories (e.g. in training a 
   stories starting with a reminder not all previous slots are set),
-  make sure to add the relevant stories without slots to your training
+  make sure to add the relevant stories without slots to your training a 
   data as well.
 
 .. _fallback-policy:
 
-Fallback Policy
+Fallback Policy a 
 ^^^^^^^^^^^^^^^
 
-The ``FallbackPolicy`` invokes a :ref:`fallback action
+The ``FallbackPolicy`` invokes a :ref:`fallback action a 
 <fallback-actions>` if at least one of the following occurs:
 
 1. The intent recognition has a confidence below ``nlu_threshold``.
@@ -497,16 +497,16 @@ The ``FallbackPolicy`` invokes a :ref:`fallback action
 
 **Configuration:**
 
-    The thresholds and fallback action can be adjusted in the policy configuration
+    The thresholds and fallback action can be adjusted in the policy configuration a 
     file as parameters of the ``FallbackPolicy``:
 
-    .. code-block:: yaml
+    .. code-block:: yaml a 
 
       policies:
         - name: "FallbackPolicy"
-          nlu_threshold: 0.3
-          ambiguity_threshold: 0.1
-          core_threshold: 0.3
+          nlu_threshold: 0.3 a 
+          ambiguity_threshold: 0.1 a 
+          core_threshold: 0.3 a 
           fallback_action_name: 'action_default_fallback'
 
     +----------------------------+---------------------------------------------+
@@ -528,11 +528,11 @@ The ``FallbackPolicy`` invokes a :ref:`fallback action
 
     You can also configure the ``FallbackPolicy`` in your python code:
 
-    .. code-block:: python
+    .. code-block:: python a 
 
-       from rasa.core.policies.fallback import FallbackPolicy
-       from rasa.core.policies.keras_policy import KerasPolicy
-       from rasa.core.agent import Agent
+       from rasa.core.policies.fallback import FallbackPolicy a 
+       from rasa.core.policies.keras_policy import KerasPolicy a 
+       from rasa.core.agent import Agent a 
 
        fallback = FallbackPolicy(fallback_action_name="action_default_fallback",
                                  core_threshold=0.3,
@@ -543,51 +543,51 @@ The ``FallbackPolicy`` invokes a :ref:`fallback action
 
     .. note::
 
-       You can include either the ``FallbackPolicy`` or the
+       You can include either the ``FallbackPolicy`` or the a 
        ``TwoStageFallbackPolicy`` in your configuration, but not both.
 
 
-Two-Stage Fallback Policy
+Two-Stage Fallback Policy a 
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The ``TwoStageFallbackPolicy`` handles low NLU confidence in multiple stages
+The ``TwoStageFallbackPolicy`` handles low NLU confidence in multiple stages a 
 by trying to disambiguate the user input.
 
-- If an NLU prediction has a low confidence score or is not significantly higher
-  than the second highest ranked prediction, the user is asked to affirm
+- If an NLU prediction has a low confidence score or is not significantly higher a 
+  than the second highest ranked prediction, the user is asked to affirm a 
   the classification of the intent.
 
-    - If they affirm, the story continues as if the intent was classified
+    - If they affirm, the story continues as if the intent was classified a 
       with high confidence from the beginning.
     - If they deny, the user is asked to rephrase their message.
 
-- Rephrasing
+- Rephrasing a 
 
-    - If the classification of the rephrased intent was confident, the story
+    - If the classification of the rephrased intent was confident, the story a 
       continues as if the user had this intent from the beginning.
-    - If the rephrased intent was not classified with high confidence, the user
+    - If the rephrased intent was not classified with high confidence, the user a 
       is asked to affirm the classified intent.
 
-- Second affirmation
+- Second affirmation a 
 
-    - If the user affirms the intent, the story continues as if the user had
+    - If the user affirms the intent, the story continues as if the user had a 
       this intent from the beginning.
-    - If the user denies, the original intent is classified as the specified
-      ``deny_suggestion_intent_name``, and an ultimate fallback action
+    - If the user denies, the original intent is classified as the specified a 
+      ``deny_suggestion_intent_name``, and an ultimate fallback action a 
       is triggered (e.g. a handoff to a human).
 
 **Configuration:**
 
-    To use the ``TwoStageFallbackPolicy``, include the following in your
+    To use the ``TwoStageFallbackPolicy``, include the following in your a 
     policy configuration.
 
-    .. code-block:: yaml
+    .. code-block:: yaml a 
 
         policies:
-          - name: TwoStageFallbackPolicy
-            nlu_threshold: 0.3
-            ambiguity_threshold: 0.1
-            core_threshold: 0.3
+          - name: TwoStageFallbackPolicy a 
+            nlu_threshold: 0.3 a 
+            ambiguity_threshold: 0.1 a 
+            core_threshold: 0.3 a 
             fallback_core_action_name: "action_default_fallback"
             fallback_nlu_action_name: "action_default_fallback"
             deny_suggestion_intent_name: "out_of_scope"
@@ -624,17 +624,17 @@ by trying to disambiguate the user input.
 
     .. note::
 
-      You can include either the ``FallbackPolicy`` or the
+      You can include either the ``FallbackPolicy`` or the a 
       ``TwoStageFallbackPolicy`` in your configuration, but not both.
 
 
 .. _form-policy:
 
-Form Policy
+Form Policy a 
 ^^^^^^^^^^^
 
-The ``FormPolicy`` is an extension of the ``MemoizationPolicy`` which
-handles the filling of forms. Once a ``FormAction`` is called, the
-``FormPolicy`` will continually predict the ``FormAction`` until all required
+The ``FormPolicy`` is an extension of the ``MemoizationPolicy`` which a 
+handles the filling of forms. Once a ``FormAction`` is called, the a 
+``FormPolicy`` will continually predict the ``FormAction`` until all required a 
 slots in the form are filled. For more information, see :ref:`forms`.
 

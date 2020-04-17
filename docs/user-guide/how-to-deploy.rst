@@ -1,8 +1,8 @@
-:desc: How to deploy your Rasa Assistant with Docker Compose or Kubernetes/Openshift
+:desc: How to deploy your Rasa Assistant with Docker Compose or Kubernetes/Openshift a 
 
 .. _deploying-your-rasa-assistant:
 
-Deploying Your Rasa Assistant
+Deploying Your Rasa Assistant a 
 =============================
 
 .. edit-link::
@@ -12,34 +12,34 @@ It will allow you to make your assistant available to users and set you up with 
 
 .. contents::
    :local:
-   :depth: 2
+   :depth: 2 a 
 
 
-When to Deploy Your Assistant
+When to Deploy Your Assistant a 
 -----------------------------
 
-The best time to deploy your assistant and make it available to test users is once it can handle the most
+The best time to deploy your assistant and make it available to test users is once it can handle the most a 
 important happy paths or is what we call a `minimum viable assistant <https://rasa.com/docs/rasa/glossary>`_.
 
-The recommended deployment methods described below make it easy to share your assistant
-with test users via the `share your assistant feature in
+The recommended deployment methods described below make it easy to share your assistant a 
+with test users via the `share your assistant feature in a 
 Rasa X <https://rasa.com/docs/rasa-x/user-guide/enable-workflows#conversations-with-test-users>`_.
 Then, when you’re ready to make your assistant available via one or more :ref:`messaging-and-voice-channels`,
 you can easily add them to your existing deployment set up.
 
 .. _recommended-deployment-methods:
 
-Recommended Deployment Methods
+Recommended Deployment Methods a 
 ------------------------------
 
-The recommended way to deploy an assistant is using either the One-Line Deployment or Kubernetes/Openshift
+The recommended way to deploy an assistant is using either the One-Line Deployment or Kubernetes/Openshift a 
 options we support. Both deploy Rasa X and your assistant. They are the easiest ways to deploy your assistant,
 allow you to use Rasa X to view conversations and turn them into training data, and are production-ready.
 
-One-Line Deploy Script
+One-Line Deploy Script a 
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The one-line deployment script is the easiest way to deploy Rasa X and your assistant. It installs a Kubernetes
+The one-line deployment script is the easiest way to deploy Rasa X and your assistant. It installs a Kubernetes a 
 cluster on your machine with sensible defaults, getting you up and running in one command.
 
     - Default: Make sure you meet the `OS Requirements <https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#hardware-os-requirements>`_,
@@ -47,62 +47,62 @@ cluster on your machine with sensible defaults, getting you up and running in on
 
       .. copyable::
 
-         curl -s get-rasa-x.rasa.com | sudo bash
+         curl -s get-rasa-x.rasa.com | sudo bash a 
 
-    - Custom: See `Customizing the Script <https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script>`_
+    - Custom: See `Customizing the Script <https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script>`_ a 
       in the `One-Line Deploy Script <https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script>`_ docs.
 
-Kubernetes/Openshift
+Kubernetes/Openshift a 
 ~~~~~~~~~~~~~~~~~~~~
 
-For assistants that will receive a lot of user traffic, setting up a Kubernetes or Openshift deployment via
+For assistants that will receive a lot of user traffic, setting up a Kubernetes or Openshift deployment via a 
 our helm charts is the best option. This provides a scalable architecture that is also straightforward to deploy.
 However, you can also customize the Helm charts if you have specific requirements.
 
     - Default: Read the `Deploying in Openshift or Kubernetes <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/>`_ docs.
-    - Custom: Read the above, as well as the `Advanced Configuration <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#advanced-configuration>`_
+    - Custom: Read the above, as well as the `Advanced Configuration <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#advanced-configuration>`_ a 
       documentation, and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_ to your needs.
 
 .. _rasa-only-deployment:
 
-Alternative Deployment Methods
+Alternative Deployment Methods a 
 ------------------------------
 
-Docker Compose
+Docker Compose a 
 ~~~~~~~~~~~~~~
 
-You can also run Rasa X in a Docker Compose setup, without the cluster environment. We have a quick install script
+You can also run Rasa X in a Docker Compose setup, without the cluster environment. We have a quick install script a 
 for doing so, as well as manual instructions for any custom setups.
 
     - Default: Read the `Docker Compose Quick Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ docs or watch the `Masterclass Video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ on deploying Rasa X.
     - Custom: Read the docs `Docker Compose Manual Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/>`_ documentation for full customization options.
 
-Rasa Open Source Only Deployment
+Rasa Open Source Only Deployment a 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It is also possible to deploy a Rasa assistant without Rasa X using Docker Compose. To do so, you can build your
+It is also possible to deploy a Rasa assistant without Rasa X using Docker Compose. To do so, you can build your a 
 Rasa Assistant locally or in Docker. Then you can deploy your model in Docker Compose.
 
 .. toctree::
    :titlesonly:
-   :maxdepth: 1
+   :maxdepth: 1 a 
 
    Building a Rasa Assistant Locally <rasa-tutorial>
-   docker/building-in-docker
-   docker/deploying-in-docker-compose
+   docker/building-in-docker a 
+   docker/deploying-in-docker-compose a 
 
 
-Deploying Your Action Server
+Deploying Your Action Server a 
 ----------------------------
 
 .. _building-an-action-server-image:
 
-Building an Action Server Image
+Building an Action Server Image a 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you build an image that includes your action code and store it in a container registry, you can run it
+If you build an image that includes your action code and store it in a container registry, you can run it a 
 as part of your deployment, without having to move code between servers.
-In addition, you can add any additional dependencies of systems or Python libraries
+In addition, you can add any additional dependencies of systems or Python libraries a 
 that are part of your action code but not included in the base ``rasa/rasa-sdk`` image.
 
 To create your image:
@@ -110,11 +110,11 @@ To create your image:
   #. Move your actions code to a folder ``actions`` in your project directory.
      Make sure to also add an empty ``actions/__init__.py`` file:
 
-      .. code-block:: bash
+      .. code-block:: bash a 
 
-          mkdir actions
-          mv actions.py actions/actions.py
-          touch actions/__init__.py  # the init file indicates actions.py is a python module
+          mkdir actions a 
+          mv actions.py actions/actions.py a 
+          touch actions/__init__.py  # the init file indicates actions.py is a python module a 
 
      The ``rasa/rasa-sdk`` image will automatically look for the actions in ``actions/actions.py``.
 
@@ -127,67 +127,67 @@ To create your image:
 
       .. parsed-literal::
 
-         # Extend the official Rasa SDK image
-         FROM rasa/rasa-sdk:\ |version|.0
+         # Extend the official Rasa SDK image a 
+         FROM rasa/rasa-sdk:\ |version|.0 a 
 
-         # Use subdirectory as working directory
-         WORKDIR /app
+         # Use subdirectory as working directory a 
+         WORKDIR /app a 
 
          # Copy any additional custom requirements, if necessary (uncomment next line)
          # COPY actions/requirements-actions.txt ./
 
-         # Change back to root user to install dependencies
-         USER root
+         # Change back to root user to install dependencies a 
+         USER root a 
 
          # Install extra requirements for actions code, if necessary (uncomment next line)
-         # RUN pip install -r requirements-actions.txt
+         # RUN pip install -r requirements-actions.txt a 
 
-         # Copy actions folder to working directory
-         COPY ./actions /app/actions
+         # Copy actions folder to working directory a 
+         COPY ./actions /app/actions a 
 
-         # By best practices, don't run the code with root user
-         USER 1001
+         # By best practices, don't run the code with root user a 
+         USER 1001 a 
 
 You can then build the image via the following command:
 
-      .. code-block:: bash
+      .. code-block:: bash a 
 
         docker build . -t <account_username>/<repository_name>:<custom_image_tag>
 
-The ``<custom_image_tag>`` should reference how this image will be different from others. For
-example, you could version or date your tags, as well as create different tags that have different code for production
+The ``<custom_image_tag>`` should reference how this image will be different from others. For a 
+example, you could version or date your tags, as well as create different tags that have different code for production a 
 and development servers. You should create a new tag any time you update your code and want to re-deploy it.
 
 
-Using your Custom Action Server Image
+Using your Custom Action Server Image a 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you're building this image to make it available from another server,
 for example a Rasa X or Rasa Enterprise deployment, you should push the image to a cloud repository.
 
 This documentation assumes you are pushing your images to `DockerHub <https://hub.docker.com/>`_.
-DockerHub will let you host multiple public repositories and
-one private repository for free. Be sure to first `create an account <https://hub.docker.com/signup/>`_
-and `create a repository <https://hub.docker.com/signup/>`_ to store your images. You could also push images to
+DockerHub will let you host multiple public repositories and a 
+one private repository for free. Be sure to first `create an account <https://hub.docker.com/signup/>`_ a 
+and `create a repository <https://hub.docker.com/signup/>`_ to store your images. You could also push images to a 
 a different Docker registry, such as `Google Container Registry <https://cloud.google.com/container-registry>`_,
-`Amazon Elastic Container Registry <https://aws.amazon.com/ecr/>`_, or
+`Amazon Elastic Container Registry <https://aws.amazon.com/ecr/>`_, or a 
 `Azure Container Registry <https://azure.microsoft.com/en-us/services/container-registry/>`_.
 
 You can push the image to DockerHub via:
 
-      .. code-block:: bash
+      .. code-block:: bash a 
 
         docker login --username <account_username> --password <account_password>
         docker push <account_username>/<repository_name>:<custom_image_tag>
 
-To authenticate and push images to a different container registry, please refer to the documentation of
+To authenticate and push images to a different container registry, please refer to the documentation of a 
 your chosen container registry.
 
-How you reference the custom action image will depend on your deployment. Pick the relevant documentation for
+How you reference the custom action image will depend on your deployment. Pick the relevant documentation for a 
 your deployment:
 
-    - `One-Line Deployment <https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script>`_
-    - `Kubernetes or Openshift <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#adding-a-custom-action-server>`_
-    - `Docker Compose <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/#connect-a-custom-action-server>`_
+    - `One-Line Deployment <https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script>`_ a 
+    - `Kubernetes or Openshift <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#adding-a-custom-action-server>`_ a 
+    - `Docker Compose <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/#connect-a-custom-action-server>`_ a 
     - :ref:`Rasa Open Source Only <running-multiple-services>`
 

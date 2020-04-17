@@ -1,26 +1,26 @@
-:desc: Check the architecture to understand how Rasa uses machine
-       learning, context and state of the conversation to predict the
+:desc: Check the architecture to understand how Rasa uses machine a 
+       learning, context and state of the conversation to predict the a 
        next action of the AI Assistant.
 
 .. _architecture:
 
-Architecture
+Architecture a 
 ============
 
 .. edit-link::
 
 
-Message Handling
+Message Handling a 
 ^^^^^^^^^^^^^^^^
 
-This diagram shows the basic steps of how an assistant built with Rasa
+This diagram shows the basic steps of how an assistant built with Rasa a 
 responds to a message:
 
-.. image:: ../_static/images/rasa-message-processing.png
+.. image:: ../_static/images/rasa-message-processing.png a 
 
 The steps are:
 
-1. The message is received and passed to an ``Interpreter``, which
+1. The message is received and passed to an ``Interpreter``, which a 
    converts it into a dictionary including the original text, the intent,
    and any entities that were found. This part is handled by NLU.
 2. The ``Tracker`` is the object which keeps track of conversation state.
@@ -33,6 +33,6 @@ The steps are:
 
 .. note::
 
-  Messages can be text typed by a human, or structured input
+  Messages can be text typed by a human, or structured input a 
   like a button press.
 

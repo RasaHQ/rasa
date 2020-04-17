@@ -1,9 +1,9 @@
-:desc: Create custom components to create additional features like sentiment
+:desc: Create custom components to create additional features like sentiment a 
        analysis to integrate with open source bot framework Rasa.
 
 .. _custom-nlu-components:
 
-Custom NLU Components
+Custom NLU Components a 
 =====================
 
 .. edit-link::
@@ -12,7 +12,7 @@ You can create a custom component to perform a specific task which NLU doesn't c
 Below is the specification of the :class:`rasa.nlu.components.Component` class with the methods you'll need to implement.
 
 .. note::
-    There is a detailed tutorial on building custom components `here
+    There is a detailed tutorial on building custom components `here a 
     <https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/>`_.
 
 
@@ -20,7 +20,7 @@ You can add a custom component to your pipeline by adding the module path.
 So if you have a module called ``sentiment``
 containing a ``SentimentAnalyzer`` class:
 
-    .. code-block:: yaml
+    .. code-block:: yaml a 
 
         pipeline:
         - name: "sentiment.SentimentAnalyzer"
@@ -28,11 +28,11 @@ containing a ``SentimentAnalyzer`` class:
 
 Also be sure to read the section on the :ref:`component-lifecycle`.
 
-To get started, you can use this skeleton that contains the most important
+To get started, you can use this skeleton that contains the most important a 
 methods that you should implement:
 
-.. literalinclude:: ../../tests/nlu/example_component.py
-    :language: python
+.. literalinclude:: ../../tests/nlu/example_component.py a 
+    :language: python a 
     :linenos:
 
 .. note::
@@ -46,28 +46,28 @@ methods that you should implement:
     E.g. your featurizer should return a matrix of size (number-of-tokens x feature-dimension).
     The feature vector of the ``__CLS__`` token should contain features for the complete message.
 
-Component
+Component a 
 ^^^^^^^^^
 
-.. autoclass:: rasa.nlu.components.Component
+.. autoclass:: rasa.nlu.components.Component a 
 
-   .. automethod:: required_components
+   .. automethod:: required_components a 
 
-   .. automethod:: required_packages
+   .. automethod:: required_packages a 
 
-   .. automethod:: create
+   .. automethod:: create a 
 
-   .. automethod:: provide_context
+   .. automethod:: provide_context a 
 
-   .. automethod:: train
+   .. automethod:: train a 
 
-   .. automethod:: process
+   .. automethod:: process a 
 
-   .. automethod:: persist
+   .. automethod:: persist a 
 
-   .. automethod:: prepare_partial_processing
+   .. automethod:: prepare_partial_processing a 
 
-   .. automethod:: partially_process
+   .. automethod:: partially_process a 
 
-   .. automethod:: can_handle_language
+   .. automethod:: can_handle_language a 
 

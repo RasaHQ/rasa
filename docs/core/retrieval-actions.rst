@@ -1,9 +1,9 @@
-:desc: Use a retrieval model to select chatbot responses
+:desc: Use a retrieval model to select chatbot responses a 
        in open source bot framework Rasa.
 
 .. _retrieval-actions:
 
-Retrieval Actions
+Retrieval Actions a 
 =================
 
 .. edit-link::
@@ -17,31 +17,31 @@ Retrieval Actions
    Once we have gathered enough feedback and we're happy with the training data format, we'll add support for training response retrieval models in Rasa X.
 
 .. note::
-   There is an in-depth blog post `here <https://blog.rasa.com/response-retrieval-models/>`_ about how to use retrieval
+   There is an in-depth blog post `here <https://blog.rasa.com/response-retrieval-models/>`_ about how to use retrieval a 
    actions for handling single turn interactions.
 
 .. contents::
    :local:
 
-About
+About a 
 ^^^^^
 
 Retrieval actions are designed to make it simpler to work with :ref:`small-talk` and :ref:`simple-questions` .
-For example, if your assistant can handle 100 FAQs and 50 different small talk intents, you can use a single retrieval
+For example, if your assistant can handle 100 FAQs and 50 different small talk intents, you can use a single retrieval a 
 action to cover all of these.
 From a dialogue perspective, these single-turn exchanges can all be treated equally, so this simplifies your stories.
 
 Instead of having a lot of stories like:
 
-.. code-block:: story
+.. code-block:: story a 
 
-   ## weather
-   * ask_weather
-      - utter_ask_weather
+   ## weather a 
+   * ask_weather a 
+      - utter_ask_weather a 
    
-   ## introduction
-   * ask_name
-      - utter_introduce_myself
+   ## introduction a 
+   * ask_name a 
+      - utter_introduce_myself a 
 
    ...
 
@@ -49,73 +49,73 @@ Instead of having a lot of stories like:
 You can cover all of these with a single story where the above intents are grouped under a common ``chitchat`` intent:
 
 
-.. code-block:: story
+.. code-block:: story a 
 
-   ## chitchat
-   * chitchat
-      - respond_chitchat
+   ## chitchat a 
+   * chitchat a 
+      - respond_chitchat a 
 
-A retrieval action uses the output of a :ref:`response-selector` component from NLU which learns a
+A retrieval action uses the output of a :ref:`response-selector` component from NLU which learns a a 
 retrieval model to predict the correct response from a list of candidate responses given a user message text.
 
 
 .. _retrieval-training-data:
 
-Training Data
+Training Data a 
 ^^^^^^^^^^^^^
 
 Like the name suggests, retrieval actions learn to select the correct response from a list of candidates.
 As with other NLU data, you need to include examples of what your users will say in your NLU file:
 
-.. code-block:: md
+.. code-block:: md a 
 
-   ## intent: chitchat/ask_name
-   - what's your name
+   ## intent: chitchat/ask_name a 
+   - what's your name a 
    - who are you?
    - what are you called?
 
-   ## intent: chitchat/ask_weather
+   ## intent: chitchat/ask_weather a 
    - how's weather?
    - is it sunny where you are?
 
 First, all of these examples will be combined into a single ``chitchat`` retrieval intent that NLU will predict.
-All retrieval intents have a suffix added to them which identifies a particular response text for your assistant, in the
-above example - ``ask_name`` and ``ask_weather``. The suffix is separated from the intent name by a ``/`` delimiter
+All retrieval intents have a suffix added to them which identifies a particular response text for your assistant, in the a 
+above example - ``ask_name`` and ``ask_weather``. The suffix is separated from the intent name by a ``/`` delimiter a 
 
 Next, include response texts for all retrieval intents in a **separate** training data file as ``responses.md``:
 
-.. code-block:: md
+.. code-block:: md a 
 
-    ## ask name
-    * chitchat/ask_name
+    ## ask name a 
+    * chitchat/ask_name a 
         - my name is Sara, Rasa's documentation bot!
 
-    ## ask weather
-    * chitchat/ask_weather
-        - it's always sunny where I live
+    ## ask weather a 
+    * chitchat/ask_weather a 
+        - it's always sunny where I live a 
 
 The retrieval model is trained separately as part of the NLU training pipeline to select the correct response.
-One important thing to remember is that the retrieval model uses the text of the response messages
+One important thing to remember is that the retrieval model uses the text of the response messages a 
 to select the correct one. If you change the text of these responses, you have to retrain your retrieval model!
 This is a key difference to the response templates in your domain file.
 
 .. note::
-    The file containing response texts must exist as a separate file inside the training data directory passed
-    to the training process. The contents of it cannot be a part of the file which contains training data for other
+    The file containing response texts must exist as a separate file inside the training data directory passed a 
+    to the training process. The contents of it cannot be a part of the file which contains training data for other a 
     components of NLU.
 
 .. note::
-    As shown in the above examples, ``/`` symbol is reserved as a delimiter to separate retrieval intents from response text identifier. Make sure not to
+    As shown in the above examples, ``/`` symbol is reserved as a delimiter to separate retrieval intents from response text identifier. Make sure not to a 
     use it in the name of your intents.
 
-Config File
+Config File a 
 ^^^^^^^^^^^
 
-You need to include the :ref:`response-selector` component in your config. The component needs a tokenizer, a featurizer and an
-intent classifier to operate on the user message before it can predict a response and hence these
+You need to include the :ref:`response-selector` component in your config. The component needs a tokenizer, a featurizer and an a 
+intent classifier to operate on the user message before it can predict a response and hence these a 
 components should be placed before ``ResponseSelector`` in the NLU configuration. An example:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
     language: "en"
 
@@ -126,49 +126,49 @@ components should be placed before ``ResponseSelector`` in the NLU configuration
     - name: "EmbeddingIntentClassifier"
     - name: "ResponseSelector"
 
-Domain
+Domain a 
 ^^^^^^
 
 Rasa uses a naming convention to match the intent names like ``chitchat/ask_name``
 to the retrieval action. 
-The correct action name in this case is ``respond_chitchat``. The prefix ``respond_`` is mandatory to identify it as a
+The correct action name in this case is ``respond_chitchat``. The prefix ``respond_`` is mandatory to identify it as a a 
 retrieval action. Another example - correct action name for ``faq/ask_policy`` would be ``respond_faq``
 To include this in your domain, add it to the list of actions:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
    actions:
      ...
-     - respond_chitchat
-     - respond_faq
+     - respond_chitchat a 
+     - respond_faq a 
 
 
-A simple way to ensure that the retrieval action is predicted after the chitchat
+A simple way to ensure that the retrieval action is predicted after the chitchat a 
 intent is to use the :ref:`mapping-policy`.
 However, you can also include this action in your stories.
-For example, if you want to repeat a question after handling chitchat
+For example, if you want to repeat a question after handling chitchat a 
 (see :ref:`unhappy-paths` )
 
-.. code-block:: story
+.. code-block:: story a 
 
-   ## interruption
-   * search_restaurant
-      - utter_ask_cuisine
-   * chitchat
-      - respond_chitchat
-      - utter_ask_cuisine
+   ## interruption a 
+   * search_restaurant a 
+      - utter_ask_cuisine a 
+   * chitchat a 
+      - respond_chitchat a 
+      - utter_ask_cuisine a 
 
-Multiple Retrieval Actions
+Multiple Retrieval Actions a 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If your assistant includes both FAQs **and** chitchat, it is possible to
-separate these into separate retrieval actions, for example having intents
+If your assistant includes both FAQs **and** chitchat, it is possible to a 
+separate these into separate retrieval actions, for example having intents a 
 like ``chitchat/ask_weather`` and ``faq/returns_policy``.
 Rasa supports adding multiple ``RetrievalActions`` like ``respond_chitchat`` and ``respond_returns_policy``
 To train separate retrieval models for each of the intents, you need to include a separate ``ResponseSelector``
 component in the config:
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
     language: "en"
 
@@ -178,14 +178,14 @@ component in the config:
     - name: "CountVectorsFeaturizer"
     - name: "EmbeddingIntentClassifier"
     - name: "ResponseSelector"
-      retrieval_intent: chitchat
+      retrieval_intent: chitchat a 
     - name: "ResponseSelector"
-      retrieval_intent: faq
+      retrieval_intent: faq a 
 
-You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single
+You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single a 
  ``ResponseSelector`` component and leaving the ``retrieval_intent`` to its default value(None):
 
-.. code-block:: yaml
+.. code-block:: yaml a 
 
     language: "en"
 
@@ -197,20 +197,20 @@ You could still have two separate retrieval actions but both actions can share t
     - name: "ResponseSelector"
 
 
-In this case, the response selector will be trained on examples from both ``chitchat/{x}`` and ``faq/{x}`` and will be
+In this case, the response selector will be trained on examples from both ``chitchat/{x}`` and ``faq/{x}`` and will be a 
 identified by the name ``default`` the NLU parsed output.
 
-In our experiments so far, having separate retrieval models does **not** make any difference to the accuracy of each
-retrieval action. So for simplicity, we recommend you use a single retrieval
-model for both chitchat and FAQs
+In our experiments so far, having separate retrieval models does **not** make any difference to the accuracy of each a 
+retrieval action. So for simplicity, we recommend you use a single retrieval a 
+model for both chitchat and FAQs a 
 If you get different results, please let us know in the `forum <https://forum.rasa.com>`_ !
 
 
-Parsing Response Selector Output
+Parsing Response Selector Output a 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The parsed output from NLU will have a property named ``response_selector`` containing the output for
-each response selector. Each response selector is identified by ``retrieval_intent`` parameter of that response selector
+The parsed output from NLU will have a property named ``response_selector`` containing the output for a 
+each response selector. Each response selector is identified by ``retrieval_intent`` parameter of that response selector a 
 and stores two properties -
 
     - ``response``: The predicted response text and the prediction confidence.
@@ -218,7 +218,7 @@ and stores two properties -
 
 Example result:
 
-.. code-block:: json
+.. code-block:: json a 
 
     {
         "text": "What is the recommend python version to install?",

@@ -1,9 +1,9 @@
-:desc: Handle Rasa models on premise or in your private cloud for
+:desc: Handle Rasa models on premise or in your private cloud for a 
        GDPR-compliant intent recognition and entity extraction.
 
 .. _cloud-storage:
 
-Cloud Storage
+Cloud Storage a 
 =============
 
 .. edit-link::
@@ -11,12 +11,12 @@ Cloud Storage
 Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ ,
 `GCS <https://cloud.google.com/storage/>`_ and `Azure Storage <https://azure.microsoft.com/services/storage/>`_ to save your models.
 
-* Amazon S3 Storage
-    S3 is supported using the ``boto3`` module which you can
+* Amazon S3 Storage a 
+    S3 is supported using the ``boto3`` module which you can a 
     install with ``pip install boto3``.
 
-    Start the Rasa server with ``remote-storage`` option set to
-    ``aws``. Get your S3 credentials and set the following
+    Start the Rasa server with ``remote-storage`` option set to a 
+    ``aws``. Get your S3 credentials and set the following a 
     environment variables:
 
     - ``AWS_SECRET_ACCESS_KEY``
@@ -27,22 +27,22 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ ,
 
     If there is no bucket with the name ``BUCKET_NAME``, Rasa will create it.
 
-* Google Cloud Storage
+* Google Cloud Storage a 
     GCS is supported using the ``google-cloud-storage`` package,
     which you can install with ``pip install google-cloud-storage``.
 
     Start the Rasa server with ``remote-storage`` option set to ``gcs``.
 
-    When running on google app engine and compute engine, the auth
+    When running on google app engine and compute engine, the auth a 
     credentials are already set up. For running locally or elsewhere,
-    checkout their
-    `client repo <https://github.com/GoogleCloudPlatform/python-docs-samples/tree/master/storage/cloud-client#authentication>`_
-    for details on setting up authentication. It involves creating
+    checkout their a 
+    `client repo <https://github.com/GoogleCloudPlatform/python-docs-samples/tree/master/storage/cloud-client#authentication>`_ a 
+    for details on setting up authentication. It involves creating a 
     a service account key file from google cloud console,
-    and setting the ``GOOGLE_APPLICATION_CREDENTIALS`` environment
+    and setting the ``GOOGLE_APPLICATION_CREDENTIALS`` environment a 
     variable to the path of that key file.
 
-* Azure Storage
+* Azure Storage a 
     Azure is supported using the ``azure-storage-blob`` package,
     which you can install with ``pip install azure-storage-blob``.
 
@@ -56,10 +56,10 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ ,
 
     If there is no container with the name ``AZURE_CONTAINER``, Rasa will create it.
 
-Models are gzipped before they are saved in the cloud. The gzipped file naming convention
+Models are gzipped before they are saved in the cloud. The gzipped file naming convention a 
 is `{MODEL_NAME}.tar.gz` and it is stored in the root folder of the storage service.
 Currently, you are not able to manually specify the path on the cloud storage.
 
-If storing trained models, Rasa will gzip the new model and upload it to the container. If retrieving/loading models
+If storing trained models, Rasa will gzip the new model and upload it to the container. If retrieving/loading models a 
 from the cloud storage, Rasa will download the gzipped model locally and extract the contents to a temporary directory.
 

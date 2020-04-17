@@ -1,11 +1,11 @@
-:desc: Read about common dialogue patterns encountered by task-oriented
-       bots and how best to handle them using Rasa's open source dialogue
+:desc: Read about common dialogue patterns encountered by task-oriented a 
+       bots and how best to handle them using Rasa's open source dialogue a 
        management system.
 
 .. _completing-tasks:
 
 ================
-Completing Tasks
+Completing Tasks a 
 ================
 
 .. edit-link::
@@ -15,27 +15,27 @@ Completing Tasks
 
 .. _simple-questions:
 
-Simple Questions
+Simple Questions a 
 ----------------
 
-Simple questions, or FAQs, should receive the same answer
+Simple questions, or FAQs, should receive the same answer a 
 no matter what happened previously in the conversation.
-Users will often ask a basic set of questions
+Users will often ask a basic set of questions a 
 and your assistant should answer them reliably.
 
 .. conversations::
    examples:
      -
        - what's your email address?
-       - ( it's contact@example.com
+       - ( it's contact@example.com a 
      -
        - do you have a loyalty program?
-       - ( unfortunately we don't
+       - ( unfortunately we don't a 
 
 Just like greetings and goodbyes, you can use the mapping policy to achieve this.
 See :ref:`greetings`.
 
-Business Logic
+Business Logic a 
 --------------
 
 .. note::
@@ -43,33 +43,33 @@ Business Logic
 
 Your AI assistant will often have to follow some pre-defined business logic.
 To figure out how to help users, your assistant will often have to ask a few questions.
-The answers you get will impact the rest of the conversation; for example, some products might
-be limited to users in a certain country or above a certain age. It is good practice to
-implement that logic inside a form, separating it from the learned behaviour. A single form
+The answers you get will impact the rest of the conversation; for example, some products might a 
+be limited to users in a certain country or above a certain age. It is good practice to a 
+implement that logic inside a form, separating it from the learned behaviour. A single form a 
 can cover all the happy paths (e.g. all the ways that a user can provide the required information).
 You can read more about forms in `this tutorial <https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/>`_.
 
 .. conversations::
    examples:
      -
-       - I'd like to apply for a loan
+       - I'd like to apply for a loan a 
        - ( I'd love to help. Which state are you in?
-       - Alaska
+       - Alaska a 
        - ( Unfortunately, we only operate in the continental U.S.
      -
-       - I'd like to apply for a loan
+       - I'd like to apply for a loan a 
        - ( I'd love to help. Which state are you in?
-       - California
+       - California a 
        - ( Thanks. Do you know what your credit score is?
 
 
 See :ref:`conditional-logic` for details on how to use forms to implement business logic.
 
-Contextual Questions
+Contextual Questions a 
 --------------------
 
 Unlike answers to FAQs, correct responses to contextual questions depend on the conversation history.
-These include questions which refer to something earlier in the conversation and are ambiguous
+These include questions which refer to something earlier in the conversation and are ambiguous a 
 on their own.
 Real users will often ask questions like "which is better?" and "why?".
 It is frustrating for users if your assistant doesn't understand this,
@@ -82,7 +82,7 @@ Understanding contextual questions is a key difference between `level 2 and leve
      -
        - ( what's your email address?
        - why do you need to know that?
-       - ( I need your email so I can send you a confirmation
+       - ( I need your email so I can send you a confirmation a 
      -
        - ( are you currently a premium customer?
        - what do you mean?
@@ -90,18 +90,18 @@ Understanding contextual questions is a key difference between `level 2 and leve
 
 .. _unhappy-paths:
 
-Unhappy Paths
+Unhappy Paths a 
 -------------
 
-When your assistant asks a user for information, you will often get responses other
+When your assistant asks a user for information, you will often get responses other a 
 than the information you asked for. For example, the user might refuse to provide this information,
 they might correct something they said earlier, or interrupt with chitchat.
-It is important that your assistant can handle these edge cases. There
+It is important that your assistant can handle these edge cases. There a 
 are so many things a user might say other than provide you the information you asked for,
 and a simple interruption shouldn't throw off your assistant completely.
 This is a key reason for building an assistant that can learn from real data.
 
-The best way to collect training data for unhappy paths is to use
+The best way to collect training data for unhappy paths is to use a 
 :ref:`interactive-learning`.
 
 .. conversations::
@@ -113,9 +113,9 @@ The best way to collect training data for unhappy paths is to use
        - ( what's your email address?
      -
        - ( what's your email address?
-       - work@example.com
+       - work@example.com a 
        - ( thanks, and your phone number?
-       - no wait, please use personal@example.com
+       - no wait, please use personal@example.com a 
        - ( ok, I'll use that email.
        - ( thanks, and your phone number?
 
