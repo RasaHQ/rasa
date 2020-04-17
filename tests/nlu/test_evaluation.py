@@ -7,6 +7,7 @@ import pytest
 from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.test import compare_nlu_models
 from rasa.nlu.extractors.extractor import EntityExtractor
@@ -50,7 +51,7 @@ from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
-from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
 
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
@@ -510,6 +511,26 @@ def test_response_evaluation_report(tmpdir_factory):
     assert result["predictions"][1] == prediction
 
 
+@pytest.mark.parametrize(
+    "components, expected_extractors",
+    [
+        ([DIETClassifier({ENTITY_RECOGNITION: False})], set()),
+        ([DIETClassifier({ENTITY_RECOGNITION: True})], {"DIETClassifier"}),
+        ([CRFEntityExtractor()], {"CRFEntityExtractor"}),
+        (
+            [SpacyEntityExtractor(), CRFEntityExtractor()],
+            {"SpacyEntityExtractor", "CRFEntityExtractor"},
+        ),
+        ([ResponseSelector()], set()),
+    ],
+)
+def test_get_entity_extractors(components, expected_extractors):
+    mock_interpreter = Interpreter(components, None)
+    extractors = get_entity_extractors(mock_interpreter)
+
+    assert extractors == expected_extractors
+
+
 def test_entity_evaluation_report(tmpdir_factory):
     class EntityExtractorA(EntityExtractor):
 
@@ -651,13 +672,6 @@ def test_evaluate_entities_cv():
             ],
         },
     }, "Wrong entity prediction alignment"
-
-
-def test_get_entity_extractors(pretrained_interpreter):
-    assert get_entity_extractors(pretrained_interpreter) == {
-        "SpacyEntityExtractor",
-        "DucklingHTTPExtractor",
-    }
 
 
 def test_remove_pretrained_extractors(pretrained_interpreter):
