@@ -1,0 +1,5 @@
+Fixed misleading error message for a situation when ``rasa train nlu --nlu`` is given a file with a wrong format.
+
+Before this change the output message was always: ``No NLU data given.``
+
+Now in case the format is wrong the command prints: ``Path `nlu_data` doesn't contain valid NLU data in it. Please verify the data format. The NLU model training will be skipped now.``

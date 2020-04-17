@@ -1,0 +1,2 @@
+Update ``POST /model/train`` endpoint to accept retrieval action responses
+at the ``responses`` key of the JSON payload.
