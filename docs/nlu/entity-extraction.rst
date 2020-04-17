@@ -164,3 +164,4 @@ However, ``CRFEntityExtractor`` will continue to train just without the addition
 In case dense features are present, ``CRFEntityExtractor`` will pass the dense features to ``sklearn_crfsuite``
 and use them for training.
 
+splingerrr

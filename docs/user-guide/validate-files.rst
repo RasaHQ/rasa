@@ -117,3 +117,4 @@ This means, that 3 events (user messages / bot actions) are taken into account f
     If your stories are in the Markdown format, you may find duplicate names with a command like
     ``grep -h "##" data/*.md | uniq -c | grep "^[^1]"``.
 
+splingerrr

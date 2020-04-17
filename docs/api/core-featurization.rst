@@ -118,3 +118,4 @@ should be reshaped to
 target class labels are needed instead of one-hot vectors, use
 ``y.argmax(axis=-1)``.
 
+splingerrr
