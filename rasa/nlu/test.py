@@ -1136,14 +1136,14 @@ def run_evaluation(
             entity_results, extractors, output_directory, successes, errors
         )
 
-    write_prediction_for_hermit_evaluation(
+    write_prediction_for_diet_paper(
         entity_results, intent_results, extractors, output_directory
     )
 
     return result
 
 
-def write_prediction_for_hermit_evaluation(
+def write_prediction_for_diet_paper(
     entity_results: List[EntityEvaluationResult],
     intent_results: List[IntentEvaluationResult],
     extractors: Set[Text],
@@ -1159,7 +1159,7 @@ def write_prediction_for_hermit_evaluation(
     ):
 
         entity_gold = e_pred["target_labels"]
-        entity_pred = e_pred["extractor_labels"]["EmbeddingIntentClassifier"]
+        entity_pred = e_pred["extractor_labels"]["DIETClassifier"]
 
         last = "O"
         for j in range(len(entity_pred)):
