@@ -28,9 +28,8 @@ class SocketIOOutput(OutputChannel):
     def name(cls) -> Text:
         return "socketio"
 
-    def __init__(self, sio, sid, bot_message_evt) -> None:
+    def __init__(self, sio, bot_message_evt) -> None:
         self.sio = sio
-        self.sid = sid
         self.bot_message_evt = bot_message_evt
 
     async def _send_message(self, socket_id: Text, response: Any) -> None:
@@ -148,7 +147,14 @@ class SocketIOInput(InputChannel):
         self.socketio_path = socketio_path
 
     def get_output_channel(self) -> Optional["OutputChannel"]:
-        return SocketIOOutput(SocketIOInput.sio , None, self.bot_message_evt)
+        if SocketIOInput.sio == None:
+            raise_warning(
+                "Output channel can't be"
+                "reproduced in case if sio equals to None"
+                "e.g. if the Rasa Server uses multiple Sanic workers"
+            )
+            return
+        return SocketIOOutput(SocketIOInput.sio, self.bot_message_evt)
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -181,12 +187,14 @@ class SocketIOInput(InputChannel):
                 data = {}
             if "session_id" not in data or data["session_id"] is None:
                 data["session_id"] = uuid.uuid4().hex
+            if self.session_persistence:
+                sio.enter_room(sid,data["session_id"])
             await sio.emit("session_confirm", data["session_id"], room=sid)
             logger.debug(f"User {sid} connected to socketIO endpoint.")
 
         @sio.on(self.user_message_evt, namespace=self.namespace)
         async def handle_message(sid: Text, data: Dict) -> Any:
-            output_channel = SocketIOOutput(sio, sid, self.bot_message_evt)
+            output_channel = SocketIOOutput(sio, self.bot_message_evt)
 
             if self.session_persistence:
                 if not data.get("session_id"):
