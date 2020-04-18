@@ -115,8 +115,6 @@ class SocketIOOutput(OutputChannel):
 class SocketIOInput(InputChannel):
     """A socket.io input channel."""
 
-    sio = None
-
     @classmethod
     def name(cls) -> Text:
         return "socketio"
@@ -145,16 +143,17 @@ class SocketIOInput(InputChannel):
         self.user_message_evt = user_message_evt
         self.namespace = namespace
         self.socketio_path = socketio_path
+        self.sio = None
 
     def get_output_channel(self) -> Optional["OutputChannel"]:
-        if SocketIOInput.sio == None:
+        if self.sio == None:
             raise_warning(
                 "Output channel can't be"
                 "reproduced in case if sio equals to None"
                 "e.g. if the Rasa Server uses multiple Sanic workers"
             )
             return
-        return SocketIOOutput(SocketIOInput.sio, self.bot_message_evt)
+        return SocketIOOutput(self.sio, self.bot_message_evt)
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -167,7 +166,7 @@ class SocketIOInput(InputChannel):
         )
 
         # make sio object static to use in get_output_channel
-        SocketIOInput.sio = sio
+        self.sio = sio
 
         @socketio_webhook.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
