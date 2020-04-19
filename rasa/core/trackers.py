@@ -31,7 +31,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     SessionStarted,
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
-from rasa.core.slots import Slot
+from rasa.core.slots import Slot, UnfeaturizedSlot, ListSlot, TextSlot
 
 logger = logging.getLogger(__name__)
 
@@ -536,11 +536,12 @@ class DialogueStateTracker:
         if key in self.slots:
             self.slots[key].value = value
         else:
-            logger.error(
-                "Tried to set non existent slot '{}'. Make sure you "
-                "added all your slots to your domain file."
-                "".format(key)
-            )
+            if isinstance(value, list):
+                self.slots[key] = ListSlot(key, value)
+            elif isinstance(value, str):
+                self.slots[key] = TextSlot(key, value)
+            else:
+                self.slots[key] = UnfeaturizedSlot(key, value)
 
     def _create_events(self, evts: List[Event]) -> Deque[Event]:
 
