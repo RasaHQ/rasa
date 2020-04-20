@@ -330,18 +330,24 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
 
     def prepare_training_data(self, trackers_as_states, trackers_as_actions, domain):
         training_examples = []
+        all_slots = []
         for tracker in trackers_as_states:
             for state in tracker:
                 if state and not state == {}:
                     training_examples.append(state["prev_action"])
+                    if len(domain.slots) == 1:
+                        all_slots += list(state['slots'].keys())
                     if "user" in state.keys():
                         training_examples.append(state["user"])
         training_examples += [Message(action) for action in domain.action_names]
         training_data = TrainingData(training_examples=training_examples)
+        if len(domain.slots) == 1:
+            all_slots = list(set(all_slots))
+        slots = [slot.name for slot in domain.slots]
 
         training_examples = [action for tr in trackers_as_actions for action in tr]
         training_data.training_examples += training_examples
-        return training_data
+        return training_data, all_slots
 
     def prepare_training_data_and_train(
         self, trackers_as_states, trackers_as_actions, output_path, domain
@@ -353,7 +359,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
              - trackers_as_states: real data as a dictionary
              - trackers_as_actions: output label
         """
-        training_data = self.prepare_training_data(
+        training_data, all_slots = self.prepare_training_data(
             trackers_as_states, trackers_as_actions, domain
         )
         kwargs = {"no_copy": True}
