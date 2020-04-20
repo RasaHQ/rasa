@@ -92,11 +92,19 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         super().__init__()
         self.interpreter = RasaE2EInterpreter()
 
+    def featurize_slots(self, slots: Dict) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
+        # print(self.interpreter.all_slots)
+        # print(list(slots.keys()))
+        return None, None
+
     def _extract_features(
         self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
         sparse_features = None
         dense_features = None
+
+        if isinstance(message, dict) and not 'tokens' in message.keys():
+            return self.featurize_slots(message)
 
         if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
             sparse_features = message.get(SPARSE_FEATURE_NAMES[attribute])
@@ -135,7 +143,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         return sparse_state, dense_state
 
     def encode_e2e(
-        self, state: Dict[Text, Event],
+        self, state: Dict[Text, Message],
     ):
         """
         Encode the state into a numpy array or a sparse sklearn
@@ -150,6 +158,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             state_extracted_features = {
                 key: self._extract_features(state[key], TEXT) for key in state.keys()
             }
+
             if not "user" in state_extracted_features.keys():
                 state_extracted_features["user"] = self._extract_features(
                     self.interpreter.interpreter.parse(

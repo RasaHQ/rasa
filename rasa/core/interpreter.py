@@ -342,12 +342,13 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         training_examples += [Message(action) for action in domain.action_names]
         training_data = TrainingData(training_examples=training_examples)
         if len(domain.slots) == 1:
-            all_slots = list(set(all_slots))
-        slots = [slot.name for slot in domain.slots]
+            self.all_slots = list(set(all_slots))
+        else:
+            self.all_slots = domain.slots
 
         training_examples = [action for tr in trackers_as_actions for action in tr]
         training_data.training_examples += training_examples
-        return training_data, all_slots
+        return training_data
 
     def prepare_training_data_and_train(
         self, trackers_as_states, trackers_as_actions, output_path, domain
@@ -359,7 +360,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
              - trackers_as_states: real data as a dictionary
              - trackers_as_actions: output label
         """
-        training_data, all_slots = self.prepare_training_data(
+        training_data = self.prepare_training_data(
             trackers_as_states, trackers_as_actions, domain
         )
         kwargs = {"no_copy": True}
