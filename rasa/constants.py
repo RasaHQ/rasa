@@ -25,7 +25,6 @@ PACKAGE_NAME = "rasa"
 
 CONFIG_SCHEMA_FILE = "nlu/schemas/config.yml"
 DOMAIN_SCHEMA_FILE = "core/schemas/domain.yml"
-YAML_VERSION = (1, 2)
 
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005

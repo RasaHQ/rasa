@@ -17,7 +17,7 @@ from typing import Text, Any, Dict, Union, List, Type, Callable
 
 import ruamel.yaml as yaml
 
-from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
+from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 
 if typing.TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
@@ -110,22 +110,24 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     replace_environment_variables()
 
     yaml_parser = yaml.YAML(typ="safe")
-    yaml_parser.version = YAML_VERSION
+    yaml_parser.version = "1.2"
+    yaml_parser.unicode_supplementary = True
 
-    if _is_ascii(content):
-        # Required to make sure emojis are correctly parsed
+    # noinspection PyUnresolvedReferences
+    try:
+        return yaml_parser.load(content) or {}
+    except yaml.scanner.ScannerError:
+        # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
+        # unicode sequences that form surrogate pairs. Try converting the input
+        # to a parsable format based on
+        # https://stackoverflow.com/a/52187065/3429596.
         content = (
             content.encode("utf-8")
             .decode("raw_unicode_escape")
             .encode("utf-16", "surrogatepass")
             .decode("utf-16")
         )
-
-    return yaml_parser.load(content) or {}
-
-
-def _is_ascii(text: Text) -> bool:
-    return all(ord(character) < 128 for character in text)
+        return yaml_parser.load(content) or {}
 
 
 def read_file(filename: Text, encoding: Text = DEFAULT_ENCODING) -> Any:
