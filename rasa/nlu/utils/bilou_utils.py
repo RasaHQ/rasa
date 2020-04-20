@@ -244,72 +244,75 @@ def _add_bilou_tags_to_entities(
                 bilou[end_token_idx] = f"L-{label}"
 
 
-def check_consistent_bilou_tagging(predicted_tags: List[Text]) -> None:
+def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
     """
-    Check if predicted tags follow the BILOU tagging schema.
+    Ensure predicted tags follow the BILOU tagging schema.
+
+    We assume that starting B- tags are correct. Followed tags that belong to start
+    tag but have a different entity type are updated.
+    For example, B-a I-b L-a is updated to B-a I-a L-a and B-a I-a O is changed to
+    B-a L-a.
 
     Args:
         predicted_tags: list of predicted tags
+
+    Return:
+        List of tags.
     """
 
-    # TODO
-    #  we might want to correct cases like B-location I-person L-location ->
-    #  B-location I-location L-location instead of just logging warnings
-
-    last_tag = NO_ENTITY_TAG
-    entity_found = False
-
-    for predicted_tag in predicted_tags:
-        prefix = bilou_prefix_from_tag(predicted_tag)
-        tag = tag_without_prefix(predicted_tag)
-
-        if not prefix:
-            if entity_found:
-                logger.debug(
-                    f"Inconsistent BILOU tagging schema found. Missing "
-                    f"'L-{last_tag}'."
-                )
-
-            entity_found = False
-            last_tag = NO_ENTITY_TAG
-            continue
+    for idx in range(len(predicted_tags)):
+        prefix = bilou_prefix_from_tag(predicted_tags[idx])
+        tag = tag_without_prefix(predicted_tags[idx])
 
         if prefix == "B":
-            if entity_found:
-                logger.debug(
-                    f"Inconsistent BILOU tagging schema found. Missing 'L-{last_tag}'."
-                )
-            entity_found = True
+            last_idx = _find_bilou_end(idx, predicted_tags)
 
+            # ensure correct BILOU annotations
+            if last_idx == idx:
+                predicted_tags[idx] = f"U-{tag}"
+            elif last_idx - idx == 1:
+                predicted_tags[idx] = f"B-{tag}"
+                predicted_tags[last_idx] = f"L-{tag}"
+            else:
+                predicted_tags[idx] = f"B-{tag}"
+                predicted_tags[last_idx] = f"L-{tag}"
+                for i in range(idx + 1, last_idx):
+                    predicted_tags[i] = f"I-{tag}"
+
+    return predicted_tags
+
+
+def _find_bilou_end(start_idx: int, predicted_tags: List[Text]) -> int:
+    current_idx = start_idx + 1
+    finished = False
+    start_tag = tag_without_prefix(predicted_tags[start_idx])
+
+    while not finished:
+        current_label = predicted_tags[current_idx]
+        prefix = bilou_prefix_from_tag(current_label)
+        tag = tag_without_prefix(current_label)
+
+        if tag != start_tag:
+            # words are not tagged the same entity class
+            logger.debug(
+                "Inconsistent BILOU tagging found, B- tag, L- tag pair encloses "
+                "multiple entity classes.i.e. [B-a, I-b, L-a] instead of "
+                "[B-a, I-a, L-a].\nAssuming B- class is correct."
+            )
+
+        if prefix == "L":
+            finished = True
         elif prefix == "I":
-            if tag != last_tag:
-                logger.debug(
-                    f"Inconsistent BILOU tagging schema found. Conflicting entities: "
-                    f"Found 'I-{tag}', but last seen '{last_tag}'."
-                )
-            if not entity_found:
-                logger.debug(
-                    f"Inconsistent BILOU tagging schema found. Entity starts with "
-                    f"'I-{tag}' instead of 'B-{tag}'."
-                )
+            # middle part of the entity
+            current_idx += 1
+        else:
+            # entity not closed by an L- tag
+            finished = True
+            current_idx -= 1
+            logger.debug(
+                "Inconsistent BILOU tagging found, B- tag not closed by L- tag, "
+                "i.e [B-a, I-a, O] instead of [B-a, L-a, O].\n"
+                "Assuming last tag is L- instead of I-."
+            )
 
-        elif prefix == "U":
-            if entity_found:
-                logger.debug(
-                    f"Inconsistent BILOU tagging schema found. Missing 'L-{last_tag}'."
-                )
-
-        elif prefix == "L":
-            if tag != last_tag:
-                logger.debug(
-                    f"Inconsistent BILOU tagging schema found. Conflicting entities: "
-                    f"Found 'L-{tag}', but last seen '{last_tag}'."
-                )
-            if not entity_found:
-                logger.debug(
-                    f"Inconsistent BILOU tagging schema found. Entity starts with "
-                    f"'L-{tag}' instead of 'B-{tag}'."
-                )
-            entity_found = False
-
-        last_tag = tag
+    return current_idx

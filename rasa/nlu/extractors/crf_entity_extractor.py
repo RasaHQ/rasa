@@ -279,7 +279,7 @@ class CRFEntityExtractor(EntityExtractor):
             _tags, _confidences = self._most_likely_tag(predicted_tags)
 
             if self.component_config["BILOU_flag"]:
-                bilou_utils.check_consistent_bilou_tagging(_tags)
+                bilou_utils.ensure_consistent_bilou_tagging(_tags)
                 _tags = bilou_utils.remove_bilou_prefixes(_tags)
 
             confidences[tag_name] = _confidences

@@ -145,40 +145,37 @@ def test_apply_bilou_schema():
 
 
 @pytest.mark.parametrize(
-    "tags, message",
+    "tags, expected_tags, debug_message",
     [
-        (["O", "B-person", "I-person", "L-person", "O", "U-person", "O"], None),
         (
-            ["O", "B-person", "B-person", "L-person", "O", "U-person", "O"],
-            "Missing 'L-person'",
+            ["O", "B-person", "I-person", "L-person", "O", "U-person", "O"],
+            ["O", "B-person", "I-person", "L-person", "O", "U-person", "O"],
+            None,
         ),
         (
-            ["O", "O", "I-person", "L-person", "O", "U-person", "O"],
-            "Entity starts with 'I-person' instead of 'B-person'.",
+            ["O", "B-person", "B-location", "I-location", "O"],
+            ["O", "U-person", "B-location", "L-location", "O"],
+            "B- tag not closed",
         ),
         (
-            ["O", "L-person", "I-person", "L-person", "O", "U-person", "O"],
-            "Entity starts with 'L-person' instead of 'B-person'.",
+            ["O", "B-person", "I-location", "L-person"],
+            ["O", "B-person", "I-person", "L-person"],
+            "B- tag, L- tag pair encloses multiple entity classes",
         ),
-        (["O", "U-person", "B-location", "L-location", "O", "U-person", "O"], None),
-        (
-            ["O", "B-person", "I-location", "L-person", "O", "U-person", "O"],
-            "Found 'L-person', but last seen 'location'",
-        ),
-        (
-            ["O", "U-person", "B-location", "U-person", "O", "U-person", "O"],
-            "Missing 'L-location'",
-        ),
+        (["O", "B-person", "O"], ["O", "U-person", "O"], "B- tag not closed"),
     ],
 )
 def test_check_consistent_bilou_tagging(
-    tags: List[Text], message: Optional[Text], caplog
+    tags: List[Text], expected_tags: List[Text], debug_message: Optional[Text], caplog
 ):
-    with caplog.at_level(logging.DEBUG):
-        bilou_utils.check_consistent_bilou_tagging(tags)
 
-    if message:
+    with caplog.at_level(logging.DEBUG):
+        actual_tags = bilou_utils.ensure_consistent_bilou_tagging(tags)
+
+    if debug_message:
         assert len(caplog.records) > 0
-        assert message in caplog.text
+        assert debug_message in caplog.text
     else:
         assert len(caplog.records) == 0
+
+    assert actual_tags == expected_tags
