@@ -547,6 +547,7 @@ class TED(RasaModel):
             use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
             max_relative_position=self.config[MAX_RELATIVE_POSITION],
             name=DIALOGUE + "_encoder",
+            summary_writer=self.test_summary_writer,
         )
         self._tf_layers[f"embed.{DIALOGUE}"] = layers.Embed(
             self.config[EMBEDDING_DIMENSION],

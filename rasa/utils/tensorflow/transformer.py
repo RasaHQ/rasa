@@ -4,6 +4,8 @@ import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 import numpy as np
+from tensorflow_core.python.ops.summary_ops_v2 import ResourceSummaryWriter
+
 from rasa.utils.tensorflow.layers import DenseWithSparseWeights
 
 
@@ -419,8 +421,11 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         use_value_relative_position: bool = False,
         max_relative_position: Optional[int] = None,
         heads_share_relative_embedding: bool = False,
+        summary_writer: Optional[ResourceSummaryWriter] = None,
     ) -> None:
         super().__init__()
+
+        self._summary_writer = summary_writer
 
         self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self._mha = MultiHeadAttention(
@@ -469,7 +474,9 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             training = K.learning_phase()
 
         x_norm = self._layer_norm(x)  # (batch_size, length, units)
-        attn_out, _ = self._mha(x_norm, x_norm, pad_mask=pad_mask, training=training)
+        attn_out, attn_weights = self._mha(
+            x_norm, x_norm, pad_mask=pad_mask, training=training
+        )
         attn_out = self._dropout(attn_out, training=training)
         x += attn_out
 
@@ -477,6 +484,38 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         for layer in self._ffn_layers:
             ffn_out = layer(ffn_out, training=training)
         x += ffn_out
+
+        if self._summary_writer:
+            # attention_weights.shape == (batch_size, num_heads, length, length)
+
+            # for i_head in range(self._mha.num_heads):
+            #     # select attention weights of one head and reshape for image output
+            #     img = attn_weights[:, i_head, :, :]
+            #     img = tf.expand_dims(img, axis=-1)
+            #     # rescale values to range from 0.0 to 1.0
+            #     img = (img - tf.reduce_min(img)) / (
+            #         tf.reduce_max(img) - tf.reduce_min(img)
+            #     )
+            #     # write image to tensorboard
+            #     with self._summary_writer.as_default():
+            #         tf.summary.image(
+            #             f"attn_weights_h{i_head}", img, step=0, max_outputs=20
+            #         )
+
+            # reshape so we get all attention heads in one image
+            num_heads = self._mha.num_heads
+            length = tf.shape(x)[1]
+            img = tf.reshape(attn_weights, (-1, num_heads * length, length, 1))
+            img = tf.transpose(img, perm=[0, 2, 1, 3])
+            # rescale values to range from 0.0 to 1.0
+            img = (img - tf.reduce_min(img)) / (
+                tf.reduce_max(img) - tf.reduce_min(img)
+            )
+            # write image to tensorboard
+            with self._summary_writer.as_default():
+                tf.summary.image(
+                    f"attn_weights", img, step=0, max_outputs=20
+                )
 
         return x  # (batch_size, length, units)
 
@@ -524,6 +563,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         max_relative_position: Optional[int] = None,
         heads_share_relative_embedding: bool = False,
         name: Optional[Text] = None,
+        summary_writer: Optional[ResourceSummaryWriter] = None,
     ) -> None:
         super().__init__(name=name)
 
@@ -554,6 +594,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
                 use_value_relative_position,
                 max_relative_position,
                 heads_share_relative_embedding,
+                summary_writer,
             )
             for _ in range(num_layers)
         ]
