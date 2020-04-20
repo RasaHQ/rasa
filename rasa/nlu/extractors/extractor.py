@@ -353,7 +353,7 @@ class EntityExtractor(Component):
                 for entity in example.get(ENTITIES)
             ]
             token_start_positions = [t.start for t in example.get(TOKENS_NAMES[TEXT])]
-            token_end_positions = [t.start for t in example.get(TOKENS_NAMES[TEXT])]
+            token_end_positions = [t.end for t in example.get(TOKENS_NAMES[TEXT])]
 
             for entity_start, entity_end in entity_boundaries:
                 if (
@@ -361,10 +361,11 @@ class EntityExtractor(Component):
                     or entity_end not in token_end_positions
                 ):
                     common_utils.raise_warning(
-                        f"Misaligned entity annotation in sentence '{example.text}' with "
-                        f"intent '{example.get(INTENT)}'. Make sure the start and end entities "
-                        f"of the annotated training examples at token boundaries (e.g. don't "
-                        f"include trailing whitespaces or punctuation).",
+                        f"Misaligned entity annotation in message '{example.text}' "
+                        f"with intent '{example.get(INTENT)}'. Make sure the start and "
+                        f"end values of entities in the training data match the token "
+                        f"boundaries (e.g. entities don't include trailing whitespaces "
+                        f"or punctuation).",
                         docs=DOCS_URL_TRAINING_DATA_NLU,
                     )
                     break

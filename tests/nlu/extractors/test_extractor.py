@@ -250,23 +250,39 @@ def test_clean_up_entities(
 
 
 @pytest.mark.parametrize(
-    "text",
+    "text, warnings",
     [
         (
             "## intent:test\n"
-            "-I want to fly from [Berlin](location) to[ San Fransisco](location)"
+            "- I want to fly from [Berlin](location) to [ San Fransisco](location)\n",
+            1,
         ),
         (
             "## intent:test\n"
-            "-I want to fly from [Berlin ](location) to[San Fransisco](location)"
+            "- I want to fly from [Berlin ](location) to [San Fransisco](location)\n",
+            1,
         ),
         (
             "## intent:test\n"
-            "-I want to fly from [Berlin](location) to[San Fransisco.](location)"
+            "- I want to fly from [Berlin](location) to [San Fransisco.](location)\n"
+            "- I have nothing to say.",
+            1,
+        ),
+        (
+            "## intent:test\n"
+            "- I have nothing to say.\n"
+            "- I want to fly from [Berlin](location) to[San Fransisco](location)\n",
+            1,
+        ),
+        (
+            "## intent:test\n"
+            "- I want to fly from [Berlin](location) to[San Fransisco](location)\n"
+            "- Book a flight from [London](location) to [Paris.](location)\n",
+            2,
         ),
     ],
 )
-def test_check_check_correct_entity_annotations(text: Text):
+def test_check_check_correct_entity_annotations(text: Text, warnings: int):
     reader = MarkdownReader()
     tokenizer = WhitespaceTokenizer()
 
@@ -276,7 +292,7 @@ def test_check_check_correct_entity_annotations(text: Text):
     with pytest.warns(UserWarning) as record:
         EntityExtractor.check_correct_entity_annotations(training_data)
 
-    assert len(record) == 1
+    assert len(record) == warnings
     assert all(
         [excerpt in record[0].message.args[0]]
         for excerpt in ["Misaligned entity annotation in sentence"]
