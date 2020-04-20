@@ -6,6 +6,7 @@ import re
 
 import os
 from typing import Text, List, Dict, Any, Union, Optional, Tuple
+import numpy as np
 
 import rasa.utils.io
 from rasa.constants import DOCS_URL_STORIES
@@ -381,6 +382,9 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
                                 name = state[key].as_dict()["text"]
                                 example = find_same(name, TEXT, training_data)
                                 state[key] = example
+        
+        self.slot_states = domain.slot_states
+
         self.trainer.persist(output_path, fixed_model_name="nlu")
 
 

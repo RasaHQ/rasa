@@ -92,10 +92,11 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         super().__init__()
         self.interpreter = RasaE2EInterpreter()
 
-    def featurize_slots(self, slots: Dict) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
-        # print(self.interpreter.all_slots)
-        # print(list(slots.keys()))
-        return None, None
+    def featurize_slots(self, slot_dict):
+            slot_featurization = np.zeros(len(self.interpreter.slot_states))
+            for slot_name in list(slot_dict.keys()):
+                slot_featurization[self.interpreter.slot_states.index(slot_name)] = 1
+            return None, slot_featurization
 
     def _extract_features(
         self, message: Message, attribute: Text
@@ -103,7 +104,8 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         sparse_features = None
         dense_features = None
 
-        if isinstance(message, dict) and not 'tokens' in message.keys():
+        #check that it is slot dictionary and not the processed empty used utterance
+        if isinstance(message, Dict) and not 'intent' in message.keys():
             return self.featurize_slots(message)
 
         if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
@@ -133,12 +135,13 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             sparse_state = scipy.sparse.hstack(
                 [state_features["user"][0], state_features["prev_action"][0]]
             )
+        dense_state = state_features['slots'][1]
         if (
             state_features["user"][1] is not None
             and state_features["prev_action"][1] is not None
         ):
             dense_state = np.hstack(
-                (state_features["user"][1], state_features["prev_action"][1])
+                dense_state, (state_features["user"][1], state_features["prev_action"][1])
             )
         return sparse_state, dense_state
 
@@ -253,11 +256,13 @@ class TrackerFeaturizer:
             return [dict(state) for state in states]
 
     def collect_slots(self, tracker):
-        slots = tracker.current_slot_values()
         current_nonnone_slots = {}
-        for key, value in slots.items():
-            if value:
-                current_nonnone_slots[key] = value
+        for key, slot in tracker.slots.items():
+            if slot is not None:
+                for i, slot_value in enumerate(slot.as_feature()):
+                    if slot_value != 0:
+                        slot_id = f"slot_{key}_{i}"
+                        current_nonnone_slots[slot_id] = slot_value
         return current_nonnone_slots
 
     def _create_states_e2e(self, tracker):
