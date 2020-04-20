@@ -31,6 +31,7 @@ from rasa.constants import (
     DEFAULT_SANIC_WORKERS,
     ENV_SANIC_WORKERS,
     DEFAULT_ENDPOINTS_PATH,
+    YAML_VERSION,
 )
 
 # backwards compatibility 1.0.x
@@ -195,7 +196,7 @@ def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
     yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
     yaml_writer.unicode_supplementary = True
     yaml_writer.default_flow_style = False
-    yaml_writer.version = "1.1"
+    yaml_writer.version = YAML_VERSION
 
     yaml_writer.dump(obj, output)
 
