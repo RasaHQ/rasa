@@ -62,6 +62,7 @@ from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     NUM_NEG,
     SPARSE_INPUT_DROPOUT,
+    DENSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
     TENSORBOARD_LOG_DIR,
@@ -204,8 +205,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         DROP_RATE_ATTENTION: 0,
         # Sparsity of the weights in dense layers
         WEIGHT_SPARSITY: 0.8,
-        # If 'True' apply dropout to sparse tensors
+        # If 'True' apply dropout to sparse input tensors
         SPARSE_INPUT_DROPOUT: True,
+        # If 'True' apply dropout to dense input tensors
+        DENSE_INPUT_DROPOUT: True,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
         # Small values may hurt performance, e.g. model accuracy.
@@ -1092,10 +1095,10 @@ class DIET(RasaModel):
                 )
 
     def _prepare_input_layers(self, name: Text) -> None:
-        self._tf_layers[f"sparse_dropout.{name}"] = layers.SparseDropout(
+        self._tf_layers[f"sparse_input_dropout.{name}"] = layers.SparseDropout(
             rate=self.config[DROP_RATE]
         )
-        self._tf_layers[f"dropout.{name}"] = tf.keras.layers.Dropout(
+        self._tf_layers[f"dense_input_dropout.{name}"] = tf.keras.layers.Dropout(
             rate=self.config[DROP_RATE]
         )
         self._prepare_sparse_dense_layers(
@@ -1192,6 +1195,7 @@ class DIET(RasaModel):
         mask: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
+        dense_dropout: bool = False,
     ) -> tf.Tensor:
 
         dense_features = []
@@ -1199,7 +1203,9 @@ class DIET(RasaModel):
         for f in features:
             if isinstance(f, tf.SparseTensor):
                 if sparse_dropout:
-                    _f = self._tf_layers[f"sparse_dropout.{name}"](f, self._training)
+                    _f = self._tf_layers[f"sparse_input_dropout.{name}"](
+                        f, self._training
+                    )
                 else:
                     _f = f
                 dense_features.append(self._tf_layers[f"sparse_to_dense.{name}"](_f))
@@ -1207,7 +1213,12 @@ class DIET(RasaModel):
                 dense_features.append(f)
 
         outputs = tf.concat(dense_features, axis=-1) * mask
-        return self._tf_layers[f"dropout.{name}"](outputs, self._training)
+        if dense_dropout:
+            outputs = self._tf_layers[f"dense_input_dropout.{name}"](
+                outputs, self._training
+            )
+
+        return outputs
 
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
@@ -1234,9 +1245,12 @@ class DIET(RasaModel):
         mask: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
+        dense_dropout: bool = False,
     ) -> tf.Tensor:
 
-        x = self._combine_sparse_dense_features(features, mask, name, sparse_dropout)
+        x = self._combine_sparse_dense_features(
+            features, mask, name, sparse_dropout, dense_dropout
+        )
         x = tf.reduce_sum(x, axis=1)  # convert to bag-of-words
         return self._tf_layers[f"ffnn.{name}"](x, self._training)
 
@@ -1254,7 +1268,11 @@ class DIET(RasaModel):
             seq_ids = None
 
         inputs = self._combine_sparse_dense_features(
-            features, mask, name, sparse_dropout=self.config[SPARSE_INPUT_DROPOUT]
+            features,
+            mask,
+            name,
+            sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
+            dense_dropout=self.config[DENSE_INPUT_DROPOUT],
         )
 
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)

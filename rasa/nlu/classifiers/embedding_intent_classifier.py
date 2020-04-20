@@ -29,6 +29,7 @@ from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     NUM_NEG,
     SPARSE_INPUT_DROPOUT,
+    DENSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
@@ -143,6 +144,8 @@ class EmbeddingIntentClassifier(DIETClassifier):
         WEIGHT_SPARSITY: 0.0,
         # If 'True' apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
+        # If 'True' apply dropout to dense input tensors
+        DENSE_INPUT_DROPOUT: False,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
         # Small values may hurt performance, e.g. model accuracy.

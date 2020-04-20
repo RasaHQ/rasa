@@ -55,6 +55,7 @@ ENTITY_RECOGNITION = "entity_recognition"
 MASKED_LM = "use_masked_language_model"
 
 SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
+DENSE_INPUT_DROPOUT = "use_dense_input_dropout"
 
 RANKING_LENGTH = "ranking_length"
 

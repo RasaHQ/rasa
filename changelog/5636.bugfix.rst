@@ -1,1 +1,0 @@
-Add dropout between ``FFNN`` and ``DenseForSparse`` layers in ``DIETClassifier``, ``ResponseSelector`` and ``EmbeddingIntentClassifier``
