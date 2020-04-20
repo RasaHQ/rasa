@@ -24,6 +24,7 @@ from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow.optimizers import WarmupDecayLearningSchedule
 from rasa.nlu.constants import (
     INTENT,
     TEXT,
@@ -51,11 +52,11 @@ from rasa.utils.tensorflow.constants import (
     LEARNING_RATE,
     LEARNING_SCHEDULE,
     WARMUP_PROPORTION,
-    PICK_MULTIPLIER,
-    WARMUP_EPOCHS,
-    END_MULTIPLIER,
+    PICK_LEARNING_RATE,
+    WARMUP_STEPS,
+    END_LEARNING_RATE,
     DECAY_POWER,
-    DECAY_EPOCHS,
+    DECAY_STEPS,
     DENSE_DIMENSION,
     RANKING_LENGTH,
     LOSS_TYPE,
@@ -153,16 +154,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         EPOCHS: 300,
         # Set random seed to any 'int' to get reproducible results
         RANDOM_SEED: None,
-        # Initial learning rate for the optimizer
+        # Initial learning rate for the optimizer or "learning_schedule"
         LEARNING_RATE: 0.001,
-        # warmup-decay learning schedule, serves as a multiplier to learning_rate
+        # warmup-decay learning schedule, used if learning_rate == "learning_schedule"
         LEARNING_SCHEDULE: {
-            WARMUP_PROPORTION: 0.0,
-            WARMUP_EPOCHS: None,
-            PICK_MULTIPLIER: 1.0,
-            END_MULTIPLIER: 1.0,
+            WARMUP_PROPORTION: 0.1,
+            WARMUP_STEPS: None,
+            PICK_LEARNING_RATE: 0.001,
+            END_LEARNING_RATE: 0.0001,
             DECAY_POWER: 1.0,
-            DECAY_EPOCHS: None,
+            DECAY_STEPS: None,
         },
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
@@ -658,6 +659,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
 
+        total_steps = self.model_class().number_of_training_steps(
+            model_data,
+            self.component_config[EPOCHS],
+            self.component_config[BATCH_SIZE],
+            self.component_config[BATCH_STRATEGY],
+        )
+        self.component_config[LEARNING_SCHEDULE] = train_utils.update_learning_schedule(
+            self.component_config[LEARNING_SCHEDULE], total_steps
+        )
+
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,
@@ -672,7 +683,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
             self.component_config[BATCH_STRATEGY],
-            self.component_config[LEARNING_SCHEDULE],
         )
 
     # process helpers
@@ -1001,7 +1011,18 @@ class DIET(RasaModel):
         self._prepare_layers()
 
         # tf training
-        self._set_optimizer(tf.keras.optimizers.Adam(config[LEARNING_RATE]))
+        if config[LEARNING_RATE] == LEARNING_SCHEDULE:
+            learning_rate = WarmupDecayLearningSchedule(
+                config[LEARNING_SCHEDULE][PICK_LEARNING_RATE],
+                config[LEARNING_SCHEDULE][WARMUP_STEPS],
+                config[LEARNING_SCHEDULE][DECAY_STEPS],
+                config[LEARNING_SCHEDULE][END_LEARNING_RATE],
+                config[LEARNING_SCHEDULE][DECAY_POWER],
+            )
+        else:
+            learning_rate = config[LEARNING_RATE]
+
+        self._set_optimizer(tf.keras.optimizers.Adam(learning_rate))
         self._create_metrics()
         self._update_metrics_to_log()
 

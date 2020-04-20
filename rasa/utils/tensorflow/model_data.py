@@ -218,6 +218,23 @@ class RasaModelData:
             for key, values in self.data.items()
         }
 
+    def prepare_data_for_batching(
+        self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
+    ) -> Tuple[Data, int]:
+        data = self.data
+        num_examples = self.num_examples
+
+        if shuffle:
+            data = self._shuffled_data(data)
+
+        if batch_strategy == BALANCED:
+            data = self._balanced_data(data, batch_size, shuffle)
+            # after balancing, number of examples increased
+            num_examples = self.number_of_examples(data)
+
+        num_batches = math.ceil(num_examples / batch_size)
+        return data, num_batches
+
     def as_tf_dataset(
         self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
     ) -> tf.data.Dataset:
@@ -393,18 +410,9 @@ class RasaModelData:
     ) -> Generator[Tuple[Optional[np.ndarray]], None, None]:
         """Generate batches."""
 
-        data = self.data
-        num_examples = self.num_examples
-
-        if shuffle:
-            data = self._shuffled_data(data)
-
-        if batch_strategy == BALANCED:
-            data = self._balanced_data(data, batch_size, shuffle)
-            # after balancing, number of examples increased
-            num_examples = self.number_of_examples(data)
-
-        num_batches = math.ceil(num_examples / batch_size)
+        data, num_batches = self.prepare_data_for_batching(
+            batch_size, batch_strategy, shuffle
+        )
 
         for batch_num in range(num_batches):
             start = batch_num * batch_size

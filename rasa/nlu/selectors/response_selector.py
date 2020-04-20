@@ -35,10 +35,10 @@ from rasa.utils.tensorflow.constants import (
     LEARNING_RATE,
     LEARNING_SCHEDULE,
     WARMUP_PROPORTION,
-    PICK_MULTIPLIER,
-    WARMUP_EPOCHS,
-    DECAY_EPOCHS,
-    END_MULTIPLIER,
+    PICK_LEARNING_RATE,
+    WARMUP_STEPS,
+    DECAY_STEPS,
+    END_LEARNING_RATE,
     DECAY_POWER,
     DENSE_DIMENSION,
     RANKING_LENGTH,
@@ -148,14 +148,14 @@ class ResponseSelector(DIETClassifier):
         RANDOM_SEED: None,
         # Initial learning rate for the optimizer
         LEARNING_RATE: 0.001,
-        # warmup-decay learning schedule, serves as a multiplier to learning_rate
+        # warmup-decay learning schedule, used if learning_rate == "learning_schedule"
         LEARNING_SCHEDULE: {
-            WARMUP_PROPORTION: 0.0,
-            WARMUP_EPOCHS: None,
-            PICK_MULTIPLIER: 1.0,
-            END_MULTIPLIER: 1.0,
+            WARMUP_PROPORTION: 0.1,
+            WARMUP_STEPS: None,
+            PICK_LEARNING_RATE: 0.001,
+            END_LEARNING_RATE: 0.0001,
             DECAY_POWER: 1.0,
-            DECAY_EPOCHS: None,
+            DECAY_STEPS: None,
         },
         # ## Parameters for embeddings
         # Dimension size of embedding vectors

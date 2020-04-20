@@ -32,6 +32,9 @@ from rasa.utils.tensorflow.constants import (
     AUTO,
     INNER,
     COSINE,
+    WARMUP_PROPORTION,
+    WARMUP_STEPS,
+    DECAY_STEPS,
 )
 
 
@@ -234,3 +237,16 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     )
 
     return config
+
+
+def update_learning_schedule(
+    learning_schedule: Dict[Text, Any], total_steps: int
+) -> Dict[Text, Any]:
+    if learning_schedule and learning_schedule.get(WARMUP_STEPS) is None:
+        learning_schedule[WARMUP_STEPS] = int(
+            learning_schedule[WARMUP_PROPORTION] * total_steps
+        )
+    if learning_schedule and learning_schedule.get(DECAY_STEPS) is None:
+        learning_schedule[DECAY_STEPS] = total_steps - learning_schedule[WARMUP_STEPS]
+
+    return learning_schedule

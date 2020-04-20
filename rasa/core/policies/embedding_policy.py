@@ -18,11 +18,11 @@ from rasa.utils.tensorflow.constants import (
     LEARNING_RATE,
     LEARNING_SCHEDULE,
     WARMUP_PROPORTION,
-    PICK_MULTIPLIER,
-    WARMUP_EPOCHS,
-    END_MULTIPLIER,
+    PICK_LEARNING_RATE,
+    WARMUP_STEPS,
+    END_LEARNING_RATE,
     DECAY_POWER,
-    DECAY_EPOCHS,
+    DECAY_STEPS,
     RANKING_LENGTH,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -109,11 +109,11 @@ class EmbeddingPolicy(TEDPolicy):
         # warmup-decay learning schedule, serves as a multiplier to learning_rate
         LEARNING_SCHEDULE: {
             WARMUP_PROPORTION: 0.0,
-            WARMUP_EPOCHS: None,
-            PICK_MULTIPLIER: 1.0,
-            END_MULTIPLIER: 1.0,
+            WARMUP_STEPS: None,
+            PICK_LEARNING_RATE: 1.0,
+            END_LEARNING_RATE: 1.0,
             DECAY_POWER: 1.0,
-            DECAY_EPOCHS: None,
+            DECAY_STEPS: None,
         },
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
