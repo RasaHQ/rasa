@@ -109,8 +109,9 @@ There are several other ways to install Poetry. Please, follow
 
 ### Managing environments
 
-The official guide suggests to use [pyenv](https://github.com/pyenv/pyenv) or any other similar tool
-to easily switch between Python versions. This is how it can be done:
+The official [Poetry guide](https://python-poetry.org/docs/managing-environments/) suggests to use
+[pyenv](https://github.com/pyenv/pyenv) or any other similar tool to easily switch between Python versions. 
+This is how it can be done:
 
 ```bash
 pyenv install 3.7.6
@@ -185,7 +186,8 @@ Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatical
 
 ### Resolving merge conflicts
 
-Poetry doesn't include any solution that can help to resolve merge conflicts in the lock file by default.
+Poetry doesn't include any solution that can help to resolve merge conflicts in
+the lock file `poetry.lock` by default.
 However, there is a great tool called [poetry-merge-lock](https://poetry-merge-lock.readthedocs.io/en/latest/).
 Here is how use can install it:
 
