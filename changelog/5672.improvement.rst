@@ -1,0 +1,2 @@
+Raise a warning in ``CRFEntityExtractor`` and ``DIETClassifier`` if entities are not correctly annotated in the
+training data, e.g. their start and end values do not match token boundaries.
