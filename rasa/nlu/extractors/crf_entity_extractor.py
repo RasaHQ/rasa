@@ -134,6 +134,8 @@ class CRFEntityExtractor(EntityExtractor):
         # checks whether there is at least one
         # example with an entity annotation
         if training_data.entity_examples:
+            self.check_correct_entity_annotations(training_data)
+
             # filter out pre-trained entity examples
             filtered_entity_examples = self.filter_trainable_entities(
                 training_data.training_examples
