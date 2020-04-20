@@ -1,9 +1,20 @@
 from typing import Any, Dict, List, Text, Tuple, Optional, Union
 
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.nlu.training_data import TrainingData
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
-from rasa.nlu.constants import EXTRACTOR, ENTITIES, TOKENS_NAMES, TEXT
+from rasa.nlu.constants import (
+    EXTRACTOR,
+    ENTITIES,
+    TOKENS_NAMES,
+    TEXT,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    INTENT,
+)
 from rasa.nlu.training_data import Message
+import rasa.utils.common as common_utils
 
 
 class EntityExtractor(Component):
@@ -333,3 +344,27 @@ class EntityExtractor(Component):
             )
 
         return filtered
+
+    @staticmethod
+    def check_correct_entity_annotations(training_data: TrainingData) -> None:
+        for example in training_data.entity_examples:
+            entity_boundaries = [
+                (entity[ENTITY_ATTRIBUTE_START], entity[ENTITY_ATTRIBUTE_END])
+                for entity in example.get(ENTITIES)
+            ]
+            token_start_positions = [t.start for t in example.get(TOKENS_NAMES[TEXT])]
+            token_end_positions = [t.start for t in example.get(TOKENS_NAMES[TEXT])]
+
+            for entity_start, entity_end in entity_boundaries:
+                if (
+                    entity_start not in token_start_positions
+                    or entity_end not in token_end_positions
+                ):
+                    common_utils.raise_warning(
+                        f"Misaligned entity annotation in sentence '{example.text}' with "
+                        f"intent '{example.get(INTENT)}'. Make sure the start and end entities "
+                        f"of the annotated training examples at token boundaries (e.g. don't "
+                        f"include trailing whitespaces or punctuation).",
+                        docs=DOCS_URL_TRAINING_DATA_NLU,
+                    )
+                    break
