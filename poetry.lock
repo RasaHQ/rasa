@@ -1468,8 +1468,8 @@ category = "dev"
 description = "Jupyter Notebook Tools for Sphinx"
 name = "nbsphinx"
 optional = false
-python-versions = ">=3"
-version = "0.6.1"
+python-versions = ">=2.7"
+version = "0.5.1"
 
 [package.dependencies]
 docutils = "*"
@@ -3304,7 +3304,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "b98d30ae19b6dfd7bf196c142cac2862350f75c01eb0500d7723e0bc8cc560e7"
+content-hash = "c9d34948babfa1352b9283f67ed0d767ccf1137d982600b13ab69b3cf92c3a68"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -4094,8 +4094,8 @@ nbformat = [
     {file = "nbformat-5.0.6.tar.gz", hash = "sha256:049af048ed76b95c3c44043620c17e56bc001329e07f83fec4f177f0e3d7b757"},
 ]
 nbsphinx = [
-    {file = "nbsphinx-0.6.1-py3-none-any.whl", hash = "sha256:b0ecd23861188525563c20feae7900a0a8b5119eb555a2cac58033f5832a995b"},
-    {file = "nbsphinx-0.6.1.tar.gz", hash = "sha256:043a92c13e21effab3f599eef11def889790c95eb13e97e0cdec88346cb719fa"},
+    {file = "nbsphinx-0.5.1-py2.py3-none-any.whl", hash = "sha256:e100472db293dcc2f7aae04ebebec0bfbe8eba88e209d04f367373fdd4b1455d"},
+    {file = "nbsphinx-0.5.1.tar.gz", hash = "sha256:1c3e1b5c5b4c96c06c2e428536b6a7860ee23bc290dc4e6e73ee6ed5076a004e"},
 ]
 networkx = [
     {file = "networkx-2.4-py3-none-any.whl", hash = "sha256:cdfbf698749a5014bf2ed9db4a07a5295df1d3a53bf80bf3cbd61edf9df05fa1"},
