@@ -14,7 +14,7 @@ to test your bot <https://rasa.com/docs/rasa-x/user-guide/enable-workflows/#conv
 If you already have an existing website and want to add a Rasa assistant to it,
 you have a couple of options:
 
-- `Rasa Webchat <https://github.com/mrbot-ai/rasa-webchat>`_, which
+- `Rasa Webchat <https://github.com/botfront/rasa-webchat>`_, which
   uses websockets.
 - `Chatroom <https://github.com/scalableminds/chatroom>`_, which
   uses regular HTTP requests.
@@ -49,7 +49,7 @@ for generating a session id and sending it to the Rasa Core server by
 emitting the event ``session_request`` with ``{session_id: [session_id]}``
 immediately after the ``connect`` event.
 
-The example `Webchat <https://github.com/mrbot-ai/rasa-webchat>`_
+The example `Webchat <https://github.com/botfront/rasa-webchat>`_
 implements this session creation mechanism (version >= 0.5.0).
 
 

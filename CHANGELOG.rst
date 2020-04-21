@@ -1561,4 +1561,4 @@ Bugfixes
 
 .. _`master`: https://github.com/RasaHQ/rasa/
 
-.. _`Semantic Versioning`: http://semver.org/
+.. _`Semantic Versioning`: https://semver.org/

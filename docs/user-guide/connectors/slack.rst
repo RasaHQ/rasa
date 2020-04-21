@@ -31,9 +31,6 @@ Getting Credentials
      with ``xoxb``.
 
 
-For more detailed steps, visit the
-`Slack API docs <https://api.slack.com/incoming-webhooks>`_.
-
 Running on Slack
 ^^^^^^^^^^^^^^^^
 
