@@ -15,6 +15,9 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_CONFIDENCE,
+    ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
+    ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
+    ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
 )
 from rasa.nlu.training_data import Message
 
@@ -347,7 +350,7 @@ class EntityExtractor(Component):
 
         return filtered
 
-    def create_entities(
+    def convert_predictions_into_entities(
         self,
         text: Text,
         tokens: List[Token],
@@ -355,7 +358,7 @@ class EntityExtractor(Component):
         confidences: Optional[Dict[Text, List[float]]] = None,
     ) -> List[Dict[Text, Any]]:
         """
-        Convert predicted tags into proper entities.
+        Create entities from predictions.
 
         Args:
             text: The text message.
@@ -364,7 +367,7 @@ class EntityExtractor(Component):
             confidences: Confidences of predicted tags.
 
         Returns:
-            Proper entities.
+            Entities.
         """
         entities = []
 
@@ -376,10 +379,6 @@ class EntityExtractor(Component):
             current_entity_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
             current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
             current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
-            # report only the confidence value of the entity type
-            confidence = (
-                confidences[ENTITY_ATTRIBUTE_TYPE][idx] if confidences else None
-            )
 
             if current_entity_tag == NO_ENTITY_TAG:
                 last_entity_tag = NO_ENTITY_TAG
@@ -390,11 +389,6 @@ class EntityExtractor(Component):
                 or last_group_tag != current_group_tag
                 or last_role_tag != current_role_tag
             )
-            belongs_to_last_entity = (
-                last_entity_tag == current_entity_tag
-                and last_group_tag == current_group_tag
-                and last_role_tag == current_role_tag
-            )
 
             if new_tag_found:
                 entity = self._create_new_entity(
@@ -403,16 +397,14 @@ class EntityExtractor(Component):
                     current_group_tag,
                     current_role_tag,
                     token,
-                    confidence,
+                    idx,
+                    confidences,
                 )
                 entities.append(entity)
-            elif belongs_to_last_entity:
+            else:
                 entities[-1][ENTITY_ATTRIBUTE_END] = token.end
-                if confidence:
-                    # use the lower confidence value
-                    entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE] = min(
-                        entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE], confidence
-                    )
+                if confidences is not None:
+                    self._update_confidence_values(entities, confidences, idx)
 
             last_entity_tag = current_entity_tag
             last_group_tag = current_group_tag
@@ -424,6 +416,26 @@ class EntityExtractor(Component):
             ]
 
         return entities
+
+    @staticmethod
+    def _update_confidence_values(
+        entities: List[Dict[Text, Any]], confidences: Dict[Text, List[float]], idx: int
+    ):
+        # use the lower confidence value
+        entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_TYPE] = min(
+            entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_TYPE],
+            confidences[ENTITY_ATTRIBUTE_TYPE][idx],
+        )
+        if ENTITY_ATTRIBUTE_ROLE in entities[-1]:
+            entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_ROLE] = min(
+                entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_ROLE],
+                confidences[ENTITY_ATTRIBUTE_ROLE][idx],
+            )
+        if ENTITY_ATTRIBUTE_GROUP in entities[-1]:
+            entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_GROUP] = min(
+                entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_GROUP],
+                confidences[ENTITY_ATTRIBUTE_GROUP][idx],
+            )
 
     @staticmethod
     def get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text, idx: int) -> Text:
@@ -448,7 +460,8 @@ class EntityExtractor(Component):
         group_tag: Text,
         role_tag: Text,
         token: Token,
-        confidence: Optional[float],
+        idx: int,
+        confidences: Optional[Dict[Text, List[float]]] = None,
     ) -> Dict[Text, Any]:
         """Create a new entity.
 
@@ -470,13 +483,23 @@ class EntityExtractor(Component):
             ENTITY_ATTRIBUTE_END: token.end,
         }
 
-        if confidence:
-            entity[ENTITY_ATTRIBUTE_CONFIDENCE] = confidence
+        if confidences is not None:
+            entity[ENTITY_ATTRIBUTE_CONFIDENCE_TYPE] = confidences[
+                ENTITY_ATTRIBUTE_TYPE
+            ][idx]
 
         if ENTITY_ATTRIBUTE_ROLE in tag_names:
             entity[ENTITY_ATTRIBUTE_ROLE] = role_tag
+            if confidences is not None:
+                entity[ENTITY_ATTRIBUTE_CONFIDENCE_ROLE] = confidences[
+                    ENTITY_ATTRIBUTE_ROLE
+                ][idx]
         if ENTITY_ATTRIBUTE_GROUP in tag_names:
             entity[ENTITY_ATTRIBUTE_GROUP] = group_tag
+            if confidences is not None:
+                entity[ENTITY_ATTRIBUTE_CONFIDENCE_GROUP] = confidences[
+                    ENTITY_ATTRIBUTE_GROUP
+                ][idx]
 
         return entity
 

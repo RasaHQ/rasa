@@ -794,7 +794,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         predicted_tags = self._entity_label_to_tags(predict_out)
 
-        entities = self.create_entities(
+        entities = self.convert_predictions_into_entities(
             message.text, message.get(TOKENS_NAMES[TEXT], []), predicted_tags
         )
 
@@ -814,7 +814,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
 
             if self.component_config[BILOU_FLAG]:
-                bilou_utils.ensure_consistent_bilou_tagging(tags)
+                tags = bilou_utils.ensure_consistent_bilou_tagging(tags)
                 tags = bilou_utils.remove_bilou_prefixes(tags)
 
             predicted_tags[tag_spec.tag_name] = tags

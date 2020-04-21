@@ -217,7 +217,9 @@ class CRFEntityExtractor(EntityExtractor):
         # convert predictions into a list of tags and a list of confidences
         tags, confidences = self._tag_confidences(tokens, predictions)
 
-        return self.create_entities(message.text, tokens, tags, confidences)
+        return self.convert_predictions_into_entities(
+            message.text, tokens, tags, confidences
+        )
 
     def _add_tag_to_crf_token(
         self,
@@ -280,7 +282,7 @@ class CRFEntityExtractor(EntityExtractor):
             _tags, _confidences = self._most_likely_tag(predicted_tags)
 
             if self.component_config[BILOU_FLAG]:
-                bilou_utils.ensure_consistent_bilou_tagging(_tags)
+                _tags = bilou_utils.ensure_consistent_bilou_tagging(_tags)
                 _tags = bilou_utils.remove_bilou_prefixes(_tags)
 
             confidences[tag_name] = _confidences
@@ -552,6 +554,8 @@ class CRFEntityExtractor(EntityExtractor):
         self.entity_taggers = {}
 
         for tag_name in self.crf_order:
+            logger.debug(f"Training CRF for '{tag_name}'.")
+
             # add entity tag features for second level CRFs
             include_tag_features = tag_name != ENTITY_ATTRIBUTE_TYPE
             X_train = [
@@ -576,3 +580,5 @@ class CRFEntityExtractor(EntityExtractor):
             entity_tagger.fit(X_train, y_train)
 
             self.entity_taggers[tag_name] = entity_tagger
+
+            logger.debug("Training finished.")
