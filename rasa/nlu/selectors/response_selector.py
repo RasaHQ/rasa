@@ -486,7 +486,9 @@ class DIET2DIET(DIET):
             tf_batch_data[TEXT_FEATURES],
             mask_text,
             self.text_name,
-            self.config[MASKED_LM],
+            sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
+            dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+            masked_lm_loss=self.config[MASKED_LM],
             sequence_ids=True,
         )
 

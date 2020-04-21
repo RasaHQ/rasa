@@ -1280,6 +1280,8 @@ class DIET(RasaModel):
         features: List[Union[tf.Tensor, tf.SparseTensor]],
         mask: tf.Tensor,
         name: Text,
+        sparse_dropout: bool = False,
+        dense_dropout: bool = False,
         masked_lm_loss: bool = False,
         sequence_ids: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
@@ -1289,11 +1291,7 @@ class DIET(RasaModel):
             seq_ids = None
 
         inputs = self._combine_sparse_dense_features(
-            features,
-            mask,
-            name,
-            sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
-            dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+            features, mask, name, sparse_dropout, dense_dropout,
         )
 
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
@@ -1446,7 +1444,9 @@ class DIET(RasaModel):
             tf_batch_data[TEXT_FEATURES],
             mask_text,
             self.text_name,
-            self.config[MASKED_LM],
+            sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
+            dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+            masked_lm_loss=self.config[MASKED_LM],
             sequence_ids=True,
         )
 
