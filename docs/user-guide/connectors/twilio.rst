@@ -39,7 +39,10 @@ Connecting to WhatsApp
 You can deploy a Rasa Open Source assistant to WhatsApp through Twilio. However, to do so, you have
 to have a `WhatsApp Business <https://www.whatsapp.com/business/>`_ profile. Associate
 your Whatsapp Business profile with the phone number you purchased through Twilio to
-access the `Twilio API for WhatsApp <https://www.twilio.com/whatsapp>`_.
+access the `Twilio API for WhatsApp <https://www.twilio.com/docs/whatsapp/api>`_.
+
+Note that according to the `API documentation <https://www.twilio.com/docs/whatsapp/api#using-phone-numbers-with-whatsapp>`_, 
+the phone number you use should be prefixed with `whatsapp+` in the ``credentials.yml`` described below.
 
 
 Applying the Credentials
@@ -52,7 +55,7 @@ Add the Twilio credentials to your  ``credentials.yml``:
    twilio:
      account_sid: "ACbc2dxxxxxxxxxxxx19d54bdcd6e41186"
      auth_token: "e231c197493a7122d475b4xxxxxxxxxx"
-     twilio_number: "+440123456789"
+     twilio_number: "+440123456789"  # if using WhatsApp: "whatsapp:+440123456789"
 
 Make sure to restart your Rasa Open Source server or container to make changes to
 which connectors are available. 
