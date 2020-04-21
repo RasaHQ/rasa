@@ -1,7 +1,7 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
     <title>Tracker Stores</title>
@@ -144,6 +144,7 @@ provides implementations for different store types out of the box." />
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/setting-up-ci-cd/">Setting up CI/CD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
@@ -413,7 +414,7 @@ First download the Oracle Instant Client from <a class="reference external" href
 rename it to <code class="docutils literal notranslate"><span class="pre">oracle.rpm</span></code> and store it in the directory from where you’ll be building the docker image.
 Copy the following into a file called <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code>:</p>
 <blockquote>
-<div><pre class="literal-block">FROM rasa/rasa:1.9.5-full
+<div><pre class="literal-block">FROM rasa/rasa:1.9.6-full
 
 # Switch to root user to install packages
 USER root
@@ -434,7 +435,7 @@ USER 1001</pre>
 </div></blockquote>
 <p>Then build the docker image:</p>
 <blockquote>
-<div><pre class="literal-block">docker build . -t rasa-oracle:1.9.5-oracle-full</pre>
+<div><pre class="literal-block">docker build . -t rasa-oracle:1.9.6-oracle-full</pre>
 </div></blockquote>
 <p>Now you can configure the tracker store in the <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> as described above,
 and start the container. The <code class="docutils literal notranslate"><span class="pre">dialect</span></code> parameter with this setup will be <code class="docutils literal notranslate"><span class="pre">oracle+cx_oracle</span></code>.
