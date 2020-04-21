@@ -117,7 +117,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         SCALE_LOSS: True,
         # ## Regularization parameters
         # The scale of regularization
-        REGULARIZATION_CONSTANT: 0.002,
+        REGULARIZATION_CONSTANT: 0.001,
         # The scale of how important is to minimize the maximum similarity
         # between embeddings of different labels.
         NEGATIVE_MARGIN_SCALE: 0.8,

@@ -234,7 +234,14 @@ You can specify the training data, the fraction, and the output directory using 
 
 
 This command will attempt to keep the proportions of intents the same in train and test.
+If you have NLG data for retrieval actions, this will be saved to seperate files:
 
+.. code-block:: bash
+
+   ls train_test_split
+
+         nlg_test_data.md     test_data.json
+         nlg_training_data.md training_data.json
 
 Convert Data Between Markdown and JSON
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

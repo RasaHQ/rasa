@@ -286,7 +286,7 @@ In the restaurant case, your stories would look something like this:
         ( ... all other slots the form set ... )
         - form{"name": null}
 
-Again, is is **strongly** recommended that you use interactive
+Again, it is **strongly** recommended that you use interactive
 learning to build these stories.
 Please read :ref:`section_interactive_learning_forms`
 on how to use interactive learning with forms.
