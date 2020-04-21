@@ -3,7 +3,7 @@ import os
 import typing
 
 import numpy as np
-from typing import Any, Dict, List, Optional, Text, Tuple, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, Type, Callable
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.utils.common as common_utils
@@ -95,7 +95,7 @@ class CRFEntityExtractor(EntityExtractor):
         "L2_c": 0.1,
     }
 
-    function_dict = {
+    function_dict: Dict[Text, Callable[[], Any]] = {
         "low": lambda crf_token: crf_token.text.lower(),
         "title": lambda crf_token: crf_token.text.istitle(),
         "prefix5": lambda crf_token: crf_token.text[:5],
@@ -376,12 +376,10 @@ class CRFEntityExtractor(EntityExtractor):
                         if feature == "pattern":
                             # add all regexes as a feature
                             regex_patterns = self.function_dict[feature](token)
-                            # pytype: disable=attribute-error
                             for pattern_name, matched in regex_patterns.items():
                                 token_features[
                                     f"{prefix}:{feature}:{pattern_name}"
                                 ] = matched
-                            # pytype: enable=attribute-error
                         else:
                             value = self.function_dict[feature](token)
                             token_features[f"{prefix}:{feature}"] = value
@@ -438,7 +436,7 @@ class CRFEntityExtractor(EntityExtractor):
         return features_out
 
     def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:
-        """Takes a message and converts it to crfsuite format."""
+        """Take a message and convert it to crfsuite format."""
 
         crf_format = []
         tokens = self.tokens_without_cls(message)

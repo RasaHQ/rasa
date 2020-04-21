@@ -21,7 +21,6 @@ ENTITY_ATTRIBUTE_START = "start"
 ENTITY_ATTRIBUTE_END = "end"
 ENTITY_ATTRIBUTE_CONFIDENCE = "confidence"
 
-
 EXTRACTOR = "extractor"
 
 PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}

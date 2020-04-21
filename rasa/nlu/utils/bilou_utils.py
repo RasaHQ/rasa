@@ -148,7 +148,7 @@ def build_tag_id_dict(
 def apply_bilou_schema(
     training_data: TrainingData, include_cls_token: bool = True
 ) -> None:
-    """Gets a list of BILOU entity tags and sets them on the given messages.
+    """Get a list of BILOU entity tags and set them on the given messages.
 
     Args:
         training_data: the training data
@@ -200,16 +200,16 @@ def map_message_entities(
 def bilou_tags_from_offsets(
     tokens: List[Token], entities: List[Tuple[int, int, Text]]
 ) -> List[Text]:
-    """Creates a list of BILOU tags for the given list of tokens and entities.
+    """Creates BILOU tags for the given tokens and entities.
 
     Args:
-        message: the message object
-        tokens: the list of tokens
-        entities: the list of start, end, and tag tuples
-        missing: tag for missing entities
+        message: The message object.
+        tokens: The list of tokens.
+        entities: The list of start, end, and tag tuples.
+        missing: The tag for missing entities.
 
     Returns:
-        list of BILOU tags
+        BILOU tags.
     """
     start_pos_to_token_idx = {token.start: i for i, token in enumerate(tokens)}
     end_pos_to_token_idx = {token.end: i for i, token in enumerate(tokens)}
@@ -254,7 +254,7 @@ def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
     B-a L-a.
 
     Args:
-        predicted_tags: list of predicted tags
+        predicted_tags: predicted tags
 
     Return:
         List of tags.

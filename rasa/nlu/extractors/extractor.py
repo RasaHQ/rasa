@@ -355,16 +355,16 @@ class EntityExtractor(Component):
         confidences: Optional[Dict[Text, List[float]]] = None,
     ) -> List[Dict[Text, Any]]:
         """
-        Converts predicted tags into proper entities.
+        Convert predicted tags into proper entities.
 
         Args:
-            text: the text of the message
-            tokens: list of tokens
-            tags: predicted tags
-            confidences: confidences of predicted tags
+            text: The text message.
+            tokens: Message tokens without CLS token.
+            tags: Predicted tags.
+            confidences: Confidences of predicted tags.
 
         Returns:
-            list of proper entities
+            Proper entities.
         """
         entities = []
 
@@ -430,12 +430,12 @@ class EntityExtractor(Component):
         """Get the value of the given tag name from the list of tags.
 
         Args:
-            tags: mapping of tag name to list of tags
-            tag_name: the tag name of interest
-            idx: the index position of the tag
+            tags: Mapping of tag name to list of tags;
+            tag_name: The tag name of interest.
+            idx: The index position of the tag.
 
         Returns:
-            the tag value
+            The tag value.
         """
         if tag_name in tags:
             return tags[tag_name][idx]
@@ -449,19 +449,19 @@ class EntityExtractor(Component):
         role_tag: Text,
         token: Token,
         confidence: Optional[float],
-    ):
+    ) -> Dict[Text, Any]:
         """Create a new entity.
 
         Args:
-            tag_names: the tag names to include in the entity
-            entity_tag: entity type value
-            group_tag: entity group value
-            role_tag: entity role value
-            token: the token
-            confidence: confidence value
+            tag_names: The tag names to include in the entity.
+            entity_tag: The entity type value.
+            group_tag: The entity group value.
+            role_tag: The entity role value.
+            token: The token.
+            confidence: The confidence value.
 
         Returns:
-            The entity dict.
+            Created entity.
 
         """
         entity = {
@@ -485,10 +485,10 @@ class EntityExtractor(Component):
         """Return tokens of given message without CLS token.
 
         Args:
-            message: the message
+            message: The message.
 
         Returns:
-            List of tokens.
+            Tokens without CLS token.
         """
         # [:-1] to remove the CLS token from the list of tokens
         return message.get(TOKENS_NAMES[TEXT])[:-1]
