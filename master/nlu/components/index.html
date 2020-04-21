@@ -1366,7 +1366,9 @@ However, additional parameters exist that can be adapted.</p>
 | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
 |                                 |                  | The higher the value the higher the regularization effect.   |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| use_sparse_input_dropout        | True             | If &#39;True&#39; apply dropout to sparse tensors.                   |
+| use_sparse_input_dropout        | False            | If &#39;True&#39; apply dropout to sparse input tensors.             |
++---------------------------------+------------------+--------------------------------------------------------------+
+| use_dense_input_dropout         | False            | If &#39;True&#39; apply dropout to dense input tensors.              |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
 |                                 |                  | Set to &#39;-1&#39; to evaluate just once at the end of training.    |
@@ -1974,7 +1976,9 @@ However, additional parameters exist that can be adapted.</p>
 | drop_rate_attention             | 0.0               | Dropout rate for attention. Value should be between 0 and 1. |
 |                                 |                   | The higher the value the higher the regularization effect.   |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| use_sparse_input_dropout        | False             | If &#39;True&#39; apply dropout to sparse tensors.                   |
+| use_sparse_input_dropout        | False             | If &#39;True&#39; apply dropout to sparse input tensors.             |
++---------------------------------+-------------------+--------------------------------------------------------------+
+| use_dense_input_dropout         | False             | If &#39;True&#39; apply dropout to dense input tensors.              |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | evaluate_every_number_of_epochs | 20                | How often to calculate validation accuracy.                  |
 |                                 |                   | Set to &#39;-1&#39; to evaluate just once at the end of training.    |
@@ -2213,7 +2217,9 @@ However, additional parameters exist that can be adapted.</p>
 | drop_rate_attention             | 0.0              | Dropout rate for attention. Value should be between 0 and 1. |
 |                                 |                  | The higher the value the higher the regularization effect.   |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| use_sparse_input_dropout        | True             | If &#39;True&#39; apply dropout to sparse tensors.                   |
+| use_sparse_input_dropout        | True             | If &#39;True&#39; apply dropout to sparse input tensors.             |
++---------------------------------+------------------+--------------------------------------------------------------+
+| use_dense_input_dropout         | True             | If &#39;True&#39; apply dropout to dense input tensors.              |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
 |                                 |                  | Set to &#39;-1&#39; to evaluate just once at the end of training.    |
