@@ -105,7 +105,7 @@ jobs:
       run: |
         make install-full
         export SPHINXBUILD=$(poetry run which sphinx-build)
-        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html && make linkcheck
+        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html && make SPHINXBUILD=$SPHINXBUILD linkcheck
         
 
   test:
