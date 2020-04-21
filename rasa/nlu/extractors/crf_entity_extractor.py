@@ -28,6 +28,7 @@ from rasa.nlu.constants import (
 )
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
+import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +202,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.entity_taggers is None:
             return []
 
-        tokens = self.tokens_without_cls(message)
+        tokens = train_utils.tokens_without_cls(message)
         crf_tokens = self._convert_to_crf_tokens(message)
 
         predictions = {}
@@ -495,7 +496,7 @@ class CRFEntityExtractor(EntityExtractor):
         """Take a message and convert it to crfsuite format."""
 
         crf_format = []
-        tokens = self.tokens_without_cls(message)
+        tokens = train_utils.tokens_without_cls(message)
 
         text_dense_features = self._get_dense_features(message)
         tags = self._get_tags(message)
@@ -526,7 +527,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _get_tags(self, message: Message) -> Dict[Text, List[Text]]:
         """Get assigned entity tags of message."""
-        tokens = self.tokens_without_cls(message)
+        tokens = train_utils.tokens_without_cls(message)
         tags = {}
 
         for tag_name in self.crf_order:

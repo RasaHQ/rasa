@@ -502,16 +502,3 @@ class EntityExtractor(Component):
                 ][idx]
 
         return entity
-
-    @staticmethod
-    def tokens_without_cls(message: Message) -> List[Token]:
-        """Return tokens of given message without CLS token.
-
-        Args:
-            message: The message.
-
-        Returns:
-            Tokens without CLS token.
-        """
-        # [:-1] to remove the CLS token from the list of tokens
-        return message.get(TOKENS_NAMES[TEXT])[:-1]

@@ -2,8 +2,15 @@ import numpy as np
 import logging
 import scipy.sparse
 from typing import Optional, Text, Dict, Any, Union, List
+
+from rasa.nlu.training_data import Message
 from rasa.core.constants import DIALOGUE
-from rasa.nlu.constants import TEXT
+from rasa.nlu.constants import (
+    TEXT,
+    TOKENS_NAMES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    POSITION_OF_CLS_TOKEN,
+)
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
@@ -234,3 +241,24 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     )
 
     return config
+
+
+def tokens_without_cls(message: Message, attribute: Text = TEXT) -> List[Token]:
+    """Return tokens of given message without __CLS__ token.
+
+    All tokenizers add a __CLS__ token to the end of the list of tokens for
+    text and responses. The token captures the sentence features.
+
+    Args:
+        message: The message.
+        attribute: Return tokens of provided attribute.
+
+    Returns:
+        Tokens without CLS token.
+    """
+    # return all tokens up to __CLS__ token for text and responses
+    if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+        return message.get(TOKENS_NAMES[attribute])[:POSITION_OF_CLS_TOKEN]
+
+    # we don't add the __CLS__ token for intents, return all tokens
+    return message.get(TOKENS_NAMES[attribute])

@@ -15,6 +15,7 @@ from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
+import rasa.utils.train_utils as train_utils
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -41,11 +42,10 @@ class MitieFeaturizer(DenseFeaturizer):
         return ["mitie", "numpy"]
 
     def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:
-
         return feature_extractor.num_dimensions
 
-    def get_tokens_by_attribute(self, example: Message, attribute: Text) -> Any:
-        return example.get(TOKENS_NAMES[attribute])
+    def get_tokens_by_attribute(self, example: Message, attribute: Text) -> List[Token]:
+        return train_utils.tokens_without_cls(example, attribute)
 
     def train(
         self,
@@ -64,11 +64,9 @@ class MitieFeaturizer(DenseFeaturizer):
     def process_training_example(
         self, example: Message, attribute: Text, mitie_feature_extractor: Any
     ):
-        attribute_tokens = self.get_tokens_by_attribute(example, attribute)
-        if attribute_tokens is not None:
-            features = self.features_for_tokens(
-                attribute_tokens, mitie_feature_extractor
-            )
+        tokens = train_utils.tokens_without_cls(example, attribute)
+        if tokens is not None:
+            features = self.features_for_tokens(tokens, mitie_feature_extractor)
             example.set(
                 DENSE_FEATURE_NAMES[attribute],
                 self._combine_with_existing_dense_features(
@@ -79,9 +77,8 @@ class MitieFeaturizer(DenseFeaturizer):
     def process(self, message: Message, **kwargs: Any) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        features = self.features_for_tokens(
-            message.get(TOKENS_NAMES[TEXT]), mitie_feature_extractor
-        )
+        tokens = train_utils.tokens_without_cls(message)
+        features = self.features_for_tokens(tokens, mitie_feature_extractor)
         message.set(
             DENSE_FEATURE_NAMES[TEXT],
             self._combine_with_existing_dense_features(
@@ -106,13 +103,9 @@ class MitieFeaturizer(DenseFeaturizer):
         tokens: List[Token],
         feature_extractor: "mitie.total_word_feature_extractor",
     ) -> np.ndarray:
-
-        # remove CLS token from tokens
-        tokens_without_cls = tokens[:-1]
-
         # calculate features
         features = []
-        for token in tokens_without_cls:
+        for token in tokens:
             features.append(feature_extractor.get_feature_vector(token.text))
         features = np.array(features)
 

@@ -12,6 +12,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
+import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +135,9 @@ class MitieEntityExtractor(EntityExtractor):
             )
 
         ents = self.extract_entities(
-            message.text, self.tokens_without_cls(message), mitie_feature_extractor
+            message.text,
+            train_utils.tokens_without_cls(message),
+            mitie_feature_extractor,
         )
         extracted = self.add_extractor_name(ents)
         extracted = self.clean_up_entities(message, extracted)
