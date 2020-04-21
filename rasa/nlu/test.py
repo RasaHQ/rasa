@@ -1482,7 +1482,9 @@ def compare_nlu(
             percent_string = f"{percentage}%_exclusion"
 
             _, train = train.train_test_split(percentage / 100)
-            training_examples_per_run.append(len(train.training_examples))
+            # only count for the first run and ignore the others
+            if run == 0:
+                training_examples_per_run.append(len(train.training_examples))
 
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, "train")
