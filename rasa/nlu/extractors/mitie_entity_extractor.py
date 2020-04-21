@@ -98,7 +98,7 @@ class MitieEntityExtractor(EntityExtractor):
         import mitie
 
         text = training_example.text
-        tokens = self.tokens_without_cls(training_example)
+        tokens = train_utils.tokens_without_cls(training_example)
         sample = mitie.ner_training_instance([t.text for t in tokens])
         for ent in training_example.get(ENTITIES, []):
             try:
