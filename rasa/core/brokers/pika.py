@@ -4,8 +4,20 @@ import os
 import time
 import typing
 from collections import deque
+from contextlib import contextmanager
 from threading import Thread
-from typing import Callable, Deque, Dict, Optional, Text, Union, Any, List, Tuple
+from typing import (
+    Callable,
+    Deque,
+    Dict,
+    Optional,
+    Text,
+    Union,
+    Any,
+    List,
+    Tuple,
+    Generator,
+)
 
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
@@ -53,10 +65,35 @@ def initialise_pika_connection(
     """
     import pika
 
-    parameters = _get_pika_parameters(
-        host, username, password, port, connection_attempts, retry_delay_in_seconds
-    )
-    return pika.BlockingConnection(parameters)
+    with _pika_log_level(logging.CRITICAL):
+        parameters = _get_pika_parameters(
+            host, username, password, port, connection_attempts, retry_delay_in_seconds
+        )
+        return pika.BlockingConnection(parameters)
+
+
+@contextmanager
+def _pika_log_level(temporary_log_level: int) -> Generator[None, None, None]:
+    """Change the log level of the `pika` library.
+
+    The log level will remain unchanged if the current log level is 10 (`DEBUG`) or
+    lower.
+
+    Args:
+        temporary_log_level: Temporary log level for pika. Will be revert to previous
+            log level when context manager exits.
+    """
+
+    pika_logger = logging.getLogger("pika")
+    old_log_level = pika_logger.level
+    is_debug_mode = logging.root.level <= logging.DEBUG
+
+    if not is_debug_mode:
+        pika_logger.setLevel(temporary_log_level)
+
+    yield
+
+    pika_logger.setLevel(old_log_level)
 
 
 def _get_pika_parameters(
