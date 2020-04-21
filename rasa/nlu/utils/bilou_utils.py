@@ -18,6 +18,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
+import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,7 @@ def apply_bilou_schema(
 
         tokens = message.get(TOKENS_NAMES[TEXT])
         if not include_cls_token:
-            tokens = tokens[:-1]
+            tokens = train_utils.tokens_without_cls(message)
 
         for attribute, message_key in [
             (ENTITY_ATTRIBUTE_TYPE, BILOU_ENTITIES),
@@ -193,8 +194,11 @@ def map_message_entities(
         )
 
     entities = [convert_entity(entity) for entity in message.get(ENTITIES, [])]
-    # filter out no entity tags
-    return [entity for entity in entities if entity[2] != NO_ENTITY_TAG]
+
+    # entities is a list of tuples (start, end, tag value).
+    # filter out all entities with tag value == NO_ENTITY_TAG.
+    tag_value_idx = 2
+    return [entity for entity in entities if entity[tag_value_idx] != NO_ENTITY_TAG]
 
 
 def bilou_tags_from_offsets(

@@ -358,7 +358,7 @@ class EntityExtractor(Component):
         confidences: Optional[Dict[Text, List[float]]] = None,
     ) -> List[Dict[Text, Any]]:
         """
-        Create entities from predictions.
+        Convert predictions into entities.
 
         Args:
             text: The text message.
@@ -377,12 +377,13 @@ class EntityExtractor(Component):
 
         for idx, token in enumerate(tokens):
             current_entity_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
-            current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
-            current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
 
             if current_entity_tag == NO_ENTITY_TAG:
                 last_entity_tag = NO_ENTITY_TAG
                 continue
+
+            current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
+            current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
 
             new_tag_found = (
                 last_entity_tag != current_entity_tag
