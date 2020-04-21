@@ -27,6 +27,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.utils.tensorflow.constants import BILOU_FLAG
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ class CRFEntityExtractor(EntityExtractor):
         # BILOU_flag determines whether to use BILOU tagging or not.
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
-        "BILOU_flag": True,
+        BILOU_FLAG: True,
         # crf_features is [before, token, after] array with before, token,
         # after holding keys about which features to use for each token,
         # for example, 'title' in array before will have the feature
@@ -95,7 +96,7 @@ class CRFEntityExtractor(EntityExtractor):
         "L2_c": 0.1,
     }
 
-    function_dict: Dict[Text, Callable[[], Any]] = {
+    function_dict: Dict[Text, Callable[[CRFToken], Any]] = {
         "low": lambda crf_token: crf_token.text.lower(),
         "title": lambda crf_token: crf_token.text.istitle(),
         "prefix5": lambda crf_token: crf_token.text[:5],
@@ -159,7 +160,7 @@ class CRFEntityExtractor(EntityExtractor):
             )
             return
 
-        if self.component_config["BILOU_flag"]:
+        if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data, include_cls_token=False)
 
         # only keep the CRFs for tags we actually have training data for
@@ -247,7 +248,7 @@ class CRFEntityExtractor(EntityExtractor):
             tag = max(token_predictions, key=lambda key: token_predictions[key])
             _tags.append(tag)
 
-            if self.component_config["BILOU_flag"]:
+            if self.component_config[BILOU_FLAG]:
                 # if we are using BILOU flags, we will sum up the prob
                 # of the B, I, L and U tags for an entity
                 _confidences.append(
@@ -278,7 +279,7 @@ class CRFEntityExtractor(EntityExtractor):
 
             _tags, _confidences = self._most_likely_tag(predicted_tags)
 
-            if self.component_config["BILOU_flag"]:
+            if self.component_config[BILOU_FLAG]:
                 bilou_utils.ensure_consistent_bilou_tagging(_tags)
                 _tags = bilou_utils.remove_bilou_prefixes(_tags)
 
@@ -298,7 +299,7 @@ class CRFEntityExtractor(EntityExtractor):
     ) -> "CRFEntityExtractor":
         from sklearn.externals import joblib
 
-        file_names = meta.get("file")
+        file_names = meta.get("files")
         entity_taggers = {}
 
         if not file_names:
@@ -313,6 +314,13 @@ class CRFEntityExtractor(EntityExtractor):
             model_file = os.path.join(model_dir, file_name)
             if os.path.exists(model_file):
                 entity_taggers[name] = joblib.load(model_file)
+            else:
+                logger.debug(
+                    f"Failed to load model for tag '{name}' for 'CRFEntityExtractor'. "
+                    f"Maybe you did not provide enough training data and no model was "
+                    f"trained or the path '{os.path.abspath(model_file)}' doesn't "
+                    f"exist?"
+                )
 
         return cls(meta, entity_taggers)
 
@@ -332,61 +340,93 @@ class CRFEntityExtractor(EntityExtractor):
                 joblib.dump(entity_tagger, model_file_name)
                 file_names[name] = file_name
 
-        return {"file": file_names}
+        return {"files": file_names}
 
     def _crf_tokens_to_features(
         self, crf_tokens: List[CRFToken], include_tag_features: bool = False
     ) -> List[Dict[Text, Any]]:
-        """Convert a word into discrete features including word before and word
-        after."""
+        """Convert the list of tokens into discrete features."""
 
         configured_features = self.component_config["features"]
         sentence_features = []
 
         for token_idx in range(len(crf_tokens)):
-            # token before (-1), current token (0), next token (+1)
+            # the features for the current token include features of the token
+            # before and after the current features (if defined in the config)
+            # token before (-1), current token (0), token after (+1)
             window_size = len(configured_features)
             half_window_size = window_size // 2
             window_range = range(-half_window_size, half_window_size + 1)
 
-            prefixes = [str(i) for i in window_range]
-
-            token_features = {}
-
-            for pointer_position in window_range:
-                current_token_idx = token_idx + pointer_position
-
-                if current_token_idx >= len(crf_tokens):
-                    # End Of Sentence
-                    token_features["EOS"] = True
-                elif current_token_idx < 0:
-                    # Beginning Of Sentence
-                    token_features["BOS"] = True
-                else:
-                    token = crf_tokens[current_token_idx]
-
-                    current_feature_idx = pointer_position + half_window_size
-                    prefix = prefixes[current_feature_idx]
-
-                    features = configured_features[current_feature_idx]
-                    if include_tag_features:
-                        features.append("entity")
-
-                    for feature in features:
-                        if feature == "pattern":
-                            # add all regexes as a feature
-                            regex_patterns = self.function_dict[feature](token)
-                            for pattern_name, matched in regex_patterns.items():
-                                token_features[
-                                    f"{prefix}:{feature}:{pattern_name}"
-                                ] = matched
-                        else:
-                            value = self.function_dict[feature](token)
-                            token_features[f"{prefix}:{feature}"] = value
+            token_features = self._create_features_for_token(
+                crf_tokens,
+                token_idx,
+                half_window_size,
+                window_range,
+                include_tag_features,
+            )
 
             sentence_features.append(token_features)
 
         return sentence_features
+
+    def _create_features_for_token(
+        self,
+        crf_tokens: List[CRFToken],
+        token_idx: int,
+        half_window_size: int,
+        window_range: range,
+        include_tag_features: bool,
+    ):
+        """Convert a token into discrete features including word before and word
+        after."""
+
+        configured_features = self.component_config["features"]
+        prefixes = [str(i) for i in window_range]
+
+        token_features = {}
+
+        # iterate over the tokens in the window range (-1, 0, +1) to collect the
+        # features for the token at token_idx
+        for pointer_position in window_range:
+            current_token_idx = token_idx + pointer_position
+
+            if current_token_idx >= len(crf_tokens):
+                # token is at the end of the sentence
+                token_features["EOS"] = True
+            elif current_token_idx < 0:
+                # token is at the beginning of the sentence
+                token_features["BOS"] = True
+            else:
+                token = crf_tokens[current_token_idx]
+
+                # get the features to extract for the token we are currently looking at
+                current_feature_idx = pointer_position + half_window_size
+                features = configured_features[current_feature_idx]
+                # we add the 'entity' feature to include the entity type as features
+                # for the role and group CRFs
+                if include_tag_features:
+                    features.append("entity")
+
+                prefix = prefixes[current_feature_idx]
+
+                for feature in features:
+                    if feature == "pattern":
+                        # add all regexes extracted from the 'RegexFeaturizer' as a
+                        # feature: 'pattern_name' is the name of the pattern the user
+                        # set in the training data, 'matched' is either 'True' or
+                        # 'False' depending on whether the token actually matches the
+                        # pattern or not
+                        regex_patterns = self.function_dict[feature](token)
+                        for pattern_name, matched in regex_patterns.items():
+                            token_features[
+                                f"{prefix}:{feature}:{pattern_name}"
+                            ] = matched
+                    else:
+                        value = self.function_dict[feature](token)
+                        token_features[f"{prefix}:{feature}"] = value
+
+        return token_features
 
     @staticmethod
     def _crf_tokens_to_tags(crf_tokens: List[CRFToken], tag_name: Text) -> List[Text]:
@@ -399,7 +439,21 @@ class CRFEntityExtractor(EntityExtractor):
         return [crf_token.entity_tag for crf_token in crf_tokens]
 
     @staticmethod
-    def _pattern_of_token(message: Message, idx: int) -> Dict:
+    def _pattern_of_token(message: Message, idx: int) -> Dict[Text, bool]:
+        """Get the patterns of the token at the given index extracted by the
+        'RegexFeaturizer'.
+
+        The 'RegexFeaturizer' adds all patterns listed in the training data to the
+        token. The pattern name is mapped to either 'True' (pattern applies to token) or
+        'False' (pattern does not apply to token).
+
+        Args:
+            message: The message.
+            idx: The token index.
+
+        Returns:
+            The pattern dict.
+        """
         if message.get(TOKENS_NAMES[TEXT]) is not None:
             return message.get(TOKENS_NAMES[TEXT])[idx].get("pattern", {})
         else:
@@ -474,7 +528,7 @@ class CRFEntityExtractor(EntityExtractor):
         tags = {}
 
         for tag_name in self.crf_order:
-            if self.component_config["BILOU_flag"]:
+            if self.component_config[BILOU_FLAG]:
                 bilou_key = bilou_utils.get_bilou_key_for_tag(tag_name)
                 if message.get(bilou_key):
                     _tags = message.get(bilou_key)
