@@ -8,6 +8,8 @@ linkcheck_anchors_ignore = [".*"]
 linkcheck_ignore = [
     r"http://localhost:\d+/",
     r"https://github.com/mit-nlp/MITIE/releases/download/",
+    r"https://github.com/rasahq/rasa/issues/.*",
+    r"https://github.com/RasaHQ/rasa/issues/.*",
 ]
 linkcheck_retries = 2
 linkcheck_timeout = 5
