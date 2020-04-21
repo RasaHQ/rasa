@@ -1,7 +1,8 @@
-from typing import Dict, Text, List
+from typing import Dict, Text, List, Any
 
 import pytest
 
+from rasa.nlu.components import Component, ComponentBuilder
 from rasa.nlu import train
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter
@@ -12,12 +13,14 @@ from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
 
-def as_pipeline(*components):
+def pipeline_from_components(*components: Text) -> List[Dict[Text, Text]]:
     return [{"name": c} for c in components]
 
 
-async def test_train_persist_load_with_composite_entities(component_builder, tmpdir):
-    pipeline = as_pipeline("WhitespaceTokenizer", "CRFEntityExtractor")
+async def test_train_persist_load_with_composite_entities(
+    component_builder: ComponentBuilder, tmpdir: Any
+):
+    pipeline = pipeline_from_components("WhitespaceTokenizer", "CRFEntityExtractor")
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
@@ -82,9 +85,11 @@ async def test_train_persist_load_with_composite_entities(component_builder, tmp
     ],
 )
 async def test_train_persist_with_different_configurations(
-    config_params, component_builder, tmpdir
+    config_params: Dict[Text, Any], component_builder: ComponentBuilder, tmpdir: Any
 ):
-    pipeline = as_pipeline("SpacyNLP", "SpacyTokenizer", "CRFEntityExtractor")
+    pipeline = pipeline_from_components(
+        "SpacyNLP", "SpacyTokenizer", "CRFEntityExtractor"
+    )
     assert pipeline[2]["name"] == "CRFEntityExtractor"
     pipeline[2].update(config_params)
 
@@ -113,7 +118,7 @@ async def test_train_persist_with_different_configurations(
     assert detected_entities[0]["value"] == "italian"
 
 
-def test_crf_use_dense_features(spacy_nlp):
+def test_crf_use_dense_features(spacy_nlp: Any):
     crf_extractor = CRFEntityExtractor(
         component_config={
             "features": [
@@ -162,7 +167,7 @@ def test_crf_use_dense_features(spacy_nlp):
         ([{"O": 0.99, "person": 0.03}], ["O"], [0.99]),
     ],
 )
-def test__most_likely_entity(
+def test_most_likely_entity(
     entity_predictions: List[Dict[Text, float]],
     expected_label: Text,
     expected_confidence: float,

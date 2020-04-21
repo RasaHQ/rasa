@@ -1,6 +1,6 @@
 import logging
 from typing import Text, List, Optional
-
+from _pytest.logging import LogCaptureFixture
 import pytest
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
@@ -166,7 +166,10 @@ def test_apply_bilou_schema():
     ],
 )
 def test_check_consistent_bilou_tagging(
-    tags: List[Text], expected_tags: List[Text], debug_message: Optional[Text], caplog
+    tags: List[Text],
+    expected_tags: List[Text],
+    debug_message: Optional[Text],
+    caplog: LogCaptureFixture,
 ):
 
     with caplog.at_level(logging.DEBUG):
