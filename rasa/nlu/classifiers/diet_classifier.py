@@ -1317,7 +1317,7 @@ class DIET(RasaModel):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        label_lengths = self.sequence_lengths_for(
+        label_lengths = self._get_sequence_lengths(
             self.tf_label_data[LABEL_SEQ_LENGTH][0]
         )
         mask_label = self._compute_mask(label_lengths)
@@ -1424,7 +1424,8 @@ class DIET(RasaModel):
         # to track correctly dynamic sequences
         return tf.expand_dims(mask, -1)
 
-    def sequence_lengths_for(self, sequence_lengths: tf.Tensor) -> tf.Tensor:
+    @staticmethod
+    def _get_sequence_lengths(sequence_lengths: tf.Tensor) -> tf.Tensor:
         return tf.cast(sequence_lengths, dtype=tf.int32)
 
     def batch_loss(
@@ -1432,7 +1433,7 @@ class DIET(RasaModel):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        sequence_lengths = self.sequence_lengths_for(tf_batch_data[TEXT_SEQ_LENGTH][0])
+        sequence_lengths = self._get_sequence_lengths(tf_batch_data[TEXT_SEQ_LENGTH][0])
         mask_text = self._compute_mask(sequence_lengths)
 
         (
@@ -1464,7 +1465,7 @@ class DIET(RasaModel):
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
 
-            label_lengths = self.sequence_lengths_for(
+            label_lengths = self._get_sequence_lengths(
                 tf_batch_data[LABEL_SEQ_LENGTH][0]
             )
             mask_label = self._compute_mask(label_lengths)
@@ -1497,7 +1498,7 @@ class DIET(RasaModel):
             batch_in, self.predict_data_signature
         )
 
-        sequence_lengths = self.sequence_lengths_for(tf_batch_data[TEXT_SEQ_LENGTH][0])
+        sequence_lengths = self._get_sequence_lengths(tf_batch_data[TEXT_SEQ_LENGTH][0])
         mask_text = self._compute_mask(sequence_lengths)
 
         text_transformed, _, _, _ = self._create_sequence(
