@@ -22,8 +22,11 @@ import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
-
-BILOU_PREFIXES = ["B-", "I-", "U-", "L-"]
+BEGINNING = "B-"
+INSIDE = "I-"
+LAST = "L-"
+UNIT = "U-"
+BILOU_PREFIXES = [BEGINNING, INSIDE, LAST, UNIT]
 
 
 def bilou_prefix_from_tag(tag: Text) -> Optional[Text]:
@@ -35,7 +38,7 @@ def bilou_prefix_from_tag(tag: Text) -> Optional[Text]:
     Returns: the BILOU prefix of the tag
     """
     if tag[:2] in BILOU_PREFIXES:
-        return tag[0]
+        return tag[:2]
     return None
 
 
@@ -240,12 +243,12 @@ def _add_bilou_tags_to_entities(
         # Only interested if the tokenization is correct
         if start_token_idx is not None and end_token_idx is not None:
             if start_token_idx == end_token_idx:
-                bilou[start_token_idx] = f"U-{label}"
+                bilou[start_token_idx] = f"{UNIT}{label}"
             else:
-                bilou[start_token_idx] = f"B-{label}"
+                bilou[start_token_idx] = f"{BEGINNING}{label}"
                 for i in range(start_token_idx + 1, end_token_idx):
-                    bilou[i] = f"I-{label}"
-                bilou[end_token_idx] = f"L-{label}"
+                    bilou[i] = f"{INSIDE}{label}"
+                bilou[end_token_idx] = f"{LAST}{label}"
 
 
 def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
@@ -268,20 +271,20 @@ def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
         prefix = bilou_prefix_from_tag(predicted_tags[idx])
         tag = tag_without_prefix(predicted_tags[idx])
 
-        if prefix == "B":
+        if prefix == BEGINNING:
             last_idx = _find_bilou_end(idx, predicted_tags)
 
             # ensure correct BILOU annotations
             if last_idx == idx:
-                predicted_tags[idx] = f"U-{tag}"
+                predicted_tags[idx] = f"{UNIT}{tag}"
             elif last_idx - idx == 1:
-                predicted_tags[idx] = f"B-{tag}"
-                predicted_tags[last_idx] = f"L-{tag}"
+                predicted_tags[idx] = f"{BEGINNING}{tag}"
+                predicted_tags[last_idx] = f"{LAST}{tag}"
             else:
-                predicted_tags[idx] = f"B-{tag}"
-                predicted_tags[last_idx] = f"L-{tag}"
+                predicted_tags[idx] = f"{BEGINNING}{tag}"
+                predicted_tags[last_idx] = f"{LAST}{tag}"
                 for i in range(idx + 1, last_idx):
-                    predicted_tags[i] = f"I-{tag}"
+                    predicted_tags[i] = f"{INSIDE}{tag}"
 
     return predicted_tags
 
@@ -304,9 +307,9 @@ def _find_bilou_end(start_idx: int, predicted_tags: List[Text]) -> int:
                 "[B-a, I-a, L-a].\nAssuming B- class is correct."
             )
 
-        if prefix == "L":
+        if prefix == LAST:
             finished = True
-        elif prefix == "I":
+        elif prefix == INSIDE:
             # middle part of the entity
             current_idx += 1
         else:

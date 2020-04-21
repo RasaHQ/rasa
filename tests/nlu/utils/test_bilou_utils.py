@@ -28,11 +28,11 @@ def test_entity_name_from_tag(tag, expected):
 @pytest.mark.parametrize(
     "tag, expected",
     [
-        ("B-person", "B"),
-        ("I-location", "I"),
+        ("B-person", "B-"),
+        ("I-location", "I-"),
         ("location", None),
-        ("U-company", "U"),
-        ("L-company", "L"),
+        ("U-company", "U-"),
+        ("L-company", "L-"),
         ("O-company", None),
     ],
 )
@@ -82,12 +82,12 @@ def test_build_tag_id_dict():
         "O": 0,
         "B-location": 1,
         "I-location": 2,
-        "U-location": 3,
-        "L-location": 4,
+        "L-location": 3,
+        "U-location": 4,
         "B-organisation": 5,
         "I-organisation": 6,
-        "U-organisation": 7,
-        "L-organisation": 8,
+        "L-organisation": 7,
+        "U-organisation": 8,
     }
 
 
