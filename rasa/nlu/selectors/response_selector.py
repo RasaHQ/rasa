@@ -318,7 +318,9 @@ class ResponseSelector(DIETClassifier):
         retrieval_intent_name = self.retrieval_intent_mapping.get(label.get("name"))
 
         for ranking in label_ranking:
-            ranking["full_retrieval_intent"] = self.retrieval_intent_mapping.get(ranking.get("name"))
+            ranking["full_retrieval_intent"] = self.retrieval_intent_mapping.get(
+                ranking.get("name")
+            )
 
         selector_key = (
             self.retrieval_intent
