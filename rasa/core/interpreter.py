@@ -382,7 +382,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
                                 name = state[key].as_dict()["text"]
                                 example = find_same(name, TEXT, training_data)
                                 state[key] = example
-        
+
         self.slot_states = domain.slot_states
 
         self.trainer.persist(output_path, fixed_model_name="nlu")
