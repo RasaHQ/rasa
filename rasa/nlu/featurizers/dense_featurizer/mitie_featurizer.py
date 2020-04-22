@@ -39,9 +39,6 @@ class MitieFeaturizer(DenseFeaturizer):
     def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:
         return feature_extractor.num_dimensions
 
-    def get_tokens_by_attribute(self, example: Message, attribute: Text) -> List[Token]:
-        return train_utils.tokens_without_cls(example, attribute)
-
     def train(
         self,
         training_data: TrainingData,
