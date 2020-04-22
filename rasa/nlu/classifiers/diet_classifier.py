@@ -1193,9 +1193,12 @@ class DIET(RasaModel):
                     _f = f
 
                 dense_f = self._tf_layers[f"sparse_to_dense.{name}"](_f)
-                dense_f = self._tf_layers[f"dense_input_dropout.{name}"](
-                    dense_f, self._training
-                )
+
+                if dense_dropout:
+                    dense_f = self._tf_layers[f"dense_input_dropout.{name}"](
+                        dense_f, self._training
+                    )
+
                 dense_features.append(dense_f)
             else:
                 dense_features.append(f)
