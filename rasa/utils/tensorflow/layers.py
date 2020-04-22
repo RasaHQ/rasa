@@ -553,7 +553,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         scale_loss: bool,
         name: Optional[Text] = None,
         parallel_iterations: int = 1000,
-        same_sampling: bool = True,
+        same_sampling: bool = False,
     ) -> None:
         super().__init__(name=name)
         self.num_neg = num_neg
