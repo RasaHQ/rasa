@@ -82,12 +82,15 @@ In addition to typical text, image, button, and custom responses, the Facebook M
    utter_fb_buttons_example:
       - text: Hello World!
         buttons:
-          - title: Button Title
-            payload: /example_intent
-          - title: Button Title
-            payload: /example_intent
           - title: Button title over 20 characters # this will be truncated to: "Button title over..."
             payload: /example_intent
+          - title: Link in Messenger
+            type: web_url
+            url: https://youtu.be/dQw4w9WgXcQ
+          - title: Calls in Messenger
+            type: phone_number
+            payload: +15105551234
+
 
 .. warning::
 
