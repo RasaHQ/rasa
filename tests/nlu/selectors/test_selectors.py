@@ -43,3 +43,11 @@ def test_train_selector(pipeline, component_builder, tmpdir):
         .get("default")
         .get("full_retrieval_intent")
     ) is not None
+
+    ranking = parsed.get(RESPONSE_SELECTOR_PROPERTY_NAME).get("default").get("ranking")
+    assert (ranking) is not None
+
+    for rank in ranking:
+        assert rank.get("name") is not None
+        assert rank.get("confidence") is not None
+        assert rank.get("full_retrieval_intent") is not None
