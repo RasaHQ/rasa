@@ -195,9 +195,9 @@ class RasaModel(tf.keras.models.Model):
 
         self.total_loss.update_state(total_loss)
 
-        # calculate the gradients that comes from supervision signal
+        # calculate the gradients that come from supervision signal
         prediction_gradients = tape.gradient(prediction_loss, self.trainable_variables)
-        # calculate the gradients that comes from regularization
+        # calculate the gradients that come from regularization
         regularization_gradients = tape.gradient(
             regularization_loss, self.trainable_variables
         )
