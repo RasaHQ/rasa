@@ -5,6 +5,8 @@ import pytest
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.training_data.formats import MarkdownReader
 
 
 @pytest.mark.parametrize(
@@ -245,3 +247,53 @@ def test_clean_up_entities(
     updated_entities = extractor.clean_up_entities(message, entities, keep)
 
     assert updated_entities == expected_entities
+
+
+@pytest.mark.parametrize(
+    "text, warnings",
+    [
+        (
+            "## intent:test\n"
+            "- I want to fly from [Berlin](location) to [ San Fransisco](location)\n",
+            1,
+        ),
+        (
+            "## intent:test\n"
+            "- I want to fly from [Berlin ](location) to [San Fransisco](location)\n",
+            1,
+        ),
+        (
+            "## intent:test\n"
+            "- I want to fly from [Berlin](location) to [San Fransisco.](location)\n"
+            "- I have nothing to say.",
+            1,
+        ),
+        (
+            "## intent:test\n"
+            "- I have nothing to say.\n"
+            "- I want to fly from [Berlin](location) to[San Fransisco](location)\n",
+            1,
+        ),
+        (
+            "## intent:test\n"
+            "- I want to fly from [Berlin](location) to[San Fransisco](location)\n"
+            "- Book a flight from [London](location) to [Paris.](location)\n",
+            2,
+        ),
+    ],
+)
+def test_check_check_correct_entity_annotations(text: Text, warnings: int):
+    reader = MarkdownReader()
+    tokenizer = WhitespaceTokenizer()
+
+    training_data = reader.reads(text)
+    tokenizer.train(training_data)
+
+    with pytest.warns(UserWarning) as record:
+        EntityExtractor.check_correct_entity_annotations(training_data)
+
+    assert len(record) == warnings
+    assert all(
+        [excerpt in record[0].message.args[0]]
+        for excerpt in ["Misaligned entity annotation in sentence"]
+    )

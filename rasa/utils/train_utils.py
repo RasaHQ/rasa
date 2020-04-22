@@ -2,8 +2,18 @@ import numpy as np
 import logging
 import scipy.sparse
 from typing import Optional, Text, Dict, Any, Union, List
+
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.nlu.training_data import TrainingData
 from rasa.core.constants import DIALOGUE
-from rasa.nlu.constants import TEXT
+from rasa.nlu.constants import (
+    TEXT,
+    ENTITIES,
+    TOKENS_NAMES,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    INTENT,
+)
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
@@ -33,7 +43,7 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     COSINE,
 )
-
+import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
