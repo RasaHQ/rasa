@@ -333,7 +333,7 @@ featurized as normal.
     If you really want these entities not to influence action prediction we
     suggest you make the slots with the same name of type ``unfeaturized``.
 
-.. _session_config:
+.. _session-configuration:
 
 Session configuration
 ---------------------

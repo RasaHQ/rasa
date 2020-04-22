@@ -1,0 +1,1 @@
+Update ``rasa shell`` documentation to explain session start behavior and how to see typical external channel greetings and/or behavior.
