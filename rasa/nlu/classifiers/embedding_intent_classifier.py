@@ -22,6 +22,7 @@ from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     NUM_NEG,
     SPARSE_INPUT_DROPOUT,
+    DENSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
@@ -117,7 +118,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         SCALE_LOSS: True,
         # ## Regularization parameters
         # The scale of regularization
-        REGULARIZATION_CONSTANT: 0.002,
+        REGULARIZATION_CONSTANT: 0.001,
         # The scale of how important is to minimize the maximum similarity
         # between embeddings of different labels.
         NEGATIVE_MARGIN_SCALE: 0.8,
@@ -127,6 +128,8 @@ class EmbeddingIntentClassifier(DIETClassifier):
         WEIGHT_SPARSITY: 0.0,
         # If 'True' apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
+        # If 'True' apply dropout to dense input tensors
+        DENSE_INPUT_DROPOUT: False,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
         # Small values may hurt performance, e.g. model accuracy.
