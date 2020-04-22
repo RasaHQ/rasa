@@ -1,5 +1,4 @@
 import asyncio
-import os
 import random
 import uuid
 
@@ -41,7 +40,7 @@ from tests.core.conftest import (
     MOODBOT_MODEL_PATH,
     INCORRECT_NLU_DATA,
 )
-from tests.utilities import update_number_of_epochs
+
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 

@@ -96,24 +96,24 @@ def test_lookup_table_md():
 def test_composite_entities_data():
     td = training_data.load_data("data/test/demo-rasa-composite-entities.md")
     assert not td.is_empty()
-    assert len(td.entity_examples) == 16
-    assert len(td.intent_examples) == 51
-    assert len(td.training_examples) == 51
-    assert td.entity_synonyms == {"chines": "chinese"}
+    assert len(td.entity_examples) == 11
+    assert len(td.intent_examples) == 45
+    assert len(td.training_examples) == 45
+    assert td.entity_synonyms == {"SF": "San Fransisco"}
     assert td.intents == {
         "order_pizza",
-        "restaurant_search",
+        "book_flight",
         "chitchat",
         "greet",
         "goodbye",
         "affirm",
     }
-    assert td.entities == {"location", "cuisine", "topping", "size"}
+    assert td.entities == {"location", "topping", "size"}
     assert td.entity_groups == {"1", "2"}
-    assert td.entity_roles == {"european", "asian", "latin america"}
-    assert td.examples_per_entity["entity 'location'"] == 7
+    assert td.entity_roles == {"to", "from"}
+    assert td.examples_per_entity["entity 'location'"] == 8
     assert td.examples_per_entity["group '1'"] == 9
-    assert td.examples_per_entity["role 'european'"] == 1
+    assert td.examples_per_entity["role 'from'"] == 3
 
 
 @pytest.mark.parametrize(
