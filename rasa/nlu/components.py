@@ -228,10 +228,12 @@ def validate_required_components_from_data(
     if data.entity_examples and not any_components_in_pipeline(
         {"DIETClassifier", "CRFEntityExtractor"}, pipeline
     ):
-        composite_entities_used = (
+        entity_groups_used = (
             data.entity_groups is not None and len(data.entity_groups) > 0
-        ) or (data.entity_roles is not None and len(data.entity_roles) > 0)
-        if composite_entities_used:
+        )
+        entity_roles_used = data.entity_roles is not None and len(data.entity_roles) > 0
+
+        if entity_groups_used or entity_roles_used:
             raise_warning(
                 "You have defined training data with entities that have roles/groups, "
                 "but your NLU pipeline does not include a 'DIETClassifier' or a "

@@ -6,7 +6,7 @@
 - [intent:goodbye](#intentgoodbye)
 - [intent:greet](#intentgreet)
 - [intent:chitchat](#intentchitchat)
-- [intent:restaurant_search](#intentrestaurant_search)
+- [intent:book_flight](#intentbook_flight)
 - [intent:order_pizza](#intentorder_pizza)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -50,22 +50,16 @@
 - How's the weather?
 - Is it too hot outside?
 
-## intent:restaurant_search
-- i'm looking for a place to eat
-- I want to grab lunch
-- I am searching for a dinner spot
-- i'm looking for a place in the [north](location) of town
-- show me [italian]{"entity": "cuisine", "role": "european"} restaurants
-- show me [chines]{"entity": "cuisine", "value": "chinese", "role": "asian"} restaurants in the [north](location)
-- show me a [mexican]{"entity": "cuisine", "role": "latin america"} place in the [centre](location)
-- i am looking for an [indian]{"entity": "cuisine", "role": "asian"} spot called olaolaolaolaolaola
-- search for restaurants
-- anywhere in the [west](location)
-- anywhere near [18328](location)
-- I am looking for [asian fusion](cuisine) food
-- I am looking a restaurant in [29432](location)
-- I am looking for [mexican indian fusion](cuisine)
-- [central](location) [indian]{"entity": "cuisine", "role": "asian"} restaurant
+## intent:book_flight
+- i'm looking for a flight
+- I want to book a flight
+- i'm looking for a flight to [Berlin]{"entity": "location", "role": "to"}
+- show me flights from [Amsterdam]{"entity": "location", "role": "from"}
+- show me flights to [London]{"entity": "location", "role": "to"}
+- i am looking for a flight from [SF]{"entity": "location", "value": "San Fransisco", "role": "from"} to [New York]{"entity": "location", "role": "to"}
+- search for flights
+- from [Madrid]{"entity": "location", "role": "from"} to [Munich]{"entity": "location", "role": "to"}
+- any flight to [Liverpool]{"entity": "location", "role": "to"}
 
 ## intent:order_pizza
 - i want a [large]{"entity": "size", "group": "1"} pizza with [tomato]{"entity": "topping", "group": "1"} and a [small]{"entity": "size", "group": "2"} pizza with [bacon]{"entity": "topping", "group": "2"}
