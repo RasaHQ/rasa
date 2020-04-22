@@ -39,6 +39,7 @@ from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     NUM_NEG,
     SPARSE_INPUT_DROPOUT,
+    DENSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
@@ -179,8 +180,10 @@ class ResponseSelector(DIETClassifier):
         DROP_RATE: 0.2,
         # Dropout rate for attention
         DROP_RATE_ATTENTION: 0,
-        # If 'True' apply dropout to sparse tensors
+        # If 'True' apply dropout to sparse input tensors
         SPARSE_INPUT_DROPOUT: False,
+        # If 'True' apply dropout to dense input tensors
+        DENSE_INPUT_DROPOUT: False,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
         # Small values may hurt performance, e.g. model accuracy.
@@ -472,7 +475,9 @@ class DIET2DIET(DIET):
             tf_batch_data[TEXT_FEATURES],
             mask_text,
             self.text_name,
-            self.config[MASKED_LM],
+            sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
+            dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+            masked_lm_loss=self.config[MASKED_LM],
             sequence_ids=True,
         )
 
