@@ -40,7 +40,7 @@ clean:
 	rm -rf docs/_build
 
 install:
-	poetry run python -m pip install -U 'pip<20'
+	poetry run python -m pip install -U pip
 	poetry install
 
 install-mitie:
