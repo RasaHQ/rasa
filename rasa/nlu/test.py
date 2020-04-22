@@ -40,6 +40,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 
 logger = logging.getLogger(__name__)
 
@@ -1080,12 +1081,18 @@ def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
 
     Processors are removed since they do not detect the boundaries themselves.
     """
-
     from rasa.nlu.extractors.extractor import EntityExtractor
+    from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 
-    extractors = {
-        c.name for c in interpreter.pipeline if isinstance(c, EntityExtractor)
-    }
+    extractors = set()
+    for c in interpreter.pipeline:
+        if isinstance(c, EntityExtractor):
+            if isinstance(c, DIETClassifier):
+                if c.component_config[ENTITY_RECOGNITION]:
+                    extractors.add(c.name)
+            else:
+                extractors.add(c.name)
+
     return extractors - ENTITY_PROCESSORS
 
 
@@ -1543,7 +1550,9 @@ def compare_nlu(
             percent_string = f"{percentage}%_exclusion"
 
             _, train = train.train_test_split(percentage / 100)
-            training_examples_per_run.append(len(train.training_examples))
+            # only count for the first run and ignore the others
+            if run == 0:
+                training_examples_per_run.append(len(train.training_examples))
 
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, "train")
