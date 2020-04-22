@@ -1,12 +1,12 @@
-Add support for composite entities in Rasa NLU.
+Add support for entities with roles and grouping of entities in Rasa NLU.
 
-Composite entities allow you to define a role and/or group label in addition to the entity type.
+You can now define a role and/or group label in addition to the entity type for entities.
 Use the role label if an entity can play different roles in your assistant.
 For example, a city can be a destination or a departure city.
 The group label can be use to group multiple entities together.
-For example, you could group different pizza orders together, so that you know what toppings goes with which pizza and
+For example, you could group different pizza orders, so that you know what toppings goes with which pizza and
 what size which pizza has.
-For more details see :ref:`composite-entities`.
+For more details see :ref:`entities-roles-groups`.
 
 To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
 We updated the tracker method ``get_latest_entity_values`` to take an optional role/group label.

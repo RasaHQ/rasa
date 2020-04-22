@@ -1,4 +1,4 @@
-Update training data format for NLU to support composite entities.
+Update training data format for NLU to support entities with a role or group label.
 
 You can now specify synonyms, roles, and groups of entities using the following data format:
 Markdown:

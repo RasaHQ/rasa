@@ -103,10 +103,10 @@ some training data.
 See :ref:`training-data-format` for details on how to include entities in your training data.
 
 
-.. _composite-entities:
+.. _entities-roles-groups:
 
-Composite Entities
-^^^^^^^^^^^^^^^^^^
+Entities with Roles and Groups
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Assigning custom entity labels to words, allow you to define certain concepts in the data.
 For example, we can define what a `city` is:
@@ -120,12 +120,13 @@ Let's assume we want to build an assistant that should book a flight for us.
 The assistant needs to know which of the two cities in the example above is the departure city and which is the
 destination city.
 ``Berlin`` and ``San Francisco`` are still cities, but they play a different role in our example.
-Composite entities allow you to assign a role and/or a group label in addition to the entity label.
+To distinguish between the different roles, you can assign a role label in addition to the entity label.
 
 .. code-block:: none
 
     - I want to fly from [Berlin]{"entity": "city", "role": "departure"} to [San Francisco]{"entity": "city", "role": "destination"}.
 
+You can also group different entities by specifying a group label next to the entity label.
 The group label can, for example, be used to define different orders.
 In the following example we use the group label to reference what toppings goes with which pizza and
 what size which pizza has.
@@ -135,7 +136,7 @@ what size which pizza has.
     Give me a [small]{"entity": "size", "group": "1"} pizza with [mushrooms]{"entity": "topping", "group": "1"} and
     a [large]{"entity": "size", "group": "2"} [pepperoni]{"entity": "topping", "group": "2"}
 
-See :ref:`training-data-format` for details on how to define composite entities in your training data.
+See :ref:`training-data-format` for details on how to define entities with roles and groups in your training data.
 
 The entity object returned by the extractor will include the detected role/group label.
 
@@ -168,8 +169,8 @@ The entity object returned by the extractor will include the detected role/group
 
     Composite entities are currently only supported by the :ref:``diet-classifier`` and :ref:``CRFEntityExtractor``.
 
-In order to properly train your model with composite entities, make sure to include enough training data examples
-for every combination of entity and role/group label.
+In order to properly train your model with entities that have roles/groups, make sure to include enough training data
+examples for every combination of entity and role/group label.
 Also make sure to have some variations in your training data, so that the model is able to generalize.
 For example, you should not only have example like ``fly FROM x TO y``, but also include examples like
 ``fly TO y FROM x``.
