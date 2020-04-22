@@ -165,7 +165,9 @@ class EntityExtractor(Component):
                     }
                 )
             else:
+                # pytype: disable=attribute-error
                 misaligned_entities[_idx]["entity_indices"].append(entity_idx)
+                # pytype: enable=attribute-error
 
         return misaligned_entities
 
