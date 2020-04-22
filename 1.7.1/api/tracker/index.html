@@ -455,12 +455,23 @@ should be excluded from the results. Can be used to skip
 
 <dl class="py method">
 <dt id="rasa.core.trackers.DialogueStateTracker.get_latest_entity_values">
-<code class="sig-name descname">get_latest_entity_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entity_type</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get entity values found for the passed entity name in latest msg.</p>
+<code class="sig-name descname">get_latest_entity_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entity_type</span></em>, <em class="sig-param"><span class="n">entity_role</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">entity_group</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get entity values found for the passed entity type and optional role and
+group in latest message.</p>
 <p>If you are only interested in the first entity of a given type use
 <cite>next(tracker.get_latest_entity_values(“my_entity_name”), None)</cite>.
 If no entity is found <cite>None</cite> is the default result.</p>
 <dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entity_type</strong> – the entity type of interest</p></li>
+<li><p><strong>entity_role</strong> – optional entity role of interest</p></li>
+<li><p><strong>entity_group</strong> – optional entity group of interest</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Entity values.</p>
+</dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
 </dd>
