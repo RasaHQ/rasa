@@ -461,8 +461,7 @@ class CRFEntityExtractor(EntityExtractor):
         """
         if message.get(TOKENS_NAMES[TEXT]) is not None:
             return message.get(TOKENS_NAMES[TEXT])[idx].get("pattern", {})
-        else:
-            return {}
+        return {}
 
     @staticmethod
     def _get_dense_features(message: Message) -> Optional[List[Any]]:
