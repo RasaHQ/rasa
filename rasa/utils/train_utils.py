@@ -243,7 +243,9 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     return config
 
 
-def tokens_without_cls(message: Message, attribute: Text = TEXT) -> List[Token]:
+def tokens_without_cls(
+    message: Message, attribute: Text = TEXT
+) -> Optional[List[Token]]:
     """Return tokens of given message without __CLS__ token.
 
     All tokenizers add a __CLS__ token to the end of the list of tokens for
@@ -258,7 +260,10 @@ def tokens_without_cls(message: Message, attribute: Text = TEXT) -> List[Token]:
     """
     # return all tokens up to __CLS__ token for text and responses
     if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-        return message.get(TOKENS_NAMES[attribute])[:POSITION_OF_CLS_TOKEN]
+        tokens = message.get(TOKENS_NAMES[attribute])
+        if tokens is not None:
+            return tokens[:POSITION_OF_CLS_TOKEN]
+        return None
 
     # we don't add the __CLS__ token for intents, return all tokens
     return message.get(TOKENS_NAMES[attribute])

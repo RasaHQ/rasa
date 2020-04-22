@@ -2,7 +2,7 @@ from typing import Dict, Text, List, Any
 
 import pytest
 
-from rasa.nlu.components import Component, ComponentBuilder
+from rasa.nlu.components import ComponentBuilder
 from rasa.nlu import train
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter

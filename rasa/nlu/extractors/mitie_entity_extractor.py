@@ -94,7 +94,8 @@ class MitieEntityExtractor(EntityExtractor):
         if found_one_entity:
             self.ner = trainer.train()
 
-    def _prepare_mitie_sample(self, training_example: Message) -> Any:
+    @staticmethod
+    def _prepare_mitie_sample(training_example: Message) -> Any:
         import mitie
 
         text = training_example.text

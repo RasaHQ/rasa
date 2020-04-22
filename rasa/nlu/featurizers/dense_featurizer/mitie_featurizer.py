@@ -8,12 +8,7 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    TEXT,
-    TOKENS_NAMES,
-    DENSE_FEATURE_NAMES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-)
+from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, DENSE_FEATURIZABLE_ATTRIBUTES
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 import rasa.utils.train_utils as train_utils
 

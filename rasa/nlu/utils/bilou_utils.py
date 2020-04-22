@@ -267,9 +267,9 @@ def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
         List of tags.
     """
 
-    for idx in range(len(predicted_tags)):
-        prefix = bilou_prefix_from_tag(predicted_tags[idx])
-        tag = tag_without_prefix(predicted_tags[idx])
+    for idx, predicted_tag in enumerate(predicted_tags):
+        prefix = bilou_prefix_from_tag(predicted_tag)
+        tag = tag_without_prefix(predicted_tag)
 
         if prefix == BEGINNING:
             last_idx = _find_bilou_end(idx, predicted_tags)
