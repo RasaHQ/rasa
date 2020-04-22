@@ -280,8 +280,8 @@ class MessengerBot(OutputChannel):
                 fb_buttons.append(
                     FBButton(
                         button["type"],
-                        title=button["title"],
-                        payload=button["payload"],
+                        title=button.get("title"),
+                        payload=button.get("payload"),
                         url=button.get("url"),
                         fallback_url=button.get("fallback_url"),
                         webview_height_ratio=button.get("webview_height_ratio"),
