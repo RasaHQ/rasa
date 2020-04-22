@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Choosing a Pipeline</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Components" href="../components/" />
@@ -156,7 +155,6 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../components/">Components</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../entity-extraction/">Entity Extraction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../using-bert/">Using BERT inside Rasa NLU</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Core</span></p>
 <ul>
@@ -244,8 +242,6 @@
               <a href="../../../1.4.6/nlu/choosing-a-pipeline/">1.4.6</a>
               <a href="../../../1.3.10/nlu/choosing-a-pipeline/">1.3.10</a>
               <a href="../../../1.2.9/nlu/choosing-a-pipeline/">1.2.9</a>
-              <a href="../../../1.1.8/nlu/choosing-a-pipeline/">1.1.8</a>
-              <a href="../../../1.0.9/nlu/choosing-a-pipeline/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -288,27 +284,28 @@ These components are executed one after another in a so-called processing <code 
 Choosing an NLU pipeline allows you to customize your model and finetune it on your dataset.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#how-to-choose-a-pipeline" id="id6">How to Choose a Pipeline</a><ul>
-<li><a class="reference internal" href="#the-short-answer" id="id7">The Short Answer</a></li>
-<li><a class="reference internal" href="#a-longer-answer" id="id8">A Longer Answer</a></li>
-<li><a class="reference internal" href="#choosing-the-right-components" id="id9">Choosing the Right Components</a></li>
-<li><a class="reference internal" href="#multi-intent-classification" id="id10">Multi-Intent Classification</a></li>
+<li><p><a class="reference internal" href="#how-to-choose-a-pipeline" id="id6">How to Choose a Pipeline</a></p>
+<ul>
+<li><p><a class="reference internal" href="#the-short-answer" id="id7">The Short Answer</a></p></li>
+<li><p><a class="reference internal" href="#a-longer-answer" id="id8">A Longer Answer</a></p></li>
+<li><p><a class="reference internal" href="#choosing-the-right-components" id="id9">Choosing the Right Components</a></p></li>
+<li><p><a class="reference internal" href="#multi-intent-classification" id="id10">Multi-Intent Classification</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#comparing-pipelines" id="id11">Comparing Pipelines</a></li>
-<li><a class="reference internal" href="#handling-class-imbalance" id="id12">Handling Class Imbalance</a></li>
-<li><a class="reference internal" href="#component-lifecycle" id="id13">Component Lifecycle</a></li>
-<li><a class="reference internal" href="#pipeline-templates-deprecated" id="id14">Pipeline Templates (deprecated)</a></li>
+<li><p><a class="reference internal" href="#comparing-pipelines" id="id11">Comparing Pipelines</a></p></li>
+<li><p><a class="reference internal" href="#handling-class-imbalance" id="id12">Handling Class Imbalance</a></p></li>
+<li><p><a class="reference internal" href="#component-lifecycle" id="id13">Component Lifecycle</a></p></li>
+<li><p><a class="reference internal" href="#pipeline-templates-deprecated" id="id14">Pipeline Templates (deprecated)</a></p></li>
 </ul>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">With Rasa 1.8.0 we updated some components and deprecated all existing pipeline templates.
+<p class="admonition-title">Note</p>
+<p>With Rasa 1.8.0 we updated some components and deprecated all existing pipeline templates.
 However, <strong>any of the old terminology will still behave the same way as it did before</strong>!</p>
 </div>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">We deprecated all existing pipeline templates (e.g. <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code>). Please list any
+<p class="admonition-title">Warning</p>
+<p>We deprecated all existing pipeline templates (e.g. <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code>). Please list any
 components you want to use directly in the configuration file. See
 <a class="reference internal" href="#how-to-choose-a-pipeline"><span class="std std-ref">How to Choose a Pipeline</span></a> for recommended starting configurations, or
 <a class="reference internal" href="#pipeline-templates"><span class="std std-ref">Pipeline Templates (deprecated)</span></a> for more information.</p>
@@ -319,44 +316,44 @@ components you want to use directly in the configuration file. See
 <h3><a class="toc-backref" href="#id7">The Short Answer</a><a class="headerlink" href="#the-short-answer" title="Permalink to this headline">¶</a></h3>
 <p>If your training data is in English, a good starting point is the following pipeline:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTTokenizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-    <span class="l l-Scalar l-Scalar-Plain">analyzer</span><span class="p p-Indicator">:</span> <span class="s">&quot;char_wb&quot;</span>
-    <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-    <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
-    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
-    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTTokenizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+    <span class="nt">analyzer</span><span class="p">:</span> <span class="s">&quot;char_wb&quot;</span>
+    <span class="nt">min_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">max_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>If your training data is not in English, start with the following pipeline:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;fr&quot;</span>  <span class="c1"># your two-letter language code</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;fr&quot;</span>  <span class="c1"># your two-letter language code</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-    <span class="l l-Scalar l-Scalar-Plain">analyzer</span><span class="p p-Indicator">:</span> <span class="s">&quot;char_wb&quot;</span>
-    <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-    <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
-    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
-    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+    <span class="nt">analyzer</span><span class="p">:</span> <span class="s">&quot;char_wb&quot;</span>
+    <span class="nt">min_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">max_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -365,23 +362,23 @@ components you want to use directly in the configuration file. See
 <h3><a class="toc-backref" href="#id8">A Longer Answer</a><a class="headerlink" href="#a-longer-answer" title="Permalink to this headline">¶</a></h3>
 <p id="recommended-pipeline-english">We recommend using following pipeline, if your training data is in English:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTTokenizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-    <span class="l l-Scalar l-Scalar-Plain">analyzer</span><span class="p p-Indicator">:</span> <span class="s">&quot;char_wb&quot;</span>
-    <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-    <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
-    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
-    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTTokenizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+    <span class="nt">analyzer</span><span class="p">:</span> <span class="s">&quot;char_wb&quot;</span>
+    <span class="nt">min_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">max_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -396,24 +393,24 @@ However, <code class="docutils literal notranslate"><span class="pre">ConveRT</s
 <p id="recommended-pipeline-pretrained-non-english">If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
 the following pipeline:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;fr&quot;</span>  <span class="c1"># your two-letter language code</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;fr&quot;</span>  <span class="c1"># your two-letter language code</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SpacyNLP</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SpacyTokenizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SpacyFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-    <span class="l l-Scalar l-Scalar-Plain">analyzer</span><span class="p p-Indicator">:</span> <span class="s">&quot;char_wb&quot;</span>
-    <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-    <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
-    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
-    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SpacyNLP</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SpacyTokenizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SpacyFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+    <span class="nt">analyzer</span><span class="p">:</span> <span class="s">&quot;char_wb&quot;</span>
+    <span class="nt">min_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">max_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -425,28 +422,28 @@ and can train your model to be more domain specific.
 If there are no word embeddings for your language or you have very domain specific terminology,
 we recommend using the following pipeline:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;fr&quot;</span>  <span class="c1"># your two-letter language code</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;fr&quot;</span>  <span class="c1"># your two-letter language code</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-    <span class="l l-Scalar l-Scalar-Plain">analyzer</span><span class="p p-Indicator">:</span> <span class="s">&quot;char_wb&quot;</span>
-    <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-    <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
-    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
-    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+    <span class="nt">analyzer</span><span class="p">:</span> <span class="s">&quot;char_wb&quot;</span>
+    <span class="nt">min_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">max_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
 </div></blockquote>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">We encourage everyone to define their own pipeline by listing the names of the components you want to use.
+<p class="admonition-title">Note</p>
+<p>We encourage everyone to define their own pipeline by listing the names of the components you want to use.
 You can find the details of each component in <a class="reference internal" href="../components/#components"><span class="std std-ref">Components</span></a>.
 If you want to use custom components in your pipeline, see <a class="reference internal" href="../../api/custom-nlu-components/#custom-nlu-components"><span class="std std-ref">Custom NLU Components</span></a>.</p>
 </div>
@@ -460,9 +457,9 @@ do sentiment analysis, check out <a class="reference internal" href="../../api/c
 <p>A pipeline usually consists of three main parts:</p>
 <div class="contents local topic" id="id3">
 <ul class="simple">
-<li><a class="reference internal" href="#tokenization" id="id15">Tokenization</a></li>
-<li><a class="reference internal" href="#featurization" id="id16">Featurization</a></li>
-<li><a class="reference internal" href="#entity-recognition-intent-classification-response-selectors" id="id17">Entity Recognition / Intent Classification / Response Selectors</a></li>
+<li><p><a class="reference internal" href="#tokenization" id="id15">Tokenization</a></p></li>
+<li><p><a class="reference internal" href="#featurization" id="id16">Featurization</a></p></li>
+<li><p><a class="reference internal" href="#entity-recognition-intent-classification-response-selectors" id="id17">Entity Recognition / Intent Classification / Response Selectors</a></p></li>
 </ul>
 </div>
 <div class="section" id="tokenization">
@@ -473,8 +470,8 @@ with the <a class="reference internal" href="../components/#whitespacetokenizer"
 We support a number of different <a class="reference internal" href="../components/#tokenizers"><span class="std std-ref">tokenizers</span></a>, or you can
 create your own <a class="reference internal" href="../../api/custom-nlu-components/#custom-nlu-components"><span class="std std-ref">custom tokenizer</span></a>.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Some components further down the pipeline may require a specific tokenizer. You can find those requirements
+<p class="admonition-title">Note</p>
+<p>Some components further down the pipeline may require a specific tokenizer. You can find those requirements
 on the individual components in <a class="reference internal" href="../components/#components"><span class="std std-ref">Components</span></a>. If a required component is missing inside the pipeline, an
 error will be thrown.</p>
 </div>
@@ -488,8 +485,8 @@ embeddings, which learn word meanings directly from your training data, can make
 If you can’t find a pre-trained model for your language, you should use supervised embeddings.</p>
 <div class="contents local topic" id="id4">
 <ul class="simple">
-<li><a class="reference internal" href="#pre-trained-embeddings" id="id18">Pre-trained Embeddings</a></li>
-<li><a class="reference internal" href="#supervised-embeddings" id="id19">Supervised Embeddings</a></li>
+<li><p><a class="reference internal" href="#pre-trained-embeddings" id="id18">Pre-trained Embeddings</a></p></li>
+<li><p><a class="reference internal" href="#supervised-embeddings" id="id19">Supervised Embeddings</a></p></li>
 </ul>
 </div>
 <div class="section" id="pre-trained-embeddings">
@@ -499,10 +496,10 @@ If you can’t find a pre-trained model for your language, you should use superv
 words “apples” and “pears” are very similar. This is especially useful if you don’t have enough training data.
 We support a few components that provide pre-trained word embeddings:</p>
 <ol class="arabic simple">
-<li><a class="reference internal" href="../components/#mitiefeaturizer"><span class="std std-ref">MitieFeaturizer</span></a></li>
-<li><a class="reference internal" href="../components/#spacyfeaturizer"><span class="std std-ref">SpacyFeaturizer</span></a></li>
-<li><a class="reference internal" href="../components/#convertfeaturizer"><span class="std std-ref">ConveRTFeaturizer</span></a></li>
-<li><a class="reference internal" href="../components/#languagemodelfeaturizer"><span class="std std-ref">LanguageModelFeaturizer</span></a></li>
+<li><p><a class="reference internal" href="../components/#mitiefeaturizer"><span class="std std-ref">MitieFeaturizer</span></a></p></li>
+<li><p><a class="reference internal" href="../components/#spacyfeaturizer"><span class="std std-ref">SpacyFeaturizer</span></a></p></li>
+<li><p><a class="reference internal" href="../components/#convertfeaturizer"><span class="std std-ref">ConveRTFeaturizer</span></a></p></li>
+<li><p><a class="reference internal" href="../components/#languagemodelfeaturizer"><span class="std std-ref">LanguageModelFeaturizer</span></a></p></li>
 </ol>
 <p>If your training data is in English, we recommend using the <a class="reference internal" href="../components/#convertfeaturizer"><span class="std std-ref">ConveRTFeaturizer</span></a>.
 The advantage of the <a class="reference internal" href="../components/#convertfeaturizer"><span class="std std-ref">ConveRTFeaturizer</span></a> is that it doesn’t treat each word of the user message independently, but
@@ -551,22 +548,22 @@ To do this, you need to use the <a class="reference internal" href="../component
 You’ll also need to define these flags in whichever tokenizer you are using:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">intent_tokenization_flag</span></code>: Set it to <code class="docutils literal notranslate"><span class="pre">True</span></code>, so that intent labels are tokenized.</li>
-<li><code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code>: Set it to the delimiter string that splits the intent labels. In this case <code class="docutils literal notranslate"><span class="pre">+</span></code>, default <code class="docutils literal notranslate"><span class="pre">_</span></code>.</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">intent_tokenization_flag</span></code>: Set it to <code class="docutils literal notranslate"><span class="pre">True</span></code>, so that intent labels are tokenized.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code>: Set it to the delimiter string that splits the intent labels. In this case <code class="docutils literal notranslate"><span class="pre">+</span></code>, default <code class="docutils literal notranslate"><span class="pre">_</span></code>.</p></li>
 </ul>
 </div></blockquote>
 <p>Read a <a class="reference external" href="https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/">tutorial</a>
 on how to use multiple intents in Rasa.</p>
 <p>Here’s an example configuration:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">intent_tokenization_flag</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
-  <span class="l l-Scalar l-Scalar-Plain">intent_split_symbol</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;DIETClassifier&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
+  <span class="nt">intent_tokenization_flag</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+  <span class="nt">intent_split_symbol</span><span class="p">:</span> <span class="s">&quot;_&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;DIETClassifier&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -577,8 +574,8 @@ on how to use multiple intents in Rasa.</p>
 <p>Rasa gives you the tools to compare the performance of multiple pipelines on your data directly.
 See <a class="reference internal" href="../../user-guide/testing-your-assistant/#comparing-nlu-pipelines"><span class="std std-ref">Comparing NLU Pipelines</span></a> for more information.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Intent classification is independent of entity extraction. So sometimes
+<p class="admonition-title">Note</p>
+<p>Intent classification is independent of entity extraction. So sometimes
 NLU will get the intent right but entities wrong, or the other way around.
 You need to provide enough data for both intents and entities.</p>
 </div>
@@ -593,12 +590,12 @@ as many subsequent batches as possible, still mimicking the fact that some class
 Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
 <code class="docutils literal notranslate"><span class="pre">batch_strategy:</span> <span class="pre">sequence</span></code> in your config file.</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="nt">pipeline</span><span class="p">:</span>
 <span class="c1"># - ... other components</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;DIETClassifier&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">batch_strategy</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">sequence</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;DIETClassifier&quot;</span>
+  <span class="nt">batch_strategy</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sequence</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -635,18 +632,18 @@ the processing has finished.</p>
 </div></blockquote>
 <p>This is created as a combination of the results of the different components in the following pipeline:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-    <span class="l l-Scalar l-Scalar-Plain">analyzer</span><span class="p p-Indicator">:</span> <span class="s">&quot;char_wb&quot;</span>
-    <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-    <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+    <span class="nt">analyzer</span><span class="p">:</span> <span class="s">&quot;char_wb&quot;</span>
+    <span class="nt">min_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">max_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -654,10 +651,10 @@ the processing has finished.</p>
 <p>Every component can implement several methods from the <code class="docutils literal notranslate"><span class="pre">Component</span></code> base class; in a pipeline these different methods
 will be called in a specific order. Assuming we added the following pipeline to our <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;Component</span><span class="nv"> </span><span class="s">A&quot;</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;Component</span><span class="nv"> </span><span class="s">B&quot;</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;Last</span><span class="nv"> </span><span class="s">Component&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;Component</span><span class="nv"> </span><span class="s">A&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;Component</span><span class="nv"> </span><span class="s">B&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;Last</span><span class="nv"> </span><span class="s">Component&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -678,22 +675,22 @@ final context dictionary is used to persist the model’s metadata.</p>
 <span id="pipeline-templates"></span><h2><a class="toc-backref" href="#id14">Pipeline Templates (deprecated)</a><a class="headerlink" href="#pipeline-templates-deprecated" title="Permalink to this headline">¶</a></h2>
 <p>A template is just a shortcut for a full list of components. For example, this pipeline template:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;pretrained_embeddings_spacy&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span> <span class="s">&quot;pretrained_embeddings_spacy&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>is equivalent to this pipeline:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyNLP&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyNLP&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -703,44 +700,46 @@ expand it below.</p>
 <blockquote>
 <div><div class="toggle docutils container">
 <div class="header docutils container">
-<code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code></div>
+<p><code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code></p>
+</div>
 <p id="section-pretrained-embeddings-spacy-pipeline">The advantage of <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> pipeline is that if you have a training example like:
 “I want to buy apples”, and Rasa is asked to predict the intent for “get pears”, your model
 already knows that the words “apples” and “pears” are very similar. This is especially useful
 if you don’t have enough training data.</p>
 <p>To use the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> template, use the following configuration:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;pretrained_embeddings_spacy&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span> <span class="s">&quot;pretrained_embeddings_spacy&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>See <a class="reference internal" href="../language-support/#pretrained-word-vectors"><span class="std std-ref">Pre-trained Word Vectors</span></a> for more information about loading spacy language models.
 To use the components and configure them separately:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyNLP&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyNLP&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
 
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
 </div>
 <div class="toggle docutils container">
 <div class="header docutils container">
-<code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code></div>
+<p><code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code></p>
+</div>
 <blockquote id="section-pretrained-embeddings-convert-pipeline">
 <div><div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Since <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> model is trained only on an <strong>English</strong> corpus of conversations, this pipeline should only
+<p class="admonition-title">Note</p>
+<p>Since <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> model is trained only on an <strong>English</strong> corpus of conversations, this pipeline should only
 be used if your training data is in English language.</p>
 </div>
 </div></blockquote>
@@ -753,34 +752,35 @@ my place”, since the contextual vector representation for both examples are al
 for both is highly likely to be the same. This is also useful if you don’t have enough training data.</p>
 <blockquote>
 <div><div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">To use <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code> pipeline, you should install Rasa with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[convert]</span></code>.
+<p class="admonition-title">Note</p>
+<p>To use <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code> pipeline, you should install Rasa with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[convert]</span></code>.
 Please also note that one of the dependencies(<code class="docutils literal notranslate"><span class="pre">tensorflow-text</span></code>) is currently only supported on Linux
 platforms.</p>
 </div>
 </div></blockquote>
 <p>To use the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code> template:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ConveRTTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ConveRTTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
 </pre></div>
 </div>
 <p>To use the components and configure them separately:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ConveRTTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ConveRTTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
 </pre></div>
 </div>
 </div>
 <div class="toggle docutils container">
 <div class="header docutils container">
-<code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code></div>
+<p><code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code></p>
+</div>
 <p id="section-supervised-embeddings-pipeline">The advantage of the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline is that your word vectors will be customised
 for your domain. For example, in general English, the word “balance” is closely related to “symmetry”,
 but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely related
@@ -790,9 +790,9 @@ so it will work with any language that you can tokenize (on whitespace or using 
 <p>To train a Rasa model in your preferred language, define the
 <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline as your pipeline in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> or other configuration file:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;supervised_embeddings&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span> <span class="s">&quot;supervised_embeddings&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -800,19 +800,19 @@ so it will work with any language that you can tokenize (on whitespace or using 
 whitespace for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are
 the default components that make up the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">analyzer</span><span class="p p-Indicator">:</span> <span class="s">&quot;char_wb&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-  <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
+  <span class="nt">analyzer</span><span class="p">:</span> <span class="s">&quot;char_wb&quot;</span>
+  <span class="nt">min_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+  <span class="nt">max_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -827,7 +827,8 @@ featurization more robust.</p>
 </div>
 <div class="toggle docutils container" id="section-mitie-pipeline">
 <div class="header docutils container">
-<code class="docutils literal notranslate"><span class="pre">MITIE</span> <span class="pre">pipeline</span></code></div>
+<p><code class="docutils literal notranslate"><span class="pre">MITIE</span> <span class="pre">pipeline</span></code></p>
+</div>
 <p>You can also use MITIE as a source of word vectors in your pipeline.
 The MITIE backend performs well for small datasets, but training can take very long if you have more than a couple
 of hundred examples.</p>
@@ -835,33 +836,33 @@ of hundred examples.</p>
 <p>To use the MITIE pipeline, you will have to train word vectors from a corpus. Instructions can be found
 <a class="reference internal" href="../language-support/#mitie"><span class="std std-ref">here</span></a>. This will give you the file path to pass to the <code class="docutils literal notranslate"><span class="pre">model</span></code> parameter.</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieNLP&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieEntityExtractor&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieNLP&quot;</span>
+  <span class="nt">model</span><span class="p">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieEntityExtractor&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>Another version of this pipeline uses MITIE’s featurizer and also its multi-class classifier.
 Training can be quite slow, so this is not recommended for large datasets.</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieNLP&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieEntityExtractor&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieIntentClassifier&quot;</span>
+<span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieNLP&quot;</span>
+  <span class="nt">model</span><span class="p">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieEntityExtractor&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieIntentClassifier&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>

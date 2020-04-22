@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Migration Guide</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex/" />
     <link rel="search" title="Search" href="../search/" />
     <link rel="next" title="Rasa Open Source Change Log" href="../changelog/" />
@@ -247,8 +246,6 @@ Rasa Core and how you can migrate from one version to another." />
               <a href="../../1.4.6/migration-guide/">1.4.6</a>
               <a href="../../1.3.10/migration-guide/">1.3.10</a>
               <a href="../../1.2.9/migration-guide/">1.2.9</a>
-              <a href="../../1.1.8/migration-guide/">1.1.8</a>
-              <a href="../../1.0.9/migration-guide/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -288,129 +285,127 @@ how you can migrate from one version to another.</p>
 <div class="section" id="rasa-1-7-to-rasa-1-8">
 <span id="migration-to-rasa-1-8"></span><h2>Rasa 1.7 to Rasa 1.8<a class="headerlink" href="#rasa-1-7-to-rasa-1-8" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This is a release <strong>breaking backwards compatibility</strong>.
+<p class="admonition-title">Warning</p>
+<p>This is a release <strong>breaking backwards compatibility</strong>.
 It is not possible to load previously trained models. Please make sure to retrain a
 model before trying to use it with this improved version.</p>
 </div>
 <div class="section" id="general">
 <h3>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h3>
 <ul>
-<li><p class="first">The <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a> replaced the <a class="reference internal" href="../core/policies/#keras-policy"><span class="std std-ref">Keras Policy</span></a> as recommended machine
+<li><p>The <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a> replaced the <a class="reference internal" href="../core/policies/#keras-policy"><span class="std std-ref">Keras Policy</span></a> as recommended machine
 learning policy. New projects generated with <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> will automatically use
 this policy. In case you want to change your existing model configuration to use the
 <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a> add this to the <code class="docutils literal notranslate"><span class="pre">policies</span></code> section in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>
 and remove potentially existing <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> entries:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
 <span class="c1"># - ... other policies</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">TEDPolicy</span>
-  <span class="l l-Scalar l-Scalar-Plain">max_history</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
-  <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TEDPolicy</span>
+  <span class="nt">max_history</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+  <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
 <p>The given snippet specifies default values for the parameters <code class="docutils literal notranslate"><span class="pre">max_history</span></code> and
 <code class="docutils literal notranslate"><span class="pre">epochs</span></code>. <code class="docutils literal notranslate"><span class="pre">max_history</span></code> is particularly important and strongly depends on your stories.
 Please see the docs of the <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a> if you want to customize them.</p>
 </li>
-<li><p class="first">All pre-defined pipeline templates are deprecated. <strong>Any templates you use will be
+<li><p>All pre-defined pipeline templates are deprecated. <strong>Any templates you use will be
 mapped to the new configuration, but the underlying architecture is the same</strong>.
 Take a look at <a class="reference internal" href="../nlu/choosing-a-pipeline/#choosing-a-pipeline"><span class="std std-ref">Choosing a Pipeline</span></a> to decide on what components you should use
-in your configuration file.</p>
-</li>
-<li><p class="first">The <a class="reference internal" href="../core/policies/#embedding-policy"><span class="std std-ref">Embedding Policy</span></a> was renamed to <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a>. The functionality of the policy stayed the same.
-Please update your configuration files to use <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code> instead of <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>.</p>
-</li>
-<li><p class="first">Most of the model options for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> got
+in your configuration file.</p></li>
+<li><p>The <a class="reference internal" href="../core/policies/#embedding-policy"><span class="std std-ref">Embedding Policy</span></a> was renamed to <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a>. The functionality of the policy stayed the same.
+Please update your configuration files to use <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code> instead of <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>.</p></li>
+<li><p>Most of the model options for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> got
 renamed. Please update your configuration files using the following mapping:</p>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="35%" />
-<col width="65%" />
+<col style="width: 35%" />
+<col style="width: 65%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Old model option</th>
-<th class="head">New model option</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Old model option</p></th>
+<th class="head"><p>New model option</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>hidden_layers_sizes_a</td>
-<td>dictionary “hidden_layers_sizes” with key “text”</td>
+<tbody>
+<tr class="row-even"><td><p>hidden_layers_sizes_a</p></td>
+<td><p>dictionary “hidden_layers_sizes” with key “text”</p></td>
 </tr>
-<tr class="row-odd"><td>hidden_layers_sizes_b</td>
-<td>dictionary “hidden_layers_sizes” with key “label”</td>
+<tr class="row-odd"><td><p>hidden_layers_sizes_b</p></td>
+<td><p>dictionary “hidden_layers_sizes” with key “label”</p></td>
 </tr>
-<tr class="row-even"><td>hidden_layers_sizes_pre_dial</td>
-<td>dictionary “hidden_layers_sizes” with key “dialogue”</td>
+<tr class="row-even"><td><p>hidden_layers_sizes_pre_dial</p></td>
+<td><p>dictionary “hidden_layers_sizes” with key “dialogue”</p></td>
 </tr>
-<tr class="row-odd"><td>hidden_layers_sizes_bot</td>
-<td>dictionary “hidden_layers_sizes” with key “label”</td>
+<tr class="row-odd"><td><p>hidden_layers_sizes_bot</p></td>
+<td><p>dictionary “hidden_layers_sizes” with key “label”</p></td>
 </tr>
-<tr class="row-even"><td>num_transformer_layers</td>
-<td>number_of_transformer_layers</td>
+<tr class="row-even"><td><p>num_transformer_layers</p></td>
+<td><p>number_of_transformer_layers</p></td>
 </tr>
-<tr class="row-odd"><td>num_heads</td>
-<td>number_of_attention_heads</td>
+<tr class="row-odd"><td><p>num_heads</p></td>
+<td><p>number_of_attention_heads</p></td>
 </tr>
-<tr class="row-even"><td>max_seq_length</td>
-<td>maximum_sequence_length</td>
+<tr class="row-even"><td><p>max_seq_length</p></td>
+<td><p>maximum_sequence_length</p></td>
 </tr>
-<tr class="row-odd"><td>dense_dim</td>
-<td>dense_dimension</td>
+<tr class="row-odd"><td><p>dense_dim</p></td>
+<td><p>dense_dimension</p></td>
 </tr>
-<tr class="row-even"><td>embed_dim</td>
-<td>embedding_dimension</td>
+<tr class="row-even"><td><p>embed_dim</p></td>
+<td><p>embedding_dimension</p></td>
 </tr>
-<tr class="row-odd"><td>num_neg</td>
-<td>number_of_negative_examples</td>
+<tr class="row-odd"><td><p>num_neg</p></td>
+<td><p>number_of_negative_examples</p></td>
 </tr>
-<tr class="row-even"><td>mu_pos</td>
-<td>maximum_positive_similarity</td>
+<tr class="row-even"><td><p>mu_pos</p></td>
+<td><p>maximum_positive_similarity</p></td>
 </tr>
-<tr class="row-odd"><td>mu_neg</td>
-<td>maximum_negative_similarity</td>
+<tr class="row-odd"><td><p>mu_neg</p></td>
+<td><p>maximum_negative_similarity</p></td>
 </tr>
-<tr class="row-even"><td>use_max_sim_neg</td>
-<td>use_maximum_negative_similarity</td>
+<tr class="row-even"><td><p>use_max_sim_neg</p></td>
+<td><p>use_maximum_negative_similarity</p></td>
 </tr>
-<tr class="row-odd"><td>C2</td>
-<td>regularization_constant</td>
+<tr class="row-odd"><td><p>C2</p></td>
+<td><p>regularization_constant</p></td>
 </tr>
-<tr class="row-even"><td>C_emb</td>
-<td>negative_margin_scale</td>
+<tr class="row-even"><td><p>C_emb</p></td>
+<td><p>negative_margin_scale</p></td>
 </tr>
-<tr class="row-odd"><td>droprate_a</td>
-<td>droprate_dialogue</td>
+<tr class="row-odd"><td><p>droprate_a</p></td>
+<td><p>droprate_dialogue</p></td>
 </tr>
-<tr class="row-even"><td>droprate_b</td>
-<td>droprate_label</td>
+<tr class="row-even"><td><p>droprate_b</p></td>
+<td><p>droprate_label</p></td>
 </tr>
-<tr class="row-odd"><td>evaluate_every_num_epochs</td>
-<td>evaluate_every_number_of_epochs</td>
+<tr class="row-odd"><td><p>evaluate_every_num_epochs</p></td>
+<td><p>evaluate_every_number_of_epochs</p></td>
 </tr>
-<tr class="row-even"><td>evaluate_on_num_examples</td>
-<td>evaluate_on_number_of_examples</td>
+<tr class="row-even"><td><p>evaluate_on_num_examples</p></td>
+<td><p>evaluate_on_number_of_examples</p></td>
 </tr>
 </tbody>
 </table>
 <p>Old configuration options will be mapped to the new names, and a warning will be thrown.
 However, these will be deprecated in a future release.</p>
 </li>
-<li><p class="first"><a class="reference internal" href="../nlu/components/#embedding-intent-classifier"><span class="std std-ref">EmbeddingIntentClassifier</span></a> is now deprecated and will be replaced by <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a>
+<li><p><a class="reference internal" href="../nlu/components/#embedding-intent-classifier"><span class="std std-ref">EmbeddingIntentClassifier</span></a> is now deprecated and will be replaced by <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a>
 in the future.
 <code class="docutils literal notranslate"><span class="pre">DIETClassfier</span></code> performs intent classification as well as entity recognition.
 If you want to get the same model behaviour as the current <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, you can use
 the following configuration of <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="c1"># - ... other components</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
-  <span class="l l-Scalar l-Scalar-Plain">hidden_layers_sizes</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">256</span><span class="p p-Indicator">,</span> <span class="nv">128</span><span class="p p-Indicator">]</span>
-  <span class="l l-Scalar l-Scalar-Plain">number_of_transformer_layers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
-  <span class="l l-Scalar l-Scalar-Plain">weight_sparsity</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
-  <span class="l l-Scalar l-Scalar-Plain">intent_classification</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
-  <span class="l l-Scalar l-Scalar-Plain">entity_recognition</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
-  <span class="l l-Scalar l-Scalar-Plain">use_masked_language_model</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
-  <span class="l l-Scalar l-Scalar-Plain">BILOU_flag</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+  <span class="nt">hidden_layers_sizes</span><span class="p">:</span>
+    <span class="nt">text</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">256</span><span class="p p-Indicator">,</span> <span class="nv">128</span><span class="p p-Indicator">]</span>
+  <span class="nt">number_of_transformer_layers</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="nt">weight_sparsity</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="nt">intent_classification</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+  <span class="nt">entity_recognition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+  <span class="nt">use_masked_language_model</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+  <span class="nt">BILOU_flag</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># ... any other parameters</span>
 </pre></div>
 </div>
@@ -418,12 +413,12 @@ the following configuration of <code class="docutils literal notranslate"><span 
 Specifying <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> in the configuration maps to the above component definition, the
 behaviour is unchanged from previous versions.</p>
 </li>
-<li><p class="first"><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> is now deprecated and will be replaced by <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> in the future. If you want to
+<li><p><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> is now deprecated and will be replaced by <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> in the future. If you want to
 get the same model behaviour as the current <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>, you can use the following configuration:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="c1"># - ... other components</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
-  <span class="l l-Scalar l-Scalar-Plain">features</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="nt">features</span><span class="p">:</span> <span class="p p-Indicator">[</span>
     <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">],</span>
     <span class="p p-Indicator">[</span>
       <span class="s">&quot;BOS&quot;</span><span class="p p-Indicator">,</span>
@@ -440,11 +435,11 @@ get the same model behaviour as the current <code class="docutils literal notran
     <span class="p p-Indicator">],</span>
     <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">],</span>
   <span class="p p-Indicator">]</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
-  <span class="l l-Scalar l-Scalar-Plain">intent_classification</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
-  <span class="l l-Scalar l-Scalar-Plain">entity_recognition</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
-  <span class="l l-Scalar l-Scalar-Plain">use_masked_language_model</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
-  <span class="l l-Scalar l-Scalar-Plain">number_of_transformer_layers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+  <span class="nt">intent_classification</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+  <span class="nt">entity_recognition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+  <span class="nt">use_masked_language_model</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+  <span class="nt">number_of_transformer_layers</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
   <span class="c1"># ... any other parameters</span>
 </pre></div>
 </div>
@@ -455,12 +450,12 @@ in order to obtain the same results as before, you need to add this featurizer t
 Specifying <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> in the configuration maps to the above component definition, the behaviour
 is unchanged from previous versions.</p>
 </li>
-<li><p class="first">If your pipeline contains <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> and <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> you can substitute both
+<li><p>If your pipeline contains <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> and <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> you can substitute both
 components with <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a>. You can use the following pipeline for that:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="c1"># - ... other components</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
-  <span class="l l-Scalar l-Scalar-Plain">features</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="nt">features</span><span class="p">:</span> <span class="p p-Indicator">[</span>
     <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">],</span>
     <span class="p p-Indicator">[</span>
       <span class="s">&quot;BOS&quot;</span><span class="p p-Indicator">,</span>
@@ -477,8 +472,8 @@ components with <a class="reference internal" href="../nlu/components/#diet-clas
     <span class="p p-Indicator">],</span>
     <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">],</span>
   <span class="p p-Indicator">]</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
-  <span class="l l-Scalar l-Scalar-Plain">number_of_transformer_layers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+  <span class="nt">number_of_transformer_layers</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
   <span class="c1"># ... any other parameters</span>
 </pre></div>
 </div>
@@ -491,25 +486,25 @@ components with <a class="reference internal" href="../nlu/components/#diet-clas
 <div class="section" id="id2">
 <h3>General<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>By default, the <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> will
+<li><p>By default, the <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> will
 now normalize the top 10 confidence results if the <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;softmax&quot;</span></code> (which has been
 default since 1.3, see <a class="reference internal" href="#migration-to-rasa-1-3"><span class="std std-ref">Rasa 1.2 to Rasa 1.3</span></a>). This is configurable via the <code class="docutils literal notranslate"><span class="pre">ranking_length</span></code>
-configuration parameter; to turn off normalization to match the previous behavior, set <code class="docutils literal notranslate"><span class="pre">ranking_length:</span> <span class="pre">0</span></code>.</li>
+configuration parameter; to turn off normalization to match the previous behavior, set <code class="docutils literal notranslate"><span class="pre">ranking_length:</span> <span class="pre">0</span></code>.</p></li>
 </ul>
 </div>
 </div>
 <div class="section" id="rasa-1-2-to-rasa-1-3">
 <span id="migration-to-rasa-1-3"></span><h2>Rasa 1.2 to Rasa 1.3<a class="headerlink" href="#rasa-1-2-to-rasa-1-3" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This is a release <strong>breaking backwards compatibility</strong>.
+<p class="admonition-title">Warning</p>
+<p>This is a release <strong>breaking backwards compatibility</strong>.
 It is not possible to load previously trained models. Please make sure to retrain a
 model before trying to use it with this improved version.</p>
 </div>
 <div class="section" id="id3">
 <h3>General<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Default parameters of <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> are changed. See <a class="reference internal" href="../nlu/components/#components"><span class="std std-ref">Components</span></a> for details.
+<li><p>Default parameters of <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> are changed. See <a class="reference internal" href="../nlu/components/#components"><span class="std std-ref">Components</span></a> for details.
 Architecture implementation is changed as well, so <strong>old trained models cannot be loaded</strong>.
 Default parameters and architecture for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> are changed. See <a class="reference internal" href="../core/policies/#policies"><span class="std std-ref">Policies</span></a> for details.
 It uses transformer instead of lstm. <strong>Old trained models cannot be loaded</strong>.
@@ -519,79 +514,79 @@ They use <code class="docutils literal notranslate"><span class="pre">balanced</
 The meaning of <code class="docutils literal notranslate"><span class="pre">evaluate_on_num_examples</span></code> is changed. If it is non zero, random examples will be
 picked by stratified split and used as <strong>hold out</strong> validation set, so they will be excluded from training data.
 We suggest to set it to zero (default) if data set contains a lot of unique examples of dialogue turns.
-Removed <code class="docutils literal notranslate"><span class="pre">label_tokenization_flag</span></code> and <code class="docutils literal notranslate"><span class="pre">label_split_symbol</span></code> from component. Instead moved intent splitting to <code class="docutils literal notranslate"><span class="pre">Tokenizer</span></code> components via <code class="docutils literal notranslate"><span class="pre">intent_tokenization_flag</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code> flag.</li>
-<li>Default <code class="docutils literal notranslate"><span class="pre">max_history</span></code> for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> which means it’ll use
+Removed <code class="docutils literal notranslate"><span class="pre">label_tokenization_flag</span></code> and <code class="docutils literal notranslate"><span class="pre">label_split_symbol</span></code> from component. Instead moved intent splitting to <code class="docutils literal notranslate"><span class="pre">Tokenizer</span></code> components via <code class="docutils literal notranslate"><span class="pre">intent_tokenization_flag</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code> flag.</p></li>
+<li><p>Default <code class="docutils literal notranslate"><span class="pre">max_history</span></code> for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> which means it’ll use
 the <code class="docutils literal notranslate"><span class="pre">FullDialogueTrackerFeaturizer</span></code>. We recommend to set <code class="docutils literal notranslate"><span class="pre">max_history</span></code> to
 some finite value in order to use <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code>
 for <strong>faster training</strong>. See <a class="reference internal" href="../api/core-featurization/#featurization-conversations"><span class="std std-ref">Featurization of Conversations</span></a> for details.
 We recommend to increase <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> for <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code>
-(e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[32,</span> <span class="pre">64]</span></code>)</li>
-<li><strong>Compare</strong> mode of <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> allows the whole core config comparison.
+(e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[32,</span> <span class="pre">64]</span></code>)</p></li>
+<li><p><strong>Compare</strong> mode of <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> allows the whole core config comparison.
 Therefore, we changed the naming of trained models. They are named by config file
 name instead of policy name. Old naming style will not be read correctly when
 creating <strong>compare</strong> plots (<code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code>). Please remove old trained models
-in comparison folder and retrain. Normal core training is unaffected.</li>
-<li>We updated the <strong>evaluation metric</strong> for our <strong>NER</strong>. We report the weighted precision and f1-score.
+in comparison folder and retrain. Normal core training is unaffected.</p></li>
+<li><p>We updated the <strong>evaluation metric</strong> for our <strong>NER</strong>. We report the weighted precision and f1-score.
 So far we included <code class="docutils literal notranslate"><span class="pre">no-entity</span></code> in this report. However, as most of the tokens actually don’t have
 an entity set, this will influence the weighted precision and f1-score quite a bit. From now on we
 exclude <code class="docutils literal notranslate"><span class="pre">no-entity</span></code> from the evaluation. The overall metrics now only include proper entities. You
-might see a drop in the performance scores when running the evaluation again.</li>
-<li><code class="docutils literal notranslate"><span class="pre">/</span></code> is reserved as a delimiter token to distinguish between retrieval intent and the corresponding response text
-identifier. Make sure you don’t include <code class="docutils literal notranslate"><span class="pre">/</span></code> symbol in the name of your intents.</li>
+might see a drop in the performance scores when running the evaluation again.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/</span></code> is reserved as a delimiter token to distinguish between retrieval intent and the corresponding response text
+identifier. Make sure you don’t include <code class="docutils literal notranslate"><span class="pre">/</span></code> symbol in the name of your intents.</p></li>
 </ul>
 </div>
 </div>
 <div class="section" id="rasa-nlu-0-14-x-and-rasa-core-0-13-x-to-rasa-1-0">
 <span id="migration-to-rasa-1-0"></span><h2>Rasa NLU 0.14.x and Rasa Core 0.13.x to Rasa 1.0<a class="headerlink" href="#rasa-nlu-0-14-x-and-rasa-core-0-13-x-to-rasa-1-0" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This is a release <strong>breaking backwards compatibility</strong>.
+<p class="admonition-title">Warning</p>
+<p>This is a release <strong>breaking backwards compatibility</strong>.
 It is not possible to load previously trained models. Please make sure to retrain a
 model before trying to use it with this improved version.</p>
 </div>
 <div class="section" id="id4">
 <h3>General<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>The scripts in <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa.nlu</span></code> can no longer be executed. To train, test, run, … an NLU or Core
+<li><p>The scripts in <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa.nlu</span></code> can no longer be executed. To train, test, run, … an NLU or Core
 model, you should now use the command line interface <code class="docutils literal notranslate"><span class="pre">rasa</span></code>. The functionality is, for the most part, the same as before.
 Some changes in commands reflect the combined training and running of NLU and Core models, but NLU and Core can still
 be trained and used individually. If you attempt to run one of the old scripts in <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa.nlu</span></code>,
 an error is thrown that points you to the command you
-should use instead. See all the new commands at <a class="reference internal" href="../user-guide/command-line-interface/#command-line-interface"><span class="std std-ref">Command Line Interface</span></a>.</li>
-<li>If you have written a custom output channel, all <code class="docutils literal notranslate"><span class="pre">send_</span></code> methods subclassed
+should use instead. See all the new commands at <a class="reference internal" href="../user-guide/command-line-interface/#command-line-interface"><span class="std std-ref">Command Line Interface</span></a>.</p></li>
+<li><p>If you have written a custom output channel, all <code class="docutils literal notranslate"><span class="pre">send_</span></code> methods subclassed
 from the <code class="docutils literal notranslate"><span class="pre">OutputChannel</span></code> class need to take an additional <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>
 argument. You can use these keyword args from your custom action code or the
 templates in your domain file to send any extra parameters used in your
-channel’s send methods.</li>
-<li>If you were previously importing the <code class="docutils literal notranslate"><span class="pre">Button</span></code> or <code class="docutils literal notranslate"><span class="pre">Element</span></code> classes from
-<code class="docutils literal notranslate"><span class="pre">rasa_core.dispatcher</span></code>, these are now to be imported from <code class="docutils literal notranslate"><span class="pre">rasa_sdk.utils</span></code>.</li>
-<li>Rasa NLU and Core previously used <a class="reference external" href="https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&amp;_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1">separate configuration files</a>.
-These two files should be merged into a single file either named <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>, or passed via the <code class="docutils literal notranslate"><span class="pre">--config</span></code> parameter.</li>
+channel’s send methods.</p></li>
+<li><p>If you were previously importing the <code class="docutils literal notranslate"><span class="pre">Button</span></code> or <code class="docutils literal notranslate"><span class="pre">Element</span></code> classes from
+<code class="docutils literal notranslate"><span class="pre">rasa_core.dispatcher</span></code>, these are now to be imported from <code class="docutils literal notranslate"><span class="pre">rasa_sdk.utils</span></code>.</p></li>
+<li><p>Rasa NLU and Core previously used <a class="reference external" href="https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&amp;_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1">separate configuration files</a>.
+These two files should be merged into a single file either named <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>, or passed via the <code class="docutils literal notranslate"><span class="pre">--config</span></code> parameter.</p></li>
 </ul>
 </div>
 <div class="section" id="script-parameters">
 <h3>Script parameters<a class="headerlink" href="#script-parameters" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>All script parameter names have been unified to follow the same schema.
+<li><p>All script parameter names have been unified to follow the same schema.
 Any underscores (<code class="docutils literal notranslate"><span class="pre">_</span></code>) in arguments have been replaced with dashes (<code class="docutils literal notranslate"><span class="pre">-</span></code>).
 For example: <code class="docutils literal notranslate"><span class="pre">--max_history</span></code> has been changed to <code class="docutils literal notranslate"><span class="pre">--max-history</span></code>. You can
 see all of the script parameters in the <code class="docutils literal notranslate"><span class="pre">--help</span></code> output of the commands
-in the <a class="reference internal" href="../user-guide/command-line-interface/#command-line-interface"><span class="std std-ref">Command Line Interface</span></a>.</li>
-<li>The <code class="docutils literal notranslate"><span class="pre">--num_threads</span></code> parameter was removed from the <code class="docutils literal notranslate"><span class="pre">run</span></code> command. The
+in the <a class="reference internal" href="../user-guide/command-line-interface/#command-line-interface"><span class="std std-ref">Command Line Interface</span></a>.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">--num_threads</span></code> parameter was removed from the <code class="docutils literal notranslate"><span class="pre">run</span></code> command. The
 server will always run single-threaded, but will now run asynchronously. If you want to
 make use of multiple processes, feel free to check out the <a class="reference external" href="https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn">Sanic server
-documentation</a>.</li>
-<li>To avoid conflicts in script parameter names, connectors in the <code class="docutils literal notranslate"><span class="pre">run</span></code> command now need to be specified with
+documentation</a>.</p></li>
+<li><p>To avoid conflicts in script parameter names, connectors in the <code class="docutils literal notranslate"><span class="pre">run</span></code> command now need to be specified with
 <code class="docutils literal notranslate"><span class="pre">--connector</span></code>, as <code class="docutils literal notranslate"><span class="pre">-c</span></code> is no longer supported. The maximum history in the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">visualize</span></code> command needs to be
 defined with <code class="docutils literal notranslate"><span class="pre">--max-history</span></code>. Output paths and log files cannot be specified with <code class="docutils literal notranslate"><span class="pre">-o</span></code> anymore; <code class="docutils literal notranslate"><span class="pre">--out</span></code> and
 <code class="docutils literal notranslate"><span class="pre">--log-file</span></code> should be used. NLU data has been standarized to be <code class="docutils literal notranslate"><span class="pre">--nlu</span></code> and the name of
-any kind of data files or directory to be <code class="docutils literal notranslate"><span class="pre">--data</span></code>.</li>
+any kind of data files or directory to be <code class="docutils literal notranslate"><span class="pre">--data</span></code>.</p></li>
 </ul>
 </div>
 <div class="section" id="http-api">
 <h3>HTTP API<a class="headerlink" href="#http-api" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>There are numerous HTTP API endpoint changes which can be found <a class="reference external" href="http://rasa.com/docs/rasa/api/http-api/">here</a>.</li>
+<li><p>There are numerous HTTP API endpoint changes which can be found <a class="reference external" href="http://rasa.com/docs/rasa/api/http-api/">here</a>.</p></li>
 </ul>
 </div>
 </div>

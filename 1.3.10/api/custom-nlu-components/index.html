@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Custom NLU Components</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Events" href="../events/" />
@@ -238,8 +237,6 @@ analysis to integrate with open source bot framework Rasa." />
               <a href="../../../1.4.6/api/custom-nlu-components/">1.4.6</a>
               <a href="../../../1.3.10/api/custom-nlu-components/">1.3.10</a>
               <a href="../../../1.2.9/api/custom-nlu-components/">1.2.9</a>
-              <a href="../../../1.1.8/api/custom-nlu-components/">1.1.8</a>
-              <a href="../../../1.0.9/api/custom-nlu-components/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -280,15 +277,15 @@ analysis to integrate with open source bot framework Rasa." />
   </div><p>You can create a custom component to perform a specific task which NLU doesn’t currently offer (for example, sentiment analysis).
 Below is the specification of the <a class="reference internal" href="#rasa.nlu.components.Component" title="rasa.nlu.components.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.components.Component</span></code></a> class with the methods you’ll need to implement.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">There is a detailed tutorial on building custom components <a class="reference external" href="https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/">here</a>.</p>
+<p class="admonition-title">Note</p>
+<p>There is a detailed tutorial on building custom components <a class="reference external" href="https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/">here</a>.</p>
 </div>
 <p>You can add a custom component to your pipeline by adding the module path.
 So if you have a module called <code class="docutils literal notranslate"><span class="pre">sentiment</span></code>
 containing a <code class="docutils literal notranslate"><span class="pre">SentimentAnalyzer</span></code> class:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;sentiment.SentimentAnalyzer&quot;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;sentiment.SentimentAnalyzer&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -413,9 +410,9 @@ methods that you should implement:</p>
     <span class="c1"># This attribute is designed for instance method: `can_handle_language`.</span>
     <span class="c1"># Default value is None which means it can handle all languages.</span>
     <span class="c1"># This is an important feature for backwards compatibility of components.</span>
-    <span class="n">language_list</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">language_list</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_config</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">MyComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">component_config</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">training_data</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -453,9 +450,9 @@ methods that you should implement:</p>
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">meta</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-        <span class="n">model_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
-        <span class="n">model_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Metadata&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
-        <span class="n">cached_component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Component&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">model_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Metadata&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cached_component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Component&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Component&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Load this component from file.&quot;&quot;&quot;</span>
@@ -468,9 +465,9 @@ methods that you should implement:</p>
 </td></tr></table></div>
 <div class="section" id="component">
 <h2>Component<a class="headerlink" href="#component" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="rasa.nlu.components.Component">
-<em class="property">class </em><code class="descclassname">rasa.nlu.components.</code><code class="descname">Component</code><span class="sig-paren">(</span><em>component_config=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">rasa.nlu.components.</code><code class="sig-name descname">Component</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">component_config</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component" title="Permalink to this definition">¶</a></dt>
 <dd><p>A component is a message processing unit in a pipeline.</p>
 <p>Components are collected sequentially in a pipeline. Each component
 is called one after another. This holds for
@@ -488,55 +485,49 @@ components a component can use to do its own
 processing. For example, a featurizer component can provide
 features that are used by another component down
 the pipeline to do intent classification.</p>
-<dl class="classmethod">
+<dl class="py method">
 <dt id="rasa.nlu.components.Component.required_packages">
-<em class="property">classmethod </em><code class="descname">required_packages</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.required_packages" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">required_packages</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.required_packages" title="Permalink to this definition">¶</a></dt>
 <dd><p>Specify which python packages need to be installed.</p>
 <p>E.g. <code class="docutils literal notranslate"><span class="pre">[&quot;spacy&quot;]</span></code>. More specifically, these should be
 importable python package names e.g. <cite>sklearn</cite> and not package
 names in the dependencies sense e.g. <cite>scikit-learn</cite></p>
 <p>This list of requirements allows us to fail early during training
 if a required package is not installed.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The list of required package names.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The list of required package names.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="classmethod">
+<dl class="py method">
 <dt id="rasa.nlu.components.Component.create">
-<em class="property">classmethod </em><code class="descname">create</code><span class="sig-paren">(</span><em>component_config</em>, <em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.create" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">component_config</span></em>, <em class="sig-param"><span class="n">config</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.create" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates this component (e.g. before a training is started).</p>
 <p>Method can access all configuration parameters.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>component_config</strong> – The components configuration parameters.</li>
-<li><strong>config</strong> – The model configuration parameters.</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>component_config</strong> – The components configuration parameters.</p></li>
+<li><p><strong>config</strong> – The model configuration parameters.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The created component.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#rasa.nlu.components.Component" title="rasa.nlu.components.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code></a></p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The created component.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rasa.nlu.components.Component" title="rasa.nlu.components.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code></a></p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="rasa.nlu.components.Component.provide_context">
-<code class="descname">provide_context</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.provide_context" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">provide_context</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.provide_context" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize this component for a new pipeline.</p>
 <p>This function will be called before the training
 is started and before the first message is processed using
@@ -547,21 +538,19 @@ components do not need to implement this method.
 It’s mostly used to initialize framework environments
 like MITIE and spacy
 (e.g. loading word vectors for the pipeline).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The updated component configuration.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The updated component configuration.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="rasa.nlu.components.Component.train">
-<code class="descname">train</code><span class="sig-paren">(</span><em>training_data</em>, <em>config=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.train" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">training_data</span></em>, <em class="sig-param"><span class="n">config</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train this component.</p>
 <p>This is the components chance to train itself provided
 with the training data. The component can rely on
@@ -571,26 +560,22 @@ of ANY component and
 on any context attributes created by a call to
 <a class="reference internal" href="#rasa.nlu.components.Component.train" title="rasa.nlu.components.Component.train"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rasa.nlu.components.Component.train()</span></code></a>
 of components previous to this one.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>training_data</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.training_data.TrainingData</span></code>.</li>
-<li><strong>config</strong> – The model configuration parameters.</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>training_data</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.training_data.TrainingData</span></code>.</p></li>
+<li><p><strong>config</strong> – The model configuration parameters.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="rasa.nlu.components.Component.process">
-<code class="descname">process</code><span class="sig-paren">(</span><em>message</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.process" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">process</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.process" title="Permalink to this definition">¶</a></dt>
 <dd><p>Process an incoming message.</p>
 <p>This is the components chance to process an incoming
 message. The component can rely on
@@ -600,106 +585,94 @@ of ANY component and
 on any context attributes created by a call to
 <a class="reference internal" href="#rasa.nlu.components.Component.process" title="rasa.nlu.components.Component.process"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rasa.nlu.components.Component.process()</span></code></a>
 of components previous to this one.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>message</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.message.Message</span></code> to process.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>message</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.message.Message</span></code> to process.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="rasa.nlu.components.Component.persist">
-<code class="descname">persist</code><span class="sig-paren">(</span><em>file_name</em>, <em>model_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.persist" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_name</span></em>, <em class="sig-param"><span class="n">model_dir</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.persist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Persist this component to disk for future loading.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>file_name</strong> – The file name of the model.</li>
-<li><strong>model_dir</strong> – The directory to store the model to.</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_name</strong> – The file name of the model.</p></li>
+<li><p><strong>model_dir</strong> – The directory to store the model to.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An optional dictionary with any information about the stored model.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An optional dictionary with any information about the stored model.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="rasa.nlu.components.Component.prepare_partial_processing">
-<code class="descname">prepare_partial_processing</code><span class="sig-paren">(</span><em>pipeline</em>, <em>context</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.prepare_partial_processing" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">prepare_partial_processing</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">context</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.prepare_partial_processing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the pipeline and context used for partial processing.</p>
 <p>The pipeline should be a list of components that are
 previous to this one in the pipeline and
 have already finished their training (and can therefore
 be safely used to process messages).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>pipeline</strong> – The list of components.</li>
-<li><strong>context</strong> – The context of processing.</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pipeline</strong> – The list of components.</p></li>
+<li><p><strong>context</strong> – The context of processing.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="rasa.nlu.components.Component.partially_process">
-<code class="descname">partially_process</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.partially_process" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">partially_process</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.partially_process" title="Permalink to this definition">¶</a></dt>
 <dd><p>Allows the component to process messages during
 training (e.g. external training data).</p>
 <p>The passed message will be processed by all components
 previous to this one in the pipeline.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>message</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.message.Message</span></code> to process.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The processed <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.message.Message</span></code>.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>message</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.message.Message</span></code> to process.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The processed <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.nlu.training_data.message.Message</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="classmethod">
+<dl class="py method">
 <dt id="rasa.nlu.components.Component.can_handle_language">
-<em class="property">classmethod </em><code class="descname">can_handle_language</code><span class="sig-paren">(</span><em>language</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.can_handle_language" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">can_handle_language</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">language</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.can_handle_language" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check if component supports a specific language.</p>
 <p>This method can be overwritten when needed. (e.g. dynamically
 determine which language is supported.)</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>language</strong> – The language to check.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><cite>True</cite> if component can handle specific language, <cite>False</cite> otherwise.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>language</strong> – The language to check.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>True</cite> if component can handle specific language, <cite>False</cite> otherwise.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

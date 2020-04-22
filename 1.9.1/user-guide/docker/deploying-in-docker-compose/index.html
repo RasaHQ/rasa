@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Deploying a Rasa Open Source Assistant in Docker Compose</title>
     <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../../genindex/" />
     <link rel="search" title="Search" href="../../../search/" />
     <link rel="next" title="Cloud Storage" href="../../cloud-storage/" />
@@ -242,8 +241,6 @@
               <a href="../../../../1.4.6/index/">1.4.6</a>
               <a href="../../../../1.3.10/index/">1.3.10</a>
               <a href="../../../../1.2.9/index/">1.2.9</a>
-              <a href="../../../../1.1.8/index/">1.1.8</a>
-              <a href="../../../../1.0.9/index/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -282,11 +279,11 @@
 To deploy Rasa X and your assistant together, see the <a class="reference internal" href="../../how-to-deploy/#recommended-deployment-methods"><span class="std std-ref">Recommended Deployment Methods</span></a>.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#installing-docker" id="id3">Installing Docker</a></li>
-<li><a class="reference internal" href="#configuring-channels" id="id4">Configuring Channels</a></li>
-<li><a class="reference internal" href="#using-docker-compose-to-run-multiple-services" id="id5">Using Docker Compose to Run Multiple Services</a></li>
-<li><a class="reference internal" href="#building-an-action-server-image" id="id6">Building an Action Server Image</a></li>
-<li><a class="reference internal" href="#configuring-a-tracker-store" id="id7">Configuring a Tracker Store</a></li>
+<li><p><a class="reference internal" href="#installing-docker" id="id3">Installing Docker</a></p></li>
+<li><p><a class="reference internal" href="#configuring-channels" id="id4">Configuring Channels</a></p></li>
+<li><p><a class="reference internal" href="#using-docker-compose-to-run-multiple-services" id="id5">Using Docker Compose to Run Multiple Services</a></p></li>
+<li><p><a class="reference internal" href="#building-an-action-server-image" id="id6">Building an Action Server Image</a></p></li>
+<li><p><a class="reference internal" href="#configuring-a-tracker-store" id="id7">Configuring a Tracker Store</a></p></li>
 </ul>
 </div>
 <div class="section" id="installing-docker">
@@ -310,7 +307,7 @@ See <a class="reference external" href="https://docs.docker.com/install/">Docker
 <a class="reference internal" href="../../messaging-and-voice-channels/#messaging-and-voice-channels"><span class="std std-ref">Messaging and Voice Channels</span></a> in <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>. For example, to add a
 REST channel, uncomment this section in the <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">rest</span><span class="p p-Indicator">:</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">rest</span><span class="p">:</span>
   <span class="c1"># you don&#39;t need to provide anything here - this channel doesn&#39;t</span>
   <span class="c1"># require any credentials</span>
 </pre></div>
@@ -331,8 +328,7 @@ want to deploy an assistant that also has an action server.</p>
 </div></blockquote>
 <p>Add the following content to the file:</p>
 <blockquote>
-<div><pre class="literal-block">
-version: '3.0'
+<div><pre class="literal-block">version: '3.0'
 services:
   rasa:
     image: rasa/rasa:1.9.1-full
@@ -341,8 +337,7 @@ services:
     volumes:
       - ./:/app
     command:
-      - run
-</pre>
+      - run</pre>
 </div></blockquote>
 <p>The file starts with the version of the Docker Compose specification that you
 want to use.
@@ -351,8 +346,7 @@ The first service is the <code class="docutils literal notranslate"><span class=
 <p>To add the action server, add the image of your action server code. To learn how to deploy
 an action server image, see <a class="reference internal" href="#building-an-action-server-image"><span class="std std-ref">Building an Action Server Image</span></a>.</p>
 <blockquote>
-<div><pre class="literal-block">
-version: '3.0'
+<div><pre class="literal-block">version: '3.0'
 services:
   rasa:
     image: rasa/rasa:1.9.1-full
@@ -364,14 +358,13 @@ services:
       - run
   app:
     image: &lt;your action server image&gt;
-    expose: 5055
-</pre>
+    expose: 5055</pre>
 </div></blockquote>
 <p>The <code class="docutils literal notranslate"><span class="pre">expose:</span> <span class="pre">5005</span></code> is what allows the <code class="docutils literal notranslate"><span class="pre">rasa</span></code> service to reach the <code class="docutils literal notranslate"><span class="pre">app</span></code> service on that port.
 To instruct the <code class="docutils literal notranslate"><span class="pre">rasa</span></code> service to send its action requests to that endpoint, add it to your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">action_endpoint</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">http://app:5055/webhook</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">action_endpoint</span><span class="p">:</span>
+  <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://app:5055/webhook</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -407,7 +400,7 @@ a different Docker registry, such as <a class="reference external" href="https:/
 <p>To create your image:</p>
 <blockquote>
 <div><ol class="arabic">
-<li><p class="first">Move your actions code to a folder <code class="docutils literal notranslate"><span class="pre">actions</span></code> in your project directory.
+<li><p>Move your actions code to a folder <code class="docutils literal notranslate"><span class="pre">actions</span></code> in your project directory.
 Make sure to also add an empty <code class="docutils literal notranslate"><span class="pre">actions/__init__.py</span></code> file:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir actions
@@ -418,15 +411,13 @@ touch actions/__init__.py  <span class="c1"># the init file indicates actions.py
 </div></blockquote>
 <p>The <code class="docutils literal notranslate"><span class="pre">rasa/rasa-sdk</span></code> image will automatically look for the actions in <code class="docutils literal notranslate"><span class="pre">actions/actions.py</span></code>.</p>
 </li>
-<li><p class="first">If your actions have any extra dependencies, create a list of them in a file,
-<code class="docutils literal notranslate"><span class="pre">actions/requirements-actions.txt</span></code>.</p>
-</li>
-<li><p class="first">Create a file named <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> in your project directory,
+<li><p>If your actions have any extra dependencies, create a list of them in a file,
+<code class="docutils literal notranslate"><span class="pre">actions/requirements-actions.txt</span></code>.</p></li>
+<li><p>Create a file named <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> in your project directory,
 in which you’ll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
 For example:</p>
 <blockquote>
-<div><pre class="literal-block">
-# Extend the official Rasa SDK image
+<div><pre class="literal-block"># Extend the official Rasa SDK image
 FROM rasa/rasa-sdk:1.9.0
 
 # Use subdirectory as working directory
@@ -445,8 +436,7 @@ RUN pip install -r requirements-actions.txt
 COPY ./actions /app/actions
 
 # By best practices, don't run the code with root user
-USER 1001
-</pre>
+USER 1001</pre>
 </div></blockquote>
 </li>
 </ol>
@@ -463,10 +453,10 @@ and development servers. You should create a new tag any time you update your co
 <p>If you are using Docker Compose locally, you can use this image directly in your
 <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">version</span><span class="p p-Indicator">:</span> <span class="s">&#39;3.0&#39;</span>
-<span class="l l-Scalar l-Scalar-Plain">services</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">app</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;account_username&gt;/&lt;repository_name&gt;:&lt;custom_image_tag&gt;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">version</span><span class="p">:</span> <span class="s">&#39;3.0&#39;</span>
+<span class="nt">services</span><span class="p">:</span>
+  <span class="nt">app</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;account_username&gt;/&lt;repository_name&gt;:&lt;custom_image_tag&gt;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -483,10 +473,10 @@ docker push &lt;account_username&gt;/&lt;repository_name&gt;:&lt;custom_image_ta
 your chosen container registry.</p>
 <p>Then, reference the new image tag in your <code class="docutils literal notranslate"><span class="pre">docker-compose.override.yml</span></code>:</p>
 <blockquote>
-<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">version</span><span class="p p-Indicator">:</span> <span class="s">&#39;3.0&#39;</span>
-<span class="l l-Scalar l-Scalar-Plain">services</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">app</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;account_username&gt;/&lt;repository_name&gt;:&lt;custom_image_tag&gt;</span>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">version</span><span class="p">:</span> <span class="s">&#39;3.0&#39;</span>
+<span class="nt">services</span><span class="p">:</span>
+  <span class="nt">app</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;account_username&gt;/&lt;repository_name&gt;:&lt;custom_image_tag&gt;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -503,10 +493,10 @@ the new tracker store, pointing to your new service. More information about how
 to do so can be found in the tracker store documentation:</p>
 <blockquote>
 <div><ul class="simple">
-<li><a class="reference internal" href="../../../api/tracker-stores/#sql-tracker-store"><span class="std std-ref">SQLTrackerStore</span></a></li>
-<li><a class="reference internal" href="../../../api/tracker-stores/#redis-tracker-store"><span class="std std-ref">RedisTrackerStore</span></a></li>
-<li><a class="reference internal" href="../../../api/tracker-stores/#mongo-tracker-store"><span class="std std-ref">MongoTrackerStore</span></a></li>
-<li><a class="reference internal" href="../../../api/tracker-stores/#custom-tracker-store"><span class="std std-ref">Custom Tracker Store</span></a></li>
+<li><p><a class="reference internal" href="../../../api/tracker-stores/#sql-tracker-store"><span class="std std-ref">SQLTrackerStore</span></a></p></li>
+<li><p><a class="reference internal" href="../../../api/tracker-stores/#redis-tracker-store"><span class="std std-ref">RedisTrackerStore</span></a></p></li>
+<li><p><a class="reference internal" href="../../../api/tracker-stores/#mongo-tracker-store"><span class="std std-ref">MongoTrackerStore</span></a></p></li>
+<li><p><a class="reference internal" href="../../../api/tracker-stores/#custom-tracker-store"><span class="std std-ref">Custom Tracker Store</span></a></p></li>
 </ul>
 </div></blockquote>
 </div>

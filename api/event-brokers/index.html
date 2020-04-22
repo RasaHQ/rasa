@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Event Brokers</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Lock Stores" href="../lock-stores/" />
@@ -247,8 +246,6 @@ you to stream events to a message broker." />
               <a href="../.././1.4.6/api/event-brokers/">1.4.6</a>
               <a href="../.././1.3.10/api/event-brokers/">1.3.10</a>
               <a href="../.././1.2.9/api/event-brokers/">1.2.9</a>
-              <a href="../.././1.1.8/api/event-brokers/">1.1.8</a>
-              <a href="../.././1.0.9/api/event-brokers/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -291,10 +288,10 @@ service. The event broker publishes messages to a message streaming service,
 also known as a message broker, to forward Rasa <a class="reference internal" href="../events/#events"><span class="std std-ref">Events</span></a> from the Rasa server to other services.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#format" id="id4">Format</a></li>
-<li><a class="reference internal" href="#pika-event-broker" id="id5">Pika Event Broker</a></li>
-<li><a class="reference internal" href="#kafka-event-broker" id="id6">Kafka Event Broker</a></li>
-<li><a class="reference internal" href="#sql-event-broker" id="id7">SQL Event Broker</a></li>
+<li><p><a class="reference internal" href="#format" id="id4">Format</a></p></li>
+<li><p><a class="reference internal" href="#pika-event-broker" id="id5">Pika Event Broker</a></p></li>
+<li><p><a class="reference internal" href="#kafka-event-broker" id="id6">Kafka Event Broker</a></p></li>
+<li><p><a class="reference internal" href="#sql-event-broker" id="id7">SQL Event Broker</a></p></li>
 </ul>
 </div>
 <div class="section" id="format">
@@ -324,9 +321,9 @@ types, check out the <a class="reference internal" href="../events/#events"><spa
 <a class="reference external" href="https://www.rabbitmq.com">RabbitMQ</a>.</p>
 <div class="contents local topic" id="id2">
 <ul class="simple">
-<li><a class="reference internal" href="#adding-a-pika-event-broker-using-the-endpoint-configuration" id="id8">Adding a Pika Event Broker Using the Endpoint Configuration</a></li>
-<li><a class="reference internal" href="#adding-a-pika-event-broker-in-python" id="id9">Adding a Pika Event Broker in Python</a></li>
-<li><a class="reference internal" href="#implementing-a-pika-event-consumer" id="id10">Implementing a Pika Event Consumer</a></li>
+<li><p><a class="reference internal" href="#adding-a-pika-event-broker-using-the-endpoint-configuration" id="id8">Adding a Pika Event Broker Using the Endpoint Configuration</a></p></li>
+<li><p><a class="reference internal" href="#adding-a-pika-event-broker-in-python" id="id9">Adding a Pika Event Broker in Python</a></p></li>
+<li><p><a class="reference internal" href="#implementing-a-pika-event-consumer" id="id10">Implementing a Pika Event Consumer</a></p></li>
 </ul>
 </div>
 <div class="section" id="adding-a-pika-event-broker-using-the-endpoint-configuration">
@@ -375,7 +372,7 @@ example:</p>
 <span class="k">def</span> <span class="nf">_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">body</span><span class="p">):</span>
         <span class="c1"># Do something useful with your incoming message body here, e.g.</span>
         <span class="c1"># saving it to a database</span>
-        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;Received event {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">body</span><span class="p">)))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Received event </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">body</span><span class="p">)))</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
 
@@ -391,7 +388,7 @@ example:</p>
     <span class="n">channel</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">channel</span><span class="p">()</span>
     <span class="n">channel</span><span class="o">.</span><span class="n">basic_consume</span><span class="p">(</span><span class="n">_callback</span><span class="p">,</span>
                           <span class="n">queue</span><span class="o">=</span><span class="s1">&#39;rasa_events&#39;</span><span class="p">,</span>
-                          <span class="n">no_ack</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                          <span class="n">no_ack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">channel</span><span class="o">.</span><span class="n">start_consuming</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -403,10 +400,10 @@ example:</p>
 events. In this example we are going to use the <a class="reference external" href="https://kafka-python.readthedocs.io/en/master/usage.html">python-kafka</a> library, a Kafka client written in Python.</p>
 <div class="contents local topic" id="id3">
 <ul class="simple">
-<li><a class="reference internal" href="#adding-a-kafka-event-broker-using-the-endpoint-configuration" id="id11">Adding a Kafka Event Broker Using the Endpoint Configuration</a></li>
-<li><a class="reference internal" href="#adding-a-kafka-broker-in-python" id="id12">Adding a Kafka Broker in Python</a></li>
-<li><a class="reference internal" href="#authentication-and-authorization" id="id13">Authentication and Authorization</a></li>
-<li><a class="reference internal" href="#implementing-a-kafka-event-consumer" id="id14">Implementing a Kafka Event Consumer</a></li>
+<li><p><a class="reference internal" href="#adding-a-kafka-event-broker-using-the-endpoint-configuration" id="id11">Adding a Kafka Event Broker Using the Endpoint Configuration</a></p></li>
+<li><p><a class="reference internal" href="#adding-a-kafka-broker-in-python" id="id12">Adding a Kafka Broker in Python</a></p></li>
+<li><p><a class="reference internal" href="#authentication-and-authorization" id="id13">Authentication and Authorization</a></p></li>
+<li><p><a class="reference internal" href="#implementing-a-kafka-event-consumer" id="id14">Implementing a Kafka Event Consumer</a></p></li>
 </ul>
 </div>
 <div class="section" id="adding-a-kafka-event-broker-using-the-endpoint-configuration">
@@ -488,7 +485,7 @@ be provided as arguments, as well as the CA’s root certificate.</p>
                                 <span class="n">ssl_cafile</span><span class="o">=</span><span class="s1">&#39;CARoot.pem&#39;</span><span class="p">,</span>
                                 <span class="n">ssl_certfile</span><span class="o">=</span><span class="s1">&#39;certificate.pem&#39;</span><span class="p">,</span>
                                 <span class="n">ssl_keyfile</span><span class="o">=</span><span class="s1">&#39;key.pem&#39;</span><span class="p">,</span>
-                                <span class="n">ssl_check_hostname</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                <span class="n">ssl_check_hostname</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                 <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SSL&#39;</span><span class="p">,</span>
                                 <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_events&#39;</span><span class="p">)</span>
 </pre></div>
@@ -508,13 +505,13 @@ according to the security protocol being used. The following implementation show
                           <span class="n">bootstrap_servers</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;localhost:29093&#39;</span><span class="p">],</span>
                           <span class="n">value_deserializer</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)),</span>
                           <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SSL&#39;</span><span class="p">,</span>
-                          <span class="n">ssl_check_hostname</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                          <span class="n">ssl_check_hostname</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                           <span class="n">ssl_cafile</span><span class="o">=</span><span class="s1">&#39;CARoot.pem&#39;</span><span class="p">,</span>
                           <span class="n">ssl_certfile</span><span class="o">=</span><span class="s1">&#39;certificate.pem&#39;</span><span class="p">,</span>
                           <span class="n">ssl_keyfile</span><span class="o">=</span><span class="s1">&#39;key.pem&#39;</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">consumer</span><span class="p">:</span>
-    <span class="k">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -532,21 +529,21 @@ and PostgreSQL databases, to see other options, please see the
 <p>To instruct Rasa to save all events to your SQL event broker, add an <code class="docutils literal notranslate"><span class="pre">event_broker</span></code> section to your
 <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>. For example, a valid SQLite configuration
 could look like the following:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">event_broker</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
-  <span class="l l-Scalar l-Scalar-Plain">dialect</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">sqlite</span>
-  <span class="l l-Scalar l-Scalar-Plain">db</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">events.db</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">event_broker</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
+  <span class="nt">dialect</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sqlite</span>
+  <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">events.db</span>
 </pre></div>
 </div>
 <p>PostgreSQL databases can be used as well:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">event_broker</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
-  <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span>
-  <span class="l l-Scalar l-Scalar-Plain">port</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">5432</span>
-  <span class="l l-Scalar l-Scalar-Plain">dialect</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">postgresql</span>
-  <span class="l l-Scalar l-Scalar-Plain">username</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">myuser</span>
-  <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mypassword</span>
-  <span class="l l-Scalar l-Scalar-Plain">db</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mydatabase</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">event_broker</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
+  <span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span>
+  <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5432</span>
+  <span class="nt">dialect</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">postgresql</span>
+  <span class="nt">username</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myuser</span>
+  <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mypassword</span>
+  <span class="nt">db</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mydatabase</span>
 </pre></div>
 </div>
 <p>With this configuration applied, Rasa will create a table called <code class="docutils literal notranslate"><span class="pre">events</span></code> on the database,
