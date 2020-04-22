@@ -701,6 +701,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     f"Skipping training of classifier."
                 )
                 return
+        if self.component_config.get(ENTITY_RECOGNITION):
+            self.check_correct_entity_annotations(training_data)
 
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()

@@ -3,10 +3,11 @@ from typing import Any, Text, Dict, List
 import pytest
 
 from rasa.nlu.constants import TEXT
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.training_data.formats import MarkdownReader
 
 
 @pytest.mark.parametrize(
@@ -320,3 +321,53 @@ def test_convert_tags_to_entities(
         text, tokens, tags, confidences
     )
     assert actual_entities == expected_entities
+
+
+@pytest.mark.parametrize(
+    "text, warnings",
+    [
+        (
+            "## intent:test\n"
+            "- I want to fly from [Berlin](location) to [ San Fransisco](location)\n",
+            1,
+        ),
+        (
+            "## intent:test\n"
+            "- I want to fly from [Berlin ](location) to [San Fransisco](location)\n",
+            1,
+        ),
+        (
+            "## intent:test\n"
+            "- I want to fly from [Berlin](location) to [San Fransisco.](location)\n"
+            "- I have nothing to say.",
+            1,
+        ),
+        (
+            "## intent:test\n"
+            "- I have nothing to say.\n"
+            "- I want to fly from [Berlin](location) to[San Fransisco](location)\n",
+            1,
+        ),
+        (
+            "## intent:test\n"
+            "- I want to fly from [Berlin](location) to[San Fransisco](location)\n"
+            "- Book a flight from [London](location) to [Paris.](location)\n",
+            2,
+        ),
+    ],
+)
+def test_check_check_correct_entity_annotations(text: Text, warnings: int):
+    reader = MarkdownReader()
+    tokenizer = WhitespaceTokenizer()
+
+    training_data = reader.reads(text)
+    tokenizer.train(training_data)
+
+    with pytest.warns(UserWarning) as record:
+        EntityExtractor.check_correct_entity_annotations(training_data)
+
+    assert len(record) == warnings
+    assert all(
+        [excerpt in record[0].message.args[0]]
+        for excerpt in ["Misaligned entity annotation in sentence"]
+    )

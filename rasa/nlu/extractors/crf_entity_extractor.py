@@ -161,6 +161,8 @@ class CRFEntityExtractor(EntityExtractor):
             )
             return
 
+        self.check_correct_entity_annotations(training_data)
+
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data, include_cls_token=False)
 
