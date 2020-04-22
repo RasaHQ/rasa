@@ -12,7 +12,7 @@ is usually the chat interface that ships with Rasa X, where you can `invite user
 to test your bot <https://rasa.com/docs/rasa-x/user-guide/enable-workflows/#conversations-with-test-users>`_.
 
 If you already have an existing website and want to add a Rasa assistant to it,
-you can use `Chatroom <https://github.com/scalableminds/chatroom>`_, a widget which uses regular HTTP requests.
+you can use `Chatroom <https://github.com/scalableminds/chatroom>`_, a widget which you can incorporate into your existing webpage by adding a HTML snippet.
 Alternatively, you can also build your own chat widget.
 
 
