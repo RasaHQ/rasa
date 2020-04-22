@@ -134,7 +134,7 @@ def test_markdown_entity_regex(
 def test_deprecation_warning_logged():
     r = MarkdownReader()
 
-    md = f"""
+    md = """
 ## intent:test-intent
 - I want to go to [LA](city:Los Angeles)
     """
