@@ -1,1 +1,1 @@
-Update the ``DIETClassifier`` to support composite entities.
+Update the ``DIETClassifier`` and ````DIETClassifier`` to support entities with roles/groups.
