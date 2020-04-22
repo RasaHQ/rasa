@@ -2,6 +2,7 @@ from typing import Any, Text, Dict, List
 
 import pytest
 
+from rasa.nlu.constants import TEXT
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
@@ -66,14 +67,14 @@ from rasa.nlu.training_data.formats import MarkdownReader
                     "entity": "city",
                     "start": 0,
                     "end": 3,
-                    "confidence": 0.87,
+                    "confidence_entity": 0.87,
                     "value": "Aar",
                 },
                 {
                     "entity": "iata",
                     "start": 3,
                     "end": 6,
-                    "confidence": 0.43,
+                    "confidence_entity": 0.43,
                     "value": "hus",
                 },
                 {"entity": "location", "start": 12, "end": 16, "value": "city"},
@@ -84,7 +85,7 @@ from rasa.nlu.training_data.formats import MarkdownReader
                     "entity": "city",
                     "start": 0,
                     "end": 6,
-                    "confidence": 0.87,
+                    "confidence_entity": 0.87,
                     "value": "Aarhus",
                 },
                 {"entity": "location", "start": 12, "end": 16, "value": "city"},
@@ -98,28 +99,28 @@ from rasa.nlu.training_data.formats import MarkdownReader
                     "entity": "iata",
                     "start": 0,
                     "end": 2,
-                    "confidence": 0.32,
+                    "confidence_entity": 0.32,
                     "value": "Aa",
                 },
                 {
                     "entity": "city",
                     "start": 2,
                     "end": 3,
-                    "confidence": 0.87,
+                    "confidence_entity": 0.87,
                     "value": "r",
                 },
                 {
                     "entity": "iata",
                     "start": 3,
                     "end": 5,
-                    "confidence": 0.21,
+                    "confidence_entity": 0.21,
                     "value": "hu",
                 },
                 {
                     "entity": "city",
                     "start": 5,
                     "end": 6,
-                    "confidence": 0.43,
+                    "confidence_entity": 0.43,
                     "value": "s",
                 },
             ],
@@ -129,7 +130,7 @@ from rasa.nlu.training_data.formats import MarkdownReader
                     "entity": "city",
                     "start": 0,
                     "end": 6,
-                    "confidence": 0.87,
+                    "confidence_entity": 0.87,
                     "value": "Aarhus",
                 }
             ],
@@ -142,7 +143,7 @@ from rasa.nlu.training_data.formats import MarkdownReader
                     "entity": "city",
                     "start": 0,
                     "end": 2,
-                    "confidence": 0.32,
+                    "confidence_entity": 0.32,
                     "value": "Aa",
                 }
             ],
@@ -152,7 +153,7 @@ from rasa.nlu.training_data.formats import MarkdownReader
                     "entity": "city",
                     "start": 0,
                     "end": 6,
-                    "confidence": 0.32,
+                    "confidence_entity": 0.32,
                     "value": "Aarhus",
                 }
             ],
@@ -165,7 +166,7 @@ from rasa.nlu.training_data.formats import MarkdownReader
                     "entity": "city",
                     "start": 0,
                     "end": 2,
-                    "confidence": 0.32,
+                    "confidence_entity": 0.32,
                     "value": "Aa",
                 }
             ],
@@ -247,6 +248,84 @@ def test_clean_up_entities(
     updated_entities = extractor.clean_up_entities(message, entities, keep)
 
     assert updated_entities == expected_entities
+
+
+@pytest.mark.parametrize(
+    "text, tags, confidences, expected_entities",
+    [
+        (
+            "I am flying from San Fransisco to Amsterdam",
+            {
+                "entity": ["O", "O", "O", "O", "city", "city", "O", "city"],
+                "role": ["O", "O", "O", "O", "from", "from", "O", "to"],
+            },
+            {
+                "entity": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89],
+                "role": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89],
+            },
+            [
+                {
+                    "entity": "city",
+                    "start": 17,
+                    "end": 30,
+                    "value": "San Fransisco",
+                    "role": "from",
+                    "confidence_entity": 0.78,
+                    "confidence_role": 0.78,
+                },
+                {
+                    "entity": "city",
+                    "start": 34,
+                    "end": 43,
+                    "value": "Amsterdam",
+                    "role": "to",
+                    "confidence_entity": 0.89,
+                    "confidence_role": 0.89,
+                },
+            ],
+        ),
+        (
+            "I am flying from San Fransisco to Amsterdam",
+            {
+                "entity": ["O", "O", "O", "O", "city", "city", "O", "city"],
+                "group": ["O", "O", "O", "O", "1", "1", "O", "1"],
+            },
+            None,
+            [
+                {
+                    "entity": "city",
+                    "start": 17,
+                    "end": 30,
+                    "value": "San Fransisco",
+                    "group": "1",
+                },
+                {
+                    "entity": "city",
+                    "start": 34,
+                    "end": 43,
+                    "value": "Amsterdam",
+                    "group": "1",
+                },
+            ],
+        ),
+    ],
+)
+def test_convert_tags_to_entities(
+    text: Text,
+    tags: Dict[Text, List[Text]],
+    confidences: Dict[Text, List[float]],
+    expected_entities: List[Dict[Text, Any]],
+):
+    extractor = EntityExtractor()
+    tokenizer = WhitespaceTokenizer()
+
+    message = Message(text)
+    tokens = tokenizer.tokenize(message, TEXT)
+
+    actual_entities = extractor.convert_predictions_into_entities(
+        text, tokens, tags, confidences
+    )
+    assert actual_entities == expected_entities
 
 
 @pytest.mark.parametrize(

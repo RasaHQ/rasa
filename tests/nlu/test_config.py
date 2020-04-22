@@ -225,9 +225,9 @@ def test_train_docker_and_docs_configs(config_file: Text):
             ["add an 'EntitySynonymMapper'"],
         ),
         (
-            "data/test_config/config_crf_no_regex.yml",
+            "data/test_config/config_embedding_intent_response_selector.yml",
             "data/test/demo-rasa-composite-entities.md",
-            ["add 'DIETClassifier'"],
+            ["include either 'DIETClassifier' or 'CRFEntityExtractor'"],
         ),
     ],
 )

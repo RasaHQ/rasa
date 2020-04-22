@@ -17,7 +17,6 @@ from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.test import determine_token_labels
-from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.common import raise_warning
@@ -34,11 +33,8 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_START,
-    ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_VALUE,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.nlu.training_data import TrainingData
@@ -611,6 +607,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         model_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
+
         for tag_name, tag_ids in tag_name_to_tag_ids.items():
             model_data.add_features(f"{tag_name}_{TAG_IDS}", [tag_ids])
 
@@ -801,7 +798,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         predicted_tags = self._entity_label_to_tags(predict_out)
 
-        entities = self._convert_tags_to_entities(
+        entities = self.convert_predictions_into_entities(
             message.text, message.get(TOKENS_NAMES[TEXT], []), predicted_tags
         )
 
@@ -821,98 +818,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
 
             if self.component_config[BILOU_FLAG]:
+                tags = bilou_utils.ensure_consistent_bilou_tagging(tags)
                 tags = bilou_utils.remove_bilou_prefixes(tags)
 
             predicted_tags[tag_spec.tag_name] = tags
 
         return predicted_tags
-
-    def _convert_tags_to_entities(
-        self, text: Text, tokens: List[Token], predicted_tags: Dict[Text, List[Text]]
-    ) -> List[Dict[Text, Any]]:
-        entities = []
-
-        last_tag = NO_ENTITY_TAG
-        last_role_tag = NO_ENTITY_TAG
-        last_group_tag = NO_ENTITY_TAG
-
-        for idx, token in enumerate(tokens):
-            current_entity_tag = self._get_tag_for(
-                predicted_tags, ENTITY_ATTRIBUTE_TYPE, idx
-            )
-            current_group_tag = self._get_tag_for(
-                predicted_tags, ENTITY_ATTRIBUTE_GROUP, idx
-            )
-            current_role_tag = self._get_tag_for(
-                predicted_tags, ENTITY_ATTRIBUTE_ROLE, idx
-            )
-
-            if current_entity_tag == NO_ENTITY_TAG:
-                last_tag = NO_ENTITY_TAG
-                continue
-
-            # new tag found
-            if (
-                last_tag != current_entity_tag
-                or last_group_tag != current_group_tag
-                or last_role_tag != current_role_tag
-            ):
-                entity = self._create_new_entity(
-                    predicted_tags,
-                    current_entity_tag,
-                    current_group_tag,
-                    current_role_tag,
-                    token,
-                )
-                entities.append(entity)
-
-            # belongs to last entity
-            elif (
-                last_tag == current_entity_tag
-                and last_group_tag == current_group_tag
-                and last_role_tag == current_role_tag
-            ):
-                entities[-1][ENTITY_ATTRIBUTE_END] = token.end
-
-            last_tag = current_entity_tag
-            last_group_tag = current_group_tag
-            last_role_tag = current_role_tag
-
-        for entity in entities:
-            entity[ENTITY_ATTRIBUTE_VALUE] = text[
-                entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
-            ]
-
-        return entities
-
-    @staticmethod
-    def _create_new_entity(
-        predicted_tags: Dict[Text, List[Text]],
-        entity_tag: Text,
-        group_tag: Text,
-        role_tag: Text,
-        token: Token,
-    ):
-        entity = {
-            ENTITY_ATTRIBUTE_TYPE: entity_tag,
-            ENTITY_ATTRIBUTE_START: token.start,
-            ENTITY_ATTRIBUTE_END: token.end,
-        }
-
-        if ENTITY_ATTRIBUTE_ROLE in predicted_tags:
-            entity[ENTITY_ATTRIBUTE_ROLE] = role_tag
-        if ENTITY_ATTRIBUTE_GROUP in predicted_tags:
-            entity[ENTITY_ATTRIBUTE_GROUP] = group_tag
-
-        return entity
-
-    @staticmethod
-    def _get_tag_for(
-        predicted_tags: Dict[Text, List[Text]], tag_name: Text, idx: int
-    ) -> Text:
-        if tag_name in predicted_tags:
-            return predicted_tags[tag_name][idx]
-        return NO_ENTITY_TAG
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""

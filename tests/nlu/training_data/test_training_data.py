@@ -111,7 +111,6 @@ def test_composite_entities_data():
     assert td.entities == {"location", "cuisine", "topping", "size"}
     assert td.entity_groups == {"1", "2"}
     assert td.entity_roles == {"european", "asian", "latin america"}
-
     assert td.examples_per_entity["entity 'location'"] == 7
     assert td.examples_per_entity["group '1'"] == 9
     assert td.examples_per_entity["role 'european'"] == 1
