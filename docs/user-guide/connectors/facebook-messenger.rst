@@ -73,14 +73,16 @@ you should add in the configuration of the webhook.
 Supported response attachments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In addition to typical text, image, button, and custom responses, the Facebook Messenger channel supports the following additional response template attachments:
+In addition to typical text, image, button, and custom responses, the Facebook
+Messenger channel supports the following additional response template attachments:
 
 * `Buttons <https://developers.facebook.com/docs/messenger-platform/send-messages/buttons>`_: sends a text message with up to three attached buttons
 
 .. code-block:: yaml
 
    utter_fb_buttons_example:
-      - text: Hello World!
+      - channel: facebook
+        text: Hello World!
         buttons:
           - title: Button title over 20 characters # this will be truncated to: "Button title over..."
             payload: /example_intent
@@ -94,14 +96,17 @@ In addition to typical text, image, button, and custom responses, the Facebook M
 
 .. warning::
 
-   Facebook API limits the amount of buttons you can sent in a message to 3.  If more than 3 buttons are provided in a message, Rasa will ignore all provided buttons.
+   Facebook API limits the amount of buttons you can sent in a message to 3.  If
+   more than 3 buttons are provided in a message, Rasa will ignore all provided
+   buttons.
 
-* `Quick Replies <https://developers.facebook.com/docs/messenger-platform/send-messages/quick-replies>`_: provide a way to present a set of up to 13 buttons in-conversation that contain a title and optional image, and appear prominently above the composer. You can also use quick replies to request a person's email address or phone number.
+* `Quick Replies <https://developers.facebook.com/docs/messenger-platform/send-messages/quick-replies>`_: provide a way to present a set of up to 13 buttons in-conversation that contain a title and optional image, and appear prominently above the composer. You can also use quick replies to request a person'semail address or phone number.
 
 .. code-block:: yaml
 
    utter_fb_quick_reply_example:
-      - text: Hello World!
+      - channel: facebook
+        text: Hello World!
         quick_replies:
           - title: Text quick reply
             payload: /example_intent
@@ -116,14 +121,16 @@ In addition to typical text, image, button, and custom responses, the Facebook M
 
 .. note::
 
-   Both Quick Reply and Button titles in Facebook Messenger have a character limit of 20.  Titles longer than 20 characters will be truncated.
+   Both Quick Reply and Button titles in Facebook Messenger have a character
+   limit of 20.  Titles longer than 20 characters will be truncated.
 
 * `Generic Template Elements <https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic>`_: provide a way to create a horizontally scrollable list up to 10 content elements that integrate buttons, images, and more alongside text a single message.
 
 .. code-block:: yaml
 
    utter_fb_element_example:
-      - text: Hello World!
+      - channel: facebook
+        text: Hello World!
         elements:
           - title: Element Title 1
             subtitle: Subtitles are supported
