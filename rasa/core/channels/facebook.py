@@ -3,7 +3,8 @@ import hmac
 import logging
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
-from fbmessenger.elements import Text as FBText
+from fbmessenger.templates import ButtonTemplate, GenericTemplate
+from fbmessenger.elements import Text as FBText, Button as FBButton
 from fbmessenger.quick_replies import QuickReplies, QuickReply
 from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
@@ -167,7 +168,6 @@ class MessengerBot(OutputChannel):
     ) -> None:
         """Sends buttons to the output."""
 
-        # buttons is a list of tuples: [(option_name,payload)]
         if len(buttons) > 3:
             raise_warning(
                 "Facebook API currently allows only up to 3 buttons. "
@@ -177,20 +177,9 @@ class MessengerBot(OutputChannel):
         else:
             self._add_postback_info(buttons)
 
-            # Currently there is no predefined way to create a message with
-            # buttons in the fbmessenger framework - so we need to create the
-            # payload on our own
-            payload = {
-                "attachment": {
-                    "type": "template",
-                    "payload": {
-                        "template_type": "button",
-                        "text": text,
-                        "buttons": buttons,
-                    },
-                }
-            }
-            self.messenger_client.send(payload, recipient_id, "RESPONSE")
+            fb_buttons = self._convert_to_fb_button(buttons)
+
+            self.send(recipient_id, ButtonTemplate(text, fb_buttons))
 
     async def send_quick_replies(
         self,
@@ -205,21 +194,26 @@ class MessengerBot(OutputChannel):
         self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
 
     async def send_elements(
-        self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
+        self,
+        recipient_id: Text,
+        elements: Iterable[Dict[Text, Any]],
+        quick_replies: List[Dict[Text, Any]] = None,
+        **kwargs: Any,
     ) -> None:
         """Sends elements to the output."""
 
         for element in elements:
             if "buttons" in element:
                 self._add_postback_info(element["buttons"])
+                element["buttons"] = self._convert_to_fb_button(element["buttons"])
 
-        payload = {
-            "attachment": {
-                "type": "template",
-                "payload": {"template_type": "generic", "elements": elements},
-            }
-        }
-        self.messenger_client.send(payload, recipient_id, "RESPONSE")
+        if quick_replies:
+            quick_replies = self._convert_to_quick_reply(quick_replies)
+
+        self.send(
+            recipient_id,
+            GenericTemplate(elements=elements, quick_replies=quick_replies),
+        )
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
@@ -244,19 +238,63 @@ class MessengerBot(OutputChannel):
         fb_quick_replies = []
         for quick_reply in quick_replies:
             try:
-                fb_quick_replies.append(
-                    QuickReply(
-                        title=quick_reply["title"],
-                        payload=quick_reply["payload"],
-                        content_type=quick_reply.get("content_type"),
+                if quick_reply.get("content_type") in [
+                    "user_phone_number",
+                    "user_email",
+                ]:
+                    # facebook-provided quick replies don't need a title or payload
+                    fb_quick_replies.append(
+                        QuickReply(content_type=quick_reply["content_type"],)
                     )
-                )
+                else:
+                    fb_quick_replies.append(
+                        QuickReply(
+                            title=quick_reply["title"],
+                            payload=quick_reply["payload"],
+                            content_type=quick_reply.get("content_type"),
+                            image_url=quick_reply.get("image_url"),
+                        )
+                    )
             except KeyError as e:
                 raise ValueError(
                     'Facebook quick replies must define a "{}" field.'.format(e.args[0])
                 )
 
         return QuickReplies(quick_replies=fb_quick_replies)
+
+    @staticmethod
+    def _convert_to_fb_button(buttons: List[Dict[Text, Any]]) -> List[FBButton]:
+        """Convert button dictionary to FB Button Object"""
+
+        fb_buttons = []
+        for button in buttons:
+            try:
+                if len(button["title"]) > 20:
+                    raise_warning(
+                        f'Button title: {button["title"]} is too long.'
+                        "Facebook API currently allows button titles "
+                        "of 20 characters or less. "
+                        "Longer button titles will be truncated."
+                    )
+
+                fb_buttons.append(
+                    FBButton(
+                        button["type"],
+                        title=button["title"],
+                        payload=button["payload"],
+                        url=button.get("url"),
+                        fallback_url=button.get("fallback_url"),
+                        webview_height_ratio=button.get("webview_height_ratio"),
+                        messenger_extensions=button.get("messenger_extensions"),
+                        share_contents=button.get("share_contents"),
+                    )
+                )
+            except KeyError as e:
+                raise ValueError(
+                    'Facebook buttons must define a "{}" field.'.format(e.args[0])
+                )
+
+        return fb_buttons
 
 
 class FacebookInput(InputChannel):
