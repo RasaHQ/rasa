@@ -109,11 +109,7 @@ In addition to typical text, image, button, and custom responses, the Facebook M
           # the title and payload will be filled
           # with the user's information from their profile
           - content_type: user_email
-            title:
-            payload:
           - content_type: user_phone_number
-            title:
-            payload:
 
 .. note::
 
