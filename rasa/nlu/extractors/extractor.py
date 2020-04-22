@@ -91,10 +91,16 @@ class EntityExtractor(Component):
                 entity_indices_to_remove.update(entity_indices)
 
                 # update that entity to cover the complete word(s)
-                entities[idx]["start"] = misaligned_entity["start"]
-                entities[idx]["end"] = misaligned_entity["end"]
-                entities[idx]["value"] = message.text[
-                    misaligned_entity["start"] : misaligned_entity["end"]
+                entities[idx][ENTITY_ATTRIBUTE_START] = misaligned_entity[
+                    ENTITY_ATTRIBUTE_START
+                ]
+                entities[idx][ENTITY_ATTRIBUTE_END] = misaligned_entity[
+                    ENTITY_ATTRIBUTE_END
+                ]
+                entities[idx][ENTITY_ATTRIBUTE_VALUE] = message.text[
+                    misaligned_entity[ENTITY_ATTRIBUTE_START] : misaligned_entity[
+                        ENTITY_ATTRIBUTE_END
+                    ]
                 ]
 
         # sort indices to remove entries at the end of the list first
@@ -153,8 +159,8 @@ class EntityExtractor(Component):
             if _idx is None:
                 misaligned_entities.append(
                     {
-                        "start": start_position,
-                        "end": end_position,
+                        ENTITY_ATTRIBUTE_START: start_position,
+                        ENTITY_ATTRIBUTE_END: end_position,
                         "entity_indices": [entity_idx],
                     }
                 )
@@ -181,7 +187,10 @@ class EntityExtractor(Component):
             position.
         """
         for idx, cluster in enumerate(word_entity_cluster):
-            if cluster["start"] == start_position and cluster["end"] == end_position:
+            if (
+                cluster[ENTITY_ATTRIBUTE_START] == start_position
+                and cluster[ENTITY_ATTRIBUTE_END] == end_position
+            ):
                 return idx
         return None
 
@@ -204,10 +213,14 @@ class EntityExtractor(Component):
         entity_tokens = []
         for token_cluster in token_clusters:
             entity_starts_inside_cluster = (
-                token_cluster[0].start <= entity["start"] <= token_cluster[-1].end
+                token_cluster[0].start
+                <= entity[ENTITY_ATTRIBUTE_START]
+                <= token_cluster[-1].end
             )
             entity_ends_inside_cluster = (
-                token_cluster[0].start <= entity["end"] <= token_cluster[-1].end
+                token_cluster[0].start
+                <= entity[ENTITY_ATTRIBUTE_END]
+                <= token_cluster[-1].end
             )
 
             if entity_starts_inside_cluster or entity_ends_inside_cluster:
@@ -274,9 +287,9 @@ class EntityExtractor(Component):
             return entity_indices[0]
 
         confidences = [
-            entities[idx]["confidence"]
+            entities[idx][ENTITY_ATTRIBUTE_CONFIDENCE_TYPE]
             for idx in entity_indices
-            if "confidence" in entities[idx]
+            if ENTITY_ATTRIBUTE_CONFIDENCE_TYPE in entities[idx]
         ]
 
         # we don't have confidence values for all entity labels
@@ -293,33 +306,35 @@ class EntityExtractor(Component):
             return [
                 entity
                 for entity in extracted
-                if entity["entity"] in requested_dimensions
+                if entity[ENTITY_ATTRIBUTE_TYPE] in requested_dimensions
             ]
         return extracted
 
     @staticmethod
-    def find_entity(ent, text, tokens) -> Tuple[int, int]:
+    def find_entity(
+        entity: Dict[Text, Any], text: Text, tokens: List[Token]
+    ) -> Tuple[int, int]:
         offsets = [token.start for token in tokens]
         ends = [token.end for token in tokens]
 
-        if ent["start"] not in offsets:
+        if entity[ENTITY_ATTRIBUTE_START] not in offsets:
             message = (
                 "Invalid entity {} in example '{}': "
                 "entities must span whole tokens. "
-                "Wrong entity start.".format(ent, text)
+                "Wrong entity start.".format(entity, text)
             )
             raise ValueError(message)
 
-        if ent["end"] not in ends:
+        if entity[ENTITY_ATTRIBUTE_END] not in ends:
             message = (
                 "Invalid entity {} in example '{}': "
                 "entities must span whole tokens. "
-                "Wrong entity end.".format(ent, text)
+                "Wrong entity end.".format(entity, text)
             )
             raise ValueError(message)
 
-        start = offsets.index(ent["start"])
-        end = ends.index(ent["end"]) + 1
+        start = offsets.index(entity[ENTITY_ATTRIBUTE_START])
+        end = ends.index(entity[ENTITY_ATTRIBUTE_END]) + 1
         return start, end
 
     def filter_trainable_entities(
