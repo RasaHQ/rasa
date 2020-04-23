@@ -212,6 +212,7 @@ class RasaModel(tf.keras.models.Model):
     ) -> None:
         """Train on batch"""
 
+        # calculate supervision and regularization losses separately
         with tf.GradientTape(persistent=True) as tape:
             prediction_loss = self.batch_loss(batch_in)
             regularization_loss = tf.math.add_n(self.losses)
@@ -219,10 +220,14 @@ class RasaModel(tf.keras.models.Model):
 
         self.total_loss.update_state(total_loss)
 
+        # calculate the gradients that come from supervision signal
         prediction_gradients = tape.gradient(prediction_loss, self.trainable_variables)
+        # calculate the gradients that come from regularization
         regularization_gradients = tape.gradient(
             regularization_loss, self.trainable_variables
         )
+        # delete gradient tape manually
+        # since it was created with `persistent=True` option
         del tape
 
         gradients = []

@@ -1229,17 +1229,19 @@ class DIET(RasaModel):
                     )
                 else:
                     _f = f
-                dense_features.append(self._tf_layers[f"sparse_to_dense.{name}"](_f))
+
+                dense_f = self._tf_layers[f"sparse_to_dense.{name}"](_f)
+
+                if dense_dropout:
+                    dense_f = self._tf_layers[f"dense_input_dropout.{name}"](
+                        dense_f, self._training
+                    )
+
+                dense_features.append(dense_f)
             else:
                 dense_features.append(f)
 
-        outputs = tf.concat(dense_features, axis=-1) * mask
-        if dense_dropout:
-            outputs = self._tf_layers[f"dense_input_dropout.{name}"](
-                outputs, self._training
-            )
-
-        return outputs
+        return tf.concat(dense_features, axis=-1) * mask
 
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
