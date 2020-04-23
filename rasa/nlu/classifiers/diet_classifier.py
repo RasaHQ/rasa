@@ -55,6 +55,7 @@ from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     NUM_NEG,
     SPARSE_INPUT_DROPOUT,
+    DENSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
     TENSORBOARD_LOG_DIR,
@@ -188,8 +189,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         DROP_RATE_ATTENTION: 0,
         # Sparsity of the weights in dense layers
         WEIGHT_SPARSITY: 0.8,
-        # If 'True' apply dropout to sparse tensors
+        # If 'True' apply dropout to sparse input tensors
         SPARSE_INPUT_DROPOUT: True,
+        # If 'True' apply dropout to dense input tensors
+        DENSE_INPUT_DROPOUT: True,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
         # Small values may hurt performance, e.g. model accuracy.
@@ -329,11 +332,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[BILOU_FLAG]:
             return bilou_utils.build_tag_id_dict(training_data)
 
-        distinct_tag_ids = set(
+        distinct_tag_ids = {
             e["entity"]
             for example in training_data.entity_examples
             for e in example.get(ENTITIES)
-        ) - {None}
+        } - {None}
 
         tag_id_dict = {
             tag_id: idx for idx, tag_id in enumerate(sorted(distinct_tag_ids), 1)
@@ -663,7 +666,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 f"component is either not trained or didn't receive enough training "
                 f"data."
             )
-            return
+            return None
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message])
@@ -740,8 +743,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message.text, message.get(TOKENS_NAMES[TEXT], []), tags
         )
 
-        extracted = self.add_extractor_name(entities)
-        entities = message.get(ENTITIES, []) + extracted
+        entities = self.add_extractor_name(entities)
+        entities = self.clean_up_entities(message, entities)
+        entities = message.get(ENTITIES, []) + entities
 
         return entities
 
@@ -1074,7 +1078,10 @@ class DIET(RasaModel):
                 )
 
     def _prepare_input_layers(self, name: Text) -> None:
-        self._tf_layers[f"sparse_dropout.{name}"] = layers.SparseDropout(
+        self._tf_layers[f"sparse_input_dropout.{name}"] = layers.SparseDropout(
+            rate=self.config[DROP_RATE]
+        )
+        self._tf_layers[f"dense_input_dropout.{name}"] = tf.keras.layers.Dropout(
             rate=self.config[DROP_RATE]
         )
         self._prepare_sparse_dense_layers(
@@ -1171,6 +1178,7 @@ class DIET(RasaModel):
         mask: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
+        dense_dropout: bool = False,
     ) -> tf.Tensor:
 
         dense_features = []
@@ -1178,10 +1186,20 @@ class DIET(RasaModel):
         for f in features:
             if isinstance(f, tf.SparseTensor):
                 if sparse_dropout:
-                    _f = self._tf_layers[f"sparse_dropout.{name}"](f, self._training)
+                    _f = self._tf_layers[f"sparse_input_dropout.{name}"](
+                        f, self._training
+                    )
                 else:
                     _f = f
-                dense_features.append(self._tf_layers[f"sparse_to_dense.{name}"](_f))
+
+                dense_f = self._tf_layers[f"sparse_to_dense.{name}"](_f)
+
+                if dense_dropout:
+                    dense_f = self._tf_layers[f"dense_input_dropout.{name}"](
+                        dense_f, self._training
+                    )
+
+                dense_features.append(dense_f)
             else:
                 dense_features.append(f)
 
@@ -1189,7 +1207,7 @@ class DIET(RasaModel):
 
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
-    ) -> tf.Tensor:
+    ) -> Optional[tf.Tensor]:
         """Creates dense labels for negative sampling."""
 
         # if there are dense features - we can use them
@@ -1204,15 +1222,20 @@ class DIET(RasaModel):
                     self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
                 )
 
+        return None
+
     def _create_bow(
         self,
         features: List[Union[tf.Tensor, tf.SparseTensor]],
         mask: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
+        dense_dropout: bool = False,
     ) -> tf.Tensor:
 
-        x = self._combine_sparse_dense_features(features, mask, name, sparse_dropout)
+        x = self._combine_sparse_dense_features(
+            features, mask, name, sparse_dropout, dense_dropout
+        )
         x = tf.reduce_sum(x, axis=1)  # convert to bag-of-words
         return self._tf_layers[f"ffnn.{name}"](x, self._training)
 
@@ -1221,6 +1244,8 @@ class DIET(RasaModel):
         features: List[Union[tf.Tensor, tf.SparseTensor]],
         mask: tf.Tensor,
         name: Text,
+        sparse_dropout: bool = False,
+        dense_dropout: bool = False,
         masked_lm_loss: bool = False,
         sequence_ids: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
@@ -1230,7 +1255,7 @@ class DIET(RasaModel):
             seq_ids = None
 
         inputs = self._combine_sparse_dense_features(
-            features, mask, name, sparse_dropout=self.config[SPARSE_INPUT_DROPOUT]
+            features, mask, name, sparse_dropout, dense_dropout,
         )
 
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
@@ -1252,7 +1277,7 @@ class DIET(RasaModel):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        label_lengths = self.sequence_lengths_for(
+        label_lengths = self._get_sequence_lengths(
             self.tf_label_data[LABEL_SEQ_LENGTH][0]
         )
         mask_label = self._compute_mask(label_lengths)
@@ -1359,7 +1384,8 @@ class DIET(RasaModel):
         # to track correctly dynamic sequences
         return tf.expand_dims(mask, -1)
 
-    def sequence_lengths_for(self, sequence_lengths: tf.Tensor) -> tf.Tensor:
+    @staticmethod
+    def _get_sequence_lengths(sequence_lengths: tf.Tensor) -> tf.Tensor:
         return tf.cast(sequence_lengths, dtype=tf.int32)
 
     def batch_loss(
@@ -1367,7 +1393,7 @@ class DIET(RasaModel):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        sequence_lengths = self.sequence_lengths_for(tf_batch_data[TEXT_SEQ_LENGTH][0])
+        sequence_lengths = self._get_sequence_lengths(tf_batch_data[TEXT_SEQ_LENGTH][0])
         mask_text = self._compute_mask(sequence_lengths)
 
         (
@@ -1379,7 +1405,9 @@ class DIET(RasaModel):
             tf_batch_data[TEXT_FEATURES],
             mask_text,
             self.text_name,
-            self.config[MASKED_LM],
+            sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
+            dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+            masked_lm_loss=self.config[MASKED_LM],
             sequence_ids=True,
         )
 
@@ -1397,7 +1425,7 @@ class DIET(RasaModel):
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
 
-            label_lengths = self.sequence_lengths_for(
+            label_lengths = self._get_sequence_lengths(
                 tf_batch_data[LABEL_SEQ_LENGTH][0]
             )
             mask_label = self._compute_mask(label_lengths)
@@ -1430,7 +1458,7 @@ class DIET(RasaModel):
             batch_in, self.predict_data_signature
         )
 
-        sequence_lengths = self.sequence_lengths_for(tf_batch_data[TEXT_SEQ_LENGTH][0])
+        sequence_lengths = self._get_sequence_lengths(tf_batch_data[TEXT_SEQ_LENGTH][0])
         mask_text = self._compute_mask(sequence_lengths)
 
         text_transformed, _, _, _ = self._create_sequence(
