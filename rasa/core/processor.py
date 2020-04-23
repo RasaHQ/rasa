@@ -36,6 +36,7 @@ from rasa.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
+    SessionStarted,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -149,7 +150,10 @@ class MessageProcessor:
         }
 
     async def _update_tracker_session(
-        self, tracker: DialogueStateTracker, output_channel: OutputChannel
+        self,
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+        metadata: Optional[Dict] = None,
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
@@ -158,6 +162,7 @@ class MessageProcessor:
         restart are considered).
 
         Args:
+            metadata: Data sent from client associated with the incoming user message.
             tracker: Tracker to inspect.
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
@@ -167,6 +172,9 @@ class MessageProcessor:
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
 
+            if metadata:
+                tracker.events.append(SessionStarted(metadata=metadata))
+
             await self._run_action(
                 action=self._get_action(ACTION_SESSION_START_NAME),
                 tracker=tracker,
@@ -175,13 +183,17 @@ class MessageProcessor:
             )
 
     async def get_tracker_with_session_start(
-        self, sender_id: Text, output_channel: Optional[OutputChannel] = None
+        self,
+        sender_id: Text,
+        output_channel: Optional[OutputChannel] = None,
+        metadata: Optional[Dict] = None,
     ) -> Optional[DialogueStateTracker]:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
         If a new tracker is created, `action_session_start` is run.
 
         Args:
+            metadata: Data sent from client associated with the incoming user message.
             output_channel: Output channel associated with the incoming user message.
             sender_id: Conversation ID for which to fetch the tracker.
 
@@ -193,7 +205,7 @@ class MessageProcessor:
         if not tracker:
             return None
 
-        await self._update_tracker_session(tracker, output_channel)
+        await self._update_tracker_session(tracker, output_channel, metadata)
 
         return tracker
 
@@ -233,7 +245,7 @@ class MessageProcessor:
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.get_tracker_with_session_start(
-            message.sender_id, message.output_channel
+            message.sender_id, message.output_channel, message.metadata
         )
 
         if tracker:
@@ -291,10 +303,12 @@ class MessageProcessor:
         action = self.domain.action_for_index(
             max_confidence_index, self.action_endpoint
         )
+
         logger.debug(
             f"Predicted next action '{action.name()}' with confidence "
             f"{action_confidences[max_confidence_index]:.2f}."
         )
+
         return action, policy, action_confidences[max_confidence_index]
 
     @staticmethod
