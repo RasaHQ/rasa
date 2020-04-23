@@ -1,0 +1,6 @@
+Reverted changes in 1.9.6 that led to model incompatibility. Upgrade to 1.9.7 to fix 
+``self.sequence_lengths_for(tf_batch_data[TEXT_SEQ_LENGTH][0]) IndexError: list index out of range`` 
+error without needing to retrain earlier 1.9 models.
+
+Therefore, all 1.9 models `except for 1.9.6` will be compatible; a model trained on 1.9.6 will need
+to be retrained on 1.9.7.
