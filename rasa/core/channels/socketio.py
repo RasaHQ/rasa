@@ -148,9 +148,11 @@ class SocketIOInput(InputChannel):
     def get_output_channel(self) -> Optional["OutputChannel"]:
         if self.sio == None:
             raise_warning(
-                "Output channel can't be"
-                "reproduced in case if sio equals to None"
-                "e.g. if the Rasa Server uses multiple Sanic workers"
+                "SocketIO output channel cannot be recreated. "
+                "This is expected behavior when using multiple Sanic "
+                "workers or multiple Rasa Open Source instances. "
+                "Please use a different channel for external events in these "
+                "scenarios."
             )
             return
         return SocketIOOutput(self.sio, self.bot_message_evt)
