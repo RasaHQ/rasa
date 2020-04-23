@@ -28,7 +28,7 @@ class SocketIOOutput(OutputChannel):
     def name(cls) -> Text:
         return "socketio"
 
-    def __init__(self, sio, bot_message_evt) -> None:
+    def __init__(self, sio: AsyncServer, bot_message_evt: Text) -> None:
         self.sio = sio
         self.bot_message_evt = bot_message_evt
 
