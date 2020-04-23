@@ -5,6 +5,7 @@ from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
+from fbmessenger.sender_actions import SenderAction
 from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
@@ -12,6 +13,7 @@ from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optiona
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +143,21 @@ class MessengerBot(OutputChannel):
         # this is a bit hacky, but the client doesn't have a proper API to
         # send messages but instead expects the incoming sender to be present
         # which we don't have as it is stored in the input channel.
-        self.messenger_client.send(element.to_dict(), recipient_id, "RESPONSE")
+        
+        elementlenght = element.to_dict()
+       
+        if 'text' in elementlenght:
+            messagelength = len(elementlenght['text'])
+            delay = messagelength * fb_delay
+            typing_on = SenderAction(sender_action='typing_on')
+            self.messenger_client.send_action(typing_on.to_dict(), recipient_id)
+            time.sleep(delay)
+            typing_off = SenderAction(sender_action='typing_off')
+            self.messenger_client.send_action(typing_off.to_dict(), recipient_id)
+            self.messenger_client.send(element.to_dict(), recipient_id, "RESPONSE")
+        else:
+            self.messenger_client.send(element.to_dict(), recipient_id, "RESPONSE")
+            
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
@@ -276,10 +292,11 @@ class FacebookInput(InputChannel):
             credentials.get("verify"),
             credentials.get("secret"),
             credentials.get("page-access-token"),
+            credentials.get("delay"),
         )
         # pytype: enable=attribute-error
 
-    def __init__(self, fb_verify: Text, fb_secret: Text, fb_access_token: Text) -> None:
+    def __init__(self, fb_verify: Text, fb_secret: Text, fb_access_token: Text, fb_delay: Text) -> None:
         """Create a facebook input channel.
 
         Needs a couple of settings to properly authenticate and validate
@@ -292,10 +309,12 @@ class FacebookInput(InputChannel):
                 (can be chosen by yourself on webhook creation)
             fb_secret: facebook application secret
             fb_access_token: access token to post in the name of the FB page
+            fb_delay: value use to be multiplie by message lenght to generate a message delay
         """
         self.fb_verify = fb_verify
         self.fb_secret = fb_secret
         self.fb_access_token = fb_access_token
+        self.fb_delay = fb_delay
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
