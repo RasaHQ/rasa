@@ -83,7 +83,7 @@ class EntityExtractor(Component):
 
             idx = self._entity_index_to_keep(entities, entity_indices)
 
-            if idx is None:
+            if idx is None or idx not in entity_indices:
                 entity_indices_to_remove.update(entity_indices)
             else:
                 # keep just one entity
