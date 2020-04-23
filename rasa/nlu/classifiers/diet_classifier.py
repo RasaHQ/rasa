@@ -758,7 +758,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_id_index_mapping = self._label_id_index_mapping(
             training_data, attribute=TEXT
         )
-        print(label_id_index_mapping)
 
         if not label_id_index_mapping:
             # no labels are present to train
