@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Facebook Messenger</title>
     <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    <script src="../../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../../genindex/" />
     <link rel="search" title="Search" href="../../../search/" />
     <link rel="next" title="Slack" href="../slack/" />
@@ -241,6 +242,8 @@
               <a href="../../../../1.4.6/user-guide/connectors/facebook-messenger/">1.4.6</a>
               <a href="../../../../1.3.10/user-guide/connectors/facebook-messenger/">1.3.10</a>
               <a href="../../../../1.2.9/user-guide/connectors/facebook-messenger/">1.2.9</a>
+              <a href="../../../../1.1.8/user-guide/connectors/facebook-messenger/">1.1.8</a>
+              <a href="../../../../1.0.9/user-guide/connectors/facebook-messenger/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -288,27 +291,27 @@ Facebook Messenger. Once you have them you can add these to your <code class="do
 You need to set up a Facebook app and a page.</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li><p>To create the app head over to
+<li>To create the app head over to
 <a class="reference external" href="https://developers.facebook.com/">Facebook for Developers</a>
-and click on <strong>My Apps</strong> → <strong>Add New App</strong>.</p></li>
-<li><p>Go onto the dashboard for the app and under <strong>Products</strong>,
+and click on <strong>My Apps</strong> → <strong>Add New App</strong>.</li>
+<li>Go onto the dashboard for the app and under <strong>Products</strong>,
 find the <strong>Messenger</strong> section and click <strong>Set Up</strong>. Scroll down to
 <strong>Token Generation</strong> and click on the link to create a new page for your
-app.</p></li>
-<li><p>Create your page and select it in the dropdown menu for the
+app.</li>
+<li>Create your page and select it in the dropdown menu for the
 <strong>Token Generation</strong>. The shown <strong>Page Access Token</strong> is the
-<code class="docutils literal notranslate"><span class="pre">page-access-token</span></code> needed later on.</p></li>
-<li><p>Locate the <strong>App Secret</strong> in the app dashboard under <strong>Settings</strong> → <strong>Basic</strong>.
-This will be your <code class="docutils literal notranslate"><span class="pre">secret</span></code>.</p></li>
-<li><p>Use the collected <code class="docutils literal notranslate"><span class="pre">secret</span></code> and <code class="docutils literal notranslate"><span class="pre">page-access-token</span></code> in your
+<code class="docutils literal notranslate"><span class="pre">page-access-token</span></code> needed later on.</li>
+<li>Locate the <strong>App Secret</strong> in the app dashboard under <strong>Settings</strong> → <strong>Basic</strong>.
+This will be your <code class="docutils literal notranslate"><span class="pre">secret</span></code>.</li>
+<li>Use the collected <code class="docutils literal notranslate"><span class="pre">secret</span></code> and <code class="docutils literal notranslate"><span class="pre">page-access-token</span></code> in your
 <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>, and add a field called <code class="docutils literal notranslate"><span class="pre">verify</span></code> containing
 a string of your choice. Start <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> with the
-<code class="docutils literal notranslate"><span class="pre">--credentials</span> <span class="pre">credentials.yml</span></code> option.</p></li>
-<li><p>Set up a <strong>Webhook</strong> and select at least the <strong>messaging</strong> and
+<code class="docutils literal notranslate"><span class="pre">--credentials</span> <span class="pre">credentials.yml</span></code> option.</li>
+<li>Set up a <strong>Webhook</strong> and select at least the <strong>messaging</strong> and
 <strong>messaging_postback</strong> subscriptions. Insert your callback URL which will
 look like <code class="docutils literal notranslate"><span class="pre">https://&lt;YOUR_HOST&gt;/webhooks/facebook/webhook</span></code>. Insert the
 <strong>Verify Token</strong> which has to match the <code class="docutils literal notranslate"><span class="pre">verify</span></code>
-entry in your <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>.</p></li>
+entry in your <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>.</li>
 </ol>
 </div></blockquote>
 <p>For more detailed steps, visit the
@@ -321,10 +324,10 @@ entry in your <code class="docutils literal notranslate"><span class="pre">crede
 </pre></div>
 </div>
 <p>you need to supply a <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> with the following content:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">facebook</span><span class="p">:</span>
-  <span class="nt">verify</span><span class="p">:</span> <span class="s">&quot;rasa-bot&quot;</span>
-  <span class="nt">secret</span><span class="p">:</span> <span class="s">&quot;3e34709d01ea89032asdebfe5a74518&quot;</span>
-  <span class="nt">page-access-token</span><span class="p">:</span> <span class="s">&quot;EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">facebook</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">verify</span><span class="p p-Indicator">:</span> <span class="s">&quot;rasa-bot&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">secret</span><span class="p p-Indicator">:</span> <span class="s">&quot;3e34709d01ea89032asdebfe5a74518&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">page-access-token</span><span class="p p-Indicator">:</span> <span class="s">&quot;EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD&quot;</span>
 </pre></div>
 </div>
 <p>The endpoint for receiving Facebook messenger messages is

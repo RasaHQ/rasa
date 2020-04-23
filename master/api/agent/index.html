@@ -1,19 +1,20 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Agent</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Custom NLU Components" href="../custom-nlu-components/" />
@@ -250,6 +251,8 @@ action prediction." />
               <a href="../../../1.4.6/api/agent/">1.4.6</a>
               <a href="../../../1.3.10/api/agent/">1.3.10</a>
               <a href="../../../1.2.9/api/agent/">1.2.9</a>
+              <a href="../../../1.1.8/api/agent/">1.1.8</a>
+              <a href="../../../1.0.9/api/agent/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -287,60 +290,72 @@ action prediction." />
 
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/rasa/core/agent.py" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST DOCSTRING EDITS</a>
-  </div><dl class="py class">
+  </div><dl class="class">
 <dt id="rasa.core.agent.Agent">
-<em class="property">class </em><code class="sig-prename descclassname">rasa.core.agent.</code><code class="sig-name descname">Agent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">policies</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">interpreter</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">generator</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tracker_store</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lock_store</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">action_endpoint</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fingerprint</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model_directory</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model_server</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">remote_storage</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">path_to_model_archive</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.agent.</code><code class="descname">Agent</code><span class="sig-paren">(</span><em>domain=None</em>, <em>policies=None</em>, <em>interpreter=None</em>, <em>generator=None</em>, <em>tracker_store=None</em>, <em>lock_store=None</em>, <em>action_endpoint=None</em>, <em>fingerprint=None</em>, <em>model_directory=None</em>, <em>model_server=None</em>, <em>remote_storage=None</em>, <em>path_to_model_archive=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent" title="Permalink to this definition">¶</a></dt>
 <dd><p>The Agent class provides a convenient interface for the most important
 Rasa functionality.</p>
 <p>This includes training, handling messages, loading a dialogue model,
 getting the next action, and handling a channel.</p>
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.create_processor">
-<code class="sig-name descname">create_processor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">preprocessor</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.create_processor" title="Permalink to this definition">¶</a></dt>
+<code class="descname">create_processor</code><span class="sig-paren">(</span><em>preprocessor=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.create_processor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Instantiates a processor based on the set state of the agent.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">MessageProcessor</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">MessageProcessor</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.execute_action">
-<em class="property">async </em><code class="sig-name descname">execute_action</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sender_id</span></em>, <em class="sig-param"><span class="n">action</span></em>, <em class="sig-param"><span class="n">output_channel</span></em>, <em class="sig-param"><span class="n">policy</span></em>, <em class="sig-param"><span class="n">confidence</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.execute_action" title="Permalink to this definition">¶</a></dt>
+<code class="descname">execute_action</code><span class="sig-paren">(</span><em>sender_id</em>, <em>action</em>, <em>output_channel</em>, <em>policy</em>, <em>confidence</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.execute_action" title="Permalink to this definition">¶</a></dt>
 <dd><p>Handle a single message.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="../tracker/#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="../tracker/#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.handle_channels">
-<code class="sig-name descname">handle_channels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">channels</span></em>, <em class="sig-param"><span class="n">http_port</span><span class="o">=</span><span class="default_value">5005</span></em>, <em class="sig-param"><span class="n">route</span><span class="o">=</span><span class="default_value">'/webhooks/'</span></em>, <em class="sig-param"><span class="n">cors</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.handle_channels" title="Permalink to this definition">¶</a></dt>
+<code class="descname">handle_channels</code><span class="sig-paren">(</span><em>channels</em>, <em>http_port=5005</em>, <em>route='/webhooks/'</em>, <em>cors=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.handle_channels" title="Permalink to this definition">¶</a></dt>
 <dd><p>Start a webserver attaching the input channels and handling msgs.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Sanic</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sanic</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.handle_message">
-<em class="property">async </em><code class="sig-name descname">handle_message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="n">message_preprocessor</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.handle_message" title="Permalink to this definition">¶</a></dt>
+<code class="descname">handle_message</code><span class="sig-paren">(</span><em>message</em>, <em>message_preprocessor=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.handle_message" title="Permalink to this definition">¶</a></dt>
 <dd><p>Handle a single message.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.handle_text">
-<em class="property">async </em><code class="sig-name descname">handle_text</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text_message</span></em>, <em class="sig-param"><span class="n">message_preprocessor</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_channel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sender_id</span><span class="o">=</span><span class="default_value">'default'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.handle_text" title="Permalink to this definition">¶</a></dt>
+<code class="descname">handle_text</code><span class="sig-paren">(</span><em>text_message</em>, <em>message_preprocessor=None</em>, <em>output_channel=None</em>, <em>sender_id='default'</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.handle_text" title="Permalink to this definition">¶</a></dt>
 <dd><p>Handle a single message.</p>
 <p>If a message preprocessor is passed, the message will be passed to that
 function first and the return value is then used as the
@@ -349,127 +364,156 @@ input for the dialogue engine.</p>
 the output channel is not set, set to <code class="docutils literal notranslate"><span class="pre">None</span></code>, or set
 to <code class="docutils literal notranslate"><span class="pre">CollectingOutputChannel</span></code> this function will return the messages
 the bot wants to respond.</p>
-<dl class="field-list">
-<dt class="field-odd">Example</dt>
-<dd class="field-odd"><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">rasa.core.agent</span> <span class="kn">import</span> <span class="n">Agent</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">rasa.core.interpreter</span> <span class="kn">import</span> <span class="n">RasaNLUInterpreter</span>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">rasa.core.agent</span> <span class="k">import</span> <span class="n">Agent</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">rasa.core.interpreter</span> <span class="k">import</span> <span class="n">RasaNLUInterpreter</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;examples/restaurantbot/models/current&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">handle_text</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
 <span class="go">[u&#39;how can I help you?&#39;]</span>
 </pre></div>
 </div>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]]</p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]]</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.is_core_ready">
-<code class="sig-name descname">is_core_ready</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.is_core_ready" title="Permalink to this definition">¶</a></dt>
+<code class="descname">is_core_ready</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.is_core_ready" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check if all necessary components and policies are ready to use the agent.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.is_ready">
-<code class="sig-name descname">is_ready</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.is_ready" title="Permalink to this definition">¶</a></dt>
+<code class="descname">is_ready</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.is_ready" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check if all necessary components are instantiated to use agent.</p>
 <p>Policies might not be available, if this is an NLU only agent.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="classmethod">
 <dt id="rasa.core.agent.Agent.load">
-<em class="property">classmethod </em><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_path</span></em>, <em class="sig-param"><span class="n">interpreter</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">generator</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tracker_store</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lock_store</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">action_endpoint</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model_server</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">remote_storage</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">path_to_model_archive</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.load" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">load</code><span class="sig-paren">(</span><em>model_path</em>, <em>interpreter=None</em>, <em>generator=None</em>, <em>tracker_store=None</em>, <em>lock_store=None</em>, <em>action_endpoint=None</em>, <em>model_server=None</em>, <em>remote_storage=None</em>, <em>path_to_model_archive=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load a persisted model from the passed path.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#rasa.core.agent.Agent" title="rasa.core.agent.Agent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Agent</span></code></a></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#rasa.core.agent.Agent" title="rasa.core.agent.Agent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Agent</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.load_data">
-<em class="property">async </em><code class="sig-name descname">load_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">training_resource</span></em>, <em class="sig-param"><span class="n">remove_duplicates</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">unique_last_num_states</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">augmentation_factor</span><span class="o">=</span><span class="default_value">50</span></em>, <em class="sig-param"><span class="n">tracker_limit</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_story_concatenation</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">debug_plots</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">exclusion_percentage</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.load_data" title="Permalink to this definition">¶</a></dt>
+<code class="descname">load_data</code><span class="sig-paren">(</span><em>training_resource</em>, <em>remove_duplicates=True</em>, <em>unique_last_num_states=None</em>, <em>augmentation_factor=50</em>, <em>tracker_limit=None</em>, <em>use_story_concatenation=True</em>, <em>debug_plots=False</em>, <em>exclusion_percentage=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.load_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load training data from a resource.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="../tracker/#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a>]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="../tracker/#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.log_message">
-<em class="property">async </em><code class="sig-name descname">log_message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="n">message_preprocessor</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.log_message" title="Permalink to this definition">¶</a></dt>
+<code class="descname">log_message</code><span class="sig-paren">(</span><em>message</em>, <em>message_preprocessor=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.log_message" title="Permalink to this definition">¶</a></dt>
 <dd><p>Append a message to a dialogue - does not predict actions.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="../tracker/#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="../tracker/#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.parse_message_using_nlu_interpreter">
-<em class="property">async </em><code class="sig-name descname">parse_message_using_nlu_interpreter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message_data</span></em>, <em class="sig-param"><span class="n">tracker</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.parse_message_using_nlu_interpreter" title="Permalink to this definition">¶</a></dt>
+<code class="descname">parse_message_using_nlu_interpreter</code><span class="sig-paren">(</span><em>message_data</em>, <em>tracker=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.parse_message_using_nlu_interpreter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Handles message text and intent payload input messages.</p>
 <p>The return value of this function is parsed_data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>message_data</strong> (<em>Text</em>) – Contain the received message in text or            intent payload format.</p></li>
-<li><p><strong>tracker</strong> (<a class="reference internal" href="../tracker/#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><em>DialogueStateTracker</em></a>) – Contains the tracker to be            used by the interpreter.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>message_data</strong> (<em>Text</em>) – Contain the received message in text or            intent payload format.</li>
+<li><strong>tracker</strong> (<a class="reference internal" href="../tracker/#rasa.core.trackers.DialogueStateTracker" title="rasa.core.trackers.DialogueStateTracker"><em>DialogueStateTracker</em></a>) – Contains the tracker to be            used by the interpreter.</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><p>The parsed message.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>The parsed message.</p>
 <p class="rubric">Example</p>
 <p>{                    “text”: ‘/greet{“name”:”Rasa”}’,                    “intent”: {“name”: “greet”, “confidence”: 1.0},                    “intent_ranking”: [{“name”: “greet”, “confidence”: 1.0}],                    “entities”: [{“entity”: “name”, “start”: 6,                                  “end”: 21, “value”: “Rasa”}],                }</p>
 </p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.persist">
-<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.persist" title="Permalink to this definition">¶</a></dt>
+<code class="descname">persist</code><span class="sig-paren">(</span><em>model_path</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.persist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Persists this agent into a directory for later loading and usage.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.predict_next">
-<em class="property">async </em><code class="sig-name descname">predict_next</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sender_id</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.predict_next" title="Permalink to this definition">¶</a></dt>
+<code class="descname">predict_next</code><span class="sig-paren">(</span><em>sender_id</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.predict_next" title="Permalink to this definition">¶</a></dt>
 <dd><p>Handle a single message.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.toggle_memoization">
-<code class="sig-name descname">toggle_memoization</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">activate</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.toggle_memoization" title="Permalink to this definition">¶</a></dt>
+<code class="descname">toggle_memoization</code><span class="sig-paren">(</span><em>activate</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.toggle_memoization" title="Permalink to this definition">¶</a></dt>
 <dd><p>Toggles the memoization on and off.</p>
 <p>If a memoization policy is present in the ensemble, this will toggle
 the prediction of that policy. When set to <code class="docutils literal notranslate"><span class="pre">False</span></code> the Memoization
@@ -479,40 +523,50 @@ from a different policy (e.g. <code class="docutils literal notranslate"><span c
 prediction
 capabilities of an ensemble when ignoring memorized turns from the
 training data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.train">
-<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">training_trackers</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.train" title="Permalink to this definition">¶</a></dt>
+<code class="descname">train</code><span class="sig-paren">(</span><em>training_trackers</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train the policies / policy ensemble using dialogue data from file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>training_trackers</strong> – trackers to train on</p></li>
-<li><p><strong>**kwargs</strong> – additional arguments passed to the underlying ML
-trainer (e.g. keras parameters)</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>training_trackers</strong> – trackers to train on</li>
+<li><strong>**kwargs</strong> – additional arguments passed to the underlying ML
+trainer (e.g. keras parameters)</li>
 </ul>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
-<dl class="py method">
+<dl class="method">
 <dt id="rasa.core.agent.Agent.trigger_intent">
-<em class="property">async </em><code class="sig-name descname">trigger_intent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">intent_name</span></em>, <em class="sig-param"><span class="n">entities</span></em>, <em class="sig-param"><span class="n">output_channel</span></em>, <em class="sig-param"><span class="n">tracker</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.trigger_intent" title="Permalink to this definition">¶</a></dt>
+<code class="descname">trigger_intent</code><span class="sig-paren">(</span><em>intent_name</em>, <em>entities</em>, <em>output_channel</em>, <em>tracker</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.trigger_intent" title="Permalink to this definition">¶</a></dt>
 <dd><p>Trigger a user intent, e.g. triggered by an external event.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
