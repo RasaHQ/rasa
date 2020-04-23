@@ -356,6 +356,7 @@ class StoryFileReader:
                 elif line.startswith("*"):
                     # reached a user message
                     user_messages = [el.strip() for el in line[1:].split(" OR ")]
+<<<<<<< HEAD
                     await self.add_user_messages_e2e(user_messages, line_num)
                 # end-to-end BOT message
                 elif line.startswith("<B>"):
@@ -363,6 +364,18 @@ class StoryFileReader:
                     self.add_event(event_name, parameters)
                 # end-to-end USER message
                 elif line.startswith("<U>"):
+=======
+                    if self.use_e2e:
+                        await self.add_e2e_messages(user_messages, line_num)
+                    else:
+                        await self.add_user_messages(user_messages, line_num)
+                #end-to-end BOT message
+                elif line.startswith('<B>'):
+                    event_name, parameters = self._parse_event_line(line[3:])
+                    self.add_event(event_name, parameters)
+                #end-to-end USER message
+                elif line.startswith('<U>'):
+>>>>>>> making it work for e2e format; taking entities into account
                     user_messages = [el.strip() for el in line[3:].split(" OR ")]
                     await self.add_user_messages_e2e(user_messages, line_num)
                 else:
@@ -439,6 +452,7 @@ class StoryFileReader:
             )
         return utterance
 
+<<<<<<< HEAD
     async def _parse_message_e2e(self, text: Text, line_num: int) -> UserUttered:
         from rasa.nlu.training_data.formats.markdown import MarkdownReader
 
@@ -452,6 +466,18 @@ class StoryFileReader:
             message=message_processed,
         )
         intent_name = utterance.intent.get("name")
+=======
+    async def _parse_message_e2e(self, message: Text, line_num: int) -> UserUttered:
+        from rasa.nlu.training_data.formats.markdown import MarkdownReader
+
+        message_processed = MarkdownReader().parse_training_example(message)
+
+        utterance = UserUttered(
+            message_processed.text, message_processed.get("intent"), message_processed.get("entities"), message_processed.as_dict(), message = message_processed
+        )
+        intent_name = utterance.intent.get("name")
+        
+>>>>>>> making it work for e2e format; taking entities into account
         return utterance
 
     async def add_user_messages(self, messages, line_num):
@@ -500,7 +526,6 @@ class StoryFileReader:
         # because there might be a slot with slot_key='name'
         if "name" not in parameters and event_name != SlotSet.type_name:
             from rasa.nlu.training_data.formats.markdown import MarkdownReader
-
             action_as_message = MarkdownReader().parse_e2e_training_example(event_name)
             parameters["name"] = action_as_message.text
             parameters["message"] = action_as_message

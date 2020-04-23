@@ -314,7 +314,6 @@ class MarkdownReader(TrainingDataReader):
             entity_regex, lambda m: "<" + m.groupdict()["entity"] + ">", example
         )
         message = Message(plain_text.replace(":", ""))
-
         return message
 
     def _set_current_section(self, section: Text, title: Text) -> None:

@@ -160,7 +160,12 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         sparse_state, dense_state = self.combine_state_features(
             state_extracted_features
         )
-
+        entity_features = np.zeros(len(self.interpreter.entities))
+        if "user" in list(state.keys()):
+            if not state["user"].get("entities") is None:
+                user_entities = [entity['entity'] for entity in state["user"].get("entities")]
+                for entity_name in user_entities:
+                    entity_features[self.interpreter.entities.index(entity_name)] = 1
 
         if self.interpreter.entities == []:
             entity_features = None
@@ -278,12 +283,19 @@ class TrackerFeaturizer:
                 state_dict = {}
                 for event in state:
                     if isinstance(event, UserUttered):
+<<<<<<< HEAD
                         if not event.message is None:
                             state_dict["user"] = event.message
                     elif isinstance(event, ActionExecuted):
                         if event.message is not None:
                             state_dict["prev_action"] = event.message
                         # to turn the default actions such as action_listen into Message;
+=======
+                        state_dict["user"] = event.message
+                    elif isinstance(event, ActionExecuted):
+                        if event.message is not None:
+                            state_dict["prev_action"] = event.message
+>>>>>>> making it work for e2e format; taking entities into account
                         else:
                             state_dict["prev_action"] = Message(event.action_name)
                     state_dict["slots"] = self.collect_slots(tr)
