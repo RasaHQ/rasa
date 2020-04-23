@@ -161,8 +161,14 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         sparse_state, dense_state = self.combine_state_features(
             state_extracted_features
         )
+        entity_features = np.zeros(len(self.interpreter.entities))
+        if "user" in list(state.keys()):
+            if not state["user"].get("entities") is None:
+                user_entities = [entity['entity'] for entity in state["user"].get("entities")]
+                for entity_name in user_entities:
+                    entity_features[self.interpreter.entities.index(entity_name)] = 1
 
-        return sparse_state, dense_state
+        return sparse_state, dense_state, entity_features
 
     def create_encoded_all_actions(self, domain):
         label_data = [
@@ -248,9 +254,12 @@ class TrackerFeaturizer:
                 state_dict = {}
                 for event in state:
                     if isinstance(event, UserUttered):
-                        state_dict["user"] = Message(event.text)
+                        state_dict["user"] = event.message
                     elif isinstance(event, ActionExecuted):
-                        state_dict["prev_action"] = Message(event.action_name)
+                        if event.message is not None:
+                            state_dict["prev_action"] = event.message
+                        else:
+                            state_dict["prev_action"] = Message(event.action_name)
                     state_dict["slots"] = self.collect_slots(tr)
             else:
                 state_dict = {}
@@ -558,7 +567,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             trackers, desc="Processed trackers e2e", disable=is_logging_disabled()
         )
         for tracker in pbar:
-            # tracker = trackers[0]
             states = self._create_states_e2e(tracker)
             idx = 0
             for event in tracker.applied_events():
@@ -582,15 +590,27 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                                 trackers_as_states_e2e.append(sliced_states)
 
                                 if len(sliced_states) > 1:
-                                    trackers_as_actions_e2e.append(
-                                        [Message(event.action_name)]
-                                    )
+                                    if event.message is not None:
+                                        trackers_as_actions_e2e.append(
+                                            [Message(event.message.text)]
+                                        )
+                                    # if it is a default action, turn it into a message
+                                    else:
+                                        trackers_as_actions_e2e.append(
+                                            [Message(event.action_name)]
+                                        )
                         else:
                             trackers_as_states_e2e.append(sliced_states)
                             if len(sliced_states) > 1:
-                                trackers_as_actions_e2e.append(
-                                    [Message(event.action_name)]
-                                )
+                                if event.message is not None:
+                                    trackers_as_actions_e2e.append(
+                                        [Message(event.message.text)]
+                                    )
+                                # if it is a default action, turn it into a message
+                                else:
+                                    trackers_as_actions_e2e.append(
+                                        [Message(event.action_name)]
+                                    )
                         pbar.set_postfix(
                             {"# actions": "{:d}".format(len(trackers_as_actions_e2e))}
                         )

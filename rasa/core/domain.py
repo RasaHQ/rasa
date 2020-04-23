@@ -667,9 +667,12 @@ class Domain:
         self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, float]:
         """Turn the previous taken action into a state name."""
+        from rasa.nlu.training_data import Message
 
         latest_action = tracker.latest_action_name
         if latest_action:
+            if isinstance(latest_action, Message):
+                latest_action = latest_action.text
             prev_action_name = PREV_PREFIX + latest_action
             if prev_action_name in self.input_state_map:
                 return {prev_action_name: 1.0}

@@ -183,6 +183,17 @@ class MarkdownReader(TrainingDataReader):
             message.set("entities", entities)
         return message
 
+    def parse_e2e_training_example(self, example: Text) -> "Message":
+        """Extract entities and synonyms, and convert to plain text."""
+        from rasa.nlu.training_data import Message
+
+        entities = self._find_entities_in_training_example(example)
+        
+        plain_text = re.sub(ent_regex, lambda m: '<' + m.groupdict()["entity"] + '>', example)
+        message = Message(plain_text)
+
+        return message
+
     def _set_current_section(self, section: Text, title: Text) -> None:
         """Update parsing mode."""
         if section not in available_sections:

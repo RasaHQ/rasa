@@ -287,25 +287,30 @@ class TEDPolicy(Policy):
 
         X_sparse = []
         X_dense = []
+        X_entities = []
 
         for dial in data_X:
             sparse_state = []
             dense_state = []
+            entities = []
             for state in dial:
                 if state[0] is not None:
                     sparse_state.append(state[0].astype(np.float32))
                 if state[1] is not None:
                     dense_state.append(state[1])
+                entities.append(state[2])
 
             if not sparse_state == []:
                 sparse_state = scipy.sparse.vstack(sparse_state)
             if not dense_state == []:
                 dense_state = np.vstack(dense_state)
+            entities = np.vstack(entities)
             X_sparse.append(sparse_state)
             X_dense.append(dense_state)
+            X_entities.append(entities)
 
         model_data.add_features(
-            DIALOGUE_FEATURES, [np.array(X_sparse), np.array(X_dense)]
+            DIALOGUE_FEATURES, [np.array(X_sparse), np.array(X_dense), np.array(X_entities)]
         )
         model_data.add_features(LABEL_FEATURES, [Y_sparse, Y_dense])
         model_data.add_features(LABEL_IDS, [label_ids])

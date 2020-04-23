@@ -358,6 +358,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         )
         kwargs = {'no_copy': True}
         self.interpreter = self.trainer.train(training_data, **kwargs)
+        self.entities = domain.entities
 
         ## Not so clever fix for now;
         ## TODO: properly encode everything in place;
