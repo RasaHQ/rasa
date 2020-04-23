@@ -41,8 +41,8 @@ to have a `WhatsApp Business <https://www.whatsapp.com/business/>`_ profile. Ass
 your Whatsapp Business profile with the phone number you purchased through Twilio to
 access the `Twilio API for WhatsApp <https://www.twilio.com/docs/whatsapp/api>`_.
 
-Note that according to the `API documentation <https://www.twilio.com/docs/whatsapp/api#using-phone-numbers-with-whatsapp>`_, 
-the phone number you use should be prefixed with `whatsapp+` in the ``credentials.yml`` described below.
+According to the `Twilio API documentation <https://www.twilio.com/docs/whatsapp/api#using-phone-numbers-with-whatsapp>`_, 
+the phone number you use should be prefixed with `whatsapp:` in the ``credentials.yml`` described below.
 
 
 Applying the Credentials
