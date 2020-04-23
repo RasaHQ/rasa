@@ -330,7 +330,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Create label_id dictionary."""
 
         distinct_label_ids = {
-            example.get(attribute) for example in training_data.intent_examples
+            example.get(attribute) for example in training_data.training_examples
         } - {None}
         return {
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
@@ -511,7 +511,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         labels_idx_examples = []
         for label_name, idx in label_id_dict.items():
             label_example = self._find_example_for_label(
-                label_name, training_data.intent_examples, attribute
+                label_name, training_data.training_examples, attribute
             )
             labels_idx_examples.append((idx, label_example))
 
@@ -644,8 +644,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             bilou_utils.apply_bilou_schema(training_data)
 
         label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=INTENT
+            training_data, attribute=TEXT
         )
+        print(label_id_index_mapping)
 
         if not label_id_index_mapping:
             # no labels are present to train
@@ -654,7 +655,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
         self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping, attribute=INTENT
+            training_data, label_id_index_mapping, attribute=TEXT
         )
 
         self._entity_tag_specs = self._create_entity_tag_specs(training_data)
@@ -684,8 +685,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
-
+        print('DATA EXAMPLE')
         model_data = self.preprocess_train_data(training_data)
+        print('DATA EXAMPLE')
         if model_data.is_empty():
             logger.debug(
                 f"Cannot train '{self.__class__.__name__}'. No data was provided. "
