@@ -566,7 +566,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_id_index_mapping = self._label_id_index_mapping(
             training_data, attribute=TEXT
         )
-        print(label_id_index_mapping)
 
         if not label_id_index_mapping:
             # no labels are present to train
@@ -609,9 +608,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
-        print('DATA EXAMPLE')
+
         model_data = self.preprocess_train_data(training_data)
-        print('DATA EXAMPLE')
+
         if model_data.is_empty():
             logger.debug(
                 f"Cannot train '{self.__class__.__name__}'. No data was provided. "
