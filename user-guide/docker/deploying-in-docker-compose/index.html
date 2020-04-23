@@ -216,12 +216,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.6
+          viewing: 1.9.7
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.9.7/user-guide/docker/deploying-in-docker-compose/">1.9.7</a>
               <a href="../../.././1.9.6/user-guide/docker/deploying-in-docker-compose/">1.9.6</a>
               <a href="../../.././1.9.5/user-guide/docker/deploying-in-docker-compose/">1.9.5</a>
               <a href="../../.././1.9.4/user-guide/docker/deploying-in-docker-compose/">1.9.4</a>
@@ -332,7 +333,7 @@ want to deploy an assistant that also has an action server.</p>
 version: '3.0'
 services:
   rasa:
-    image: rasa/rasa:1.9.6-full
+    image: rasa/rasa:1.9.7-full
     ports:
       - 5005:5005
     volumes:
@@ -352,7 +353,7 @@ an action server image, see <a class="reference internal" href="../../how-to-dep
 version: '3.0'
 services:
   rasa:
-    image: rasa/rasa:1.9.6-full
+    image: rasa/rasa:1.9.7-full
     ports:
       - 5005:5005
     volumes:

@@ -216,12 +216,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.6
+          viewing: 1.9.7
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.9.7/user-guide/building-assistants/">1.9.7</a>
               <a href="../.././1.9.6/user-guide/building-assistants/">1.9.6</a>
               <a href="../.././1.9.5/user-guide/building-assistants/">1.9.5</a>
               <a href="../.././1.9.4/user-guide/building-assistants/">1.9.4</a>
@@ -837,8 +838,7 @@ the user to type a full sentence and not something that you could necessarily
 extract as an entity. In this case we can make use of the <code class="docutils literal notranslate"><span class="pre">slot_mappings</span></code> method,
 where you can describe what your entities should be extracted from. Here we can
 use the <code class="docutils literal notranslate"><span class="pre">from_text</span></code> method to extract the users whole message:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">slot_mappings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]]:</span>
-    <span class="c1"># type: () -&gt; Dict[Text: Union[Dict, List[Dict]]]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">slot_mappings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]:</span>
     <span class="sd">&quot;&quot;&quot;A dictionary to map required slots to</span>
 <span class="sd">    - an extracted entity</span>
 <span class="sd">    - intent: value pairs</span>
