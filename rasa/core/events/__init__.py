@@ -18,6 +18,7 @@ from rasa.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
 )
+from rasa.nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -212,6 +213,7 @@ class UserUttered(Event):
         intent: Optional[Dict] = None,
         entities: Optional[List[Dict]] = None,
         parse_data: Optional[Dict[Text, Any]] = None,
+        message: Optional[Message] = None,
         timestamp: Optional[float] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
@@ -222,6 +224,7 @@ class UserUttered(Event):
         self.entities = entities if entities else []
         self.input_channel = input_channel
         self.message_id = message_id
+        self.message = message if message else None
 
         super().__init__(timestamp, metadata)
 
@@ -989,11 +992,14 @@ class ActionExecuted(Event):
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
+        message: Optional[Message] = None
     ):
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
         self.unpredictable = False
+        self.message = message if message else None
+
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
@@ -1023,6 +1029,7 @@ class ActionExecuted(Event):
                 parameters.get("confidence"),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
+                message = parameters.get("message")
             )
         ]
 
