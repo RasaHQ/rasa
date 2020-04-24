@@ -80,10 +80,9 @@ def _pika_log_level(temporary_log_level: int) -> Generator[None, None, None]:
     lower.
 
     Args:
-        temporary_log_level: Temporary log level for pika. Will be revert to previous
-            log level when context manager exits.
+        temporary_log_level: Temporary log level for pika. Will be reverted to
+        previous log level when context manager exits.
     """
-
     pika_logger = logging.getLogger("pika")
     old_log_level = pika_logger.level
     is_debug_mode = logging.root.level <= logging.DEBUG
