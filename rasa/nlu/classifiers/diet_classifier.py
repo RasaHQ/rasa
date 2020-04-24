@@ -628,7 +628,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 return
 
         # keep one example for persisting and loading
-        self.data_example = self.data_example = model_data.first_data_example()
+        self.data_example = model_data.first_data_example()
 
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
@@ -813,7 +813,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.index_tag_id_mapping.pkl",
             self.index_tag_id_mapping,
         )
-
         return {"file": file_name}
 
     @classmethod
