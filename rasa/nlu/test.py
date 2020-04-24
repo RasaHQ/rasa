@@ -852,7 +852,6 @@ def pick_best_entity_fit(
 
     Returns:
         the value of the attribute key of the best fitting entity
-
     """
     if len(candidates) == 0:
         return NO_ENTITY_TAG
@@ -935,7 +934,7 @@ def align_entity_predictions(
 
 def _concat_entity_labels(
     token: Token, entities: List[Dict], extractors: Optional[Set[Text]] = None
-):
+) -> Text:
     """Concatenate labels for entity type, role, and group for evaluation.
 
     In order to calculate metrics also for entity type, role, and group we need to
@@ -1150,7 +1149,6 @@ def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
 
     Returns:
         Updated pipeline
-
     """
     pipeline = [c for c in pipeline if c.name not in PRETRAINED_EXTRACTORS]
     return pipeline

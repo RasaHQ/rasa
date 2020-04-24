@@ -874,7 +874,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             else []
         )
         io_utils.dump_obj_as_json_to_file(
-            model_dir / f"{file_name}.entity_tag_specs.pkl", entity_tag_specs
+            model_dir / f"{file_name}.entity_tag_specs.json", entity_tag_specs
         )
 
         return {"file": file_name}
@@ -931,7 +931,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.index_label_id_mapping.pkl"
         )
         entity_tag_specs = io_utils.read_json_file(
-            model_dir / f"{file_name}.entity_tag_specs.pkl"
+            model_dir / f"{file_name}.entity_tag_specs.json"
         )
         entity_tag_specs = [
             EntityTagSpec(
@@ -1555,7 +1555,7 @@ class DIET(RasaModel):
     ) -> List[tf.Tensor]:
         losses = []
 
-        sequence_lengths = sequence_lengths - 1  # remove cls token
+        sequence_lengths -= 1  # remove cls token
 
         entity_tags = None
 

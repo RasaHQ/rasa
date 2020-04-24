@@ -495,7 +495,6 @@ class EntityExtractor(Component):
 
         Returns:
             Created entity.
-
         """
         entity = {
             ENTITY_ATTRIBUTE_TYPE: entity_tag,
@@ -525,6 +524,14 @@ class EntityExtractor(Component):
 
     @staticmethod
     def check_correct_entity_annotations(training_data: TrainingData) -> None:
+        """Check if entities are correctly annotated in the training data.
+
+        If the start and end values of an entity do not match any start and end values
+        of the respected token, we define an entity as misaligned and log a warning.
+
+        Args:
+            training_data: The training data.
+        """
         for example in training_data.entity_examples:
             entity_boundaries = [
                 (entity[ENTITY_ATTRIBUTE_START], entity[ENTITY_ATTRIBUTE_END])

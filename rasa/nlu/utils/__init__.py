@@ -87,7 +87,6 @@ def build_entity(
 
     Returns:
         an entity dictionary
-
     """
 
     entity = {
