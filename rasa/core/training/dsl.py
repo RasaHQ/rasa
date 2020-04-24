@@ -472,7 +472,6 @@ class StoryFileReader:
         parsed_messages = await asyncio.gather(
             *[self._parse_message_e2e(m, line_num) for m in messages]
         )
-        print(len(parsed_messages))
         self.current_step_builder.add_user_messages(parsed_messages)
 
     async def add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
