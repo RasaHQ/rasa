@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Custom Connectors</title>
     <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../../genindex/" />
     <link rel="search" title="Search" href="../../../search/" />
     <link rel="next" title="Evaluating Models" href="../../evaluating-models/" />
@@ -237,8 +236,6 @@
               <a href="../../../../1.4.6/user-guide/connectors/custom-connectors/">1.4.6</a>
               <a href="../../../../1.3.10/user-guide/connectors/custom-connectors/">1.3.10</a>
               <a href="../../../../1.2.9/user-guide/connectors/custom-connectors/">1.2.9</a>
-              <a href="../../../../1.1.8/user-guide/connectors/custom-connectors/">1.1.8</a>
-              <a href="../../../../1.0.9/user-guide/connectors/custom-connectors/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -304,36 +301,32 @@ or action prediction. If you want to change the way metadata is extracted for an
 existing channel, you can overwrite the function <code class="docutils literal notranslate"><span class="pre">get_metadata</span></code>. The return value
 of this method will be passed to the <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code>.</p>
 <p>Here are all the attributes of <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code>:</p>
-<dl class="class">
+<dl class="py class">
 <dt id="rasa.core.channels.UserMessage">
-<em class="property">class </em><code class="descclassname">rasa.core.channels.</code><code class="descname">UserMessage</code><span class="sig-paren">(</span><em>text=None</em>, <em>output_channel=None</em>, <em>sender_id=None</em>, <em>parse_data=None</em>, <em>input_channel=None</em>, <em>message_id=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">rasa.core.channels.</code><code class="sig-name descname">UserMessage</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_channel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sender_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">parse_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_channel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">message_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents an incoming message.</p>
 <p>Includes the channel the responses should be sent to.</p>
-<dl class="method">
+<dl class="py method">
 <dt id="rasa.core.channels.UserMessage.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>text=None</em>, <em>output_channel=None</em>, <em>sender_id=None</em>, <em>parse_data=None</em>, <em>input_channel=None</em>, <em>message_id=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_channel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sender_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">parse_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_channel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">message_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code> object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>text</strong> – the message text content.</li>
-<li><strong>output_channel</strong> – the output channel which should be used to send
-bot responses back to the user.</li>
-<li><strong>sender_id</strong> – the message owner ID.</li>
-<li><strong>parse_data</strong> – rasa data about the message.</li>
-<li><strong>input_channel</strong> – the name of the channel which received this message.</li>
-<li><strong>message_id</strong> – ID of the message.</li>
-<li><strong>metadata</strong> – additional metadata for this message.</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> – the message text content.</p></li>
+<li><p><strong>output_channel</strong> – the output channel which should be used to send
+bot responses back to the user.</p></li>
+<li><p><strong>sender_id</strong> – the message owner ID.</p></li>
+<li><p><strong>parse_data</strong> – rasa data about the message.</p></li>
+<li><p><strong>input_channel</strong> – the name of the channel which received this message.</p></li>
+<li><p><strong>message_id</strong> – ID of the message.</p></li>
+<li><p><strong>metadata</strong> – additional metadata for this message.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -354,9 +347,9 @@ output channels, e.g. the <code class="docutils literal notranslate"><span class
 <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> with the command line argument <code class="docutils literal notranslate"><span class="pre">--credentials</span></code>.
 This credentials file has to contain the module path of your custom channel and
 any required configuration parameters. For example, this could look like:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">mypackage.MyIO</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">username</span><span class="p p-Indicator">:</span> <span class="s">&quot;user_name&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">another_parameter</span><span class="p p-Indicator">:</span> <span class="s">&quot;some</span><span class="nv"> </span><span class="s">value&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">mypackage.MyIO</span><span class="p">:</span>
+  <span class="nt">username</span><span class="p">:</span> <span class="s">&quot;user_name&quot;</span>
+  <span class="nt">another_parameter</span><span class="p">:</span> <span class="s">&quot;some</span><span class="nv"> </span><span class="s">value&quot;</span>
 </pre></div>
 </div>
 <p>Here is an example implementation for an input channel that receives the messages,

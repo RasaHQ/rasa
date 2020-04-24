@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Tutorial: Rasa Basics</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Tutorial: Building Assistants" href="../building-assistants/" />
@@ -247,8 +246,6 @@ chatbot or AI assistant using open source Rasa." />
               <a href="../../../1.4.6/user-guide/rasa-tutorial/">1.4.6</a>
               <a href="../../../1.3.10/user-guide/rasa-tutorial/">1.3.10</a>
               <a href="../../../1.2.9/user-guide/rasa-tutorial/">1.2.9</a>
-              <a href="../../../1.1.8/user-guide/rasa-tutorial/">1.1.8</a>
-              <a href="../../../1.0.9/user-guide/rasa-tutorial/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -292,15 +289,15 @@ installing anything.
 You can also <a class="reference internal" href="../installation/#installation"><span class="std std-ref">install Rasa</span></a> and follow along in your command line.</p>
 The <a style="text-decoration: none" href="https://rasa.com/docs/rasa/glossary">glossary</a> contains an overview of the most common terms you’ll see in the Rasa documentation.<div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#create-a-new-project" id="id1">1. Create a New Project</a></li>
-<li><a class="reference internal" href="#view-your-nlu-training-data" id="id2">2. View Your NLU Training Data</a></li>
-<li><a class="reference internal" href="#define-your-model-configuration" id="id3">3. Define Your Model Configuration</a></li>
-<li><a class="reference internal" href="#write-your-first-stories" id="id4">4. Write Your First Stories</a></li>
-<li><a class="reference internal" href="#define-a-domain" id="id5">5. Define a Domain</a></li>
-<li><a class="reference internal" href="#train-a-model" id="id6">6. Train a Model</a></li>
-<li><a class="reference internal" href="#test-your-assistant" id="id7">7. Test Your Assistant</a></li>
-<li><a class="reference internal" href="#talk-to-your-assistant" id="id8">8. Talk to Your Assistant</a></li>
-<li><a class="reference internal" href="#next-steps" id="id9">Next Steps</a></li>
+<li><p><a class="reference internal" href="#create-a-new-project" id="id1">1. Create a New Project</a></p></li>
+<li><p><a class="reference internal" href="#view-your-nlu-training-data" id="id2">2. View Your NLU Training Data</a></p></li>
+<li><p><a class="reference internal" href="#define-your-model-configuration" id="id3">3. Define Your Model Configuration</a></p></li>
+<li><p><a class="reference internal" href="#write-your-first-stories" id="id4">4. Write Your First Stories</a></p></li>
+<li><p><a class="reference internal" href="#define-a-domain" id="id5">5. Define a Domain</a></p></li>
+<li><p><a class="reference internal" href="#train-a-model" id="id6">6. Train a Model</a></p></li>
+<li><p><a class="reference internal" href="#test-your-assistant" id="id7">7. Test Your Assistant</a></p></li>
+<li><p><a class="reference internal" href="#talk-to-your-assistant" id="id8">8. Talk to Your Assistant</a></p></li>
+<li><p><a class="reference internal" href="#next-steps" id="id9">Next Steps</a></p></li>
 </ul>
 </div>
 <p>In this tutorial, you will build a simple, friendly assistant which will ask how you’re doing
@@ -317,38 +314,38 @@ trains a simple bot on some sample data.
 If you leave out the <code class="docutils literal notranslate"><span class="pre">--no-prompt</span></code> flag you will be asked some questions about
 how you want your project to be set up.</p>
 <p>This creates the following files:</p>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="36%" />
-<col width="64%" />
+<col style="width: 36%" />
+<col style="width: 64%" />
 </colgroup>
-<tbody valign="top">
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code></td>
-<td>an empty file that helps python find your actions</td>
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code></p></td>
+<td><p>an empty file that helps python find your actions</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">actions.py</span></code></td>
-<td>code for your custom actions</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">actions.py</span></code></p></td>
+<td><p>code for your custom actions</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">config.yml</span></code> ‘*’</td>
-<td>configuration of your NLU and Core models</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">config.yml</span></code> ‘*’</p></td>
+<td><p>configuration of your NLU and Core models</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code></td>
-<td>details for connecting to other services</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code></p></td>
+<td><p>details for connecting to other services</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code> ‘*’</td>
-<td>your NLU training data</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code> ‘*’</p></td>
+<td><p>your NLU training data</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code> ‘*’</td>
-<td>your stories</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code> ‘*’</p></td>
+<td><p>your stories</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> ‘*’</td>
-<td>your assistant’s domain</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> ‘*’</p></td>
+<td><p>your assistant’s domain</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code></td>
-<td>details for connecting to channels like fb messenger</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code></p></td>
+<td><p>details for connecting to channels like fb messenger</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">models/&lt;timestamp&gt;.tar.gz</span></code></td>
-<td>your initial model</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">models/&lt;timestamp&gt;.tar.gz</span></code></p></td>
+<td><p>your initial model</p></td>
 </tr>
 </tbody>
 </table>
@@ -423,20 +420,20 @@ file called <code class="docutils literal notranslate"><span class="pre">domain.
 
   <pre data-executable>cat domain.yml</pre>
 <p>So what do the different parts mean?</p>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="20%" />
-<col width="80%" />
+<col style="width: 20%" />
+<col style="width: 80%" />
 </colgroup>
-<tbody valign="top">
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">intents</span></code></td>
-<td>things you expect users to say</td>
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">intents</span></code></p></td>
+<td><p>things you expect users to say</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">actions</span></code></td>
-<td>things your assistant can do and say</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">actions</span></code></p></td>
+<td><p>things your assistant can do and say</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">templates</span></code></td>
-<td>template strings for the things your assistant can say</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">templates</span></code></p></td>
+<td><p>template strings for the things your assistant can say</p></td>
 </tr>
 </tbody>
 </table>
@@ -491,11 +488,11 @@ assistant by running:</p>
 <p>Now that you’ve built your first Rasa bot it’s time to learn about
 some more advanced Rasa features.</p>
 <ul class="simple">
-<li>Learn how to implement business logic using <a class="reference internal" href="../../core/forms/#forms"><span class="std std-ref">forms</span></a></li>
-<li>Learn how to integrate other APIs using <a class="reference internal" href="../../core/actions/#actions"><span class="std std-ref">custom actions</span></a></li>
-<li>Learn how to connect your bot to different <a class="reference internal" href="../messaging-and-voice-channels/#messaging-and-voice-channels"><span class="std std-ref">messaging apps</span></a></li>
-<li>Learn about customising the <a class="reference internal" href="../../nlu/components/#components"><span class="std std-ref">components</span></a> in your NLU pipeline</li>
-<li>Read about custom and built-in <a class="reference internal" href="../../nlu/entity-extraction/#entity-extraction"><span class="std std-ref">entities</span></a></li>
+<li><p>Learn how to implement business logic using <a class="reference internal" href="../../core/forms/#forms"><span class="std std-ref">forms</span></a></p></li>
+<li><p>Learn how to integrate other APIs using <a class="reference internal" href="../../core/actions/#actions"><span class="std std-ref">custom actions</span></a></p></li>
+<li><p>Learn how to connect your bot to different <a class="reference internal" href="../messaging-and-voice-channels/#messaging-and-voice-channels"><span class="std std-ref">messaging apps</span></a></p></li>
+<li><p>Learn about customising the <a class="reference internal" href="../../nlu/components/#components"><span class="std std-ref">components</span></a> in your NLU pipeline</p></li>
+<li><p>Read about custom and built-in <a class="reference internal" href="../../nlu/entity-extraction/#entity-extraction"><span class="std std-ref">entities</span></a></p></li>
 </ul>
 <p>You can also use Rasa X to collect more conversations
 and improve your assistant:</p>

@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Training Data Format</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Choosing a Pipeline" href="../choosing-a-pipeline/" />
@@ -239,8 +238,6 @@ source natural language processing." />
               <a href="../../../1.4.6/nlu/training-data-format/">1.4.6</a>
               <a href="../../../1.3.10/nlu/training-data-format/">1.3.10</a>
               <a href="../../../1.2.9/nlu/training-data-format/">1.2.9</a>
-              <a href="../../../1.1.8/nlu/training-data-format/">1.1.8</a>
-              <a href="../../../1.0.9/nlu/training-data-format/">1.0.9</a>
           </div>
           <p>branches</p>
           <div class="dropdown-content">
@@ -280,22 +277,25 @@ source natural language processing." />
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/nlu/training-data-format.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#data-formats" id="id4">Data Formats</a><ul>
-<li><a class="reference internal" href="#markdown-format" id="id5">Markdown Format</a></li>
-<li><a class="reference internal" href="#json-format" id="id6">JSON Format</a></li>
+<li><p><a class="reference internal" href="#data-formats" id="id4">Data Formats</a></p>
+<ul>
+<li><p><a class="reference internal" href="#markdown-format" id="id5">Markdown Format</a></p></li>
+<li><p><a class="reference internal" href="#json-format" id="id6">JSON Format</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#improving-intent-classification-and-entity-recognition" id="id7">Improving Intent Classification and Entity Recognition</a><ul>
-<li><a class="reference internal" href="#common-examples" id="id8">Common Examples</a></li>
-<li><a class="reference internal" href="#regular-expression-features" id="id9">Regular Expression Features</a></li>
-<li><a class="reference internal" href="#lookup-tables" id="id10">Lookup Tables</a></li>
+<li><p><a class="reference internal" href="#improving-intent-classification-and-entity-recognition" id="id7">Improving Intent Classification and Entity Recognition</a></p>
+<ul>
+<li><p><a class="reference internal" href="#common-examples" id="id8">Common Examples</a></p></li>
+<li><p><a class="reference internal" href="#regular-expression-features" id="id9">Regular Expression Features</a></p></li>
+<li><p><a class="reference internal" href="#lookup-tables" id="id10">Lookup Tables</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#normalizing-data" id="id11">Normalizing Data</a><ul>
-<li><a class="reference internal" href="#entity-synonyms" id="id12">Entity Synonyms</a></li>
+<li><p><a class="reference internal" href="#normalizing-data" id="id11">Normalizing Data</a></p>
+<ul>
+<li><p><a class="reference internal" href="#entity-synonyms" id="id12">Entity Synonyms</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#generating-more-entity-examples" id="id13">Generating More Entity Examples</a></li>
+<li><p><a class="reference internal" href="#generating-more-entity-examples" id="id13">Generating More Entity Examples</a></p></li>
 </ul>
 </div>
 <div class="section" id="data-formats">
@@ -336,10 +336,10 @@ path/to/currencies.txt
 </div>
 <p>The training data for Rasa NLU is structured into different parts:</p>
 <ul class="simple">
-<li>common examples</li>
-<li>synonyms</li>
-<li>regex features and</li>
-<li>lookup tables</li>
+<li><p>common examples</p></li>
+<li><p>synonyms</p></li>
+<li><p>regex features and</p></li>
+<li><p>lookup tables</p></li>
 </ul>
 <p>While common examples is the only part that is mandatory, including the others will help the NLU model
 learn the domain with fewer examples and also help it be more confident of its predictions.</p>
@@ -347,12 +347,12 @@ learn the domain with fewer examples and also help it be more confident of its p
 However, this only happens <em>after</em> the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up.</p>
 <p>Lookup tables may be specified either directly as lists or as txt files containing newline-separated words or phrases.  Upon loading the training data, these files are used to generate case-insensitive regex patterns that are added to the regex features.  For example, in this case a list of currency names is supplied so that it is easier to pick out this entity.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU model by providing additional features to the machine learning algorithm during training. Therefore, it must not be assumed that having a single example would be enough for the model to robustly identify intents and/or entities across all variants of that example.</p>
+<p class="admonition-title">Note</p>
+<p>The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU model by providing additional features to the machine learning algorithm during training. Therefore, it must not be assumed that having a single example would be enough for the model to robustly identify intents and/or entities across all variants of that example.</p>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last"><code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not to
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not to
 use it in the name of your intents.</p>
 </div>
 </div>
@@ -383,9 +383,9 @@ Regex features are a tool to help the classifier detect entities or intents and 
 <p>Common examples have three components: <code class="docutils literal notranslate"><span class="pre">text</span></code>, <code class="docutils literal notranslate"><span class="pre">intent</span></code> and <code class="docutils literal notranslate"><span class="pre">entities</span></code>. The first two are strings while the last one is an array.</p>
 <blockquote>
 <div><ul class="simple">
-<li>The <em>text</em> is the user message [required]</li>
-<li>The <em>intent</em> is the intent that should be associated with the text [optional]</li>
-<li>The <em>entities</em> are specific parts of the text which need to be identified [optional]</li>
+<li><p>The <em>text</em> is the user message [required]</p></li>
+<li><p>The <em>intent</em> is the intent that should be associated with the text [optional]</p></li>
+<li><p>The <em>entities</em> are specific parts of the text which need to be identified [optional]</p></li>
 </ul>
 </div></blockquote>
 <p>Entities are specified with a <code class="docutils literal notranslate"><span class="pre">start</span></code> and  an <code class="docutils literal notranslate"><span class="pre">end</span></code> value, which together make a python
@@ -417,8 +417,8 @@ instead of <code class="docutils literal notranslate"><span class="pre">hey.*</s
 extractors, like <code class="docutils literal notranslate"><span class="pre">MitieEntityExtractor</span></code> or <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> won’t use the generated features and their presence will not improve entity recognition
 for these extractors. Currently, all intent classifiers make use of available regex features.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Regex features don’t define entities nor intents! They simply provide patterns to help the classifier
+<p class="admonition-title">Note</p>
+<p>Regex features don’t define entities nor intents! They simply provide patterns to help the classifier
 recognize entities and related intents. Hence, you still need to provide intent &amp; entity examples as part of your
 training data!</p>
 </div>
@@ -455,12 +455,12 @@ the training examples. These regexes match over multiple tokens, so
 These regexes are processed identically to the regular regex patterns
 directly specified in the training data.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">For lookup tables to be effective, there must be a few examples of matches in your training data.  Otherwise the model will not learn to use the lookup table match features.</p>
+<p class="admonition-title">Note</p>
+<p>For lookup tables to be effective, there must be a few examples of matches in your training data.  Otherwise the model will not learn to use the lookup table match features.</p>
 </div>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">You have to be careful when you add data to the lookup table.
+<p class="admonition-title">Warning</p>
+<p>You have to be careful when you add data to the lookup table.
 For example if there are false positives or other noise in the table,
 this can hurt performance. So make sure your lookup tables contain
 clean data.</p>
@@ -491,8 +491,8 @@ component (see <a class="reference internal" href="../components/#components"><s
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Please note that adding synonyms using the above format does not improve the model’s classification of those entities.
+<p class="admonition-title">Note</p>
+<p>Please note that adding synonyms using the above format does not improve the model’s classification of those entities.
 <strong>Entities must be properly classified before they can be replaced with the synonym value.</strong></p>
 </div>
 </div>
