@@ -93,7 +93,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
         # Default dense dimension to use if no dense features are present.
-        DENSE_DIMENSION: {TEXT: 512, LABEL: 20},
+        DENSE_DIMENSION: {TEXT: 256, LABEL: 20},
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
@@ -115,7 +115,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
         USE_MAX_NEG_SIM: True,
         # Scale loss inverse proportionally to confidence of correct prediction
-        SCALE_LOSS: True,
+        SCALE_LOSS: False,
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.001,
