@@ -995,7 +995,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         io_utils.dump_obj_as_json_to_file(
             model_dir / f"{file_name}.entity_tag_specs.json", entity_tag_specs
         )
-
         return {"file": file_name}
 
     @classmethod

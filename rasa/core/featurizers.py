@@ -8,6 +8,7 @@ from typing import Tuple, List, Optional, Dict, Text, Any
 from scipy.sparse import csr_matrix
 import re
 import string
+import pickle
 
 import rasa.utils.io
 from rasa.core import utils
@@ -391,7 +392,12 @@ class TrackerFeaturizer:
 
     def persist(self, path) -> None:
         featurizer_file = os.path.join(path, "featurizer.json")
+
         rasa.utils.io.create_directory_for_file(featurizer_file)
+
+        if isinstance(self.state_featurizer.interpreter.trainer.pipeline[-1], rasa.nlu.classifiers.diet_classifier.DIETClassifier):
+            self.state_featurizer.interpreter.trainer.pipeline = self.state_featurizer.interpreter.trainer.pipeline[:-1]
+            self.state_featurizer.interpreter.interpreter.pipeline = self.state_featurizer.interpreter.interpreter.pipeline[:-1]
 
         # noinspection PyTypeChecker
         rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
@@ -680,8 +686,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> List[List[Dict[Text, float]]]:
+        from rasa.nlu.model import Interpreter
         """Transforms list of trackers to lists of states for prediction."""
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
+        self.state_featurizer.interpreter.interpreter = Interpreter(self.state_featurizer.interpreter.trainer.pipeline, []).load(os.path.join(os.path.dirname(self.path), 'nlu'))
+
 
         trackers_as_states_modified = []
         for tracker in trackers_as_states:
