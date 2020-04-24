@@ -36,10 +36,6 @@ Bugfixes
   Therefore, all 1.9 models `except for 1.9.6` will be compatible; a model trained on 1.9.6 will need
   to be retrained on 1.9.7.
 
-Miscellaneous internal changes
-------------------------------
-- #5631
-
 
 [1.9.6] - 2020-04-15
 ^^^^^^^^^^^^^^^^^^^^

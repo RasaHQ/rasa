@@ -1255,7 +1255,7 @@ class DIET(RasaModel):
             seq_ids = None
 
         inputs = self._combine_sparse_dense_features(
-            features, mask, name, sparse_dropout, dense_dropout,
+            features, mask, name, sparse_dropout, dense_dropout
         )
 
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
@@ -1272,6 +1272,10 @@ class DIET(RasaModel):
             transformer_inputs, 1 - mask, self._training
         )
 
+        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
+            # apply activation
+            outputs = tfa.activations.gelu(outputs)
+
         return outputs, inputs, seq_ids, lm_mask_bool
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -1283,7 +1287,7 @@ class DIET(RasaModel):
         mask_label = self._compute_mask(label_lengths)
 
         x = self._create_bow(
-            self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name,
+            self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name
         )
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
 
@@ -1432,7 +1436,7 @@ class DIET(RasaModel):
 
             label_ids = tf_batch_data[LABEL_IDS][0]
             label = self._create_bow(
-                tf_batch_data[LABEL_FEATURES], mask_label, self.label_name,
+                tf_batch_data[LABEL_FEATURES], mask_label, self.label_name
             )
             loss, acc = self._calculate_label_loss(cls, label, label_ids)
             self.intent_loss.update_state(loss)
