@@ -10,6 +10,7 @@ import tensorflow_addons as tfa
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTuple
 
+import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -19,7 +20,6 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
-from rasa.utils.common import raise_warning
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.models import RasaModel
@@ -295,7 +295,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Declare instance variables with default values."""
 
         if component_config is not None and EPOCHS not in component_config:
-            raise_warning(
+            common_utils.raise_warning(
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
                 f" We will change the default value of '{EPOCHS}' in the future to 1. "
             )
@@ -1096,7 +1096,7 @@ class DIET(RasaModel):
             self.config[ENTITY_RECOGNITION]
             and f"{ENTITY_ATTRIBUTE_TYPE}_{TAG_IDS}" not in self.data_signature
         ):
-            raise_warning(
+            common_utils.raise_warning(
                 f"You specified '{self.__class__.__name__}' to train entities, but "
                 f"no entities are present in the training data. Skip training of "
                 f"entities."

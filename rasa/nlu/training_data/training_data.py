@@ -206,6 +206,14 @@ class TrainingData:
         ]
         return set(entity_types) - {NO_ENTITY_TAG}
 
+    def entity_roles_groups_used(self) -> bool:
+        entity_groups_used = (
+            self.entity_groups is not None and len(self.entity_groups) > 0
+        )
+        entity_roles_used = self.entity_roles is not None and len(self.entity_roles) > 0
+
+        return entity_groups_used or entity_roles_used
+
     @lazy_property
     def examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""

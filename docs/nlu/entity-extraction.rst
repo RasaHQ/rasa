@@ -105,8 +105,14 @@ See :ref:`training-data-format` for details on how to include entities in your t
 
 .. _entities-roles-groups:
 
-Entities with Roles and Groups
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Entities Roles and Groups
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+   This feature is experimental.
+   We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+   However, the functionality might be changed or removed in the future.
+   If you have feedback (positive or negative) please share it with us on the `forum <https://forum.rasa.com>`_.
 
 Assigning custom entity labels to words, allow you to define certain concepts in the data.
 For example, we can define what a `city` is:
@@ -175,7 +181,8 @@ Also make sure to have some variations in your training data, so that the model 
 For example, you should not only have example like ``fly FROM x TO y``, but also include examples like
 ``fly TO y FROM x``.
 
-To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
+To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
+:ref:`forms` or use :ref:`custom-actions` to extract the corresponding entity directly from the tracker.
 
 
 Extracting Places, Dates, People, Organisations
