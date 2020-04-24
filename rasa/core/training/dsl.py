@@ -435,12 +435,12 @@ class StoryFileReader:
         from rasa.nlu.training_data.formats.markdown import MarkdownReader
 
         message_processed = MarkdownReader().parse_training_example(message)
+        parse_data = await self.interpreter.parse(message)
 
         utterance = UserUttered(
-            message_processed.text, message_processed.get("intent"), message_processed.get("entities"), message_processed.as_dict(), message = message_processed
+            message, parse_data.get("intent"), message_processed.get("entities"), message_processed.as_dict(), message = message_processed
         )
         intent_name = utterance.intent.get("name")
-        
         return utterance
 
     async def add_user_messages(self, messages, line_num):
@@ -463,6 +463,7 @@ class StoryFileReader:
         parsed_messages = await asyncio.gather(
             *[self._parse_message_e2e(m, line_num) for m in messages]
         )
+        print(len(parsed_messages))
         self.current_step_builder.add_user_messages(parsed_messages)
 
     async def add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
