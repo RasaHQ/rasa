@@ -691,8 +691,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 for key, value in state.items():
                     if isinstance(value, Message):
                         curr_state[key] = self.state_featurizer.interpreter.parse(
-                            value.text
-                        )
+                            value.text)
+                        curr_state[key]['entities'] = value.get('entities')
                     else:
                         curr_state[key] = value
                 curr_tracker.append(curr_state)
