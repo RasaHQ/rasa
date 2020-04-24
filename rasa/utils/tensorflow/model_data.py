@@ -144,8 +144,9 @@ class RasaModelData:
         # update number of examples
         self.num_examples = self.number_of_examples()
 
-    def add_lengths(self, key: Text, from_key: Text) -> None:
-        """Adds np.array of lengths of sequences to data under given key."""
+    def add_mask(self, key: Text, from_key: Text):
+        """Calculate mask for given key and put it under specified key."""
+
         if not self.data.get(from_key):
             return
 
@@ -153,8 +154,10 @@ class RasaModelData:
 
         for data in self.data[from_key]:
             if data.size > 0:
-                lengths = np.array([x.shape[0] for x in data])
-                self.data[key].append(lengths)
+                # explicitly add last dimension to mask
+                # to track correctly dynamic sequences
+                mask = np.array([np.ones((x.shape[0], 1)) for x in data])
+                self.data[key].append(mask)
                 break
 
     def split(
