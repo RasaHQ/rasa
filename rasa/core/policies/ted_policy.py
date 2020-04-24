@@ -490,6 +490,7 @@ class TEDPolicy(Policy):
 
         **Needs to load its featurizer**
         """
+        from rasa.nlu.model import Interpreter
 
         if not os.path.exists(path):
             raise Exception(

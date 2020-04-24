@@ -8,6 +8,7 @@ from typing import Tuple, List, Optional, Dict, Text, Any
 from scipy.sparse import csr_matrix
 import re
 import string
+import pickle
 
 import rasa.utils.io
 from rasa.core import utils
@@ -283,19 +284,12 @@ class TrackerFeaturizer:
                 state_dict = {}
                 for event in state:
                     if isinstance(event, UserUttered):
-<<<<<<< HEAD
                         if not event.message is None:
                             state_dict["user"] = event.message
                     elif isinstance(event, ActionExecuted):
                         if event.message is not None:
                             state_dict["prev_action"] = event.message
                         # to turn the default actions such as action_listen into Message;
-=======
-                        state_dict["user"] = event.message
-                    elif isinstance(event, ActionExecuted):
-                        if event.message is not None:
-                            state_dict["prev_action"] = event.message
->>>>>>> making it work for e2e format; taking entities into account
                         else:
                             state_dict["prev_action"] = Message(event.action_name)
                     state_dict["slots"] = self.collect_slots(tr)
@@ -442,6 +436,10 @@ class TrackerFeaturizer:
             self.state_featurizer.interpreter.interpreter.pipeline = self.state_featurizer.interpreter.interpreter.pipeline[
                 :-1
             ]
+
+        if isinstance(self.state_featurizer.interpreter.trainer.pipeline[-1], rasa.nlu.classifiers.diet_classifier.DIETClassifier):
+            self.state_featurizer.interpreter.trainer.pipeline = self.state_featurizer.interpreter.trainer.pipeline[:-1]
+            self.state_featurizer.interpreter.interpreter.pipeline = self.state_featurizer.interpreter.interpreter.pipeline[:-1]
 
         # noinspection PyTypeChecker
         rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
