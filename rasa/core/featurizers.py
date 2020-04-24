@@ -254,7 +254,8 @@ class TrackerFeaturizer:
                 state_dict = {}
                 for event in state:
                     if isinstance(event, UserUttered):
-                        state_dict["user"] = event.message
+                        if not event.message is None:
+                            state_dict["user"] = event.message
                     elif isinstance(event, ActionExecuted):
                         if event.message is not None:
                             state_dict["prev_action"] = event.message
