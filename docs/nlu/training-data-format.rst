@@ -85,7 +85,7 @@ case-insensitive regex patterns that are added to the regex features.
     new format ``[savings account]{"entity": "source_account", "value": "savings"}``. To update your training data
     file execute the following command on the terminal of your choice:
     ``sed -i .deprecated -E 's/\[(.+)\]\((.+):(.+)\)/\[\1\]\{"entity": "\2", "value": "\3"\}/g' <nlu training data file>``
-    Assume your NLU training data file is called ``nlu.md``. After you executed the above command, this file will
+    After you executed the above command, this file will
     contain the new training data format. The command also creates a backup file with the old training data format,
     called ``nlu.md.deprecated``.
 
