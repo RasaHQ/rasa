@@ -2,7 +2,7 @@
 name: Feature request
 about: Suggest an idea on how to improve Rasa
 title: ''
-labels: 'type:enhancement :sparkles:'
+labels: 'area:rasa-oss :ferris_wheel:,type:enhancement :sparkles:'
 assignees: ''
 
 ---
