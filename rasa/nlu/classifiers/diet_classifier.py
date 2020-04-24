@@ -1526,7 +1526,7 @@ class DIET(RasaModel):
         self,
         sequence_lengths: tf.Tensor,
         text_transformed: tf.Tensor,
-        tf_batch_data: tf.Tensor,
+        tf_batch_data: Dict[Text, List[tf.Tensor]],
     ) -> tf.Tensor:
         # get _cls_ vector for intent classification
         cls = self._last_token(text_transformed, sequence_lengths)
