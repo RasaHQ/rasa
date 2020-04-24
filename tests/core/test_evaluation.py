@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import rasa.utils.io
 from rasa.core.test import (
     _generate_trackers,
     collect_story_predictions,
