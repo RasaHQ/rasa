@@ -132,7 +132,7 @@ def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) ->
     """Read text from a file."""
 
     try:
-        with open(filename, encoding=encoding) as f:
+        with open(filename, encoding=encoding, errors="ignore") as f:
             return f.read()
     except FileNotFoundError:
         raise ValueError(f"File '{filename}' does not exist.")
