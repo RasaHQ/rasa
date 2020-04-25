@@ -255,7 +255,7 @@ class StoryFileReader:
         """Given a md file reads the contained stories."""
 
         try:
-            with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
+            with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING, errors="ignore") as f:
                 lines = f.readlines()
             reader = StoryFileReader(
                 interpreter, domain, template_variables, use_e2e, filename
