@@ -443,10 +443,11 @@ The <code class="docutils literal notranslate"><span class="pre">slot_mappings</
 </div>
 <p>The predefined functions work as follows:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">self.from_entity(entity=entity_name,</span> <span class="pre">intent=intent_name)</span></code>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.from_entity(entity=entity_name,</span> <span class="pre">intent=intent_name,</span> <span class="pre">role=role_name,</span> <span class="pre">group=group_name)</span></code>
 will look for an entity called <code class="docutils literal notranslate"><span class="pre">entity_name</span></code> to fill a slot
 <code class="docutils literal notranslate"><span class="pre">slot_name</span></code> regardless of user intent if <code class="docutils literal notranslate"><span class="pre">intent_name</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>
-else only if the users intent is <code class="docutils literal notranslate"><span class="pre">intent_name</span></code>.</p></li>
+else only if the users intent is <code class="docutils literal notranslate"><span class="pre">intent_name</span></code>. If <code class="docutils literal notranslate"><span class="pre">role_name</span></code> and/or <code class="docutils literal notranslate"><span class="pre">group_name</span></code>
+are provided, the role/group label of the entity also needs to match the given values.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">self.from_intent(intent=intent_name,</span> <span class="pre">value=value)</span></code>
 will fill slot <code class="docutils literal notranslate"><span class="pre">slot_name</span></code> with <code class="docutils literal notranslate"><span class="pre">value</span></code> if user intent is <code class="docutils literal notranslate"><span class="pre">intent_name</span></code>.
 To make a boolean slot, take a look at the definition of <code class="docutils literal notranslate"><span class="pre">outdoor_seating</span></code>
