@@ -42,7 +42,7 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
 
 
 @pytest.fixture()
-def model_server(loop, sanic_client, trained_moodbot_path):
+def model_server(loop, sanic_client, trained_moodbot_path: Text):
     app = model_server_app(trained_moodbot_path, model_hash="somehash")
     return loop.run_until_complete(sanic_client(app))
 
