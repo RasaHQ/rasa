@@ -1,9 +1,28 @@
 from typing import Any, Dict, List, Text, Tuple, Optional, Union
 
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.nlu.training_data import TrainingData
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
-from rasa.nlu.constants import EXTRACTOR, ENTITIES, TOKENS_NAMES, TEXT
+from rasa.nlu.constants import (
+    EXTRACTOR,
+    ENTITIES,
+    TOKENS_NAMES,
+    TEXT,
+    NO_ENTITY_TAG,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
+    ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
+    ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    INTENT,
+)
 from rasa.nlu.training_data import Message
+import rasa.utils.common as common_utils
 
 
 class EntityExtractor(Component):
@@ -64,7 +83,7 @@ class EntityExtractor(Component):
 
             idx = self._entity_index_to_keep(entities, entity_indices)
 
-            if idx is None:
+            if idx is None or idx not in entity_indices:
                 entity_indices_to_remove.update(entity_indices)
             else:
                 # keep just one entity
@@ -72,10 +91,16 @@ class EntityExtractor(Component):
                 entity_indices_to_remove.update(entity_indices)
 
                 # update that entity to cover the complete word(s)
-                entities[idx]["start"] = misaligned_entity["start"]
-                entities[idx]["end"] = misaligned_entity["end"]
-                entities[idx]["value"] = message.text[
-                    misaligned_entity["start"] : misaligned_entity["end"]
+                entities[idx][ENTITY_ATTRIBUTE_START] = misaligned_entity[
+                    ENTITY_ATTRIBUTE_START
+                ]
+                entities[idx][ENTITY_ATTRIBUTE_END] = misaligned_entity[
+                    ENTITY_ATTRIBUTE_END
+                ]
+                entities[idx][ENTITY_ATTRIBUTE_VALUE] = message.text[
+                    misaligned_entity[ENTITY_ATTRIBUTE_START] : misaligned_entity[
+                        ENTITY_ATTRIBUTE_END
+                    ]
                 ]
 
         # sort indices to remove entries at the end of the list first
@@ -134,13 +159,15 @@ class EntityExtractor(Component):
             if _idx is None:
                 misaligned_entities.append(
                     {
-                        "start": start_position,
-                        "end": end_position,
+                        ENTITY_ATTRIBUTE_START: start_position,
+                        ENTITY_ATTRIBUTE_END: end_position,
                         "entity_indices": [entity_idx],
                     }
                 )
             else:
+                # pytype: disable=attribute-error
                 misaligned_entities[_idx]["entity_indices"].append(entity_idx)
+                # pytype: enable=attribute-error
 
         return misaligned_entities
 
@@ -162,7 +189,10 @@ class EntityExtractor(Component):
             position.
         """
         for idx, cluster in enumerate(word_entity_cluster):
-            if cluster["start"] == start_position and cluster["end"] == end_position:
+            if (
+                cluster[ENTITY_ATTRIBUTE_START] == start_position
+                and cluster[ENTITY_ATTRIBUTE_END] == end_position
+            ):
                 return idx
         return None
 
@@ -185,10 +215,14 @@ class EntityExtractor(Component):
         entity_tokens = []
         for token_cluster in token_clusters:
             entity_starts_inside_cluster = (
-                token_cluster[0].start <= entity["start"] <= token_cluster[-1].end
+                token_cluster[0].start
+                <= entity[ENTITY_ATTRIBUTE_START]
+                <= token_cluster[-1].end
             )
             entity_ends_inside_cluster = (
-                token_cluster[0].start <= entity["end"] <= token_cluster[-1].end
+                token_cluster[0].start
+                <= entity[ENTITY_ATTRIBUTE_END]
+                <= token_cluster[-1].end
             )
 
             if entity_starts_inside_cluster or entity_ends_inside_cluster:
@@ -255,9 +289,9 @@ class EntityExtractor(Component):
             return entity_indices[0]
 
         confidences = [
-            entities[idx]["confidence"]
+            entities[idx][ENTITY_ATTRIBUTE_CONFIDENCE_TYPE]
             for idx in entity_indices
-            if "confidence" in entities[idx]
+            if ENTITY_ATTRIBUTE_CONFIDENCE_TYPE in entities[idx]
         ]
 
         # we don't have confidence values for all entity labels
@@ -274,34 +308,35 @@ class EntityExtractor(Component):
             return [
                 entity
                 for entity in extracted
-                if entity["entity"] in requested_dimensions
+                if entity[ENTITY_ATTRIBUTE_TYPE] in requested_dimensions
             ]
-        else:
-            return extracted
+        return extracted
 
     @staticmethod
-    def find_entity(ent, text, tokens) -> Tuple[int, int]:
+    def find_entity(
+        entity: Dict[Text, Any], text: Text, tokens: List[Token]
+    ) -> Tuple[int, int]:
         offsets = [token.start for token in tokens]
         ends = [token.end for token in tokens]
 
-        if ent["start"] not in offsets:
+        if entity[ENTITY_ATTRIBUTE_START] not in offsets:
             message = (
                 "Invalid entity {} in example '{}': "
                 "entities must span whole tokens. "
-                "Wrong entity start.".format(ent, text)
+                "Wrong entity start.".format(entity, text)
             )
             raise ValueError(message)
 
-        if ent["end"] not in ends:
+        if entity[ENTITY_ATTRIBUTE_END] not in ends:
             message = (
                 "Invalid entity {} in example '{}': "
                 "entities must span whole tokens. "
-                "Wrong entity end.".format(ent, text)
+                "Wrong entity end.".format(entity, text)
             )
             raise ValueError(message)
 
-        start = offsets.index(ent["start"])
-        end = ends.index(ent["end"]) + 1
+        start = offsets.index(entity[ENTITY_ATTRIBUTE_START])
+        end = ends.index(entity[ENTITY_ATTRIBUTE_END]) + 1
         return start, end
 
     def filter_trainable_entities(
@@ -333,3 +368,189 @@ class EntityExtractor(Component):
             )
 
         return filtered
+
+    def convert_predictions_into_entities(
+        self,
+        text: Text,
+        tokens: List[Token],
+        tags: Dict[Text, List[Text]],
+        confidences: Optional[Dict[Text, List[float]]] = None,
+    ) -> List[Dict[Text, Any]]:
+        """
+        Convert predictions into entities.
+
+        Args:
+            text: The text message.
+            tokens: Message tokens without CLS token.
+            tags: Predicted tags.
+            confidences: Confidences of predicted tags.
+
+        Returns:
+            Entities.
+        """
+        entities = []
+
+        last_entity_tag = NO_ENTITY_TAG
+        last_role_tag = NO_ENTITY_TAG
+        last_group_tag = NO_ENTITY_TAG
+
+        for idx, token in enumerate(tokens):
+            current_entity_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
+
+            if current_entity_tag == NO_ENTITY_TAG:
+                last_entity_tag = NO_ENTITY_TAG
+                continue
+
+            current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
+            current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
+
+            new_tag_found = (
+                last_entity_tag != current_entity_tag
+                or last_group_tag != current_group_tag
+                or last_role_tag != current_role_tag
+            )
+
+            if new_tag_found:
+                entity = self._create_new_entity(
+                    list(tags.keys()),
+                    current_entity_tag,
+                    current_group_tag,
+                    current_role_tag,
+                    token,
+                    idx,
+                    confidences,
+                )
+                entities.append(entity)
+            else:
+                entities[-1][ENTITY_ATTRIBUTE_END] = token.end
+                if confidences is not None:
+                    self._update_confidence_values(entities, confidences, idx)
+
+            last_entity_tag = current_entity_tag
+            last_group_tag = current_group_tag
+            last_role_tag = current_role_tag
+
+        for entity in entities:
+            entity[ENTITY_ATTRIBUTE_VALUE] = text[
+                entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
+            ]
+
+        return entities
+
+    @staticmethod
+    def _update_confidence_values(
+        entities: List[Dict[Text, Any]], confidences: Dict[Text, List[float]], idx: int
+    ):
+        # use the lower confidence value
+        entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_TYPE] = min(
+            entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_TYPE],
+            confidences[ENTITY_ATTRIBUTE_TYPE][idx],
+        )
+        if ENTITY_ATTRIBUTE_ROLE in entities[-1]:
+            entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_ROLE] = min(
+                entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_ROLE],
+                confidences[ENTITY_ATTRIBUTE_ROLE][idx],
+            )
+        if ENTITY_ATTRIBUTE_GROUP in entities[-1]:
+            entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_GROUP] = min(
+                entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_GROUP],
+                confidences[ENTITY_ATTRIBUTE_GROUP][idx],
+            )
+
+    @staticmethod
+    def get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text, idx: int) -> Text:
+        """Get the value of the given tag name from the list of tags.
+
+        Args:
+            tags: Mapping of tag name to list of tags;
+            tag_name: The tag name of interest.
+            idx: The index position of the tag.
+
+        Returns:
+            The tag value.
+        """
+        if tag_name in tags:
+            return tags[tag_name][idx]
+        return NO_ENTITY_TAG
+
+    @staticmethod
+    def _create_new_entity(
+        tag_names: List[Text],
+        entity_tag: Text,
+        group_tag: Text,
+        role_tag: Text,
+        token: Token,
+        idx: int,
+        confidences: Optional[Dict[Text, List[float]]] = None,
+    ) -> Dict[Text, Any]:
+        """Create a new entity.
+
+        Args:
+            tag_names: The tag names to include in the entity.
+            entity_tag: The entity type value.
+            group_tag: The entity group value.
+            role_tag: The entity role value.
+            token: The token.
+            confidence: The confidence value.
+
+        Returns:
+            Created entity.
+        """
+        entity = {
+            ENTITY_ATTRIBUTE_TYPE: entity_tag,
+            ENTITY_ATTRIBUTE_START: token.start,
+            ENTITY_ATTRIBUTE_END: token.end,
+        }
+
+        if confidences is not None:
+            entity[ENTITY_ATTRIBUTE_CONFIDENCE_TYPE] = confidences[
+                ENTITY_ATTRIBUTE_TYPE
+            ][idx]
+
+        if ENTITY_ATTRIBUTE_ROLE in tag_names:
+            entity[ENTITY_ATTRIBUTE_ROLE] = role_tag
+            if confidences is not None:
+                entity[ENTITY_ATTRIBUTE_CONFIDENCE_ROLE] = confidences[
+                    ENTITY_ATTRIBUTE_ROLE
+                ][idx]
+        if ENTITY_ATTRIBUTE_GROUP in tag_names:
+            entity[ENTITY_ATTRIBUTE_GROUP] = group_tag
+            if confidences is not None:
+                entity[ENTITY_ATTRIBUTE_CONFIDENCE_GROUP] = confidences[
+                    ENTITY_ATTRIBUTE_GROUP
+                ][idx]
+
+        return entity
+
+    @staticmethod
+    def check_correct_entity_annotations(training_data: TrainingData) -> None:
+        """Check if entities are correctly annotated in the training data.
+
+        If the start and end values of an entity do not match any start and end values
+        of the respected token, we define an entity as misaligned and log a warning.
+
+        Args:
+            training_data: The training data.
+        """
+        for example in training_data.entity_examples:
+            entity_boundaries = [
+                (entity[ENTITY_ATTRIBUTE_START], entity[ENTITY_ATTRIBUTE_END])
+                for entity in example.get(ENTITIES)
+            ]
+            token_start_positions = [t.start for t in example.get(TOKENS_NAMES[TEXT])]
+            token_end_positions = [t.end for t in example.get(TOKENS_NAMES[TEXT])]
+
+            for entity_start, entity_end in entity_boundaries:
+                if (
+                    entity_start not in token_start_positions
+                    or entity_end not in token_end_positions
+                ):
+                    common_utils.raise_warning(
+                        f"Misaligned entity annotation in message '{example.text}' "
+                        f"with intent '{example.get(INTENT)}'. Make sure the start and "
+                        f"end values of entities in the training data match the token "
+                        f"boundaries (e.g. entities don't include trailing whitespaces "
+                        f"or punctuation).",
+                        docs=DOCS_URL_TRAINING_DATA_NLU,
+                    )
+                    break

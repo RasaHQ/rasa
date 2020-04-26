@@ -224,6 +224,11 @@ def test_train_docker_and_docs_configs(config_file: Text):
             "data/test/markdown_single_sections/synonyms_only.md",
             ["add an 'EntitySynonymMapper'"],
         ),
+        (
+            "data/test_config/config_embedding_intent_response_selector.yml",
+            "data/test/demo-rasa-composite-entities.md",
+            ["include either 'DIETClassifier' or 'CRFEntityExtractor'"],
+        ),
     ],
 )
 def test_validate_required_components_from_data(
