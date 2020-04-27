@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from rasa.core.test import _generate_trackers, collect_story_predictions, test
+from rasa.core.policies.memoization import MemoizationPolicy
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
@@ -11,6 +12,8 @@ from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
     E2E_STORY_FILE_UNKNOWN_ENTITY,
     END_TO_END_STORY_FILE,
+    E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER,
+    STORY_FILE_TRIPS_CIRCUIT_BREAKER,
 )
 
 
@@ -58,7 +61,7 @@ async def test_end_to_end_evaluation_script(default_agent: Agent):
         "goodbye",
         "greet",
         "default",
-        '[{"name": "Max"}](name:Max)',
+        '[{"name": "Max"}]{"entity": "name", "value": "Max"}',
     ]
 
     assert story_evaluation.evaluation_store.serialise()[0] == serialised_store
@@ -91,3 +94,40 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     )
 
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+
+
+async def test_end_to_evaluation_trips_circuit_breaker():
+    agent = Agent(
+        domain="data/test_domains/default.yml",
+        policies=[MemoizationPolicy(max_history=11)],
+    )
+    training_data = await agent.load_data(STORY_FILE_TRIPS_CIRCUIT_BREAKER)
+    agent.train(training_data)
+
+    test_stories = await _generate_trackers(
+        E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER, agent, use_e2e=True
+    )
+
+    story_evaluation, num_stories = collect_story_predictions(
+        test_stories, agent, use_e2e=True
+    )
+
+    circuit_trip_predicted = [
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "circuit breaker tripped",
+        "circuit breaker tripped",
+    ]
+
+    assert (
+        story_evaluation.evaluation_store.action_predictions == circuit_trip_predicted
+    )
+    assert num_stories == 1

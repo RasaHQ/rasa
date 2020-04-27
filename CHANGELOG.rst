@@ -17,6 +17,39 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.9.7] - 2020-04-23
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#4606 <https://github.com/rasahq/rasa/issues/4606>`_: The stream reading timeout for ``rasa shell` is now configurable by using the
+  environment variable ``RASA_SHELL_STREAM_READING_TIMEOUT_IN_SECONDS``.
+  This can help to fix problems when using ``rasa shell`` with custom actions which run
+  10 seconds or longer.
+
+Bugfixes
+--------
+- `#5709 <https://github.com/rasahq/rasa/issues/5709>`_: Reverted changes in 1.9.6 that led to model incompatibility. Upgrade to 1.9.7 to fix 
+  ``self.sequence_lengths_for(tf_batch_data[TEXT_SEQ_LENGTH][0]) IndexError: list index out of range`` 
+  error without needing to retrain earlier 1.9 models.
+
+  Therefore, all 1.9 models `except for 1.9.6` will be compatible; a model trained on 1.9.6 will need
+  to be retrained on 1.9.7.
+
+
+[1.9.6] - 2020-04-15
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5426 <https://github.com/rasahq/rasa/issues/5426>`_: Fix `rasa test nlu` plotting when using multiple runs.
+- `#5489 <https://github.com/rasahq/rasa/issues/5489>`_: Fixed issue where ``max_number_of_predictions`` was not considered when running end-to-end testing.
+
+Miscellaneous internal changes
+------------------------------
+- #5626
+
+
 [1.9.5] - 2020-04-01
 ^^^^^^^^^^^^^^^^^^^^
 
