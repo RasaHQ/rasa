@@ -883,7 +883,7 @@ EmbeddingIntentClassifier
          +---------------------------------+------------------+--------------------------------------------------------------+
          | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | dense_dimension                 | text: 512        | Dense dimension for sparse features to use if no dense       |
+         | dense_dimension                 | text: 256        | Dense dimension for sparse features to use if no dense       |
          |                                 | label: 20        | features are present.                                        |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
@@ -922,7 +922,9 @@ EmbeddingIntentClassifier
          | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
          |                                 |                  | The higher the value the higher the regularization effect.   |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | use_sparse_input_dropout        | True             | If 'True' apply dropout to sparse tensors.                   |
+         | use_sparse_input_dropout        | False            | If 'True' apply dropout to sparse input tensors.             |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_dense_input_dropout         | False            | If 'True' apply dropout to dense input tensors.              |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
          |                                 |                  | Set to '-1' to evaluate just once at the end of training.    |
@@ -1486,7 +1488,9 @@ ResponseSelector
          | drop_rate_attention             | 0.0               | Dropout rate for attention. Value should be between 0 and 1. |
          |                                 |                   | The higher the value the higher the regularization effect.   |
          +---------------------------------+-------------------+--------------------------------------------------------------+
-         | use_sparse_input_dropout        | False             | If 'True' apply dropout to sparse tensors.                   |
+         | use_sparse_input_dropout        | False             | If 'True' apply dropout to sparse input tensors.             |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | use_dense_input_dropout         | False             | If 'True' apply dropout to dense input tensors.              |
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | evaluate_every_number_of_epochs | 20                | How often to calculate validation accuracy.                  |
          |                                 |                   | Set to '-1' to evaluate just once at the end of training.    |
@@ -1698,7 +1702,7 @@ DIETClassifier
          |                                 |                  | over incorrect intent labels, used only if 'loss_type' is    |
          |                                 |                  | set to 'margin'.                                             |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | scale_loss                      | True             | Scale loss inverse proportionally to confidence of correct   |
+         | scale_loss                      | False            | Scale loss inverse proportionally to confidence of correct   |
          |                                 |                  | prediction.                                                  |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | regularization_constant         | 0.002            | The scale of regularization.                                 |
@@ -1715,7 +1719,9 @@ DIETClassifier
          | drop_rate_attention             | 0.0              | Dropout rate for attention. Value should be between 0 and 1. |
          |                                 |                  | The higher the value the higher the regularization effect.   |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | use_sparse_input_dropout        | True             | If 'True' apply dropout to sparse tensors.                   |
+         | use_sparse_input_dropout        | True             | If 'True' apply dropout to sparse input tensors.             |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_dense_input_dropout         | True             | If 'True' apply dropout to dense input tensors.              |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
          |                                 |                  | Set to '-1' to evaluate just once at the end of training.    |

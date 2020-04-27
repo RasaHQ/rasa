@@ -1,0 +1,2 @@
+Add dropout between ``FFNN`` and ``DenseForSparse`` layers in ``DIETClassifier``,
+``ResponseSelector`` and ``EmbeddingIntentClassifier`` controlled by ``use_dense_input_dropout`` config parameter.

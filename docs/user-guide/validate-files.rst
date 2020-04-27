@@ -67,6 +67,8 @@ To use these functions it is necessary to create a `Validator` object and initia
 
   validator.verify_all()
 
+.. _test-story-files-for-conflicts:
+
 Test Story Files for Conflicts
 ------------------------------
 
