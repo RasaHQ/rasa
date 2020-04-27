@@ -296,7 +296,7 @@ check out the docs on <a class="reference internal" href="../../core/domains/#se
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/rasa/core/trackers.py" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST DOCSTRING EDITS</a>
   </div><dl class="py class">
 <dt id="rasa.core.trackers.DialogueStateTracker">
-<em class="property">class </em><code class="sig-prename descclassname">rasa.core.trackers.</code><code class="sig-name descname">DialogueStateTracker</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sender_id</span></em>, <em class="sig-param"><span class="n">slots</span></em>, <em class="sig-param"><span class="n">max_event_history</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">rasa.core.trackers.</code><code class="sig-name descname">DialogueStateTracker</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sender_id</span></em>, <em class="sig-param"><span class="n">slots</span></em>, <em class="sig-param"><span class="n">max_event_history</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sender_source</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Maintains the state of a conversation.</p>
 <p>The field max_event_history will only give you these last events,
 it can be set in the tracker_store</p>
@@ -392,7 +392,7 @@ of this tracker exactly.</p>
 
 <dl class="py method">
 <dt id="rasa.core.trackers.DialogueStateTracker.export_stories">
-<code class="sig-name descname">export_stories</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">e2e</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.export_stories" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">export_stories</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">e2e</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">include_source</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.export_stories" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dump the tracker as a story in the Rasa Core story format.</p>
 <p>Returns the dumped tracker as a string.</p>
 <dl class="field-list simple">
