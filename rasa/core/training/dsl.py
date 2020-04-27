@@ -255,7 +255,9 @@ class StoryFileReader:
         """Given a md file reads the contained stories."""
 
         try:
-            with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING, errors="ignore") as f:
+            with open(
+                filename, "r", encoding=io_utils.DEFAULT_ENCODING, errors="ignore"
+            ) as f:
                 lines = f.readlines()
             reader = StoryFileReader(
                 interpreter, domain, template_variables, use_e2e, filename
@@ -358,12 +360,12 @@ class StoryFileReader:
                         await self.add_e2e_messages(user_messages, line_num)
                     else:
                         await self.add_user_messages(user_messages, line_num)
-                #end-to-end BOT message
-                elif line.startswith('<B>'):
+                # end-to-end BOT message
+                elif line.startswith("<B>"):
                     event_name, parameters = self._parse_event_line(line[3:])
                     self.add_event(event_name, parameters)
-                #end-to-end USER message
-                elif line.startswith('<U>'):
+                # end-to-end USER message
+                elif line.startswith("<U>"):
                     user_messages = [el.strip() for el in line[3:].split(" OR ")]
                     await self.add_user_messages_e2e(user_messages, line_num)
                 else:
@@ -447,7 +449,11 @@ class StoryFileReader:
         parse_data = await self.interpreter.parse(message)
 
         utterance = UserUttered(
-            message, parse_data.get("intent"), message_processed.get("entities"), message_processed.as_dict(), message = message_processed
+            message,
+            parse_data.get("intent"),
+            message_processed.get("entities"),
+            message_processed.as_dict(),
+            message=message_processed,
         )
         intent_name = utterance.intent.get("name")
         return utterance
@@ -498,11 +504,11 @@ class StoryFileReader:
         # because there might be a slot with slot_key='name'
         if "name" not in parameters and event_name != SlotSet.type_name:
             from rasa.nlu.training_data.formats.markdown import MarkdownReader
+
             action_as_message = MarkdownReader().parse_e2e_training_example(event_name)
             parameters["name"] = action_as_message.text
             parameters["message"] = action_as_message
-        
-        
+
         parsed_events = Event.from_story_string(
             event_name, parameters, default=ActionExecuted
         )

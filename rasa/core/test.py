@@ -303,7 +303,6 @@ def _collect_action_executed_predictions(
 
     gold = event.action_name
 
-
     if circuit_breaker_tripped:
         predicted = "circuit breaker tripped"
         policy = None
@@ -383,6 +382,7 @@ def _predict_tracker_actions(
             ) = _collect_action_executed_predictions(
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                 processor,
                 partial_tracker,
                 event,
@@ -397,6 +397,9 @@ def _predict_tracker_actions(
                 event,
                 fail_on_prediction_errors
 >>>>>>> small fix
+=======
+                processor, partial_tracker, event, fail_on_prediction_errors
+>>>>>>> black formatting
             )
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(
