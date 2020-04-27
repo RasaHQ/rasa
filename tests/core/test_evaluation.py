@@ -1,7 +1,13 @@
 import os
 from pathlib import Path
 
-from rasa.core.test import _generate_trackers, collect_story_predictions, test
+import rasa.utils.io
+from rasa.core.test import (
+    _generate_trackers,
+    collect_story_predictions,
+    test,
+    FAILED_STORIES_FILE,
+)
 from rasa.core.policies.memoization import MemoizationPolicy
 
 # we need this import to ignore the warning...
@@ -18,7 +24,7 @@ from tests.core.conftest import (
 
 
 async def test_evaluation_image_creation(tmpdir: Path, default_agent: Agent):
-    stories_path = str(tmpdir / "failed_stories.md")
+    stories_path = str(tmpdir / FAILED_STORIES_FILE)
     img_path = str(tmpdir / "story_confmat.pdf")
 
     await test(
@@ -94,6 +100,25 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     )
 
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+
+
+async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
+    stories_path = str(tmpdir / FAILED_STORIES_FILE)
+
+    await test(
+        stories=E2E_STORY_FILE_UNKNOWN_ENTITY,
+        agent=default_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=False,
+    )
+
+    failed_stories = rasa.utils.io.read_file(stories_path)
+
+    assert (
+        f"## simple_story_with_unknown_entity ({E2E_STORY_FILE_UNKNOWN_ENTITY})"
+        in failed_stories
+    )
 
 
 async def test_end_to_evaluation_trips_circuit_breaker():
