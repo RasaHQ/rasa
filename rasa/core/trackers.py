@@ -104,8 +104,9 @@ class DialogueStateTracker:
         evts: List[Event],
         slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
+        sender_source: Optional[Text] = None,
     ):
-        tracker = cls(sender_id, slots, max_event_history)
+        tracker = cls(sender_id, slots, max_event_history, sender_source)
         for e in evts:
             tracker.update(e)
         return tracker
@@ -115,6 +116,7 @@ class DialogueStateTracker:
         sender_id: Text,
         slots: Optional[Iterable[Slot]],
         max_event_history: Optional[int] = None,
+        sender_source: Optional[Text] = None,
     ) -> None:
         """Initialize the tracker.
 
@@ -133,6 +135,8 @@ class DialogueStateTracker:
             self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
         else:
             self.slots = AnySlotDict()
+        # file source of the messages
+        self.sender_source = sender_source
 
         ###
         # current state of the tracker - MUST be re-creatable by processing
@@ -471,13 +475,18 @@ class DialogueStateTracker:
             for e in domain.slots_for_entities(event.parse_data["entities"]):
                 self.update(e)
 
-    def export_stories(self, e2e: bool = False) -> Text:
+    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
         from rasa.core.training.structures import Story
 
-        story = Story.from_events(self.applied_events(), self.sender_id)
+        story_name = (
+            f"{self.sender_id} ({self.sender_source})"
+            if include_source
+            else self.sender_id
+        )
+        story = Story.from_events(self.applied_events(), story_name)
         return story.as_story_string(flat=True, e2e=e2e)
 
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
