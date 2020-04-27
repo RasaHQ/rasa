@@ -1,5 +1,7 @@
+import sys
 import argparse
 import logging
+from pathlib import Path
 
 import rasa.utils.io
 
@@ -64,7 +66,21 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 
 def print_version() -> None:
-    print("Rasa", version.__version__)
+    print(f"Rasa Version     : {version.__version__}")
+    py_stuff, os_stuff = sys.version.split("\n")
+    print(f"Python Version   : {py_stuff}")
+    print(f"Operating System : {os_stuff}")
+    print(f"Path             : {Path(__file__).parent}")
+    try:
+        import rasa_sdk
+        print(f"Rasa SDK Version : {rasa_sdk.__version__}")
+    except ModuleNotFoundError:
+        pass
+    try:
+        from rasax.community.version import __version__ as rasa_x_version
+        print(f"Rasa X Version   : {rasa_x_version}")
+    except ModuleNotFoundError:
+        pass
 
 
 def main() -> None:
