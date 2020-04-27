@@ -1,8 +1,7 @@
 import numpy as np
 import scipy.sparse
-from typing import Any, Text, Union, Optional, List
+from typing import Any, Text, Union, Optional
 
-from nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.components import Component
 from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT
