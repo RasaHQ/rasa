@@ -9,7 +9,7 @@ from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
     "text, expected_tokens, expected_indices",
     [
         (
-            "Forecast for lunch",
+            "forecast for lunch",
             ["forecast", "for", "lunch"],
             [(0, 8), (9, 12), (13, 18)],
         ),
@@ -17,11 +17,7 @@ from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
         ("you're", ["you", "re"], [(0, 3), (4, 6)]),
         ("r. n. b.", ["r", "n", "b"], [(0, 1), (3, 4), (6, 7)]),
         ("rock & roll", ["rock", "&", "roll"], [(0, 4), (5, 6), (7, 11)]),
-        (
-            "ńöñàśçií",
-            ["ń", "ö", "ñ", "à", "ś", "ç", "i", "í"],
-            [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8)],
-        ),
+        ("ńöñàśçií", ["ńöñàśçií"], [(0, 8)]),
     ],
 )
 def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
