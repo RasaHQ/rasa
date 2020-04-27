@@ -179,8 +179,8 @@ class TEDPolicy(Policy):
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
-                E2ESingleStateFeaturizer(), max_history=max_history
-            )
+            E2ESingleStateFeaturizer(), max_history=max_history
+        )
 
     def __init__(
         self,
@@ -310,7 +310,8 @@ class TEDPolicy(Policy):
             X_entities.append(entities)
 
         model_data.add_features(
-            DIALOGUE_FEATURES, [np.array(X_sparse), np.array(X_dense), np.array(X_entities)]
+            DIALOGUE_FEATURES,
+            [np.array(X_sparse), np.array(X_dense), np.array(X_entities)],
         )
         model_data.add_features(LABEL_FEATURES, [Y_sparse, Y_dense])
         model_data.add_features(LABEL_IDS, [label_ids])
@@ -679,9 +680,7 @@ class TED(RasaModel):
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = self.tf_label_data[LABEL_FEATURES]
-        all_labels = self._combine_sparse_dense_features(
-            all_labels, LABEL_FEATURES
-        )
+        all_labels = self._combine_sparse_dense_features(all_labels, LABEL_FEATURES)
         all_labels = tf.squeeze(all_labels, axis=1)
         all_labels_embed = self._embed_label(all_labels)
 
@@ -765,9 +764,7 @@ class TED(RasaModel):
             batch[DIALOGUE_FEATURES], DIALOGUE_FEATURES
         )
 
-        label_in = self._combine_sparse_dense_features(
-            label_in, LABEL_FEATURES
-        )
+        label_in = self._combine_sparse_dense_features(label_in, LABEL_FEATURES)
         label_in = tf.squeeze(label_in, axis=1)
 
         if self.max_history_tracker_featurizer_used:

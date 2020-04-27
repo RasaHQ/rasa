@@ -188,9 +188,11 @@ class MarkdownReader(TrainingDataReader):
         from rasa.nlu.training_data import Message
 
         entities = self._find_entities_in_training_example(example)
-        
-        plain_text = re.sub(ent_regex, lambda m: '<' + m.groupdict()["entity"] + '>', example)
-        message = Message(plain_text.replace(':', ''))
+
+        plain_text = re.sub(
+            ent_regex, lambda m: "<" + m.groupdict()["entity"] + ">", example
+        )
+        message = Message(plain_text.replace(":", ""))
 
         return message
 

@@ -356,7 +356,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         training_data = self.prepare_training_data(
             trackers_as_states, trackers_as_actions, domain
         )
-        kwargs = {'no_copy': True}
+        kwargs = {"no_copy": True}
         self.interpreter = self.trainer.train(training_data, **kwargs)
         self.entities = domain.entities
 

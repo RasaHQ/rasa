@@ -481,9 +481,7 @@ class MessageProcessor:
         )
 
     async def _predict_and_execute_next_action(
-        self,
-        output_channel: OutputChannel,
-        tracker: DialogueStateTracker,
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker,
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -735,7 +733,9 @@ class MessageProcessor:
         else:
             return None, None
 
-    def _get_next_action_probabilities(self, tracker: DialogueStateTracker) -> Tuple[Optional[List[float]], Optional[Text]]:
+    def _get_next_action_probabilities(
+        self, tracker: DialogueStateTracker
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Collect predictions from ensemble and return action and predictions."""
 
         followup_action = tracker.followup_action
