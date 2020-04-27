@@ -1327,7 +1327,7 @@ However, additional parameters exist that can be adapted.</p>
 +---------------------------------+------------------+--------------------------------------------------------------+
 | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| dense_dimension                 | text: 512        | Dense dimension for sparse features to use if no dense       |
+| dense_dimension                 | text: 256        | Dense dimension for sparse features to use if no dense       |
 |                                 | label: 20        | features are present.                                        |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
@@ -2200,7 +2200,7 @@ However, additional parameters exist that can be adapted.</p>
 |                                 |                  | over incorrect intent labels, used only if &#39;loss_type&#39; is    |
 |                                 |                  | set to &#39;margin&#39;.                                             |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| scale_loss                      | True             | Scale loss inverse proportionally to confidence of correct   |
+| scale_loss                      | False            | Scale loss inverse proportionally to confidence of correct   |
 |                                 |                  | prediction.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | regularization_constant         | 0.002            | The scale of regularization.                                 |
