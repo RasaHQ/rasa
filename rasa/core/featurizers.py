@@ -425,9 +425,13 @@ class TrackerFeaturizer:
         featurizer_file = os.path.join(path, "featurizer.json")
 
         rasa.utils.io.create_directory_for_file(featurizer_file)
+<<<<<<< HEAD
         # DIET cannot be json-ed; because we already save it through
         # the interpreter.persist in RasaE2EInterpreter.prepare_training_data_and_train()
         # we can load it from there at time of prediction;
+=======
+
+>>>>>>> black formatting
         if isinstance(
             self.state_featurizer.interpreter.trainer.pipeline[-1],
             rasa.nlu.classifiers.diet_classifier.DIETClassifier,
@@ -743,7 +747,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         """Transforms list of trackers to lists of states for prediction."""
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
+<<<<<<< HEAD
         # required to have the DIET do the prediction;
+=======
+>>>>>>> black formatting
         self.state_featurizer.interpreter.interpreter = Interpreter(
             self.state_featurizer.interpreter.trainer.pipeline, []
         ).load(os.path.join(os.path.dirname(self.path), "nlu"))
