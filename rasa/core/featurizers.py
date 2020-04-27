@@ -164,7 +164,9 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         entity_features = np.zeros(len(self.interpreter.entities))
         if "user" in list(state.keys()):
             if not state["user"].get("entities") is None:
-                user_entities = [entity['entity'] for entity in state["user"].get("entities")]
+                user_entities = [
+                    entity["entity"] for entity in state["user"].get("entities")
+                ]
                 for entity_name in user_entities:
                     entity_features[self.interpreter.entities.index(entity_name)] = 1
 
@@ -437,9 +439,16 @@ class TrackerFeaturizer:
                 :-1
             ]
 
-        if isinstance(self.state_featurizer.interpreter.trainer.pipeline[-1], rasa.nlu.classifiers.diet_classifier.DIETClassifier):
-            self.state_featurizer.interpreter.trainer.pipeline = self.state_featurizer.interpreter.trainer.pipeline[:-1]
-            self.state_featurizer.interpreter.interpreter.pipeline = self.state_featurizer.interpreter.interpreter.pipeline[:-1]
+        if isinstance(
+            self.state_featurizer.interpreter.trainer.pipeline[-1],
+            rasa.nlu.classifiers.diet_classifier.DIETClassifier,
+        ):
+            self.state_featurizer.interpreter.trainer.pipeline = self.state_featurizer.interpreter.trainer.pipeline[
+                :-1
+            ]
+            self.state_featurizer.interpreter.interpreter.pipeline = self.state_featurizer.interpreter.interpreter.pipeline[
+                :-1
+            ]
 
         # noinspection PyTypeChecker
         rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)

@@ -500,6 +500,7 @@ class StoryFileReader:
         # because there might be a slot with slot_key='name'
         if "name" not in parameters and event_name != SlotSet.type_name:
             from rasa.nlu.training_data.formats.markdown import MarkdownReader
+
             action_as_message = MarkdownReader().parse_e2e_training_example(event_name)
             parameters["name"] = action_as_message.text
             parameters["message"] = action_as_message

@@ -775,7 +775,9 @@ class MessageProcessor:
         else:
             return None, None
 
-    def _get_next_action_probabilities(self, tracker: DialogueStateTracker) -> Tuple[Optional[List[float]], Optional[Text]]:
+    def _get_next_action_probabilities(
+        self, tracker: DialogueStateTracker
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Collect predictions from ensemble and return action and predictions."""
 
         followup_action = tracker.followup_action
