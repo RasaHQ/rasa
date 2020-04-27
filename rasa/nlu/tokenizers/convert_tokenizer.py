@@ -47,8 +47,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         ConveRT adds a special char in front of (some) words and splits words into
         sub-words. To ensure the entity start and end values matches the token values,
         tokenize the text first using the whitespace tokenizer. If individual tokens
-        are split up into multiple tokens, we make sure that the start end end value
-        of the first and last respective tokens stay the same.
+        are split up into multiple tokens, add this information to the
+        respected tokens.
         """
 
         # perform whitespace tokenization

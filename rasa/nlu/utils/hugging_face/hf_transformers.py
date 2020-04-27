@@ -202,7 +202,7 @@ class HFTransformersNLP(Component):
         words into sub-words. To ensure the entity start and end values matches the
         token values, tokenize the text first using the whitespace tokenizer. If
         individual tokens are split up into multiple tokens, we add this information
-        to the corresponding token.
+        to the respected token.
 
         Args:
             message: Single message object to be processed.
