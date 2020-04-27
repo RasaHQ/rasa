@@ -127,42 +127,6 @@ def align_token_features(
     return out_token_features
 
 
-def align_tokens(
-    tokens_in: List[Text], token_end: int, token_start: int
-) -> List[Token]:
-    """Align sub-tokens of Language model with tokens return by the WhitespaceTokenizer.
-
-    As a language model might split a single word into multiple tokens, we need to make
-    sure that the start and end value of first and last sub-token matches the
-    start and end value of the token return by the WhitespaceTokenizer as the
-    entities are using those start and end values.
-    """
-
-    tokens_out = []
-
-    current_token_offset = token_start
-
-    for index, string in enumerate(tokens_in):
-        if index == 0:
-            if index == len(tokens_in) - 1:
-                s_token_end = token_end
-            else:
-                s_token_end = current_token_offset + len(string)
-            tokens_out.append(Token(string, token_start, end=s_token_end))
-        elif index == len(tokens_in) - 1:
-            tokens_out.append(Token(string, current_token_offset, end=token_end))
-        else:
-            tokens_out.append(
-                Token(
-                    string, current_token_offset, end=current_token_offset + len(string)
-                )
-            )
-
-        current_token_offset += len(string)
-
-    return tokens_out
-
-
 def sequence_to_sentence_features(
     features: Union[np.ndarray, scipy.sparse.spmatrix]
 ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
