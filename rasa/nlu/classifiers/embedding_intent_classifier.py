@@ -115,7 +115,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
         USE_MAX_NEG_SIM: True,
         # Scale loss inverse proportionally to confidence of correct prediction
-        SCALE_LOSS: False,
+        SCALE_LOSS: True,
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.001,

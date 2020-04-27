@@ -908,7 +908,7 @@ EmbeddingIntentClassifier
          |                                 |                  | over incorrect intent labels, used only if 'loss_type' is    |
          |                                 |                  | set to 'margin'.                                             |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | scale_loss                      | False            | Scale loss inverse proportionally to confidence of correct   |
+         | scale_loss                      | True             | Scale loss inverse proportionally to confidence of correct   |
          |                                 |                  | prediction.                                                  |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | regularization_constant         | 0.002            | The scale of regularization.                                 |
