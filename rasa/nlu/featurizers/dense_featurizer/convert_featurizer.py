@@ -79,11 +79,9 @@ class ConveRTFeaturizer(DenseFeaturizer):
         self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
-            example.get(TOKENS_NAMES[attribute]) for example in batch_examples
+            train_utils.tokens_without_cls(example, attribute)
+            for example in batch_examples
         ]
-
-        # remove CLS token from list of tokens
-        list_of_tokens = [sent_tokens[:-1] for sent_tokens in list_of_tokens]
 
         number_of_tokens_in_sentence = [
             len(sent_tokens) for sent_tokens in list_of_tokens
@@ -91,12 +89,56 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         # join the tokens to get a clean text to ensure the sequence length of
         # the returned embeddings from ConveRT matches the length of the tokens
+        # (including sub-tokens)
         tokenized_texts = self._tokens_to_text(list_of_tokens)
+        token_features = self._sequence_encoding_of_text(tokenized_texts)
 
-        return (
-            self._sequence_encoding_of_text(tokenized_texts),
-            number_of_tokens_in_sentence,
-        )
+        # ConveRT might split up tokens into sub-tokens
+        # take the mean of the sub-token vectors and use that as the token vector
+        token_features = self._align_token_features(list_of_tokens, token_features)
+
+        return (token_features, number_of_tokens_in_sentence)
+
+    @staticmethod
+    def _align_token_features(
+        list_of_tokens: List[List[Token]], in_token_features: np.ndarray
+    ) -> np.ndarray:
+        """Align token features to match tokens.
+
+        ConveRT might split up tokens into sub-tokens. We need to take the mean of
+        the sub-token vectors and take that as token vector.
+
+        Args:
+            list_of_tokens: tokens for examples
+            in_token_features: token features from ConveRT
+
+        Returns:
+            Token features.
+        """
+        out_token_features = np.zeros(in_token_features.shape)
+
+        for example_idx, example_tokens in enumerate(list_of_tokens):
+            offset = 0
+            for token_idx, token in enumerate(example_tokens):
+                number_sub_words = token.get("number_of_sub_words", 1)
+
+                if number_sub_words > 1:
+                    token_start_idx = token_idx + offset
+                    token_end_idx = token_idx + offset + number_sub_words
+
+                    mean_vec = np.mean(
+                        in_token_features[example_idx][token_start_idx:token_end_idx]
+                    )
+
+                    offset += number_sub_words - 1
+
+                    out_token_features[example_idx][token_idx] = mean_vec
+                else:
+                    out_token_features[example_idx][token_idx] = in_token_features[
+                        example_idx
+                    ][token_idx + offset]
+
+        return out_token_features
 
     def _combine_encodings(
         self,

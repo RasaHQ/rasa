@@ -56,17 +56,15 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         tokens_out = []
 
         for token in tokens_in:
-            token_start, token_end, token_text = token.start, token.end, token.text
-
             # use ConveRT model to tokenize the text
-            split_token_strings = self._tokenize(token_text)[0]
+            split_token_strings = self._tokenize(token.text)[0]
 
             # clean tokens (remove special chars and empty tokens)
             split_token_strings = self._clean_tokens(split_token_strings)
 
-            tokens_out += train_utils.align_tokens(
-                split_token_strings, token_end, token_start
-            )
+            token.set("number_of_sub_words", len(split_token_strings))
+
+            tokens_out.append(token)
 
         return tokens_out
 
