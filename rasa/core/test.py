@@ -319,7 +319,6 @@ def _collect_action_executed_predictions(
 
     gold = event.action_name
 
-
     if circuit_breaker_tripped:
         predicted = "circuit breaker tripped"
         policy = None

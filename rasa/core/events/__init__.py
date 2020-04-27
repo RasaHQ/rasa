@@ -992,7 +992,7 @@ class ActionExecuted(Event):
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
-        message: Optional[Message] = None
+        message: Optional[Message] = None,
     ):
         self.action_name = action_name
         self.policy = policy
@@ -1029,7 +1029,7 @@ class ActionExecuted(Event):
                 parameters.get("confidence"),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
-                message = parameters.get("message")
+                message=parameters.get("message"),
             )
         ]
 
