@@ -1,12 +1,6 @@
 import numpy as np
 
-from rasa.nlu.constants import (
-    DENSE_FEATURE_NAMES,
-    TEXT,
-    RESPONSE,
-    INTENT,
-    TOKENS_NAMES,
-)
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT, RESPONSE, INTENT, TOKENS_NAMES
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -20,7 +14,7 @@ def test_mitie_featurizer(mitie_feature_extractor):
     sentence = "Hey how are you today"
     message = Message(sentence)
     MitieTokenizer().process(message)
-    tokens = message.get(TOKENS_NAMES[TEXT])
+    tokens = message.get(TOKENS_NAMES[TEXT])[:-1]  # remove CLS token
 
     vecs = featurizer.features_for_tokens(tokens, mitie_feature_extractor)
 
