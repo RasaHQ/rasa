@@ -70,7 +70,7 @@ def print_version() -> None:
     py_stuff, os_stuff = sys.version.split("\n")
     print(f"Python Version   : {py_stuff}")
     print(f"Operating System : {os_stuff}")
-    print(f"Virtualen Env    : {os.environ['VIRTUAL_ENV']}")
+    print(f"Python Path      : {sys.path[0]}")
     try:
         import rasa_sdk
 
