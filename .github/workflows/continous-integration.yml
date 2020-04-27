@@ -259,3 +259,40 @@ jobs:
         pip install -U github3.py pypandoc
         python3 scripts/publish_gh_release_notes.py
         ./scripts/ping_slack_about_package_release.sh
+
+  github_release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    # only run when there is a tag available
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    needs: [quality, test, api, docker]  # only run after all other stages succeeded
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Get tag name ✍️
+      id: get_tag_name
+      run: echo ::set-output name=GITHUB_TAG_NAME::${GITHUB_REF/refs\/tags\//}
+
+    # when creating a release using GitHub UI, a tag will be pushed, hence
+    # triggering this workflow. Performing this check avoid creating the release twice
+    - name: Check if release already exists ✅
+      id: check_release_exists
+      env:
+        GITHUB_TAG_NAME: ${{ steps.get_tag_name.outputs.GITHUB_TAG_NAME }}
+      run: |
+          RELEASE_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_TAG_NAME}"
+          RELEASE_API_STATUS_CODE=$(curl -o -I -L -s -w "%{http_code}" -X GET -G $RELEASE_URL)
+          run: echo ::set-output name=RELEASE_API_STATUS_CODE::$RELEASE_API_STATUS_CODE
+
+    - name: Create Release 🛺
+        uses: actions/create-release@latest
+        if: steps.check_release_exists.outputs.RELEASE_API_STATUS_CODE == '404'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ steps.get_tag_name.outputs.GITHUB_TAG_NAME }}
+          draft: false
+          prerelease: false
