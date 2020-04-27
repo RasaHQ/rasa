@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 import scipy.sparse
-from typing import Optional, Text, Dict, Any, Union, List
+from typing import Optional, Text, Dict, Any, Union, List, Tuple
 
 from rasa.nlu.training_data import Message
 from rasa.core.constants import DIALOGUE
@@ -10,6 +10,7 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     POSITION_OF_CLS_TOKEN,
+    NUMBER_OF_SUB_TOKENS,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
@@ -77,6 +78,53 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
             config[SIMILARITY_TYPE] = COSINE
 
     return config
+
+
+def align_token_features(
+    list_of_tokens: List[List[Token]],
+    in_token_features: np.ndarray,
+    shape: Optional[Tuple] = None,
+) -> np.ndarray:
+    """Align token features to match tokens.
+
+    ConveRT might split up tokens into sub-tokens. We need to take the mean of
+    the sub-token vectors and take that as token vector.
+
+    Args:
+        list_of_tokens: tokens for examples
+        in_token_features: token features from ConveRT
+        shape: shape of feature matrix
+
+    Returns:
+        Token features.
+    """
+    if shape is None:
+        shape = in_token_features.shape
+    out_token_features = np.zeros(shape)
+
+    for example_idx, example_tokens in enumerate(list_of_tokens):
+        offset = 0
+        for token_idx, token in enumerate(example_tokens):
+            number_sub_words = token.get(NUMBER_OF_SUB_TOKENS, 1)
+
+            if number_sub_words > 1:
+                token_start_idx = token_idx + offset
+                token_end_idx = token_idx + offset + number_sub_words
+
+                mean_vec = np.mean(
+                    in_token_features[example_idx][token_start_idx:token_end_idx],
+                    axis=0,
+                )
+
+                offset += number_sub_words - 1
+
+                out_token_features[example_idx][token_idx] = mean_vec
+            else:
+                out_token_features[example_idx][token_idx] = in_token_features[
+                    example_idx
+                ][token_idx + offset]
+
+    return out_token_features
 
 
 def align_tokens(

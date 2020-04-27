@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Any, Optional, Text, List, Type
 
+import rasa.utils.train_utils as train_utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer

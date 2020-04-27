@@ -17,6 +17,7 @@ from rasa.nlu.constants import (
     TOKENS,
     SENTENCE_FEATURES,
     SEQUENCE_FEATURES,
+    NUMBER_OF_SUB_TOKENS,
 )
 
 logger = logging.getLogger(__name__)
@@ -172,7 +173,7 @@ class HFTransformersNLP(Component):
         sentence_embeddings = []
         post_processed_sequence_embeddings = []
 
-        for example_embedding in sequence_embeddings:
+        for example_idx, example_embedding in enumerate(sequence_embeddings):
             (
                 example_sentence_embedding,
                 example_post_processed_embedding,
@@ -221,9 +222,9 @@ class HFTransformersNLP(Component):
 
             token_ids_out += split_token_ids
 
-            tokens_out += train_utils.align_tokens(
-                split_token_strings, token.end, token.start
-            )
+            token.set(NUMBER_OF_SUB_TOKENS, len(split_token_strings))
+
+            tokens_out.append(token)
 
         return tokens_out, token_ids_out
 
@@ -354,7 +355,7 @@ class HFTransformersNLP(Component):
         return sequence_hidden_states
 
     def _get_model_features_for_batch(
-        self, batch_token_ids: List[List[int]]
+        self, batch_token_ids: List[List[int]], batch_tokens: List[List[Token]]
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Compute dense features of each example in the batch.
 
@@ -395,8 +396,27 @@ class HFTransformersNLP(Component):
         # Extract sentence level and post-processed features
         (
             sentence_embeddings,
-            sequence_final_embeddings,
+            sequence_embeddings,
         ) = self._post_process_sequence_embeddings(sequence_nonpadded_embeddings)
+
+        # shape of matrix for all sequence embeddings
+        batch_dim = len(sequence_embeddings)
+        seq_dim = max(e.shape[0] for e in sequence_embeddings)
+        feature_dim = sequence_embeddings[0].shape[1]
+        shape = (batch_dim, seq_dim, feature_dim)
+
+        # align features with tokens so that we have just one vector per token
+        # (don't include sub-tokens)
+        sequence_embeddings = train_utils.align_token_features(
+            batch_tokens, sequence_embeddings, shape
+        )
+
+        # sequence_embeddings is a padded numpy array
+        # remove the padding, keep just the non-zero vectors
+        sequence_final_embeddings = []
+        for embeddings, tokens in zip(sequence_embeddings, batch_tokens):
+            sequence_final_embeddings.append(embeddings[: len(tokens)])
+        sequence_final_embeddings = np.array(sequence_final_embeddings)
 
         return sentence_embeddings, sequence_final_embeddings
 
@@ -420,7 +440,7 @@ class HFTransformersNLP(Component):
         (
             batch_sentence_features,
             batch_sequence_features,
-        ) = self._get_model_features_for_batch(batch_token_ids)
+        ) = self._get_model_features_for_batch(batch_token_ids, batch_tokens)
 
         # A doc consists of
         # {'token_ids': ..., 'tokens': ..., 'sequence_features': ..., 'sentence_features': ...}

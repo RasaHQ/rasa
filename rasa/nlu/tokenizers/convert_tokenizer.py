@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Text
 
+from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import Message
@@ -62,7 +63,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
             # clean tokens (remove special chars and empty tokens)
             split_token_strings = self._clean_tokens(split_token_strings)
 
-            token.set("number_of_sub_words", len(split_token_strings))
+            token.set(NUMBER_OF_SUB_TOKENS, len(split_token_strings))
 
             tokens_out.append(token)
 

@@ -84,16 +84,3 @@ def test_convert_featurizer_tokens_to_text(sentence, expected_text):
     actual_text = ConveRTFeaturizer._tokens_to_text([tokens])[0]
 
     assert expected_text == actual_text
-
-
-def test_align_token_features():
-    tokens = ConveRTTokenizer().tokenize(Message("In Aarhus and Ahaus"), attribute=TEXT)
-    x = sum(t.get("number_of_sub_words") for t in tokens)
-    token_features = np.random.rand(1, x, 64)
-
-    actual_features = ConveRTFeaturizer._align_token_features([tokens], token_features)
-
-    assert np.all(actual_features[0][0] == token_features[0][0])
-    assert np.all(actual_features[0][1] == np.mean(token_features[0][1:3]))
-    assert np.all(actual_features[0][2] == token_features[0][3])
-    assert np.all(actual_features[0][3] == np.mean(token_features[0][4:6]))
