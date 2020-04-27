@@ -307,17 +307,18 @@ class TEDPolicy(Policy):
                     sparse_state.append(state[0].astype(np.float32))
                 if state[1] is not None:
                     dense_state.append(state[1])
-                entities.append(state[2])
+                if state[2] is not None:
+                    entities.append(state[2])
 
             if not sparse_state == []:
                 sparse_state = scipy.sparse.vstack(sparse_state)
             if not dense_state == []:
                 dense_state = np.vstack(dense_state)
-            entities = np.vstack(entities)
+            if not entities == []: 
+                entities = np.vstack(entities)
             X_sparse.append(sparse_state)
             X_dense.append(dense_state)
             X_entities.append(entities)
-
         model_data.add_features(
             DIALOGUE_FEATURES,
             [np.array(X_sparse), np.array(X_dense), np.array(X_entities)],

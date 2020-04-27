@@ -356,10 +356,7 @@ class StoryFileReader:
                 elif line.startswith("*"):
                     # reached a user message
                     user_messages = [el.strip() for el in line[1:].split(" OR ")]
-                    if self.use_e2e:
-                        await self.add_e2e_messages(user_messages, line_num)
-                    else:
-                        await self.add_user_messages(user_messages, line_num)
+                    await self.add_user_messages_e2e(user_messages, line_num)
                 # end-to-end BOT message
                 elif line.startswith("<B>"):
                     event_name, parameters = self._parse_event_line(line[3:])
