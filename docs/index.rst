@@ -47,7 +47,6 @@ Understand messages, hold conversations, and connect to messaging channels and A
    nlu/choosing-a-pipeline
    nlu/components
    nlu/entity-extraction
-   nlu/using-bert
 
 .. toctree::
    :maxdepth: 1

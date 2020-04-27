@@ -15,6 +15,12 @@ from typing import (
     Iterable,
 )
 
+from rasa.nlu.constants import (
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
+)
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
 from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
@@ -234,17 +240,34 @@ class DialogueStateTracker:
             logger.info(f"Tried to access non existent slot '{key}'")
             return None
 
-    def get_latest_entity_values(self, entity_type: Text) -> Iterator[Text]:
-        """Get entity values found for the passed entity name in latest msg.
+    def get_latest_entity_values(
+        self,
+        entity_type: Text,
+        entity_role: Optional[Text] = None,
+        entity_group: Optional[Text] = None,
+    ) -> Iterator[Text]:
+        """Get entity values found for the passed entity type and optional role and
+        group in latest message.
 
         If you are only interested in the first entity of a given type use
         `next(tracker.get_latest_entity_values("my_entity_name"), None)`.
-        If no entity is found `None` is the default result."""
+        If no entity is found `None` is the default result.
+
+        Args:
+            entity_type: the entity type of interest
+            entity_role: optional entity role of interest
+            entity_group: optional entity group of interest
+
+        Returns:
+            Entity values.
+        """
 
         return (
-            x.get("value")
+            x.get(ENTITY_ATTRIBUTE_VALUE)
             for x in self.latest_message.entities
-            if x.get("entity") == entity_type
+            if x.get(ENTITY_ATTRIBUTE_TYPE) == entity_type
+            and (entity_group is None or x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group)
+            and (entity_role is None or x.get(ENTITY_ATTRIBUTE_ROLE) == entity_role)
         )
 
     def get_latest_input_channel(self) -> Optional[Text]:
