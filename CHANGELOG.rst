@@ -35,7 +35,7 @@ Features
   To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
   We updated the tracker method ``get_latest_entity_values`` to take an optional role/group label.
   If you want to use a form, you can add the specific role/group label of interest to the slot mapping function
-  ``from_entity`` (see :ref:`forms``).
+  ``from_entity`` (see :ref:`forms`).
 
   .. note::
 
