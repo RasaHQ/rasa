@@ -497,7 +497,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: df1f667e8fc940fd9165266f44c0abd5)
+                        generated. (default: 1cb1d66614ee49659193226c6085224e)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
@@ -549,7 +549,14 @@ extracts as intents and entities from text, you can use the command <code class=
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa shell --debug
 </pre></div>
 </div>
-<p>The full list of options for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> is</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In order to see the typical greetings and/or session start behavior you might see
+in an external channel, you will need to explicitly send <code class="docutils literal notranslate"><span class="pre">/session_start</span></code>
+as the first message. Otherwise, the session start behavior will begin as described in
+<a class="reference internal" href="../../core/domains/#session-config"><span class="std std-ref">Session configuration</span></a>.</p>
+</div>
+<p>The full list of options for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> is:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa shell [-h] [-v] [-vv] [--quiet]
                   [--conversation-id CONVERSATION_ID] [-m MODEL]
                   [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
@@ -576,7 +583,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        4f75661842e04cf08c9ad48fa311a58f)
+                        5accdc45d7a24bf384117fbed1dc46a4)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
