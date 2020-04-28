@@ -16,6 +16,7 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, SPARSE_FEATURE_NAMES
 from rasa.nlu.model import Metadata
 import rasa.utils.io as io_utils
+import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -112,8 +113,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         # get all possible feature values
         all_features = []
         for example in training_data.training_examples:
-            # [:-1] to remove CLS token
-            tokens_without_cls = example.get(TOKENS_NAMES[TEXT])[:-1]
+            tokens_without_cls = train_utils.tokens_without_cls(example)
             all_features.append(self._tokens_to_features(tokens_without_cls))
 
         # build vocabulary of features
