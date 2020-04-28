@@ -147,7 +147,7 @@ To increase the logging level for debugging, run:
    In order to see the typical greetings and/or session start behavior you might see
    in an external channel, you will need to explicitly send ``/session_start``
    as the first message. Otherwise, the session start behavior will begin as described in
-   :ref:`session-configuration`.
+   :ref:`session_config`.
 
 The full list of options for ``rasa shell`` is:
 
