@@ -694,12 +694,18 @@ class TED(RasaModel):
 
         return all_labels, all_labels_embed
 
+
+    @staticmethod
+    def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
+        mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
+        return mask
+
     def _emebed_dialogue(
         self, dialogue_in: tf.Tensor, sequence_lengths
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Create dialogue level embedding and mask."""
 
-        mask = tf.sign(tf.reduce_max(dialogue_in, axis=-1) + 1)
+        mask = self._compute_mask(sequence_lengths)
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
         dialogue_transformed = self._tf_layers["transformer"](
