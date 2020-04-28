@@ -192,7 +192,7 @@ def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Compo
         `True` if any of the `components` are in the `pipeline`, else `False`.
 
     """
-    return any(any([component.name == c for component in pipeline]) for c in components)
+    return any(any(component.name == c for component in pipeline) for c in components)
 
 
 def validate_required_components_from_data(
@@ -209,9 +209,10 @@ def validate_required_components_from_data(
         ["ResponseSelector"], pipeline
     ):
         raise_warning(
-            "You have defined training data with examples for training a response selector, but "
-            "your NLU pipeline does not include a response selector component. To train a "
-            "model on your response selector data, add a 'ResponseSelector' to your pipeline."
+            "You have defined training data with examples for training a response "
+            "selector, but your NLU pipeline does not include a response selector "
+            "component. To train a model on your response selector data, add a "
+            "'ResponseSelector' to your pipeline."
         )
 
     if data.entity_examples and not any_components_in_pipeline(
@@ -223,6 +224,18 @@ def validate_required_components_from_data(
             "your training data. To extract non-pretrained entities, add one of "
             f"{TRAINABLE_EXTRACTORS} to your pipeline."
         )
+
+    if data.entity_examples and not any_components_in_pipeline(
+        {"DIETClassifier", "CRFEntityExtractor"}, pipeline
+    ):
+        if data.entity_roles_groups_used():
+            raise_warning(
+                "You have defined training data with entities that have roles/groups, "
+                "but your NLU pipeline does not include a 'DIETClassifier' or a "
+                "'CRFEntityExtractor'. To train entities that have roles/groups, "
+                "add either 'DIETClassifier' or 'CRFEntityExtractor' to your "
+                "pipeline."
+            )
 
     if data.regex_features and not any_components_in_pipeline(
         ["RegexFeaturizer"], pipeline
@@ -248,13 +261,14 @@ def validate_required_components_from_data(
         ):
             raise_warning(
                 "You have defined training data consisting of lookup tables, but "
-                "your NLU pipeline does not include any components that use these features. "
-                "To make use of lookup tables, add a 'DIETClassifier' or a 'CRFEntityExtractor' with "
-                "the 'pattern' feature to your pipeline."
+                "your NLU pipeline does not include any components that use these "
+                "features. To make use of lookup tables, add a 'DIETClassifier' or a "
+                "'CRFEntityExtractor' with the 'pattern' feature to your pipeline."
             )
         elif any_components_in_pipeline(["CRFEntityExtractor"], pipeline):
             crf_components = [c for c in pipeline if c.name == "CRFEntityExtractor"]
-            # check to see if any of the possible CRFEntityExtractors will featurize `pattern`
+            # check to see if any of the possible CRFEntityExtractors will
+            # featurize `pattern`
             has_pattern_feature = False
             for crf in crf_components:
                 crf_features = crf.component_config.get("features")
@@ -264,9 +278,9 @@ def validate_required_components_from_data(
             if not has_pattern_feature:
                 raise_warning(
                     "You have defined training data consisting of lookup tables, but "
-                    "your NLU pipeline's 'CRFEntityExtractor' does not include the 'pattern' feature. "
-                    "To featurize lookup tables, add the 'pattern' feature to the 'CRFEntityExtractor' in "
-                    "your pipeline."
+                    "your NLU pipeline's 'CRFEntityExtractor' does not include the "
+                    "'pattern' feature. To featurize lookup tables, add the 'pattern' "
+                    "feature to the 'CRFEntityExtractor' in your pipeline."
                 )
 
     if data.entity_synonyms and not any_components_in_pipeline(
@@ -441,8 +455,8 @@ class Component(metaclass=ComponentMetaclass):
 
         if cached_component:
             return cached_component
-        else:
-            return cls(meta)
+
+        return cls(meta)
 
     @classmethod
     def create(
@@ -672,8 +686,8 @@ class ComponentBuilder:
             and cache_key in self.component_cache
         ):
             return self.component_cache[cache_key], cache_key
-        else:
-            return None, cache_key
+
+        return None, cache_key
 
     def __add_to_cache(self, component: Component, cache_key: Optional[Text]) -> None:
         """Add a component to the cache."""
