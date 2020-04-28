@@ -21,9 +21,9 @@ Getting Credentials
   2. Activate the following features:
 
     - Interactivity & Shortcuts > Interactivity (if your bot uses any `interactive components <https://api.slack.com/reference/block-kit/interactive-components>`_ , e.g. buttons)
-      - Add your Rasa request URL ``http://<host>:<port>/webhooks/slack/webhook``, replacing
-     the host and port with the appropriate values that point to your Rasa X or Rasa Open Source deployment.
-    - Event subscriptions > Subscribe to bot events: message.channels, message.groups, message.im & message.mpim
+    - Add your Rasa request URL ``http://<host>:<port>/webhooks/slack/webhook``, replacing
+      the host and port with the appropriate values that point to your Rasa X or Rasa Open Source deployment.
+    - Event subscriptions > Subscribe to bot events: ``message.channels``, ``message.groups``, ``message.im``, ``message.mpim``
     - App Home > Always Show My Bot as Online
 
   3. Get the ``Bot User OAuth Access Token`` from the OAuth & Permissions page. Click ``Install App to Workspace``
@@ -32,7 +32,7 @@ Getting Credentials
      with ``xoxb``.
 
   4. In the "OAuth & Permissions > Redirect URLs" enter the endpoint for receiving Slack messages. This is 
-     the same URL you entered above for Interactivity & Shortcuts -``http://<host>:<port>/webhooks/slack/webhook``.  
+     the same URL you entered above for Interactivity & Shortcuts - ``http://<host>:<port>/webhooks/slack/webhook``.
      
   5. Go to the "Event Subscriptions" section, turn on the "Enable Events" and add the endpoint here also.
 
@@ -61,7 +61,6 @@ You need to supply a ``credentials.yml`` with the following content:
 - The ``slack_channel`` can be a channel or an individual person that the bot should listen to for communications, in
   addition to the default behavior of listening for direct messages and app mentions, i.e. "@app_name". To get the channel
   id, right click on the channel choose Copy Link and the id will be the last component in the URL.
-
 
 - Use the entry for ``Bot User OAuth Access Token`` in the
   "OAuth & Permissions" tab as your ``slack_token``. It should start
