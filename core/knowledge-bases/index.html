@@ -219,12 +219,13 @@ in open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.7
+          viewing: 1.10.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.0/core/knowledge-bases/">1.10.0</a>
               <a href="../.././1.9.7/core/knowledge-bases/">1.9.7</a>
               <a href="../.././1.9.6/core/knowledge-bases/">1.9.6</a>
               <a href="../.././1.9.5/core/knowledge-bases/">1.9.5</a>
@@ -474,7 +475,10 @@ knowledge base.</p></li>
 <span id="create-action-query-knowledge-base"></span><h3><a class="toc-backref" href="#id7">Create an Action to Query your Knowledge Base</a><a class="headerlink" href="#create-an-action-to-query-your-knowledge-base" title="Permalink to this headline">¶</a></h3>
 <p>To create your own knowledge base action, you need to inherit <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code> and pass the knowledge
 base to the constructor of <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyKnowledgeBaseAction</span><span class="p">(</span><span class="n">ActionQueryKnowledgeBase</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa_sdk.knowledge_base.storage</span> <span class="kn">import</span> <span class="n">InMemoryKnowledgeBase</span>
+<span class="kn">from</span> <span class="nn">rasa_sdk.knowledge_base.actions</span> <span class="kn">import</span> <span class="n">ActionQueryKnowledgeBase</span>
+
+<span class="k">class</span> <span class="nc">MyKnowledgeBaseAction</span><span class="p">(</span><span class="n">ActionQueryKnowledgeBase</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">knowledge_base</span> <span class="o">=</span> <span class="n">InMemoryKnowledgeBase</span><span class="p">(</span><span class="s2">&quot;data.json&quot;</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">knowledge_base</span><span class="p">)</span>

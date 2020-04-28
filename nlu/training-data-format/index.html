@@ -219,12 +219,13 @@ source natural language processing." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.7
+          viewing: 1.10.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.0/nlu/training-data-format/">1.10.0</a>
               <a href="../.././1.9.7/nlu/training-data-format/">1.9.7</a>
               <a href="../.././1.9.6/nlu/training-data-format/">1.9.6</a>
               <a href="../.././1.9.5/nlu/training-data-format/">1.9.5</a>
@@ -310,14 +311,17 @@ Note that Markdown is usually easier to work with.</p>
 <div class="section" id="markdown-format">
 <h3><a class="toc-backref" href="#id5">Markdown Format</a><a class="headerlink" href="#markdown-format" title="Permalink to this headline">¶</a></h3>
 <p>Markdown is the easiest Rasa NLU format for humans to read and write.
-Examples are listed using the unordered
-list syntax, e.g. minus <code class="docutils literal notranslate"><span class="pre">-</span></code>, asterisk <code class="docutils literal notranslate"><span class="pre">*</span></code>, or plus <code class="docutils literal notranslate"><span class="pre">+</span></code>.
+Examples are listed using the unordered list syntax, e.g. minus <code class="docutils literal notranslate"><span class="pre">-</span></code>, asterisk <code class="docutils literal notranslate"><span class="pre">*</span></code>, or plus <code class="docutils literal notranslate"><span class="pre">+</span></code>.
 Examples are grouped by intent, and entities are annotated as Markdown links,
-e.g. <code class="docutils literal notranslate"><span class="pre">[entity](entity</span> <span class="pre">name)</span></code>.</p>
+e.g. <code class="docutils literal notranslate"><span class="pre">[&lt;entity</span> <span class="pre">text&gt;](&lt;entity</span> <span class="pre">name&gt;)</span></code>, or by using the following syntax <code class="docutils literal notranslate"><span class="pre">[&lt;entity-text&gt;]{&quot;entity&quot;:</span> <span class="pre">&quot;&lt;entity</span> <span class="pre">name&gt;&quot;}</span></code>.
+Using the latter syntax, you can also assign synonyms, roles, or groups to an entity, e.g.
+<code class="docutils literal notranslate"><span class="pre">[&lt;entity-text&gt;]{&quot;entity&quot;:</span> <span class="pre">&quot;&lt;entity</span> <span class="pre">name&gt;&quot;,</span> <span class="pre">&quot;role&quot;:</span> <span class="pre">&quot;&lt;role</span> <span class="pre">name&gt;&quot;,</span> <span class="pre">&quot;group&quot;:</span> <span class="pre">&quot;&lt;group</span> <span class="pre">name&gt;&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;&lt;entity</span> <span class="pre">synonym&gt;&quot;}</span></code>.
+The keywords <code class="docutils literal notranslate"><span class="pre">role</span></code>, <code class="docutils literal notranslate"><span class="pre">group</span></code>, and <code class="docutils literal notranslate"><span class="pre">value</span></code> are optional in this notation.
+To understand what the labels <code class="docutils literal notranslate"><span class="pre">role</span></code> and <code class="docutils literal notranslate"><span class="pre">group</span></code> are for, see section <a class="reference internal" href="../entity-extraction/#entities-roles-groups"><span class="std std-ref">Entities Roles and Groups</span></a>.</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:check_balance
 <span class="k">-</span> what is my balance &lt;!-- no entity --&gt;
 <span class="k">-</span> how much do I have on my [<span class="nt">savings</span>](<span class="na">source_account</span>) &lt;!-- entity &quot;source_account&quot; has value &quot;savings&quot; --&gt;
-<span class="k">-</span> how much do I have on my [<span class="nt">savings account</span>](<span class="na">source_account:savings</span>) &lt;!-- synonyms, method 1--&gt;
+<span class="k">-</span> how much do I have on my [savings account]{&quot;entity&quot;: &quot;source_account&quot;, &quot;value&quot;: &quot;savings&quot;} &lt;!-- synonyms, method 1--&gt;
 <span class="k">-</span> Could I pay in [<span class="nt">yen</span>](<span class="na">currency</span>)?  &lt;!-- entity matched by lookup table --&gt;
 
 <span class="gu">##</span> intent:greet
@@ -344,18 +348,32 @@ path/to/currencies.txt
 <p>While common examples is the only part that is mandatory, including the others will help the NLU model
 learn the domain with fewer examples and also help it be more confident of its predictions.</p>
 <p>Synonyms will map extracted entities to the same name, for example mapping “my savings account” to simply “savings”.
-However, this only happens <em>after</em> the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up.</p>
+However, this only happens <em>after</em> the entities have been extracted, so you need to provide examples with the synonyms
+present so that Rasa can learn to pick them up.</p>
 <p>Lookup tables may be specified as plain text files containing newline-separated words or
 phrases. Upon loading the training data, these files are used to generate
 case-insensitive regex patterns that are added to the regex features.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU model by providing additional features to the machine learning algorithm during training. Therefore, it must not be assumed that having a single example would be enough for the model to robustly identify intents and/or entities across all variants of that example.</p>
+<p>The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU
+model by providing additional features to the machine learning algorithm during training. Therefore, it must not be
+assumed that having a single example would be enough for the model to robustly identify intents and/or entities
+across all variants of that example.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p><code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not to
-use it in the name of your intents.</p>
+<p><code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not
+to use it in the name of your intents.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The synonym format to specify synonyms <code class="docutils literal notranslate"><span class="pre">[savings</span> <span class="pre">account](source_account:savings)</span></code> is deprecated. Please use the
+new format <code class="docutils literal notranslate"><span class="pre">[savings</span> <span class="pre">account]{&quot;entity&quot;:</span> <span class="pre">&quot;source_account&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;savings&quot;}</span></code>. To update your training data
+file execute the following command on the terminal of your choice:
+<code class="docutils literal notranslate"><span class="pre">sed</span> <span class="pre">-i</span> <span class="pre">.deprecated</span> <span class="pre">-E</span> <span class="pre">'s/\[(.+)\]\((.+):(.+)\)/\[\1\]\{&quot;entity&quot;:</span> <span class="pre">&quot;\2&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;\3&quot;\}/g'</span> <span class="pre">&lt;nlu</span> <span class="pre">training</span> <span class="pre">data</span> <span class="pre">file&gt;</span></code>
+Assume you training data file is called <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code>. After you executed the above command, this file will
+contain the new training data format. The command also creates a backup file with the old training data format,
+called <code class="docutils literal notranslate"><span class="pre">nlu.md.deprecated</span></code>.</p>
 </div>
 </div>
 <div class="section" id="json-format">
@@ -382,7 +400,8 @@ Regex features are a tool to help the classifier detect entities or intents and 
 <h2><a class="toc-backref" href="#id7">Improving Intent Classification and Entity Recognition</a><a class="headerlink" href="#improving-intent-classification-and-entity-recognition" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="common-examples">
 <h3><a class="toc-backref" href="#id8">Common Examples</a><a class="headerlink" href="#common-examples" title="Permalink to this headline">¶</a></h3>
-<p>Common examples have three components: <code class="docutils literal notranslate"><span class="pre">text</span></code>, <code class="docutils literal notranslate"><span class="pre">intent</span></code> and <code class="docutils literal notranslate"><span class="pre">entities</span></code>. The first two are strings while the last one is an array.</p>
+<p>Common examples have three components: <code class="docutils literal notranslate"><span class="pre">text</span></code>, <code class="docutils literal notranslate"><span class="pre">intent</span></code> and <code class="docutils literal notranslate"><span class="pre">entities</span></code>. The first two are strings while the last
+one is an array.</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>The <em>text</em> is the user message [required]</p></li>
@@ -390,9 +409,9 @@ Regex features are a tool to help the classifier detect entities or intents and 
 <li><p>The <em>entities</em> are specific parts of the text which need to be identified [optional]</p></li>
 </ul>
 </div></blockquote>
-<p>Entities are specified with a <code class="docutils literal notranslate"><span class="pre">start</span></code> and  an <code class="docutils literal notranslate"><span class="pre">end</span></code> value, which together make a python
-style range to apply to the string, e.g. in the example below, with <code class="docutils literal notranslate"><span class="pre">text=&quot;show</span> <span class="pre">me</span> <span class="pre">chinese</span>
-<span class="pre">restaurants&quot;</span></code>, then <code class="docutils literal notranslate"><span class="pre">text[8:15]</span> <span class="pre">==</span> <span class="pre">'chinese'</span></code>. Entities can span multiple words, and in
+<p>Entities are specified with a <code class="docutils literal notranslate"><span class="pre">start</span></code> and an <code class="docutils literal notranslate"><span class="pre">end</span></code> value, which together make a range
+to apply to the string, e.g. in the example below, with <code class="docutils literal notranslate"><span class="pre">text=&quot;show</span> <span class="pre">me</span> <span class="pre">chinese</span> <span class="pre">restaurants&quot;</span></code>, then
+<code class="docutils literal notranslate"><span class="pre">text[8:15]</span> <span class="pre">==</span> <span class="pre">'chinese'</span></code>. Entities can span multiple words, and in
 fact the <code class="docutils literal notranslate"><span class="pre">value</span></code> field does not have to correspond exactly to the substring in your example.
 That way you can map synonyms, or misspellings, to the same <code class="docutils literal notranslate"><span class="pre">value</span></code>.</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:restaurant_search
@@ -402,7 +421,9 @@ That way you can map synonyms, or misspellings, to the same <code class="docutil
 </div>
 <div class="section" id="regular-expression-features">
 <h3><a class="toc-backref" href="#id9">Regular Expression Features</a><a class="headerlink" href="#regular-expression-features" title="Permalink to this headline">¶</a></h3>
-<p>Regular expressions can be used to support the intent classification and entity extraction. For example, if your entity has a deterministic structure (like a zipcode or an email address), you can use a regular expression to ease detection of that entity. For the zipcode example it might look like this:</p>
+<p>Regular expressions can be used to support the intent classification and entity extraction. For example, if your entity
+has a deterministic structure (like a zipcode or an email address), you can use a regular expression to ease detection
+of that entity. For the zipcode example it might look like this:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> regex:zipcode
 <span class="k">-</span> [0-9]{5}
 
@@ -411,13 +432,15 @@ That way you can map synonyms, or misspellings, to the same <code class="docutil
 </pre></div>
 </div>
 <p>The name doesn’t define the entity nor the intent, it is just a human readable description for you to remember what
-this regex is used for and is the title of the corresponding pattern feature. As you can see in the above example, you can also use the regex features to improve the intent
+this regex is used for and is the title of the corresponding pattern feature. As you can see in the above example, you
+can also use the regex features to improve the intent
 classification performance.</p>
 <p>Try to create your regular expressions in a way that they match as few words as possible. E.g. using <code class="docutils literal notranslate"><span class="pre">hey[^\s]*</span></code>
 instead of <code class="docutils literal notranslate"><span class="pre">hey.*</span></code>, as the later one might match the whole message whereas the first one only matches a single word.</p>
-<p>Regex features for entity extraction are currently only supported by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component! Hence, other entity
-extractors, like <code class="docutils literal notranslate"><span class="pre">MitieEntityExtractor</span></code> or <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> won’t use the generated features and their presence will not improve entity recognition
-for these extractors. Currently, all intent classifiers make use of available regex features.</p>
+<p>Regex features for entity extraction are currently only supported by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component! Hence, other
+entity extractors, like <code class="docutils literal notranslate"><span class="pre">MitieEntityExtractor</span></code> or <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> won’t use the generated features and their
+presence will not improve entity recognition for these extractors. Currently, all intent classifiers make use of
+available regex features.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Regex features don’t define entities nor intents! They simply provide patterns to help the classifier
@@ -454,7 +477,8 @@ These regexes are processed identically to the regular regex patterns
 directly specified in the training data.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For lookup tables to be effective, there must be a few examples of matches in your training data.  Otherwise the model will not learn to use the lookup table match features.</p>
+<p>For lookup tables to be effective, there must be a few examples of matches in your training data. Otherwise the
+model will not learn to use the lookup table match features.</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -471,7 +495,7 @@ clean data.</p>
 <span id="id3"></span><h3><a class="toc-backref" href="#id12">Entity Synonyms</a><a class="headerlink" href="#entity-synonyms" title="Permalink to this headline">¶</a></h3>
 <p>If you define entities as having the same value they will be treated as synonyms. Here is an example of that:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:search
-<span class="k">-</span> in the center of [<span class="nt">NYC</span>](<span class="na">city:New York City</span>)
+<span class="k">-</span> in the center of [NYC]{&quot;entity&quot;: &quot;city&quot;, &quot;value&quot;: &quot;New York City&quot;)
 <span class="k">-</span> in the centre of [<span class="nt">New York City</span>](<span class="na">city</span>)
 </pre></div>
 </div>
@@ -479,9 +503,10 @@ clean data.</p>
 example states <code class="docutils literal notranslate"><span class="pre">NYC</span></code>. By defining the value attribute to be different from the value found in the text between start
 and end index of the entity, you can define a synonym. Whenever the same text will be found, the value will use the
 synonym instead of the actual text in the message.</p>
-<p>To use the synonyms defined in your training data, you need to make sure the pipeline contains the <code class="docutils literal notranslate"><span class="pre">EntitySynonymMapper</span></code>
-component (see <a class="reference internal" href="../components/#components"><span class="std std-ref">Components</span></a>).</p>
-<p>Alternatively, you can add an “entity_synonyms” array to define several synonyms to one entity value. Here is an example of that:</p>
+<p>To use the synonyms defined in your training data, you need to make sure the pipeline contains the
+<code class="docutils literal notranslate"><span class="pre">EntitySynonymMapper</span></code> component (see <a class="reference internal" href="../components/#components"><span class="std std-ref">Components</span></a>).</p>
+<p>Alternatively, you can add an “entity_synonyms” array to define several synonyms to one entity value. Here is an
+example of that:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> synonym:New York City
 <span class="k">-</span> NYC
 <span class="k">-</span> nyc

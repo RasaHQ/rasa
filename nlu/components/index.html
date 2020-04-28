@@ -219,12 +219,13 @@ Natural Language Understanding pipeline" />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.7
+          viewing: 1.10.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.0/nlu/components/">1.10.0</a>
               <a href="../.././1.9.7/nlu/components/">1.9.7</a>
               <a href="../.././1.9.6/nlu/components/">1.9.6</a>
               <a href="../.././1.9.5/nlu/components/">1.9.5</a>
@@ -1324,7 +1325,7 @@ However, additional parameters exist that can be adapted.</p>
 +---------------------------------+------------------+--------------------------------------------------------------+
 | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| dense_dimension                 | text: 512        | Dense dimension for sparse features to use if no dense       |
+| dense_dimension                 | text: 256        | Dense dimension for sparse features to use if no dense       |
 |                                 | label: 20        | features are present.                                        |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
@@ -1363,7 +1364,9 @@ However, additional parameters exist that can be adapted.</p>
 | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
 |                                 |                  | The higher the value the higher the regularization effect.   |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| use_sparse_input_dropout        | True             | If &#39;True&#39; apply dropout to sparse tensors.                   |
+| use_sparse_input_dropout        | False            | If &#39;True&#39; apply dropout to sparse input tensors.             |
++---------------------------------+------------------+--------------------------------------------------------------+
+| use_dense_input_dropout         | False            | If &#39;True&#39; apply dropout to dense input tensors.              |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
 |                                 |                  | Set to &#39;-1&#39; to evaluate just once at the end of training.    |
@@ -1971,7 +1974,9 @@ However, additional parameters exist that can be adapted.</p>
 | drop_rate_attention             | 0.0               | Dropout rate for attention. Value should be between 0 and 1. |
 |                                 |                   | The higher the value the higher the regularization effect.   |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| use_sparse_input_dropout        | False             | If &#39;True&#39; apply dropout to sparse tensors.                   |
+| use_sparse_input_dropout        | False             | If &#39;True&#39; apply dropout to sparse input tensors.             |
++---------------------------------+-------------------+--------------------------------------------------------------+
+| use_dense_input_dropout         | False             | If &#39;True&#39; apply dropout to dense input tensors.              |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | evaluate_every_number_of_epochs | 20                | How often to calculate validation accuracy.                  |
 |                                 |                   | Set to &#39;-1&#39; to evaluate just once at the end of training.    |
@@ -2125,9 +2130,6 @@ set <code class="docutils literal notranslate"><span class="pre">weight_sparsity
 to learn.</p></li>
 </ul>
 </div></blockquote>
-<div class="line-block">
-<div class="line"><br /></div>
-</div>
 <div class="toggle docutils container">
 <div class="header docutils container">
 <p>The above configuration parameters are the ones you should configure to fit your model to your data.
@@ -2196,7 +2198,7 @@ However, additional parameters exist that can be adapted.</p>
 |                                 |                  | over incorrect intent labels, used only if &#39;loss_type&#39; is    |
 |                                 |                  | set to &#39;margin&#39;.                                             |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| scale_loss                      | True             | Scale loss inverse proportionally to confidence of correct   |
+| scale_loss                      | False            | Scale loss inverse proportionally to confidence of correct   |
 |                                 |                  | prediction.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | regularization_constant         | 0.002            | The scale of regularization.                                 |
@@ -2213,7 +2215,9 @@ However, additional parameters exist that can be adapted.</p>
 | drop_rate_attention             | 0.0              | Dropout rate for attention. Value should be between 0 and 1. |
 |                                 |                  | The higher the value the higher the regularization effect.   |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| use_sparse_input_dropout        | True             | If &#39;True&#39; apply dropout to sparse tensors.                   |
+| use_sparse_input_dropout        | True             | If &#39;True&#39; apply dropout to sparse input tensors.             |
++---------------------------------+------------------+--------------------------------------------------------------+
+| use_dense_input_dropout         | True             | If &#39;True&#39; apply dropout to dense input tensors.              |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
 |                                 |                  | Set to &#39;-1&#39; to evaluate just once at the end of training.    |

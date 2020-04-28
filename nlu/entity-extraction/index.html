@@ -223,12 +223,13 @@ AI assistants" />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.7
+          viewing: 1.10.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.0/nlu/entity-extraction/">1.10.0</a>
               <a href="../.././1.9.7/nlu/entity-extraction/">1.9.7</a>
               <a href="../.././1.9.6/nlu/entity-extraction/">1.9.6</a>
               <a href="../.././1.9.5/nlu/entity-extraction/">1.9.5</a>
@@ -340,15 +341,16 @@ on top of a transformer</p></td>
 <ul class="simple">
 <li><p><a class="reference internal" href="#the-entity-object" id="id2">The “entity” Object</a></p></li>
 <li><p><a class="reference internal" href="#custom-entities" id="id3">Custom Entities</a></p></li>
-<li><p><a class="reference internal" href="#extracting-places-dates-people-organisations" id="id4">Extracting Places, Dates, People, Organisations</a></p></li>
-<li><p><a class="reference internal" href="#dates-amounts-of-money-durations-distances-ordinals" id="id5">Dates, Amounts of Money, Durations, Distances, Ordinals</a></p></li>
-<li><p><a class="reference internal" href="#regular-expressions-regex" id="id6">Regular Expressions (regex)</a></p></li>
-<li><p><a class="reference internal" href="#passing-custom-features-to-crfentityextractor" id="id7">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a></p></li>
+<li><p><a class="reference internal" href="#entities-roles-and-groups" id="id4">Entities Roles and Groups</a></p></li>
+<li><p><a class="reference internal" href="#extracting-places-dates-people-organisations" id="id5">Extracting Places, Dates, People, Organisations</a></p></li>
+<li><p><a class="reference internal" href="#dates-amounts-of-money-durations-distances-ordinals" id="id6">Dates, Amounts of Money, Durations, Distances, Ordinals</a></p></li>
+<li><p><a class="reference internal" href="#regular-expressions-regex" id="id7">Regular Expressions (regex)</a></p></li>
+<li><p><a class="reference internal" href="#passing-custom-features-to-crfentityextractor" id="id8">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a></p></li>
 </ul>
 </div>
 <div class="section" id="the-entity-object">
 <h2><a class="toc-backref" href="#id2">The “entity” Object</a><a class="headerlink" href="#the-entity-object" title="Permalink to this headline">¶</a></h2>
-<p>After parsing, an entity is returned as a dictionary.  There are two fields that show information
+<p>After parsing, an entity is returned as a dictionary. There are two fields that show information
 about how the pipeline impacted the entities returned: the <code class="docutils literal notranslate"><span class="pre">extractor</span></code> field
 of an entity tells you which entity extractor found this particular entity, and
 the <code class="docutils literal notranslate"><span class="pre">processors</span></code> field contains the name of components that altered this
@@ -376,7 +378,7 @@ exactly. Instead it will return the trained synonym.</p>
 <p class="admonition-title">Note</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">confidence</span></code> will be set by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component. The
 <code class="docutils literal notranslate"><span class="pre">DucklingHTTPExtractor</span></code> will always return <code class="docutils literal notranslate"><span class="pre">1</span></code>. The <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> extractor
-and <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> do not provide this information and returns <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
+and <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> do not provide this information and return <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
 </div>
 <p>Some extractors, like <code class="docutils literal notranslate"><span class="pre">duckling</span></code>, may include additional information. For example:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
@@ -408,12 +410,81 @@ and <code class="docutils literal notranslate"><span class="pre">DIETClassifier<
 <p>Almost every chatbot and voice app will have some custom entities.
 A restaurant assistant should understand <code class="docutils literal notranslate"><span class="pre">chinese</span></code> as a cuisine,
 but to a language-learning assistant it would mean something very different.
-The <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component can learn custom entities in any language, given
+The <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> and the <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> component can learn custom entities in any language, given
 some training data.
 See <a class="reference internal" href="../training-data-format/#training-data-format"><span class="std std-ref">Training Data Format</span></a> for details on how to include entities in your training data.</p>
 </div>
+<div class="section" id="entities-roles-and-groups">
+<span id="entities-roles-groups"></span><h2><a class="toc-backref" href="#id4">Entities Roles and Groups</a><a class="headerlink" href="#entities-roles-and-groups" title="Permalink to this headline">¶</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This feature is experimental.
+We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+However, the functionality might be changed or removed in the future.
+If you have feedback (positive or negative) please share it with us on the <a class="reference external" href="https://forum.rasa.com">forum</a>.</p>
+</div>
+<p>Assigning custom entity labels to words, allow you to define certain concepts in the data.
+For example, we can define what a <cite>city</cite> is:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>I want to fly from [Berlin](city) to [San Francisco](city).
+</pre></div>
+</div>
+<p>However, sometimes you want to specify entities even further.
+Let’s assume we want to build an assistant that should book a flight for us.
+The assistant needs to know which of the two cities in the example above is the departure city and which is the
+destination city.
+<code class="docutils literal notranslate"><span class="pre">Berlin</span></code> and <code class="docutils literal notranslate"><span class="pre">San</span> <span class="pre">Francisco</span></code> are still cities, but they play a different role in our example.
+To distinguish between the different roles, you can assign a role label in addition to the entity label.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>- I want to fly from [Berlin]{&quot;entity&quot;: &quot;city&quot;, &quot;role&quot;: &quot;departure&quot;} to [San Francisco]{&quot;entity&quot;: &quot;city&quot;, &quot;role&quot;: &quot;destination&quot;}.
+</pre></div>
+</div>
+<p>You can also group different entities by specifying a group label next to the entity label.
+The group label can, for example, be used to define different orders.
+In the following example we use the group label to reference what toppings goes with which pizza and
+what size which pizza has.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Give me a [small]{&quot;entity&quot;: &quot;size&quot;, &quot;group&quot;: &quot;1&quot;} pizza with [mushrooms]{&quot;entity&quot;: &quot;topping&quot;, &quot;group&quot;: &quot;1&quot;} and
+a [large]{&quot;entity&quot;: &quot;size&quot;, &quot;group&quot;: &quot;2&quot;} [pepperoni]{&quot;entity&quot;: &quot;topping&quot;, &quot;group&quot;: &quot;2&quot;}
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="../training-data-format/#training-data-format"><span class="std std-ref">Training Data Format</span></a> for details on how to define entities with roles and groups in your training data.</p>
+<p>The entity object returned by the extractor will include the detected role/group label.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Book a flight from Berlin to SF&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;book_flight&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">19</span><span class="p">,</span>
+      <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">25</span><span class="p">,</span>
+      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;Berlin&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;city&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;departure&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;DIETClassifier&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">29</span><span class="p">,</span>
+      <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">31</span><span class="p">,</span>
+      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;San Francisco&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;city&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;destination&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;DIETClassifier&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Composite entities are currently only supported by the :ref:<code class="docutils literal notranslate"><span class="pre">diet-classifier</span></code> and :ref:<code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>.</p>
+</div>
+<p>In order to properly train your model with entities that have roles/groups, make sure to include enough training data
+examples for every combination of entity and role/group label.
+Also make sure to have some variations in your training data, so that the model is able to generalize.
+For example, you should not only have example like <code class="docutils literal notranslate"><span class="pre">fly</span> <span class="pre">FROM</span> <span class="pre">x</span> <span class="pre">TO</span> <span class="pre">y</span></code>, but also include examples like
+<code class="docutils literal notranslate"><span class="pre">fly</span> <span class="pre">TO</span> <span class="pre">y</span> <span class="pre">FROM</span> <span class="pre">x</span></code>.</p>
+<p>To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
+<a class="reference internal" href="../../core/forms/#forms"><span class="std std-ref">Forms</span></a> or use <a class="reference internal" href="../../core/actions/#custom-actions"><span class="std std-ref">Custom Actions</span></a> to extract the corresponding entity directly from the tracker.</p>
+</div>
 <div class="section" id="extracting-places-dates-people-organisations">
-<h2><a class="toc-backref" href="#id4">Extracting Places, Dates, People, Organisations</a><a class="headerlink" href="#extracting-places-dates-people-organisations" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id5">Extracting Places, Dates, People, Organisations</a><a class="headerlink" href="#extracting-places-dates-people-organisations" title="Permalink to this headline">¶</a></h2>
 <p>spaCy has excellent pre-trained named-entity recognisers for a few different languages.
 You can test them out in this
 <a class="reference external" href="https://demos.explosion.ai/displacy-ent/">interactive demo</a>.
@@ -422,7 +493,7 @@ unless you have a lot of data and know what you are doing.
 Note that some spaCy models are highly case-sensitive.</p>
 </div>
 <div class="section" id="dates-amounts-of-money-durations-distances-ordinals">
-<h2><a class="toc-backref" href="#id5">Dates, Amounts of Money, Durations, Distances, Ordinals</a><a class="headerlink" href="#dates-amounts-of-money-durations-distances-ordinals" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id6">Dates, Amounts of Money, Durations, Distances, Ordinals</a><a class="headerlink" href="#dates-amounts-of-money-durations-distances-ordinals" title="Permalink to this headline">¶</a></h2>
 <p>The <a class="reference external" href="https://duckling.wit.ai/">duckling</a> library does a great job
 of turning expressions like “next Thursday at 8pm” into actual datetime
 objects that you can use, e.g.</p>
@@ -438,7 +509,7 @@ that you just need to spin up and connect to Rasa NLU
 (see <a class="reference internal" href="../components/#ducklinghttpextractor"><span class="std std-ref">DucklingHTTPExtractor</span></a>).</p>
 </div>
 <div class="section" id="regular-expressions-regex">
-<h2><a class="toc-backref" href="#id6">Regular Expressions (regex)</a><a class="headerlink" href="#regular-expressions-regex" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">Regular Expressions (regex)</a><a class="headerlink" href="#regular-expressions-regex" title="Permalink to this headline">¶</a></h2>
 <p>You can use regular expressions to help the CRF model learn to recognize entities.
 In your training data (see <a class="reference internal" href="../training-data-format/#training-data-format"><span class="std std-ref">Training Data Format</span></a>) you can provide a list of regular expressions, each of which provides
 the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> with an extra binary feature, which says if the regex was found (1) or not (0).</p>
@@ -449,7 +520,7 @@ associate that with a location entity.</p>
 as a postprocessing step after receiving the response from Rasa NLU.</p>
 </div>
 <div class="section" id="passing-custom-features-to-crfentityextractor">
-<span id="entity-extraction-custom-features"></span><h2><a class="toc-backref" href="#id7">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a><a class="headerlink" href="#passing-custom-features-to-crfentityextractor" title="Permalink to this headline">¶</a></h2>
+<span id="entity-extraction-custom-features"></span><h2><a class="toc-backref" href="#id8">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a><a class="headerlink" href="#passing-custom-features-to-crfentityextractor" title="Permalink to this headline">¶</a></h2>
 <p>If you want to pass custom features, such as pre-trained word embeddings, to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>, you can
 add any dense featurizer to the pipeline before the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>.
 <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> automatically finds the additional dense features and checks if the dense features are an

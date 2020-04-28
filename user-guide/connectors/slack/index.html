@@ -215,12 +215,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.7
+          viewing: 1.10.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.10.0/user-guide/connectors/slack/">1.10.0</a>
               <a href="../../.././1.9.7/user-guide/connectors/slack/">1.9.7</a>
               <a href="../../.././1.9.6/user-guide/connectors/slack/">1.9.6</a>
               <a href="../../.././1.9.5/user-guide/connectors/slack/">1.9.5</a>
@@ -290,18 +291,21 @@ on <strong>Create New App</strong>.</p></li>
 </ol>
 <blockquote>
 <div><ul class="simple">
-<li><p><a class="reference external" href="https://api.slack.com/reference/block-kit/interactive-components">Interactive Components</a> (if your bot uses any, e.g. buttons)</p></li>
-<li><p>Event subscriptions</p></li>
-<li><p>Bot users</p></li>
-<li><p>Permissions (for basic functionality you should subscribe to the
-following events: <code class="docutils literal notranslate"><span class="pre">message.channel</span></code>, <code class="docutils literal notranslate"><span class="pre">message.groups</span></code>,
-<code class="docutils literal notranslate"><span class="pre">message.im</span></code> and <code class="docutils literal notranslate"><span class="pre">message.mpim</span></code>)</p></li>
+<li><p>Interactivity &amp; Shortcuts &gt; Interactivity (if your bot uses any <a class="reference external" href="https://api.slack.com/reference/block-kit/interactive-components">interactive components</a> , e.g. buttons)</p></li>
+<li><p>Add your Rasa request URL <code class="docutils literal notranslate"><span class="pre">http://&lt;host&gt;:&lt;port&gt;/webhooks/slack/webhook</span></code>, replacing
+the host and port with the appropriate values that point to your Rasa X or Rasa Open Source deployment.</p></li>
+<li><p>Event subscriptions &gt; Subscribe to bot events: <code class="docutils literal notranslate"><span class="pre">message.channels</span></code>, <code class="docutils literal notranslate"><span class="pre">message.groups</span></code>, <code class="docutils literal notranslate"><span class="pre">message.im</span></code>, <code class="docutils literal notranslate"><span class="pre">message.mpim</span></code></p></li>
+<li><p>App Home &gt; Always Show My Bot as Online</p></li>
 </ul>
 </div></blockquote>
 <ol class="arabic simple" start="3">
-<li><p>Get the <code class="docutils literal notranslate"><span class="pre">Bot</span> <span class="pre">User</span> <span class="pre">OAuth</span> <span class="pre">Access</span> <span class="pre">Token</span></code> from the OAuth &amp; Permissions page. You will need
+<li><p>Get the <code class="docutils literal notranslate"><span class="pre">Bot</span> <span class="pre">User</span> <span class="pre">OAuth</span> <span class="pre">Access</span> <span class="pre">Token</span></code> from the OAuth &amp; Permissions page. Click <code class="docutils literal notranslate"><span class="pre">Install</span> <span class="pre">App</span> <span class="pre">to</span> <span class="pre">Workspace</span></code>
+and allow access to your workspace. You will need
 to provide this value in your credentials later in these instructions. It should start
 with <code class="docutils literal notranslate"><span class="pre">xoxb</span></code>.</p></li>
+<li><p>In the “OAuth &amp; Permissions &gt; Redirect URLs” enter the endpoint for receiving Slack messages. This is
+the same URL you entered above for Interactivity &amp; Shortcuts - <code class="docutils literal notranslate"><span class="pre">http://&lt;host&gt;:&lt;port&gt;/webhooks/slack/webhook</span></code>.</p></li>
+<li><p>Go to the “Event Subscriptions” section, turn on the “Enable Events” and add the endpoint here also.</p></li>
 </ol>
 </div></blockquote>
 <p>For more detailed steps, visit the
@@ -322,14 +326,15 @@ e.g. using:</p>
 <p>You need to supply a <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> with the following content:</p>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">slack_channel</span></code> can be a channel or an individual person that the bot should listen to for communications, in
-addition to the default behavior of listening for direct messages and app mentions, i.e. “&#64;app_name”.</p></li>
+addition to the default behavior of listening for direct messages and app mentions, i.e. “&#64;app_name”. To get the channel
+id, right click on the channel choose Copy Link and the id will be the last component in the URL.</p></li>
 <li><p>Use the entry for <code class="docutils literal notranslate"><span class="pre">Bot</span> <span class="pre">User</span> <span class="pre">OAuth</span> <span class="pre">Access</span> <span class="pre">Token</span></code> in the
 “OAuth &amp; Permissions” tab as your <code class="docutils literal notranslate"><span class="pre">slack_token</span></code>. It should start
 with <code class="docutils literal notranslate"><span class="pre">xoxb</span></code>.</p></li>
 </ul>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">slack</span><span class="p">:</span>
   <span class="nt">slack_token</span><span class="p">:</span> <span class="s">&quot;xoxb-286425452756-safjasdf7sl38KLls&quot;</span>
-  <span class="nt">slack_channel</span><span class="p">:</span> <span class="s">&quot;#my_channel&quot;</span>
+  <span class="nt">slack_channel</span><span class="p">:</span> <span class="s">&quot;C011GR5D33F&quot;</span>
   <span class="nt">slack_retry_reason_header</span><span class="p">:</span> <span class="s">&quot;x-slack-retry-reason&quot;</span>  <span class="c1"># Slack HTTP header name indicating reason that slack send retry request. This configuration is optional.</span>
   <span class="nt">slack_retry_number_header</span><span class="p">:</span> <span class="s">&quot;x-slack-retry-num&quot;</span>  <span class="c1"># Slack HTTP header name indicating the attempt number. This configuration is optional.</span>
   <span class="nt">errors_ignore_retry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>  <span class="c1"># Any error codes given by Slack included in this list will be ignored. Error codes are listed `here &lt;https://api.slack.com/events-api#errors&gt;`_.</span>

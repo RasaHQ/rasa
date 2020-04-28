@@ -212,6 +212,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.10.0/user-guide/command-line-interface/">1.10.0</a>
               <a href="../../../1.9.7/user-guide/command-line-interface/">1.9.7</a>
               <a href="../../../1.9.6/user-guide/command-line-interface/">1.9.6</a>
               <a href="../../../1.9.5/user-guide/command-line-interface/">1.9.5</a>
@@ -265,7 +266,7 @@
 
 
 
-    <p class="scv-banner"><a href="../../../1.9.7/user-guide/command-line-interface/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.9.7.</a></p>
+    <p class="scv-banner"><a href="../../../1.10.0/user-guide/command-line-interface/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.10.0.</a></p>
 <div class="section" id="command-line-interface">
 <span id="id1"></span><h1>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h1>
 
@@ -483,7 +484,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: bb405a66732d4ce3b6b79e5038336e15)
+                        generated. (default: bf16e355863c4647b6e937d1b78b146f)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
@@ -562,7 +563,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        4a976754b16546d7b3b2ac32bda4ac16)
+                        b96af87398e44b16b6b4535417eed42c)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
@@ -739,7 +740,7 @@ See the Rasa <a class="reference internal" href="../../api/http-api/#http-api"><
                         [--cors [CORS [CORS ...]]] [--actions ACTIONS]
                         [--ssl-keyfile SSL_KEYFILE]
                         [--ssl-certificate SSL_CERTIFICATE]
-                        [--ssl-password SSL_PASSWORD]
+                        [--ssl-password SSL_PASSWORD] [--auto-reload]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -757,6 +758,8 @@ optional arguments:
   --ssl-password SSL_PASSWORD
                         If your ssl-keyfile is protected by a password, you
                         can specify it using this paramer. (default: None)
+  --auto-reload         Enable auto-reloading of modules containing Action
+                        subclasses. (default: False)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:

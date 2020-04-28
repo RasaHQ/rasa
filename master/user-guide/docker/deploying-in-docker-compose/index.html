@@ -221,6 +221,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../../1.10.0/user-guide/docker/deploying-in-docker-compose/">1.10.0</a>
               <a href="../../../../1.9.7/user-guide/docker/deploying-in-docker-compose/">1.9.7</a>
               <a href="../../../../1.9.6/user-guide/docker/deploying-in-docker-compose/">1.9.6</a>
               <a href="../../../../1.9.5/user-guide/docker/deploying-in-docker-compose/">1.9.5</a>
@@ -274,7 +275,7 @@
 
 
 
-    <p class="scv-banner"><a href="../../../../1.9.7/user-guide/docker/deploying-in-docker-compose/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.9.7.</a></p>
+    <p class="scv-banner"><a href="../../../../1.10.0/user-guide/docker/deploying-in-docker-compose/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.10.0.</a></p>
 <div class="section" id="deploying-a-rasa-open-source-assistant-in-docker-compose">
 <span id="deploying-rasa-in-docker-compose"></span><h1>Deploying a Rasa Open Source Assistant in Docker Compose<a class="headerlink" href="#deploying-a-rasa-open-source-assistant-in-docker-compose" title="Permalink to this headline">¶</a></h1>
 <p>If you would like to deploy your assistant without Rasa X, you can do so by deploying it in Docker Compose.
@@ -332,7 +333,7 @@ want to deploy an assistant that also has an action server.</p>
 <div><pre class="literal-block">version: '3.0'
 services:
   rasa:
-    image: rasa/rasa:1.10.0a3-full
+    image: rasa/rasa:1.10.0-full
     ports:
       - 5005:5005
     volumes:
@@ -350,7 +351,7 @@ an action server image, see <a class="reference internal" href="../../how-to-dep
 <div><pre class="literal-block">version: '3.0'
 services:
   rasa:
-    image: rasa/rasa:1.10.0a3-full
+    image: rasa/rasa:1.10.0-full
     ports:
       - 5005:5005
     volumes:

@@ -218,6 +218,7 @@ external APIs or improve dialogue with custom actions written in Python." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.10.0/api/rasa-sdk/">1.10.0</a>
               <a href="../../../1.9.7/api/rasa-sdk/">1.9.7</a>
               <a href="../../../1.9.6/api/rasa-sdk/">1.9.6</a>
               <a href="../../../1.9.5/api/rasa-sdk/">1.9.5</a>
@@ -271,7 +272,7 @@ external APIs or improve dialogue with custom actions written in Python." />
 
 
 
-    <p class="scv-banner"><a href="../../../1.9.7/api/rasa-sdk/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.9.7.</a></p>
+    <p class="scv-banner"><a href="../../../1.10.0/api/rasa-sdk/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.10.0.</a></p>
 <div class="section" id="rasa-sdk">
 <span id="id1"></span><h1>Rasa SDK<a class="headerlink" href="#rasa-sdk" title="Permalink to this headline">¶</a></h1>
 
@@ -331,7 +332,7 @@ manually specify an actions module or package with the <code class="docutils lit
                         [--cors [CORS [CORS ...]]] [--actions ACTIONS]
                         [--ssl-keyfile SSL_KEYFILE]
                         [--ssl-certificate SSL_CERTIFICATE]
-                        [--ssl-password SSL_PASSWORD]
+                        [--ssl-password SSL_PASSWORD] [--auto-reload]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -349,6 +350,8 @@ optional arguments:
   --ssl-password SSL_PASSWORD
                         If your ssl-keyfile is protected by a password, you
                         can specify it using this paramer. (default: None)
+  --auto-reload         Enable auto-reloading of modules containing Action
+                        subclasses. (default: False)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
@@ -544,12 +547,23 @@ message: <code class="docutils literal notranslate"><span class="pre">intent</sp
 
 <dl class="py method">
 <dt id="rasa_sdk.interfaces.Tracker.get_latest_entity_values">
-<code class="sig-prename descclassname">Tracker.</code><code class="sig-name descname">get_latest_entity_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entity_type</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get entity values found for the passed entity name in latest msg.</p>
+<code class="sig-prename descclassname">Tracker.</code><code class="sig-name descname">get_latest_entity_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entity_type</span></em>, <em class="sig-param"><span class="n">entity_role</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">entity_group</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.interfaces.Tracker.get_latest_entity_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get entity values found for the passed entity type and optional role and
+group in latest message.</p>
 <p>If you are only interested in the first entity of a given type use
 <cite>next(tracker.get_latest_entity_values(“my_entity_name”), None)</cite>.
 If no entity is found <cite>None</cite> is the default result.</p>
 <dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entity_type</strong> – the entity type of interest</p></li>
+<li><p><strong>entity_role</strong> – optional entity role of interest</p></li>
+<li><p><strong>entity_group</strong> – optional entity group of interest</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of entity values.</p>
+</dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
 </dd>
