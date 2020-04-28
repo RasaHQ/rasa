@@ -155,7 +155,9 @@ def test_core(
                 "evaluation."
             )
     _interpreter = RasaE2EInterpreter()
-    _interpreter.interpreter = rasa.nlu.model.Interpreter(_interpreter.trainer.pipeline, []).load(os.path.join(core_path, 'nlu'))
+    _interpreter.interpreter = rasa.nlu.model.Interpreter(
+        _interpreter.trainer.pipeline, []
+    ).load(os.path.join(core_path, "nlu"))
 
     _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 
