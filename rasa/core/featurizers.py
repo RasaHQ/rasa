@@ -172,7 +172,9 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                         entity["entity"] for entity in state["user"].get("entities")
                     ]
                     for entity_name in user_entities:
-                        entity_features[self.interpreter.entities.index(entity_name)] = 1
+                        entity_features[
+                            self.interpreter.entities.index(entity_name)
+                        ] = 1
 
         return sparse_state, dense_state, entity_features
 
@@ -265,7 +267,7 @@ class TrackerFeaturizer:
                     elif isinstance(event, ActionExecuted):
                         if event.message is not None:
                             state_dict["prev_action"] = event.message
-                        # to turn the default actions such as action_listen into Message; 
+                        # to turn the default actions such as action_listen into Message;
                         else:
                             state_dict["prev_action"] = Message(event.action_name)
                     state_dict["slots"] = self.collect_slots(tr)
@@ -400,9 +402,9 @@ class TrackerFeaturizer:
         featurizer_file = os.path.join(path, "featurizer.json")
 
         rasa.utils.io.create_directory_for_file(featurizer_file)
-        # DIET cannot be json-ed; because we already save it through 
+        # DIET cannot be json-ed; because we already save it through
         # the interpreter.persist in RasaE2EInterpreter.prepare_training_data_and_train()
-        # we can load it from there at time of prediction; 
+        # we can load it from there at time of prediction;
         if isinstance(
             self.state_featurizer.interpreter.trainer.pipeline[-1],
             rasa.nlu.classifiers.diet_classifier.DIETClassifier,

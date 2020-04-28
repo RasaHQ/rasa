@@ -305,7 +305,7 @@ class TEDPolicy(Policy):
                 sparse_state = scipy.sparse.vstack(sparse_state)
             if not dense_state == []:
                 dense_state = np.vstack(dense_state)
-            if not entities == []: 
+            if not entities == []:
                 entities = np.vstack(entities)
             X_sparse.append(sparse_state)
             X_dense.append(dense_state)
