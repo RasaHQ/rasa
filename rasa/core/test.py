@@ -18,6 +18,8 @@ if typing.TYPE_CHECKING:
 
 import matplotlib
 
+FAILED_STORIES_FILE = "failed_stories.md"
+
 # At first, matplotlib will be initialized with default OS-specific available backend
 # if that didn't happen, we'll try to set it up manually
 if matplotlib.get_backend() is not None:
@@ -357,7 +359,10 @@ def _predict_tracker_actions(
     events = list(tracker.events)
 
     partial_tracker = DialogueStateTracker.from_events(
-        tracker.sender_id, events[:1], agent.domain.slots
+        tracker.sender_id,
+        events[:1],
+        agent.domain.slots,
+        sender_source=tracker.sender_source,
     )
 
     tracker_actions = []
@@ -496,13 +501,13 @@ def log_failed_stories(failed, out_directory):
     if not out_directory:
         return
     with open(
-        os.path.join(out_directory, "failed_stories.md"), "w", encoding=DEFAULT_ENCODING
+        os.path.join(out_directory, FAILED_STORIES_FILE), "w", encoding=DEFAULT_ENCODING
     ) as f:
         if len(failed) == 0:
             f.write("<!-- All stories passed -->")
         else:
             for failure in failed:
-                f.write(failure.export_stories())
+                f.write(failure.export_stories(include_source=True))
                 f.write("\n\n")
 
 

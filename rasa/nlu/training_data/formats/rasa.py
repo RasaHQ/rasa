@@ -3,7 +3,7 @@ import typing
 from collections import defaultdict
 from typing import Any, Dict, Text
 
-from rasa.constants import DOCS_BASE_URL, DOCS_URL_TRAINING_DATA_NLU
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter,
@@ -19,11 +19,13 @@ logger = logging.getLogger(__name__)
 
 
 class RasaReader(JsonTrainingDataReader):
-    def read_from_json(self, js, **kwargs) -> "TrainingData":
+    def read_from_json(self, js: Dict[Text, Any], **_) -> "TrainingData":
         """Loads training data stored in the rasa NLU data format."""
         from rasa.nlu.training_data import Message, TrainingData
+        import rasa.nlu.schemas.data_schema as schema
+        import rasa.utils.validation as validation_utils
 
-        validate_rasa_nlu_data(js)
+        validation_utils.validate_training_data(js, schema.rasa_nlu_data_schema())
 
         data = js["rasa_nlu_data"]
         common_examples = data.get("common_examples", [])
@@ -87,89 +89,3 @@ class RasaWriter(TrainingDataWriter):
             },
             **kwargs,
         )
-
-
-def validate_rasa_nlu_data(data: Dict[Text, Any]) -> None:
-    """Validate rasa training data format to ensure proper training.
-
-    Raises exception on failure."""
-    from jsonschema import validate
-    from jsonschema import ValidationError
-
-    try:
-        validate(data, _rasa_nlu_data_schema())
-    except ValidationError as e:
-        e.message += (
-            f". Failed to validate training data, make sure your data "
-            f"is valid. For more information about the format visit "
-            f"{DOCS_BASE_URL}/nlu/training-data-format/"
-        )
-        raise e
-
-
-def _rasa_nlu_data_schema() -> Dict[Text, Any]:
-    training_example_schema = {
-        "type": "object",
-        "properties": {
-            "text": {"type": "string", "minLength": 1},
-            "intent": {"type": "string"},
-            "entities": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "start": {"type": "number"},
-                        "end": {"type": "number"},
-                        "value": {"type": "string"},
-                        "entity": {"type": "string"},
-                    },
-                    "required": ["start", "end", "entity"],
-                },
-            },
-        },
-        "required": ["text"],
-    }
-
-    regex_feature_schema = {
-        "type": "object",
-        "properties": {"name": {"type": "string"}, "pattern": {"type": "string"}},
-    }
-
-    lookup_table_schema = {
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"},
-            "elements": {
-                "oneOf": [
-                    {"type": "array", "items": {"type": "string"}},
-                    {"type": "string"},
-                ]
-            },
-        },
-    }
-
-    return {
-        "type": "object",
-        "properties": {
-            "rasa_nlu_data": {
-                "type": "object",
-                "properties": {
-                    "regex_features": {"type": "array", "items": regex_feature_schema},
-                    "common_examples": {
-                        "type": "array",
-                        "items": training_example_schema,
-                    },
-                    "intent_examples": {
-                        "type": "array",
-                        "items": training_example_schema,
-                    },
-                    "entity_examples": {
-                        "type": "array",
-                        "items": training_example_schema,
-                    },
-                    "lookup_tables": {"type": "array", "items": lookup_table_schema},
-                },
-            }
-        },
-        "additionalProperties": False,
-    }
