@@ -146,7 +146,7 @@ class SocketIOInput(InputChannel):
         self.sio = None
 
     def get_output_channel(self) -> Optional["OutputChannel"]:
-        if self.sio == None:
+        if self.sio is None:
             raise_warning(
                 "SocketIO output channel cannot be recreated. "
                 "This is expected behavior when using multiple Sanic "
