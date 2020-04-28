@@ -144,7 +144,8 @@ jobs:
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
-        make install-full
+        make install-full | tee .output
+        if grep 'The lock file is not up to date' .output; then exit 1; fi
         make prepare-tests-ubuntu
 
     - name: Test Code 🔍

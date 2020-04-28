@@ -1,3 +1,0 @@
-Change default values for hyper-parameters in ``EmbeddingIntentClassifier`` and ``DIETClassifier``
-
-Use ``scale_loss=False`` in ``DIETClassifier``. Reduce the number of dense dimensions for sparse features of text from 512 to 256 in ``EmbeddingIntentClassifier``.

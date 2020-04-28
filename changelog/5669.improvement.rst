@@ -1,1 +1,0 @@
-Remove regularization gradient for variables that don't have prediction gradient.
