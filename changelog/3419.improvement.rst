@@ -1,3 +1,0 @@
-Include the source filename of a story in the failed stories
-
-Include the source filename of a story in the failed stories to make it easier to identify the file which contains the failed story.
