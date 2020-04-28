@@ -8,7 +8,6 @@ from typing import Tuple, List, Optional, Dict, Text, Any
 from scipy.sparse import csr_matrix
 import re
 import string
-import pickle
 
 import rasa.utils.io
 from rasa.core import utils
