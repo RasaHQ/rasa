@@ -265,6 +265,7 @@ class TrackerFeaturizer:
                     elif isinstance(event, ActionExecuted):
                         if event.message is not None:
                             state_dict["prev_action"] = event.message
+                        # to turn the default actions such as action_listen into Message; 
                         else:
                             state_dict["prev_action"] = Message(event.action_name)
                     state_dict["slots"] = self.collect_slots(tr)
@@ -399,7 +400,9 @@ class TrackerFeaturizer:
         featurizer_file = os.path.join(path, "featurizer.json")
 
         rasa.utils.io.create_directory_for_file(featurizer_file)
-
+        # DIET cannot be json-ed; because we already save it through 
+        # the interpreter.persist in RasaE2EInterpreter.prepare_training_data_and_train()
+        # we can load it from there at time of prediction; 
         if isinstance(
             self.state_featurizer.interpreter.trainer.pipeline[-1],
             rasa.nlu.classifiers.diet_classifier.DIETClassifier,
@@ -702,9 +705,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         """Transforms list of trackers to lists of states for prediction."""
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
-        # self.state_featurizer.interpreter.interpreter = Interpreter(
-        #     self.state_featurizer.interpreter.trainer.pipeline, []
-        # ).load(os.path.join(os.path.dirname(self.path), "nlu"))
+        # required to have the DIET do the prediction;
+        self.state_featurizer.interpreter.interpreter = Interpreter(
+            self.state_featurizer.interpreter.trainer.pipeline, []
+        ).load(os.path.join(os.path.dirname(self.path), "nlu"))
 
         trackers_as_states_modified = []
         for tracker in trackers_as_states:

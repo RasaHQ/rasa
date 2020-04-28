@@ -470,7 +470,6 @@ class TEDPolicy(Policy):
 
         **Needs to load its featurizer**
         """
-        from rasa.nlu.model import Interpreter
 
         if not os.path.exists(path):
             raise Exception(
@@ -482,6 +481,8 @@ class TEDPolicy(Policy):
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
         featurizer = TrackerFeaturizer.load(path)
+        # setting path variable for featurizer so that we can load the nlu pipeline with
+        # DIET from there;
         featurizer.path = path
 
         if not (model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl").is_file():
