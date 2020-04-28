@@ -1,1 +1,0 @@
-Added ``socketio`` to the compatible channels for :ref:`reminders-and-external-events`.
