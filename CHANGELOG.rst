@@ -72,6 +72,14 @@ Features
 
 Improvements
 ------------
+- `#2224 <https://github.com/rasahq/rasa/issues/2224>`_: Suppressed ``pika`` logs when establishing the connection. These log messages
+  mostly happened when Rasa X and RabbitMQ were started at the same time. Since RabbitMQ
+  can take a few seconds to initialize, Rasa X has to re-try until the connection is
+  established.
+  In case you suspect a different problem (such as failing authentication) you can
+  re-enable the ``pika`` logs by setting the log level to ``DEBUG``. To run Rasa Open
+  Source in debug mode, use the ``--debug`` flag. To run Rasa X in debug mode, set the
+  environment variable ``DEBUG_MODE`` to ``true``.
 - `#3419 <https://github.com/rasahq/rasa/issues/3419>`_: Include the source filename of a story in the failed stories
 
   Include the source filename of a story in the failed stories to make it easier to identify the file which contains the failed story.
