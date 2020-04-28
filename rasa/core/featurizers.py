@@ -162,14 +162,18 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         sparse_state, dense_state = self.combine_state_features(
             state_extracted_features
         )
-        entity_features = np.zeros(len(self.interpreter.entities))
-        if "user" in list(state.keys()):
-            if not state["user"].get("entities") is None:
-                user_entities = [
-                    entity["entity"] for entity in state["user"].get("entities")
-                ]
-                for entity_name in user_entities:
-                    entity_features[self.interpreter.entities.index(entity_name)] = 1
+
+        if self.interpreter.entities == []:
+            entity_features = None
+        else:
+            entity_features = np.zeros(len(self.interpreter.entities))
+            if "user" in list(state.keys()):
+                if not state["user"].get("entities") is None:
+                    user_entities = [
+                        entity["entity"] for entity in state["user"].get("entities")
+                    ]
+                    for entity_name in user_entities:
+                        entity_features[self.interpreter.entities.index(entity_name)] = 1
 
         return sparse_state, dense_state, entity_features
 
@@ -699,9 +703,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         """Transforms list of trackers to lists of states for prediction."""
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
-        self.state_featurizer.interpreter.interpreter = Interpreter(
-            self.state_featurizer.interpreter.trainer.pipeline, []
-        ).load(os.path.join(os.path.dirname(self.path), "nlu"))
+        # self.state_featurizer.interpreter.interpreter = Interpreter(
+        #     self.state_featurizer.interpreter.trainer.pipeline, []
+        # ).load(os.path.join(os.path.dirname(self.path), "nlu"))
 
         trackers_as_states_modified = []
         for tracker in trackers_as_states:
