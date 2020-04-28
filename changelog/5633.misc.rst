@@ -1,2 +1,0 @@
-Add more information about the usage of Poetry and the process of merge conflict resolution
-in the lockfile of Poetry to `README.md`.
