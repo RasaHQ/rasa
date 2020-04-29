@@ -1,0 +1,64 @@
+intents:
+- activate_q_form
+- inform
+- explain
+- stopp
+- ask_possibilities
+- faq
+- affirm
+- deny
+- greet
+- switch_faq
+
+entities:
+- some_slot
+
+slots:
+  some_slot:
+    type: unfeaturized
+  detailed_faq:
+    type: bool
+  requested_slot:
+    type: text
+
+actions:
+- action_activate_q_form
+- action_loop_q_form
+- validate_some_slot
+- utter_explain_some_slot
+- action_stop_q_form
+- utter_list_possibilities
+- utter_faq
+- utter_ask_did_help
+- utter_continue
+- utter_detailed_faq
+- utter_ask_stop
+- utter_stop
+- utter_greet
+- action_switch_faq
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true
+
+responses:
+  utter_ask_some_slot:
+    - text: "utter_ask_some_slot"
+  utter_explain_some_slot:
+    - text: "utter_explain_some_slot"
+  utter_list_possibilities:
+    - text: "utter_list_possibilities"
+  utter_faq:
+    - text: "utter_faq"
+  utter_ask_did_help:
+    - text: "utter_ask_did_help"
+  utter_continue:
+    - text: "utter_continue"
+  utter_detailed_faq:
+    - text: "utter_detailed_faq"
+  utter_ask_stop:
+    - text: "utter_ask_stop"
+  utter_stop:
+    - text: "utter_stop"
+  utter_greet:
+    - text: "utter_greet"

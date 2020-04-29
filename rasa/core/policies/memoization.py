@@ -86,10 +86,11 @@ class MemoizationPolicy(Policy):
         if not trackers_as_states:
             return
 
-        assert len(trackers_as_states[0]) == self.max_history, (
-            "Trying to mem featurized data with {} historic turns. Expected: "
-            "{}".format(len(trackers_as_states[0]), self.max_history)
-        )
+        if self.max_history:
+            assert len(trackers_as_states[0]) == self.max_history, (
+                "Trying to mem featurized data with {} historic turns. Expected: "
+                "{}".format(len(trackers_as_states[0]), self.max_history)
+            )
 
         assert len(trackers_as_actions[0]) == 1, (
             "The second dimension of trackers_as_action should be 1, "

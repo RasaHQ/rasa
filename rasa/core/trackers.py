@@ -278,6 +278,19 @@ class DialogueStateTracker:
             UserMessage.DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
         )
 
+    def generate_all_prior_trackers_for_rules(self):
+
+        tracker = self.init_copy()
+
+        for event in self.applied_events():
+
+            if isinstance(event, ActionExecuted):
+                yield tracker
+
+            tracker.update(event)
+
+        yield tracker
+
     def generate_all_prior_trackers(
         self,
     ) -> Generator["DialogueStateTracker", None, None]:

@@ -563,25 +563,25 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     ) -> None:
 
         super().__init__(state_featurizer, use_intent_probabilities)
-        self.max_history = max_history or self.MAX_HISTORY_DEFAULT
+        self.max_history = max_history
         self.remove_duplicates = remove_duplicates
 
     @staticmethod
     def slice_state_history(
-        states: List[Dict[Text, float]], slice_length: int
+        states: List[Dict[Text, float]], slice_length: Optional[int]
     ) -> List[Optional[Dict[Text, float]]]:
         """Slices states from the trackers history.
 
         If the slice is at the array borders, padding will be added to ensure
         the slice length.
         """
+        if slice_length is not None:
+            slice_end = len(states)
+            slice_start = max(0, slice_end - slice_length)
+        else:
+            slice_start = 0
 
-        slice_end = len(states)
-        slice_start = max(0, slice_end - slice_length)
-        padding = [None] * max(0, slice_length - slice_end)
-        # noinspection PyTypeChecker
-        state_features = padding + states[slice_start:]
-        return state_features
+        return states[slice_start:]
 
     @staticmethod
     def _hash_example(states, action) -> int:
