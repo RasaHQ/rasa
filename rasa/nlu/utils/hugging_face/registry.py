@@ -13,6 +13,7 @@ from transformers import (
     TFDistilBertModel,
     TFRobertaModel,
     BertTokenizer,
+    BertJapaneseTokenizer,
     OpenAIGPTTokenizer,
     GPT2Tokenizer,
     XLNetTokenizer,
@@ -46,13 +47,18 @@ model_class_dict = {
     "roberta": TFRobertaModel,
 }
 model_tokenizer_dict = {
-    "bert": BertTokenizer,
-    "gpt": OpenAIGPTTokenizer,
-    "gpt2": GPT2Tokenizer,
-    "xlnet": XLNetTokenizer,
-    # "xlm": XLMTokenizer,
-    "distilbert": DistilBertTokenizer,
-    "roberta": RobertaTokenizer,
+    "default": {
+        "bert": BertTokenizer,
+        "gpt": OpenAIGPTTokenizer,
+        "gpt2": GPT2Tokenizer,
+        "xlnet": XLNetTokenizer,
+        # "xlm": XLMTokenizer,
+        "distilbert": DistilBertTokenizer,
+        "roberta": RobertaTokenizer,
+    },
+    "japanese": {
+        "bert": BertJapaneseTokenizer,
+    }
 }
 model_weights_defaults = {
     "bert": "bert-base-uncased",
@@ -93,3 +99,15 @@ model_embeddings_post_processors = {
     "distilbert": bert_embeddings_post_processor,
     "roberta": roberta_embeddings_post_processor,
 }
+
+
+def choose_tokenizer_dict(model_weights):
+    japanese_model_weights = [
+        "bert-base-japanese",
+        "bert-base-japanese-whole-word-masking",
+        "bert-base-japanese-char",
+        "bert-base-japanese-char-whole-word-masking",
+    ]
+    if model_weights in japanese_model_weights:
+        return model_tokenizer_dict["japanese"]
+    return model_tokenizer_dict["default"]

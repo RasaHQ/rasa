@@ -53,7 +53,7 @@ class HFTransformersNLP(Component):
         from rasa.nlu.utils.hugging_face.registry import (
             model_class_dict,
             model_weights_defaults,
-            model_tokenizer_dict,
+            choose_tokenizer_dict,
         )
 
         self.model_name = self.component_config["model_name"]
@@ -77,9 +77,9 @@ class HFTransformersNLP(Component):
 
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
 
-        self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
+        self.tokenizer = choose_tokenizer_dict(self.model_weights)[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
-        )
+        )   
         self.model = model_class_dict[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
