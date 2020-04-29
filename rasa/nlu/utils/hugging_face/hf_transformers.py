@@ -79,7 +79,7 @@ class HFTransformersNLP(Component):
 
         self.tokenizer = choose_tokenizer_dict(self.model_weights)[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
-        )   
+        )
         self.model = model_class_dict[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
