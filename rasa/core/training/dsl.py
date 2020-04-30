@@ -439,17 +439,16 @@ class StoryFileReader:
             )
         return utterance
 
-    async def _parse_message_e2e(self, message: Text, line_num: int) -> UserUttered:
+    async def _parse_message_e2e(self, text: Text, line_num: int) -> UserUttered:
         from rasa.nlu.training_data.formats.markdown import MarkdownReader
 
-        message_processed = MarkdownReader().parse_training_example(message)
-        parse_data = await self.interpreter.parse(message)
+        message_processed = MarkdownReader().parse_training_example(text)
+        parse_data = await self.interpreter.parse(text)
 
         utterance = UserUttered(
-            message,
+            text,
             parse_data.get("intent"),
             message_processed.get("entities"),
-            message_processed.as_dict(),
             message=message_processed,
         )
         intent_name = utterance.intent.get("name")
