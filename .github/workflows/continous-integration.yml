@@ -99,7 +99,7 @@ jobs:
         poetry run python -c "${build_command}"
 
     - name: Test Docs
-      uses: ammaraskar/sphinx-action@0.3
+      uses: ammaraskar/sphinx-action@0.4
       with:
         docs-folder: "docs/"
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
