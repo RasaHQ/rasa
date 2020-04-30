@@ -67,6 +67,10 @@ class SpacyFeaturizer(DenseFeaturizer):
         if message_attribute_doc is not None:
             features = self._features_for_doc(message_attribute_doc)
 
+            # in case an empty spaCy model was used, features are empty
+            if not features:
+                return
+
             cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
             features = np.concatenate([features, cls_token_vec])
 
