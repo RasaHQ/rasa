@@ -56,30 +56,29 @@ class SpacyFeaturizer(DenseFeaturizer):
                 self._set_spacy_features(example, attribute)
 
     def get_doc(self, message: Message, attribute: Text) -> Any:
-
         return message.get(SPACY_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
         self._set_spacy_features(message)
 
-    def _set_spacy_features(self, message: Message, attribute: Text = TEXT):
+    def _set_spacy_features(self, message: Message, attribute: Text = TEXT) -> None:
         """Adds the spacy word vectors to the messages features."""
+        doc = self.get_doc(message, attribute)
 
-        message_attribute_doc = self.get_doc(message, attribute)
+        if doc is None:
+            return
 
-        if message_attribute_doc is not None:
-            features = self._features_for_doc(message_attribute_doc)
+        # in case an empty spaCy model was used, no vectors are present
+        if doc.vocab.vectors.name is None:
+            logger.debug("No features present. You are using an empty spaCy model.")
+            return
 
-            # in case an empty spaCy model was used, features are empty
-            if not features.any():
-                logger.debug("No features present. You are using an empty spaCy model.")
-                return
+        features = self._features_for_doc(doc)
 
-            cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
-            features = np.concatenate([features, cls_token_vec])
+        cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
+        features = np.concatenate([features, cls_token_vec])
 
-            features = self._combine_with_existing_dense_features(
-                message, features, DENSE_FEATURE_NAMES[attribute]
-            )
-            message.set(DENSE_FEATURE_NAMES[attribute], features)
+        features = self._combine_with_existing_dense_features(
+            message, features, DENSE_FEATURE_NAMES[attribute]
+        )
+        message.set(DENSE_FEATURE_NAMES[attribute], features)

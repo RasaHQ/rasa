@@ -99,11 +99,11 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
     greet = {"intent": "greet", "text_features": [0.5]}
 
     message = Message(sentence, greet)
-    message.set("text_spacy_doc", doc)
+    message.set(SPACY_DOCS[TEXT], doc)
 
     ftr._set_spacy_features(message)
 
-    vecs = message.get("text_dense_features")[0][:5]
+    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])[0][:5]
 
     assert np.allclose(token_vectors[0][:5], vecs, atol=1e-4)
     assert np.allclose(vecs, expected, atol=1e-4)
@@ -179,10 +179,10 @@ def test_spacy_featurizer_using_empty_model():
     ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
     message = Message(sentence)
-    message.set("text_spacy_doc", doc)
+    message.set(SPACY_DOCS[TEXT], doc)
 
     ftr._set_spacy_features(message)
 
-    vecs = message.get("text_dense_features")
+    vecs = message.get(SPACY_DOCS[TEXT])
 
     assert vecs is None
