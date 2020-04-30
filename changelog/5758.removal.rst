@@ -1,0 +1,3 @@
+Removed previously deprecated event brokers (``EventChannel`` and ``FileProducer``).
+
+Use their renamed counterparts instead (``EventBroker`` and ``FileEventBroker``).
