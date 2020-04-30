@@ -165,3 +165,24 @@ def test_spacy_featurizer_train(spacy_nlp):
     vecs = message.get(DENSE_FEATURE_NAMES[INTENT])
 
     assert vecs is None
+
+
+def test_spacy_featurizer_using_empty_model():
+    from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
+    import spacy
+
+    sentence = "This test is using an empty spaCy model"
+
+    model = spacy.blank("en")
+    doc = model(sentence)
+
+    ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+
+    message = Message(sentence)
+    message.set("text_spacy_doc", doc)
+
+    ftr._set_spacy_features(message)
+
+    vecs = message.get("text_dense_features")
+
+    assert vecs is None
