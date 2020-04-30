@@ -1,14 +1,14 @@
 import numpy as np
 
 import rasa.utils.train_utils as train_utils
-from rasa.nlu.constants import TEXT
+from rasa.nlu.constants import TEXT, NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.training_data import Message
 
 
 def test_align_token_features_convert():
     tokens = ConveRTTokenizer().tokenize(Message("In Aarhus and Ahaus"), attribute=TEXT)
-    seq_dim = sum(t.get("number_of_sub_words") for t in tokens)
+    seq_dim = sum(t.get(NUMBER_OF_SUB_TOKENS) for t in tokens)
     token_features = np.random.rand(1, seq_dim, 64)
 
     actual_features = train_utils.align_token_features([tokens], token_features)
