@@ -77,12 +77,6 @@ def print_version() -> None:
         print(f"Rasa SDK Version : {rasa_sdk.__version__}")
     except ModuleNotFoundError:
         pass
-    try:
-        from rasax.community.version import __version__ as rasa_x_version
-
-        print(f"Rasa X Version   : {rasa_x_version}")
-    except ModuleNotFoundError:
-        pass
 
 
 def main() -> None:
