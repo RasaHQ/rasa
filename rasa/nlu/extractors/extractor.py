@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text, Tuple, Optional, Union
+from typing import Any, Dict, List, Text, Tuple, Optional
 
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data import TrainingData

@@ -9,12 +9,7 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    TEXT,
-    TOKENS_NAMES,
-    DENSE_FEATURE_NAMES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-)
+from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, DENSE_FEATURIZABLE_ATTRIBUTES
 import numpy as np
 import tensorflow as tf
 

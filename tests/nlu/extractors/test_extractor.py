@@ -3,7 +3,6 @@ from typing import Any, Text, Dict, List
 import pytest
 
 from rasa.nlu.constants import TEXT
-from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
