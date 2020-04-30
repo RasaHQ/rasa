@@ -1,3 +1,0 @@
-Fixed an issue that happened when metadata is passed in a new session.
-
-Now the metadata is correctly passed to the ActionSessionStart.
