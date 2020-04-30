@@ -1,5 +1,6 @@
 import numpy as np
 import typing
+import logging
 from typing import Any, Optional, Text, Dict, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
@@ -18,6 +19,9 @@ from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
+
+
+logger = logging.getLogger(__name__)
 
 
 class SpacyFeaturizer(DenseFeaturizer):
@@ -69,6 +73,7 @@ class SpacyFeaturizer(DenseFeaturizer):
 
             # in case an empty spaCy model was used, features are empty
             if not features:
+                logger.debug("No features present. You are using an empty spaCy model.")
                 return
 
             cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
