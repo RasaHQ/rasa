@@ -90,23 +90,21 @@ jobs:
       # trying to run the `rasa` command once before the docs build.
       run: poetry run rasa --help
 
-# DOES NOT WORK YET DUE TO TENSORFLOW 1.5 (some issue with no tensorflow-cpu verison)
-#  -> should work with 2.0 and replace the below "Test Docs":
-#
-#    - name: Test Docs
-#      uses: ammaraskar/sphinx-action@0.3
-#      with:
-#        docs-folder: "docs/"
-#        repo-token: "${{ secrets.GITHUB_TOKEN }}"
-#        build-command: "make SPHINXOPTS=\"-W --keep-going -A html_theme=rasabaster\" html"
-#        pre-build-command: "apt-get update -y && apt-get install -y git"
-
-    - name: Test Docs 📃
+    - name: Build Changelog 🔨
+      env:
+        build_command: |
+          from scripts import release
+          release.generate_changelog('major.minor.patch')
       run: |
-        make install-full
-        poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
-        export SPHINXBUILD=$(poetry run which sphinx-build)
-        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+        poetry run python -c "${build_command}"
+
+    - name: Test Docs
+      uses: ammaraskar/sphinx-action@0.3
+      with:
+        docs-folder: "docs/"
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        build-command: "make SPHINXOPTS=\"-W --keep-going -A html_theme=rasabaster\" html"
+        pre-build-command: "apt-get update -y && apt-get install -y git"
 
   test:
     name: Run Tests
