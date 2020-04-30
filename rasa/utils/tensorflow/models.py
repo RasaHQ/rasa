@@ -103,7 +103,9 @@ class RasaModel(tf.keras.models.Model):
     ) -> None:
         """Fit model data"""
 
-        self._set_up_tensorboard_writer()
+        if not silent:
+            # don't setup tensorboard writers when training during loading
+            self._set_up_tensorboard_writer()
 
         tf.random.set_seed(self.random_seed)
         np.random.seed(self.random_seed)
