@@ -48,37 +48,37 @@ class RasaModel(tf.keras.models.Model):
 
         self.random_seed = random_seed
 
+        self.tensorboard_log_dir = tensorboard_log_dir
+        self.tensorboard_log_level = tensorboard_log_level
+
         self.train_summary_writer = None
         self.test_summary_writer = None
         self.model_summary_file = None
         self.tensorboard_log_on_epochs = True
 
-        self._set_up_tensorboard_writer(tensorboard_log_level, tensorboard_log_dir)
-
-    def _set_up_tensorboard_writer(
-        self, tensorboard_log_level: Text, tensorboard_log_dir: Optional[Text] = None
-    ) -> None:
-        if tensorboard_log_dir is not None:
-            if tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
+    def _set_up_tensorboard_writer(self) -> None:
+        if self.tensorboard_log_dir is not None:
+            if self.tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
                 raise ValueError(
-                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{tensorboard_log_level}') "
+                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{self.tensorboard_log_level}') "
                     f"is invalid! Valid values are: {TENSORBOARD_LOG_LEVELS}"
                 )
-
-            self.tensorboard_log_on_epochs = tensorboard_log_level == "epoch"
+            self.tensorboard_log_on_epochs = self.tensorboard_log_level == "epoch"
 
             current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             class_name = self.__class__.__name__
 
-            train_log_dir = f"{tensorboard_log_dir}/{class_name}/{current_time}/train"
-            test_log_dir = f"{tensorboard_log_dir}/{class_name}/{current_time}/test"
+            train_log_dir = (
+                f"{self.tensorboard_log_dir}/{class_name}/{current_time}/train"
+            )
+            test_log_dir = (
+                f"{self.tensorboard_log_dir}/{class_name}/{current_time}/test"
+            )
 
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
-            self.model_summary_file = (
-                f"{tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
-            )
+            self.model_summary_file = f"{self.tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -102,6 +102,8 @@ class RasaModel(tf.keras.models.Model):
         eager: bool = False,
     ) -> None:
         """Fit model data"""
+
+        self._set_up_tensorboard_writer()
 
         tf.random.set_seed(self.random_seed)
         np.random.seed(self.random_seed)
