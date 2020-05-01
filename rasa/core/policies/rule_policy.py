@@ -3,6 +3,7 @@ import typing
 from typing import List, Dict, Text, Optional, Any
 from tqdm import tqdm
 import json
+import re
 
 import rasa.utils.io
 
@@ -51,8 +52,7 @@ class RulePolicy(MemoizationPolicy):
         feature_str = ""
         for state in states:
             if state:
-                if feature_str:
-                    feature_str += "|"
+                feature_str += "|"
                 for feature in state.keys():
                     feature_str += feature + " "
                 feature_str = feature_str.strip()
@@ -81,14 +81,25 @@ class RulePolicy(MemoizationPolicy):
         self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
 
         # remove action_listens that were added after conditions
-        bad_keys = set()
+        updated_lookup = self.lookup.copy()
         for key in self.lookup.keys():
-            if "prev" not in key:
-                bad_keys.add(key)
+            if "prev" not in key or self.lookup[key] == domain.index_for_action("..."):
+                del updated_lookup[key]
+            elif "..." in key:
+                new_key = re.sub(r".*prev_\.\.\.[^|]*", "", key)
 
-        for key in bad_keys:
-            del self.lookup[key]
+                if new_key:
+                    if new_key.startswith("|"):
+                        # if "intent" not in new_key:
 
+                        new_key = new_key[1:]
+                    if new_key.endswith("|"):
+                        new_key = new_key[:-1]
+                    updated_lookup[new_key] = self.lookup[key]
+
+                del updated_lookup[key]
+
+        self.lookup = updated_lookup
         logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
 
     def predict_action_probabilities(
@@ -113,21 +124,26 @@ class RulePolicy(MemoizationPolicy):
 
         possible_keys = set(self.lookup.keys())
         for i, state in enumerate(reversed(states)):
-            if state:
-                possible_keys = set(
-                    filter(
-                        lambda key: (
-                            i >= len(key.split("|"))
-                            or all(
+            possible_keys = set(
+                filter(
+                    lambda key: (
+                        i >= len(key.split("|"))
+                        or (not list(reversed(key.split("|")))[i] and not state)
+                        or (
+                            list(reversed(key.split("|")))[i]
+                            and state
+                            and all(
                                 f in state.keys()
                                 for f in list(reversed(key.split("|")))[i].split()
                             )
-                        ),
-                        possible_keys,
-                    )
+                        )
+                    ),
+                    possible_keys,
                 )
-
+            )
+        print(possible_keys)
         if possible_keys:
+
             key = max(possible_keys, key=len)
 
             recalled = self.lookup.get(key)

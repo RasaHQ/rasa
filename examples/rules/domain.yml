@@ -22,6 +22,7 @@ slots:
     type: text
 
 actions:
+- ...
 - action_activate_q_form
 - action_loop_q_form
 - validate_some_slot
