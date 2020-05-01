@@ -171,7 +171,7 @@ class MessageProcessor:
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
-            
+
             if not (SessionStarted in tracker.events) and metadata:
                 tracker.events.append(SessionStarted(metadata=metadata))
 
