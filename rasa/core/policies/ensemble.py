@@ -356,7 +356,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return not (is_memo or is_augmented)
 
     def probabilities_using_best_policy(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self, tracker: DialogueStateTracker, domain: Domain, action_index
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         import numpy as np
 
@@ -366,7 +366,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         best_policy_priority = -1
 
         for i, p in enumerate(self.policies):
-            probabilities = p.predict_action_probabilities(tracker, domain)
+            probabilities = p.predict_action_probabilities(tracker, domain, action_index)
 
             if len(tracker.events) > 0 and isinstance(
                 tracker.events[-1], ActionExecutionRejected
