@@ -289,7 +289,7 @@ def _emulate_form_rejection(processor, partial_tracker):
 
 
 def _collect_action_executed_predictions(
-    processor, partial_tracker, event, fail_on_prediction_errors,
+    processor, partial_tracker, event, fail_on_prediction_errors, action_index
 ):
     from rasa.core.policies.form_policy import FormPolicy
 
@@ -297,7 +297,7 @@ def _collect_action_executed_predictions(
 
     gold = event.action_name
 
-    action, policy, confidence = processor.predict_next_action(partial_tracker)
+    action, policy, confidence = processor.predict_next_action(partial_tracker, action_index)
 
     predicted = action.name()
 
@@ -362,7 +362,7 @@ def _predict_tracker_actions(
                 policy,
                 confidence,
             ) = _collect_action_executed_predictions(
-                processor, partial_tracker, event, fail_on_prediction_errors
+                processor, partial_tracker, event, fail_on_prediction_errors, agent.domain.action_names.index(event.action_name.replace('\\t', ' '))
             )
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(

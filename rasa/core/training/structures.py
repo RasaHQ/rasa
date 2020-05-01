@@ -352,10 +352,10 @@ class StoryStep:
         """
 
         events = []
+        self._add_action_listen(events)
 
         for e in self.events:
             if isinstance(e, UserUttered):
-                self._add_action_listen(events)
                 events.append(e)
                 events.extend(domain.slots_for_entities(e.entities))
             else:

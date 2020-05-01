@@ -278,7 +278,8 @@ class TEDPolicy(Policy):
         if data_Y is not None:
             # label_ids = self._label_ids_for_Y(data_Y)
             label_ids = np.squeeze(data_Y, axis=-1)
-            Y_sparse, Y_dense = self._label_features_for_Y(label_ids)
+            if not self._label_data is None:
+                Y_sparse, Y_dense = self._label_features_for_Y(label_ids)
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
             label_ids = np.expand_dims(label_ids, -1)
@@ -396,7 +397,7 @@ class TEDPolicy(Policy):
         )
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain,
+        self, tracker: DialogueStateTracker, domain: Domain, action_index
     ) -> List[float]:
         """Predict the next action the bot should take.
 
@@ -408,18 +409,26 @@ class TEDPolicy(Policy):
 
         # create model data from tracker
         data_X = self.featurizer.create_X([tracker], domain)
-        model_data = self._create_model_data(data_X)
+
+        model_data = self._create_model_data(data_X, data_Y = np.array([[action_index]]))
 
         output = self.model.predict(model_data)
 
         confidence = output["action_scores"].numpy()
         # remove batch dimension and take the last prediction in the sequence
         confidence = confidence[0, -1, :]
+        indices = list(output["candidate_indices"].numpy().astype('int32'))
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return confidence.tolist()
+        confidence = confidence.tolist()
+
+        probabilities = np.zeros(len(domain.action_names))
+        for i, index in enumerate(indices):
+            probabilities[index] = confidence[i]
+
+        return probabilities.tolist()
 
     def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
@@ -510,7 +519,7 @@ class TEDPolicy(Policy):
             data={
                 feature_name: features
                 for feature_name, features in model_data_example.items()
-                if DIALOGUE in feature_name
+                if DIALOGUE in feature_name or feature_name == LABEL_IDS
             },
         )
         model.build_for_predict(predict_data_example)
@@ -542,7 +551,7 @@ class TED(RasaModel):
         self.predict_data_signature = {
             feature_name: features
             for feature_name, features in data_signature.items()
-            if DIALOGUE in feature_name
+            if DIALOGUE in feature_name or feature_name == LABEL_IDS
         }
 
         # optimizer
@@ -790,6 +799,7 @@ class TED(RasaModel):
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
+        import random
         batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
 
         dialogue_in = self._combine_sparse_dense_features(
@@ -800,20 +810,24 @@ class TED(RasaModel):
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
+        label_id = batch.get(LABEL_IDS)[0][0][0]
+        indices_to_choose_from = tf.concat([tf.range(label_id), tf.range(label_id + 1, tf.shape(self.all_labels_embed)[0])], 0)
+        negative_samples = tf.random.shuffle(indices_to_choose_from)[:19]
+        all_candidates = tf.concat([negative_samples, tf.expand_dims(label_id, -1)], 0)
+        gathered_candidates = tf.gather(self.all_labels_embed, indices = tf.cast(all_candidates, tf.int32), axis=0)
 
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in, sequence_lengths)
 
-        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+        sim_candidates = self._tf_layers[f"loss.{LABEL}"].sim(
             dialogue_embed[:, :, tf.newaxis, :],
-            self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
+            gathered_candidates[tf.newaxis, tf.newaxis, :, :],
             mask,
         )
-
-        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[SIMILARITY_TYPE]
+        scores_candidates = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
+            sim_candidates, self.config[SIMILARITY_TYPE]
         )
 
-        return {"action_scores": scores}
+        return {"action_scores": scores_candidates, "candidate_indices": all_candidates}
 
 
 # pytype: enable=key-error
