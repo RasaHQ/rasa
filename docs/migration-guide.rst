@@ -79,7 +79,7 @@ General
   Old configuration options will be mapped to the new names, and a warning will be thrown.
   However, these will be deprecated in a future release.
 
-- :ref:`embedding-intent-classifier` is now deprecated and will be replaced by :ref:`DIETClassifier <diet-classifier>`
+- The Embedding Intent Classifier is now deprecated and will be replaced by :ref:`DIETClassifier <diet-classifier>`
   in the future.
   ``DIETClassfier`` performs intent classification as well as entity recognition.
   If you want to get the same model behaviour as the current ``EmbeddingIntentClassifier``, you can use

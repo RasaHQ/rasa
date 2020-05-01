@@ -22,7 +22,6 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.nlu.training_data import Message, TrainingData
-import rasa.utils.common as common_utils
 from rasa.nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
@@ -37,14 +36,14 @@ class RegexFeaturizer(SparseFeaturizer):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         known_patterns: Optional[List[Dict[Text, Text]]] = None,
-        lookup_tables: Optional[List[Dict[Text, Union[Text, List]]]] = None,
+        lookup_tables: Optional[Dict[Text, List[Text]]] = None,
     ) -> None:
 
         super().__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
-        lookup_tables = lookup_tables or []
-        self._add_lookup_table_regexes(lookup_tables)
+        lookup_regexes = self._generate_lookup_table_regexes(lookup_tables or {})
+        self.known_patterns.extend(lookup_regexes)
 
     def train(
         self,
@@ -54,7 +53,9 @@ class RegexFeaturizer(SparseFeaturizer):
     ) -> None:
 
         self.known_patterns = training_data.regex_features
-        self._add_lookup_table_regexes(training_data.lookup_tables)
+        lookup_info = training_data.lookup_tables
+        lookup_tables = self.load_lookup_tables(lookup_info)
+        self.known_patterns.extend(self._generate_lookup_table_regexes(lookup_tables))
 
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE]:
@@ -71,14 +72,17 @@ class RegexFeaturizer(SparseFeaturizer):
             )
             message.set(SPARSE_FEATURE_NAMES[attribute], features)
 
-    def _add_lookup_table_regexes(
-        self, lookup_tables: List[Dict[Text, Union[Text, List]]]
-    ) -> None:
-        """appends the regex features from the lookup tables to self.known_patterns"""
-        for table in lookup_tables:
-            regex_pattern = self._generate_lookup_regex(table)
-            lookup_regex = {"name": table["name"], "pattern": regex_pattern}
-            self.known_patterns.append(lookup_regex)
+    def _generate_lookup_table_regexes(
+        self, lookup_tables: Dict[Text, List[Text]]
+    ) -> List[Dict[Text, Text]]:
+        """Generate the regex features from the lookup tables."""
+
+        patterns = []
+        for name, items in lookup_tables.items():
+            regex_pattern = self._generate_lookup_regex(items)
+            lookup_regex = {"name": name, "pattern": regex_pattern}
+            patterns.append(lookup_regex)
+        return patterns
 
     def _features_for_patterns(
         self, message: Message, attribute: Text
@@ -130,42 +134,49 @@ class RegexFeaturizer(SparseFeaturizer):
 
         return scipy.sparse.coo_matrix(vec)
 
-    def _generate_lookup_regex(
-        self, lookup_table: Dict[Text, Union[Text, List[Text]]]
-    ) -> Text:
-        """creates a regex out of the contents of a lookup table file"""
-        lookup_elements = lookup_table["elements"]
+    @classmethod
+    def _load_lookup_table(cls, lookup_path: Text) -> List[Text]:
+        """Load a lookup table from a file."""
+
         elements_to_regex = []
 
-        # if it's a list, it should be the elements directly
-        if isinstance(lookup_elements, list):
-            elements_to_regex = lookup_elements
-            common_utils.raise_warning(
-                f"Directly including lookup tables as a list is deprecated since Rasa "
-                f"1.6.",
-                FutureWarning,
-                docs=DOCS_URL_TRAINING_DATA_NLU + "#lookup-tables",
+        if isinstance(lookup_path, list):
+            # support for lookup tables embedded in the training data file has been
+            # removed
+            # DEPRECATION EXCEPTION - remove in 2.1
+            raise Exception(
+                f"Directly including lookup tables as a list has been removed. "
+                f"{DOCS_URL_TRAINING_DATA_NLU}#lookup-tables",
             )
 
-        # otherwise it's a file path.
-        else:
+        try:
+            f = open(lookup_path, "r", encoding=rasa.utils.io.DEFAULT_ENCODING)
+        except OSError:
+            raise ValueError(
+                f"Could not load lookup table {lookup_path}. "
+                f"Please make sure you've provided the correct path."
+            )
 
-            try:
-                f = open(lookup_elements, "r", encoding=rasa.utils.io.DEFAULT_ENCODING)
-            except OSError:
-                raise ValueError(
-                    f"Could not load lookup table {lookup_elements}. "
-                    f"Please make sure you've provided the correct path."
-                )
+        with f:
+            for line in f:
+                new_element = line.strip()
+                if new_element:
+                    elements_to_regex.append(new_element)
+        return elements_to_regex
 
-            with f:
-                for line in f:
-                    new_element = line.strip()
-                    if new_element:
-                        elements_to_regex.append(new_element)
+    @classmethod
+    def load_lookup_tables(cls, lookup_tables: List[Dict[Text, Union[Text, List]]]):
+        return {
+            lookup_table["name"]: cls._load_lookup_table(lookup_table["elements"])
+            for lookup_table in lookup_tables
+        }
+
+    @staticmethod
+    def _generate_lookup_regex(lookup_table: List[Text]) -> Text:
+        """Create a regex out of the contents of a lookup table."""
 
         # sanitize the regex, escape special characters
-        elements_sanitized = [re.escape(e) for e in elements_to_regex]
+        elements_sanitized = [re.escape(e) for e in lookup_table]
 
         # regex matching elements with word boundaries on either side
         regex_string = "(?i)(\\b" + "\\b|\\b".join(elements_sanitized) + "\\b)"

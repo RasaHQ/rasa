@@ -192,10 +192,8 @@ def test_tracker_store_deprecated_url_argument_from_string(default_domain: Domai
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.URLExampleTrackerStore"
 
-    with pytest.warns(DeprecationWarning):
-        tracker_store = TrackerStore.create(store_config, default_domain)
-
-    assert isinstance(tracker_store, URLExampleTrackerStore)
+    with pytest.raises(Exception):
+        TrackerStore.create(store_config, default_domain)
 
 
 def test_tracker_store_with_host_argument_from_string(default_domain: Domain):

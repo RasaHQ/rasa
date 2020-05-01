@@ -44,11 +44,10 @@ from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 
 logger = logging.getLogger(__name__)
 
-# Exclude 'EmbeddingIntentClassifier' and 'ResponseSelector' as their super class
+# Exclude 'EntitySynonymMapper' and 'ResponseSelector' as their super class
 # performs entity extraction but those two classifiers don't
 ENTITY_PROCESSORS = {
     "EntitySynonymMapper",
-    "EmbeddingIntentClassifier",
     "ResponseSelector",
 }
 

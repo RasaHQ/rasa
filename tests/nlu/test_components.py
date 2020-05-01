@@ -19,19 +19,6 @@ def test_no_components_with_same_name(component_class):
     ), f"There is more than one component named {component_class.name}"
 
 
-@pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates)
-def test_all_components_in_model_templates_exist(pipeline_template):
-    """We provide a couple of ready to use pipelines, this test ensures
-    all components referenced by name in the
-    pipeline definitions are available."""
-
-    components = registry.registered_pipeline_templates[pipeline_template]
-    for component in components:
-        assert (
-            component["name"] in registry.registered_components
-        ), "Model template contains unknown component."
-
-
 @pytest.mark.parametrize("component_class", registry.component_classes)
 def test_all_required_components_can_be_satisfied(component_class):
     """Checks that all required_components are present in the registry."""

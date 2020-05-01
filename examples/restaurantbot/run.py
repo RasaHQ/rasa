@@ -4,9 +4,10 @@ import logging
 from typing import Text
 
 import os
+
+from rasa.core.policies.ted_policy import TEDPolicy
 import rasa.utils.io
 import rasa.train
-from examples.restaurantbot.policy import RestaurantPolicy
 from rasa.core.agent import Agent
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
@@ -37,7 +38,7 @@ async def train_core(
         policies=[
             MemoizationPolicy(max_history=3),
             MappingPolicy(),
-            RestaurantPolicy(batch_size=100, epochs=100, validation_split=0.2),
+            TEDPolicy(batch_size=100, epochs=10, validation_split=0.2),
         ],
     )
 

@@ -75,23 +75,6 @@ class TrackerStore:
         else:
             return _create_from_endpoint_config(obj, domain, event_broker)
 
-    @staticmethod
-    def create_tracker_store(
-        domain: Domain,
-        store: Optional[EndpointConfig] = None,
-        event_broker: Optional[EventBroker] = None,
-    ) -> "TrackerStore":
-        """Returns the tracker_store type"""
-
-        raise_warning(
-            "The `create_tracker_store` function is deprecated, please use "
-            "`TrackerStore.create` instead. `create_tracker_store` will be "
-            "removed in future Rasa versions.",
-            DeprecationWarning,
-        )
-
-        return TrackerStore.create(store, domain, event_broker)
-
     def get_or_create_tracker(
         self,
         sender_id: Text,
@@ -1069,13 +1052,12 @@ def _load_from_module_string(
         tracker_store_class = class_from_module_path(store.type)
         init_args = arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
-            raise_warning(
-                "The `url` initialization argument for custom tracker stores is "
-                "deprecated. Your custom tracker store should take a `host` "
+            # DEPRECATION EXCEPTION - remove in 2.1
+            raise Exception(
+                "The `url` initialization argument for custom tracker stores has "
+                "been removed. Your custom tracker store should take a `host` "
                 "argument in its `__init__()` instead.",
-                DeprecationWarning,
             )
-            store.kwargs["url"] = store.url
         else:
             store.kwargs["host"] = store.url
 

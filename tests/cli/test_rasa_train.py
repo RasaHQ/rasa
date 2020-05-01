@@ -90,7 +90,7 @@ def test_train_core_compare(
         {
             "language": "en",
             "pipeline": "supervised_embeddings",
-            "policies": [{"name": "KerasPolicy"}],
+            "policies": [{"name": "TEDPolicy"}],
         },
         "config_1.yml",
     )
@@ -373,7 +373,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
             "error": True,
@@ -383,20 +383,20 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
             "error": True,
         },
         {
             "config_data": {
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
                 "imports": "other-folder",
             },
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
             "error": True,
@@ -405,7 +405,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "config_data": None,
             "default_config": {
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
             "error": True,
@@ -415,7 +415,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
             "error": False,

@@ -343,7 +343,7 @@
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_ask_moreupdates",
       "confidence":0.9925360233665671,
-      "policy":"policy_0_KerasPolicy",
+      "policy":"policy_0_TEDPolicy",
       "timestamp":1551884573.494926,
       "unpredictable":false
     },
@@ -361,7 +361,7 @@
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":0.9998248227762471,
-      "policy":"policy_0_KerasPolicy",
+      "policy":"policy_0_TEDPolicy",
       "timestamp":1551884576.519327,
       "unpredictable":false
     },
@@ -411,7 +411,7 @@
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_search_restaurants",
       "confidence":0.9959966060902363,
-      "policy":"policy_0_KerasPolicy",
+      "policy":"policy_0_TEDPolicy",
       "timestamp":1551884599.403338,
       "unpredictable":false
     },
@@ -419,7 +419,7 @@
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_suggest",
       "confidence":0.9632275734738791,
-      "policy":"policy_0_KerasPolicy",
+      "policy":"policy_0_TEDPolicy",
       "timestamp":1551884602.426846,
       "unpredictable":false
     },
@@ -427,7 +427,7 @@
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":0.9950680237822371,
-      "policy":"policy_0_KerasPolicy",
+      "policy":"policy_0_TEDPolicy",
       "timestamp":1551884605.8911119,
       "unpredictable":false
     },

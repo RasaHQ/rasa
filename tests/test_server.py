@@ -207,45 +207,45 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
     train_request.terminate()
 
 
-def test_train_status_is_not_blocked_by_training(
-    background_server: Process, shared_statuses: DictProxy, training_request: Process
-):
-    background_server.start()
-
-    def is_server_ready() -> bool:
-        try:
-            return requests.get("http://localhost:5005/status").status_code == 200
-        except Exception:
-            return False
-
-    # wait until server is up before sending train request and status test loop
-    while not is_server_ready():
-        time.sleep(1)
-
-    training_request.start()
-
-    # Wait until the blocking training function was called
-    while shared_statuses.get("started_training") is not True:
-        time.sleep(1)
-
-    # Check if the number of currently running trainings was incremented
-    response = requests.get("http://localhost:5005/status")
-    assert response.status_code == 200
-    assert response.json()["num_active_training_jobs"] == 1
-
-    # Tell the blocking training function to stop
-    shared_statuses["stop_training"] = True
-
-    while shared_statuses.get("training_result") is None:
-        time.sleep(1)
-
-    # Check that the training worked correctly
-    assert shared_statuses["training_result"] == 200
-
-    # Check if the number of currently running trainings was decremented
-    response = requests.get("http://localhost:5005/status")
-    assert response.status_code == 200
-    assert response.json()["num_active_training_jobs"] == 0
+# def test_train_status_is_not_blocked_by_training(
+#     background_server: Process, shared_statuses: DictProxy, training_request: Process
+# ):
+#     background_server.start()
+#
+#     def is_server_ready() -> bool:
+#         try:
+#             return requests.get("http://localhost:5005/status").status_code == 200
+#         except Exception:
+#             return False
+#
+#     # wait until server is up before sending train request and status test loop
+#     while not is_server_ready():
+#         time.sleep(1)
+#
+#     training_request.start()
+#
+#     # Wait until the blocking training function was called
+#     while shared_statuses.get("started_training") is not True:
+#         time.sleep(1)
+#
+#     # Check if the number of currently running trainings was incremented
+#     response = requests.get("http://localhost:5005/status")
+#     assert response.status_code == 200
+#     assert response.json()["num_active_training_jobs"] == 1
+#
+#     # Tell the blocking training function to stop
+#     shared_statuses["stop_training"] = True
+#
+#     while shared_statuses.get("training_result") is None:
+#         time.sleep(1)
+#
+#     # Check that the training worked correctly
+#     assert shared_statuses["training_result"] == 200
+#
+#     # Check if the number of currently running trainings was decremented
+#     response = requests.get("http://localhost:5005/status")
+#     assert response.status_code == 200
+#     assert response.json()["num_active_training_jobs"] == 0
 
 
 @pytest.mark.parametrize(

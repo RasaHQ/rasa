@@ -316,7 +316,7 @@ can measure how well Rasa Core is predicting the held-out stories.
 
 To compare single policies create config files containing only one policy each.
 If you're not sure which policies to compare, we'd recommend trying out the
-``EmbeddingPolicy`` and the ``KerasPolicy`` to see which one works better for
+``EmbeddingPolicy`` and the ``TEDPolicy`` to see which one works better for
 you.
 
 .. note::

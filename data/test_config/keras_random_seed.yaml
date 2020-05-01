@@ -1,4 +1,4 @@
 policies:
-- name: KerasPolicy
+- name: TEDPolicy
   random_seed: 42
   validation_split: 0
