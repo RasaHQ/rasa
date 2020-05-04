@@ -99,12 +99,13 @@ class RasaModel(tf.keras.models.Model):
         evaluate_every_num_epochs: int,
         batch_strategy: Text,
         silent: bool = False,
+        loading: bool = False,
         eager: bool = False,
     ) -> None:
         """Fit model data"""
 
-        if not silent:
-            # don't setup tensorboard writers when training during loading
+        # don't setup tensorboard writers when training during loading
+        if not loading:
             self._set_up_tensorboard_writer()
 
         tf.random.set_seed(self.random_seed)
@@ -261,6 +262,7 @@ class RasaModel(tf.keras.models.Model):
             evaluate_on_num_examples=0,
             batch_strategy=SEQUENCE,
             silent=True,  # don't confuse users with training output
+            loading=True,  # don't use tensorboard while loading
             eager=True,  # no need to build tf graph, eager is faster here
         )
         # load trained weights
