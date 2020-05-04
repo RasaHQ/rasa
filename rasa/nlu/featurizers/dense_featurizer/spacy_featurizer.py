@@ -69,7 +69,7 @@ class SpacyFeaturizer(DenseFeaturizer):
             return
 
         # in case an empty spaCy model was used, no vectors are present
-        if doc.vocab.vectors.name is None:
+        if doc.vocab.vectors_length == 0:
             logger.debug("No features present. You are using an empty spaCy model.")
             return
 

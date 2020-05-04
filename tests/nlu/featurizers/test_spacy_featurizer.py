@@ -183,6 +183,6 @@ def test_spacy_featurizer_using_empty_model():
 
     ftr._set_spacy_features(message)
 
-    vecs = message.get(SPACY_DOCS[TEXT])
+    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
 
     assert vecs is None
