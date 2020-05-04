@@ -1,5 +1,6 @@
 import argparse
 import os
+from rasa.configurations import autoconfig
 from typing import List, Optional, Text, Dict
 import rasa.cli.arguments.train as train_arguments
 
@@ -157,15 +158,16 @@ def _get_valid_config(
     mandatory_keys: List[Text],
     default_config: Text = DEFAULT_CONFIG_PATH,
 ) -> Text:
-    config = get_validated_path(config, "config", default_config)
+    config = get_validated_path(config, "config", default_config, none_is_valid=True)
 
-    if not os.path.exists(config):
-        print_error(
-            "The config file '{}' does not exist. Use '--config' to specify a "
-            "valid config file."
-            "".format(config)
-        )
-        exit(1)
+    if not config or not os.path.exists(config):
+        config = autoconfig.create_decent_config()
+
+    # TODO: this should also be run if the configuration is present, but doesn't contain
+    #       pipeline and policies
+
+    # TODO: dump config into original project directory
+    print(f"CONFIG: {config}")
 
     missing_keys = missing_config_keys(config, mandatory_keys)
     if missing_keys:
