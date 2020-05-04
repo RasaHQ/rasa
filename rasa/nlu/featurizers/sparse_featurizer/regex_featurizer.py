@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional, Text, Union, Type
+from typing import Any, Dict, List, Optional, Text, Union, Type, Tuple
 
 import numpy as np
 
@@ -17,10 +17,11 @@ from rasa.nlu.constants import (
     SPARSE_FEATURE_NAMES,
     TEXT,
     TOKENS_NAMES,
+    ALIAS,
 )
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.common as common_utils
 from rasa.nlu.model import Metadata
@@ -29,6 +30,9 @@ logger = logging.getLogger(__name__)
 
 
 class RegexFeaturizer(SparseFeaturizer):
+
+    defaults = {ALIAS: "regex_featurizer"}
+
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
@@ -65,11 +69,16 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
-            extras = self._features_for_patterns(message, attribute)
-            features = self._combine_with_existing_sparse_features(
-                message, extras, feature_name=SPARSE_FEATURE_NAMES[attribute]
+            seq_features, cls_features = self._features_for_patterns(message, attribute)
+
+            final_sequence_features = Features(
+                seq_features, Features.SEQUENCE, attribute, self.component_config[ALIAS]
             )
-            message.set(SPARSE_FEATURE_NAMES[attribute], features)
+            message.add_features(final_sequence_features)
+            final_sentence_features = Features(
+                cls_features, Features.SENTENCE, attribute, self.component_config[ALIAS]
+            )
+            message.add_features(final_sentence_features)
 
     def _add_lookup_table_regexes(
         self, lookup_tables: List[Dict[Text, Union[Text, List]]]
@@ -82,7 +91,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def _features_for_patterns(
         self, message: Message, attribute: Text
-    ) -> Optional[scipy.sparse.coo_matrix]:
+    ) -> Optional[Tuple[scipy.sparse.coo_matrix, scipy.sparse.coo_matrix]]:
         """Checks which known patterns match the message.
 
         Given a sentence, returns a vector of {1,0} values indicating which
@@ -102,7 +111,8 @@ class RegexFeaturizer(SparseFeaturizer):
 
         seq_length = len(tokens)
 
-        vec = np.zeros([seq_length, len(self.known_patterns)])
+        seq_vec = np.zeros([seq_length - 1, len(self.known_patterns)])
+        cls_vec = np.zeros([1, len(self.known_patterns)])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
             matches = re.finditer(pattern["pattern"], message.text)
@@ -121,14 +131,14 @@ class RegexFeaturizer(SparseFeaturizer):
                 for match in matches:
                     if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
-                        vec[token_index][pattern_index] = 1.0
+                        seq_vec[token_index][pattern_index] = 1.0
                         if attribute in [RESPONSE, TEXT]:
                             # CLS token vector should contain all patterns
-                            vec[-1][pattern_index] = 1.0
+                            cls_vec[0][pattern_index] = 1.0
 
                 t.set("pattern", patterns)
 
-        return scipy.sparse.coo_matrix(vec)
+        return scipy.sparse.coo_matrix(seq_vec), scipy.sparse.coo_matrix(cls_vec)
 
     def _generate_lookup_regex(
         self, lookup_table: Dict[Text, Union[Text, List[Text]]]

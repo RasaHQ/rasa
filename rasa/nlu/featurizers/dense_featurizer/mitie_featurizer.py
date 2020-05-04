@@ -1,14 +1,21 @@
 import numpy as np
 import typing
-from typing import Any, List, Text, Optional, Dict, Type
+from typing import Any, List, Text, Optional, Dict, Type, Tuple
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.nlu.constants import (
+    TEXT,
+    DENSE_FEATURE_NAMES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    ALIAS,
+    SENTENCE,
+    SEQUENCE,
+)
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 import rasa.utils.train_utils as train_utils
 
@@ -24,7 +31,8 @@ class MitieFeaturizer(DenseFeaturizer):
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
         # the CLS token. Available options: 'mean' and 'max'
-        POOLING: MEAN_POOLING
+        POOLING: MEAN_POOLING,
+        ALIAS: "mitie_featurizer",
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
@@ -57,26 +65,36 @@ class MitieFeaturizer(DenseFeaturizer):
         self, example: Message, attribute: Text, mitie_feature_extractor: Any
     ):
         tokens = train_utils.tokens_without_cls(example, attribute)
+
         if tokens is not None:
-            features = self.features_for_tokens(tokens, mitie_feature_extractor)
-            example.set(
-                DENSE_FEATURE_NAMES[attribute],
-                self._combine_with_existing_dense_features(
-                    example, features, DENSE_FEATURE_NAMES[attribute]
-                ),
+            features, cls_features = self.features_for_tokens(
+                tokens, mitie_feature_extractor
             )
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+            final_sequence_features = Features(
+                features, Features.SEQUENCE, attribute, self.component_config[ALIAS]
+            )
+            example.add_features(final_sequence_features)
+            final_sentence_features = Features(
+                cls_features, Features.SENTENCE, attribute, self.component_config[ALIAS]
+            )
+            example.add_features(final_sentence_features)
 
+    def process(self, message: Message, **kwargs: Any) -> None:
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         tokens = train_utils.tokens_without_cls(message)
-        features = self.features_for_tokens(tokens, mitie_feature_extractor)
-        message.set(
-            DENSE_FEATURE_NAMES[TEXT],
-            self._combine_with_existing_dense_features(
-                message, features, DENSE_FEATURE_NAMES[TEXT]
-            ),
+        features, cls_features = self.features_for_tokens(
+            tokens, mitie_feature_extractor
         )
+
+        final_sequence_features = Features(
+            features, Features.SEQUENCE, TEXT, self.component_config[ALIAS]
+        )
+        message.add_features(final_sequence_features)
+        final_sentence_features = Features(
+            cls_features, Features.SENTENCE, TEXT, self.component_config[ALIAS]
+        )
+        message.add_features(final_sentence_features)
 
     def _mitie_feature_extractor(self, **kwargs) -> Any:
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
@@ -94,7 +112,7 @@ class MitieFeaturizer(DenseFeaturizer):
         self,
         tokens: List[Token],
         feature_extractor: "mitie.total_word_feature_extractor",
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         # calculate features
         features = []
         for token in tokens:
@@ -102,6 +120,5 @@ class MitieFeaturizer(DenseFeaturizer):
         features = np.array(features)
 
         cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
-        features = np.concatenate([features, cls_token_vec])
 
-        return features
+        return features, cls_token_vec

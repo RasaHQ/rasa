@@ -4,7 +4,7 @@ from typing import Any, Optional, Text, Dict, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message, TrainingData
@@ -13,6 +13,9 @@ from rasa.nlu.constants import (
     SPACY_DOCS,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
+    ALIAS,
+    SENTENCE,
+    SEQUENCE,
 )
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
@@ -28,7 +31,8 @@ class SpacyFeaturizer(DenseFeaturizer):
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
         # the CLS token. Available options: 'mean' and 'max'
-        POOLING: MEAN_POOLING
+        POOLING: MEAN_POOLING,
+        ALIAS: "spacy_featurizer",
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
@@ -61,16 +65,20 @@ class SpacyFeaturizer(DenseFeaturizer):
 
     def _set_spacy_features(self, message: Message, attribute: Text = TEXT):
         """Adds the spacy word vectors to the messages features."""
-
         message_attribute_doc = self.get_doc(message, attribute)
 
         if message_attribute_doc is not None:
             features = self._features_for_doc(message_attribute_doc)
-
             cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
-            features = np.concatenate([features, cls_token_vec])
 
-            features = self._combine_with_existing_dense_features(
-                message, features, DENSE_FEATURE_NAMES[attribute]
+            final_sequence_features = Features(
+                features, Features.SEQUENCE, attribute, self.component_config[ALIAS]
             )
-            message.set(DENSE_FEATURE_NAMES[attribute], features)
+            message.add_features(final_sequence_features)
+            final_sentence_features = Features(
+                cls_token_vec,
+                Features.SENTENCE,
+                attribute,
+                self.component_config[ALIAS],
+            )
+            message.add_features(final_sentence_features)

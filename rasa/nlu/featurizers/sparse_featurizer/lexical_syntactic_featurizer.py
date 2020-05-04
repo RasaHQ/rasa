@@ -3,17 +3,17 @@ from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import numpy as np
-from typing import Any, Dict, Optional, Text, List, Type, Union
+from typing import Any, Dict, Optional, Text, List, Type, Union, Tuple
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TOKENS_NAMES, TEXT, SPARSE_FEATURE_NAMES
+from rasa.nlu.constants import TOKENS_NAMES, TEXT, SPARSE_FEATURE_NAMES, ALIAS
 from rasa.nlu.model import Metadata
 import rasa.utils.io as io_utils
 import rasa.utils.train_utils as train_utils
@@ -45,7 +45,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             ["low", "title", "upper"],
             ["BOS", "EOS", "low", "upper", "title", "digit"],
             ["low", "title", "upper"],
-        ]
+        ],
+        ALIAS: "lexical_syntactic_featurizer",
     }
 
     function_dict = {
@@ -165,14 +166,22 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         tokens = message.get(TOKENS_NAMES[TEXT])[:-1]
 
         sentence_features = self._tokens_to_features(tokens)
-        one_hot_feature_vector = self._features_to_one_hot(sentence_features)
+        (
+            one_hot_seq_feature_vector,
+            one_hot_cls_feature_vector,
+        ) = self._features_to_one_hot(sentence_features)
 
-        sparse_features = scipy.sparse.coo_matrix(one_hot_feature_vector)
+        sequence_features = scipy.sparse.coo_matrix(one_hot_seq_feature_vector)
+        sentence_features = scipy.sparse.coo_matrix(one_hot_cls_feature_vector)
 
-        sparse_features = self._combine_with_existing_sparse_features(
-            message, sparse_features, feature_name=SPARSE_FEATURE_NAMES[TEXT]
+        final_sequence_features = Features(
+            sequence_features, Features.SEQUENCE, TEXT, self.component_config[ALIAS]
         )
-        message.set(SPARSE_FEATURE_NAMES[TEXT], sparse_features)
+        message.add_features(final_sequence_features)
+        final_sentence_features = Features(
+            sentence_features, Features.SENTENCE, TEXT, self.component_config[ALIAS]
+        )
+        message.add_features(final_sentence_features)
 
     def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
         """Convert words into discrete features."""
@@ -216,14 +225,14 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
     def _features_to_one_hot(
         self, sentence_features: List[Dict[Text, Any]]
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Convert the word features into a one-hot presentation using the indices
         in the feature-to-idx dictionary."""
 
-        # +1 for CLS token
-        one_hot_feature_vector = np.zeros(
-            [len(sentence_features) + 1, self.number_of_features]
+        one_hot_seq_feature_vector = np.zeros(
+            [len(sentence_features), self.number_of_features]
         )
+        one_hot_cls_feature_vector = np.zeros([1, self.number_of_features])
 
         for token_idx, token_features in enumerate(sentence_features):
             for feature_name, feature_value in token_features.items():
@@ -235,12 +244,12 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
                     feature_idx = self.feature_to_idx_dict[feature_name][
                         feature_value_str
                     ]
-                    one_hot_feature_vector[token_idx][feature_idx] = 1
+                    one_hot_seq_feature_vector[token_idx][feature_idx] = 1
 
         # set vector of CLS token to sum of everything
-        one_hot_feature_vector[-1] = np.sum(one_hot_feature_vector, axis=0)
+        one_hot_cls_feature_vector[1] = np.sum(one_hot_seq_feature_vector, axis=0)
 
-        return one_hot_feature_vector
+        return one_hot_seq_feature_vector, one_hot_cls_feature_vector
 
     def _get_feature_value(
         self,

@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple, Text
+from typing import Any, Optional, Tuple, Text, Dict, Set, List
 
 from rasa.nlu.constants import (
     ENTITIES,
@@ -13,16 +13,25 @@ from rasa.nlu.utils import ordered
 
 class Message:
     def __init__(
-        self, text: Text, data=None, output_properties=None, time=None
+        self,
+        text: Text,
+        data: Optional[Dict[Text, Any]] = None,
+        output_properties: Optional[Set] = None,
+        time: Optional[Text] = None,
+        features: Optional[List["Features"]] = None,
     ) -> None:
         self.text = text
         self.time = time
         self.data = data if data else {}
+        self.features = features if features else []
 
         if output_properties:
             self.output_properties = output_properties
         else:
             self.output_properties = set()
+
+    def add_features(self, features: "Features") -> None:
+        self.features.append(features)
 
     def set(self, prop, info, add_to_output=False) -> None:
         self.data[prop] = info

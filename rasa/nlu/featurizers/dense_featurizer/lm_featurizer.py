@@ -3,7 +3,7 @@ from typing import Any, Optional, Text, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.training_data import Message, TrainingData
@@ -14,6 +14,9 @@ from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
+    SENTENCE,
+    SEQUENCE,
+    ALIAS,
 )
 
 
@@ -23,6 +26,8 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     Uses the output of HFTransformersNLP component to set the sequence and sentence
     level representations for dense featurizable attributes of each message object.
     """
+
+    defaults = {ALIAS: "language_model_featurizer"}
 
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
@@ -62,9 +67,17 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         sequence_features = doc[SEQUENCE_FEATURES]
         sentence_features = doc[SENTENCE_FEATURES]
 
-        features = np.concatenate([sequence_features, sentence_features])
-
-        features = self._combine_with_existing_dense_features(
-            message, features, DENSE_FEATURE_NAMES[attribute]
+        final_sequence_features = Features(
+            sequence_features,
+            Features.SEQUENCE,
+            attribute,
+            self.component_config[ALIAS],
         )
-        message.set(DENSE_FEATURE_NAMES[attribute], features)
+        message.add_features(final_sequence_features)
+        final_sentence_features = Features(
+            sentence_features,
+            Features.SENTENCE,
+            attribute,
+            self.component_config[ALIAS],
+        )
+        message.add_features(final_sentence_features)

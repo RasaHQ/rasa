@@ -24,6 +24,38 @@ def sequence_to_sentence_features(
     return np.expand_dims(features[-1], axis=0)
 
 
+class Features:
+    SEQUENCE = "sequence"
+    SENTENCE = "sentence"
+    VALID_TYPES = [SEQUENCE, SENTENCE]
+
+    def __init__(
+        self,
+        features: Union[np.ndarray, scipy.sparse.spmatrix],
+        type: Text,
+        message_attribute: Text,
+        origin: Text,
+    ):
+        self.validate_type(type)
+
+        self.features = features
+        self.type = type
+        self.origin = origin
+        self.message_attribute = message_attribute
+
+    def validate_type(self, type: Text):
+        if type not in self.VALID_TYPES:
+            raise ValueError(
+                f"Invalid feature type '{type}' used. Valid feature types are: {self.VALID_TYPES}."
+            )
+
+    def is_sparse(self):
+        return isinstance(self.features, scipy.sparse.spmatrix)
+
+    def is_dense(self):
+        return not self.is_sparse()
+
+
 class Featurizer(Component):
     pass
 
