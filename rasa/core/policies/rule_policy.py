@@ -4,6 +4,7 @@ from typing import List, Dict, Text, Optional, Any
 from tqdm import tqdm
 import json
 import re
+from collections import defaultdict
 
 import rasa.utils.io
 
@@ -59,6 +60,41 @@ class RulePolicy(MemoizationPolicy):
 
         return feature_str
 
+    @staticmethod
+    def _features_in_state(fs, state):
+
+        state_slots = defaultdict(set)
+        for s in state.keys():
+            if s.startswith("slot"):
+                state_slots[s[: s.rfind("_")]].add(s)
+
+        f_slots = defaultdict(set)
+        for f in fs:
+            if f not in state:
+                return False
+
+            if f.startswith("slot"):
+                f_slots[f[: f.rfind("_")]].add(f)
+
+        for k, v in f_slots.items():
+            if state_slots[k] != v:
+                return False
+
+        return True
+
+    def _rule_is_good(self, key, i, state):
+        return (
+            i >= len(key.split("|"))
+            or (not list(reversed(key.split("|")))[i] and not state)
+            or (
+                list(reversed(key.split("|")))[i]
+                and state
+                and self._features_in_state(
+                    list(reversed(key.split("|")))[i].split(), state
+                )
+            )
+        )
+
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
@@ -90,8 +126,6 @@ class RulePolicy(MemoizationPolicy):
 
                 if new_key:
                     if new_key.startswith("|"):
-                        # if "intent" not in new_key:
-
                         new_key = new_key[1:]
                     if new_key.endswith("|"):
                         new_key = new_key[:-1]
@@ -125,25 +159,10 @@ class RulePolicy(MemoizationPolicy):
         possible_keys = set(self.lookup.keys())
         for i, state in enumerate(reversed(states)):
             possible_keys = set(
-                filter(
-                    lambda key: (
-                        i >= len(key.split("|"))
-                        or (not list(reversed(key.split("|")))[i] and not state)
-                        or (
-                            list(reversed(key.split("|")))[i]
-                            and state
-                            and all(
-                                f in state.keys()
-                                for f in list(reversed(key.split("|")))[i].split()
-                            )
-                        )
-                    ),
-                    possible_keys,
-                )
+                filter(lambda _key: self._rule_is_good(_key, i, state), possible_keys,)
             )
-        print(possible_keys)
-        if possible_keys:
 
+        if possible_keys:
             key = max(possible_keys, key=len)
 
             recalled = self.lookup.get(key)
