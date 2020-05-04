@@ -1,7 +1,7 @@
 import pytest
 
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT, INTENT, TOKENS_NAMES
+from rasa.nlu.constants import TEXT, INTENT, TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 
 
@@ -48,3 +48,20 @@ def test_custom_intent_symbol(text, expected_tokens):
     tk.train(TrainingData([message]))
 
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
+
+
+@pytest.mark.parametrize(
+    "text, expected_number_of_sub_tokens",
+    [("Aarhus is a city", [2, 1, 1, 1]), ("sentence embeddings", [1, 3])],
+)
+def test_convert_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
+    tk = ConveRTTokenizer()
+
+    message = Message(text)
+    message.set(INTENT, text)
+
+    tk.train(TrainingData([message]))
+
+    assert [
+        t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])[:-1]
+    ] == expected_number_of_sub_tokens
