@@ -57,7 +57,7 @@
     - ... <!-- indicator that there might be a story before hand -->
 * faq
     - utter_faq
-<!-- no ... it will learn to predict action_listen here -->
+<!-- no ... means predict action_listen here -->
 
 ## FAQ detailed
     - slot{"detailed_faq": true}
