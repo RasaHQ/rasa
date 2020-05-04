@@ -71,11 +71,11 @@ def print_version() -> None:
     rasa_x_info = None
     try:
         import rasa_sdk
-        sdk_info = rasa_sdk.__version__ # pytype: disable=import-error
+        sdk_info = rasa_sdk.__version__  # pytype: disable=import-error
     except ModuleNotFoundError:
         pass
     try:
-        from rasax.community.version import __version__ as rasa_x_version # pytype: disable=import-error
+        from rasax.community.version import __version__ as rasa_x_version  # pytype: disable=import-error
         rasa_x_info = rasa_x_version
     except ModuleNotFoundError:
         pass
