@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTup
 import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
-from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.featurizers.featurizer import Featurizer, Features
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractor
@@ -234,6 +234,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
+        "in_sequence": [],
+        "in_sentence": [],
     }
 
     # init helpers
@@ -419,21 +421,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _extract_features(
         self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
-        sparse_features = None
-        dense_features = None
 
-        if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
-            sparse_features = message.get(SPARSE_FEATURE_NAMES[attribute])
-
-        if message.get(DENSE_FEATURE_NAMES[attribute]) is not None:
-            dense_features = message.get(DENSE_FEATURE_NAMES[attribute])
-
-        if sparse_features is not None and dense_features is not None:
-            if sparse_features.shape[0] != dense_features.shape[0]:
-                raise ValueError(
-                    f"Sequence dimensions for sparse and dense features "
-                    f"don't coincide in '{message.text}' for attribute '{attribute}'."
-                )
+        sparse_features = message.get_sparse_features(attribute)
+        dense_features = message.get_dense_features(attribute)
 
         # If we don't use the transformer and we don't want to do entity recognition,
         # to speed up training take only the sentence features as feature vector.

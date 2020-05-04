@@ -247,7 +247,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
                     one_hot_seq_feature_vector[token_idx][feature_idx] = 1
 
         # set vector of CLS token to sum of everything
-        one_hot_cls_feature_vector[1] = np.sum(one_hot_seq_feature_vector, axis=0)
+        one_hot_cls_feature_vector[0] = np.sum(one_hot_seq_feature_vector, axis=0)
 
         return one_hot_seq_feature_vector, one_hot_cls_feature_vector
 

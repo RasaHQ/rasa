@@ -11,14 +11,7 @@ import rasa.utils.io
 import scipy.sparse
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import (
-    CLS_TOKEN,
-    RESPONSE,
-    SPARSE_FEATURE_NAMES,
-    TEXT,
-    TOKENS_NAMES,
-    ALIAS,
-)
+from rasa.nlu.constants import CLS_TOKEN, RESPONSE, TEXT, TOKENS_NAMES, ALIAS
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features

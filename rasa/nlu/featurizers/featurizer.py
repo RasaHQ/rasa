@@ -55,6 +55,21 @@ class Features:
     def is_dense(self):
         return not self.is_sparse()
 
+    @staticmethod
+    def combine_features(
+        features: Union[np.ndarray, scipy.sparse.spmatrix],
+        additional_features: Optional["Features"],
+    ) -> Any:
+        if features is None:
+            return additional_features.features
+
+        if additional_features.is_dense():
+            return np.concatenate((features, additional_features.features), axis=-1)
+
+        from scipy.sparse import hstack
+
+        return hstack([features, additional_features.features])
+
 
 class Featurizer(Component):
     pass

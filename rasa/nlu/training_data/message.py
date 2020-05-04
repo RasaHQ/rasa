@@ -107,3 +107,73 @@ class Message:
             return split_title[0], split_title[1]
         elif len(split_title) == 1:
             return split_title[0], None
+
+    def get_sparse_features(self, attribute: Text):
+        from nlu.featurizers.featurizer import Features
+        import scipy.sparse
+
+        # TODO: check what features to use
+
+        features = [
+            f
+            for f in self.features
+            if f.message_attribute == attribute and f.is_sparse()
+        ]
+
+        if not features:
+            return None
+
+        sequence_features = [f for f in features if f.type == Features.SEQUENCE]
+        sentence_features = [f for f in features if f.type == Features.SENTENCE]
+
+        combined_sequence_features = None
+        for f in sequence_features:
+            combined_sequence_features = Features.combine_features(
+                combined_sequence_features, f
+            )
+
+        combined_sentence_features = None
+        for f in sentence_features:
+            combined_sentence_features = Features.combine_features(
+                combined_sentence_features, f
+            )
+
+        return scipy.sparse.vstack(
+            [combined_sequence_features, combined_sentence_features]
+        )
+
+    def get_dense_features(self, attribute: Text):
+        from nlu.featurizers.featurizer import Features
+        import numpy as np
+
+        # TODO: check what features to use
+
+        features = [
+            f
+            for f in self.features
+            if f.message_attribute == attribute and f.is_dense()
+        ]
+
+        if not features:
+            return None
+
+        sequence_features = [f for f in features if f.type == Features.SEQUENCE]
+        sentence_features = [f for f in features if f.type == Features.SENTENCE]
+
+        combined_sequence_features = None
+        for f in sequence_features:
+            combined_sequence_features = Features.combine_features(
+                combined_sequence_features, f
+            )
+
+        combined_sentence_features = None
+        for f in sentence_features:
+            combined_sentence_features = Features.combine_features(
+                combined_sentence_features, f
+            )
+
+        # TODO
+        #  stack sequence and sentence
+        #  make sure they have the same dimension
+
+        return np.concatenate([combined_sequence_features, combined_sentence_features])
