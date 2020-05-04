@@ -1,4 +1,3 @@
-import os
 import sys
 import argparse
 import logging
@@ -66,17 +65,19 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 
 def print_version() -> None:
-    print(f"Rasa Version     : {version.__version__}")
-    py_stuff, os_stuff = sys.version.split("\n")
-    print(f"Python Version   : {py_stuff}")
-    print(f"Operating System : {os_stuff}")
-    print(f"Python Path      : {sys.path[0]}")
+    """Prints version information of rasa tooling and python."""
+    py_info, os_info = sys.version.split("\n")
+    sdk_info = None
     try:
         import rasa_sdk
-
-        print(f"Rasa SDK Version : {rasa_sdk.__version__}")
+        sdk_info = rasa_sdk.__version__
     except ModuleNotFoundError:
         pass
+    print(f"Rasa Version     : {version.__version__}")
+    print(f"Rasa SDK Version : {sdk_info}")
+    print(f"Python Version   : {py_info}")
+    print(f"Operating System : {os_info}")
+    print(f"Python Path      : {sys.executable}")
 
 
 def main() -> None:
