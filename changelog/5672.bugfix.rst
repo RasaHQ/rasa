@@ -1,4 +1,0 @@
-Updated Python dependency ``ruamel.yaml`` to ``>=0.16``. We recommend to use at least
-``0.16.10`` due to the security issue
-`CVE-2019-20478 <https://nvd.nist.gov/vuln/detail/CVE-2019-20478>`_ which is present in
-in prior versions.
