@@ -212,4 +212,4 @@ the Rasa assistant that you can talk to in the Rasa Docs, and
 Both use `Github Actions <https://github.com/features/actions>`_ as a CI/CD tool.
 
 These examples are just two of many possibilities. If you have a CI/CD setup you like, please
-share it with the Rasa community on the `Rasa Forum <https://forum.rasa.com/>`_.
+share it with the Rasa community on the `forum <https://forum.rasa.com>`_.
