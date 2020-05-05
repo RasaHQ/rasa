@@ -1457,7 +1457,7 @@ def write_prediction_for_hermit_evaluation(
         }
         out.append(obj)
 
-    with open(os.path.join(output_directory, "hermit_eval.json"), "w") as outfile:
+    with open(os.path.join(output_directory, "diet-paper-eval.json"), "w") as outfile:
         json.dump(out, outfile, indent=2)
 
 
