@@ -413,8 +413,22 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Checks if all labels have features set."""
 
         return all(
-            label_example.get(SPARSE_FEATURE_NAMES[attribute]) is not None
-            or label_example.get(DENSE_FEATURE_NAMES[attribute]) is not None
+            len(
+                [
+                    f
+                    for f in label_example.features
+                    if f.is_sparse() and f.message_attribute == attribute
+                ]
+            )
+            > 0
+            or len(
+                [
+                    f
+                    for f in label_example.features
+                    if f.is_dense() and f.message_attribute == attribute
+                ]
+            )
+            > 0
             for label_example in labels_example
         )
 

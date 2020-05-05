@@ -109,10 +109,12 @@ class Message:
             return split_title[0], None
 
     def get_sparse_features(
-        self, attribute: Text, sentence_featurizers: List, sequence_featurizers: List
+        self, attribute: Text, sequence_featurizers: List, sentence_featurizers: List
     ):
         from nlu.featurizers.featurizer import Features
         import scipy.sparse
+        import numpy as np
+        import rasa.utils.train_utils as train_utils
 
         features = [
             f
@@ -136,7 +138,7 @@ class Message:
             and (f.origin in sentence_featurizers or not sentence_featurizers)
         ]
 
-        if not sequence_features or not sentence_features:
+        if not sequence_features and not sentence_features:
             return None
 
         combined_sequence_features = None
@@ -151,15 +153,29 @@ class Message:
                 combined_sentence_features, f
             )
 
+        if combined_sequence_features is None:
+            seq_dim = len(train_utils.tokens_without_cls(self, attribute))
+            feature_dim = combined_sentence_features.shape[-1]
+            combined_sequence_features = scipy.sparse.coo_matrix(
+                np.zeros([seq_dim, feature_dim])
+            )
+        if combined_sentence_features is None:
+            seq_dim = 1
+            feature_dim = combined_sequence_features.shape[-1]
+            combined_sentence_features = scipy.sparse.coo_matrix(
+                np.zeros([seq_dim, feature_dim])
+            )
+
         return scipy.sparse.vstack(
             [combined_sequence_features, combined_sentence_features]
         )
 
     def get_dense_features(
-        self, attribute: Text, sentence_featurizers: List, sequence_featurizers: List
+        self, attribute: Text, sequence_featurizers: List, sentence_featurizers: List
     ):
         from nlu.featurizers.featurizer import Features
         import numpy as np
+        import rasa.utils.train_utils as train_utils
 
         features = [
             f
@@ -183,7 +199,7 @@ class Message:
             and (f.origin in sentence_featurizers or not sentence_featurizers)
         ]
 
-        if not sequence_features or not sentence_features:
+        if not sequence_features and not sentence_features:
             return None
 
         combined_sequence_features = None
@@ -197,6 +213,15 @@ class Message:
             combined_sentence_features = Features.combine_features(
                 combined_sentence_features, f
             )
+
+        if combined_sequence_features is None:
+            seq_dim = len(train_utils.tokens_without_cls(self, attribute))
+            feature_dim = combined_sentence_features.shape[-1]
+            combined_sequence_features = np.zeros([seq_dim, feature_dim])
+        if combined_sentence_features is None:
+            seq_dim = 1
+            feature_dim = combined_sequence_features.shape[-1]
+            combined_sentence_features = np.zeros([seq_dim, feature_dim])
 
         seq_dim = (
             combined_sequence_features.shape[0] + combined_sentence_features.shape[0]
