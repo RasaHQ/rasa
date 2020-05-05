@@ -422,8 +422,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
 
-        sparse_features = message.get_sparse_features(attribute)
-        dense_features = message.get_dense_features(attribute)
+        sparse_features = message.get_sparse_features(
+            attribute,
+            self.component_config["in_sequence"],
+            self.component_config["in_sentence"],
+        )
+        dense_features = message.get_dense_features(
+            attribute,
+            self.component_config["in_sequence"],
+            self.component_config["in_sentence"],
+        )
 
         # If we don't use the transformer and we don't want to do entity recognition,
         # to speed up training take only the sentence features as feature vector.

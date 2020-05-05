@@ -108,11 +108,11 @@ class Message:
         elif len(split_title) == 1:
             return split_title[0], None
 
-    def get_sparse_features(self, attribute: Text):
+    def get_sparse_features(
+        self, attribute: Text, sentence_featurizers: List, sequence_featurizers: List
+    ):
         from nlu.featurizers.featurizer import Features
         import scipy.sparse
-
-        # TODO: check what features to use
 
         features = [
             f
@@ -123,8 +123,21 @@ class Message:
         if not features:
             return None
 
-        sequence_features = [f for f in features if f.type == Features.SEQUENCE]
-        sentence_features = [f for f in features if f.type == Features.SENTENCE]
+        sequence_features = [
+            f
+            for f in features
+            if f.type == Features.SEQUENCE
+            and (f.origin in sequence_featurizers or not sentence_featurizers)
+        ]
+        sentence_features = [
+            f
+            for f in features
+            if f.type == Features.SENTENCE
+            and (f.origin in sentence_featurizers or not sentence_featurizers)
+        ]
+
+        if not sequence_features or not sentence_features:
+            return None
 
         combined_sequence_features = None
         for f in sequence_features:
@@ -142,11 +155,11 @@ class Message:
             [combined_sequence_features, combined_sentence_features]
         )
 
-    def get_dense_features(self, attribute: Text):
+    def get_dense_features(
+        self, attribute: Text, sentence_featurizers: List, sequence_featurizers: List
+    ):
         from nlu.featurizers.featurizer import Features
         import numpy as np
-
-        # TODO: check what features to use
 
         features = [
             f
@@ -157,8 +170,21 @@ class Message:
         if not features:
             return None
 
-        sequence_features = [f for f in features if f.type == Features.SEQUENCE]
-        sentence_features = [f for f in features if f.type == Features.SENTENCE]
+        sequence_features = [
+            f
+            for f in features
+            if f.type == Features.SEQUENCE
+            and (f.origin in sequence_featurizers or not sentence_featurizers)
+        ]
+        sentence_features = [
+            f
+            for f in features
+            if f.type == Features.SENTENCE
+            and (f.origin in sentence_featurizers or not sentence_featurizers)
+        ]
+
+        if not sequence_features or not sentence_features:
+            return None
 
         combined_sequence_features = None
         for f in sequence_features:
@@ -172,8 +198,21 @@ class Message:
                 combined_sentence_features, f
             )
 
-        # TODO
-        #  stack sequence and sentence
-        #  make sure they have the same dimension
+        seq_dim = (
+            combined_sequence_features.shape[0] + combined_sentence_features.shape[0]
+        )
+        feature_dim = max(
+            [combined_sequence_features.shape[-1], combined_sentence_features.shape[-1]]
+        )
 
-        return np.concatenate([combined_sequence_features, combined_sentence_features])
+        final_features = np.zeros([seq_dim, feature_dim])
+
+        final_features[
+            : combined_sequence_features.shape[0],
+            : combined_sequence_features.shape[-1],
+        ] = combined_sequence_features
+        final_features[
+            -1, : combined_sentence_features.shape[-1]
+        ] = combined_sentence_features
+
+        return final_features
