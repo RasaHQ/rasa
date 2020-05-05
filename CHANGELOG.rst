@@ -39,7 +39,7 @@ Features
 
   .. note::
 
-      Composite entities are currently just supported by the :ref:``diet-classifier`` and :ref:``CRFEntityExtractor``.
+      Composite entities are currently just supported by the :ref:`diet-classifier` and :ref:`CRFEntityExtractor`.
 - `#5465 <https://github.com/rasahq/rasa/issues/5465>`_: Update training data format for NLU to support entities with a role or group label.
 
   You can now specify synonyms, roles, and groups of entities using the following data format:
