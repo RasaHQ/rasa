@@ -134,6 +134,8 @@ class RasaModel(tf.keras.models.Model):
 
         training_steps = 0
 
+        # print(tf.trainable_variables())
+
         for epoch in progress_bar:
             epoch_batch_size = self.linearly_increasing_batch_size(
                 epoch, batch_size, epochs

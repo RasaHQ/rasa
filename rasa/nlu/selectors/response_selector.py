@@ -112,7 +112,7 @@ class ResponseSelector(DIETClassifier):
         # and labels.
         # The number of hidden layers is equal to the length of the corresponding
         # list.
-        HIDDEN_LAYERS_SIZES: {TEXT: [256, 128], LABEL: [256, 128]},
+        HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []},
         # Whether to share the hidden layer weights between input words and responses
         SHARE_HIDDEN_LAYERS: False,
         # Number of units in transformer

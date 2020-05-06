@@ -35,10 +35,13 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         super(ConveRTFeaturizer, self).__init__(component_config)
 
-        model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
+        # model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
+        model_url = "http://models.poly-ai.com/multi_context_convert/v1/model.tar.gz"
         self.module = train_utils.load_tf_hub_model(model_url)
 
         self.sentence_encoding_signature = self.module.signatures["default"]
+        self.context_encoding_signature = self.module.signatures["encode_context"]
+        self.response_encoding_signature = self.module.signatures["encode_response"]
         self.sequence_encoding_signature = self.module.signatures["encode_sequence"]
 
     @classmethod
@@ -60,12 +63,59 @@ class ConveRTFeaturizer(DenseFeaturizer):
             sentence_encodings, sequence_encodings, number_of_tokens_in_sentence
         )
 
+    @staticmethod
+    def _clean_text(text):
+
+        user_messages = text.split("@@")
+        user_messages = [msg.strip() for msg in user_messages if msg.strip()]
+
+        # remove user label
+        user_messages = [msg.strip()[2:].strip() for msg in user_messages]
+
+        messages = []
+        for msg in user_messages:
+            # remove turn identifier
+            messages += msg.split("%%")
+
+        # remove form identifier
+        messages = [
+            msg.split("}:")[1].strip() if 'form{"requested_slot' in msg else msg
+            for msg in messages
+        ]
+
+        # remove other symbolic names
+        messages = [
+            ":".join(msg.split(":")[1:]).strip() if ":" in msg else msg
+            for msg in messages
+        ]
+
+        messages = [msg.replace("_", " ") for msg in messages]
+        return " ".join(messages)
+
+    def _separate_extra_context(self, batch_text):
+
+        immediate_contexts = []
+        past_contexts = []
+        for text in batch_text:
+            all_turns = text.split("@@")
+            immediate = f"@@{all_turns[1]}"
+            past = "@@" + "@@".join(all_turns[2:])
+
+            immediate_contexts.append(self._clean_text(immediate))
+            past_contexts.append(self._clean_text(past))
+
+        return immediate_contexts, past_contexts
+
     def _compute_sentence_encodings(
         self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> np.ndarray:
         # Get text for attribute of each example
+
+        # batch_attribute_text = [self._clean_text(ex.get(attribute)) for ex in batch_examples]
         batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
-        sentence_encodings = self._sentence_encoding_of_text(batch_attribute_text)
+        sentence_encodings = self._sentence_encoding_of_text(
+            batch_attribute_text, attribute
+        )
 
         # convert them to a sequence of 1
         return np.reshape(sentence_encodings, (len(batch_examples), 1, -1))
@@ -116,7 +166,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
             # tile sequence encoding to duplicate as sentence encodings have size
             # 1024 and sequence encodings only have a dimensionality of 512
-            sequence_encoding = np.tile(sequence_encoding, (1, 2))
+            # sequence_encoding = np.tile(sequence_encoding, (1, 2))
             # add sentence encoding to the end (position of cls token)
             sequence_encoding = np.concatenate(
                 [sequence_encoding, sentence_encoding], axis=0
@@ -147,11 +197,36 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         return texts
 
-    def _sentence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
+    def _sentence_encoding_of_text(
+        self, batch: List[Text], attribute: Text = TEXT
+    ) -> np.ndarray:
 
-        return self.sentence_encoding_signature(tf.convert_to_tensor(batch))[
-            "default"
-        ].numpy()
+        if attribute == TEXT:
+
+            context_batch, extra_context_batch = self._separate_extra_context(batch)
+            # context_batch = batch
+            # extra_context_batch = [''] * len(batch)
+            # for i in range(10):
+            #     print('Original', batch[i])
+            #     print('immediate', context_batch[i])
+            #     print('extra', extra_context_batch[i])
+            #     print('--------------------------------')
+            # print(context_batch[1], extra_context_batch[2])
+            # print(context_batch[3], extra_context_batch[3])
+            # print(context_batch[4], extra_context_batch[4])
+            encoding = self.context_encoding_signature(
+                context=tf.convert_to_tensor(context_batch),
+                extra_context=tf.convert_to_tensor(extra_context_batch),
+            )
+            # print(encoding.keys())
+            return encoding["default"].numpy()
+        else:
+            return self.response_encoding_signature(tf.convert_to_tensor(batch))[
+                "default"
+            ].numpy()
+        # return self.sentence_encoding_signature(tf.convert_to_tensor(batch))[
+        #     "default"
+        # ].numpy()
 
     def _sequence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
 

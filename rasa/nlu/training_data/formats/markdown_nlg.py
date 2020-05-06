@@ -91,10 +91,23 @@ class NLGMarkdownWriter(TrainingDataWriter):
     def _generate_nlg_stories(training_data: "TrainingData"):
 
         md = ""
-        for intent, utterances in training_data.nlg_stories.items():
+        responses_covered = {}
+        for message in training_data.training_examples:
+            intent = message.get_combined_intent_response_key()
+            response = message.get("response")
+            if intent in responses_covered:
+                continue
+
             md += "## \n"
             md += f"* {intent}\n"
-            for utterance in utterances:
-                md += f"- {utterance}\n"
+            md += f"- {response}\n"
             md += "\n"
+            responses_covered[intent] = 1
         return md
+        # for intent, utterances in training_data.nlg_stories.items():
+        #     md += "## \n"
+        #     md += f"* {intent}\n"
+        #     for utterance in utterances:
+        #         md += f"- {utterance}\n"
+        #     md += "\n"
+        # return md

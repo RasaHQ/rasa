@@ -183,6 +183,7 @@ def load_tf_hub_model(model_url: Text) -> Any:
         directory = io_utils.create_temporary_directory()
         os.environ["TFHUB_CACHE_DIR"] = directory
         return tfhub.load(model_url)
+    # return tfhub.load(model_url)
 
 
 def _replace_deprecated_option(

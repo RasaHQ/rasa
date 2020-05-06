@@ -30,7 +30,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         super().__init__(component_config)
 
-        model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
+        # model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
+        model_url = "http://models.poly-ai.com/multi_context_convert/v1/model.tar.gz"
         self.module = train_utils.load_tf_hub_model(model_url)
 
         self.tokenize_signature = self.module.signatures["tokenize"]
