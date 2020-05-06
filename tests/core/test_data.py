@@ -1,14 +1,15 @@
 import os
+import pytest
 import shutil
 import tempfile
-
-import pytest
-
 import rasa.data as data
-from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
+
 from rasa.nlu.training_data import load_data
 from rasa.nlu.utils import json_to_string
 from rasa.utils import io
+
+from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
+from tests.utilities import platform_independent_paths
 
 
 def test_get_core_directory(project):
@@ -157,8 +158,8 @@ def test_same_file_names_get_resolved(tmpdir):
 def test_find_nlu_files_with_different_formats(test_input, expected):
     examples_dir = "data/examples"
     data_dir = os.path.join(examples_dir, test_input)
-    core_files, nlu_files = data.get_core_nlu_files([data_dir])
-    assert nlu_files == expected
+    paths = data.get_core_nlu_files([data_dir])
+    assert platform_independent_paths(paths[1]) == expected
 
 
 def test_is_nlu_file_with_json():

@@ -1,5 +1,4 @@
 import logging
-import tempfile
 from contextlib import contextmanager
 
 import pytest
@@ -45,6 +44,7 @@ from rasa.core.tracker_store import (
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE, MockedMongoTrackerStore
+from tests.utilities import write_file_config
 
 domain = Domain.load("data/test_domains/default.yml")
 
@@ -357,11 +357,8 @@ def test_db_url_with_query_from_endpoint_config():
         another: query
     """
 
-    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.yml") as f:
-        f.write(endpoint_config)
-        f.flush()
-        store_config = read_endpoint_config(f.name, "tracker_store")
-
+    filename = write_file_config(endpoint_config)
+    store_config = read_endpoint_config(filename, "tracker_store")
     url = SQLTrackerStore.get_db_url(**store_config.kwargs)
 
     import itertools
@@ -559,12 +556,12 @@ def test_tracker_store_retrieve_with_session_started_events(
 ):
     tracker_store = tracker_store_type(default_domain, **tracker_store_kwargs)
     events = [
-        UserUttered("Hola", {"name": "greet"}),
-        BotUttered("Hi"),
-        SessionStarted(),
-        UserUttered("Ciao", {"name": "greet"}),
+        UserUttered("Hola", {"name": "greet"}, timestamp=1),
+        BotUttered("Hi", timestamp=2),
+        SessionStarted(timestamp=3),
+        UserUttered("Ciao", {"name": "greet"}, timestamp=4),
     ]
-    sender_id = "test_sql_tracker_store_with_session_events"
+    sender_id = "test_tracker_store_retrieve_with_session_started_events"
     tracker = DialogueStateTracker.from_events(sender_id, events)
     tracker_store.save(tracker)
 

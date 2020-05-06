@@ -207,6 +207,7 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
     train_request.terminate()
 
 
+@pytest.mark.unix
 def test_train_status_is_not_blocked_by_training(
     background_server: Process, shared_statuses: DictProxy, training_request: Process
 ):
@@ -689,7 +690,7 @@ def test_pushing_event(rasa_app: SanicTestClient, event: Event):
     evt = tracker.get("events")[0]
     deserialised_event = Event.from_parameters(evt)
     assert deserialised_event == event
-    assert deserialised_event.timestamp > time_before_adding_events
+    assert deserialised_event.timestamp >= time_before_adding_events
 
 
 def test_push_multiple_events(rasa_app: SanicTestClient):

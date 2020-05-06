@@ -169,6 +169,7 @@ from rasa.nlu.training_data import Message
         ),
     ],
 )
+@pytest.mark.unix
 def test_lm_featurizer_shape_values(
     model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec
 ):

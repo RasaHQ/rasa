@@ -341,6 +341,7 @@ def test_lm_tokenizer_edge_cases(
         ("Forecast+for+LUNCH", ["Forecast", "for", "LUNCH"]),
     ],
 )
+@pytest.mark.unix
 def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
@@ -364,6 +365,7 @@ def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens):
     "text, expected_number_of_sub_tokens",
     [("sentence embeddings", [1, 4]), ("this is a test", [1, 1, 1, 1])],
 )
+@pytest.mark.unix
 def test_lm_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
     transformers_config = {"model_name": "bert"}  # Test for one should be enough
 

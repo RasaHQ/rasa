@@ -20,6 +20,7 @@ from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
         ("ńöñàśçií", ["ńöñàśçií"], [(0, 8)]),
     ],
 )
+@pytest.mark.unix
 def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
     tk = ConveRTTokenizer()
 
@@ -37,6 +38,7 @@ def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
         ("Forecast for LUNCH", ["Forecast for LUNCH"]),
     ],
 )
+@pytest.mark.unix
 def test_custom_intent_symbol(text, expected_tokens):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
@@ -54,6 +56,7 @@ def test_custom_intent_symbol(text, expected_tokens):
     "text, expected_number_of_sub_tokens",
     [("Aarhus is a city", [2, 1, 1, 1]), ("sentence embeddings", [1, 3])],
 )
+@pytest.mark.unix
 def test_convert_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
     tk = ConveRTTokenizer()
 

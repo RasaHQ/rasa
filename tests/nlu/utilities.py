@@ -1,6 +1,3 @@
-import tempfile
-import ruamel.yaml as yaml
-
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter
 from rasa.nlu.train import train
@@ -8,15 +5,6 @@ from rasa.nlu.train import train
 
 def base_test_conf(pipeline_template):
     return RasaNLUModelConfig({"pipeline": pipeline_template})
-
-
-def write_file_config(file_config):
-    with tempfile.NamedTemporaryFile(
-        "w+", suffix="_tmp_config_file.yml", delete=False
-    ) as f:
-        f.write(yaml.safe_dump(file_config))
-        f.flush()
-        return f
 
 
 async def interpreter_for(component_builder, data, path, config):

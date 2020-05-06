@@ -162,6 +162,7 @@ rasabaster = "^0.7.23"
 spacy = [ "spacy",]
 convert = [ "tensorflow_text",]
 transformers = [ "transformers",]
+jieba = [ "jieba",]
 full = [ "spacy", "tensorflow_text", "transformers", "jieba",]
 gh-release-notes = [ "pypandoc", "github3.py",]
 

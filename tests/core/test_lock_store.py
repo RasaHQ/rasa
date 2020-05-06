@@ -221,7 +221,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
 async def test_lock_error(default_agent: Agent):
     lock_lifetime = 0.01
     wait_time_in_seconds = 0.01
-    holdup = 0.1
+    holdup = 1
 
     # Mock message handler again to add a wait time holding up the lock
     # after it's been acquired

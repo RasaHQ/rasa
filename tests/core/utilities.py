@@ -66,7 +66,7 @@ def mocked_cmd_input(package, text: Text):
 
 
 def user_uttered(
-    text: Text, confidence: float, metadata: Dict[Text, Any] = None
+    text: Text, confidence: float, metadata: Dict[Text, Any] = None, timestamp: Optional[float] = None,
 ) -> UserUttered:
     parse_data = {"intent": {"name": text, "confidence": confidence}}
     return UserUttered(
@@ -74,6 +74,7 @@ def user_uttered(
         intent=parse_data["intent"],
         parse_data=parse_data,
         metadata=metadata,
+        timestamp=timestamp,
     )
 
 

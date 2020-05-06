@@ -18,6 +18,7 @@ from tests.nlu import utilities
 @pytest.mark.parametrize(
     "pipeline_template", list(registry.registered_pipeline_templates.keys())
 )
+@pytest.mark.unix
 async def test_interpreter_on_pipeline_templates(
     pipeline_template, component_builder, tmpdir
 ):

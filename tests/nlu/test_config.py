@@ -1,6 +1,6 @@
 import json
-import tempfile
 import os
+import ruamel.yaml as yaml
 from typing import Text, List
 
 import pytest
@@ -13,13 +13,13 @@ from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.registry import registered_pipeline_templates
 from rasa.nlu.model import Trainer
-from tests.nlu.utilities import write_file_config
+from tests.utilities import write_file_config
 
 
 def test_blank_config(blank_config):
     file_config = {}
-    f = write_file_config(file_config)
-    final_config = config.load(f.name)
+    filename = write_file_config(yaml.safe_dump(file_config))
+    final_config = config.load(filename)
 
     assert final_config.as_dict() == blank_config.as_dict()
 
@@ -27,20 +27,18 @@ def test_blank_config(blank_config):
 def test_invalid_config_json():
     file_config = """pipeline: [pretrained_embeddings_spacy"""  # invalid yaml
 
-    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.json") as f:
-        f.write(file_config)
-        f.flush()
+    filename = write_file_config(file_config)
 
-        with pytest.raises(config.InvalidConfigError):
-            config.load(f.name)
+    with pytest.raises(config.InvalidConfigError):
+        config.load(filename)
 
 
 def test_invalid_pipeline_template():
     args = {"pipeline": "my_made_up_name"}
-    f = write_file_config(args)
+    filename = write_file_config(yaml.safe_dump(args))
 
     with pytest.raises(config.InvalidConfigError) as execinfo:
-        config.load(f.name)
+        config.load(filename)
     assert "unknown pipeline template" in str(execinfo.value)
 
 
@@ -58,13 +56,24 @@ def test_invalid_many_tokenizers_in_config():
     "_config",
     [
         {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyFeaturizer"}]},
-        {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "ConveRTFeaturizer"}]},
-        {
-            "pipeline": [
-                {"name": "ConveRTTokenizer"},
-                {"name": "LanguageModelFeaturizer"},
-            ]
-        },
+        pytest.param(
+            {
+                "pipeline": [
+                    {"name": "WhitespaceTokenizer"},
+                    {"name": "ConveRTFeaturizer"},
+                ]
+            },
+            marks=pytest.mark.unix,
+        ),
+        pytest.param(
+            {
+                "pipeline": [
+                    {"name": "ConveRTTokenizer"},
+                    {"name": "LanguageModelFeaturizer"},
+                ]
+            },
+            marks=pytest.mark.unix,
+        ),
     ],
 )
 def test_missing_required_component(_config):
@@ -85,11 +94,12 @@ def test_missing_property(pipeline_config):
 @pytest.mark.parametrize(
     "pipeline_template", list(registered_pipeline_templates.keys())
 )
+@pytest.mark.unix
 def test_pipeline_registry_lookup(pipeline_template: Text):
     args = {"pipeline": pipeline_template}
-    f = write_file_config(args)
+    filename = write_file_config(yaml.safe_dump(args))
 
-    final_config = config.load(f.name)
+    final_config = config.load(filename)
     components = [c for c in final_config.pipeline]
 
     assert json.dumps(components, sort_keys=True) == json.dumps(

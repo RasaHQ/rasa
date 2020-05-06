@@ -1,11 +1,12 @@
 from typing import Text
+import ruamel.yaml as yaml
 
 import pytest
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
-from tests.nlu.utilities import write_file_config
+from tests.utilities import write_file_config
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
@@ -41,31 +42,35 @@ def blank_config() -> RasaNLUModelConfig:
 @pytest.fixture(scope="session")
 def config_path() -> Text:
     return write_file_config(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
-            ],
-        }
-    ).name
+        yaml.safe_dump(
+            {
+                "language": "en",
+                "pipeline": [
+                    {"name": "WhitespaceTokenizer"},
+                    {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
+                    {"name": "CountVectorsFeaturizer"},
+                    {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
+                ],
+            }
+        )
+    )
 
 
 @pytest.fixture(scope="session")
 def config_path_duplicate() -> Text:
     return write_file_config(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
-            ],
-        }
-    ).name
+        yaml.safe_dump(
+            {
+                "language": "en",
+                "pipeline": [
+                    {"name": "WhitespaceTokenizer"},
+                    {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
+                    {"name": "CountVectorsFeaturizer"},
+                    {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
+                ],
+            }
+        )
+    )
 
 
 @pytest.fixture()

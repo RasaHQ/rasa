@@ -106,6 +106,7 @@ def test_check_labels_features_exist(messages, expected):
         ],
     ],
 )
+@pytest.mark.unix
 async def test_train_persist_load_with_different_settings(
     pipeline, component_builder, tmpdir
 ):
@@ -158,6 +159,7 @@ def as_pipeline(*components):
     return [{"name": c} for c in components]
 
 
+@pytest.mark.unix
 @pytest.mark.parametrize(
     "classifier_params, data_path, output_length, output_should_sum_to_1",
     [

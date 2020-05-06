@@ -1,5 +1,4 @@
 import pytest
-import tempfile
 
 from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
 from rasa.nlu import training_data
@@ -10,6 +9,7 @@ from rasa.nlu.training_data import TrainingData
 from rasa.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.nlu.training_data.util import get_file_format
 import rasa.utils.io as io_utils
+from tests.utilities import write_temp_file
 
 
 def test_luis_data():
@@ -279,18 +279,19 @@ def test_repeated_entities():
     ]
   }
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert len(td.entity_examples) == 1
-        example = td.entity_examples[0]
-        entities = example.get("entities")
-        assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
-        assert start == 9
-        assert end == 10
+
+    filename = write_temp_file(
+        data.encode(io_utils.DEFAULT_ENCODING), "_tmp_training_data.json", "wb+"
+    )
+    td = training_data.load_data(filename)
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example.get("entities")
+    assert len(entities) == 1
+    tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
+    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    assert start == 9
+    assert end == 10
 
 
 def test_multiword_entities():
@@ -313,18 +314,18 @@ def test_multiword_entities():
     ]
   }
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert len(td.entity_examples) == 1
-        example = td.entity_examples[0]
-        entities = example.get("entities")
-        assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
-        assert start == 4
-        assert end == 7
+    filename = write_temp_file(
+        data.encode(io_utils.DEFAULT_ENCODING), "_tmp_training_data.json", "wb+"
+    )
+    td = training_data.load_data(filename)
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example.get("entities")
+    assert len(entities) == 1
+    tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
+    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    assert start == 4
+    assert end == 7
 
 
 def test_nonascii_entities():
@@ -345,19 +346,19 @@ def test_nonascii_entities():
     }
   ]
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert len(td.entity_examples) == 1
-        example = td.entity_examples[0]
-        entities = example.get("entities")
-        assert len(entities) == 1
-        entity = entities[0]
-        assert entity["value"] == "ßäæ ?€ö)"
-        assert entity["start"] == 19
-        assert entity["end"] == 27
-        assert entity["entity"] == "description"
+    filename = write_temp_file(
+        data.encode(io_utils.DEFAULT_ENCODING), "_tmp_training_data.json", "wb+"
+    )
+    td = training_data.load_data(filename)
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example.get("entities")
+    assert len(entities) == 1
+    entity = entities[0]
+    assert entity["value"] == "ßäæ ?€ö)"
+    assert entity["start"] == 19
+    assert entity["end"] == 27
+    assert entity["entity"] == "description"
 
 
 def test_entities_synonyms():
@@ -398,11 +399,11 @@ def test_entities_synonyms():
     ]
   }
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert td.entity_synonyms["New York City"] == "nyc"
+    filename = write_temp_file(
+        data.encode(io_utils.DEFAULT_ENCODING), "_tmp_training_data.json", "wb+"
+    )
+    td = training_data.load_data(filename)
+    assert td.entity_synonyms["New York City"] == "nyc"
 
 
 def cmp_message_list(firsts, seconds):
