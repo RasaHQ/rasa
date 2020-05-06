@@ -99,7 +99,7 @@ class RasaModel(tf.keras.models.Model):
         evaluate_every_num_epochs: int,
         batch_strategy: Text,
         silent: bool = False,
-        eager: bool = False,
+        eager: bool = True,
     ) -> None:
         """Fit model data"""
 

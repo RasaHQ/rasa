@@ -15,12 +15,12 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.classifiers.diet_classifier import (
     DIETClassifier,
     DIET,
-    TEXT_FEATURES,
-    LABEL_FEATURES,
     LABEL_IDS,
     EntityTagSpec,
-    TEXT_SEQ_LENGTH,
-    LABEL_SEQ_LENGTH,
+    SEQUENCE_TEXT_FEATURES,
+    SEQUENCE_LABEL_FEATURES,
+    SENTENCE_TEXT_FEATURES,
+    SENTENCE_LABEL_FEATURES,
 )
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -395,20 +395,20 @@ class ResponseSelector(DIETClassifier):
 
 class DIET2DIET(DIET):
     def _check_data(self) -> None:
-        if TEXT_FEATURES not in self.data_signature:
+        if SENTENCE_TEXT_FEATURES not in self.data_signature:
             raise InvalidConfigError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
-        if LABEL_FEATURES not in self.data_signature:
+        if SENTENCE_LABEL_FEATURES not in self.data_signature:
             raise InvalidConfigError(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if (
             self.config[SHARE_HIDDEN_LAYERS]
-            and self.data_signature[TEXT_FEATURES]
-            != self.data_signature[LABEL_FEATURES]
+            and self.data_signature[SENTENCE_TEXT_FEATURES]
+            != self.data_signature[SENTENCE_LABEL_FEATURES]
         ):
             raise ValueError(
                 "If hidden layer weights are shared, data signatures "

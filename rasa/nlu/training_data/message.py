@@ -123,7 +123,7 @@ class Message:
         ]
 
         if not features:
-            return None
+            return None, None
 
         sequence_features = [
             f
@@ -139,7 +139,7 @@ class Message:
         ]
 
         if not sequence_features and not sentence_features:
-            return None
+            return None, None
 
         combined_sequence_features = None
         for f in sequence_features:
@@ -153,22 +153,24 @@ class Message:
                 combined_sentence_features, f
             )
 
-        if combined_sequence_features is None:
-            seq_dim = len(train_utils.tokens_without_cls(self, attribute))
-            feature_dim = combined_sentence_features.shape[-1]
-            combined_sequence_features = scipy.sparse.coo_matrix(
-                np.zeros([seq_dim, feature_dim])
-            )
-        if combined_sentence_features is None:
-            seq_dim = 1
-            feature_dim = combined_sequence_features.shape[-1]
-            combined_sentence_features = scipy.sparse.coo_matrix(
-                np.zeros([seq_dim, feature_dim])
-            )
+        return combined_sequence_features, combined_sentence_features
 
-        return scipy.sparse.vstack(
-            [combined_sequence_features, combined_sentence_features]
-        )
+        # if combined_sequence_features is None:
+        #     seq_dim = len(train_utils.tokens_without_cls(self, attribute))
+        #     feature_dim = combined_sentence_features.shape[-1]
+        #     combined_sequence_features = scipy.sparse.coo_matrix(
+        #         np.zeros([seq_dim, feature_dim])
+        #     )
+        # if combined_sentence_features is None:
+        #     seq_dim = 1
+        #     feature_dim = combined_sequence_features.shape[-1]
+        #     combined_sentence_features = scipy.sparse.coo_matrix(
+        #         np.zeros([seq_dim, feature_dim])
+        #     )
+        #
+        # return scipy.sparse.vstack(
+        #     [combined_sequence_features, combined_sentence_features]
+        # )
 
     def get_dense_features(
         self, attribute: Text, sequence_featurizers: List, sentence_featurizers: List
@@ -184,7 +186,7 @@ class Message:
         ]
 
         if not features:
-            return None
+            return None, None
 
         sequence_features = [
             f
@@ -200,7 +202,7 @@ class Message:
         ]
 
         if not sequence_features and not sentence_features:
-            return None
+            return None, None
 
         combined_sequence_features = None
         for f in sequence_features:
@@ -214,30 +216,32 @@ class Message:
                 combined_sentence_features, f
             )
 
-        if combined_sequence_features is None:
-            seq_dim = len(train_utils.tokens_without_cls(self, attribute))
-            feature_dim = combined_sentence_features.shape[-1]
-            combined_sequence_features = np.zeros([seq_dim, feature_dim])
-        if combined_sentence_features is None:
-            seq_dim = 1
-            feature_dim = combined_sequence_features.shape[-1]
-            combined_sentence_features = np.zeros([seq_dim, feature_dim])
+        return combined_sequence_features, combined_sentence_features
 
-        seq_dim = (
-            combined_sequence_features.shape[0] + combined_sentence_features.shape[0]
-        )
-        feature_dim = max(
-            [combined_sequence_features.shape[-1], combined_sentence_features.shape[-1]]
-        )
-
-        final_features = np.zeros([seq_dim, feature_dim])
-
-        final_features[
-            : combined_sequence_features.shape[0],
-            : combined_sequence_features.shape[-1],
-        ] = combined_sequence_features
-        final_features[
-            -1, : combined_sentence_features.shape[-1]
-        ] = combined_sentence_features
-
-        return final_features
+        # if combined_sequence_features is None:
+        #     seq_dim = len(train_utils.tokens_without_cls(self, attribute))
+        #     feature_dim = combined_sentence_features.shape[-1]
+        #     combined_sequence_features = np.zeros([seq_dim, feature_dim])
+        # if combined_sentence_features is None:
+        #     seq_dim = 1
+        #     feature_dim = combined_sequence_features.shape[-1]
+        #     combined_sentence_features = np.zeros([seq_dim, feature_dim])
+        #
+        # seq_dim = (
+        #     combined_sequence_features.shape[0] + combined_sentence_features.shape[0]
+        # )
+        # feature_dim = max(
+        #     [combined_sequence_features.shape[-1], combined_sentence_features.shape[-1]]
+        # )
+        #
+        # final_features = np.zeros([seq_dim, feature_dim])
+        #
+        # final_features[
+        #     : combined_sequence_features.shape[0],
+        #     : combined_sequence_features.shape[-1],
+        # ] = combined_sequence_features
+        # final_features[
+        #     -1, : combined_sentence_features.shape[-1]
+        # ] = combined_sentence_features
+        #
+        # return final_features
