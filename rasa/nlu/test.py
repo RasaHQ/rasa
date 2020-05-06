@@ -28,6 +28,9 @@ from rasa.nlu.constants import (
     EXTRACTOR,
     PRETRAINED_EXTRACTORS,
     NO_ENTITY_TAG,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
@@ -37,6 +40,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 
 logger = logging.getLogger(__name__)
 
@@ -344,6 +348,7 @@ def plot_attribute_confidences(
 def evaluate_response_selections(
     response_selection_results: List[ResponseSelectionEvaluationResult],
     report_folder: Optional[Text],
+    disable_plotting: bool = False,
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for response selection.
 
@@ -352,6 +357,8 @@ def evaluate_response_selections(
     evaluation result.
 
     """
+    import sklearn.metrics
+    import sklearn.utils.multiclass
 
     # remove empty intent targets
     num_examples = len(response_selection_results)
@@ -374,10 +381,23 @@ def evaluate_response_selections(
             target_responses, predicted_responses, output_dict=True
         )
 
-        report_filename = os.path.join(report_folder, "response_selection_report.json")
+        cnf_matrix = sklearn.metrics.confusion_matrix(
+            target_responses, predicted_responses
+        )
+        labels = sklearn.utils.multiclass.unique_labels(
+            target_responses, predicted_responses
+        )
 
+        report = _add_confused_intents_to_report(report, cnf_matrix, labels)
+
+        report_filename = os.path.join(report_folder, "response_selection_report.json")
         utils.write_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
+
+        if not disable_plotting:
+            _plot_confusion_matrix(
+                report_folder, "response_selection_confmat.png", cnf_matrix, labels
+            )
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
@@ -816,30 +836,47 @@ def find_intersecting_entites(token: Token, entities: List[Dict]) -> List[Dict]:
     return candidates
 
 
-def pick_best_entity_fit(token: Token, candidates: List[Dict]) -> Text:
-    """Determines the token label given intersecting entities.
-    :param token: a single token
-    :param candidates: entities found by a single extractor
-    :return: entity type
+def pick_best_entity_fit(
+    token: Token,
+    candidates: List[Dict[Text, Any]],
+    attribute_key: Text = ENTITY_ATTRIBUTE_TYPE,
+) -> Text:
     """
+    Determines the token label for the provided attribute key given intersecting
+    entities.
 
+    Args:
+        token: a single token
+        candidates: entities found by a single extractor
+        attribute_key: the attribute key of interest
+
+    Returns:
+        the value of the attribute key of the best fitting entity
+    """
     if len(candidates) == 0:
         return NO_ENTITY_TAG
     elif len(candidates) == 1:
-        return candidates[0]["entity"]
+        return candidates[0].get(attribute_key) or NO_ENTITY_TAG
     else:
         best_fit = np.argmax([determine_intersection(token, c) for c in candidates])
-        return candidates[best_fit]["entity"]
+        return candidates[best_fit].get(attribute_key) or NO_ENTITY_TAG
 
 
 def determine_token_labels(
-    token: Token, entities: List[Dict], extractors: Optional[Set[Text]]
+    token: Token,
+    entities: List[Dict],
+    extractors: Optional[Set[Text]] = None,
+    attribute_key: Text = ENTITY_ATTRIBUTE_TYPE,
 ) -> Text:
-    """Determines the token label given entities that do not overlap.
+    """
+    Determines the token label for the provided attribute key given entities that do
+    not overlap.
+
     Args:
         token: a single token
         entities: entities found by a single extractor
         extractors: list of extractors
+        attribute_key: the attribute key for which the entity type should be returned
     Returns:
         entity type
     """
@@ -850,7 +887,7 @@ def determine_token_labels(
         raise ValueError("The possible entities should not overlap")
 
     candidates = find_intersecting_entites(token, entities)
-    return pick_best_entity_fit(token, candidates)
+    return pick_best_entity_fit(token, candidates, attribute_key)
 
 
 def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
@@ -884,15 +921,51 @@ def align_entity_predictions(
         entities_by_extractors[p[EXTRACTOR]].append(p)
     extractor_labels: Dict[Text, List] = {extractor: [] for extractor in extractors}
     for t in result.tokens:
-        true_token_labels.append(determine_token_labels(t, result.entity_targets, None))
+        true_token_labels.append(_concat_entity_labels(t, result.entity_targets))
         for extractor, entities in entities_by_extractors.items():
-            extracted = determine_token_labels(t, entities, {extractor})
+            extracted = _concat_entity_labels(t, entities, {extractor})
             extractor_labels[extractor].append(extracted)
 
     return {
         "target_labels": true_token_labels,
         "extractor_labels": dict(extractor_labels),
     }
+
+
+def _concat_entity_labels(
+    token: Token, entities: List[Dict], extractors: Optional[Set[Text]] = None
+) -> Text:
+    """Concatenate labels for entity type, role, and group for evaluation.
+
+    In order to calculate metrics also for entity type, role, and group we need to
+    concatenate their labels. For example, 'location.destination'. This allows
+    us to report metrics for every combination of entity type, role, and group.
+
+    Args:
+        token: the token we are looking at
+        entities: the available entities
+        extractors: the extractor of interest
+
+    Returns:
+        the entity label of the provided token
+    """
+    entity_label = determine_token_labels(
+        token, entities, extractors, ENTITY_ATTRIBUTE_TYPE
+    )
+    group_label = determine_token_labels(
+        token, entities, extractors, ENTITY_ATTRIBUTE_GROUP
+    )
+    role_label = determine_token_labels(
+        token, entities, extractors, ENTITY_ATTRIBUTE_ROLE
+    )
+
+    if entity_label == role_label == group_label == NO_ENTITY_TAG:
+        return NO_ENTITY_TAG
+
+    labels = [entity_label, group_label, role_label]
+    labels = [label for label in labels if label != NO_ENTITY_TAG]
+
+    return ".".join(labels)
 
 
 def align_all_entity_predictions(
@@ -963,7 +1036,8 @@ def get_eval_data(
 
         if should_eval_response_selection:
 
-            # including all examples here. Empty response examples are filtered at the time of metric calculation
+            # including all examples here. Empty response examples are filtered at the
+            # time of metric calculation
             intent_target = example.get("intent", "")
             selector_properties = result.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
 
@@ -1006,12 +1080,18 @@ def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
 
     Processors are removed since they do not detect the boundaries themselves.
     """
-
     from rasa.nlu.extractors.extractor import EntityExtractor
+    from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 
-    extractors = {
-        c.name for c in interpreter.pipeline if isinstance(c, EntityExtractor)
-    }
+    extractors = set()
+    for c in interpreter.pipeline:
+        if isinstance(c, EntityExtractor):
+            if isinstance(c, DIETClassifier):
+                if c.component_config[ENTITY_RECOGNITION]:
+                    extractors.add(c.name)
+            else:
+                extractors.add(c.name)
+
     return extractors - ENTITY_PROCESSORS
 
 
@@ -1059,8 +1139,17 @@ def get_available_response_selector_types(interpreter: Interpreter) -> List[Text
 
 
 def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
-    """Removes pretrained extractors from the pipeline so that entities
-       from pre-trained extractors are not predicted upon parsing"""
+    """Remove pre-trained extractors from the pipeline.
+
+    Remove pre-trained extractors so that entities from pre-trained extractors
+    are not predicted upon parsing.
+
+    Args:
+        pipeline: the pipeline
+
+    Returns:
+        Updated pipeline
+    """
     pipeline = [c for c in pipeline if c.name not in PRETRAINED_EXTRACTORS]
     return pipeline
 
@@ -1126,7 +1215,7 @@ def run_evaluation(
     if response_selection_results:
         logger.info("Response selection evaluation results:")
         result["response_selection_evaluation"] = evaluate_response_selections(
-            response_selection_results, output_directory
+            response_selection_results, output_directory, disable_plotting
         )
 
     if entity_results:
@@ -1208,8 +1297,8 @@ def generate_folds(
     skf = StratifiedKFold(n_splits=n, shuffle=True)
     x = td.intent_examples
 
-    # Get labels with response key appended to intent name because we want a stratified split on all
-    # intents(including retrieval intents if they exist)
+    # Get labels with response key appended to intent name because we want a
+    # stratified split on all intents(including retrieval intents if they exist)
     y = [example.get_combined_intent_response_key() for example in x]
     for i_fold, (train_index, test_index) in enumerate(skf.split(x, y)):
         logger.debug(f"Fold: {i_fold}")

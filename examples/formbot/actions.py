@@ -30,9 +30,8 @@ class RestaurantForm(FormAction):
             "cuisine": self.from_entity(entity="cuisine", not_intent="chitchat"),
             "num_people": [
                 self.from_entity(
-                    entity="num_people", intent=["inform", "request_restaurant"]
+                    entity="number", intent=["inform", "request_restaurant"]
                 ),
-                self.from_entity(entity="number"),
             ],
             "outdoor_seating": [
                 self.from_entity(entity="seating"),

@@ -113,7 +113,7 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
         .. code-block:: bash
 
-            $ python3 -m venv --system-site-packages ./venv
+            $ python3 -m venv ./venv
 
         Activate the virtual environment:
 
@@ -127,7 +127,7 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
         .. code-block:: bat
 
-            C:\> python3 -m venv --system-site-packages ./venv
+            C:\> python3 -m venv ./venv
 
         Activate the virtual environment:
 
