@@ -205,17 +205,25 @@ class RasaModelData:
 
         Signature stores the shape and whether features are sparse or not for every key.
         """
+        feature_signatures = {}
+        for key, values in self.data.items():
+            feature_signatures[key] = []
+            for v in values:
+                if isinstance(v[0], scipy.sparse.spmatrix):
+                    feature_signatures[key].append(FeatureSignature(True, v[0].shape))
+                else:
+                    if len(v[0].shape)==1:
+                        # takes care of the hierarchical data
+                        if isinstance(v[0][0], scipy.sparse.spmatrix):
+                            shape = [size for size in v[0][0].shape]
+                            shape = [1] + shape
+                            feature_signatures[key].append(FeatureSignature(True, shape))
+                        else:
+                            feature_signatures[key].append(FeatureSignature(False, v[0].shape))
+                    else:
+                        feature_signatures[key].append(FeatureSignature(False, v[0].shape))
 
-        return {
-            key: [
-                FeatureSignature(
-                    True if isinstance(v[0], scipy.sparse.spmatrix) else False,
-                    v[0].shape,
-                )
-                for v in values
-            ]
-            for key, values in self.data.items()
-        }
+        return feature_signatures
 
     def as_tf_dataset(
         self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
@@ -223,6 +231,9 @@ class RasaModelData:
         """Create tf dataset."""
 
         shapes, types = self._get_shapes_types()
+        print('SHAPES TYPES')
+        print(shapes)
+        print(types)
 
         return tf.data.Dataset.from_generator(
             lambda batch_size_: self._gen_batch(batch_size_, batch_strategy, shuffle),
@@ -267,7 +278,15 @@ class RasaModelData:
                 if isinstance(_data[0], scipy.sparse.spmatrix):
                     batch_data.extend(self._scipy_matrix_to_values(_data))
                 else:
-                    batch_data.append(self._pad_dense_data(_data))
+                    if len(_data[0].shape)==1:
+                        if isinstance(_data[0][0], scipy.sparse.spmatrix):
+                            batch_data.extend(self._scipy_matrix_to_values_3d(_data))
+                        elif isinstance(_data[0][0], np.ndarray) and len(_data[0][0].shape)==2:
+                            batch_data.append(self._pad_dense_data_3d(_data))
+                        else:
+                            batch_data.append(self._pad_dense_data(_data))
+                    else:
+                        batch_data.append(self._pad_dense_data(_data))
 
         # len of batch_data is equal to the number of keys in model data
         return tuple(batch_data)
@@ -287,18 +306,35 @@ class RasaModelData:
             elif features[0].ndim == 0:
                 shapes.append((None,))
             elif features[0].ndim == 1:
-                shapes.append((None, features[0].shape[-1]))
+                if isinstance(features[0][0], scipy.sparse.spmatrix):
+                # scipy matrix is converted into indices, data, shape
+                    shapes.append((None, features[0][0].ndim + 2))
+                    shapes.append((None,))
+                    shapes.append((features[0][0].ndim + 2))
+                else:
+                    shapes.append((None, features[0].shape[-1]))
+            elif features[0].ndim == 3:
+                shapes.append((None, None, None, features[0].shape[-1]))
             else:
                 shapes.append((None, None, features[0].shape[-1]))
 
         def append_type(features: np.ndarray) -> None:
+            
             if isinstance(features[0], scipy.sparse.spmatrix):
                 # scipy matrix is converted into indices, data, shape
                 types.append(tf.int64)
                 types.append(tf.float32)
                 types.append(tf.int64)
             else:
-                types.append(tf.float32)
+                if isinstance(features[0], np.ndarray):
+                    if isinstance(features[0][0], scipy.sparse.spmatrix):
+                        types.append(tf.int64)
+                        types.append(tf.float32)
+                        types.append(tf.int64)
+                    else:
+                        types.append(tf.float32)
+                else:
+                    types.append(tf.float32)
 
         for values in self.data.values():
             for v in values:
@@ -558,6 +594,31 @@ class RasaModelData:
         return data_padded.astype(np.float32)
 
     @staticmethod
+    def _pad_dense_data_3d(array_of_arrays_of_dense: np.ndarray) -> np.ndarray:
+        """Pad data of different lengths.
+
+        Sequential data is padded with zeros. Zeros are added to the end of data.
+        """
+
+        # if array_of_arrays_of_dense[0].ndim < 2:
+        #     # data doesn't contain a sequence
+        #     return array_of_arrays_of_dense.astype(np.float32)
+
+        data_size = len(array_of_arrays_of_dense)
+        max_dialog_len = max([array.shape[0] for array in array_of_arrays_of_dense])
+        max_seq_len = max([x.shape[0] for array in array_of_arrays_of_dense for x in array])
+
+        data_padded = np.zeros(
+            [data_size, max_dialog_len, max_seq_len, array_of_arrays_of_dense[0][0].shape[-1]],
+            dtype=array_of_arrays_of_dense[0][0].dtype,
+        )
+        for i in range(data_size):
+            for j in range(array_of_arrays_of_dense[i].shape[0]):
+                data_padded[i, j, : array_of_arrays_of_dense[i][j].shape[0], :] = array_of_arrays_of_dense[i][j]
+
+        return data_padded.astype(np.float32)
+
+    @staticmethod
     def _scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
         """Convert a scipy matrix into indices, data, and shape."""
 
@@ -581,6 +642,44 @@ class RasaModelData:
         number_of_features = array_of_sparse[0].shape[-1]
         shape = np.array((len(array_of_sparse), max_seq_len, number_of_features))
 
+        return [
+            indices.astype(np.int64),
+            data.astype(np.float32),
+            shape.astype(np.int64),
+        ]
+
+    @staticmethod
+    def _scipy_matrix_to_values_3d(array_of_arrays_of_sparse: np.ndarray) -> List[np.ndarray]:
+        """Convert a scipy matrix into indices, data, and shape."""
+
+        # we need to make sure that the matrices are coo_matrices otherwise the
+        # transformation does not work (e.g. you cannot access x.row, x.col)
+
+        if not isinstance(array_of_arrays_of_sparse[0][0], scipy.sparse.coo_matrix):
+            array_of_arrays_of_sparse = [np.array([x.tocoo() for x in array]) for array in array_of_arrays_of_sparse]
+        
+        max_dialog_len = max([array.shape[0] for array in array_of_arrays_of_sparse])
+        max_sentence_len = max([x.shape[0] for array in array_of_arrays_of_sparse for x in array])
+
+        batch_indices = []
+        batch_data = []
+        for j, array_of_sparse in enumerate(array_of_arrays_of_sparse):
+        # get the indices of values
+            indices = np.hstack(
+                [
+                    np.vstack([j* np.ones_like(x.row), i * np.ones_like(x.row), x.row, x.col])
+                    for i, x in enumerate(array_of_sparse)
+                ]
+            ).T
+            batch_indices.append(indices)
+
+            data = np.hstack([x.data for x in array_of_sparse])
+            batch_data.append(data)
+
+            number_of_features = array_of_sparse[0].shape[-1]
+        shape = np.array((len(array_of_arrays_of_sparse), max_dialog_len, max_sentence_len, number_of_features))
+        indices = np.vstack(batch_indices)
+        data = np.hstack(batch_data)
         return [
             indices.astype(np.int64),
             data.astype(np.float32),

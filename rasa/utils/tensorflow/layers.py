@@ -135,6 +135,11 @@ class DenseForSparse(tf.keras.layers.Dense):
                 outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1)
             )
 
+        elif len(inputs.shape) == 4:
+            outputs = tf.reshape(
+                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], tf.shape(inputs)[2], -1)
+            )
+
         if self.use_bias:
             outputs = tf.nn.bias_add(outputs, self.bias)
         if self.activation is not None:
@@ -766,7 +771,8 @@ class DotProductLoss(tf.keras.layers.Layer):
     @staticmethod
     def _calc_accuracy(sim_pos: tf.Tensor, sim_neg: tf.Tensor) -> tf.Tensor:
         """Calculate accuracy."""
-
+        print(sim_pos.shape)
+        print(sim_neg.shape)
         max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], axis=-1), axis=-1)
         return tf.reduce_mean(
             tf.cast(

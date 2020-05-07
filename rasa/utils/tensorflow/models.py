@@ -420,14 +420,26 @@ class RasaModel(tf.keras.models.Model):
                 if is_sparse:
                     # explicitly substitute last dimension in shape with known
                     # static value
-                    batch_data[k].append(
-                        tf.SparseTensor(
-                            batch[idx],
-                            batch[idx + 1],
-                            [batch[idx + 2][0], batch[idx + 2][1], shape[-1]],
+                    if batch[idx + 2].shape[0] == 3:
+                        batch_data[k].append(
+                            tf.SparseTensor(
+                                batch[idx],
+                                batch[idx + 1],
+                                [batch[idx + 2][0], batch[idx + 2][1], shape[-1]],
+                            )
                         )
-                    )
+                    else:
+                        print([batch[idx + 2][0], batch[idx + 2][1],  batch[idx + 2][2], shape[-1]])
+                        batch_data[k].append(
+                            tf.SparseTensor(
+                                batch[idx],
+                                batch[idx + 1],
+                                [batch[idx + 2][0], batch[idx + 2][1], batch[idx + 2][2], shape[-1]],
+                            )
+                        )
+                    
                     idx += 3
+
                 else:
                     if isinstance(batch[idx], tf.Tensor):
                         batch_data[k].append(batch[idx])
