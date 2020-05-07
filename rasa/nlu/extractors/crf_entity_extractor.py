@@ -195,7 +195,6 @@ class CRFEntityExtractor(EntityExtractor):
     def process(self, message: Message, **kwargs: Any) -> None:
         entities = self.extract_entities(message)
         entities = self.add_extractor_name(entities)
-        entities = self.clean_up_entities(message, entities)
         message.set(ENTITIES, message.get(ENTITIES, []) + entities, add_to_output=True)
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
