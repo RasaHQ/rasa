@@ -4,6 +4,7 @@ import logging
 
 import rasa.utils.io
 
+from rasa_sdk import __version__ as rasa_sdk_version
 from rasa import version
 from rasa.cli import (
     scaffold,
@@ -67,24 +68,15 @@ def create_argument_parser() -> argparse.ArgumentParser:
 def print_version() -> None:
     """Prints version information of rasa tooling and python."""
     py_info, os_info = sys.version.split("\n")
-    sdk_info = None
     rasa_x_info = None
     try:
-        import rasa_sdk
+        from rasax.community.version import __version__  # pytype: disable=import-error
 
-        sdk_info = rasa_sdk.__version__  # pytype: disable=import-error
-    except ModuleNotFoundError:
-        pass
-    try:
-        from rasax.community.version import (
-            __version__ as rasa_x_version,
-        )  # pytype: disable=import-error
-
-        rasa_x_info = rasa_x_version
+        rasa_x_info = __version__
     except ModuleNotFoundError:
         pass
     print(f"Rasa Version     : {version.__version__}")
-    print(f"Rasa SDK Version : {sdk_info}")
+    print(f"Rasa SDK Version : {rasa_sdk_version}")
     print(f"Rasa X Version   : {rasa_x_info}")
     print(f"Python Version   : {py_info}")
     print(f"Operating System : {os_info}")
