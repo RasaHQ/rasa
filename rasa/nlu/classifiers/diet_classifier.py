@@ -82,6 +82,7 @@ from rasa.utils.tensorflow.constants import (
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_LEVEL,
+    CONCAT_DIMENSION,
 )
 
 
@@ -169,6 +170,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         EMBEDDING_DIMENSION: 20,
         # Default dense dimension to use if no dense features are present.
         DENSE_DIMENSION: {TEXT: 512, LABEL: 20},
+        # Default dense dimension to use if no dense features are present.
+        CONCAT_DIMENSION: {TEXT: 512, LABEL: 20},
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
@@ -1301,7 +1304,7 @@ class DIET(RasaModel):
                 self.config[DENSE_DIMENSION][name],
             )
             self._tf_layers[f"{type}_ffnn.{name}"] = layers.Ffnn(
-                [512],
+                [self.config[CONCAT_DIMENSION][name]],
                 self.config[DROP_RATE],
                 self.config[REGULARIZATION_CONSTANT],
                 self.config[WEIGHT_SPARSITY],
@@ -1391,7 +1394,10 @@ class DIET(RasaModel):
         name: Text,
         sparse_dropout: bool = False,
         dense_dropout: bool = False,
-    ) -> tf.Tensor:
+    ) -> Optional[tf.Tensor]:
+
+        if not features:
+            return None
 
         dense_features = []
 
@@ -1462,14 +1468,19 @@ class DIET(RasaModel):
             dense_dropout,
         )
 
-        sequence_inputs = self._tf_layers[f"sequence_ffnn.{name}"](
-            sequence_x, self._training
-        )
-        sentence_inputs = self._tf_layers[f"sentence_ffnn.{name}"](
-            sentence_x, self._training
-        )
+        if sequence_x is not None and sentence_x is not None:
+            sequence_inputs = self._tf_layers[f"sequence_ffnn.{name}"](
+                sequence_x, self._training
+            )
+            sentence_inputs = self._tf_layers[f"sentence_ffnn.{name}"](
+                sentence_x, self._training
+            )
 
-        x = tf.concat([sequence_inputs, sentence_inputs], axis=1)
+            x = tf.concat([sequence_inputs, sentence_inputs], axis=1)
+        elif sentence_x is not None:
+            x = sentence_x
+        else:
+            x = sequence_x
 
         x = tf.reduce_sum(x, axis=1)  # convert to bag-of-words
         return self._tf_layers[f"ffnn.{name}"](x, self._training)
@@ -1488,6 +1499,7 @@ class DIET(RasaModel):
         sequence_ids: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
         if sequence_ids:
+            # TODO: What should go in?
             seq_ids = self._features_as_seq_ids(sentence_features, name)
         else:
             seq_ids = None
@@ -1507,14 +1519,20 @@ class DIET(RasaModel):
             dense_dropout,
         )
 
-        sequence_inputs = self._tf_layers[f"sequence_ffnn.{name}"](
-            sequence_inputs, self._training
-        )
-        sentence_inputs = self._tf_layers[f"sentence_ffnn.{name}"](
-            sentence_inputs, self._training
-        )
+        if sentence_inputs is not None and sequence_inputs is not None:
 
-        inputs = tf.concat([sequence_inputs, sentence_inputs], axis=1)
+            sequence_inputs = self._tf_layers[f"sequence_ffnn.{name}"](
+                sequence_inputs, self._training
+            )
+            sentence_inputs = self._tf_layers[f"sentence_ffnn.{name}"](
+                sentence_inputs, self._training
+            )
+
+            inputs = tf.concat([sequence_inputs, sentence_inputs], axis=1)
+        elif sequence_inputs is not None:
+            inputs = sequence_inputs
+        else:
+            inputs = sentence_inputs
 
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 
@@ -1799,20 +1817,21 @@ class DIET(RasaModel):
             batch_in, self.predict_data_signature
         )
 
+        sequence_mask_text = self._get_mask_for(tf_batch_data, SEQUENCE_TEXT_SEQ_LENGTH)
+        sentence_mask_text = self._get_mask_for(tf_batch_data, SENTENCE_TEXT_SEQ_LENGTH)
+
         sequence_lengths = self._get_sequence_lengths(
             tf_batch_data[SEQUENCE_TEXT_SEQ_LENGTH][0]
         )
-        sequence_mask_text = self._compute_mask(sequence_lengths)
-        sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data[SENTENCE_TEXT_SEQ_LENGTH][0]
-        )
-        sentence_mask_text = self._compute_mask(sequence_lengths)
+        sequence_lengths += 1  # add cls token
+        mask = self._compute_mask(sequence_lengths)
 
         text_transformed, _, _, _ = self._create_sequence(
             tf_batch_data[SEQUENCE_TEXT_FEATURES],
             tf_batch_data[SENTENCE_TEXT_FEATURES],
             sequence_mask_text,
             sentence_mask_text,
+            mask,
             self.text_name,
         )
 

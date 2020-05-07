@@ -473,20 +473,22 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Set computed features of the attribute to corresponding message objects"""
         for i, message in enumerate(training_data.training_examples):
             # create bag for each example
-            final_sequence_features = Features(
-                sequence_features[i],
-                Features.SEQUENCE,
-                attribute,
-                self.component_config[ALIAS],
-            )
-            message.add_features(final_sequence_features)
-            final_sentence_features = Features(
-                sentence_features[i],
-                Features.SENTENCE,
-                attribute,
-                self.component_config[ALIAS],
-            )
-            message.add_features(final_sentence_features)
+            if sequence_features[i] is not None:
+                final_sequence_features = Features(
+                    sequence_features[i],
+                    Features.SEQUENCE,
+                    attribute,
+                    self.component_config[ALIAS],
+                )
+                message.add_features(final_sequence_features)
+            if sentence_features[i] is not None:
+                final_sentence_features = Features(
+                    sentence_features[i],
+                    Features.SENTENCE,
+                    attribute,
+                    self.component_config[ALIAS],
+                )
+                message.add_features(final_sentence_features)
 
     def train(
         self,
@@ -549,14 +551,22 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # features shape (1, seq, dim)
         seq_features, cls_features = self._create_sequence(attribute, [message_tokens])
 
-        final_sequence_features = Features(
-            seq_features[0], Features.SEQUENCE, attribute, self.component_config[ALIAS]
-        )
-        message.add_features(final_sequence_features)
-        final_sentence_features = Features(
-            cls_features[0], Features.SENTENCE, attribute, self.component_config[ALIAS]
-        )
-        message.add_features(final_sentence_features)
+        if seq_features[0] is not None:
+            final_sequence_features = Features(
+                seq_features[0],
+                Features.SEQUENCE,
+                attribute,
+                self.component_config[ALIAS],
+            )
+            message.add_features(final_sequence_features)
+        if cls_features[0] is not None:
+            final_sentence_features = Features(
+                cls_features[0],
+                Features.SENTENCE,
+                attribute,
+                self.component_config[ALIAS],
+            )
+            message.add_features(final_sentence_features)
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""

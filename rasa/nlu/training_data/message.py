@@ -111,7 +111,7 @@ class Message:
     def get_sparse_features(
         self, attribute: Text, sequence_featurizers: List, sentence_featurizers: List
     ):
-        from nlu.featurizers.featurizer import Features
+        from rasa.nlu.featurizers.featurizer import Features
         import scipy.sparse
         import numpy as np
         import rasa.utils.train_utils as train_utils
@@ -175,7 +175,7 @@ class Message:
     def get_dense_features(
         self, attribute: Text, sequence_featurizers: List, sentence_featurizers: List
     ):
-        from nlu.featurizers.featurizer import Features
+        from rasa.nlu.featurizers.featurizer import Features
         import numpy as np
         import rasa.utils.train_utils as train_utils
 
