@@ -37,6 +37,7 @@ TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClass
 
 CLS_TOKEN = "__CLS__"
 POSITION_OF_CLS_TOKEN = -1
+NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
 MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE]
 
