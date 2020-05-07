@@ -1,4 +1,7 @@
-from typing import Any, Optional, Tuple, Text, Dict, Set, List
+from typing import Any, Optional, Tuple, Text, Dict, Set, List, Union
+
+import numpy as np
+import scipy.sparse
 
 from rasa.nlu.constants import (
     ENTITIES,
@@ -7,6 +10,8 @@ from rasa.nlu.constants import (
     RESPONSE_KEY_ATTRIBUTE,
     TEXT,
     RESPONSE_IDENTIFIER_DELIMITER,
+    SEQUENCE,
+    SENTENCE,
 )
 from rasa.nlu.utils import ordered
 
@@ -108,19 +113,25 @@ class Message:
         elif len(split_title) == 1:
             return split_title[0], None
 
-    def get_sparse_features(
-        self, attribute: Text, sequence_featurizers: List, sentence_featurizers: List
-    ):
-        from rasa.nlu.featurizers.featurizer import Features
-        import scipy.sparse
-        import numpy as np
-        import rasa.utils.train_utils as train_utils
-
-        features = [
-            f
-            for f in self.features
-            if f.message_attribute == attribute and f.is_sparse()
-        ]
+    def _filter_features(
+        self,
+        attribute: Text,
+        sequence_featurizers: List[Text],
+        sentence_featurizers: List[Text],
+        sparse: bool,
+    ) -> Tuple[Optional[List["Features"]], Optional[List["Features"]]]:
+        if sparse:
+            features = [
+                f
+                for f in self.features
+                if f.message_attribute == attribute and f.is_sparse()
+            ]
+        else:
+            features = [
+                f
+                for f in self.features
+                if f.message_attribute == attribute and f.is_dense()
+            ]
 
         if not features:
             return None, None
@@ -128,120 +139,66 @@ class Message:
         sequence_features = [
             f
             for f in features
-            if f.type == Features.SEQUENCE
-            and (f.origin in sequence_featurizers or not sentence_featurizers)
+            if f.type == SEQUENCE
+            and (f.origin in sequence_featurizers or not sequence_featurizers)
         ]
         sentence_features = [
             f
             for f in features
-            if f.type == Features.SENTENCE
+            if f.type == SENTENCE
             and (f.origin in sentence_featurizers or not sentence_featurizers)
         ]
 
+        return sequence_features, sentence_features
+
+    def get_sparse_features(
+        self, attribute: Text, sequence_featurizers: List, sentence_featurizers: List
+    ) -> Tuple[
+        Optional[List[Union[np.ndarray, scipy.sparse.spmatrix]]],
+        Optional[List[Union[np.ndarray, scipy.sparse.spmatrix]]],
+    ]:
+
+        sequence_features, sentence_features = self._filter_features(
+            attribute, sequence_featurizers, sentence_featurizers, sparse=True
+        )
+
         if not sequence_features and not sentence_features:
             return None, None
+
+        return self._combine_features(sequence_features, sentence_features)
+
+    @staticmethod
+    def _combine_features(
+        sequence_features: List["Features"], sentence_features: List["Features"]
+    ) -> Tuple[
+        Optional[List[Union[np.ndarray, scipy.sparse.spmatrix]]],
+        Optional[List[Union[np.ndarray, scipy.sparse.spmatrix]]],
+    ]:
+        from rasa.nlu.featurizers.featurizer import Features
 
         combined_sequence_features = None
         for f in sequence_features:
             combined_sequence_features = Features.combine_features(
                 combined_sequence_features, f
             )
-
         combined_sentence_features = None
         for f in sentence_features:
             combined_sentence_features = Features.combine_features(
                 combined_sentence_features, f
             )
-
         return combined_sequence_features, combined_sentence_features
-
-        # if combined_sequence_features is None:
-        #     seq_dim = len(train_utils.tokens_without_cls(self, attribute))
-        #     feature_dim = combined_sentence_features.shape[-1]
-        #     combined_sequence_features = scipy.sparse.coo_matrix(
-        #         np.zeros([seq_dim, feature_dim])
-        #     )
-        # if combined_sentence_features is None:
-        #     seq_dim = 1
-        #     feature_dim = combined_sequence_features.shape[-1]
-        #     combined_sentence_features = scipy.sparse.coo_matrix(
-        #         np.zeros([seq_dim, feature_dim])
-        #     )
-        #
-        # return scipy.sparse.vstack(
-        #     [combined_sequence_features, combined_sentence_features]
-        # )
 
     def get_dense_features(
         self, attribute: Text, sequence_featurizers: List, sentence_featurizers: List
-    ):
-        from rasa.nlu.featurizers.featurizer import Features
-        import numpy as np
-        import rasa.utils.train_utils as train_utils
-
-        features = [
-            f
-            for f in self.features
-            if f.message_attribute == attribute and f.is_dense()
-        ]
-
-        if not features:
-            return None, None
-
-        sequence_features = [
-            f
-            for f in features
-            if f.type == Features.SEQUENCE
-            and (f.origin in sequence_featurizers or not sentence_featurizers)
-        ]
-        sentence_features = [
-            f
-            for f in features
-            if f.type == Features.SENTENCE
-            and (f.origin in sentence_featurizers or not sentence_featurizers)
-        ]
+    ) -> Tuple[
+        Optional[List[Union[np.ndarray, scipy.sparse.spmatrix]]],
+        Optional[List[Union[np.ndarray, scipy.sparse.spmatrix]]],
+    ]:
+        sequence_features, sentence_features = self._filter_features(
+            attribute, sequence_featurizers, sentence_featurizers, sparse=False
+        )
 
         if not sequence_features and not sentence_features:
             return None, None
 
-        combined_sequence_features = None
-        for f in sequence_features:
-            combined_sequence_features = Features.combine_features(
-                combined_sequence_features, f
-            )
-
-        combined_sentence_features = None
-        for f in sentence_features:
-            combined_sentence_features = Features.combine_features(
-                combined_sentence_features, f
-            )
-
-        return combined_sequence_features, combined_sentence_features
-
-        # if combined_sequence_features is None:
-        #     seq_dim = len(train_utils.tokens_without_cls(self, attribute))
-        #     feature_dim = combined_sentence_features.shape[-1]
-        #     combined_sequence_features = np.zeros([seq_dim, feature_dim])
-        # if combined_sentence_features is None:
-        #     seq_dim = 1
-        #     feature_dim = combined_sequence_features.shape[-1]
-        #     combined_sentence_features = np.zeros([seq_dim, feature_dim])
-        #
-        # seq_dim = (
-        #     combined_sequence_features.shape[0] + combined_sentence_features.shape[0]
-        # )
-        # feature_dim = max(
-        #     [combined_sequence_features.shape[-1], combined_sentence_features.shape[-1]]
-        # )
-        #
-        # final_features = np.zeros([seq_dim, feature_dim])
-        #
-        # final_features[
-        #     : combined_sequence_features.shape[0],
-        #     : combined_sequence_features.shape[-1],
-        # ] = combined_sequence_features
-        # final_features[
-        #     -1, : combined_sentence_features.shape[-1]
-        # ] = combined_sentence_features
-        #
-        # return final_features
+        return self._combine_features(sequence_features, sentence_features)

@@ -10,7 +10,6 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT,
-    DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     ALIAS,
     SENTENCE,
@@ -72,11 +71,11 @@ class MitieFeaturizer(DenseFeaturizer):
             )
 
             final_sequence_features = Features(
-                features, Features.SEQUENCE, attribute, self.component_config[ALIAS]
+                features, SEQUENCE, attribute, self.component_config[ALIAS]
             )
             example.add_features(final_sequence_features)
             final_sentence_features = Features(
-                cls_features, Features.SENTENCE, attribute, self.component_config[ALIAS]
+                cls_features, SENTENCE, attribute, self.component_config[ALIAS]
             )
             example.add_features(final_sentence_features)
 
@@ -88,11 +87,11 @@ class MitieFeaturizer(DenseFeaturizer):
         )
 
         final_sequence_features = Features(
-            features, Features.SEQUENCE, TEXT, self.component_config[ALIAS]
+            features, SEQUENCE, TEXT, self.component_config[ALIAS]
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            cls_features, Features.SENTENCE, TEXT, self.component_config[ALIAS]
+            cls_features, SENTENCE, TEXT, self.component_config[ALIAS]
         )
         message.add_features(final_sentence_features)
 

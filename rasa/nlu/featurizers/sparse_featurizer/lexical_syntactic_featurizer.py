@@ -13,7 +13,7 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TOKENS_NAMES, TEXT, SPARSE_FEATURE_NAMES, ALIAS
+from rasa.nlu.constants import TOKENS_NAMES, TEXT, ALIAS, SENTENCE, SEQUENCE
 from rasa.nlu.model import Metadata
 import rasa.utils.io as io_utils
 import rasa.utils.train_utils as train_utils
@@ -175,11 +175,11 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         sentence_features = scipy.sparse.coo_matrix(one_hot_cls_feature_vector)
 
         final_sequence_features = Features(
-            sequence_features, Features.SEQUENCE, TEXT, self.component_config[ALIAS]
+            sequence_features, SEQUENCE, TEXT, self.component_config[ALIAS]
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            sentence_features, Features.SENTENCE, TEXT, self.component_config[ALIAS]
+            sentence_features, SENTENCE, TEXT, self.component_config[ALIAS]
         )
         message.add_features(final_sentence_features)
 

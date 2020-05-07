@@ -11,7 +11,6 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT,
     SPACY_DOCS,
-    DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     ALIAS,
     SENTENCE,
@@ -72,13 +71,10 @@ class SpacyFeaturizer(DenseFeaturizer):
             cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
 
             final_sequence_features = Features(
-                features, Features.SEQUENCE, attribute, self.component_config[ALIAS]
+                features, SEQUENCE, attribute, self.component_config[ALIAS]
             )
             message.add_features(final_sequence_features)
             final_sentence_features = Features(
-                cls_token_vec,
-                Features.SENTENCE,
-                attribute,
-                self.component_config[ALIAS],
+                cls_token_vec, SENTENCE, attribute, self.component_config[ALIAS]
             )
             message.add_features(final_sentence_features)

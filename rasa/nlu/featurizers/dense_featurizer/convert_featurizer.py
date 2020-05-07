@@ -12,7 +12,6 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT,
     TOKENS_NAMES,
-    DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     ALIAS,
     SEQUENCE,
@@ -203,14 +202,14 @@ class ConveRTFeaturizer(DenseFeaturizer):
                 for index, ex in enumerate(batch_examples):
                     sequence_features = Features(
                         batch_sequence_features[index],
-                        Features.SEQUENCE,
+                        SEQUENCE,
                         attribute,
                         self.component_config[ALIAS],
                     )
                     ex.add_features(sequence_features)
                     sentence_features = Features(
                         batch_sentence_features[index],
-                        Features.SENTENCE,
+                        SENTENCE,
                         attribute,
                         self.component_config[ALIAS],
                     )
@@ -220,10 +219,10 @@ class ConveRTFeaturizer(DenseFeaturizer):
         sequence_features, sentence_features = self._compute_features([message])
 
         final_sequence_features = Features(
-            sequence_features[0], Features.SEQUENCE, TEXT, self.component_config[ALIAS]
+            sequence_features[0], SEQUENCE, TEXT, self.component_config[ALIAS]
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            sentence_features[0], Features.SENTENCE, TEXT, self.component_config[ALIAS]
+            sentence_features[0], SENTENCE, TEXT, self.component_config[ALIAS]
         )
         message.add_features(final_sentence_features)

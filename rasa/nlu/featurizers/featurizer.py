@@ -3,7 +3,12 @@ import scipy.sparse
 from typing import Any, Text, Union, Optional
 from rasa.nlu.training_data import Message
 from rasa.nlu.components import Component
-from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT
+from rasa.nlu.constants import (
+    SPARSE_FEATURE_NAMES,
+    DENSE_FEATURE_NAMES,
+    TEXT,
+    VALID_FEATURE_TYPES,
+)
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
 
@@ -25,10 +30,6 @@ def sequence_to_sentence_features(
 
 
 class Features:
-    SEQUENCE = "sequence"
-    SENTENCE = "sentence"
-    VALID_TYPES = [SEQUENCE, SENTENCE]
-
     def __init__(
         self,
         features: Union[np.ndarray, scipy.sparse.spmatrix],
@@ -44,9 +45,9 @@ class Features:
         self.message_attribute = message_attribute
 
     def validate_type(self, type: Text):
-        if type not in self.VALID_TYPES:
+        if type not in VALID_FEATURE_TYPES:
             raise ValueError(
-                f"Invalid feature type '{type}' used. Valid feature types are: {self.VALID_TYPES}."
+                f"Invalid feature type '{type}' used. Valid feature types are: {VALID_FEATURE_TYPES}."
             )
 
     def is_sparse(self):
@@ -57,8 +58,8 @@ class Features:
 
     @staticmethod
     def combine_features(
-        features: Union[np.ndarray, scipy.sparse.spmatrix],
-        additional_features: Optional["Features"],
+        features: Optional[Union[np.ndarray, scipy.sparse.spmatrix]],
+        additional_features: "Features",
     ) -> Any:
         if features is None:
             return additional_features.features

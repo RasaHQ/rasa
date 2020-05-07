@@ -11,7 +11,15 @@ import rasa.utils.io
 import scipy.sparse
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import CLS_TOKEN, RESPONSE, TEXT, TOKENS_NAMES, ALIAS
+from rasa.nlu.constants import (
+    CLS_TOKEN,
+    RESPONSE,
+    TEXT,
+    TOKENS_NAMES,
+    ALIAS,
+    SENTENCE,
+    SEQUENCE,
+)
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
@@ -65,11 +73,11 @@ class RegexFeaturizer(SparseFeaturizer):
             seq_features, cls_features = self._features_for_patterns(message, attribute)
 
             final_sequence_features = Features(
-                seq_features, Features.SEQUENCE, attribute, self.component_config[ALIAS]
+                seq_features, SEQUENCE, attribute, self.component_config[ALIAS]
             )
             message.add_features(final_sequence_features)
             final_sentence_features = Features(
-                cls_features, Features.SENTENCE, attribute, self.component_config[ALIAS]
+                cls_features, SENTENCE, attribute, self.component_config[ALIAS]
             )
             message.add_features(final_sentence_features)
 

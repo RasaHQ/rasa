@@ -10,7 +10,6 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT,
     LANGUAGE_MODEL_DOCS,
-    DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
@@ -68,16 +67,10 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         sentence_features = doc[SENTENCE_FEATURES]
 
         final_sequence_features = Features(
-            sequence_features,
-            Features.SEQUENCE,
-            attribute,
-            self.component_config[ALIAS],
+            sequence_features, SEQUENCE, attribute, self.component_config[ALIAS]
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            sentence_features,
-            Features.SENTENCE,
-            attribute,
-            self.component_config[ALIAS],
+            sentence_features, SENTENCE, attribute, self.component_config[ALIAS]
         )
         message.add_features(final_sentence_features)

@@ -17,14 +17,14 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     LABEL_IDS,
     EntityTagSpec,
-    SEQUENCE_TEXT_SEQ_LENGTH,
-    SEQUENCE_LABEL_SEQ_LENGTH,
-    SENTENCE_LABEL_SEQ_LENGTH,
-    SENTENCE_TEXT_SEQ_LENGTH,
-    SEQUENCE_TEXT_FEATURES,
-    SEQUENCE_LABEL_FEATURES,
-    SENTENCE_TEXT_FEATURES,
-    SENTENCE_LABEL_FEATURES,
+    TEXT_SEQUENCE_LENGTH,
+    LABEL_SEQUENCE_LENGTH,
+    LABEL_SENTENCE_LENGTH,
+    TEXT_SENTENCE_LENGTH,
+    TEXT_SEQUENCE_FEATURES,
+    LABEL_SEQUENCE_FEATURES,
+    TEXT_SENTENCE_FEATURES,
+    LABEL_SENTENCE_FEATURES,
 )
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -72,6 +72,8 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
+    SEQUENCE_FEATURES,
+    SENTENCE_FEATURES,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -152,7 +154,7 @@ class ResponseSelector(DIETClassifier):
         EMBEDDING_DIMENSION: 20,
         # Default dense dimension to use if no dense features are present.
         DENSE_DIMENSION: {TEXT: 512, LABEL: 512},
-        # Default dense dimension to use if no dense features are present.
+        # Default dimension to use for concatenating sequence and sentence features.
         CONCAT_DIMENSION: {TEXT: 512, LABEL: 512},
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
@@ -212,8 +214,10 @@ class ResponseSelector(DIETClassifier):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
-        "in_sequence": [],
-        "in_sentence": [],
+        # Specify what features to use as sequence and sentence features
+        # By default all features in the pipeline are used.
+        SEQUENCE_FEATURES: [],
+        SENTENCE_FEATURES: [],
     }
 
     def __init__(
@@ -404,20 +408,20 @@ class ResponseSelector(DIETClassifier):
 
 class DIET2DIET(DIET):
     def _check_data(self) -> None:
-        if SENTENCE_TEXT_FEATURES not in self.data_signature:
+        if TEXT_SENTENCE_FEATURES not in self.data_signature:
             raise InvalidConfigError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
-        if SENTENCE_LABEL_FEATURES not in self.data_signature:
+        if LABEL_SENTENCE_FEATURES not in self.data_signature:
             raise InvalidConfigError(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if (
             self.config[SHARE_HIDDEN_LAYERS]
-            and self.data_signature[SENTENCE_TEXT_FEATURES]
-            != self.data_signature[SENTENCE_LABEL_FEATURES]
+            and self.data_signature[TEXT_SENTENCE_FEATURES]
+            != self.data_signature[LABEL_SENTENCE_FEATURES]
         ):
             raise ValueError(
                 "If hidden layer weights are shared, data signatures "
@@ -453,26 +457,26 @@ class DIET2DIET(DIET):
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
         sentence_mask_label = super()._get_mask_for(
-            self.tf_label_data, SENTENCE_LABEL_SEQ_LENGTH
+            self.tf_label_data, LABEL_SENTENCE_LENGTH
         )
         sequence_mask_label = super()._get_mask_for(
-            self.tf_label_data, SEQUENCE_LABEL_SEQ_LENGTH
+            self.tf_label_data, LABEL_SEQUENCE_LENGTH
         )
 
-        if SEQUENCE_LABEL_SEQ_LENGTH not in self.tf_label_data:
+        if LABEL_SEQUENCE_LENGTH not in self.tf_label_data:
             sequence_lengths_label = self._get_sequence_lengths(
-                self.tf_label_data[SENTENCE_LABEL_SEQ_LENGTH][0]
+                self.tf_label_data[LABEL_SENTENCE_LENGTH][0]
             )
         else:
             sequence_lengths_label = self._get_sequence_lengths(
-                self.tf_label_data[SEQUENCE_LABEL_SEQ_LENGTH][0]
+                self.tf_label_data[LABEL_SEQUENCE_LENGTH][0]
             )
             sequence_lengths_label += 1  # add cls token
         mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
-            self.tf_label_data[SEQUENCE_LABEL_FEATURES],
-            self.tf_label_data[SENTENCE_LABEL_FEATURES],
+            self.tf_label_data[LABEL_SEQUENCE_FEATURES],
+            self.tf_label_data[LABEL_SENTENCE_FEATURES],
             sequence_mask_label,
             sentence_mask_label,
             mask_label,
@@ -489,20 +493,16 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        sequence_mask_text = super()._get_mask_for(
-            tf_batch_data, SEQUENCE_TEXT_SEQ_LENGTH
-        )
-        sentence_mask_text = super()._get_mask_for(
-            tf_batch_data, SENTENCE_TEXT_SEQ_LENGTH
-        )
+        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
+        sentence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
 
-        if SEQUENCE_TEXT_SEQ_LENGTH not in self.tf_label_data:
+        if TEXT_SEQUENCE_LENGTH not in self.tf_label_data:
             sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[SENTENCE_TEXT_SEQ_LENGTH][0]
+                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
             )
         else:
             sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[SEQUENCE_TEXT_SEQ_LENGTH][0]
+                tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
             )
             sequence_lengths_text += 1  # add cls token
 
@@ -514,8 +514,8 @@ class DIET2DIET(DIET):
             text_seq_ids,
             lm_mask_bool_text,
         ) = self._create_sequence(
-            tf_batch_data[SEQUENCE_TEXT_FEATURES],
-            tf_batch_data[SENTENCE_TEXT_FEATURES],
+            tf_batch_data[TEXT_SEQUENCE_FEATURES],
+            tf_batch_data[TEXT_SENTENCE_FEATURES],
             sequence_mask_text,
             sentence_mask_text,
             mask_text,
@@ -527,27 +527,27 @@ class DIET2DIET(DIET):
         )
 
         sequence_mask_label = super()._get_mask_for(
-            tf_batch_data, SEQUENCE_LABEL_SEQ_LENGTH
+            tf_batch_data, LABEL_SEQUENCE_LENGTH
         )
         sentence_mask_label = super()._get_mask_for(
-            tf_batch_data, SENTENCE_LABEL_SEQ_LENGTH
+            tf_batch_data, LABEL_SENTENCE_LENGTH
         )
 
-        if SEQUENCE_LABEL_SEQ_LENGTH not in tf_batch_data:
+        if LABEL_SEQUENCE_LENGTH not in tf_batch_data:
             sequence_lengths_label = self._get_sequence_lengths(
-                tf_batch_data[SENTENCE_LABEL_SEQ_LENGTH][0]
+                tf_batch_data[LABEL_SENTENCE_LENGTH][0]
             )
         else:
             sequence_lengths_label = self._get_sequence_lengths(
-                tf_batch_data[SEQUENCE_LABEL_SEQ_LENGTH][0]
+                tf_batch_data[LABEL_SEQUENCE_LENGTH][0]
             )
             sequence_lengths_label += 1  # add cls token
 
         mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data[SEQUENCE_LABEL_FEATURES],
-            tf_batch_data[SENTENCE_LABEL_FEATURES],
+            tf_batch_data[LABEL_SEQUENCE_FEATURES],
+            tf_batch_data[LABEL_SENTENCE_FEATURES],
             sequence_mask_label,
             sentence_mask_label,
             mask_label,
@@ -588,27 +588,23 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
-        sequence_mask_text = super()._get_mask_for(
-            tf_batch_data, SEQUENCE_TEXT_SEQ_LENGTH
-        )
-        sentence_mask_text = super()._get_mask_for(
-            tf_batch_data, SENTENCE_TEXT_SEQ_LENGTH
-        )
+        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
+        sentence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
 
-        if SEQUENCE_TEXT_SEQ_LENGTH not in tf_batch_data:
+        if TEXT_SEQUENCE_LENGTH not in tf_batch_data:
             sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[SENTENCE_TEXT_SEQ_LENGTH][0]
+                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
             )
         else:
             sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[SEQUENCE_TEXT_SEQ_LENGTH][0]
+                tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
             )
             sequence_lengths_text += 1  # add cls token
         mask_text = self._compute_mask(sequence_lengths_text)
 
         text_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data[SEQUENCE_TEXT_FEATURES],
-            tf_batch_data[SENTENCE_TEXT_FEATURES],
+            tf_batch_data[TEXT_SEQUENCE_FEATURES],
+            tf_batch_data[TEXT_SENTENCE_FEATURES],
             sequence_mask_text,
             sentence_mask_text,
             mask_text,
