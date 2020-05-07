@@ -1,10 +1,9 @@
 import sys
 import argparse
 import logging
+import platform
 
 import rasa.utils.io
-
-from rasa_sdk import __version__ as rasa_sdk_version
 from rasa import version
 from rasa.cli import (
     scaffold,
@@ -22,6 +21,7 @@ from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
 from rasa.utils.common import set_log_level
 import rasa.utils.tensorflow.environment as tf_env
+from rasa_sdk import __version__ as rasa_sdk_version
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 def print_version() -> None:
     """Prints version information of rasa tooling and python."""
-    py_info, os_info = sys.version.split("\n")
+    py_info, _ = sys.version.split("\n")
     rasa_x_info = None
     try:
         from rasax.community.version import __version__  # pytype: disable=import-error
@@ -79,7 +79,7 @@ def print_version() -> None:
     print(f"Rasa SDK Version : {rasa_sdk_version}")
     print(f"Rasa X Version   : {rasa_x_info}")
     print(f"Python Version   : {py_info}")
-    print(f"Operating System : {os_info}")
+    print(f"Operating System : {platform.system()}")
     print(f"Python Path      : {sys.executable}")
 
 
