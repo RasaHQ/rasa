@@ -115,13 +115,14 @@ class DucklingHTTPExtractor(EntityExtractor):
     def _duckling_parse(self, text: Text, reference_time: int) -> List[Dict[Text, Any]]:
         """Sends the request to the duckling server and parses the result."""
 
+        parse_url = self._url() + "/parse"
         try:
             payload = self._payload(text, reference_time)
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
             response = requests.post(
-                self._url() + "/parse",
+                parse_url,
                 data=payload,
                 headers=headers,
                 timeout=self.component_config.get("timeout"),
@@ -130,9 +131,8 @@ class DucklingHTTPExtractor(EntityExtractor):
                 return response.json()
             else:
                 logger.error(
-                    "Failed to get a proper response from remote "
-                    "duckling. Status Code: {}. Response: {}"
-                    "".format(response.status_code, response.text)
+                    f"Failed to get a proper response from remote "
+                    f"duckling at '{parse_url}. Status Code: {response.status_code}. Response: {response.text}"
                 )
                 return []
         except (
