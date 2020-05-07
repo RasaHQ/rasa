@@ -3,10 +3,9 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type
 from tqdm import tqdm
 
 from rasa.constants import DOCS_URL_COMPONENTS
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
-from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
@@ -15,6 +14,7 @@ from rasa.nlu.constants import (
     ALIAS,
     SEQUENCE,
     SENTENCE,
+    NUMBER_OF_SUB_TOKENS,
 )
 import numpy as np
 import tensorflow as tf
@@ -37,7 +37,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
-        return [ConveRTTokenizer]
+        return [Tokenizer]
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
@@ -48,6 +48,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         self.sentence_encoding_signature = self.module.signatures["default"]
         self.sequence_encoding_signature = self.module.signatures["encode_sequence"]
+        self.tokenize_signature = self.module.signatures["tokenize"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -78,12 +79,40 @@ class ConveRTFeaturizer(DenseFeaturizer):
         # convert them to a sequence of 1
         return np.reshape(sentence_encodings, (len(batch_examples), 1, -1))
 
+    def _tokenize(self, sentence: Text) -> Any:
+
+        return self.tokenize_signature(tf.convert_to_tensor([sentence]))[
+            "default"
+        ].numpy()
+
+    def add_number_of_sub_tokens(self, tokens: List[Token]) -> List[Token]:
+        """Tokenize the text using the ConveRT model."""
+        for token in tokens:
+            # use ConveRT model to tokenize the text
+            split_token_strings = self._tokenize(token.text)[0]
+
+            # clean tokens (remove special chars and empty tokens)
+            split_token_strings = self._clean_tokens(split_token_strings)
+
+            token.set(NUMBER_OF_SUB_TOKENS, len(split_token_strings))
+
+        return tokens
+
+    def _clean_tokens(self, tokens: List[bytes]):
+        """Encode tokens and remove special char added by ConveRT."""
+
+        tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
+        return [string for string in tokens if string]
+
     def _compute_sequence_encodings(
         self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
             train_utils.tokens_without_cls(example, attribute)
             for example in batch_examples
+        ]
+        list_of_tokens = [
+            self.add_number_of_sub_tokens(tokens) for tokens in list_of_tokens
         ]
 
         number_of_tokens_in_sentence = [
@@ -135,19 +164,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         Add a whitespace between two tokens if the end value of the first tokens is
         not the same as the end value of the second token."""
 
-        texts = []
-        for tokens in list_of_tokens:
-            text = ""
-            offset = 0
-            for token in tokens:
-                if offset != token.start:
-                    text += " "
-                text += token.text
-
-                offset = token.end
-            texts.append(text)
-
-        return texts
+        return [" ".join(t.text for t in tokens) for tokens in list_of_tokens]
 
     def _sentence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
 

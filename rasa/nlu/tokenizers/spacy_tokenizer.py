@@ -38,6 +38,7 @@ class SpacyTokenizer(Tokenizer):
                 t.text, t.idx, lemma=t.lemma_, data={POS_TAG_KEY: self._tag_of_token(t)}
             )
             for t in doc
+            if t.text and t.text.strip()
         ]
 
     @staticmethod

@@ -41,7 +41,7 @@ class SpacyFeaturizer(DenseFeaturizer):
 
     def _features_for_doc(self, doc: "Doc") -> np.ndarray:
         """Feature vector for a single document / sentence / tokens."""
-        return np.array([t.vector for t in doc])
+        return np.array([t.vector for t in doc if t.text and t.text.strip()])
 
     def train(
         self,
