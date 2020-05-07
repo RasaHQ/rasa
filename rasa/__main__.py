@@ -67,7 +67,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 def print_version() -> None:
     """Prints version information of rasa tooling and python."""
-    py_info, _ = sys.version.split("\n")
+    python_version, os_info = sys.version.split("\n")
     rasa_x_info = None
     try:
         from rasax.community.version import __version__  # pytype: disable=import-error
@@ -78,7 +78,7 @@ def print_version() -> None:
     print(f"Rasa Version     : {version.__version__}")
     print(f"Rasa SDK Version : {rasa_sdk_version}")
     print(f"Rasa X Version   : {rasa_x_info}")
-    print(f"Python Version   : {py_info}")
+    print(f"Python Version   : {python_version}")
     print(f"Operating System : {platform.system()}")
     print(f"Python Path      : {sys.executable}")
 
