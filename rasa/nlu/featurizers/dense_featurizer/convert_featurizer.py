@@ -217,13 +217,13 @@ class ConveRTFeaturizer(DenseFeaturizer):
                     ex.add_features(sentence_features)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        sequence_features, sentence_features = self._compute_features([message])[0]
+        sequence_features, sentence_features = self._compute_features([message])
 
         final_sequence_features = Features(
-            sequence_features, Features.SEQUENCE, TEXT, self.component_config[ALIAS]
+            sequence_features[0], Features.SEQUENCE, TEXT, self.component_config[ALIAS]
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            sentence_features, Features.SENTENCE, TEXT, self.component_config[ALIAS]
+            sentence_features[0], Features.SENTENCE, TEXT, self.component_config[ALIAS]
         )
         message.add_features(final_sentence_features)
