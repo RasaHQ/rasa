@@ -75,6 +75,7 @@ def print_version() -> None:
         rasa_x_info = __version__
     except ModuleNotFoundError:
         rasa_x_info = None
+
     print(f"Rasa Version     : {version.__version__}")
     print(f"Rasa SDK Version : {rasa_sdk_version}")
     print(f"Rasa X Version   : {rasa_x_info}")
