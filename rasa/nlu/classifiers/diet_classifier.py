@@ -803,7 +803,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         entities = self.add_extractor_name(entities)
-        entities = self.clean_up_entities(message, entities)
         entities = message.get(ENTITIES, []) + entities
 
         return entities
