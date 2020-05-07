@@ -4,7 +4,7 @@ from typing import List, Dict, Text, Optional, Any
 from tqdm import tqdm
 import json
 import re
-from collections import defaultdict
+from collections import defaultdict, deque
 
 import rasa.utils.io
 
@@ -154,6 +154,33 @@ class RulePolicy(MemoizationPolicy):
             domain.get_active_states(tr)
             for tr in tracker.generate_all_prior_trackers_for_rules()
         ]
+        states = deque(frozenset(s.items()) for s in states)
+        bin_states = []
+        for state in states:
+            # copy state dict to preserve internal order of keys
+            bin_state = dict(state)
+            best_intent = None
+            best_intent_prob = -1.0
+            for state_name, prob in state:
+                if state_name.startswith("intent_"):
+                    if prob > best_intent_prob:
+                        # finding the maximum confidence intent
+                        if best_intent is not None:
+                            # delete previous best intent
+                            del bin_state[best_intent]
+                        best_intent = state_name
+                        best_intent_prob = prob
+                    else:
+                        # delete other intents
+                        del bin_state[state_name]
+
+            if best_intent is not None:
+                # set the confidence of best intent to 1.0
+                bin_state[best_intent] = 1.0
+
+            bin_states.append(bin_state)
+        states = bin_states
+
         logger.debug(f"Current tracker state {states}")
 
         possible_keys = set(self.lookup.keys())

@@ -42,16 +42,16 @@ class FormPolicy(MemoizationPolicy):
         if not domain:
             return
 
-        has_form_policy = ensemble is not None and any(
-            isinstance(p, cls) for p in ensemble.policies
-        )
-        if domain.form_names and not has_form_policy:
-            raise InvalidDomain(
-                "You have defined a form action, but haven't added the "
-                "FormPolicy to your policy ensemble. Either remove all "
-                "forms from your domain or exclude the FormPolicy from your "
-                "policy configuration."
-            )
+        # has_form_policy = ensemble is not None and any(
+        #     isinstance(p, cls) for p in ensemble.policies
+        # )
+        # if domain.form_names and not has_form_policy:
+        #     raise InvalidDomain(
+        #         "You have defined a form action, but haven't added the "
+        #         "FormPolicy to your policy ensemble. Either remove all "
+        #         "forms from your domain or exclude the FormPolicy from your "
+        #         "policy configuration."
+        #     )
 
     @staticmethod
     def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
