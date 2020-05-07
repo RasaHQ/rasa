@@ -67,6 +67,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 def print_version() -> None:
     """Prints version information of rasa tooling and python."""
+
     python_version, os_info = sys.version.split("\n")
     try:
         from rasax.community.version import __version__  # pytype: disable=import-error
