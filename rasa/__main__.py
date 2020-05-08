@@ -80,7 +80,7 @@ def print_version() -> None:
     print(f"Rasa SDK Version : {rasa_sdk_version}")
     print(f"Rasa X Version   : {rasa_x_info}")
     print(f"Python Version   : {python_version}")
-    print(f"Operating System : {platform.system()}")
+    print(f"Operating System : {platform.platform()}")
     print(f"Python Path      : {sys.executable}")
 
 
