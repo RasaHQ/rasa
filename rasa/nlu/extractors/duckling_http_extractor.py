@@ -5,6 +5,7 @@ import os
 import requests
 from typing import Any, List, Optional, Text, Dict
 
+import rasa.utils.endpoints as endpoints_utils
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
@@ -12,7 +13,6 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
 from rasa.utils.common import raise_warning
-from rasa.utils.endpoints import concat_url
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +123,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         Returns:
             JSON response from duckling server with parse data.
         """
-        parse_url = concat_url(self._url(), "/parse")
+        parse_url = endpoints_utils.concat_url(self._url(), "/parse")
         try:
             payload = self._payload(text, reference_time)
             headers = {
