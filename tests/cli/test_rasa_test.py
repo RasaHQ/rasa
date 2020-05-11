@@ -51,7 +51,7 @@ def test_test_nlu_no_plot(run_in_default_project: Callable[..., RunResult]):
 
 def test_test_nlu_cross_validation(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project(
-        "test", "nlu", "--cross-validation", "-c", "config.yml", "-f", "2"
+        "test", "nlu", "--cross-validation", "-c", "config.yml", "-f", "2", "-r", "1"
     )
 
     assert os.path.exists("results/hist.png")
@@ -104,7 +104,7 @@ def test_test_core_comparison_after_train(
         {
             "language": "en",
             "pipeline": "supervised_embeddings",
-            "policies": [{"name": "TEDPolicy"}],
+            "policies": [{"name": "TEDPolicy", "epochs": "1"}],
         },
         "config_1.yml",
     )

@@ -411,7 +411,7 @@ expand it below.
 
         To use the components and configure them separately:
 
-        .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_convert_config_2.yml
+        .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_convert_config.yml
             :language: yaml
 
     .. container:: toggle
