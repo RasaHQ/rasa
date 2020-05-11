@@ -1488,14 +1488,15 @@ class DIET(RasaModel):
         )
 
         if sequence_x is not None and sentence_x is not None:
-            sequence_inputs = self._tf_layers[f"ffnn.{name}_{SEQUENCE}"](
-                sequence_x, self._training
-            )
-            sentence_inputs = self._tf_layers[f"ffnn.{name}_{SENTENCE}"](
-                sentence_x, self._training
-            )
+            if sequence_x.shape[-1] != sentence_x.shape[-1]:
+                sequence_x = self._tf_layers[f"ffnn.{name}_{SEQUENCE}"](
+                    sequence_x, self._training
+                )
+                sentence_x = self._tf_layers[f"ffnn.{name}_{SENTENCE}"](
+                    sentence_x, self._training
+                )
 
-            return tf.concat([sequence_inputs, sentence_inputs], axis=1)
+            return tf.concat([sequence_x, sentence_x], axis=1)
 
         if sequence_x is not None and sentence_x is None:
             return sequence_x
