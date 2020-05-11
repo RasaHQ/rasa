@@ -4,11 +4,9 @@ pipeline:
   - name: "SpacyNLP"
   - name: "SpacyTokenizer"
   - name: "SpacyFeaturizer"
-  - name: "RegexFeaturizer"
-  - name: "LexicalSyntacticFeaturizer"
   - name: "DIETClassifier"
-    epochs: 100
-  - name: "EntitySynonymMapper"
+    entity_recognition: False
+    epochs: 50
 
 policies:
   - name: TEDPolicy

@@ -834,6 +834,7 @@ components:
           - telegram
           - twilio
           - webexteams
+          - socketio
 
   responses:
 
