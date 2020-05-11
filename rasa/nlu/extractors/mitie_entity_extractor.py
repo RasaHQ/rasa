@@ -141,7 +141,6 @@ class MitieEntityExtractor(EntityExtractor):
             mitie_feature_extractor,
         )
         extracted = self.add_extractor_name(ents)
-        extracted = self.clean_up_entities(message, extracted)
         message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @classmethod
