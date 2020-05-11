@@ -85,7 +85,7 @@ case-insensitive regex patterns that are added to the regex features.
     new format ``[savings account]{"entity": "source_account", "value": "savings"}``.
 
     To update your training data file execute the following command on the terminal of your choice:
-    ``sed -i -E 's/\[([^]]*)\]\(([^:]*):([^)]*)\)/\[\1\]\{"entity": "\2", "value": "\3"\}/g' <nlu training data file>``
+    ``sed -i -E 's/\[([^)]+)\]\(([^)]+):([^)]+)\)/[\1]{"entity": "\2", "value": "\3"}/g' <nlu training data file>``
     Your NLU training data file will contain the new training data format after you executed the above command.
     Depending on your OS you might need to update the syntax of the sed command.
 
