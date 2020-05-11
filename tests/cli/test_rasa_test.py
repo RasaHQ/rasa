@@ -104,7 +104,7 @@ def test_test_core_comparison_after_train(
         {
             "language": "en",
             "pipeline": "supervised_embeddings",
-            "policies": [{"name": "TEDPolicy", "epochs": "1"}],
+            "policies": [{"name": "TEDPolicy", "epochs": 1, "batch_size": 20}],
         },
         "config_1.yml",
     )

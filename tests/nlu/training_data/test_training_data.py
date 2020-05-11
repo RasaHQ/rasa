@@ -495,7 +495,7 @@ def test_get_file_format():
 
     assert fformat == "json"
 
-    fformat = get_file_format("examples/restaurantbot/data/nlu.md")
+    fformat = get_file_format("examples/moodbot/data/nlu.md")
 
     assert fformat == "md"
 

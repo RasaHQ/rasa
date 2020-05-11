@@ -553,7 +553,7 @@ class Agent:
 
             >>> from rasa.core.agent import Agent
             >>> from rasa.core.interpreter import RasaNLUInterpreter
-            >>> agent = Agent.load("examples/restaurantbot/models/current")
+            >>> agent = Agent.load("examples/moodbot/models")
             >>> await agent.handle_text("hello")
             [u'how can I help you?']
 
