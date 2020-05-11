@@ -103,10 +103,6 @@ class MarkdownReader(TrainingDataReader):
                 self._load_files(line)
 
         if self._deprecated_synonym_format_was_used:
-            # DEPRECATION EXCEPTION - we need to decide if we want to keep this as an
-            # exception or if we want to make this a warning again. This is converted
-            # to an exception in the first place to alert us if this is still used
-            # somewhere.
             raise_warning(
                 "You are using the deprecated training data format to declare synonyms."
                 " Please use the following format: \n"

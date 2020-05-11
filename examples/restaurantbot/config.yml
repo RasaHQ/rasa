@@ -12,7 +12,7 @@ pipeline:
 policies:
   - name: "examples.restaurantbot.policy.RestaurantPolicy"
     batch_size: 100
-    epochs: 100
+    epochs: 20
     validation_split: 0.2
   - name: MemoizationPolicy
   - name: MappingPolicy
