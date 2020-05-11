@@ -23,7 +23,7 @@ Rasa 1.7 to Rasa 1.8
 
 General
 ~~~~~~~
-- The :ref:`ted_policy` replaced the :ref:`keras_policy` as recommended machine
+- The :ref:`ted_policy` replaced the ``keras_policy`` as recommended machine
   learning policy. New projects generated with ``rasa init`` will automatically use
   this policy. In case you want to change your existing model configuration to use the
   :ref:`ted_policy` add this to the ``policies`` section in your ``config.yml``
