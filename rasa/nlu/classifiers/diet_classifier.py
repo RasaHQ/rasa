@@ -1634,15 +1634,15 @@ class DIET(RasaModel):
         )
 
     def _calculate_label_loss(
-        self, a: tf.Tensor, b: tf.Tensor, label_ids: tf.Tensor
+        self, text_features: tf.Tensor, label_features: tf.Tensor, label_ids: tf.Tensor
     ) -> tf.Tensor:
         all_label_ids, all_labels_embed = self._create_all_labels()
 
-        a_embed = self._tf_layers[f"embed.{TEXT}"](a)
-        b_embed = self._tf_layers[f"embed.{LABEL}"](b)
+        text_embed = self._tf_layers[f"embed.{TEXT}"](text_features)
+        label_embed = self._tf_layers[f"embed.{LABEL}"](label_features)
 
         return self._tf_layers[f"loss.{LABEL}"](
-            a_embed, b_embed, label_ids, all_labels_embed, all_label_ids
+            text_embed, label_embed, label_ids, all_labels_embed, all_label_ids
         )
 
     def _calculate_entity_loss(
