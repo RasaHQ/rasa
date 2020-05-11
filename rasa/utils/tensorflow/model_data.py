@@ -231,9 +231,6 @@ class RasaModelData:
         """Create tf dataset."""
 
         shapes, types = self._get_shapes_types()
-        print('SHAPES TYPES')
-        print(shapes)
-        print(types)
 
         return tf.data.Dataset.from_generator(
             lambda batch_size_: self._gen_batch(batch_size_, batch_strategy, shuffle),

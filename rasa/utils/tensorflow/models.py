@@ -429,7 +429,6 @@ class RasaModel(tf.keras.models.Model):
                             )
                         )
                     else:
-                        print([batch[idx + 2][0], batch[idx + 2][1],  batch[idx + 2][2], shape[-1]])
                         batch_data[k].append(
                             tf.SparseTensor(
                                 batch[idx],

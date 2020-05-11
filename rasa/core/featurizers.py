@@ -81,7 +81,7 @@ class SingleStateFeaturizer:
         y = domain.index_for_action(action.text)
         return y
 
-    def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
+    def create_encoded_all_actions(self, domain: Domain, kwargs) -> np.ndarray:
         """Create matrix with all actions from domain encoded in rows."""
 
         raise NotImplementedError("Featurizer must implement encoding actions.")
@@ -94,7 +94,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         self.interpreter = RasaE2EInterpreter()
 
     def _extract_features(
-        self, message: Message, attribute: Text
+        self, message: Message, attribute: Text, kwargs
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
         sparse_features = None
         dense_features = None
@@ -111,8 +111,10 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                     f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
 
-        sparse_features = train_utils.sequence_to_sentence_features(sparse_features)
-        dense_features = train_utils.sequence_to_sentence_features(dense_features)
+        
+        if not kwargs.get('hierarchical'):
+            sparse_features = train_utils.sequence_to_sentence_features(sparse_features)
+            dense_features = train_utils.sequence_to_sentence_features(dense_features)
 
         return sparse_features, dense_features
 
@@ -134,8 +136,15 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             )
         return sparse_state, dense_state
 
+    def extract_user_bot_features(self, state_features):
+        sparse_user_features = state_features["user"][0]
+        sparse_bot_features = state_features["prev_action"][0]
+        dense_user_features = state_features["user"][1]
+        dense_bot_features = state_features["prev_action"][1]
+        return sparse_user_features, sparse_bot_features, dense_user_features, dense_bot_features
+
     def encode_e2e(
-        self, state: Dict[Text, Event],
+        self, state: Dict[Text, Event], kwargs
     ):
         """
         Encode the state into a numpy array or a sparse sklearn
@@ -148,17 +157,19 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         """
         if not list(state.keys()) == []:
             state_extracted_features = {
-                key: self._extract_features(state[key], TEXT) for key in state.keys()
+                key: self._extract_features(state[key], TEXT, kwargs) for key in state.keys()
             }
             if not "user" in state_extracted_features.keys():
                 state_extracted_features["user"] = self._extract_features(
                     self.interpreter.interpreter.parse(
                         " ", only_output_properties=False
                     ),
-                    TEXT,
+                    TEXT, kwargs
                 )
-
-        sparse_state, dense_state = self.combine_state_features(
+        if kwargs.get('hierarchical') == True:
+            sparse_user_features, sparse_bot_features, dense_user_features, dense_bot_features = self.extract_user_bot_features(state_extracted_features)
+        else:
+            sparse_state, dense_state = self.combine_state_features(
             state_extracted_features
         )
         entity_features = np.zeros(len(self.interpreter.entities))
@@ -169,6 +180,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                 ]
                 for entity_name in user_entities:
                     entity_features[self.interpreter.entities.index(entity_name)] = 1
+
 
         if self.interpreter.entities == []:
             entity_features = None
@@ -183,12 +195,14 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                         entity_features[
                             self.interpreter.entities.index(entity_name)
                         ] = 1
+        if kwargs.get('hierarchical'):
+            return sparse_user_features, sparse_bot_features, dense_user_features, dense_bot_features, entity_features
+        else:
+            return sparse_state, dense_state, entity_features
 
-        return sparse_state, dense_state, entity_features
-
-    def create_encoded_all_actions(self, domain):
+    def create_encoded_all_actions(self, domain, kwargs):
         label_data = [
-            (j, self._extract_features(self.interpreter.parse(action), TEXT))
+            (j, self._extract_features(self.interpreter.parse(action), TEXT, kwargs))
             for j, action in enumerate(domain.action_names)
         ]
         return label_data
@@ -307,7 +321,7 @@ class TrackerFeaturizer:
         return states
 
     def _featurize_states(
-        self, trackers_as_states: List[List[Dict[Text, float]]],
+        self, trackers_as_states: List[List[Dict[Text, float]]], kwargs
     ) -> Tuple[np.ndarray, List[int]]:
         """Create X."""
 
@@ -324,12 +338,13 @@ class TrackerFeaturizer:
                 tracker_states = self._pad_states(tracker_states)
 
             story_features = [
-                self.state_featurizer.encode_e2e(state)
+                self.state_featurizer.encode_e2e(state, kwargs)
                 for state in tracker_states
                 if not state is None and not state == {}
             ]
 
             dialogue_len = len(story_features)
+
 
             if not story_features == []:
                 features.append(np.array(story_features))
@@ -341,7 +356,7 @@ class TrackerFeaturizer:
         return X, true_lengths
 
     def _featurize_labels(
-        self, trackers_as_actions: List[List[Text]], domain: Domain
+        self, trackers_as_actions: List[List[Text]], domain: Domain, kwargs
     ) -> np.ndarray:
         """Create y."""
 
@@ -356,7 +371,7 @@ class TrackerFeaturizer:
                 for action in tracker_actions
             ]
             for action in tracker_actions:
-                sparse, dense = self.state_featurizer._extract_features(action, TEXT)
+                sparse, dense = self.state_featurizer._extract_features(action, TEXT, kwargs)
                 value = (sparse.tocsr(), dense)
 
             labels.append(story_labels)
@@ -397,8 +412,8 @@ class TrackerFeaturizer:
             trackers_as_states, trackers_as_actions, kwargs["output_path_nlu"], domain
         )
         # noinspection PyPep8Naming
-        X, true_lengths = self._featurize_states(trackers_as_states)
-        y = self._featurize_labels(trackers_as_actions, domain)
+        X, true_lengths = self._featurize_states(trackers_as_states, kwargs)
+        y = self._featurize_labels(trackers_as_actions, domain, kwargs)
 
         return DialogueTrainingData(X, y, true_lengths)
 
@@ -413,25 +428,21 @@ class TrackerFeaturizer:
 
     # noinspection PyPep8Naming
     def create_X(
-        self, trackers: List[DialogueStateTracker], domain: Domain,
+        self, trackers: List[DialogueStateTracker], domain: Domain, **kwargs
     ) -> np.ndarray:
         """Create X for prediction."""
 
         trackers_as_states = self.prediction_states(trackers, domain)
-        X, _ = self._featurize_states(trackers_as_states)
+        X, _ = self._featurize_states(trackers_as_states, kwargs)
         return X
 
     def persist(self, path) -> None:
         featurizer_file = os.path.join(path, "featurizer.json")
 
         rasa.utils.io.create_directory_for_file(featurizer_file)
-<<<<<<< HEAD
         # DIET cannot be json-ed; because we already save it through
         # the interpreter.persist in RasaE2EInterpreter.prepare_training_data_and_train()
         # we can load it from there at time of prediction;
-=======
-
->>>>>>> black formatting
         if isinstance(
             self.state_featurizer.interpreter.trainer.pipeline[-1],
             rasa.nlu.classifiers.diet_classifier.DIETClassifier,
@@ -747,10 +758,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         """Transforms list of trackers to lists of states for prediction."""
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
-<<<<<<< HEAD
         # required to have the DIET do the prediction;
-=======
->>>>>>> black formatting
         self.state_featurizer.interpreter.interpreter = Interpreter(
             self.state_featurizer.interpreter.trainer.pipeline, []
         ).load(os.path.join(os.path.dirname(self.path), "nlu"))

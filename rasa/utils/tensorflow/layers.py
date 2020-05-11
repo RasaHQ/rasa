@@ -771,8 +771,6 @@ class DotProductLoss(tf.keras.layers.Layer):
     @staticmethod
     def _calc_accuracy(sim_pos: tf.Tensor, sim_neg: tf.Tensor) -> tf.Tensor:
         """Calculate accuracy."""
-        print(sim_pos.shape)
-        print(sim_neg.shape)
         max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], axis=-1), axis=-1)
         return tf.reduce_mean(
             tf.cast(

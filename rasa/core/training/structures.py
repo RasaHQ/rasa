@@ -353,12 +353,12 @@ class StoryStep:
         set slots. This functions makes these events explicit and
         returns them with the rest of the steps events.
         """
-
+        # NOT ADDING ACTION LISTENS IN THE STATE;
+        # avoiding blank values in user and prev_action
         events = []
-
+        self._add_action_listen(events)
         for e in self.events:
             if isinstance(e, UserUttered):
-                self._add_action_listen(events)
                 events.append(e)
                 events.extend(domain.slots_for_entities(e.entities))
             else:
