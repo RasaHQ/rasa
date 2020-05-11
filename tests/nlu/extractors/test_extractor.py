@@ -308,6 +308,12 @@ def test_clean_up_entities(
                 },
             ],
         ),
+        (
+            "Amsterdam",
+            {"entity": ["city"], "role": ["O"], "group": ["O"]},
+            None,
+            [{"entity": "city", "start": 0, "end": 9, "value": "Amsterdam"}],
+        ),
     ],
 )
 def test_convert_tags_to_entities(
