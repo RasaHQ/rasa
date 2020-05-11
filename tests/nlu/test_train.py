@@ -60,10 +60,7 @@ def pipelines_for_tests():
                 "DIETClassifier",
             ),
         ),
-        (
-            "en",
-            as_pipeline("ConveRTTokenizer", "ConveRTFeaturizer", "DIETClassifier"),
-        ),
+        ("en", as_pipeline("ConveRTTokenizer", "ConveRTFeaturizer", "DIETClassifier"),),
         (
             "en",
             as_pipeline(

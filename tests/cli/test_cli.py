@@ -1,5 +1,6 @@
 from typing import Callable
 from _pytest.pytester import RunResult
+import pytest
 
 
 def test_cli_start(run: Callable[..., RunResult]):
@@ -37,8 +38,11 @@ def test_data_convert_help(run: Callable[..., RunResult]):
         assert output.outlines[i] == line
 
 
+# Windows doesn't print all this information.
+@pytest.mark.unix
 def test_version_print_lines(run: Callable[..., RunResult]):
     output = run("--version")
+
     output_text = "".join(output.outlines)
     assert "Rasa Version" in output_text
     assert "Python Version" in output_text

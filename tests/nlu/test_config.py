@@ -4,6 +4,7 @@ import ruamel.yaml as yaml
 from typing import Text, List
 
 import pytest
+import tests.utilities
 
 import rasa.utils.io as io_utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -13,12 +14,11 @@ from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.registry import registered_pipeline_templates
 from rasa.nlu.model import Trainer
-from tests.utilities import write_file_config
 
 
 def test_blank_config(blank_config):
     file_config = {}
-    filename = write_file_config(yaml.safe_dump(file_config))
+    filename = tests.utilities.write_file_config(yaml.safe_dump(file_config))
     final_config = config.load(filename)
 
     assert final_config.as_dict() == blank_config.as_dict()
@@ -27,7 +27,7 @@ def test_blank_config(blank_config):
 def test_invalid_config_json():
     file_config = """pipeline: [pretrained_embeddings_spacy"""  # invalid yaml
 
-    filename = write_file_config(file_config)
+    filename = tests.utilities.write_file_config(file_config)
 
     with pytest.raises(config.InvalidConfigError):
         config.load(filename)
@@ -35,7 +35,7 @@ def test_invalid_config_json():
 
 def test_invalid_pipeline_template():
     args = {"pipeline": "my_made_up_name"}
-    filename = write_file_config(yaml.safe_dump(args))
+    filename = tests.utilities.write_file_config(yaml.safe_dump(args))
 
     with pytest.raises(config.InvalidConfigError) as execinfo:
         config.load(filename)
@@ -97,7 +97,7 @@ def test_missing_property(pipeline_config):
 @pytest.mark.unix
 def test_pipeline_registry_lookup(pipeline_template: Text):
     args = {"pipeline": pipeline_template}
-    filename = write_file_config(yaml.safe_dump(args))
+    filename = tests.utilities.write_file_config(yaml.safe_dump(args))
 
     final_config = config.load(filename)
     components = [c for c in final_config.pipeline]

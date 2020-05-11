@@ -2,11 +2,11 @@ from typing import Text
 import ruamel.yaml as yaml
 
 import pytest
+import tests.utilities
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
-from tests.utilities import write_file_config
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
@@ -41,7 +41,7 @@ def blank_config() -> RasaNLUModelConfig:
 
 @pytest.fixture(scope="session")
 def config_path() -> Text:
-    return write_file_config(
+    return tests.utilities.write_file_config(
         yaml.safe_dump(
             {
                 "language": "en",

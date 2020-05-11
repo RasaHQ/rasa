@@ -1273,9 +1273,9 @@ class SessionStarted(Event):
     type_name = "session_started"
 
     def __init__(
-            self,
-            timestamp: Optional[float] = None,
-            metadata: Optional[Dict[Text, Any]] = None,
+        self,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         super().__init__(timestamp, metadata)
 

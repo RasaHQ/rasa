@@ -44,7 +44,7 @@ from rasa.core.tracker_store import (
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE, MockedMongoTrackerStore
-from tests.utilities import write_file_config
+import tests.utilities
 
 domain = Domain.load("data/test_domains/default.yml")
 
@@ -357,7 +357,7 @@ def test_db_url_with_query_from_endpoint_config():
         another: query
     """
 
-    filename = write_file_config(endpoint_config)
+    filename = tests.utilities.write_file_config(endpoint_config)
     store_config = read_endpoint_config(filename, "tracker_store")
     url = SQLTrackerStore.get_db_url(**store_config.kwargs)
 

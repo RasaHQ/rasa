@@ -33,9 +33,7 @@ def test_init_using_init_dir_option(run: Callable[..., RunResult]):
 def test_not_found_init_path(run: Callable[..., RunResult]):
     output = run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
 
-    assert (
-        "Project init path './workspace' not found." in output.outlines[-1]
-    )
+    assert "Project init path './workspace' not found." in output.outlines[-1]
 
 
 def test_init_help(run: Callable[..., RunResult]):

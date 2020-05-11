@@ -1,0 +1,1 @@
+Added testing of Rasa Open Source installations on Windows. 

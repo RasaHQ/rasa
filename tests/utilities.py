@@ -19,7 +19,7 @@ def write_temp_file(contents, suffix, mode="w+") -> Text:
     return filename
 
 
-def write_file_config(file_config) -> Text:
+def write_file_config(file_config: Text) -> Text:
     return write_temp_file(file_config, "_tmp_config_file.yml")
 
 

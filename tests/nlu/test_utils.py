@@ -32,7 +32,10 @@ def fake_model_dir(empty_model_dir):
 
 def test_relative_normpath():
     test_file = "/my/test/path/file.txt"
-    assert utils.relative_normpath(test_file, "/my/test").replace("\\", "/") == "path/file.txt"
+    assert (
+        utils.relative_normpath(test_file, "/my/test").replace("\\", "/")
+        == "path/file.txt"
+    )
     assert utils.relative_normpath(None, "/my/test") is None
 
 
