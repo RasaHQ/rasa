@@ -167,7 +167,7 @@ This will open a window where you can choose the repository and branch you would
 
 - Base repository: RasaHQ/rasa
 - Base branch: master
-- Head repository: your_github_username/rasa
+- Head repository: your-github-username/rasa
 - Head branch: name-of-your-new-branch
 
 ![](https://www.rasa.com/assets/img/contributor-guidelines/openpr-2.png)
