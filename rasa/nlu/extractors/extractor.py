@@ -507,13 +507,13 @@ class EntityExtractor(Component):
                 ENTITY_ATTRIBUTE_TYPE
             ][idx]
 
-        if ENTITY_ATTRIBUTE_ROLE in tag_names:
+        if ENTITY_ATTRIBUTE_ROLE in tag_names and role_tag != NO_ENTITY_TAG:
             entity[ENTITY_ATTRIBUTE_ROLE] = role_tag
             if confidences is not None:
                 entity[ENTITY_ATTRIBUTE_CONFIDENCE_ROLE] = confidences[
                     ENTITY_ATTRIBUTE_ROLE
                 ][idx]
-        if ENTITY_ATTRIBUTE_GROUP in tag_names:
+        if ENTITY_ATTRIBUTE_GROUP in tag_names and group_tag != NO_ENTITY_TAG:
             entity[ENTITY_ATTRIBUTE_GROUP] = group_tag
             if confidences is not None:
                 entity[ENTITY_ATTRIBUTE_CONFIDENCE_GROUP] = confidences[
