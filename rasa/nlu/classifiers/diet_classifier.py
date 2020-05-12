@@ -738,7 +738,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.add_lengths(LABEL_SENTENCE_LENGTH, LABEL_SENTENCE_FEATURES)
         model_data.add_lengths(TEXT_SEQUENCE_LENGTH, TEXT_SEQUENCE_FEATURES)
         model_data.add_lengths(LABEL_SEQUENCE_LENGTH, LABEL_SEQUENCE_FEATURES)
-
         return model_data
 
     def _tag_ids_for_crf(self, example: Message, tag_spec: EntityTagSpec) -> np.ndarray:
@@ -1283,6 +1282,7 @@ class DIET(RasaModel):
         for is_sparse, shape in feature_signatures:
             if is_sparse:
                 sparse = True
+                # dense_dim = shape[-1]
             else:
                 dense = True
                 # if dense features are present
@@ -1468,6 +1468,7 @@ class DIET(RasaModel):
         sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         mask_sequence: tf.Tensor,
         mask_sentence: tf.Tensor,
+        mask_text: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
         dense_dropout: bool = False,
@@ -1496,7 +1497,23 @@ class DIET(RasaModel):
                     sentence_x, self._training
                 )
 
-            return tf.concat([sequence_x, sentence_x], axis=1)
+            # we need to concatenate the sequence features with the sentence features
+            # we cannot use tf.concat as the sequence features are padded
+
+            # (1) get position of cls token in mask
+            last = mask_text * tf.math.cumprod(
+                1 - mask_text, axis=1, exclusive=True, reverse=True
+            )
+            # (2) multiply by sentence features so that we get a matrix of
+            #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
+            #     for the sentence features
+            sentence_x = last * sentence_x
+
+            # (3) add a zero to the end of sequence matrix to match the final shape
+            sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
+
+            # (4) add the sequence features and sentence features
+            return sequence_x + sentence_x
 
         if sequence_x is not None and sentence_x is None:
             return sequence_x
@@ -1512,6 +1529,7 @@ class DIET(RasaModel):
         sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         sequence_mask: tf.Tensor,
         sentence_mask: tf.Tensor,
+        text_mask: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
         dense_dropout: bool = False,
@@ -1522,6 +1540,7 @@ class DIET(RasaModel):
             sentence_features,
             sequence_mask,
             sentence_mask,
+            text_mask,
             name,
             sparse_dropout,
             dense_dropout,
@@ -1553,6 +1572,7 @@ class DIET(RasaModel):
             sentence_features,
             mask_sequence,
             mask_sentence,
+            mask,
             name,
             sparse_dropout,
             dense_dropout,
@@ -1592,6 +1612,7 @@ class DIET(RasaModel):
             self.tf_label_data[LABEL_SENTENCE_FEATURES],
             mask_sequence_label,
             mask_sentence_label,
+            mask_sequence_label,
             self.label_name,
         )
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
@@ -1731,7 +1752,7 @@ class DIET(RasaModel):
 
         if self.config[INTENT_CLASSIFICATION]:
             loss = self._batch_loss_intent(
-                sequence_lengths, text_transformed, tf_batch_data
+                sequence_lengths, mask_text, text_transformed, tf_batch_data
             )
             losses.append(loss)
 
@@ -1752,6 +1773,7 @@ class DIET(RasaModel):
     def _batch_loss_intent(
         self,
         sequence_lengths: tf.Tensor,
+        mask_text: tf.Tensor,
         text_transformed: tf.Tensor,
         tf_batch_data: Dict[Text, List[tf.Tensor]],
     ) -> tf.Tensor:
@@ -1767,6 +1789,7 @@ class DIET(RasaModel):
             tf_batch_data[LABEL_SENTENCE_FEATURES],
             mask_sequence_label,
             mask_sentence_label,
+            mask_text,
             self.label_name,
         )
 
