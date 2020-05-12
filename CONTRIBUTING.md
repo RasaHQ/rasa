@@ -165,10 +165,10 @@ Head to the forked repository and click on a _Compare & pull_ request button.
 
 This will open a window where you can choose the repository and branch you would like to propose your changes to, as well as specific details of your contribution. In the top panel menu choose the following details:
 
-- Base repository: RasaHQ/rasa
-- Base branch: master
-- Head repository: your_github_username/rasa
-- Head branch: name-of-your-new-branch
+- Base repository: `RasaHQ/rasa`
+- Base branch: `master`
+- Head repository: `your-github-username/rasa`
+- Head branch: `name-of-your-new-branch`
 
 ![](https://www.rasa.com/assets/img/contributor-guidelines/openpr-2.png)
 
