@@ -3,16 +3,17 @@ from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_init_using_init_dir_option(run: Callable[..., RunResult]):
+def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
     os.makedirs("./workspace")
-    run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
+    run_with_stdin(
+        "init", "--quiet", "--init-dir", "./workspace", stdin=b"YN"
+    )  # avoid training an initial model
 
     assert os.path.exists("./workspace/actions.py")
     assert os.path.exists("./workspace/domain.yml")
     assert os.path.exists("./workspace/config.yml")
     assert os.path.exists("./workspace/credentials.yml")
     assert os.path.exists("./workspace/endpoints.yml")
-    assert os.path.exists("./workspace/models")
     assert os.path.exists("./workspace/data/nlu.md")
     assert os.path.exists("./workspace/data/stories.md")
 

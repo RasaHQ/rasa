@@ -5,7 +5,7 @@ from unittest.mock import patch
 from moto import mock_s3
 
 from rasa.nlu import persistor, train
-from tests.nlu import utilities
+from rasa.nlu.config import RasaNLUModelConfig
 
 
 class Object:
@@ -16,7 +16,10 @@ class Object:
 async def test_list_method_method_in_AWS_persistor(component_builder, tmpdir):
     with mock_s3():
         # artificially create a persisted model
-        _config = utilities.base_test_conf("keyword")
+        _config = RasaNLUModelConfig(
+            {"pipeline": [{"name": "KeywordIntentClassifier"}]}
+        )
+
         os.environ["BUCKET_NAME"] = "rasa-test"
         os.environ["AWS_DEFAULT_REGION"] = "us-west-1"
 

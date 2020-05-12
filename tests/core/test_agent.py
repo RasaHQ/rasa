@@ -47,7 +47,7 @@ def model_server(loop, sanic_client, trained_moodbot_path: Text):
     return loop.run_until_complete(sanic_client(app))
 
 
-async def test_training_data_is_reproducible(tmpdir, default_domain):
+async def test_training_data_is_reproducible(default_domain):
     training_data_file = "examples/moodbot/data/stories.md"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
@@ -133,7 +133,7 @@ async def test_agent_handle_message(default_agent: Agent):
     ]
 
 
-def test_agent_wrong_use_of_load(tmpdir, default_domain):
+def test_agent_wrong_use_of_load(default_domain):
     training_data_file = "examples/moodbot/data/stories.md"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]

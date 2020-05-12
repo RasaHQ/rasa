@@ -1,10 +1,10 @@
 import pytest
 
 from typing import Tuple
-from rasa.nlu import registry
+from rasa.nlu import registry, train
 from rasa.nlu.components import find_unavailable_packages
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Metadata
+from rasa.nlu.model import Interpreter, Metadata
 from tests.nlu import utilities
 
 
@@ -84,17 +84,20 @@ def test_builder_load_unknown(component_builder):
     assert "Cannot find class" in str(excinfo.value)
 
 
-async def test_example_component(component_builder, tmpdir_factory):
-    conf = RasaNLUModelConfig(
+async def test_example_component(component_builder, tmp_path):
+    _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
     )
 
-    interpreter = await utilities.interpreter_for(
-        component_builder,
+    (trainer, trained, persisted_path) = await train(
+        _config,
         data="./data/examples/rasa/demo-rasa.json",
-        path=tmpdir_factory.mktemp("projects").strpath,
-        config=conf,
+        path=str(tmp_path),
+        component_builder=component_builder,
     )
 
-    r = interpreter.parse("test")
-    assert r is not None
+    assert trainer.pipeline
+
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    assert loaded.parse("test") is not None
