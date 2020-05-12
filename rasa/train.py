@@ -19,6 +19,7 @@ from rasa.cli.utils import (
 )
 from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CORE_SUBDIRECTORY_NAME
 
+
 def train(
     domain: Text,
     config: Text,
@@ -352,7 +353,9 @@ async def _train_core_with_validated_data(
         domain, config = await asyncio.gather(
             file_importer.get_domain(), file_importer.get_config()
         )
-        additional_arguments['output_path_nlu'] = os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
+        additional_arguments["output_path_nlu"] = os.path.join(
+            _train_path, DEFAULT_CORE_SUBDIRECTORY_NAME
+        )
         await rasa.core.train(
             domain_file=domain,
             training_resource=file_importer,

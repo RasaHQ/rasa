@@ -183,7 +183,7 @@ class Trainer:
             )
 
         # data gets modified internally during the training - hence the copy
-        if kwargs['no_copy']:
+        if kwargs["no_copy"]:
             working_data = data
         else:
             working_data = copy.deepcopy(data)

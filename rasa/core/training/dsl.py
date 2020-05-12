@@ -248,7 +248,9 @@ class StoryFileReader:
         """Given a md file reads the contained stories."""
 
         try:
-            with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
+            with open(
+                filename, "r", encoding=io_utils.DEFAULT_ENCODING, errors="ignore"
+            ) as f:
                 lines = f.readlines()
             reader = StoryFileReader(interpreter, domain, template_variables, use_e2e)
             return await reader.process_lines(lines)
@@ -345,20 +347,15 @@ class StoryFileReader:
                 elif line.startswith("*"):
                     # reached a user message
                     user_messages = [el.strip() for el in line[1:].split(" OR ")]
-                    if self.use_e2e:
-                        await self.add_e2e_messages(user_messages, line_num)
-                    else:
-                        await self.add_user_messages(user_messages, line_num)
-                #end-to-end USER message
-                elif line.startswith('?'):
-                    event_name, parameters = self._parse_event_line(line[1:])
+                    await self.add_user_messages_e2e(user_messages, line_num)
+                # end-to-end BOT message
+                elif line.startswith("<B>"):
+                    event_name, parameters = self._parse_event_line(line[3:])
                     self.add_event(event_name, parameters)
-                elif line.startswith('!'):
-                    user_messages = [el.strip() for el in line[1:].split(" OR ")]
-                    if self.use_e2e:
-                        await self.add_e2e_messages(user_messages, line_num)
-                    else:
-                        await self.add_user_messages(user_messages, line_num)
+                # end-to-end USER message
+                elif line.startswith("<U>"):
+                    user_messages = [el.strip() for el in line[3:].split(" OR ")]
+                    await self.add_user_messages_e2e(user_messages, line_num)
                 else:
                     # reached an unknown type of line
                     logger.warning(
@@ -433,6 +430,21 @@ class StoryFileReader:
             )
         return utterance
 
+    async def _parse_message_e2e(self, text: Text, line_num: int) -> UserUttered:
+        from rasa.nlu.training_data.formats.markdown import MarkdownReader
+
+        message_processed = MarkdownReader().parse_training_example(text)
+        parse_data = await self.interpreter.parse(text)
+
+        utterance = UserUttered(
+            text,
+            parse_data.get("intent"),
+            message_processed.get("entities"),
+            message=message_processed,
+        )
+        intent_name = utterance.intent.get("name")
+        return utterance
+
     async def add_user_messages(self, messages, line_num):
         if not self.current_step_builder:
             raise StoryParseError(
@@ -441,6 +453,17 @@ class StoryFileReader:
             )
         parsed_messages = await asyncio.gather(
             *[self._parse_message(m, line_num) for m in messages]
+        )
+        self.current_step_builder.add_user_messages(parsed_messages)
+
+    async def add_user_messages_e2e(self, messages, line_num):
+        if not self.current_step_builder:
+            raise StoryParseError(
+                "User message '{}' at invalid location. "
+                "Expected story start.".format(messages)
+            )
+        parsed_messages = await asyncio.gather(
+            *[self._parse_message_e2e(m, line_num) for m in messages]
         )
         self.current_step_builder.add_user_messages(parsed_messages)
 
@@ -467,7 +490,11 @@ class StoryFileReader:
         # add 'name' only if event is not a SlotSet,
         # because there might be a slot with slot_key='name'
         if "name" not in parameters and event_name != SlotSet.type_name:
-            parameters["name"] = event_name
+            from rasa.nlu.training_data.formats.markdown import MarkdownReader
+
+            action_as_message = MarkdownReader().parse_e2e_training_example(event_name)
+            parameters["name"] = action_as_message.text
+            parameters["message"] = action_as_message
 
         parsed_events = Event.from_story_string(
             event_name, parameters, default=ActionExecuted

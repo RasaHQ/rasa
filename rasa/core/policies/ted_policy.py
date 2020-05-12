@@ -179,8 +179,8 @@ class TEDPolicy(Policy):
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
-                E2ESingleStateFeaturizer(), max_history=max_history
-            )
+            E2ESingleStateFeaturizer(), max_history=max_history
+        )
 
     def __init__(
         self,
@@ -287,25 +287,32 @@ class TEDPolicy(Policy):
 
         X_sparse = []
         X_dense = []
+        X_entities = []
 
         for dial in data_X:
             sparse_state = []
             dense_state = []
+            entities = []
             for state in dial:
                 if state[0] is not None:
                     sparse_state.append(state[0].astype(np.float32))
                 if state[1] is not None:
                     dense_state.append(state[1])
+                if state[2] is not None:
+                    entities.append(state[2])
 
             if not sparse_state == []:
                 sparse_state = scipy.sparse.vstack(sparse_state)
             if not dense_state == []:
                 dense_state = np.vstack(dense_state)
+            if not entities == []:
+                entities = np.vstack(entities)
             X_sparse.append(sparse_state)
             X_dense.append(dense_state)
-
+            X_entities.append(entities)
         model_data.add_features(
-            DIALOGUE_FEATURES, [np.array(X_sparse), np.array(X_dense)]
+            DIALOGUE_FEATURES,
+            [np.array(X_sparse), np.array(X_dense), np.array(X_entities)],
         )
         model_data.add_features(LABEL_FEATURES, [Y_sparse, Y_dense])
         model_data.add_features(LABEL_IDS, [label_ids])
@@ -465,6 +472,9 @@ class TEDPolicy(Policy):
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
         featurizer = TrackerFeaturizer.load(path)
+        # setting path variable for featurizer so that we can load the nlu pipeline with
+        # DIET from there;
+        featurizer.path = path
 
         if not (model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl").is_file():
             return cls(featurizer=featurizer)
@@ -672,9 +682,7 @@ class TED(RasaModel):
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = self.tf_label_data[LABEL_FEATURES]
-        all_labels = self._combine_sparse_dense_features(
-            all_labels, LABEL_FEATURES
-        )
+        all_labels = self._combine_sparse_dense_features(all_labels, LABEL_FEATURES)
         all_labels = tf.squeeze(all_labels, axis=1)
         all_labels_embed = self._embed_label(all_labels)
 
@@ -758,9 +766,7 @@ class TED(RasaModel):
             batch[DIALOGUE_FEATURES], DIALOGUE_FEATURES
         )
 
-        label_in = self._combine_sparse_dense_features(
-            label_in, LABEL_FEATURES
-        )
+        label_in = self._combine_sparse_dense_features(label_in, LABEL_FEATURES)
         label_in = tf.squeeze(label_in, axis=1)
 
         if self.max_history_tracker_featurizer_used:

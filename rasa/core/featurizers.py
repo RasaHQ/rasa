@@ -162,7 +162,21 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             state_extracted_features
         )
 
-        return sparse_state, dense_state
+        if self.interpreter.entities == []:
+            entity_features = None
+        else:
+            entity_features = np.zeros(len(self.interpreter.entities))
+            if "user" in list(state.keys()):
+                if not state["user"].get("entities") is None:
+                    user_entities = [
+                        entity["entity"] for entity in state["user"].get("entities")
+                    ]
+                    for entity_name in user_entities:
+                        entity_features[
+                            self.interpreter.entities.index(entity_name)
+                        ] = 1
+
+        return sparse_state, dense_state, entity_features
 
     def create_encoded_all_actions(self, domain):
         label_data = [
@@ -248,9 +262,14 @@ class TrackerFeaturizer:
                 state_dict = {}
                 for event in state:
                     if isinstance(event, UserUttered):
-                        state_dict["user"] = Message(event.text)
+                        if not event.message is None:
+                            state_dict["user"] = event.message
                     elif isinstance(event, ActionExecuted):
-                        state_dict["prev_action"] = Message(event.action_name)
+                        if event.message is not None:
+                            state_dict["prev_action"] = event.message
+                        # to turn the default actions such as action_listen into Message;
+                        else:
+                            state_dict["prev_action"] = Message(event.action_name)
                     state_dict["slots"] = self.collect_slots(tr)
             else:
                 state_dict = {}
@@ -381,7 +400,21 @@ class TrackerFeaturizer:
 
     def persist(self, path) -> None:
         featurizer_file = os.path.join(path, "featurizer.json")
+
         rasa.utils.io.create_directory_for_file(featurizer_file)
+        # DIET cannot be json-ed; because we already save it through
+        # the interpreter.persist in RasaE2EInterpreter.prepare_training_data_and_train()
+        # we can load it from there at time of prediction;
+        if isinstance(
+            self.state_featurizer.interpreter.trainer.pipeline[-1],
+            rasa.nlu.classifiers.diet_classifier.DIETClassifier,
+        ):
+            self.state_featurizer.interpreter.trainer.pipeline = self.state_featurizer.interpreter.trainer.pipeline[
+                :-1
+            ]
+            self.state_featurizer.interpreter.interpreter.pipeline = self.state_featurizer.interpreter.interpreter.pipeline[
+                :-1
+            ]
 
         # noinspection PyTypeChecker
         rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
@@ -558,7 +591,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             trackers, desc="Processed trackers e2e", disable=is_logging_disabled()
         )
         for tracker in pbar:
-            # tracker = trackers[0]
             states = self._create_states_e2e(tracker)
             idx = 0
             for event in tracker.applied_events():
@@ -582,15 +614,27 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                                 trackers_as_states_e2e.append(sliced_states)
 
                                 if len(sliced_states) > 1:
-                                    trackers_as_actions_e2e.append(
-                                        [Message(event.action_name)]
-                                    )
+                                    if event.message is not None:
+                                        trackers_as_actions_e2e.append(
+                                            [Message(event.message.text)]
+                                        )
+                                    # if it is a default action, turn it into a message
+                                    else:
+                                        trackers_as_actions_e2e.append(
+                                            [Message(event.action_name)]
+                                        )
                         else:
                             trackers_as_states_e2e.append(sliced_states)
                             if len(sliced_states) > 1:
-                                trackers_as_actions_e2e.append(
-                                    [Message(event.action_name)]
-                                )
+                                if event.message is not None:
+                                    trackers_as_actions_e2e.append(
+                                        [Message(event.message.text)]
+                                    )
+                                # if it is a default action, turn it into a message
+                                else:
+                                    trackers_as_actions_e2e.append(
+                                        [Message(event.action_name)]
+                                    )
                         pbar.set_postfix(
                             {"# actions": "{:d}".format(len(trackers_as_actions_e2e))}
                         )
@@ -659,8 +703,14 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> List[List[Dict[Text, float]]]:
+        from rasa.nlu.model import Interpreter
+
         """Transforms list of trackers to lists of states for prediction."""
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
+        # required to have the DIET do the prediction;
+        self.state_featurizer.interpreter.interpreter = Interpreter(
+            self.state_featurizer.interpreter.trainer.pipeline, []
+        ).load(os.path.join(os.path.dirname(self.path), "nlu"))
 
         trackers_as_states_modified = []
         for tracker in trackers_as_states:
@@ -672,6 +722,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         curr_state[key] = self.state_featurizer.interpreter.parse(
                             value.text
                         )
+                        curr_state[key]["entities"] = value.get("entities")
                     else:
                         curr_state[key] = value
                 curr_tracker.append(curr_state)

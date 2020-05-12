@@ -134,7 +134,7 @@ def read_file(filename: Text, encoding: Text = DEFAULT_ENCODING) -> Any:
     """Read text from a file."""
 
     try:
-        with open(filename, encoding=encoding) as f:
+        with open(filename, encoding=encoding, errors="ignore") as f:
             return f.read()
     except FileNotFoundError:
         raise ValueError(f"File '{filename}' does not exist.")
