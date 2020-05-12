@@ -135,13 +135,13 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             sparse_state = scipy.sparse.hstack(
                 [state_features["user"][0], state_features["prev_action"][0]]
             )
-        dense_state = state_features['slots'][1]
+
         if (
             state_features["user"][1] is not None
             and state_features["prev_action"][1] is not None
         ):
             dense_state = np.hstack(
-                dense_state, (state_features["user"][1], state_features["prev_action"][1])
+                [state_features["user"][1], state_features["prev_action"][1]]
             )
         return sparse_state, dense_state
 
@@ -174,6 +174,8 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             state_extracted_features
         )
 
+        slot_features = state_extracted_features['slots'][1]
+
         if self.interpreter.entities == []:
             entity_features = None
         else:
@@ -187,8 +189,12 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                         entity_features[
                             self.interpreter.entities.index(entity_name)
                         ] = 1
+        if entity_features is None:
+            entity_slot_features = slot_features
+        else:
+            entity_slot_features = np.hstack((entity_features, slot_features))
 
-        return sparse_state, dense_state, entity_features
+        return sparse_state, dense_state, entity_slot_features
 
     def create_encoded_all_actions(self, domain):
         label_data = [

@@ -536,6 +536,9 @@ class DialogueStateTracker:
         if key in self.slots:
             self.slots[key].value = value
         else:
+            # An attempt in autoamically inferring the slot type from the data; 
+            # COMMENT: not necessary right now but might be needed later if we want to reduce the 
+            # amount of things the user needs to desctibe manually;
             if isinstance(value, list):
                 self.slots[key] = ListSlot(key, value)
             elif isinstance(value, str):

@@ -343,6 +343,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         training_examples += [Message(action) for action in domain.action_names]
         training_data = TrainingData(training_examples=training_examples)
         if len(domain.slots) == 1:
+            # COMMENT: this is trying to collect slots from the data;
             self.all_slots = list(set(all_slots))
         else:
             self.all_slots = domain.slots
