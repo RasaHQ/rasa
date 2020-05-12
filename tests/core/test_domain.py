@@ -1,3 +1,4 @@
+import copy
 import json
 from pathlib import Path
 
@@ -802,3 +803,12 @@ slots: {}"""
     old_domain = Domain.from_yaml(old_yaml)
     new_domain = Domain.from_yaml(new_yaml)
     assert hash(old_domain) == hash(new_domain)
+
+
+def test_domain_from_dict_does_not_change_input():
+    path = DEFAULT_DOMAIN_PATH_WITH_SLOTS
+    input_before = io_utils.read_yaml(io_utils.read_file(path))
+    input_after = copy.deepcopy(input_before)
+
+    Domain.from_dict(input_after)
+    assert input_after == input_before

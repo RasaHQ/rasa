@@ -134,6 +134,7 @@ class Domain:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
+        data = copy.deepcopy(data)
         utter_templates = cls.collect_templates(data.get("responses", {}))
         if "templates" in data:
             raise_warning(
