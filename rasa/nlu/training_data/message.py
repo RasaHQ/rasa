@@ -156,9 +156,7 @@ class Message:
         attribute: Text,
         sequence_featurizers: List[Text],
         sentence_featurizers: List[Text],
-    ) -> Tuple[
-        Optional[List[scipy.sparse.spmatrix]], Optional[List[scipy.sparse.spmatrix]]
-    ]:
+    ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[scipy.sparse.spmatrix]]:
 
         sequence_features, sentence_features = self._filter_features(
             attribute, sequence_featurizers, sentence_featurizers, sparse=True
@@ -173,8 +171,8 @@ class Message:
     def _combine_features(
         sequence_features: List["Features"], sentence_features: List["Features"]
     ) -> Tuple[
-        Optional[List[Union[np.ndarray, scipy.sparse.spmatrix]]],
-        Optional[List[Union[np.ndarray, scipy.sparse.spmatrix]]],
+        Optional[Union[np.ndarray, scipy.sparse.spmatrix]],
+        Optional[Union[np.ndarray, scipy.sparse.spmatrix]],
     ]:
         combined_sequence_features = None
         for f in sequence_features:
@@ -195,7 +193,7 @@ class Message:
         attribute: Text,
         sequence_featurizers: List[Text],
         sentence_featurizers: List[Text],
-    ) -> Tuple[Optional[List[np.ndarray]], Optional[List[np.ndarray]]]:
+    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         sequence_features, sentence_features = self._filter_features(
             attribute, sequence_featurizers, sentence_featurizers, sparse=False
         )

@@ -612,6 +612,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data.add_features(LABEL_SEQUENCE_FEATURES, sequence_features)
         label_data.add_features(LABEL_SENTENCE_FEATURES, sentence_features)
 
+        if label_data.feature_not_exist(
+            LABEL_SENTENCE_FEATURES
+        ) and label_data.feature_not_exist(LABEL_SEQUENCE_FEATURES):
+            raise ValueError(
+                "No label features are present. Please check your configuration file."
+            )
+
         label_ids = np.array([idx for (idx, _) in labels_idx_examples])
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences

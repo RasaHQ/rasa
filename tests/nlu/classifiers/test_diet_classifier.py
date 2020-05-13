@@ -3,10 +3,16 @@ import pytest
 
 from unittest.mock import Mock
 
+from nlu.featurizers.featurizer import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import TEXT, SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, INTENT
+from rasa.nlu.constants import (
+    TEXT,
+    INTENT,
+    FEATURE_TYPE_SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
+)
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     RANDOM_SEED,
@@ -51,17 +57,17 @@ def test_compute_default_label_features():
             [
                 Message(
                     "test a",
-                    data={
-                        SPARSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                    },
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                    ],
                 ),
                 Message(
                     "test b",
-                    data={
-                        SPARSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                    },
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                    ],
                 ),
             ],
             True,
@@ -70,10 +76,10 @@ def test_compute_default_label_features():
             [
                 Message(
                     "test a",
-                    data={
-                        SPARSE_FEATURE_NAMES[INTENT]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[INTENT]: np.zeros(1),
-                    },
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
+                    ],
                 )
             ],
             False,
@@ -82,7 +88,6 @@ def test_compute_default_label_features():
 )
 def test_check_labels_features_exist(messages, expected):
     attribute = TEXT
-
     assert DIETClassifier._check_labels_features_exist(messages, attribute) == expected
 
 
@@ -91,7 +96,7 @@ def test_check_labels_features_exist(messages, expected):
     [
         [
             {
-                "name": "ConveRTTokenizer",
+                "name": "WhitespaceTokenizer",
                 "intent_tokenization_flag": True,
                 "intent_split_symbol": "+",
             },

@@ -33,7 +33,6 @@ from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFea
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.selectors.response_selector import ResponseSelector
-from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
@@ -43,11 +42,6 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.utils.common import class_from_module_path, raise_warning
-from rasa.utils.tensorflow.constants import (
-    INTENT_CLASSIFICATION,
-    ENTITY_RECOGNITION,
-    NUM_TRANSFORMER_LAYERS,
-)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -67,7 +61,6 @@ component_classes = [
     MitieTokenizer,
     SpacyTokenizer,
     WhitespaceTokenizer,
-    ConveRTTokenizer,
     JiebaTokenizer,
     LanguageModelTokenizer,
     # extractors

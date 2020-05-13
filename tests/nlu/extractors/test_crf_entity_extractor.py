@@ -11,6 +11,7 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.constants import TEXT, SPACY_DOCS, ENTITIES
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+import numpy as np
 
 
 def pipeline_from_components(*components: Text) -> List[Dict[Text, Text]]:
@@ -153,10 +154,10 @@ def test_crf_use_dense_features(spacy_nlp: Any):
     features = crf_extractor._crf_tokens_to_features(text_data)
 
     assert "0:text_dense_features" in features[0]
-    for i in range(0, len(message.data.get("text_dense_features")[0])):
-        assert (
-            features[0]["0:text_dense_features"]["text_dense_features"][str(i)]
-            == message.data.get("text_dense_features")[0][i]
+    dense_sequence_features, _ = message.get_dense_features(TEXT, [], [])
+    for i in range(0, len(dense_sequence_features)):
+        assert np.all(
+            features[0]["0:text_dense_features"] == dense_sequence_features[i]
         )
 
 

@@ -463,10 +463,10 @@ class CRFEntityExtractor(EntityExtractor):
             return message.get(TOKENS_NAMES[TEXT])[idx].get("pattern", {})
         return {}
 
-    def _get_dense_features(self, message: Message) -> Optional[List[Any]]:
+    def _get_dense_features(self, message: Message) -> Optional[List]:
         """Convert dense features to python-crfsuite feature format."""
         features, _ = message.get_dense_features(
-            TEXT, self.component_config["sequence_featurizers"], []
+            TEXT, self.component_config["sequence_features"], []
         )
 
         if features is None:
@@ -481,16 +481,7 @@ class CRFEntityExtractor(EntityExtractor):
             )
             return None
 
-        # convert to python-crfsuite feature format
-        features_out = []
-        for feature in features:
-            feature_dict = {
-                str(index): token_features
-                for index, token_features in enumerate(feature)
-            }
-            converted = {"text_dense_features": feature_dict}
-            features_out.append(converted)
-        return features_out
+        return features.tolist()
 
     def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:
         """Take a message and convert it to crfsuite format."""
