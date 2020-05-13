@@ -1726,10 +1726,15 @@ class DIET(RasaModel):
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
         mask_sentence_text = self._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
 
-        sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
-        )
-        sequence_lengths += 1  # add cls token
+        if TEXT_SEQUENCE_LENGTH in tf_batch_data:
+            sequence_lengths = self._get_sequence_lengths(
+                tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
+            )
+            sequence_lengths += 1  # add cls token
+        else:
+            sequence_lengths = self._get_sequence_lengths(
+                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
+            )
         mask_text = self._compute_mask(sequence_lengths)
 
         (
@@ -1872,10 +1877,15 @@ class DIET(RasaModel):
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
         mask_sentence_text = self._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
 
-        sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
-        )
-        sequence_lengths += 1  # add cls token
+        if TEXT_SEQUENCE_LENGTH in tf_batch_data:
+            sequence_lengths = self._get_sequence_lengths(
+                tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
+            )
+            sequence_lengths += 1  # add cls token
+        else:
+            sequence_lengths = self._get_sequence_lengths(
+                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
+            )
         mask = self._compute_mask(sequence_lengths)
 
         text_transformed, _, _, _ = self._create_sequence(

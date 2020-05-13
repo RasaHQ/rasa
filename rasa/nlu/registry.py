@@ -143,7 +143,7 @@ registered_pipeline_templates = {
         {"name": "EmbeddingIntentClassifier"},
     ],
     "pretrained_embeddings_convert": [
-        {"name": "ConveRTTokenizer"},
+        {"name": "WhitespaceTokenizer"},
         {"name": "ConveRTFeaturizer"},
         {"name": "EmbeddingIntentClassifier"},
     ],
