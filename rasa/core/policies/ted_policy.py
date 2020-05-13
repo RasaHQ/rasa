@@ -63,6 +63,10 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    UTTERANCE_TRANSFORMER_SIZE,
+    UTTERANCE_NUM_TRANSFORMER_LAYERS,
+    UTTERANCE_NUM_HEADS,
+    ENTITY_RECOGNITION,
 )
 
 
@@ -890,6 +894,12 @@ class HierarchicalTEDPolicy(Policy):
         NUM_TRANSFORMER_LAYERS: 1,
         # Number of attention heads in transformer
         NUM_HEADS: 4,
+        # Number of units in utterance transformer
+        UTTERANCE_TRANSFORMER_SIZE: 512,
+        # Number of utterance transformer layers
+        UTTERANCE_NUM_TRANSFORMER_LAYERS: 1,
+        # Number of attention heads in utterance transformer
+        UTTERANCE_NUM_HEADS: 4,
         # If 'True' use key relative embeddings in attention
         KEY_RELATIVE_ATTENTION: False,
         # If 'True' use value relative embeddings in attention
@@ -955,6 +965,7 @@ class HierarchicalTEDPolicy(Policy):
         # How many examples to use for hold out validation set
         # Large values may hurt performance, e.g. model accuracy.
         EVAL_NUM_EXAMPLES: 0,
+        ENTITY_RECOGNITION: True
     }
 
     @staticmethod
@@ -1500,10 +1511,10 @@ class HierarchicalTED(RasaModel):
             name=DIALOGUE + "_encoder",
         )
         self._tf_layers[f"transformer_{BOT}_utts"] = TransformerEncoder(
-            self.config[NUM_TRANSFORMER_LAYERS],
-            self.config[TRANSFORMER_SIZE],
-            self.config[NUM_HEADS],
-            self.config[TRANSFORMER_SIZE] * 4,
+            self.config[UTTERANCE_NUM_TRANSFORMER_LAYERS],
+            self.config[UTTERANCE_TRANSFORMER_SIZE],
+            self.config[UTTERANCE_NUM_HEADS],
+            self.config[UTTERANCE_TRANSFORMER_SIZE] * 4,
             self.config[REGULARIZATION_CONSTANT],
             dropout_rate=self.config[DROP_RATE_DIALOGUE],
             attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
@@ -1515,10 +1526,10 @@ class HierarchicalTED(RasaModel):
             name=BOT + "_utterance_encoder",
         )
         self._tf_layers[f"transformer_{USER}_utts"] = TransformerEncoder(
-            self.config[NUM_TRANSFORMER_LAYERS],
-            self.config[TRANSFORMER_SIZE],
-            self.config[NUM_HEADS],
-            self.config[TRANSFORMER_SIZE] * 4,
+            self.config[UTTERANCE_NUM_TRANSFORMER_LAYERS],
+            self.config[UTTERANCE_TRANSFORMER_SIZE],
+            self.config[UTTERANCE_NUM_HEADS],
+            self.config[UTTERANCE_TRANSFORMER_SIZE] * 4,
             self.config[REGULARIZATION_CONSTANT],
             dropout_rate=self.config[DROP_RATE_DIALOGUE],
             attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
@@ -1541,6 +1552,9 @@ class HierarchicalTED(RasaModel):
             LABEL,
             self.config[SIMILARITY_TYPE],
         )
+        
+        if self.config[ENTITY_RECOGNITION]:
+            print('LAYER PREPARE')
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = self.tf_label_data[LABEL_FEATURES]
