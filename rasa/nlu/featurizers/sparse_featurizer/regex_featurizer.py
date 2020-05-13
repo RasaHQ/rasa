@@ -17,8 +17,8 @@ from rasa.nlu.constants import (
     TEXT,
     TOKENS_NAMES,
     ALIAS,
-    SENTENCE,
-    SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
 )
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
@@ -73,11 +73,17 @@ class RegexFeaturizer(SparseFeaturizer):
             seq_features, cls_features = self._features_for_patterns(message, attribute)
 
             final_sequence_features = Features(
-                seq_features, SEQUENCE, attribute, self.component_config[ALIAS]
+                seq_features,
+                FEATURE_TYPE_SEQUENCE,
+                attribute,
+                self.component_config[ALIAS],
             )
             message.add_features(final_sequence_features)
             final_sentence_features = Features(
-                cls_features, SENTENCE, attribute, self.component_config[ALIAS]
+                cls_features,
+                FEATURE_TYPE_SENTENCE,
+                attribute,
+                self.component_config[ALIAS],
             )
             message.add_features(final_sentence_features)
 

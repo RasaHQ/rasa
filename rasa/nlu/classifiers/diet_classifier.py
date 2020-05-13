@@ -33,8 +33,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    SENTENCE,
-    SEQUENCE,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.nlu.training_data import TrainingData
@@ -92,14 +90,17 @@ from rasa.utils.tensorflow.constants import (
 
 logger = logging.getLogger(__name__)
 
-TEXT_SENTENCE_FEATURES = f"{TEXT}_sentence_features"
-LABEL_SENTENCE_FEATURES = f"{LABEL}_sentence_features"
-TEXT_SEQUENCE_FEATURES = f"{TEXT}_sequence_features"
-LABEL_SEQUENCE_FEATURES = f"{LABEL}_sequence_features"
-TEXT_SENTENCE_LENGTH = f"{TEXT}_sentence_lengths"
-LABEL_SENTENCE_LENGTH = f"{LABEL}_sentence_lengths"
-TEXT_SEQUENCE_LENGTH = f"{TEXT}_sequence_lengths"
-LABEL_SEQUENCE_LENGTH = f"{LABEL}_sequence_lengths"
+
+SENTENCE = "sentence"
+SEQUENCE = "sequence"
+TEXT_SENTENCE_FEATURES = f"{TEXT}_{SENTENCE}_features"
+LABEL_SENTENCE_FEATURES = f"{LABEL}_{SENTENCE}_features"
+TEXT_SEQUENCE_FEATURES = f"{TEXT}_{SEQUENCE}_features"
+LABEL_SEQUENCE_FEATURES = f"{LABEL}_{SEQUENCE}_features"
+TEXT_SENTENCE_LENGTH = f"{TEXT}_{SENTENCE}_lengths"
+LABEL_SENTENCE_LENGTH = f"{LABEL}_{SENTENCE}_lengths"
+TEXT_SEQUENCE_LENGTH = f"{TEXT}_{SEQUENCE}_lengths"
+LABEL_SEQUENCE_LENGTH = f"{LABEL}_{SEQUENCE}_lengths"
 LABEL_IDS = f"{LABEL}_ids"
 TAG_IDS = "tag_ids"
 

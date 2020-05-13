@@ -13,8 +13,8 @@ from rasa.nlu.constants import (
     SPACY_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     ALIAS,
-    SENTENCE,
-    SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
 )
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
@@ -71,10 +71,13 @@ class SpacyFeaturizer(DenseFeaturizer):
             cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
 
             final_sequence_features = Features(
-                features, SEQUENCE, attribute, self.component_config[ALIAS]
+                features, FEATURE_TYPE_SEQUENCE, attribute, self.component_config[ALIAS]
             )
             message.add_features(final_sequence_features)
             final_sentence_features = Features(
-                cls_token_vec, SENTENCE, attribute, self.component_config[ALIAS]
+                cls_token_vec,
+                FEATURE_TYPE_SENTENCE,
+                attribute,
+                self.component_config[ALIAS],
             )
             message.add_features(final_sentence_features)

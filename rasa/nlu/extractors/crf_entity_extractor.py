@@ -19,7 +19,6 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     TEXT,
-    DENSE_FEATURE_NAMES,
     ENTITIES,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
@@ -95,6 +94,8 @@ class CRFEntityExtractor(EntityExtractor):
         "L1_c": 0.1,
         # weight of the L2 regularization
         "L2_c": 0.1,
+        # what dense featurizer should be used
+        "sequence_features": [],
     }
 
     function_dict: Dict[Text, Callable[[CRFToken], Any]] = {
@@ -462,21 +463,20 @@ class CRFEntityExtractor(EntityExtractor):
             return message.get(TOKENS_NAMES[TEXT])[idx].get("pattern", {})
         return {}
 
-    @staticmethod
-    def _get_dense_features(message: Message) -> Optional[List[Any]]:
+    def _get_dense_features(self, message: Message) -> Optional[List[Any]]:
         """Convert dense features to python-crfsuite feature format."""
-
-        features = message.get(DENSE_FEATURE_NAMES[TEXT])
+        features, _ = message.get_dense_features(
+            TEXT, self.component_config["sequence_featurizers"], []
+        )
 
         if features is None:
             return None
 
-        tokens = message.get(TOKENS_NAMES[TEXT], [])
+        tokens = train_utils.tokens_without_cls(message, TEXT)
         if len(tokens) != len(features):
             common_utils.raise_warning(
-                f"Number of features ({len(features)}) for attribute "
-                f"'{DENSE_FEATURE_NAMES[TEXT]}' "
-                f"does not match number of tokens ({len(tokens)}).",
+                f"Number of dense features ({len(features)}) for attribute "
+                f"'TEXT' does not match number of tokens ({len(tokens)}).",
                 docs=DOCS_URL_COMPONENTS + "#crfentityextractor",
             )
             return None

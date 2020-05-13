@@ -22,8 +22,8 @@ from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     RESPONSE,
     ALIAS,
-    SEQUENCE,
-    SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
 )
 
 logger = logging.getLogger(__name__)
@@ -477,7 +477,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             if sequence_features[i] is not None:
                 final_sequence_features = Features(
                     sequence_features[i],
-                    SEQUENCE,
+                    FEATURE_TYPE_SEQUENCE,
                     attribute,
                     self.component_config[ALIAS],
                 )
@@ -485,7 +485,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             if sentence_features[i] is not None:
                 final_sentence_features = Features(
                     sentence_features[i],
-                    SENTENCE,
+                    FEATURE_TYPE_SENTENCE,
                     attribute,
                     self.component_config[ALIAS],
                 )
@@ -554,12 +554,18 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         if seq_features[0] is not None:
             final_sequence_features = Features(
-                seq_features[0], SEQUENCE, attribute, self.component_config[ALIAS]
+                seq_features[0],
+                FEATURE_TYPE_SEQUENCE,
+                attribute,
+                self.component_config[ALIAS],
             )
             message.add_features(final_sequence_features)
         if cls_features[0] is not None:
             final_sentence_features = Features(
-                cls_features[0], SENTENCE, attribute, self.component_config[ALIAS]
+                cls_features[0],
+                FEATURE_TYPE_SENTENCE,
+                attribute,
+                self.component_config[ALIAS],
             )
             message.add_features(final_sentence_features)
 

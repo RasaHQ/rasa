@@ -13,8 +13,8 @@ from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
-    SENTENCE,
-    SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
     ALIAS,
 )
 
@@ -67,10 +67,16 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         sentence_features = doc[SENTENCE_FEATURES]
 
         final_sequence_features = Features(
-            sequence_features, SEQUENCE, attribute, self.component_config[ALIAS]
+            sequence_features,
+            FEATURE_TYPE_SEQUENCE,
+            attribute,
+            self.component_config[ALIAS],
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            sentence_features, SENTENCE, attribute, self.component_config[ALIAS]
+            sentence_features,
+            FEATURE_TYPE_SENTENCE,
+            attribute,
+            self.component_config[ALIAS],
         )
         message.add_features(final_sentence_features)

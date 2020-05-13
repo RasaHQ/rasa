@@ -12,8 +12,8 @@ from rasa.nlu.constants import (
     TEXT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     ALIAS,
-    SEQUENCE,
-    SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
     NUMBER_OF_SUB_TOKENS,
 )
 import numpy as np
@@ -221,14 +221,14 @@ class ConveRTFeaturizer(DenseFeaturizer):
                 for index, ex in enumerate(batch_examples):
                     sequence_features = Features(
                         batch_sequence_features[index],
-                        SEQUENCE,
+                        FEATURE_TYPE_SEQUENCE,
                         attribute,
                         self.component_config[ALIAS],
                     )
                     ex.add_features(sequence_features)
                     sentence_features = Features(
                         batch_sentence_features[index],
-                        SENTENCE,
+                        FEATURE_TYPE_SENTENCE,
                         attribute,
                         self.component_config[ALIAS],
                     )
@@ -238,10 +238,16 @@ class ConveRTFeaturizer(DenseFeaturizer):
         sequence_features, sentence_features = self._compute_features([message])
 
         final_sequence_features = Features(
-            sequence_features[0], SEQUENCE, TEXT, self.component_config[ALIAS]
+            sequence_features[0],
+            FEATURE_TYPE_SEQUENCE,
+            TEXT,
+            self.component_config[ALIAS],
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            sentence_features[0], SENTENCE, TEXT, self.component_config[ALIAS]
+            sentence_features[0],
+            FEATURE_TYPE_SENTENCE,
+            TEXT,
+            self.component_config[ALIAS],
         )
         message.add_features(final_sentence_features)

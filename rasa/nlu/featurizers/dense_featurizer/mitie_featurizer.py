@@ -12,8 +12,8 @@ from rasa.nlu.constants import (
     TEXT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     ALIAS,
-    SENTENCE,
-    SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
 )
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 import rasa.utils.train_utils as train_utils
@@ -71,11 +71,14 @@ class MitieFeaturizer(DenseFeaturizer):
             )
 
             final_sequence_features = Features(
-                features, SEQUENCE, attribute, self.component_config[ALIAS]
+                features, FEATURE_TYPE_SEQUENCE, attribute, self.component_config[ALIAS]
             )
             example.add_features(final_sequence_features)
             final_sentence_features = Features(
-                cls_features, SENTENCE, attribute, self.component_config[ALIAS]
+                cls_features,
+                FEATURE_TYPE_SENTENCE,
+                attribute,
+                self.component_config[ALIAS],
             )
             example.add_features(final_sentence_features)
 
@@ -87,11 +90,11 @@ class MitieFeaturizer(DenseFeaturizer):
         )
 
         final_sequence_features = Features(
-            features, SEQUENCE, TEXT, self.component_config[ALIAS]
+            features, FEATURE_TYPE_SEQUENCE, TEXT, self.component_config[ALIAS]
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            cls_features, SENTENCE, TEXT, self.component_config[ALIAS]
+            cls_features, FEATURE_TYPE_SENTENCE, TEXT, self.component_config[ALIAS]
         )
         message.add_features(final_sentence_features)
 
