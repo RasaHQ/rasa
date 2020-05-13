@@ -5,14 +5,7 @@ from rasa.nlu.training_data import TrainingData
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-from rasa.nlu.constants import (
-    TEXT,
-    RESPONSE,
-    SPACY_DOCS,
-    TOKENS_NAMES,
-    INTENT,
-    SPARSE_FEATURE_NAMES,
-)
+from rasa.nlu.constants import TEXT, RESPONSE, SPACY_DOCS, TOKENS_NAMES, INTENT
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message
 
@@ -208,18 +201,21 @@ def test_regex_featurizer_train():
     expected = np.array([0, 1, 0])
     expected_cls = np.array([1, 1, 1])
 
-    vecs = message.get(SPARSE_FEATURE_NAMES[TEXT])
+    seq_vecs, sen_vec = message.get_sparse_features(TEXT, [], [])
 
-    assert (7, 3) == vecs.shape
-    assert np.all(vecs.toarray()[0] == expected)
-    assert np.all(vecs.toarray()[-1] == expected_cls)
+    assert (6, 3) == seq_vecs.shape
+    assert (1, 3) == sen_vec.shape
+    assert np.all(seq_vecs.toarray()[0] == expected)
+    assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    vecs = message.get(SPARSE_FEATURE_NAMES[RESPONSE])
+    seq_vecs, sen_vec = message.get_sparse_features(RESPONSE, [], [])
 
-    assert (7, 3) == vecs.shape
-    assert np.all(vecs.toarray()[0] == expected)
-    assert np.all(vecs.toarray()[-1] == expected_cls)
+    assert (6, 3) == seq_vecs.shape
+    assert (1, 3) == sen_vec.shape
+    assert np.all(seq_vecs.toarray()[0] == expected)
+    assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    vecs = message.get(SPARSE_FEATURE_NAMES[INTENT])
+    seq_vecs, sen_vec = message.get_sparse_features(INTENT, [], [])
 
-    assert vecs is None
+    assert seq_vecs is None
+    assert sen_vec is None

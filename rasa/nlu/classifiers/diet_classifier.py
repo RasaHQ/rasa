@@ -612,6 +612,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data.add_features(LABEL_SEQUENCE_FEATURES, sequence_features)
         label_data.add_features(LABEL_SENTENCE_FEATURES, sentence_features)
 
+        # TODO: In case there are label features, but the user has a spelling mistake
+        #   in this config. But what if he intentionally does not want to use
+        #   those features?
         if label_data.feature_not_exist(
             LABEL_SENTENCE_FEATURES
         ) and label_data.feature_not_exist(LABEL_SEQUENCE_FEATURES):

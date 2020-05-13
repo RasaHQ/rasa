@@ -35,8 +35,9 @@ class Message:
         else:
             self.output_properties = set()
 
-    def add_features(self, features: "Features") -> None:
-        self.features.append(features)
+    def add_features(self, features: Optional["Features"]) -> None:
+        if features is not None:
+            self.features.append(features)
 
     def set(self, prop, info, add_to_output=False) -> None:
         self.data[prop] = info

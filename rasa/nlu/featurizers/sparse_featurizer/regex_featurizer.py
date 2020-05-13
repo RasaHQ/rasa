@@ -72,20 +72,23 @@ class RegexFeaturizer(SparseFeaturizer):
         if self.known_patterns:
             seq_features, cls_features = self._features_for_patterns(message, attribute)
 
-            final_sequence_features = Features(
-                seq_features,
-                FEATURE_TYPE_SEQUENCE,
-                attribute,
-                self.component_config[ALIAS],
-            )
-            message.add_features(final_sequence_features)
-            final_sentence_features = Features(
-                cls_features,
-                FEATURE_TYPE_SENTENCE,
-                attribute,
-                self.component_config[ALIAS],
-            )
-            message.add_features(final_sentence_features)
+            if seq_features is not None:
+                final_sequence_features = Features(
+                    seq_features,
+                    FEATURE_TYPE_SEQUENCE,
+                    attribute,
+                    self.component_config[ALIAS],
+                )
+                message.add_features(final_sequence_features)
+
+            if cls_features is not None:
+                final_sentence_features = Features(
+                    cls_features,
+                    FEATURE_TYPE_SENTENCE,
+                    attribute,
+                    self.component_config[ALIAS],
+                )
+                message.add_features(final_sentence_features)
 
     def _add_lookup_table_regexes(
         self, lookup_tables: List[Dict[Text, Union[Text, List]]]
@@ -98,7 +101,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def _features_for_patterns(
         self, message: Message, attribute: Text
-    ) -> Optional[Tuple[scipy.sparse.coo_matrix, scipy.sparse.coo_matrix]]:
+    ) -> Tuple[Optional[scipy.sparse.coo_matrix], Optional[scipy.sparse.coo_matrix]]:
         """Checks which known patterns match the message.
 
         Given a sentence, returns a vector of {1,0} values indicating which
@@ -108,13 +111,13 @@ class RegexFeaturizer(SparseFeaturizer):
 
         # Attribute not set (e.g. response not present)
         if not message.get(attribute):
-            return None
+            return None, None
 
         tokens = message.get(TOKENS_NAMES[attribute], [])
 
         if not tokens:
             # nothing to featurize
-            return
+            return None, None
 
         seq_length = len(tokens)
 
