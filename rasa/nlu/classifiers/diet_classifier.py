@@ -1512,7 +1512,7 @@ class DIET(RasaModel):
             # (3) add a zero to the end of sequence matrix to match the final shape
             sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
 
-            # (4) add the sequence features and sentence features
+            # (4) sum up sequence features and sentence features
             return sequence_x + sentence_x
 
         if sequence_x is not None and sentence_x is None:
