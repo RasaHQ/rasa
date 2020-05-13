@@ -31,6 +31,11 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    RESPONSE,
+    INTENT,
+    TEXT,
+    ENTITIES,
+    TOKENS_NAMES,
 )
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
@@ -1003,11 +1008,11 @@ def get_eval_data(
     intent_results, entity_results, response_selection_results = [], [], []
 
     response_labels = [
-        e.get("response")
+        e.get(RESPONSE)
         for e in test_data.intent_examples
-        if e.get("response") is not None
+        if e.get(RESPONSE) is not None
     ]
-    intent_labels = [e.get("intent") for e in test_data.intent_examples]
+    intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
     should_eval_intents = (
         is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
     )
@@ -1024,12 +1029,12 @@ def get_eval_data(
         result = interpreter.parse(example.text, only_output_properties=False)
 
         if should_eval_intents:
-            intent_prediction = result.get("intent", {}) or {}
+            intent_prediction = result.get(INTENT, {}) or {}
             intent_results.append(
                 IntentEvaluationResult(
-                    example.get("intent", ""),
+                    example.get(INTENT, ""),
                     intent_prediction.get("name"),
-                    result.get("text", {}),
+                    result.get(TEXT, {}),
                     intent_prediction.get("confidence"),
                 )
             )
@@ -1038,7 +1043,7 @@ def get_eval_data(
 
             # including all examples here. Empty response examples are filtered at the
             # time of metric calculation
-            intent_target = example.get("intent", "")
+            intent_target = example.get(INTENT, "")
             selector_properties = result.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
 
             if intent_target in available_response_selector_types:
@@ -1050,14 +1055,14 @@ def get_eval_data(
                 response_prediction_key, {}
             ).get(OPEN_UTTERANCE_PREDICTION_KEY, {})
 
-            response_target = example.get("response", "")
+            response_target = example.get(RESPONSE, "")
 
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
                     intent_target,
                     response_target,
                     response_prediction.get("name"),
-                    result.get("text", {}),
+                    result.get(TEXT, {}),
                     response_prediction.get("confidence"),
                 )
             )
@@ -1065,10 +1070,10 @@ def get_eval_data(
         if should_eval_entities:
             entity_results.append(
                 EntityEvaluationResult(
-                    example.get("entities", []),
-                    result.get("entities", []),
-                    result.get("tokens", []),
-                    result.get("text", ""),
+                    example.get(ENTITIES, []),
+                    result.get(ENTITIES, []),
+                    result.get(TOKENS_NAMES[TEXT], []),
+                    result.get(TEXT, ""),
                 )
             )
 
