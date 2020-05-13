@@ -70,6 +70,7 @@ release = __version__
 # Sphinx replaces `|release|` and `|version|` by default,
 # but we have to add an `rst_epilog` to replace our own variables
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-rst_epilog
 from rasa_sdk import __version__ as rasa_sdk_version
 
 # type : Dict[Text, Text]
