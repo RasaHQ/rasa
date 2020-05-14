@@ -71,9 +71,6 @@ def write_version_file(version: Text) -> None:
 
 def write_version_to_pyproject(version: Text) -> None:
     """Dump a new version into the pyproject.toml."""
-
-    import toml
-
     pyproject_file = pyproject_file_path()
 
     try:
