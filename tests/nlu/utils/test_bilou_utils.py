@@ -163,6 +163,7 @@ def test_apply_bilou_schema():
             "B- tag, L- tag pair encloses multiple entity classes",
         ),
         (["O", "B-person", "O"], ["O", "U-person", "O"], "B- tag not closed"),
+        (["O", "B-person"], ["O", "U-person"], None),
     ],
 )
 def test_check_consistent_bilou_tagging(

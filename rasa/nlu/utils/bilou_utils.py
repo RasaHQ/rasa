@@ -295,6 +295,10 @@ def _find_bilou_end(start_idx: int, predicted_tags: List[Text]) -> int:
     start_tag = tag_without_prefix(predicted_tags[start_idx])
 
     while not finished:
+        if current_idx >= len(predicted_tags):
+            current_idx -= 1
+            break
+
         current_label = predicted_tags[current_idx]
         prefix = bilou_prefix_from_tag(current_label)
         tag = tag_without_prefix(current_label)
