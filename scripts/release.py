@@ -132,9 +132,13 @@ def ask_version() -> Text:
     def is_valid_version_number(v: Text) -> bool:
         return v in {"major", "minor", "patch", "alpha"} or validate_version(v)
 
+    current_version = Version.coerce(get_current_version())
+    next_patch_version = str(current_version.next_patch())
+    next_alpha_version = str(next_alpha(current_version))
     version = questionary.text(
-        "What is the version number you want to release "
-        "('major', 'minor', 'patch', 'alpha' or valid version number)?",
+        f"What is the version number you want to release "
+        f"('major', 'minor', 'patch', 'alpha' or valid version number "
+        f"e.g. '{next_patch_version}' or '{next_alpha_version}')?",
         validate=is_valid_version_number,
     ).ask()
 
