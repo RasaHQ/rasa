@@ -252,8 +252,13 @@ def next_alpha(version: Version) -> Version:
     if version.prerelease:
         alpha_number = int(ALPHA_VERSION_PATTERN.match(version.prerelease[0]).group(1))
 
-    version.prerelease = (f"alpha{alpha_number + 1}",)
-    return version
+    return Version(
+        major=version.major,
+        minor=version.minor,
+        patch=version.patch,
+        prerelease=(f"alpha{alpha_number + 1}",),
+        partial=version.partial,
+    )
 
 
 def parse_next_version(version: Text) -> Text:
