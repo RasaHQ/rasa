@@ -1,0 +1,3 @@
+Creating a ``Domain`` using ``Domain.fromDict`` can no longer alter the input dictionary.
+Previously, there could be problems when the input dictionary was re-used for other
+things after creating the ``Domain`` from it.
