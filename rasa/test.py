@@ -229,8 +229,8 @@ def perform_nlu_cross_validation(
     from rasa.nlu.test import (
         drop_intents_below_freq,
         cross_validate,
-        return_results,
-        return_entity_results,
+        log_results,
+        log_entity_results,
     )
 
     additional_arguments = additional_arguments or {}
@@ -246,13 +246,13 @@ def perform_nlu_cross_validation(
 
     if any(results):
         logger.info("Intent evaluation results")
-        return_results(results.train, "train")
-        return_results(results.test, "test")
+        log_results(results.train, "train")
+        log_results(results.test, "test")
     if any(entity_results):
         logger.info("Entity evaluation results")
-        return_entity_results(entity_results.train, "train")
-        return_entity_results(entity_results.test, "test")
+        log_entity_results(entity_results.train, "train")
+        log_entity_results(entity_results.test, "test")
     if any(response_selection_results):
         logger.info("Response Selection evaluation results")
-        return_results(response_selection_results.train, "train")
-        return_results(response_selection_results.test, "test")
+        log_results(response_selection_results.train, "train")
+        log_results(response_selection_results.test, "test")
