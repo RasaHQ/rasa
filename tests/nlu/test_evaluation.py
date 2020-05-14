@@ -238,6 +238,8 @@ def test_determine_token_labels_with_extractors():
 
 
 def test_label_merging():
+    import numpy as np
+
     aligned_predictions = [
         {
             "target_labels": ["O", "O"],
@@ -249,8 +251,8 @@ def test_label_merging():
         },
     ]
 
-    assert all(merge_labels(aligned_predictions) == ["O", "O", "LOC", "O", "O"])
-    assert all(
+    assert np.all(merge_labels(aligned_predictions) == ["O", "O", "LOC", "O", "O"])
+    assert np.all(
         merge_labels(aligned_predictions, "EntityExtractorA")
         == ["O", "O", "O", "O", "O"]
     )
