@@ -313,7 +313,9 @@ def main(args: argparse.Namespace) -> None:
     write_version_file(version)
     write_version_to_pyproject(version)
 
-    generate_changelog(version)
+    if not version.prerelease:
+        # never update changelog on an alpha version
+        generate_changelog(version)
     base = git_current_branch()
     branch = create_release_branch(version)
 
