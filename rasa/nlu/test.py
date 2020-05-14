@@ -299,7 +299,7 @@ def plot_attribute_confidences(
     hist_filename: Optional[Text],
     target_key: Text,
     prediction_key: Text,
-    type: Text = "Intent",
+    title: Text,
 ) -> None:
 
     # create histogram of confidence distribution, save to file and display
@@ -315,11 +315,7 @@ def plot_attribute_confidences(
         if getattr(r, target_key) != getattr(r, prediction_key)
     ]
 
-    plot_utils.plot_histogram(
-        [pos_hist, neg_hist],
-        f"{type} Prediction Confidence Distribution",
-        hist_filename,
-    )
+    plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
 def evaluate_response_selections(
@@ -330,8 +326,8 @@ def evaluate_response_selections(
     disable_plotting: bool,
     confusion_matrix_filename: Optional[
         Text
-    ] = "response_selection_confusion_matrix.plt",
-    histogram_filename: Optional[Text] = "response_selection_histogram.plt",
+    ] = "response_selection_confusion_matrix.png",
+    histogram_filename: Optional[Text] = "response_selection_histogram.png",
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for response selection.
 
@@ -408,7 +404,7 @@ def evaluate_response_selections(
                 confusion_matrix,
                 classes=labels,
                 title="Response Selection Confusion Matrix",
-                output_file=confusion_matrix_filename,
+                output_file=_confusion_matrix_filename,
             )
         if histogram_filename:
             _histogram_filename = os.path.join(output_directory, histogram_filename)
@@ -417,6 +413,7 @@ def evaluate_response_selections(
                 _histogram_filename,
                 "response_target",
                 "response_prediction",
+                title="Response Selection Prediction Confidence Distribution",
             )
 
     predictions = [
@@ -480,8 +477,8 @@ def evaluate_intents(
     successes: bool,
     errors: bool,
     disable_plotting: bool,
-    confusion_matrix_filename: Optional[Text] = "intent_confustion_matrix.plt",
-    histogram_filename: Optional[Text] = "intent_histogram.plt",
+    confusion_matrix_filename: Optional[Text] = "intent_confustion_matrix.png",
+    histogram_filename: Optional[Text] = "intent_histogram.png",
 ) -> Dict:  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
 
@@ -554,7 +551,7 @@ def evaluate_intents(
                 confusion_matrix,
                 classes=labels,
                 title="Intent Confusion matrix",
-                output_file=confusion_matrix_filename,
+                output_file=_confusion_matrix_filename,
             )
         if histogram_filename:
             _histogram_filename = os.path.join(output_directory, histogram_filename)
@@ -563,6 +560,7 @@ def evaluate_intents(
                 _histogram_filename,
                 "intent_target",
                 "intent_prediction",
+                title="Intent Prediction Confidence Distribution",
             )
 
     predictions = [
