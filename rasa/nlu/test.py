@@ -517,6 +517,7 @@ def _add_confused_labels_to_report(
     report: Dict[Text, Dict[Text, float]],
     confusion_matrix: np.ndarray,
     labels: Collection[Text],
+    exclude_labels: Collection[Text] = None,
 ) -> Dict[Text, Dict[Text, Union[Dict, float]]]:
     """Adds a field "confused_with" to the evaluation report.
 
@@ -534,21 +535,32 @@ def _add_confused_labels_to_report(
 
     Returns: updated evaluation report
     """
+    if exclude_labels is None:
+        exclude_labels = []
+
     # sort confusion matrix by false positives
     indices = np.argsort(confusion_matrix, axis=1)
     n_candidates = min(3, len(labels))
 
     for label in labels:
+        if label in exclude_labels:
+            continue
         # it is possible to predict intent 'None'
         if report.get(label):
             report[label]["confused_with"] = {}
 
     for i, label in enumerate(labels):
+        if label in exclude_labels:
+            continue
         for j in range(n_candidates):
             label_idx = indices[i, -(1 + j)]
             false_pos_label = labels[label_idx]
             false_positives = int(confusion_matrix[i, label_idx])
-            if false_pos_label != label and false_positives > 0:
+            if (
+                false_pos_label != label
+                and false_pos_label not in exclude_labels
+                and false_positives > 0
+            ):
                 report[label]["confused_with"][false_pos_label] = false_positives
 
     return report
@@ -833,7 +845,8 @@ def evaluate_entities(
     extractors: Set[Text],
     output_directory: Optional[Text],
     successes: bool = False,
-    errors: bool = False,
+    errors: bool = True,
+    disable_plotting: bool = False,
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for each entity extractor.
 
@@ -848,6 +861,9 @@ def evaluate_entities(
 
     Returns: dictionary with evaluation results
     """
+    import sklearn.metrics
+    import sklearn.utils.multiclass
+
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, NO_ENTITY_TAG, NO_ENTITY)
@@ -860,6 +876,14 @@ def evaluate_entities(
             merged_predictions, NO_ENTITY_TAG, NO_ENTITY
         )
         logger.info(f"Evaluation for entity extractor: {extractor} ")
+
+        confusion_matrix = sklearn.metrics.confusion_matrix(
+            merged_targets, merged_predictions
+        )
+        labels = sklearn.utils.multiclass.unique_labels(
+            merged_targets, merged_predictions
+        )
+
         if output_directory:
             report_filename = f"{extractor}_report.json"
             extractor_report_filename = os.path.join(output_directory, report_filename)
@@ -870,6 +894,10 @@ def evaluate_entities(
                 output_dict=True,
                 exclude_label=NO_ENTITY,
             )
+            report = _add_confused_labels_to_report(
+                report, confusion_matrix, labels, [NO_ENTITY]
+            )
+
             utils.write_json_to_file(extractor_report_filename, report)
 
             logger.info(
@@ -903,6 +931,19 @@ def evaluate_entities(
             # log and save misclassified samples to file for debugging
             write_incorrect_entity_predictions(
                 entity_results, merged_targets, merged_predictions, errors_filename
+            )
+
+        if not disable_plotting:
+            confusion_matrix_filename = f"{extractor}_confusion_matrix.png"
+            if output_directory:
+                confusion_matrix_filename = os.path.join(
+                    output_directory, confusion_matrix_filename
+                )
+            plot_utils.plot_confusion_matrix(
+                confusion_matrix,
+                classes=labels,
+                title="Entity Confusion matrix",
+                output_file=confusion_matrix_filename,
             )
 
         result[extractor] = {
@@ -1379,7 +1420,12 @@ def run_evaluation(
         logger.info("Entity evaluation results:")
         extractors = get_entity_extractors(interpreter)
         result["entity_evaluation"] = evaluate_entities(
-            entity_results, extractors, output_directory, successes, errors
+            entity_results,
+            extractors,
+            output_directory,
+            successes,
+            errors,
+            disable_plotting,
         )
 
     return result
@@ -1579,7 +1625,9 @@ def cross_validate(
 
     if extractors and entity_evaluation_possible:
         logger.info("Accumulated test folds entity evaluation results:")
-        evaluate_entities(entity_test_results, extractors, output, successes, errors)
+        evaluate_entities(
+            entity_test_results, extractors, output, successes, errors, disable_plotting
+        )
 
     if response_selector_present and response_selection_test_results:
         logger.info("Accumulated test folds response selection evaluation results:")
