@@ -17,7 +17,7 @@ from typing import (
     Dict,
     Any,
 )
-
+import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
@@ -62,7 +62,7 @@ IntentEvaluationResult = namedtuple(
 
 ResponseSelectionEvaluationResult = namedtuple(
     "ResponseSelectionEvaluationResult",
-    "intent_target " "response_target " "response_prediction " "message " "confidence",
+    "intent_target response_target response_prediction message confidence",
 )
 
 EntityEvaluationResult = namedtuple(
@@ -72,90 +72,6 @@ EntityEvaluationResult = namedtuple(
 IntentMetrics = Dict[Text, List[float]]
 EntityMetrics = Dict[Text, Dict[Text, List[float]]]
 ResponseSelectionMetrics = Dict[Text, List[float]]
-
-
-def plot_confusion_matrix(
-    cm: np.ndarray,
-    classes: np.ndarray,
-    normalize: bool = False,
-    title: Text = "Confusion matrix",
-    cmap=None,
-    zmin: int = 1,
-    out: Optional[Text] = None,
-) -> None:  # pragma: no cover
-    """Print and plot the confusion matrix for the intent classification.
-    Normalization can be applied by setting `normalize=True`."""
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import LogNorm
-
-    zmax = cm.max()
-    plt.clf()
-    if not cmap:
-        cmap = plt.cm.Blues
-    plt.imshow(
-        cm,
-        interpolation="nearest",
-        cmap=cmap,
-        aspect="auto",
-        norm=LogNorm(vmin=zmin, vmax=zmax),
-    )
-    plt.title(title)
-    plt.colorbar()
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=90)
-    plt.yticks(tick_marks, classes)
-
-    if normalize:
-        cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
-        logger.info(f"Normalized confusion matrix: \n{cm}")
-    else:
-        logger.info(f"Confusion matrix, without normalization: \n{cm}")
-
-    thresh = cm.max() / 2.0
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(
-            j,
-            i,
-            cm[i, j],
-            horizontalalignment="center",
-            color="white" if cm[i, j] > thresh else "black",
-        )
-
-    plt.ylabel("True label")
-    plt.xlabel("Predicted label")
-
-    # save confusion matrix to file before showing it
-    if out:
-        fig = plt.gcf()
-        fig.set_size_inches(20, 20)
-        fig.savefig(out, bbox_inches="tight")
-
-
-def plot_histogram(
-    hist_data: List[List[float]], out: Optional[Text] = None
-) -> None:  # pragma: no cover
-    """Plot a histogram of the confidence distribution of the predictions in
-    two columns.
-    Wine-ish colour for the confidences of hits.
-    Blue-ish colour for the confidences of misses.
-    Saves the plot to a file."""
-    import matplotlib.pyplot as plt
-
-    colors = ["#009292", "#920000"]  #
-    bins = [0.05 * i for i in range(1, 21)]
-
-    plt.xlim([0, 1])
-    plt.hist(hist_data, bins=bins, color=colors)
-    plt.xticks(bins)
-    plt.title("Intent Prediction Confidence Distribution")
-    plt.xlabel("Confidence")
-    plt.ylabel("Number of Samples")
-    plt.legend(["hits", "misses"])
-
-    if out:
-        fig = plt.gcf()
-        fig.set_size_inches(10, 10)
-        fig.savefig(out, bbox_inches="tight")
 
 
 def log_evaluation_table(
@@ -342,7 +258,9 @@ def plot_attribute_confidences(
         if getattr(r, target_key) != getattr(r, prediction_key)
     ]
 
-    plot_histogram([pos_hist, neg_hist], hist_filename)
+    plot_utils.plot_histogram(
+        [pos_hist, neg_hist], "Intent Prediction Confidence Distribution", hist_filename
+    )
 
 
 def evaluate_response_selections(
@@ -568,11 +486,11 @@ def _plot_confusion_matrix(
     if output_directory:
         confmat_filename = os.path.join(output_directory, confmat_filename)
 
-    plot_confusion_matrix(
+    plot_utils.plot_confusion_matrix(
         cnf_matrix,
         classes=labels,
         title="Intent Confusion matrix",
-        out=confmat_filename,
+        output_file=confmat_filename,
     )
 
 
@@ -815,7 +733,7 @@ def do_entities_overlap(entities: List[Dict]) -> bool:
     return False
 
 
-def find_intersecting_entites(token: Token, entities: List[Dict]) -> List[Dict]:
+def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]:
     """Finds the entities that intersect with a token.
     :param token: a single token
     :param entities: entities found by a single extractor
@@ -886,7 +804,7 @@ def determine_token_labels(
     if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
         raise ValueError("The possible entities should not overlap")
 
-    candidates = find_intersecting_entites(token, entities)
+    candidates = find_intersecting_entities(token, entities)
     return pick_best_entity_fit(token, candidates, attribute_key)
 
 
