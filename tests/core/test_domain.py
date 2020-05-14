@@ -681,8 +681,6 @@ def test_clean_domain_deprecated_templates():
 
 
 def test_add_knowledge_base_slots(default_domain):
-    import copy
-
     # don't modify default domain as it is used in other tests
     test_domain = copy.deepcopy(default_domain)
 
@@ -806,9 +804,26 @@ slots: {}"""
 
 
 def test_domain_from_dict_does_not_change_input():
-    path = DEFAULT_DOMAIN_PATH_WITH_SLOTS
-    input_before = io_utils.read_yaml(io_utils.read_file(path))
-    input_after = copy.deepcopy(input_before)
+    input_before = {
+        "intents": [
+            {"greet": {USE_ENTITIES_KEY: ["name"]}},
+            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+            {"goodbye": {USE_ENTITIES_KEY: None}},
+            {"thank": {USE_ENTITIES_KEY: False}},
+            {"ask": {USE_ENTITIES_KEY: True}},
+            {"why": {USE_ENTITIES_KEY: []}},
+            "pure_intent",
+        ],
+        "entities": ["name", "unrelated_recognized_entity", "other"],
+        "slots": {"name": {"type": "text"}},
+        "responses": {
+            "utter_greet": [{"text": "hey there {name}!"}],
+            "utter_goodbye": [{"text": "goodbye 😢"}, {"text": "bye bye 😢"}],
+            "utter_default": [{"text": "default message"}],
+        },
+    }
 
+    input_after = copy.deepcopy(input_before)
     Domain.from_dict(input_after)
+
     assert input_after == input_before
