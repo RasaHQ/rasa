@@ -137,7 +137,7 @@ def ask_version() -> Text:
 
     version = questionary.text(
         "What is the version number you want to release "
-        "('major', 'minor', 'patch' or valid version number)?",
+        "('major', 'minor', 'patch', 'alpha' or valid version number)?",
         validate=is_valid_version_number,
     ).ask()
 
