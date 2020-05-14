@@ -7,6 +7,7 @@
 """
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 from subprocess import CalledProcessError, check_call, check_output
@@ -25,6 +26,8 @@ REPO_BASE_URL = "https://github.com/RasaHQ/rasa"
 
 RELEASE_BRANCH_PREFIX = "prepare-release-"
 
+ALPHA_VERSION_PATTERN = re.compile(r"^alpha([1-9]\d*)$")
+
 
 def create_argument_parser() -> argparse.ArgumentParser:
     """Parse all the command line arguments for the release script."""
@@ -33,7 +36,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--next_version",
         type=str,
-        help="Either next version number or 'major', 'minor', 'patch'",
+        help="Either next version number or 'major', 'minor', 'patch', 'alpha'",
     )
 
     return parser
@@ -130,12 +133,7 @@ def ask_version() -> Text:
     """Allow the user to confirm the version number."""
 
     def is_valid_version_number(v: Text) -> bool:
-        # noinspection PyBroadException
-        try:
-            return v in {"major", "minor", "patch"} or Version.coerce(v) is not None
-        except Exception:
-            # "coerce" did fail, this is probably not a valid version number
-            return False
+        return v in {"major", "minor", "patch", "alpha"} or validate_version(v)
 
     version = questionary.text(
         "What is the version number you want to release "
@@ -228,6 +226,39 @@ def ensure_clean_git() -> None:
         sys.exit(1)
 
 
+def validate_version(version: Text) -> bool:
+    """
+    Ensure that the version follows semver
+    and that the alpha follows the format `alpha1`, `alpha2`, etc...
+    """
+    if not semantic_version.validate(version):
+        return False
+
+    version_object = Version.coerce(version)
+    return not version_object.prerelease or (
+        len(version_object.prerelease) == 1
+        and validate_alpha_version_part(version_object.prerelease[0])
+    )
+
+
+def validate_alpha_version_part(alpha_version_part: Text) -> bool:
+    """
+    Validate that the alpha part in a version follows
+    the pattern specified in `ALPHA_VERSION_PATTERN`.
+    """
+    return ALPHA_VERSION_PATTERN.match(alpha_version_part) is not None
+
+
+def next_alpha(version: Version) -> Version:
+    """Bump the current version to the next alpha."""
+    alpha_number = 0
+    if version.prerelease:
+        alpha_number = int(ALPHA_VERSION_PATTERN.match(version.prerelease[0]).group(1))
+
+    version.prerelease = (f"alpha{alpha_number + 1}",)
+    return version
+
+
 def parse_next_version(version: Text) -> Text:
     """Find the next version as a proper semantic version string."""
     if version == "major":
@@ -236,7 +267,9 @@ def parse_next_version(version: Text) -> Text:
         return str(Version.coerce(get_current_version()).next_minor())
     elif version == "patch":
         return str(Version.coerce(get_current_version()).next_patch())
-    elif semantic_version.validate(version):
+    elif version == "alpha":
+        return str(next_alpha(Version.coerce(get_current_version())))
+    elif validate_version(version):
         return version
     else:
         raise Exception(f"Invalid version number '{cmdline_args.next_version}'.")
