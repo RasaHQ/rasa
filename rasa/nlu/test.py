@@ -178,7 +178,7 @@ def drop_intents_below_freq(td: TrainingData, cutoff: int = 5) -> TrainingData:
     return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
 
-def collect_nlu_successes(
+def write_intent_successes(
     intent_results: List[IntentEvaluationResult], successes_filename: Text
 ) -> None:
     """Log messages which result in successful predictions
@@ -205,7 +205,7 @@ def collect_nlu_successes(
         logger.info("No successful intent predictions found.")
 
 
-def collect_nlu_errors(
+def write_intent_errors(
     intent_results: List[IntentEvaluationResult], errors_filename: Text
 ) -> None:
     """Log messages which result in wrong predictions and save them to file"""
@@ -234,6 +234,64 @@ def collect_nlu_errors(
         logger.info("Your model predicted all intents successfully.")
 
 
+def write_response_successes(
+    response_results: List[ResponseSelectionEvaluationResult], successes_filename: Text
+) -> None:
+    """Log messages which result in successful predictions
+    and save them to file"""
+
+    successes = [
+        {
+            "text": r.message,
+            "response": r.response_target,
+            "response_prediction": {
+                "name": r.response_prediction,
+                "confidence": r.confidence,
+            },
+        }
+        for r in response_results
+        if r.response_prediction == r.response_target
+    ]
+
+    if successes:
+        utils.write_json_to_file(successes_filename, successes)
+        logger.info(f"Successful response predictions saved to {successes_filename}.")
+        logger.debug(
+            f"\n\nSuccessfully predicted the following responses: \n{successes}"
+        )
+    else:
+        logger.info("No successful response predictions found.")
+
+
+def write_response_errors(
+    response_results: List[ResponseSelectionEvaluationResult], errors_filename: Text
+) -> None:
+    """Log messages which result in wrong predictions and save them to file"""
+
+    errors = [
+        {
+            "text": r.message,
+            "response": r.response_target,
+            "response_prediction": {
+                "name": r.response_prediction,
+                "confidence": r.confidence,
+            },
+        }
+        for r in response_results
+        if r.response_prediction != r.response_target
+    ]
+
+    if errors:
+        utils.write_json_to_file(errors_filename, errors)
+        logger.info(f"Incorrect response predictions saved to {errors_filename}.")
+        logger.debug(
+            "\n\nThese response examples could not be classified "
+            "correctly: \n{}".format(errors)
+        )
+    else:
+        logger.info("Your model predicted all responses successfully.")
+
+
 def plot_attribute_confidences(
     results: Union[
         List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]
@@ -241,11 +299,10 @@ def plot_attribute_confidences(
     hist_filename: Optional[Text],
     target_key: Text,
     prediction_key: Text,
+    type: Text = "Intent",
 ) -> None:
-    import matplotlib.pyplot as plt
 
     # create histogram of confidence distribution, save to file and display
-    plt.gcf().clear()
     pos_hist = [
         r.confidence
         for r in results
@@ -259,14 +316,22 @@ def plot_attribute_confidences(
     ]
 
     plot_utils.plot_histogram(
-        [pos_hist, neg_hist], "Intent Prediction Confidence Distribution", hist_filename
+        [pos_hist, neg_hist],
+        f"{type} Prediction Confidence Distribution",
+        hist_filename,
     )
 
 
 def evaluate_response_selections(
     response_selection_results: List[ResponseSelectionEvaluationResult],
-    report_folder: Optional[Text],
-    disable_plotting: bool = False,
+    output_directory: Optional[Text],
+    successes: bool,
+    errors: bool,
+    disable_plotting: bool,
+    confusion_matrix_filename: Optional[
+        Text
+    ] = "response_selection_confusion_matrix.plt",
+    histogram_filename: Optional[Text] = "response_selection_histogram.plt",
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for response selection.
 
@@ -278,44 +343,40 @@ def evaluate_response_selections(
     import sklearn.metrics
     import sklearn.utils.multiclass
 
-    # remove empty intent targets
+    # remove empty response targets
     num_examples = len(response_selection_results)
     response_selection_results = remove_empty_response_examples(
         response_selection_results
     )
 
     logger.info(
-        "Response Selection Evaluation: Only considering those "
-        "{} examples that have a defined response out "
-        "of {} examples".format(len(response_selection_results), num_examples)
+        f"Response Selection Evaluation: Only considering those "
+        f"{len(response_selection_results)} examples that have a defined response out "
+        f"of {num_examples} examples."
     )
 
     target_responses, predicted_responses = _targets_predictions_from(
         response_selection_results, "response_target", "response_prediction"
     )
 
-    if report_folder:
+    confusion_matrix = sklearn.metrics.confusion_matrix(
+        target_responses, predicted_responses
+    )
+    labels = sklearn.utils.multiclass.unique_labels(
+        target_responses, predicted_responses
+    )
+
+    if output_directory:
         report, precision, f1, accuracy = get_evaluation_metrics(
             target_responses, predicted_responses, output_dict=True
         )
+        report = _add_confused_intents_to_report(report, confusion_matrix, labels)
 
-        cnf_matrix = sklearn.metrics.confusion_matrix(
-            target_responses, predicted_responses
+        report_filename = os.path.join(
+            output_directory, "response_selection_report.json"
         )
-        labels = sklearn.utils.multiclass.unique_labels(
-            target_responses, predicted_responses
-        )
-
-        report = _add_confused_intents_to_report(report, cnf_matrix, labels)
-
-        report_filename = os.path.join(report_folder, "response_selection_report.json")
         utils.write_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
-
-        if not disable_plotting:
-            _plot_confusion_matrix(
-                report_folder, "response_selection_confmat.png", cnf_matrix, labels
-            )
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
@@ -323,6 +384,40 @@ def evaluate_response_selections(
         )
         if isinstance(report, str):
             log_evaluation_table(report, precision, f1, accuracy)
+
+    if successes:
+        successes_filename = "response_selection_successes.json"
+        if output_directory:
+            successes_filename = os.path.join(output_directory, successes_filename)
+        # save classified samples to file for debugging
+        write_response_successes(response_selection_results, successes_filename)
+
+    if errors:
+        errors_filename = "response_selection_errors.json"
+        if output_directory:
+            errors_filename = os.path.join(output_directory, errors_filename)
+        # log and save misclassified samples to file for debugging
+        write_response_errors(response_selection_results, errors_filename)
+
+    if not disable_plotting:
+        if confusion_matrix_filename:
+            _confusion_matrix_filename = os.path.join(
+                output_directory, confusion_matrix_filename
+            )
+            plot_utils.plot_confusion_matrix(
+                confusion_matrix,
+                classes=labels,
+                title="Response Selection Confusion Matrix",
+                output_file=confusion_matrix_filename,
+            )
+        if histogram_filename:
+            _histogram_filename = os.path.join(output_directory, histogram_filename)
+            plot_attribute_confidences(
+                response_selection_results,
+                _histogram_filename,
+                "response_target",
+                "response_prediction",
+            )
 
     predictions = [
         {
@@ -384,9 +479,9 @@ def evaluate_intents(
     output_directory: Optional[Text],
     successes: bool,
     errors: bool,
-    confmat_filename: Optional[Text],
-    intent_hist_filename: Optional[Text],
     disable_plotting: bool,
+    confusion_matrix_filename: Optional[Text] = "intent_confustion_matrix.plt",
+    histogram_filename: Optional[Text] = "intent_histogram.plt",
 ) -> Dict:  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
 
@@ -406,26 +501,26 @@ def evaluate_intents(
     intent_results = remove_empty_intent_examples(intent_results)
 
     logger.info(
-        "Intent Evaluation: Only considering those "
-        "{} examples that have a defined intent out "
-        "of {} examples".format(len(intent_results), num_examples)
+        f"Intent Evaluation: Only considering those {len(intent_results)} examples "
+        f"that have a defined intent out of {num_examples} examples."
     )
 
     target_intents, predicted_intents = _targets_predictions_from(
         intent_results, "intent_target", "intent_prediction"
     )
 
-    cnf_matrix = sklearn.metrics.confusion_matrix(target_intents, predicted_intents)
+    confusion_matrix = sklearn.metrics.confusion_matrix(
+        target_intents, predicted_intents
+    )
     labels = sklearn.utils.multiclass.unique_labels(target_intents, predicted_intents)
 
     if output_directory:
         report, precision, f1, accuracy = get_evaluation_metrics(
             target_intents, predicted_intents, output_dict=True
         )
-        report = _add_confused_intents_to_report(report, cnf_matrix, labels)
+        report = _add_confused_intents_to_report(report, confusion_matrix, labels)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
-
         utils.write_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
@@ -441,22 +536,34 @@ def evaluate_intents(
         if output_directory:
             successes_filename = os.path.join(output_directory, successes_filename)
         # save classified samples to file for debugging
-        collect_nlu_successes(intent_results, successes_filename)
+        write_intent_successes(intent_results, successes_filename)
 
     if errors:
         errors_filename = "intent_errors.json"
         if output_directory:
             errors_filename = os.path.join(output_directory, errors_filename)
         # log and save misclassified samples to file for debugging
-        collect_nlu_errors(intent_results, errors_filename)
+        write_intent_errors(intent_results, errors_filename)
 
     if not disable_plotting:
-        if confmat_filename:
-            _plot_confusion_matrix(
-                output_directory, confmat_filename, cnf_matrix, labels
+        if confusion_matrix_filename:
+            _confusion_matrix_filename = os.path.join(
+                output_directory, confusion_matrix_filename
             )
-        if intent_hist_filename:
-            _plot_histogram(output_directory, intent_hist_filename, intent_results)
+            plot_utils.plot_confusion_matrix(
+                confusion_matrix,
+                classes=labels,
+                title="Intent Confusion matrix",
+                output_file=confusion_matrix_filename,
+            )
+        if histogram_filename:
+            _histogram_filename = os.path.join(output_directory, histogram_filename)
+            plot_attribute_confidences(
+                intent_results,
+                _histogram_filename,
+                "intent_target",
+                "intent_prediction",
+            )
 
     predictions = [
         {
@@ -475,35 +582,6 @@ def evaluate_intents(
         "f1_score": f1,
         "accuracy": accuracy,
     }
-
-
-def _plot_confusion_matrix(
-    output_directory: Optional[Text],
-    confmat_filename: Optional[Text],
-    cnf_matrix: np.ndarray,
-    labels: Collection[Text],
-) -> None:
-    if output_directory:
-        confmat_filename = os.path.join(output_directory, confmat_filename)
-
-    plot_utils.plot_confusion_matrix(
-        cnf_matrix,
-        classes=labels,
-        title="Intent Confusion matrix",
-        output_file=confmat_filename,
-    )
-
-
-def _plot_histogram(
-    output_directory: Optional[Text],
-    intent_hist_filename: Optional[Text],
-    intent_results: List[IntentEvaluationResult],
-) -> None:
-    if output_directory:
-        intent_hist_filename = os.path.join(output_directory, intent_hist_filename)
-        plot_attribute_confidences(
-            intent_results, intent_hist_filename, "intent_target", "intent_prediction"
-        )
 
 
 def merge_labels(
@@ -1078,8 +1156,6 @@ def run_evaluation(
     output_directory: Optional[Text] = None,
     successes: bool = False,
     errors: bool = False,
-    confmat: Optional[Text] = None,
-    histogram: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
     disable_plotting: bool = False,
 ) -> Dict:  # pragma: no cover
@@ -1091,8 +1167,6 @@ def run_evaluation(
     :param output_directory: path to folder where all output will be stored
     :param successes: if true successful predictions are written to a file
     :param errors: if true incorrect predictions are written to a file
-    :param confmat: path to file that will show the confusion matrix
-    :param histogram: path fo file that will show a histogram
     :param component_builder: component builder
     :param disable_plotting: if true confusion matrix and histogram will not be rendered
 
@@ -1121,19 +1195,17 @@ def run_evaluation(
     if intent_results:
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results,
-            output_directory,
-            successes,
-            errors,
-            confmat,
-            histogram,
-            disable_plotting,
+            intent_results, output_directory, successes, errors, disable_plotting
         )
 
     if response_selection_results:
         logger.info("Response selection evaluation results:")
         result["response_selection_evaluation"] = evaluate_response_selections(
-            response_selection_results, output_directory, disable_plotting
+            response_selection_results,
+            output_directory,
+            successes,
+            errors,
+            disable_plotting,
         )
 
     if entity_results:
@@ -1240,8 +1312,6 @@ def cross_validate(
     output: Optional[Text] = None,
     successes: bool = False,
     errors: bool = False,
-    confmat: Optional[Text] = None,
-    histogram: Optional[Text] = None,
     disable_plotting: bool = False,
 ) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]:
 
@@ -1326,13 +1396,7 @@ def cross_validate(
     if intent_classifier_present and intent_test_results:
         logger.info("Accumulated test folds intent evaluation results:")
         evaluate_intents(
-            intent_test_results,
-            output,
-            successes,
-            errors,
-            confmat,
-            histogram,
-            disable_plotting,
+            intent_test_results, output, successes, errors, disable_plotting
         )
 
     if extractors and entity_evaluation_possible:
@@ -1341,7 +1405,9 @@ def cross_validate(
 
     if response_selector_present and response_selection_test_results:
         logger.info("Accumulated test folds response selection evaluation results:")
-        evaluate_response_selections(response_selection_test_results, output)
+        evaluate_response_selections(
+            response_selection_test_results, output, successes, errors, disable_plotting
+        )
 
     if not entity_evaluation_possible:
         entity_test_metrics = defaultdict(lambda: defaultdict(list))

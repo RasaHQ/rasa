@@ -93,6 +93,8 @@ def plot_histogram(
     """
     import matplotlib.pyplot as plt
 
+    plt.gcf().clear()
+
     # Wine-ish colour for the confidences of hits.
     # Blue-ish colour for the confidences of misses.
     colors = ["#009292", "#920000"]

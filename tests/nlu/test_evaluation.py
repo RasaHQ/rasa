@@ -377,8 +377,8 @@ def test_intent_evaluation_report(tmpdir_factory):
         report_folder,
         successes=False,
         errors=False,
-        confmat_filename=None,
-        intent_hist_filename=None,
+        confusion_matrix_filename=None,
+        histogram_filename=None,
         disable_plotting=False,
     )
 
@@ -430,8 +430,8 @@ def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
         report_folder,
         successes=False,
         errors=False,
-        confmat_filename=None,
-        intent_hist_filename=None,
+        confusion_matrix_filename=None,
+        histogram_filename=None,
         disable_plotting=False,
     )
 
@@ -485,7 +485,15 @@ def test_response_evaluation_report(tmpdir_factory):
         ),
     ]
 
-    result = evaluate_response_selections(response_results, report_folder)
+    result = evaluate_response_selections(
+        response_results,
+        report_folder,
+        successes=False,
+        errors=False,
+        confusion_matrix_filename=None,
+        histogram_filename=None,
+        disable_plotting=False,
+    )
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
 
