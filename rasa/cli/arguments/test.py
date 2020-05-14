@@ -100,13 +100,13 @@ def add_test_nlu_argument_group(
         "--successes",
         action="store_true",
         default=False,
-        help="If set successful predictions will be written " "to a file.",
+        help="If set successful predictions will be written to a file.",
     )
     parser.add_argument(
         "--no-errors",
         action="store_true",
         default=False,
-        help="If set incorrect predictions will NOT be written " "to a file.",
+        help="If set incorrect predictions will NOT be written to a file.",
     )
     parser.add_argument(
         "-c",
@@ -177,6 +177,6 @@ def add_no_plot_param(
         dest="disable_plotting",
         action="store_true",
         default=default,
-        help=f"Don't render evaluation plots",
+        help=f"Don't render evaluation plots.",
         required=required,
     )
