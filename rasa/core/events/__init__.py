@@ -361,12 +361,24 @@ class BotUttered(Event):
     type_name = "bot"
 
     def __init__(
-        self, text=None, data=None, metadata=None, timestamp=None, template_id=None
+        self,
+        text: Optional[Text] = None,
+        data: Dict[Text, Any] = None,
+        metadata: Dict[Text, Any] = None,
+        timestamp: Optional[float] = None,
+        template_id: Optional[Text] = None,
     ) -> None:
         self.text = text
         self.data = data or {}
-        self.template_id = template_id
+        self._template_id = template_id
         super().__init__(timestamp, metadata)
+
+    @property
+    def template_id(self) -> Optional[Text]:
+        if hasattr(self, "_template_id"):
+            return self._template_id
+        else:
+            return None
 
     def __members(self):
         data_no_nones = utils.remove_none_values(self.data)
