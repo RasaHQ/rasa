@@ -1,7 +1,7 @@
 import logging
 import itertools
 import numpy as np
-from typing import List, Text, Optional, Union
+from typing import List, Text, Optional, Union, Any
 
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ def plot_confusion_matrix(
     classes: Union[np.ndarray, List[Text]],
     normalize: bool = False,
     title: Text = "Confusion matrix",
-    color_map: Union[Text, "matplotlib.colors.Colormap"] = None,
+    color_map: Any = None,
     zmin: int = 1,
     output_file: Optional[Text] = None,
 ) -> None:

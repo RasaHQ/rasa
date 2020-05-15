@@ -6,7 +6,6 @@ from collections import defaultdict, namedtuple
 from tqdm import tqdm
 from typing import (
     Iterable,
-    Collection,
     Iterator,
     Tuple,
     List,
@@ -33,9 +32,10 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     INTENT,
 )
+import rasa.nlu.utils as nlu_utils
+import rasa.nlu.training_data
+import rasa.nlu.config
 from rasa.model import get_model
-from rasa.nlu import config, training_data, utils
-from rasa.nlu.utils import write_to_file
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
@@ -247,7 +247,7 @@ def write_intent_successes(
     ]
 
     if successes:
-        utils.write_json_to_file(successes_filename, successes)
+        nlu_utils.write_json_to_file(successes_filename, successes)
         logger.info(f"Successful intent predictions saved to {successes_filename}.")
         logger.debug(f"\n\nSuccessfully predicted the following intents: \n{successes}")
     else:
@@ -277,7 +277,7 @@ def write_intent_errors(
     ]
 
     if errors:
-        utils.write_json_to_file(errors_filename, errors)
+        nlu_utils.write_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect intent predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -312,7 +312,7 @@ def write_response_successes(
     ]
 
     if successes:
-        utils.write_json_to_file(successes_filename, successes)
+        nlu_utils.write_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
         logger.debug(
             f"\n\nSuccessfully predicted the following responses: \n{successes}"
@@ -345,7 +345,7 @@ def write_response_errors(
     ]
 
     if errors:
-        utils.write_json_to_file(errors_filename, errors)
+        nlu_utils.write_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect response predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese response examples could not be classified "
@@ -445,7 +445,7 @@ def evaluate_response_selections(
         report_filename = os.path.join(
             output_directory, "response_selection_report.json"
         )
-        utils.write_json_to_file(report_filename, report)
+        nlu_utils.write_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
@@ -514,11 +514,11 @@ def evaluate_response_selections(
 
 
 def _add_confused_labels_to_report(
-    report: Dict[Text, Dict[Text, float]],
+    report: Dict[Text, Dict[Text, Any]],
     confusion_matrix: np.ndarray,
-    labels: Collection[Text],
-    exclude_labels: Collection[Text] = None,
-) -> Dict[Text, Dict[Text, Union[Dict, float]]]:
+    labels: List[Text],
+    exclude_labels: List[Text] = None,
+) -> Dict[Text, Dict[Text, Union[Dict, Any]]]:
     """Adds a field "confused_with" to the evaluation report.
 
     The value is a dict of {"false_positive_label": false_positive_count} pairs.
@@ -615,7 +615,7 @@ def evaluate_intents(
         report = _add_confused_labels_to_report(report, confusion_matrix, labels)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
-        utils.write_json_to_file(report_filename, report)
+        nlu_utils.write_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
@@ -737,7 +737,7 @@ def write_incorrect_entity_predictions(
     )
 
     if errors:
-        utils.write_json_to_file(error_filename, errors)
+        nlu_utils.write_json_to_file(error_filename, errors)
         logger.info(f"Incorrect entity predictions saved to {error_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -797,7 +797,7 @@ def write_successful_entity_predictions(
     )
 
     if successes:
-        utils.write_json_to_file(successes_filename, successes)
+        nlu_utils.write_json_to_file(successes_filename, successes)
         logger.info(f"Successful entity predictions saved to {successes_filename}.")
         logger.debug(
             f"\n\nSuccessfully predicted the following entities: \n{successes}"
@@ -898,7 +898,7 @@ def evaluate_entities(
                 report, confusion_matrix, labels, [NO_ENTITY]
             )
 
-            utils.write_json_to_file(extractor_report_filename, report)
+            nlu_utils.write_json_to_file(extractor_report_filename, report)
 
             logger.info(
                 "Classification report for '{}' saved to '{}'."
@@ -1385,7 +1385,9 @@ def run_evaluation(
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-    test_data = training_data.load_data(data_path, interpreter.model_metadata.language)
+    test_data = rasa.nlu.training_data.load_data(
+        data_path, interpreter.model_metadata.language
+    )
 
     result: Dict[Text, Optional[Dict]] = {
         "intent_evaluation": None,
@@ -1558,7 +1560,7 @@ def cross_validate(
     from collections import defaultdict
 
     if isinstance(nlu_config, str):
-        nlu_config = config.load(nlu_config)
+        nlu_config = rasa.nlu.config.load(nlu_config)
 
     if output:
         io_utils.create_directory(output)
@@ -1757,7 +1759,7 @@ def compare_nlu(
         io_utils.create_path(test_path)
 
         train, test = data.train_test_split()
-        write_to_file(test_path, test.nlu_as_markdown())
+        nlu_utils.write_to_file(test_path, test.nlu_as_markdown())
 
         for percentage in exclusion_percentages:
             percent_string = f"{percentage}%_exclusion"
@@ -1772,8 +1774,8 @@ def compare_nlu(
             train_nlu_split_path = os.path.join(train_split_path, TRAIN_DATA_FILE)
             train_nlg_split_path = os.path.join(train_split_path, NLG_DATA_FILE)
             io_utils.create_path(train_nlu_split_path)
-            write_to_file(train_nlu_split_path, train.nlu_as_markdown())
-            write_to_file(train_nlg_split_path, train.nlg_as_markdown())
+            nlu_utils.write_to_file(train_nlu_split_path, train.nlu_as_markdown())
+            nlu_utils.write_to_file(train_nlg_split_path, train.nlg_as_markdown())
 
             for nlu_config, model_name in zip(configs, model_names):
                 logger.info(
