@@ -27,7 +27,7 @@ REPO_BASE_URL = "https://github.com/RasaHQ/rasa"
 
 RELEASE_BRANCH_PREFIX = "prepare-release-"
 
-ALPHA_VERSION_PATTERN = re.compile(r"^a([1-9]\d*)$")
+PRERELEASE_VERSION_PATTERN = re.compile(r"^(?:a|rc)([1-9]\d*)$")
 
 
 class Version(BaseVersion):
@@ -47,7 +47,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--next_version",
         type=str,
-        help="Either next version number or 'major', 'minor', 'patch', 'alpha'",
+        help="Either next version number or 'major', 'minor', 'patch', 'alpha', 'rc'",
     )
 
     return parser
@@ -141,14 +141,14 @@ def ask_version() -> Text:
     """Allow the user to confirm the version number."""
 
     def is_valid_version_number(v: Text) -> bool:
-        return v in {"major", "minor", "patch", "alpha"} or validate_version(v)
+        return v in {"major", "minor", "patch", "alpha", "rc"} or validate_version(v)
 
     current_version = Version.coerce(get_current_version())
     next_patch_version = str(current_version.next_patch())
-    next_alpha_version = str(next_alpha(current_version))
+    next_alpha_version = str(next_prerelease(current_version, "a"))
     version = questionary.text(
         f"What is the version number you want to release "
-        f"('major', 'minor', 'patch', 'alpha' or valid version number "
+        f"('major', 'minor', 'patch', 'alpha', 'rc' or valid version number "
         f"e.g. '{next_patch_version}' or '{next_alpha_version}')?",
         validate=is_valid_version_number,
     ).ask()
@@ -241,37 +241,39 @@ def ensure_clean_git() -> None:
 def validate_version(version: Text) -> bool:
     """
     Ensure that the version follows semver
-    and that the alpha follows the format `a1`, `a2`, etc...
+    and that the prerelease follows the format `a1`, `rc2`, etc...
     """
     if isinstance(pep440_version.parse(version), pep440_version.LegacyVersion):
         return False
 
     version_object = Version.coerce(version)
-    return not version_object.prerelease or is_alpha_version(version_object)
+    return not version_object.prerelease or is_prerelease_version(version_object)
 
 
-def is_alpha_version(version: Version) -> bool:
+def is_prerelease_version(version: Version) -> bool:
     """
-    Validate that the alpha part in a version follows
-    the pattern specified in `ALPHA_VERSION_PATTERN`.
+    Validate that the prerelease part in a version follows
+    the pattern specified in `PRERELEASE_VERSION_PATTERN`.
     """
     return (
         len(version.prerelease) == 1
-        and ALPHA_VERSION_PATTERN.match(version.prerelease[0]) is not None
+        and PRERELEASE_VERSION_PATTERN.match(version.prerelease[0]) is not None
     )
 
 
-def next_alpha(version: Version) -> Version:
-    """Bump the current version to the next alpha."""
-    alpha_number = 0
+def next_prerelease(version: Version, flavor: Text) -> Version:
+    """Bump the current version to the next prerelease."""
+    prerelease_number = 0
     if version.prerelease:
-        alpha_number = int(ALPHA_VERSION_PATTERN.match(version.prerelease[0]).group(1))
+        prerelease_number = int(
+            PRERELEASE_VERSION_PATTERN.match(version.prerelease[0]).group(1)
+        )
 
     return Version(
         major=version.major,
         minor=version.minor,
         patch=version.patch,
-        prerelease=(f"a{alpha_number + 1}",),
+        prerelease=(f"{flavor}{prerelease_number + 1}",),
         partial=version.partial,
     )
 
@@ -285,7 +287,9 @@ def parse_next_version(version: Text) -> Text:
     elif version == "patch":
         return str(Version.coerce(get_current_version()).next_patch())
     elif version == "alpha":
-        return str(next_alpha(Version.coerce(get_current_version())))
+        return str(next_prerelease(Version.coerce(get_current_version()), "a"))
+    elif version == "rc":
+        return str(next_prerelease(Version.coerce(get_current_version()), "rc"))
     elif validate_version(version):
         return version
     else:
@@ -331,7 +335,7 @@ def main(args: argparse.Namespace) -> None:
     write_version_to_pyproject(version)
 
     if not version.prerelease:
-        # never update changelog on an alpha version
+        # never update changelog on a prerelease version
         generate_changelog(version)
     base = git_current_branch()
     branch = create_release_branch(version)
