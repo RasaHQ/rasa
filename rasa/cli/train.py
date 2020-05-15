@@ -74,7 +74,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
         core_additional_arguments=extract_core_additional_arguments(args),
-        nlu_additional_arguments=extract_core_additional_arguments(args),
+        nlu_additional_arguments=extract_nlu_additional_arguments(args),
     )
 
 
