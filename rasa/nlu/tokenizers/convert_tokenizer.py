@@ -1,9 +1,9 @@
 from typing import Any, Dict, List, Text
 
+from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import MESSAGE_ATTRIBUTES, TOKENS_NAMES
 import rasa.utils.train_utils as train_utils
 import tensorflow as tf
 
@@ -47,8 +47,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         ConveRT adds a special char in front of (some) words and splits words into
         sub-words. To ensure the entity start and end values matches the token values,
         tokenize the text first using the whitespace tokenizer. If individual tokens
-        are split up into multiple tokens, we make sure that the start end end value
-        of the first and last respective tokens stay the same.
+        are split up into multiple tokens, add this information to the
+        respected tokens.
         """
 
         # perform whitespace tokenization
@@ -57,17 +57,15 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         tokens_out = []
 
         for token in tokens_in:
-            token_start, token_end, token_text = token.start, token.end, token.text
-
             # use ConveRT model to tokenize the text
-            split_token_strings = self._tokenize(token_text)[0]
+            split_token_strings = self._tokenize(token.text)[0]
 
             # clean tokens (remove special chars and empty tokens)
             split_token_strings = self._clean_tokens(split_token_strings)
 
-            tokens_out += train_utils.align_tokens(
-                split_token_strings, token_end, token_start
-            )
+            token.set(NUMBER_OF_SUB_TOKENS, len(split_token_strings))
+
+            tokens_out.append(token)
 
         return tokens_out
 

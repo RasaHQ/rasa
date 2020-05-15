@@ -36,6 +36,7 @@ from rasa.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
+    SessionStarted,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -149,7 +150,10 @@ class MessageProcessor:
         }
 
     async def _update_tracker_session(
-        self, tracker: DialogueStateTracker, output_channel: OutputChannel
+        self,
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+        metadata: Optional[Dict] = None,
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
@@ -158,6 +162,7 @@ class MessageProcessor:
         restart are considered).
 
         Args:
+            metadata: Data sent from client associated with the incoming user message.
             tracker: Tracker to inspect.
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
@@ -167,6 +172,9 @@ class MessageProcessor:
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
 
+            if metadata:
+                tracker.events.append(SessionStarted(metadata=metadata))
+
             await self._run_action(
                 action=self._get_action(ACTION_SESSION_START_NAME),
                 tracker=tracker,
@@ -175,13 +183,17 @@ class MessageProcessor:
             )
 
     async def get_tracker_with_session_start(
-        self, sender_id: Text, output_channel: Optional[OutputChannel] = None
+        self,
+        sender_id: Text,
+        output_channel: Optional[OutputChannel] = None,
+        metadata: Optional[Dict] = None,
     ) -> Optional[DialogueStateTracker]:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
         If a new tracker is created, `action_session_start` is run.
 
         Args:
+            metadata: Data sent from client associated with the incoming user message.
             output_channel: Output channel associated with the incoming user message.
             sender_id: Conversation ID for which to fetch the tracker.
 
@@ -189,13 +201,33 @@ class MessageProcessor:
               Tracker for `sender_id` if available, `None` otherwise.
         """
 
-        tracker = self._get_tracker(sender_id)
+        tracker = self.get_tracker(sender_id)
         if not tracker:
             return None
 
-        await self._update_tracker_session(tracker, output_channel)
+        await self._update_tracker_session(tracker, output_channel, metadata)
 
         return tracker
+
+    def get_tracker(self, conversation_id: Text) -> Optional[DialogueStateTracker]:
+        """Get the tracker for a conversation.
+
+        In contrast to `get_tracker_with_session_start` this does not add any
+        `action_session_start` or `session_start` events at the beginning of a
+        conversation.
+
+        Args:
+            conversation_id: The ID of the conversation for which the history should be
+                retrieved.
+
+        Returns:
+            Tracker for the conversation. Creates an empty tracker in case it's a new
+            conversation.
+        """
+        conversation_id = conversation_id or UserMessage.DEFAULT_SENDER_ID
+        return self.tracker_store.get_or_create_tracker(
+            conversation_id, append_action_listen=False
+        )
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True
@@ -213,7 +245,7 @@ class MessageProcessor:
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.get_tracker_with_session_start(
-            message.sender_id, message.output_channel
+            message.sender_id, message.output_channel, message.metadata
         )
 
         if tracker:
@@ -271,10 +303,12 @@ class MessageProcessor:
         action = self.domain.action_for_index(
             max_confidence_index, self.action_endpoint
         )
+
         logger.debug(
             f"Predicted next action '{action.name()}' with confidence "
             f"{action_confidences[max_confidence_index]:.2f}."
         )
+
         return action, policy, action_confidences[max_confidence_index]
 
     @staticmethod
@@ -480,18 +514,30 @@ class MessageProcessor:
             or tracker.latest_message.intent.get("name") == USER_INTENT_RESTART
         )
 
+    def is_action_limit_reached(
+        self, num_predicted_actions: int, should_predict_another_action: bool
+    ) -> bool:
+        """Check whether the maximum number of predictions has been met.
+
+        Args:
+            num_predictes_actions: Number of predicted actions.
+            should_predict_another_action: Whether the last executed action allows
+            for more actions to be predicted or not.
+
+        Returns:
+            `True` if the limit of actions to predict has been reached.
+        """
+        return (
+            num_predicted_actions >= self.max_number_of_predictions
+            and should_predict_another_action
+        )
+
     async def _predict_and_execute_next_action(
         self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
         num_predicted_actions = 0
-
-        def is_action_limit_reached():
-            return (
-                num_predicted_actions == self.max_number_of_predictions
-                and should_predict_another_action
-            )
 
         # action loop. predicts actions until we hit action listen
         while (
@@ -507,7 +553,9 @@ class MessageProcessor:
             )
             num_predicted_actions += 1
 
-        if is_action_limit_reached():
+        if self.is_action_limit_reached(
+            num_predicted_actions, should_predict_another_action
+        ):
             # circuit breaker was tripped
             logger.warning(
                 "Circuit breaker tripped. Stopped predicting "
@@ -712,12 +760,6 @@ class MessageProcessor:
             )
 
         return has_expired
-
-    def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
-        return self.tracker_store.get_or_create_tracker(
-            sender_id, append_action_listen=False
-        )
 
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)

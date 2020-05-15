@@ -55,8 +55,8 @@ class EndToEndReader(MarkdownReader):
             raise ValueError(
                 "Encountered invalid end-to-end format for message "
                 "`{}`. Please visit the documentation page on "
-                "end-to-end evaluation at {}/user-guide/evaluating-models/"
-                "#end-to-end-evaluation/".format(line, DOCS_BASE_URL)
+                "end-to-end testing at {}/user-guide/testing-your-assitant/"
+                "#end-to-end-testing/".format(line, DOCS_BASE_URL)
             )
 
         intent = match.group(2)
@@ -75,8 +75,9 @@ class EndToEndReader(MarkdownReader):
 
 
 class StoryStepBuilder:
-    def __init__(self, name):
+    def __init__(self, name: Text, source_name: Text):
         self.name = name
+        self.source_name = source_name
         self.story_steps = []
         self.current_steps = []
         self.start_checkpoints = []
@@ -160,7 +161,11 @@ class StoryStepBuilder:
         if not start_checkpoints:
             start_checkpoints = [Checkpoint(STORY_START)]
         current_turns = [
-            StoryStep(block_name=self.name, start_checkpoints=start_checkpoints)
+            StoryStep(
+                block_name=self.name,
+                start_checkpoints=start_checkpoints,
+                source_name=self.source_name,
+            )
         ]
         return current_turns
 
@@ -174,6 +179,7 @@ class StoryFileReader:
         domain: Optional[Domain] = None,
         template_vars: Optional[Dict] = None,
         use_e2e: bool = False,
+        source_name: Text = None,
     ):
         self.story_steps = []
         self.current_step_builder: Optional[StoryStepBuilder] = None
@@ -181,6 +187,7 @@ class StoryFileReader:
         self.interpreter = interpreter
         self.template_variables = template_vars if template_vars else {}
         self.use_e2e = use_e2e
+        self.source_name = source_name
 
     @staticmethod
     async def read_from_folder(
@@ -250,7 +257,9 @@ class StoryFileReader:
         try:
             with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
                 lines = f.readlines()
-            reader = StoryFileReader(interpreter, domain, template_variables, use_e2e)
+            reader = StoryFileReader(
+                interpreter, domain, template_variables, use_e2e, filename
+            )
             return await reader.process_lines(lines)
         except ValueError as err:
             file_info = "Invalid story file format. Failed to parse '{}'".format(
@@ -327,7 +336,7 @@ class StoryFileReader:
                 elif line.startswith("#"):
                     # reached a new story block
                     name = line[1:].strip("# ")
-                    self.new_story_part(name)
+                    self.new_story_part(name, self.source_name)
                 elif line.startswith(">"):
                     # reached a checkpoint
                     name, conditions = self._parse_event_line(line[1:].strip())
@@ -389,9 +398,9 @@ class StoryFileReader:
             self.current_step_builder.flush()
             self.story_steps.extend(self.current_step_builder.story_steps)
 
-    def new_story_part(self, name):
+    def new_story_part(self, name: Text, source_name: Text):
         self._add_current_stories_to_result()
-        self.current_step_builder = StoryStepBuilder(name)
+        self.current_step_builder = StoryStepBuilder(name, source_name)
 
     def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:
 

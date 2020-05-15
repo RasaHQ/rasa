@@ -2,13 +2,14 @@
 import asyncio
 import json
 import logging
+import asyncio
+import os
+from typing import Any, Text, Optional, Dict, List
 
 import aiohttp
 import questionary
 from aiohttp import ClientTimeout
 from prompt_toolkit.styles import Style
-from typing import Any
-from typing import Text, Optional, Dict, List
 
 from rasa.cli import utils as cli_utils
 from rasa.core import utils
@@ -19,6 +20,7 @@ from rasa.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
+STREAM_READING_TIMEOUT_ENV = "RASA_SHELL_STREAM_READING_TIMEOUT_IN_SECONDS"
 DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 
 
@@ -117,7 +119,7 @@ async def send_message_receive_stream(
     url = f"{server_url}/webhooks/rest/webhook?stream=true&token={auth_token}"
 
     # Define timeout to not keep reading in case the server crashed in between
-    timeout = ClientTimeout(DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS)
+    timeout = _get_stream_reading_timeout()
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(url, json=payload, raise_for_status=True) as resp:
@@ -125,6 +127,16 @@ async def send_message_receive_stream(
             async for line in resp.content:
                 if line:
                     yield json.loads(line.decode(DEFAULT_ENCODING))
+
+
+def _get_stream_reading_timeout() -> ClientTimeout:
+    timeout_in_seconds = int(
+        os.environ.get(
+            STREAM_READING_TIMEOUT_ENV, DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS
+        )
+    )
+
+    return ClientTimeout(timeout_in_seconds)
 
 
 async def record_messages(

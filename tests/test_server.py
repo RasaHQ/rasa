@@ -432,6 +432,42 @@ def test_train_core_success(
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
 
 
+def test_train_with_retrieval_events_success(rasa_app, default_stack_config):
+    with ExitStack() as stack:
+        domain_file = stack.enter_context(
+            open("data/test_domains/default_retrieval_intents.yml")
+        )
+        config_file = stack.enter_context(open(default_stack_config))
+        core_file = stack.enter_context(
+            open("data/test_stories/stories_retrieval_intents.md")
+        )
+        responses_file = stack.enter_context(open("data/test_responses/default.md"))
+        nlu_file = stack.enter_context(
+            open("data/test_nlu/default_retrieval_intents.md")
+        )
+
+        payload = dict(
+            domain=domain_file.read(),
+            config=config_file.read(),
+            stories=core_file.read(),
+            responses=responses_file.read(),
+            nlu=nlu_file.read(),
+        )
+
+    _, response = rasa_app.post("/model/train", json=payload)
+    assert response.status == 200
+
+    # save model to temporary file
+    tempdir = tempfile.mkdtemp()
+    model_path = os.path.join(tempdir, "model.tar.gz")
+    with open(model_path, "wb") as f:
+        f.write(response.body)
+
+    # unpack model and ensure fingerprint is present
+    model_path = unpack_model(model_path)
+    assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
+
+
 def test_train_missing_config(rasa_app: SanicTestClient):
     payload = dict(domain="domain data", config=None)
 
@@ -627,7 +663,7 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
 
 
 @pytest.mark.parametrize("event", test_events)
-def test_pushing_event(rasa_app, event):
+def test_pushing_event(rasa_app: SanicTestClient, event: Event):
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -635,6 +671,7 @@ def test_pushing_event(rasa_app, event):
     # Remove timestamp so that a new one is assigned on the server
     serialized_event.pop("timestamp")
 
+    time_before_adding_events = time.time()
     _, response = rasa_app.post(
         f"{conversation}/tracker/events",
         json=serialized_event,
@@ -647,17 +684,17 @@ def test_pushing_event(rasa_app, event):
     tracker = tracker_response.json
     assert tracker is not None
 
-    assert len(tracker.get("events")) == 4
+    assert len(tracker.get("events")) == 1
 
-    evt = tracker.get("events")[3]
+    evt = tracker.get("events")[0]
     deserialised_event = Event.from_parameters(evt)
     assert deserialised_event == event
-    assert deserialised_event.timestamp > tracker.get("events")[2]["timestamp"]
+    assert deserialised_event.timestamp > time_before_adding_events
 
 
 def test_push_multiple_events(rasa_app: SanicTestClient):
-    cid = str(uuid.uuid1())
-    conversation = f"/conversations/{cid}"
+    conversation_id = str(uuid.uuid1())
+    conversation = f"/conversations/{conversation_id}"
 
     events = [e.as_dict() for e in test_events]
     _, response = rasa_app.post(
@@ -668,13 +705,12 @@ def test_push_multiple_events(rasa_app: SanicTestClient):
     assert response.json is not None
     assert response.status == 200
 
-    _, tracker_response = rasa_app.get(f"/conversations/{cid}/tracker")
+    _, tracker_response = rasa_app.get(f"/conversations/{conversation_id}/tracker")
     tracker = tracker_response.json
     assert tracker is not None
 
     # there is also an `ACTION_LISTEN` event at the start
-    assert len(tracker.get("events")) == len(test_events) + 3
-    assert tracker.get("events")[3:] == events
+    assert tracker.get("events") == events
 
 
 def test_put_tracker(rasa_app: SanicTestClient):

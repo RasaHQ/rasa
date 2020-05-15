@@ -5,7 +5,9 @@ daysUntilClose: 7
 # Issues with these labels will never be considered stale
 exemptLabels:
   - "type:enhancement ✨"
+  - "type:enhancement :sparkles:"
   - "type:discussion 👨‍👧‍👦"
+  - "type:discussion :family_man_girl_boy:"
 # Label to use when marking an issue as stale
 staleLabel: stale
 # Comment to post when marking an issue as stale. Set to `false` to disable
