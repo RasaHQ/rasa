@@ -219,12 +219,13 @@ source natural language processing." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.0
+          viewing: 1.10.1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.1/nlu/training-data-format/">1.10.1</a>
               <a href="../.././1.10.0/nlu/training-data-format/">1.10.0</a>
               <a href="../.././1.9.7/nlu/training-data-format/">1.9.7</a>
               <a href="../.././1.9.6/nlu/training-data-format/">1.9.6</a>
@@ -368,12 +369,11 @@ to use it in the name of your intents.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>The synonym format to specify synonyms <code class="docutils literal notranslate"><span class="pre">[savings</span> <span class="pre">account](source_account:savings)</span></code> is deprecated. Please use the
-new format <code class="docutils literal notranslate"><span class="pre">[savings</span> <span class="pre">account]{&quot;entity&quot;:</span> <span class="pre">&quot;source_account&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;savings&quot;}</span></code>. To update your training data
-file execute the following command on the terminal of your choice:
-<code class="docutils literal notranslate"><span class="pre">sed</span> <span class="pre">-i</span> <span class="pre">.deprecated</span> <span class="pre">-E</span> <span class="pre">'s/\[(.+)\]\((.+):(.+)\)/\[\1\]\{&quot;entity&quot;:</span> <span class="pre">&quot;\2&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;\3&quot;\}/g'</span> <span class="pre">&lt;nlu</span> <span class="pre">training</span> <span class="pre">data</span> <span class="pre">file&gt;</span></code>
-Assume you training data file is called <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code>. After you executed the above command, this file will
-contain the new training data format. The command also creates a backup file with the old training data format,
-called <code class="docutils literal notranslate"><span class="pre">nlu.md.deprecated</span></code>.</p>
+new format <code class="docutils literal notranslate"><span class="pre">[savings</span> <span class="pre">account]{&quot;entity&quot;:</span> <span class="pre">&quot;source_account&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;savings&quot;}</span></code>.</p>
+<p>To update your training data file execute the following command on the terminal of your choice:
+<code class="docutils literal notranslate"><span class="pre">sed</span> <span class="pre">-i</span> <span class="pre">-E</span> <span class="pre">'s/\[([^)]+)\]\(([^)]+):([^)]+)\)/[\1]{&quot;entity&quot;:</span> <span class="pre">&quot;\2&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;\3&quot;}/g'</span> <span class="pre">&lt;nlu</span> <span class="pre">training</span> <span class="pre">data</span> <span class="pre">file&gt;</span></code>
+Your NLU training data file will contain the new training data format after you executed the above command.
+Depending on your OS you might need to update the syntax of the sed command.</p>
 </div>
 </div>
 <div class="section" id="json-format">

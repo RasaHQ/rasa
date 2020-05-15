@@ -219,12 +219,13 @@ chatbot or AI assistant using open source Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.0
+          viewing: 1.10.1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.1/user-guide/rasa-tutorial/">1.10.1</a>
               <a href="../.././1.10.0/user-guide/rasa-tutorial/">1.10.0</a>
               <a href="../.././1.9.7/user-guide/rasa-tutorial/">1.9.7</a>
               <a href="../.././1.9.6/user-guide/rasa-tutorial/">1.9.6</a>
@@ -431,8 +432,8 @@ file called <code class="docutils literal notranslate"><span class="pre">domain.
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">actions</span></code></p></td>
 <td><p>things your assistant can do and say</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">templates</span></code></p></td>
-<td><p>template strings for the things your assistant can say</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">responses</span></code></p></td>
+<td><p>response strings for the things your assistant can say</p></td>
 </tr>
 </tbody>
 </table>
@@ -440,8 +441,8 @@ file called <code class="docutils literal notranslate"><span class="pre">domain.
 Rasa Core’s job is to choose the right action to execute at each step
 of the conversation. In this case, our actions simply send a message to the user.
 These simple utterance actions are the <code class="docutils literal notranslate"><span class="pre">actions</span></code> in the domain that start
-with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>. The assistant will respond with a message based on a template
-from the <code class="docutils literal notranslate"><span class="pre">templates</span></code> section. See <a class="reference internal" href="../../core/actions/#custom-actions"><span class="std std-ref">Custom Actions</span></a>
+with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>. The assistant will respond with a message based on a response
+from the <code class="docutils literal notranslate"><span class="pre">responses</span></code> section. See <a class="reference internal" href="../../core/actions/#custom-actions"><span class="std std-ref">Custom Actions</span></a>
 to build actions that do more than just send a message.</p>
 </div>
 <div class="section" id="train-a-model">
