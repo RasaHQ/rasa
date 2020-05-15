@@ -236,18 +236,18 @@ def validate_version(version: Text) -> bool:
         return False
 
     version_object = Version.coerce(version)
-    return not version_object.prerelease or (
-        len(version_object.prerelease) == 1
-        and validate_alpha_version_part(version_object.prerelease[0])
-    )
+    return not version_object.prerelease or is_alpha_version(version_object)
 
 
-def validate_alpha_version_part(alpha_version_part: Text) -> bool:
+def is_alpha_version(version: Version) -> bool:
     """
     Validate that the alpha part in a version follows
     the pattern specified in `ALPHA_VERSION_PATTERN`.
     """
-    return ALPHA_VERSION_PATTERN.match(alpha_version_part) is not None
+    return (
+        len(version.prerelease) == 1
+        and ALPHA_VERSION_PATTERN.match(version.prerelease[0]) is not None
+    )
 
 
 def next_alpha(version: Version) -> Version:
