@@ -27,7 +27,9 @@ REPO_BASE_URL = "https://github.com/RasaHQ/rasa"
 
 RELEASE_BRANCH_PREFIX = "prepare-release-"
 
-PRERELEASE_VERSION_PATTERN = re.compile(r"^(?:a|rc)([1-9]\d*)$")
+PRERELEASE_VERSION_PATTERN = re.compile(r"^(a|rc)([1-9]\d*)$")
+
+RELEASE_BRANCH_PATTERN = re.compile(r"^\d+\.\d+\.x$")
 
 
 class Version(BaseVersion):
@@ -210,6 +212,15 @@ def git_current_branch() -> Text:
         return "master"
 
 
+def git_current_branch_is_master_or_release() -> bool:
+    """Returns True if the current local git branch is master or a release branch e.g. 1.10.x"""
+    current_branch = git_current_branch()
+    return (
+        current_branch == "master"
+        or RELEASE_BRANCH_PATTERN.match(current_branch) is not None
+    )
+
+
 def create_release_branch(version: Text) -> Text:
     """Create a new branch for this release. Returns the branch name."""
 
@@ -261,12 +272,28 @@ def is_prerelease_version(version: Version) -> bool:
     )
 
 
+def is_alpha_version(version: Version) -> bool:
+    """
+    Validate that the alpha part in a version follows
+    the pattern specified in `PRERELEASE_VERSION_PATTERN`
+    and is an alpha (as opposed to a release candidate).
+    """
+    if len(version.prerelease) != 1:
+        return False
+
+    version_match = PRERELEASE_VERSION_PATTERN.match(version.prerelease[0])
+    if version_match is None:
+        return False
+
+    return version_match.group(1) == "a"
+
+
 def next_prerelease(version: Version, flavor: Text) -> Version:
     """Bump the current version to the next prerelease."""
     prerelease_number = 0
     if version.prerelease:
         prerelease_number = int(
-            PRERELEASE_VERSION_PATTERN.match(version.prerelease[0]).group(1)
+            PRERELEASE_VERSION_PATTERN.match(version.prerelease[0]).group(2)
         )
 
     return Version(
@@ -317,6 +344,18 @@ def print_done_message(branch: Text, base: Text, version: Text) -> None:
     print(f"Please open a PR on GitHub: {pull_request_url}")
 
 
+def print_done_message_same_branch(version: Text) -> None:
+    """
+    Print final information for the user in case changes
+    are directly committed on this branch.
+    """
+
+    print()
+    print(
+        f"\033[94m All done - changes for version {version} where committed on this branch \033[0m"
+    )
+
+
 def main(args: argparse.Namespace) -> None:
     """Start a release preparation."""
 
@@ -337,13 +376,21 @@ def main(args: argparse.Namespace) -> None:
     if not version.prerelease:
         # never update changelog on a prerelease version
         generate_changelog(version)
-    base = git_current_branch()
-    branch = create_release_branch(version)
 
-    create_commit(version)
-    push_changes()
+    # alpha workflow on feature branch when a version bump is required
+    if is_alpha_version(version) and not git_current_branch_is_master_or_release():
+        create_commit(version)
+        push_changes()
 
-    print_done_message(branch, base, version)
+        print_done_message_same_branch(version)
+    else:
+        base = git_current_branch()
+        branch = create_release_branch(version)
+
+        create_commit(version)
+        push_changes()
+
+        print_done_message(branch, base, version)
 
 
 if __name__ == "__main__":
