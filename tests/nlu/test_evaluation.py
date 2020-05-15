@@ -634,6 +634,7 @@ def test_evaluate_entities_cv_empty_tokens():
     assert result == {
         "target_labels": [],
         "extractor_labels": {"EntityExtractorA": [], "EntityExtractorB": []},
+        "confidences": {"EntityExtractorA": [], "EntityExtractorB": []},
     }, "Wrong entity prediction alignment"
 
 
@@ -684,6 +685,36 @@ def test_evaluate_entities_cv():
                 "O",
                 "movie",
                 "movie",
+            ],
+        },
+        "confidences": {
+            "EntityExtractorA": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            "EntityExtractorB": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
             ],
         },
     }, "Wrong entity prediction alignment"
