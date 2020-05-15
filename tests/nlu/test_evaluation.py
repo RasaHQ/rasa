@@ -37,6 +37,7 @@ from rasa.nlu.test import (
     NO_ENTITY,
     collect_successful_entity_predictions,
     collect_incorrect_entity_predictions,
+    merge_confidences,
 )
 from rasa.nlu.test import does_token_cross_borders
 from rasa.nlu.test import align_entity_predictions
@@ -255,6 +256,27 @@ def test_label_merging():
     assert np.all(
         merge_labels(aligned_predictions, "EntityExtractorA")
         == ["O", "O", "O", "O", "O"]
+    )
+
+
+def test_confidence_merging():
+    import numpy as np
+
+    aligned_predictions = [
+        {
+            "target_labels": ["O", "O"],
+            "extractor_labels": {"EntityExtractorA": ["O", "O"]},
+            "confidences": {"EntityExtractorA": [0.0, 0.0]},
+        },
+        {
+            "target_labels": ["LOC", "O", "O"],
+            "extractor_labels": {"EntityExtractorA": [0.98, 0.0, 0.0]},
+        },
+    ]
+
+    assert np.all(
+        merge_confidences(aligned_predictions, "EntityExtractorA")
+        == [0.0, 0.0, 0.98, 0.0, 0.0]
     )
 
 
