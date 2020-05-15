@@ -31,6 +31,9 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     INTENT,
+    ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
+    ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
+    ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
 )
 import rasa.nlu.utils as nlu_utils
 import rasa.nlu.training_data
@@ -52,6 +55,8 @@ ENTITY_PROCESSORS = {
     "EmbeddingIntentClassifier",
     "ResponseSelector",
 }
+
+EXTRACTORS_WITH_CONFIDENCES = {"CRFEntityExtractor"}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
@@ -388,6 +393,41 @@ def plot_attribute_confidences(
     plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
+def plot_entity_confidences(
+    merged_targets: List[Text],
+    merged_predictions: List[Text],
+    merged_confidences: List[float],
+    hist_filename: Text,
+    title: Text,
+) -> None:
+    """Create histogram of confidence distribution.
+
+    Args:
+        results: evaluation results
+        hist_filename: filename to save plot to
+        target_key: key of target in results
+        prediction_key: key of predictions in results
+        title: title of plot
+    """
+    pos_hist = [
+        confidence
+        for target, prediction, confidence in zip(
+            merged_targets, merged_predictions, merged_confidences
+        )
+        if target != NO_ENTITY and target == prediction
+    ]
+
+    neg_hist = [
+        confidence
+        for target, prediction, confidence in zip(
+            merged_targets, merged_predictions, merged_confidences
+        )
+        if prediction != NO_ENTITY and target != prediction
+    ]
+
+    plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
+
+
 def evaluate_response_selections(
     response_selection_results: List[ResponseSelectionEvaluationResult],
     output_directory: Optional[Text],
@@ -705,6 +745,25 @@ def merge_labels(
     return list(itertools.chain(*label_lists))
 
 
+def merge_confidences(
+    aligned_predictions: List[Dict], extractor: Optional[Text] = None
+) -> List[float]:
+    """Concatenates all confidences of the aligned predictions.
+
+    Takes the aligned prediction confidences which are grouped for each message
+    and concatenates them.
+
+    Args:
+        aligned_predictions: aligned predictions
+        extractor: entity extractor name
+
+    Returns: concatenated confidences
+    """
+
+    label_lists = [ap["confidences"][extractor] for ap in aligned_predictions]
+    return list(itertools.chain(*label_lists))
+
+
 def substitute_labels(labels: List[Text], old: Text, new: Text) -> List[Text]:
     """Replaces label names in a list of labels.
 
@@ -858,6 +917,7 @@ def evaluate_entities(
         output_directory: directory to store files to
         successes: if True correct predictions are written to disk
         errors: if True incorrect predictions are written to disk
+        disable_plotting: if True no plots are created
 
     Returns: dictionary with evaluation results
     """
@@ -875,6 +935,7 @@ def evaluate_entities(
         merged_predictions = substitute_labels(
             merged_predictions, NO_ENTITY_TAG, NO_ENTITY
         )
+
         logger.info(f"Evaluation for entity extractor: {extractor} ")
 
         confusion_matrix = sklearn.metrics.confusion_matrix(
@@ -945,6 +1006,21 @@ def evaluate_entities(
                 title="Entity Confusion matrix",
                 output_file=confusion_matrix_filename,
             )
+
+            if extractor in EXTRACTORS_WITH_CONFIDENCES:
+                merged_confidences = merge_confidences(aligned_predictions, extractor)
+                histogram_filename = f"{extractor}_histogram.png"
+                if output_directory:
+                    histogram_filename = os.path.join(
+                        output_directory, histogram_filename
+                    )
+                plot_entity_confidences(
+                    merged_targets,
+                    merged_predictions,
+                    merged_confidences,
+                    title="Entity Confusion matrix",
+                    hist_filename=histogram_filename,
+                )
 
         result[extractor] = {
             "report": report,
@@ -1024,13 +1100,10 @@ def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
 
 
 def pick_best_entity_fit(
-    token: Token,
-    candidates: List[Dict[Text, Any]],
-    attribute_key: Text = ENTITY_ATTRIBUTE_TYPE,
-) -> Text:
+    token: Token, candidates: List[Dict[Text, Any]]
+) -> Optional[Dict[Text, Any]]:
     """
-    Determines the token label for the provided attribute key given intersecting
-    entities.
+    Determines the best fitting entity given intersecting entities.
 
     Args:
         token: a single token
@@ -1041,12 +1114,12 @@ def pick_best_entity_fit(
         the value of the attribute key of the best fitting entity
     """
     if len(candidates) == 0:
-        return NO_ENTITY_TAG
+        return None
     elif len(candidates) == 1:
-        return candidates[0].get(attribute_key) or NO_ENTITY_TAG
+        return candidates[0]
     else:
         best_fit = np.argmax([determine_intersection(token, c) for c in candidates])
-        return candidates[best_fit].get(attribute_key) or NO_ENTITY_TAG
+        return candidates[int(best_fit)]
 
 
 def determine_token_labels(
@@ -1067,14 +1140,43 @@ def determine_token_labels(
     Returns:
         entity type
     """
+    entity = determine_entity_for_token(token, entities, extractors)
+
+    if entity is None:
+        return NO_ENTITY_TAG
+
+    label = entity.get(attribute_key)
+
+    if not label:
+        return NO_ENTITY_TAG
+
+    return label
+
+
+def determine_entity_for_token(
+    token: Token,
+    entities: List[Dict[Text, Any]],
+    extractors: Optional[Set[Text]] = None,
+) -> Optional[Dict[Text, Any]]:
+    """
+    Determines the best fitting entity for the given token given entities that do
+    not overlap.
+
+    Args:
+        token: a single token
+        entities: entities found by a single extractor
+        extractors: list of extractors
+    Returns:
+        entity type
+    """
 
     if entities is None or len(entities) == 0:
-        return NO_ENTITY_TAG
+        return None
     if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
-        raise ValueError("The possible entities should not overlap")
+        raise ValueError("The possible entities should not overlap.")
 
     candidates = find_intersecting_entities(token, entities)
-    return pick_best_entity_fit(token, candidates, attribute_key)
+    return pick_best_entity_fit(token, candidates)
 
 
 def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
@@ -1110,15 +1212,21 @@ def align_entity_predictions(
     for p in result.entity_predictions:
         entities_by_extractors[p[EXTRACTOR]].append(p)
     extractor_labels: Dict[Text, List] = {extractor: [] for extractor in extractors}
+    extractor_confidences: Dict[Text, List] = {
+        extractor: [] for extractor in extractors
+    }
     for t in result.tokens:
         true_token_labels.append(_concat_entity_labels(t, result.entity_targets))
         for extractor, entities in entities_by_extractors.items():
-            extracted = _concat_entity_labels(t, entities, {extractor})
-            extractor_labels[extractor].append(extracted)
+            extracted_labels = _concat_entity_labels(t, entities, {extractor})
+            extracted_confidences = _get_entity_confidences(t, entities, {extractor})
+            extractor_labels[extractor].append(extracted_labels)
+            extractor_confidences[extractor].append(extracted_confidences)
 
     return {
         "target_labels": true_token_labels,
         "extractor_labels": dict(extractor_labels),
+        "confidences": dict(extractor_confidences),
     }
 
 
@@ -1156,6 +1264,37 @@ def _concat_entity_labels(
     labels = [label for label in labels if label != NO_ENTITY_TAG]
 
     return ".".join(labels)
+
+
+def _get_entity_confidences(
+    token: Token, entities: List[Dict], extractors: Optional[Set[Text]] = None
+) -> float:
+    """Get the confidence value of the best fitting entity.
+
+    If multiple confidence values are present, e.g. for type, role, group, we
+    pick the lowest confidence value.
+
+    Args:
+        token: the token we are looking at
+        entities: the available entities
+        extractors: the extractor of interest
+
+    Returns:
+        the confidence value
+    """
+    entity = determine_entity_for_token(token, entities, extractors)
+
+    if entity is None:
+        return 0.0
+
+    if entity.get("extractor") not in EXTRACTORS_WITH_CONFIDENCES:
+        return 0.0
+
+    conf_type = entity.get(ENTITY_ATTRIBUTE_CONFIDENCE_TYPE) or 1.0
+    conf_role = entity.get(ENTITY_ATTRIBUTE_CONFIDENCE_ROLE) or 1.0
+    conf_group = entity.get(ENTITY_ATTRIBUTE_CONFIDENCE_GROUP) or 1.0
+
+    return min(conf_type, conf_role, conf_group)
 
 
 def align_all_entity_predictions(
