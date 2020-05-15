@@ -9,6 +9,7 @@ import argparse
 import os
 import re
 import sys
+import packaging.version as pep440_version
 from pathlib import Path
 from subprocess import CalledProcessError, check_call, check_output
 from typing import Text, Set
@@ -16,7 +17,7 @@ from typing import Text, Set
 import questionary
 import semantic_version
 import toml
-from semantic_version import Version
+from semantic_version import Version as BaseVersion
 
 VERSION_FILE_PATH = "rasa/version.py"
 
@@ -26,7 +27,17 @@ REPO_BASE_URL = "https://github.com/RasaHQ/rasa"
 
 RELEASE_BRANCH_PREFIX = "prepare-release-"
 
-ALPHA_VERSION_PATTERN = re.compile(r"^alpha([1-9]\d*)$")
+ALPHA_VERSION_PATTERN = re.compile(r"^a([1-9]\d*)$")
+
+
+class Version(BaseVersion):
+    """
+    A PEP440 compatible version that supports prereleases:
+    https://www.python.org/dev/peps/pep-0440/#pre-releases
+    """
+
+    def __str__(self):
+        return super().__str__().replace("-", "")
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -230,9 +241,9 @@ def ensure_clean_git() -> None:
 def validate_version(version: Text) -> bool:
     """
     Ensure that the version follows semver
-    and that the alpha follows the format `alpha1`, `alpha2`, etc...
+    and that the alpha follows the format `a1`, `a2`, etc...
     """
-    if not semantic_version.validate(version):
+    if isinstance(pep440_version.parse(version), pep440_version.LegacyVersion):
         return False
 
     version_object = Version.coerce(version)
@@ -260,7 +271,7 @@ def next_alpha(version: Version) -> Version:
         major=version.major,
         minor=version.minor,
         patch=version.patch,
-        prerelease=(f"alpha{alpha_number + 1}",),
+        prerelease=(f"a{alpha_number + 1}",),
         partial=version.partial,
     )
 
