@@ -1449,7 +1449,7 @@ def _serve_application(app, stories, skip_visualization, server_args):
 
     if server_args.get("port"):
         port = server_args.get("port")
-        DEFAULT_SERVER_URL = "{}://localhost:{}".format("http", port)
+        DEFAULT_SERVER_URL = f"http://localhost:{port}"
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
 
