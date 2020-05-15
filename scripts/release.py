@@ -70,7 +70,7 @@ def pyproject_file_path() -> Path:
     return project_root() / PYPROJECT_FILE_PATH
 
 
-def write_version_file(version: Text) -> None:
+def write_version_file(version: Version) -> None:
     """Dump a new version into the python version file."""
 
     with version_file_path().open("w") as f:
@@ -82,13 +82,13 @@ def write_version_file(version: Text) -> None:
     check_call(["git", "add", str(version_file_path().absolute())])
 
 
-def write_version_to_pyproject(version: Text) -> None:
+def write_version_to_pyproject(version: Version) -> None:
     """Dump a new version into the pyproject.toml."""
     pyproject_file = pyproject_file_path()
 
     try:
         data = toml.load(pyproject_file)
-        data["tool"]["poetry"]["version"] = version
+        data["tool"]["poetry"]["version"] = str(version)
         with pyproject_file.open("w", encoding="utf8") as f:
             toml.dump(data, f)
     except (FileNotFoundError, TypeError):
@@ -119,10 +119,10 @@ def get_current_version() -> Text:
     return _globals["__version__"]
 
 
-def confirm_version(version: Text) -> bool:
+def confirm_version(version: Version) -> bool:
     """Allow the user to confirm the version number."""
 
-    if version in git_existing_tags():
+    if str(version) in git_existing_tags():
         confirmed = questionary.confirm(
             f"Tag with version '{version}' already exists, overwrite?", default=False
         ).ask()
@@ -175,12 +175,12 @@ def get_rasa_sdk_version() -> Text:
         raise Exception(f"Failed to find Rasa SDK version in {dependencies_filename}")
 
 
-def validate_code_is_release_ready(version: Text) -> None:
+def validate_code_is_release_ready(version: Version) -> None:
     """Make sure the code base is valid (e.g. Rasa SDK is up to date)."""
 
     sdk = get_rasa_sdk_version()
     sdk_version = (Version.coerce(sdk).major, Version.coerce(sdk).minor)
-    rasa_version = (Version.coerce(version).major, Version.coerce(version).minor)
+    rasa_version = (version.major, version.minor)
 
     if sdk_version != rasa_version:
         print()
@@ -221,7 +221,7 @@ def git_current_branch_is_master_or_release() -> bool:
     )
 
 
-def create_release_branch(version: Text) -> Text:
+def create_release_branch(version: Version) -> Text:
     """Create a new branch for this release. Returns the branch name."""
 
     branch = f"{RELEASE_BRANCH_PREFIX}{version}"
@@ -229,7 +229,7 @@ def create_release_branch(version: Text) -> Text:
     return branch
 
 
-def create_commit(version: Text) -> None:
+def create_commit(version: Version) -> None:
     """Creates a git commit with all stashed changes."""
     check_call(["git", "commit", "-m", f"prepared release of version {version}"])
 
@@ -305,35 +305,37 @@ def next_prerelease(version: Version, flavor: Text) -> Version:
     )
 
 
-def parse_next_version(version: Text) -> Text:
+def parse_next_version(version: Text) -> Version:
     """Find the next version as a proper semantic version string."""
     if version == "major":
-        return str(Version.coerce(get_current_version()).next_major())
+        return Version.coerce(get_current_version()).next_major()
     elif version == "minor":
-        return str(Version.coerce(get_current_version()).next_minor())
+        return Version.coerce(get_current_version()).next_minor()
     elif version == "patch":
-        return str(Version.coerce(get_current_version()).next_patch())
+        return Version.coerce(get_current_version()).next_patch()
     elif version == "alpha":
-        return str(next_prerelease(Version.coerce(get_current_version()), "a"))
+        return next_prerelease(Version.coerce(get_current_version()), "a")
     elif version == "rc":
-        return str(next_prerelease(Version.coerce(get_current_version()), "rc"))
+        return next_prerelease(Version.coerce(get_current_version()), "rc")
     elif validate_version(version):
-        return version
+        return Version.coerce(version)
     else:
         raise Exception(f"Invalid version number '{cmdline_args.next_version}'.")
 
 
-def next_version(args: argparse.Namespace) -> Text:
+def next_version(args: argparse.Namespace) -> Version:
     """Take cmdline args or ask the user for the next version and return semver."""
     return parse_next_version(args.next_version or ask_version())
 
 
-def generate_changelog(version: Text) -> None:
+def generate_changelog(version: Version) -> None:
     """Call tonwcrier and create a changelog from all available changelog entries."""
-    check_call(["towncrier", "--yes", "--version", version], cwd=str(project_root()))
+    check_call(
+        ["towncrier", "--yes", "--version", str(version)], cwd=str(project_root())
+    )
 
 
-def print_done_message(branch: Text, base: Text, version: Text) -> None:
+def print_done_message(branch: Text, base: Text, version: Version) -> None:
     """Print final information for the user on what to do next."""
 
     pull_request_url = f"{REPO_BASE_URL}/compare/{base}...{branch}?expand=1"
@@ -344,7 +346,7 @@ def print_done_message(branch: Text, base: Text, version: Text) -> None:
     print(f"Please open a PR on GitHub: {pull_request_url}")
 
 
-def print_done_message_same_branch(version: Text) -> None:
+def print_done_message_same_branch(version: Version) -> None:
     """
     Print final information for the user in case changes
     are directly committed on this branch.
