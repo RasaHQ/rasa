@@ -27,6 +27,10 @@ REPO_BASE_URL = "https://github.com/RasaHQ/rasa"
 
 RELEASE_BRANCH_PREFIX = "prepare-release-"
 
+PRERELEASE_FLAVORS = ("alpha", "rc")
+
+PRERELEASE_FLAVOR_CODES = {"alpha": "a", "rc": "rc"}
+
 PRERELEASE_VERSION_PATTERN = re.compile(r"^(a|rc)([1-9]\d*)$")
 
 RELEASE_BRANCH_PATTERN = re.compile(r"^\d+\.\d+\.x$")
@@ -147,13 +151,26 @@ def ask_version() -> Text:
 
     current_version = Version.coerce(get_current_version())
     next_patch_version = str(current_version.next_patch())
-    next_alpha_version = str(next_prerelease(current_version, "a"))
+    next_alpha_version = str(next_prerelease(current_version, "alpha"))
     version = questionary.text(
         f"What is the version number you want to release "
         f"('major', 'minor', 'patch', 'alpha', 'rc' or valid version number "
         f"e.g. '{next_patch_version}' or '{next_alpha_version}')?",
         validate=is_valid_version_number,
     ).ask()
+
+    if version in PRERELEASE_FLAVORS and not current_version.prerelease:
+        # at this stage it's hard to guess the kind of version bump the
+        # releaser wants, so we ask them
+        version = questionary.select(
+            f"Which {version} do you want to release?",
+            choices=[
+                str(next_prerelease(current_version, version)),
+                str(next_prerelease(current_version.next_patch(), version)),
+                str(next_prerelease(current_version.next_minor(), version)),
+                str(next_prerelease(current_version.next_major(), version)),
+            ],
+        ).ask()
 
     if version:
         return version
@@ -300,7 +317,7 @@ def next_prerelease(version: Version, flavor: Text) -> Version:
         major=version.major,
         minor=version.minor,
         patch=version.patch,
-        prerelease=(f"{flavor}{prerelease_number + 1}",),
+        prerelease=(f"{PRERELEASE_FLAVOR_CODES[flavor]}{prerelease_number + 1}",),
         partial=version.partial,
     )
 
@@ -313,10 +330,8 @@ def parse_next_version(version: Text) -> Version:
         return Version.coerce(get_current_version()).next_minor()
     elif version == "patch":
         return Version.coerce(get_current_version()).next_patch()
-    elif version == "alpha":
-        return next_prerelease(Version.coerce(get_current_version()), "a")
-    elif version == "rc":
-        return next_prerelease(Version.coerce(get_current_version()), "rc")
+    elif version in PRERELEASE_FLAVORS:
+        return next_prerelease(Version.coerce(get_current_version()), version)
     elif validate_version(version):
         return Version.coerce(version)
     else:
