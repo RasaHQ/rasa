@@ -15,7 +15,6 @@ from subprocess import CalledProcessError, check_call, check_output
 from typing import Text, Set
 
 import questionary
-import semantic_version
 import toml
 from semantic_version import Version as BaseVersion
 
@@ -229,7 +228,10 @@ def git_current_branch() -> Text:
 
 
 def git_current_branch_is_master_or_release() -> bool:
-    """Returns True if the current local git branch is master or a release branch e.g. 1.10.x"""
+    """
+    Returns True if the current local git
+    branch is master or a release branch e.g. 1.10.x
+    """
     current_branch = git_current_branch()
     return (
         current_branch == "master"
