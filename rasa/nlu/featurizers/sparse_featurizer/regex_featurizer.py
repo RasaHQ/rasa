@@ -73,7 +73,7 @@ class RegexFeaturizer(SparseFeaturizer):
             message.set(SPARSE_FEATURE_NAMES[attribute], features)
 
     def _lookup_table_regexes(
-        self, lookup_tables: List[Dict[Text, Union[Text, List]]]
+        self, lookup_tables: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Text]]:
         """appends the regex features from the lookup tables to self.known_patterns"""
 
