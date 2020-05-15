@@ -165,9 +165,8 @@ def ask_version() -> Text:
         version = questionary.select(
             f"Which {version} do you want to release?",
             choices=[
-                str(next_prerelease(current_version, version)),
-                str(next_prerelease(current_version.next_patch(), version)),
                 str(next_prerelease(current_version.next_minor(), version)),
+                str(next_prerelease(current_version.next_patch(), version)),
                 str(next_prerelease(current_version.next_major(), version)),
             ],
         ).ask()
