@@ -53,7 +53,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         return module.signatures[signature]
 
     def _compute_features(
-        self, batch_examples: List[Message], module, attribute: Text = TEXT
+        self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
     ) -> np.ndarray:
 
         sentence_encodings = self._compute_sentence_encodings(
@@ -70,7 +70,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         )
 
     def _compute_sentence_encodings(
-        self, batch_examples: List[Message], module, attribute: Text = TEXT
+        self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
     ) -> np.ndarray:
         # Get text for attribute of each example
         batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
@@ -82,7 +82,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         return np.reshape(sentence_encodings, (len(batch_examples), 1, -1))
 
     def _compute_sequence_encodings(
-        self, batch_examples: List[Message], module, attribute: Text = TEXT
+        self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
     ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
             train_utils.tokens_without_cls(example, attribute)
@@ -158,11 +158,11 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         return texts
 
-    def _sentence_encoding_of_text(self, batch: List[Text], module) -> np.ndarray:
+    def _sentence_encoding_of_text(self, batch: List[Text], module: Any) -> np.ndarray:
         signature = self.__get_signature("default", module)
         return signature(tf.convert_to_tensor(batch))["default"].numpy()
 
-    def _sequence_encoding_of_text(self, batch: List[Text], module) -> np.ndarray:
+    def _sequence_encoding_of_text(self, batch: List[Text], module: Any) -> np.ndarray:
         signature = self.__get_signature("encode_sequence", module)
 
         return signature(tf.convert_to_tensor(batch))["sequence_encoding"].numpy()

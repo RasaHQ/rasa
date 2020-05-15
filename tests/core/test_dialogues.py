@@ -35,7 +35,7 @@ def test_inmemory_tracker_store(pair):
     assert restored == tracker
 
 
-def test_tracker_restaurant():
+def test_tracker_default():
     domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
     filename = "data/test_dialogues/default.json"
     tracker = tracker_from_dialogue_file(filename, domain)
