@@ -76,6 +76,7 @@
         "elements":null
       },
       "text":"how can I help you?",
+      "template_id":"utter_ask_howcanhelp",
       "timestamp":1551884482.058523
     },
     {
@@ -160,6 +161,7 @@
         "elements":null
       },
       "text":"I'm on it",
+      "template_id":"utter_on_it",
       "timestamp":1551884534.021875
     },
     {
@@ -178,6 +180,7 @@
         "elements":null
       },
       "text":"for how many people?",
+      "template_id":"utter_ask_numpeople",
       "timestamp":1551884538.190698
     },
     {
@@ -253,6 +256,7 @@
         "elements":null
       },
       "text":"in which price range?",
+      "template_id":"utter_ask_price",
       "timestamp":1551884561.016482
     },
     {
@@ -355,6 +359,7 @@
         "elements":null
       },
       "text":"if you'd like to modify anything else, please tell me what. This is what I currently have: paris (price: lo, cuisine: italian) for four people.",
+      "template_id":"utter_ask_moreupdates",
       "timestamp":1551884573.494934
     },
     {
@@ -405,6 +410,7 @@
         "elements":null
       },
       "text":"ok let me see what I can find",
+      "template_id":"utter_ack_dosearch",
       "timestamp":1551884596.275989
     },
     {
@@ -502,6 +508,7 @@
         "elements":null
       },
       "text":"ok making a reservation for restaurant (price=lo cuisine=italian) in location=paris for count=four? ",
+      "template_id":"utter_ack_makereservation",
       "timestamp":1551884614.104864
     },
     {
@@ -578,6 +585,7 @@
         "elements":null
       },
       "text":"goodbye :(",
+      "template_id":"utter_goodbye",
       "timestamp":1551884623.904358
     }
   ]

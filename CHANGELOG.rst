@@ -840,6 +840,7 @@ Features
 - Added a new NLU featurizer - ``ConveRTFeaturizer`` based on `ConveRT
   <https://github.com/PolyAI-LDN/polyai-models>`_ model released by PolyAI.
 - Added a new preconfigured pipeline - ``pretrained_embeddings_convert``.
+- Added template name to the metadata of bot utterance
 
 Improvements
 ------------

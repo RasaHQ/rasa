@@ -360,9 +360,12 @@ class BotUttered(Event):
 
     type_name = "bot"
 
-    def __init__(self, text=None, data=None, metadata=None, timestamp=None) -> None:
+    def __init__(
+        self, text=None, data=None, metadata=None, timestamp=None, template_id=None
+    ) -> None:
         self.text = text
         self.data = data or {}
+        self.template_id = template_id
         super().__init__(timestamp, metadata)
 
     def __members(self):
@@ -372,6 +375,7 @@ class BotUttered(Event):
             self.text,
             jsonpickle.encode(data_no_nones),
             jsonpickle.encode(meta_no_nones),
+            self.template_id,
         )
 
     def __hash__(self) -> int:
@@ -384,13 +388,20 @@ class BotUttered(Event):
             return self.__members() == other.__members()
 
     def __str__(self) -> Text:
-        return "BotUttered(text: {}, data: {}, metadata: {})".format(
-            self.text, json.dumps(self.data), json.dumps(self.metadata)
+        return "BotUttered(text: {}, data: {}, metadata: {}, template_id: {})".format(
+            self.text,
+            json.dumps(self.data),
+            json.dumps(self.metadata),
+            self.template_id,
         )
 
     def __repr__(self) -> Text:
-        return "BotUttered('{}', {}, {}, {})".format(
-            self.text, json.dumps(self.data), json.dumps(self.metadata), self.timestamp
+        return "BotUttered('{}', {}, {}, {}, {})".format(
+            self.text,
+            json.dumps(self.data),
+            json.dumps(self.metadata),
+            self.timestamp,
+            self.template_id,
         )
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
@@ -406,6 +417,7 @@ class BotUttered(Event):
         m = self.data.copy()
         m["text"] = self.text
         m["timestamp"] = self.timestamp
+        m["template_id"] = self.template_id
         m.update(self.metadata)
 
         if m.get("image") == m.get("attachment"):
@@ -423,7 +435,14 @@ class BotUttered(Event):
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        d.update({"text": self.text, "data": self.data, "metadata": self.metadata})
+        d.update(
+            {
+                "text": self.text,
+                "data": self.data,
+                "metadata": self.metadata,
+                "template_id": self.template_id,
+            }
+        )
         return d
 
     @classmethod
@@ -434,6 +453,7 @@ class BotUttered(Event):
                 parameters.get("data"),
                 parameters.get("metadata"),
                 parameters.get("timestamp"),
+                parameters.get("template_id"),
             )
         except KeyError as e:
             raise ValueError(f"Failed to parse bot uttered event. {e}")

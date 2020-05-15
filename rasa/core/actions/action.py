@@ -146,6 +146,7 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
             "image": message.pop("image", None),
             "custom": message.pop("custom", None),
         },
+        template_id=message.pop("template_id", None),
         metadata=message,
     )
 
@@ -230,6 +231,8 @@ class ActionRetrieveResponse(Action):
                 OPEN_UTTERANCE_PREDICTION_KEY
             ]["name"]
         }
+        message["template_id"] = self.action_name
+
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
@@ -266,6 +269,7 @@ class ActionUtterTemplate(Action):
                     "".format(self.template_name)
                 )
             return []
+        message["template_id"] = self.template_name
 
         return [create_bot_utterance(message)]
 
@@ -505,6 +509,7 @@ class RemoteAction(Action):
                 )
                 if not draft:
                     continue
+                draft["template_id"] = template
             else:
                 draft = {}
 
@@ -720,6 +725,7 @@ class ActionDefaultAskAffirmation(Action):
                 {"title": "No", "payload": f"/{USER_INTENT_OUT_OF_SCOPE}"},
             ],
         }
+        message["template_id"] = self.name()
 
         return [create_bot_utterance(message)]
 

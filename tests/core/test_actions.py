@@ -232,7 +232,7 @@ async def test_remote_action_logs_events(
     assert events[0] == BotUttered(
         "test text", {"buttons": [{"title": "cheap", "payload": "cheap"}]}
     )
-    assert events[1] == BotUttered("hey there None!")
+    assert events[1] == BotUttered("hey there None!", template_id="utter_greet")
     assert events[2] == SlotSet("name", "rasa")
 
 
@@ -276,7 +276,7 @@ async def test_remote_action_utterances_with_none_values(
         )
 
     assert events == [
-        BotUttered("what dou want to eat?"),
+        BotUttered("what dou want to eat?", template_id="utter_ask_cuisine"),
         Form("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
     ]
@@ -364,6 +364,7 @@ async def test_action_utter_retrieved_response(
     assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
         "text"
     )
+    assert events[0].as_dict().get("template_id") == action_name
 
 
 async def test_action_utter_default_retrieved_response(
@@ -413,7 +414,9 @@ async def test_action_utter_template(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
-    assert events == [BotUttered("this is a default channel")]
+    assert events == [
+        BotUttered("this is a default channel", template_id="utter_channel")
+    ]
 
 
 async def test_action_utter_template_unknown_template(
@@ -442,6 +445,7 @@ async def test_action_utter_template_with_buttons(
                     {"payload": "button2", "title": "button2"},
                 ]
             },
+            template_id="utter_buttons",
         )
     ]
 
@@ -470,7 +474,11 @@ async def test_action_utter_template_channel_specific(
     )
 
     assert events == [
-        BotUttered("you're talking to me on slack!", metadata={"channel": "slack"})
+        BotUttered(
+            "you're talking to me on slack!",
+            metadata={"channel": "slack"},
+            template_id="utter_channel",
+        )
     ]
 
 
@@ -482,7 +490,7 @@ async def test_action_back(
     )
 
     assert events == [
-        BotUttered("backing up..."),
+        BotUttered("backing up...", template_id="utter_back"),
         UserUtteranceReverted(),
         UserUtteranceReverted(),
     ]
@@ -495,7 +503,10 @@ async def test_action_restart(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert events == [BotUttered("congrats, you've restarted me!"), Restarted()]
+    assert events == [
+        BotUttered("congrats, you've restarted me!", template_id="utter_restart",),
+        Restarted(),
+    ]
 
 
 async def test_action_session_start_without_slots(
@@ -588,7 +599,10 @@ async def test_action_default_fallback(
     )
 
     assert events == [
-        BotUttered("sorry, I didn't get that, can you rephrase it?"),
+        BotUttered(
+            "sorry, I didn't get that, can you rephrase it?",
+            template_id="utter_default",
+        ),
         UserUtteranceReverted(),
     ]
 
@@ -609,6 +623,7 @@ async def test_action_default_ask_affirmation(
                     {"title": "No", "payload": "/out_of_scope"},
                 ]
             },
+            template_id="action_default_ask_affirmation",
         )
     ]
 
@@ -620,4 +635,6 @@ async def test_action_default_ask_rephrase(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert events == [BotUttered("can you rephrase that?")]
+    assert events == [
+        BotUttered("can you rephrase that?", template_id="utter_ask_rephrase")
+    ]
