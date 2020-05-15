@@ -417,13 +417,13 @@ def _scale_loss(log_likelihood: tf.Tensor) -> tf.Tensor:
     """
 
     p = tf.math.exp(log_likelihood)
-
-    scales = tf.pow((1 - p) / 0.5, 4)
+    return tf.where(p > 0.8, tf.zeros_like(p), tf.ones_like(p))
+    # scales = tf.pow((1 - p) / 0.5, 4)
     # tf.print('---')
     # tf.print(scales)
     # tf.print(scales / tf.reduce_sum(scales))
 
-    return tf.stop_gradient(scales)  # / tf.reduce_sum(scale))
+    # return tf.stop_gradient(scales)  # / tf.reduce_sum(scale))
     # only scale loss if some examples are already learned
     # return tf.cond(
     #     tf.reduce_max(p) > 0.5,
