@@ -4,8 +4,20 @@ import os
 import time
 import typing
 from collections import deque
+from contextlib import contextmanager
 from threading import Thread
-from typing import Callable, Deque, Dict, Optional, Text, Union, Any, List, Tuple
+from typing import (
+    Callable,
+    Deque,
+    Dict,
+    Optional,
+    Text,
+    Union,
+    Any,
+    List,
+    Tuple,
+    Generator,
+)
 
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
@@ -27,6 +39,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 RABBITMQ_EXCHANGE = "rasa-exchange"
+DEFAULT_QUEUE_NAME = "rasa_core_events"
 
 
 def initialise_pika_connection(
@@ -52,10 +65,34 @@ def initialise_pika_connection(
     """
     import pika
 
-    parameters = _get_pika_parameters(
-        host, username, password, port, connection_attempts, retry_delay_in_seconds
-    )
-    return pika.BlockingConnection(parameters)
+    with _pika_log_level(logging.CRITICAL):
+        parameters = _get_pika_parameters(
+            host, username, password, port, connection_attempts, retry_delay_in_seconds
+        )
+        return pika.BlockingConnection(parameters)
+
+
+@contextmanager
+def _pika_log_level(temporary_log_level: int) -> Generator[None, None, None]:
+    """Change the log level of the `pika` library.
+
+    The log level will remain unchanged if the current log level is 10 (`DEBUG`) or
+    lower.
+
+    Args:
+        temporary_log_level: Temporary log level for pika. Will be reverted to
+        previous log level when context manager exits.
+    """
+    pika_logger = logging.getLogger("pika")
+    old_log_level = pika_logger.level
+    is_debug_mode = logging.root.level <= logging.DEBUG
+
+    if not is_debug_mode:
+        pika_logger.setLevel(temporary_log_level)
+
+    yield
+
+    pika_logger.setLevel(old_log_level)
 
 
 def _get_pika_parameters(
@@ -224,7 +261,7 @@ class PikaEventBroker(EventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queues: Union[List[Text], Tuple[Text], Text, None] = ("rasa_core_events",),
+        queues: Union[List[Text], Tuple[Text], Text, None] = None,
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         log_level: Union[Text, int] = os.environ.get(
@@ -278,7 +315,7 @@ class PikaEventBroker(EventBroker):
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text], Text, None], kwargs: Any,
+        queues_arg: Union[List[Text], Tuple[Text], Text, None], kwargs: Any
     ) -> Union[List[Text], Tuple[Text]]:
         """Get queues for this event broker.
 
@@ -326,11 +363,14 @@ class PikaEventBroker(EventBroker):
         if queue_arg:
             return queue_arg  # pytype: disable=bad-return-type
 
-        raise ValueError(
-            f"Could not initialise `PikaEventBroker` due to invalid "
-            f"`queues` or `queue` argument in constructor. See "
-            f"{DOCS_URL_PIKA_EVENT_BROKER}."
+        raise_warning(
+            f"No `queues` or `queue` argument provided. It is suggested to "
+            f"explicitly specify a queue as described in "
+            f"{DOCS_URL_PIKA_EVENT_BROKER}. "
+            f"Using the default queue '{DEFAULT_QUEUE_NAME}' for now."
         )
+
+        return [DEFAULT_QUEUE_NAME]
 
     @classmethod
     def from_endpoint_config(
@@ -399,7 +439,7 @@ class PikaEventBroker(EventBroker):
         self._pika_connection.ioloop.start()
 
     def is_ready(
-        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01,
+        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
     ) -> bool:
         """Spin until the pika channel is open.
 

@@ -143,8 +143,13 @@ To increase the logging level for debugging, run:
 
    rasa shell --debug
 
+.. note::
+   In order to see the typical greetings and/or session start behavior you might see
+   in an external channel, you will need to explicitly send ``/session_start``
+   as the first message. Otherwise, the session start behavior will begin as described in
+   :ref:`session_config`.
 
-The full list of options for ``rasa shell`` is
+The full list of options for ``rasa shell`` is:
 
 .. program-output:: rasa shell --help
 
@@ -234,7 +239,14 @@ You can specify the training data, the fraction, and the output directory using 
 
 
 This command will attempt to keep the proportions of intents the same in train and test.
+If you have NLG data for retrieval actions, this will be saved to seperate files:
 
+.. code-block:: bash
+
+   ls train_test_split
+
+         nlg_test_data.md     test_data.json
+         nlg_training_data.md training_data.json
 
 Convert Data Between Markdown and JSON
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

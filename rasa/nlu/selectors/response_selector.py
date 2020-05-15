@@ -17,9 +17,10 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     TEXT_FEATURES,
     LABEL_FEATURES,
-    TEXT_MASK,
-    LABEL_MASK,
     LABEL_IDS,
+    EntityTagSpec,
+    TEXT_SEQ_LENGTH,
+    LABEL_SEQ_LENGTH,
 )
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -39,6 +40,7 @@ from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     NUM_NEG,
     SPARSE_INPUT_DROPOUT,
+    DENSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
@@ -171,7 +173,7 @@ class ResponseSelector(DIETClassifier):
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.002,
         # Sparsity of the weights in dense layers
-        WEIGHT_SPARSITY: 0.8,
+        WEIGHT_SPARSITY: 0.0,
         # The scale of how important is to minimize the maximum similarity
         # between embeddings of different labels.
         NEGATIVE_MARGIN_SCALE: 0.8,
@@ -179,8 +181,10 @@ class ResponseSelector(DIETClassifier):
         DROP_RATE: 0.2,
         # Dropout rate for attention
         DROP_RATE_ATTENTION: 0,
-        # If 'True' apply dropout to sparse tensors
+        # If 'True' apply dropout to sparse input tensors
         SPARSE_INPUT_DROPOUT: False,
+        # If 'True' apply dropout to dense input tensors
+        DENSE_INPUT_DROPOUT: False,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
         # Small values may hurt performance, e.g. model accuracy.
@@ -207,7 +211,7 @@ class ResponseSelector(DIETClassifier):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
-        index_tag_id_mapping: Optional[Dict[int, Text]] = None,
+        entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
     ) -> None:
@@ -221,7 +225,7 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent_mapping = retrieval_intent_mapping or {}
 
         super().__init__(
-            component_config, index_label_id_mapping, index_tag_id_mapping, model
+            component_config, index_label_id_mapping, entity_tag_specs, model
         )
 
     @property
@@ -272,7 +276,9 @@ class ResponseSelector(DIETClassifier):
         """
 
         if self.retrieval_intent:
-            training_data = training_data.filter_by_intent(self.retrieval_intent)
+            training_data = training_data.filter_training_examples(
+                lambda ex: self.retrieval_intent == ex.get(INTENT)
+            )
         else:
             # retrieval intent was left to its default value
             logger.info(
@@ -314,6 +320,11 @@ class ResponseSelector(DIETClassifier):
         out = self._predict(message)
         label, label_ranking = self._predict_label(out)
         retrieval_intent_name = self.retrieval_intent_mapping.get(label.get("name"))
+
+        for ranking in label_ranking:
+            ranking["full_retrieval_intent"] = self.retrieval_intent_mapping.get(
+                ranking.get("name")
+            )
 
         selector_key = (
             self.retrieval_intent
@@ -432,8 +443,10 @@ class DIET2DIET(DIET):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        mask_label = self.tf_label_data[LABEL_MASK][0]
-        sequence_lengths_label = self._get_sequence_lengths(mask_label)
+        sequence_lengths_label = self._get_sequence_lengths(
+            self.tf_label_data[LABEL_SEQ_LENGTH][0]
+        )
+        mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
             self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name
@@ -449,8 +462,10 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        mask_text = tf_batch_data[TEXT_MASK][0]
-        sequence_lengths_text = self._get_sequence_lengths(mask_text)
+        sequence_lengths_text = self._get_sequence_lengths(
+            tf_batch_data[TEXT_SEQ_LENGTH][0]
+        )
+        mask_text = self._compute_mask(sequence_lengths_text)
 
         (
             text_transformed,
@@ -461,12 +476,16 @@ class DIET2DIET(DIET):
             tf_batch_data[TEXT_FEATURES],
             mask_text,
             self.text_name,
-            self.config[MASKED_LM],
+            sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
+            dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+            masked_lm_loss=self.config[MASKED_LM],
             sequence_ids=True,
         )
 
-        mask_label = tf_batch_data[LABEL_MASK][0]
-        sequence_lengths_label = self._get_sequence_lengths(mask_label)
+        sequence_lengths_label = self._get_sequence_lengths(
+            tf_batch_data[LABEL_SEQ_LENGTH][0]
+        )
+        mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
             tf_batch_data[LABEL_FEATURES], mask_label, self.label_name
@@ -506,8 +525,10 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
-        mask_text = tf_batch_data[TEXT_MASK][0]
-        sequence_lengths_text = self._get_sequence_lengths(mask_text)
+        sequence_lengths_text = self._get_sequence_lengths(
+            tf_batch_data[TEXT_SEQ_LENGTH][0]
+        )
+        mask_text = self._compute_mask(sequence_lengths_text)
 
         text_transformed, _, _, _ = self._create_sequence(
             tf_batch_data[TEXT_FEATURES], mask_text, self.text_name

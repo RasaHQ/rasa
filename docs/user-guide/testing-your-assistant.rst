@@ -15,7 +15,7 @@ Testing Your Assistant
    If you are looking to tune the hyperparameters of your NLU model,
    check out this `tutorial <https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/>`_.
 
-.. _end_to_end_testing:
+.. _end-to-end-testing:
 
 End-to-End Testing
 ------------------

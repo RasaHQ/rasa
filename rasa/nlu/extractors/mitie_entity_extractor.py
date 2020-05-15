@@ -3,7 +3,7 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.nlu.constants import ENTITIES, TOKENS_NAMES, TEXT
+from rasa.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
@@ -12,6 +12,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
+import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +34,6 @@ class MitieEntityExtractor(EntityExtractor):
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
-
-    @staticmethod
-    def _tokens_without_cls(message: Message) -> List[Token]:
-        # [:-1] to remove the CLS token from the list of tokens
-        return message.get(TOKENS_NAMES[TEXT])[:-1]
 
     def extract_entities(
         self, text: Text, tokens: List[Token], feature_extractor
@@ -98,11 +94,12 @@ class MitieEntityExtractor(EntityExtractor):
         if found_one_entity:
             self.ner = trainer.train()
 
-    def _prepare_mitie_sample(self, training_example: Message) -> Any:
+    @staticmethod
+    def _prepare_mitie_sample(training_example: Message) -> Any:
         import mitie
 
         text = training_example.text
-        tokens = self._tokens_without_cls(training_example)
+        tokens = train_utils.tokens_without_cls(training_example)
         sample = mitie.ner_training_instance([t.text for t in tokens])
         for ent in training_example.get(ENTITIES, []):
             try:
@@ -139,12 +136,12 @@ class MitieEntityExtractor(EntityExtractor):
             )
 
         ents = self.extract_entities(
-            message.text, self._tokens_without_cls(message), mitie_feature_extractor
+            message.text,
+            train_utils.tokens_without_cls(message),
+            mitie_feature_extractor,
         )
         extracted = self.add_extractor_name(ents)
-        message.set(
-            ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True,
-        )
+        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @classmethod
     def load(

@@ -53,6 +53,21 @@ def config_path() -> Text:
     ).name
 
 
+@pytest.fixture(scope="session")
+def config_path_duplicate() -> Text:
+    return write_file_config(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
+            ],
+        }
+    ).name
+
+
 @pytest.fixture()
 def pretrained_embeddings_spacy_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig(

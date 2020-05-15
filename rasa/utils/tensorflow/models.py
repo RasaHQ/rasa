@@ -200,10 +200,36 @@ class RasaModel(tf.keras.models.Model):
     ) -> None:
         """Train on batch"""
 
-        with tf.GradientTape() as tape:
-            total_loss = self._total_batch_loss(batch_in)
+        # calculate supervision and regularization losses separately
+        with tf.GradientTape(persistent=True) as tape:
+            prediction_loss = self.batch_loss(batch_in)
+            regularization_loss = tf.math.add_n(self.losses)
+            total_loss = prediction_loss + regularization_loss
 
-        gradients = tape.gradient(total_loss, self.trainable_variables)
+        self.total_loss.update_state(total_loss)
+
+        # calculate the gradients that come from supervision signal
+        prediction_gradients = tape.gradient(prediction_loss, self.trainable_variables)
+        # calculate the gradients that come from regularization
+        regularization_gradients = tape.gradient(
+            regularization_loss, self.trainable_variables
+        )
+        # delete gradient tape manually
+        # since it was created with `persistent=True` option
+        del tape
+
+        gradients = []
+        for pred_grad, reg_grad in zip(prediction_gradients, regularization_gradients):
+            if pred_grad is not None and reg_grad is not None:
+                # remove regularization gradient for variables
+                # that don't have prediction gradient
+                gradients.append(
+                    pred_grad
+                    + tf.where(pred_grad > 0, reg_grad, tf.zeros_like(reg_grad))
+                )
+            else:
+                gradients.append(pred_grad)
+
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
     def build_for_predict(
@@ -219,8 +245,8 @@ class RasaModel(tf.keras.models.Model):
             logger.debug("There is no tensorflow prediction graph.")
             self.build_for_predict(predict_data)
 
-        predict_dataset = predict_data.as_tf_dataset(batch_size=1)
-        batch_in = next(iter(predict_dataset))
+        # Prepare a single batch of size 1
+        batch_in = predict_data.prepare_batch(start=0, end=1)
 
         self._training = False  # needed for eager mode
         return self._predict_function(batch_in)

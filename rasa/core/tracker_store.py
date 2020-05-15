@@ -4,34 +4,52 @@ import json
 import logging
 import os
 import pickle
-import typing
 from datetime import datetime, timezone
 
-# noinspection PyPep8Naming
 from time import sleep
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Text, Union
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Text,
+    Union,
+    TYPE_CHECKING,
+)
 
 from boto3.dynamodb.conditions import Key
 import rasa.core.utils as core_utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
+from rasa.core.constants import (
+    POSTGRESQL_SCHEMA,
+    POSTGRESQL_MAX_OVERFLOW,
+    POSTGRESQL_POOL_SIZE,
+)
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.events import SessionStarted
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
+import rasa.cli.utils as rasa_cli_utils
 from rasa.utils.common import class_from_module_path, raise_warning, arguments_of
 from rasa.utils.endpoints import EndpointConfig
-from sqlalchemy import Sequence
+import sqlalchemy as sa
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
+    import boto3.resources.factory.dynamodb.Table
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm import Session, Query
-    import boto3.resources.factory.dynamodb.Table
+    from sqlalchemy.orm.session import Session
+    from sqlalchemy import Sequence
+    from sqlalchemy.orm.query import Query
 
 logger = logging.getLogger(__name__)
 
-SQLITE_SCHEME = "sqlite"
+# default values of PostgreSQL pool size and max overflow
+POSTGRESQL_DEFAULT_MAX_OVERFLOW = 100
+POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
 
 class TrackerStore:
@@ -531,7 +549,7 @@ class MongoTrackerStore(TrackerStore):
         return [c["sender_id"] for c in self.conversations.find()]
 
 
-def _create_sequence(table_name: Text) -> Sequence:
+def _create_sequence(table_name: Text) -> "Sequence":
     """Creates a sequence object for a specific table name.
 
     If using Oracle you will need to create a sequence in your database,
@@ -546,7 +564,82 @@ def _create_sequence(table_name: Text) -> Sequence:
 
     sequence_name = f"{table_name}_seq"
     Base = declarative_base()
-    return Sequence(sequence_name, metadata=Base.metadata, optional=True)
+    return sa.Sequence(sequence_name, metadata=Base.metadata, optional=True)
+
+
+def is_postgresql_url(url: Union[Text, "URL"]) -> bool:
+    """Determine whether `url` configures a PostgreSQL connection.
+
+    Args:
+        url: SQL connection URL.
+
+    Returns:
+        `True` if `url` is a PostgreSQL connection URL.
+    """
+    if isinstance(url, str):
+        return "postgresql" in url
+
+    return url.drivername == "postgresql"
+
+
+def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Union[Text, int]]:
+    """Get `sqlalchemy.create_engine()` kwargs.
+
+    Args:
+        url: SQL connection URL.
+
+    Returns:
+        kwargs to be passed into `sqlalchemy.create_engine()`.
+    """
+    if not is_postgresql_url(url):
+        return {}
+
+    kwargs = {}
+
+    schema_name = os.environ.get(POSTGRESQL_SCHEMA)
+
+    if schema_name:
+        logger.debug(f"Using PostgreSQL schema '{schema_name}'.")
+        kwargs["connect_args"] = {"options": f"-csearch_path={schema_name}"}
+
+    # pool_size and max_overflow can be set to control the number of
+    # connections that are kept in the connection pool. Not available
+    # for SQLite, and only  tested for PostgreSQL. See
+    # https://docs.sqlalchemy.org/en/13/core/pooling.html#sqlalchemy.pool.QueuePool
+    kwargs["pool_size"] = int(
+        os.environ.get(POSTGRESQL_POOL_SIZE, POSTGRESQL_DEFAULT_POOL_SIZE)
+    )
+    kwargs["max_overflow"] = int(
+        os.environ.get(POSTGRESQL_MAX_OVERFLOW, POSTGRESQL_DEFAULT_MAX_OVERFLOW)
+    )
+
+    return kwargs
+
+
+def ensure_schema_exists(session: "Session") -> None:
+    """Ensure that the requested PostgreSQL schema exists in the database.
+
+    Args:
+        session: Session used to inspect the database.
+
+    Raises:
+        `ValueError` if the requested schema does not exist.
+    """
+    schema_name = os.environ.get(POSTGRESQL_SCHEMA)
+
+    if not schema_name:
+        return
+
+    engine = session.get_bind()
+
+    if is_postgresql_url(engine.url):
+        query = sa.exists(
+            sa.select([(sa.text("schema_name"))])
+            .select_from(sa.text("information_schema.schemata"))
+            .where(sa.text(f"schema_name = '{schema_name}'"))
+        )
+        if not session.query(query).scalar():
+            raise ValueError(schema_name)
 
 
 class SQLTrackerStore(TrackerStore):
@@ -559,19 +652,17 @@ class SQLTrackerStore(TrackerStore):
     class SQLEvent(Base):
         """Represents an event in the SQL Tracker Store"""
 
-        from sqlalchemy import Column, Integer, String, Float, Text
-
         __tablename__ = "events"
 
         # `create_sequence` is needed to create a sequence for databases that
         # don't autoincrement Integer primary keys (e.g. Oracle)
-        id = Column(Integer, _create_sequence(__tablename__), primary_key=True)
-        sender_id = Column(String(255), nullable=False, index=True)
-        type_name = Column(String(255), nullable=False)
-        timestamp = Column(Float)
-        intent_name = Column(String(255))
-        action_name = Column(String(255))
-        data = Column(Text)
+        id = sa.Column(sa.Integer, _create_sequence(__tablename__), primary_key=True)
+        sender_id = sa.Column(sa.String(255), nullable=False, index=True)
+        type_name = sa.Column(sa.String(255), nullable=False)
+        timestamp = sa.Column(sa.Float)
+        intent_name = sa.Column(sa.String(255))
+        action_name = sa.Column(sa.String(255))
+        data = sa.Column(sa.Text)
 
     def __init__(
         self,
@@ -586,8 +677,6 @@ class SQLTrackerStore(TrackerStore):
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
     ) -> None:
-        from sqlalchemy.orm import sessionmaker
-        from sqlalchemy import create_engine
         import sqlalchemy.exc
 
         engine_url = self.get_db_url(
@@ -598,19 +687,9 @@ class SQLTrackerStore(TrackerStore):
         # Database might take a while to come up
         while True:
             try:
-                # pool_size and max_overflow can be set to control the number of
-                # connections that are kept in the connection pool. Not available
-                # for SQLite, and only  tested for postgresql. See
-                # https://docs.sqlalchemy.org/en/13/core/pooling.html#sqlalchemy.pool.QueuePool
-                if dialect == "postgresql":
-                    self.engine = create_engine(
-                        engine_url,
-                        pool_size=int(os.environ.get("SQL_POOL_SIZE", "50")),
-                        max_overflow=int(os.environ.get("SQL_MAX_OVERFLOW", "100")),
-                    )
-                else:
-                    self.engine = create_engine(engine_url)
-
+                self.engine = sa.engine.create_engine(
+                    engine_url, **create_engine_kwargs(engine_url),
+                )
                 # if `login_db` has been provided, use current channel with
                 # that database to create working database `db`
                 if login_db:
@@ -627,7 +706,7 @@ class SQLTrackerStore(TrackerStore):
                     # the first services finishes the table creation.
                     logger.error(f"Could not create tables: {e}")
 
-                self.sessionmaker = sessionmaker(bind=self.engine)
+                self.sessionmaker = sa.orm.session.sessionmaker(bind=self.engine)
                 break
             except (
                 sqlalchemy.exc.OperationalError,
@@ -652,7 +731,7 @@ class SQLTrackerStore(TrackerStore):
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
     ) -> Union[Text, "URL"]:
-        """Builds an SQLAlchemy `URL` object representing the parameters needed
+        """Build an SQLAlchemy `URL` object representing the parameters needed
         to connect to an SQL database.
 
         Args:
@@ -669,10 +748,8 @@ class SQLTrackerStore(TrackerStore):
 
         Returns:
             URL ready to be used with an SQLAlchemy `Engine` object.
-
         """
         from urllib import parse
-        from sqlalchemy.engine.url import URL
 
         # Users might specify a url in the host
         if host and "://" in host:
@@ -687,7 +764,7 @@ class SQLTrackerStore(TrackerStore):
             port = parsed.port or port
             host = parsed.hostname or host
 
-        return URL(
+        return sa.engine.url.URL(
             dialect,
             username,
             password,
@@ -732,7 +809,15 @@ class SQLTrackerStore(TrackerStore):
         """Provide a transactional scope around a series of operations."""
         session = self.sessionmaker()
         try:
+            ensure_schema_exists(session)
             yield session
+        except ValueError as e:
+            rasa_cli_utils.print_error_and_exit(
+                f"Requested PostgreSQL schema '{e}' was not found in the database. To "
+                f"continue, please create the schema by running 'CREATE DATABASE {e};' "
+                f"or unset the '{POSTGRESQL_SCHEMA}' environment variable in order to "
+                f"use the default schema. Exiting application."
+            )
         finally:
             session.close()
 
@@ -774,8 +859,6 @@ class SQLTrackerStore(TrackerStore):
         Returns:
             Query to get the conversation events.
         """
-        import sqlalchemy as sa
-
         # Subquery to find the timestamp of the latest `SessionStarted` event
         session_start_sub_query = (
             session.query(sa.func.max(self.SQLEvent.timestamp).label("session_start"))
