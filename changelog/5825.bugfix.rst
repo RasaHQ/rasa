@@ -1,1 +1,0 @@
-Fix list index out of range error in ``ensure_consistent_bilou_tagging``.
