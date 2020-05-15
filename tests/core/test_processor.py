@@ -47,10 +47,10 @@ async def test_message_processor(
     await default_processor.handle_message(
         UserMessage('/greet{"name":"Core"}', default_channel)
     )
-    assert {
+    assert default_channel.latest_output() == {
         "recipient_id": "default",
         "text": "hey there Core!",
-    } == default_channel.latest_output()
+    }
 
 
 async def test_message_id_logging(default_processor: MessageProcessor):
@@ -424,7 +424,7 @@ async def test_reminder_restart(
         # last user event is way in the past
         (UserUttered(timestamp=1), 60, True),
         # user event are very recent
-        (UserUttered("hello", timestamp=time.time()), 60, False,),
+        (UserUttered("hello", timestamp=time.time()), 120, False),
         # there is user event
         (ActionExecuted(ACTION_LISTEN_NAME, timestamp=time.time()), 60, False),
         # Old event, but sessions are disabled
@@ -486,6 +486,34 @@ async def test_update_tracker_session(
 
 
 # noinspection PyProtectedMember
+async def test_update_tracker_session_with_metadata(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+):
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
+    # does something
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
+
+    metadata = {"metadataTestKey": "metadataTestValue"}
+
+    await default_processor._update_tracker_session(tracker, default_channel, metadata)
+
+    # the save is not called in _update_tracker_session()
+    default_processor._save_tracker(tracker)
+
+    # inspect tracker events and make sure SessionStarted event is present and has metadata.
+    tracker = default_processor.tracker_store.retrieve(sender_id)
+    session_event_idx = tracker.events.index(SessionStarted())
+    session_event_metadata = tracker.events[session_event_idx].metadata
+
+    assert session_event_metadata == metadata
+
+
+# noinspection PyProtectedMember
 async def test_update_tracker_session_with_slots(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -517,10 +545,7 @@ async def test_update_tracker_session_with_slots(
     events = list(tracker.events)
 
     # the first three events should be up to the user utterance
-    assert events[:2] == [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        user_event,
-    ]
+    assert events[:2] == [ActionExecuted(ACTION_LISTEN_NAME), user_event]
 
     # next come the five slots
     assert events[2:7] == slot_set_events
@@ -537,7 +562,7 @@ async def test_update_tracker_session_with_slots(
 
 # noinspection PyProtectedMember
 async def test_get_tracker_with_session_start(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor,
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
     tracker = await default_processor.get_tracker_with_session_start(
@@ -565,10 +590,10 @@ async def test_handle_message_with_session_start(
         UserMessage(f"/greet{json.dumps(slot_1)}", default_channel, sender_id)
     )
 
-    assert {
+    assert default_channel.latest_output() == {
         "recipient_id": sender_id,
         "text": "hey there Core!",
-    } == default_channel.latest_output()
+    }
 
     # patch processor so a session start is triggered
     monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)

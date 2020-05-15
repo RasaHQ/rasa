@@ -12,6 +12,9 @@ from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_LISTEN_NAME,
 )
+
+from rasa.core.events import UserUttered, ActionExecuted
+
 from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.policies.fallback import FallbackPolicy
@@ -172,11 +175,19 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         return result
 
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
-        return tracker.latest_action_name in [
+        action_requires_input = tracker.latest_action_name in [
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
             ACTION_DEFAULT_ASK_REPHRASE_NAME,
             self.fallback_action_name,
         ]
+        try:
+            last_utterance_time = tracker.get_last_event_for(UserUttered).timestamp
+            last_action_time = tracker.get_last_event_for(ActionExecuted).timestamp
+            input_given = last_action_time < last_utterance_time
+        except AttributeError:
+            input_given = False
+
+        return action_requires_input and not input_given
 
     def _has_user_denied(
         self, last_intent: Text, tracker: DialogueStateTracker

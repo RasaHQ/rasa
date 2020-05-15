@@ -1,0 +1,9 @@
+language: "en"
+
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "CountVectorsFeaturizer"
+  - name: "DIETClassifier"
+    epochs: 2
+  - name: "ResponseSelector"
+    epochs: 2

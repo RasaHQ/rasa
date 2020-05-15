@@ -1,45 +1,49 @@
 import numpy as np
 import typing
-from typing import Any, List, Text
+from typing import Any, List, Text, Optional, Dict, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.components import Component
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
+import rasa.utils.train_utils as train_utils
 
 if typing.TYPE_CHECKING:
     import mitie
 
-from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
-    TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    DENSE_FEATURE_NAMES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-)
 
+class MitieFeaturizer(DenseFeaturizer):
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [MitieNLP, Tokenizer]
 
-class MitieFeaturizer(Featurizer):
+    defaults = {
+        # Specify what pooling operation should be used to calculate the vector of
+        # the CLS token. Available options: 'mean' and 'max'
+        POOLING: MEAN_POOLING
+    }
 
-    provides = [DENSE_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        super().__init__(component_config)
 
-    requires = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
-        "mitie_feature_extractor"
-    ]
+        self.pooling_operation = self.component_config["pooling"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["mitie", "numpy"]
 
     def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:
-
         return feature_extractor.num_dimensions
 
-    def get_tokens_by_attribute(self, example: Message, attribute: Text) -> Any:
-        return example.get(TOKENS_NAMES[attribute])
-
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
@@ -52,11 +56,9 @@ class MitieFeaturizer(Featurizer):
     def process_training_example(
         self, example: Message, attribute: Text, mitie_feature_extractor: Any
     ):
-        attribute_tokens = self.get_tokens_by_attribute(example, attribute)
-        if attribute_tokens is not None:
-            features = self.features_for_tokens(
-                attribute_tokens, mitie_feature_extractor
-            )
+        tokens = train_utils.tokens_without_cls(example, attribute)
+        if tokens is not None:
+            features = self.features_for_tokens(tokens, mitie_feature_extractor)
             example.set(
                 DENSE_FEATURE_NAMES[attribute],
                 self._combine_with_existing_dense_features(
@@ -67,13 +69,12 @@ class MitieFeaturizer(Featurizer):
     def process(self, message: Message, **kwargs: Any) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        features = self.features_for_tokens(
-            message.get(TOKENS_NAMES[TEXT_ATTRIBUTE]), mitie_feature_extractor
-        )
+        tokens = train_utils.tokens_without_cls(message)
+        features = self.features_for_tokens(tokens, mitie_feature_extractor)
         message.set(
-            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
+            DENSE_FEATURE_NAMES[TEXT],
             self._combine_with_existing_dense_features(
-                message, features, DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+                message, features, DENSE_FEATURE_NAMES[TEXT]
             ),
         )
 
@@ -94,17 +95,13 @@ class MitieFeaturizer(Featurizer):
         tokens: List[Token],
         feature_extractor: "mitie.total_word_feature_extractor",
     ) -> np.ndarray:
-
-        # remove CLS token from tokens
-        tokens_without_cls = tokens[:-1]
-
         # calculate features
         features = []
-        for token in tokens_without_cls:
+        for token in tokens:
             features.append(feature_extractor.get_feature_vector(token.text))
         features = np.array(features)
 
-        cls_token_vec = np.mean(features, axis=0, keepdims=True)
+        cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
         features = np.concatenate([features, cls_token_vec])
 
         return features

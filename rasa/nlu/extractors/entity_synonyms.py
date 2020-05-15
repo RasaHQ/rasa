@@ -2,9 +2,9 @@ import os
 from typing import Any, Dict, Optional, Text
 
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.nlu.constants import ENTITIES_ATTRIBUTE
+from rasa.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
@@ -13,9 +13,6 @@ from rasa.utils.common import raise_warning
 
 
 class EntitySynonymMapper(EntityExtractor):
-
-    provides = [ENTITIES_ATTRIBUTE]
-
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
@@ -27,22 +24,25 @@ class EntitySynonymMapper(EntityExtractor):
         self.synonyms = synonyms if synonyms else {}
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         for key, value in list(training_data.entity_synonyms.items()):
             self.add_entities_if_synonyms(key, value)
 
         for example in training_data.entity_examples:
-            for entity in example.get(ENTITIES_ATTRIBUTE, []):
+            for entity in example.get(ENTITIES, []):
                 entity_val = example.text[entity["start"] : entity["end"]]
                 self.add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        updated_entities = message.get(ENTITIES_ATTRIBUTE, [])[:]
+        updated_entities = message.get(ENTITIES, [])[:]
         self.replace_synonyms(updated_entities)
-        message.set(ENTITIES_ATTRIBUTE, updated_entities, add_to_output=True)
+        message.set(ENTITIES, updated_entities, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
 

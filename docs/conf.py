@@ -139,6 +139,7 @@ html_theme_options = {
     "fixed_sidebar": True,
     "product": "Rasa",
     "base_url": "https://rasa.com/docs/rasa/",
+    "canonical_url": "https://rasa.com/docs/rasa/",
 }
 # html_theme_options = {}
 
@@ -235,13 +236,13 @@ htmlhelp_basename = "rasa_doc"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
     # Latex figure (float) alignment
-    #'figure_align': 'htbp',
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -336,7 +337,8 @@ scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
 scv_whitelist_tags = (
     re.compile(r"^[2-9]+\.\d+\.\d+$"),
     re.compile(r"^1\.[1-9][0-9]+\.\d+$"),
-    re.compile(r"^1\.[6789]\.\d+$"),
+    re.compile(r"^1\.[789]\.\d+$"),
+    re.compile(r"^1\.6\.2$"),
     re.compile(r"^1\.5\.3$"),
     re.compile(r"^1\.4\.6$"),
     re.compile(r"^1\.3\.10$"),
@@ -365,6 +367,7 @@ nitpick_ignore = [
     ("py:class", "typing.Optional"),
     ("py:class", "typing.Generator"),
     ("py:class", "typing.Iterator"),
+    ("py:class", "typing.Type"),
     ("py:class", "collections.deque"),
     ("py:class", "sanic.app.Sanic"),
     ("py:data", "typing.Any"),

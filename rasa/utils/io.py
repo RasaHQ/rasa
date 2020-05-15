@@ -3,6 +3,7 @@ import errno
 import json
 import logging
 import os
+import pickle
 import tarfile
 import tempfile
 import typing
@@ -16,7 +17,7 @@ from typing import Text, Any, Dict, Union, List, Type, Callable
 
 import ruamel.yaml as yaml
 
-from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
 
 if typing.TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
@@ -109,27 +110,25 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     replace_environment_variables()
 
     yaml_parser = yaml.YAML(typ="safe")
-    yaml_parser.version = "1.2"
-    yaml_parser.unicode_supplementary = True
+    yaml_parser.version = YAML_VERSION
 
-    # noinspection PyUnresolvedReferences
-    try:
-        return yaml_parser.load(content) or {}
-    except yaml.scanner.ScannerError:
-        # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
-        # unicode sequences that form surrogate pairs. Try converting the input
-        # to a parsable format based on
-        # https://stackoverflow.com/a/52187065/3429596.
+    if _is_ascii(content):
+        # Required to make sure emojis are correctly parsed
         content = (
             content.encode("utf-8")
             .decode("raw_unicode_escape")
             .encode("utf-16", "surrogatepass")
             .decode("utf-16")
         )
-        return yaml_parser.load(content) or {}
+
+    return yaml_parser.load(content) or {}
 
 
-def read_file(filename: Text, encoding: Text = DEFAULT_ENCODING) -> Any:
+def _is_ascii(text: Text) -> bool:
+    return all(ord(character) < 128 for character in text)
+
+
+def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) -> Any:
     """Read text from a file."""
 
     try:
@@ -139,7 +138,7 @@ def read_file(filename: Text, encoding: Text = DEFAULT_ENCODING) -> Any:
         raise ValueError(f"File '{filename}' does not exist.")
 
 
-def read_json_file(filename: Text) -> Any:
+def read_json_file(filename: Union[Text, Path]) -> Any:
     """Read json from a file."""
     content = read_file(filename)
     try:
@@ -151,10 +150,33 @@ def read_json_file(filename: Text) -> Any:
         )
 
 
-def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
+def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
     """Dump an object as a json string to a file."""
 
     write_text_file(json.dumps(obj, indent=2), filename)
+
+
+def pickle_dump(filename: Union[Text, Path], obj: Any) -> None:
+    """Saves object to file.
+
+    Args:
+        filename: the filename to save the object to
+        obj: the object to store
+    """
+    with open(filename, "wb") as f:
+        pickle.dump(obj, f)
+
+
+def pickle_load(filename: Union[Text, Path]) -> Any:
+    """Loads an object from a file.
+
+    Args:
+        filename: the filename to load the object from
+
+    Returns: the loaded object
+    """
+    with open(filename, "rb") as f:
+        return pickle.load(f)
 
 
 def read_config_file(filename: Text) -> Dict[Text, Any]:
@@ -259,6 +281,12 @@ def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Te
     return f.name
 
 
+def create_temporary_directory() -> Text:
+    """Creates a tempfile.TemporaryDirectory."""
+    f = tempfile.TemporaryDirectory()
+    return f.name
+
+
 def create_path(file_path: Text) -> None:
     """Makes sure all directories in the 'file_path' exists."""
 
@@ -267,7 +295,7 @@ def create_path(file_path: Text) -> None:
         os.makedirs(parent_dir)
 
 
-def create_directory_for_file(file_path: Text) -> None:
+def create_directory_for_file(file_path: Union[Text, Path]) -> None:
     """Creates any missing parent directories of this file path."""
 
     create_directory(os.path.dirname(file_path))
@@ -355,7 +383,7 @@ def list_directory(path: Text) -> List[Text]:
         return [path]
     elif os.path.isdir(path):
         results = []
-        for base, dirs, files in os.walk(path):
+        for base, dirs, files in os.walk(path, followlinks=True):
             # sort files for same order across runs
             files = sorted(files, key=_filename_without_prefix)
             # add not hidden files
@@ -394,3 +422,35 @@ def zip_folder(folder: Text) -> Text:
 
     # WARN: not thread-safe!
     return shutil.make_archive(zipped_path.name, "zip", folder)
+
+
+def json_unpickle(file_name: Union[Text, Path]) -> Any:
+    """Unpickle an object from file using json.
+
+    Args:
+        file_name: the file to load the object from
+
+    Returns: the object
+    """
+    import jsonpickle.ext.numpy as jsonpickle_numpy
+    import jsonpickle
+
+    jsonpickle_numpy.register_handlers()
+
+    file_content = read_file(file_name)
+    return jsonpickle.loads(file_content)
+
+
+def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
+    """Pickle an object to a file using json.
+
+    Args:
+        file_name: the file to store the object to
+        obj: the object to store
+    """
+    import jsonpickle.ext.numpy as jsonpickle_numpy
+    import jsonpickle
+
+    jsonpickle_numpy.register_handlers()
+
+    write_text_file(jsonpickle.dumps(obj), file_name)

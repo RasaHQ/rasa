@@ -1,6 +1,10 @@
+from typing import List
+
 import pytest
 import copy
 
+from rasa.core.policies.fallback import FallbackPolicy
+from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.ensemble import (
     PolicyEnsemble,
@@ -9,7 +13,18 @@ from rasa.core.policies.ensemble import (
 )
 from rasa.core.domain import Domain
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.events import UserUttered
+from rasa.core.events import UserUttered, Form, Event
+
+from tests.core import utilities
+from rasa.core.actions.action import (
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_LISTEN_NAME,
+)
+from rasa.core.constants import USER_INTENT_RESTART, FORM_POLICY_PRIORITY
+from rasa.core.events import ActionExecuted
+from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+from rasa.core.policies.mapping_policy import MappingPolicy
 
 
 class WorkingPolicy(Policy):
@@ -85,6 +100,132 @@ def test_policy_priority():
     )
     assert best_policy == "policy_{}_{}".format(i, type(priority_2).__name__)
     assert result == priority_2_result
+
+
+def test_fallback_mapping_restart():
+    domain = Domain.load("data/test_domains/default.yml")
+    events = [
+        ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME),
+        utilities.user_uttered(USER_INTENT_RESTART, 1),
+    ]
+    tracker = DialogueStateTracker.from_events("test", events, [])
+
+    two_stage_fallback_policy = TwoStageFallbackPolicy(
+        priority=2, deny_suggestion_intent_name="deny"
+    )
+    mapping_policy = MappingPolicy(priority=1)
+
+    mapping_fallback_ensemble = SimplePolicyEnsemble(
+        [two_stage_fallback_policy, mapping_policy]
+    )
+
+    result, best_policy = mapping_fallback_ensemble.probabilities_using_best_policy(
+        tracker, domain
+    )
+    max_confidence_index = result.index(max(result))
+    index_of_mapping_policy = 1
+    next_action = domain.action_for_index(max_confidence_index, None)
+
+    assert best_policy == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
+    assert next_action.name() == ACTION_RESTART_NAME
+
+
+@pytest.mark.parametrize(
+    "events",
+    [
+        [
+            Form("test-form"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            utilities.user_uttered(USER_INTENT_RESTART, 1),
+        ],
+        [
+            ActionExecuted(ACTION_LISTEN_NAME),
+            utilities.user_uttered(USER_INTENT_RESTART, 1),
+        ],
+    ],
+)
+def test_mapping_wins_over_form(events: List[Event]):
+    domain = """
+    forms:
+    - test-form
+    """
+    domain = Domain.from_yaml(domain)
+    tracker = DialogueStateTracker.from_events("test", events, [])
+
+    ensemble = SimplePolicyEnsemble(
+        [
+            MappingPolicy(),
+            ConstantPolicy(priority=1, predict_index=0),
+            FormPolicy(),
+            FallbackPolicy(),
+        ]
+    )
+
+    result, best_policy = ensemble.probabilities_using_best_policy(tracker, domain)
+
+    max_confidence_index = result.index(max(result))
+    next_action = domain.action_for_index(max_confidence_index, None)
+
+    index_of_mapping_policy = 0
+    assert best_policy == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
+    assert next_action.name() == ACTION_RESTART_NAME
+
+
+@pytest.mark.parametrize(
+    "ensemble",
+    [
+        SimplePolicyEnsemble(
+            [
+                FormPolicy(),
+                ConstantPolicy(FORM_POLICY_PRIORITY - 1, 0),
+                FallbackPolicy(),
+            ]
+        ),
+        SimplePolicyEnsemble([FormPolicy(), MappingPolicy()]),
+    ],
+)
+def test_form_wins_over_everything_else(ensemble: SimplePolicyEnsemble):
+    form_name = "test-form"
+    domain = f"""
+    forms:
+    - {form_name}
+    """
+    domain = Domain.from_yaml(domain)
+
+    events = [
+        Form("test-form"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        utilities.user_uttered("test", 1),
+    ]
+    tracker = DialogueStateTracker.from_events("test", events, [])
+    result, best_policy = ensemble.probabilities_using_best_policy(tracker, domain)
+
+    max_confidence_index = result.index(max(result))
+    next_action = domain.action_for_index(max_confidence_index, None)
+
+    index_of_form_policy = 0
+    assert best_policy == f"policy_{index_of_form_policy}_{FormPolicy.__name__}"
+    assert next_action.name() == form_name
+
+
+def test_fallback_wins_over_mapping():
+    domain = Domain.load("data/test_domains/default.yml")
+    events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        # Low confidence should trigger fallback
+        utilities.user_uttered(USER_INTENT_RESTART, 0.0001),
+    ]
+    tracker = DialogueStateTracker.from_events("test", events, [])
+
+    ensemble = SimplePolicyEnsemble([FallbackPolicy(), MappingPolicy()])
+
+    result, best_policy = ensemble.probabilities_using_best_policy(tracker, domain)
+    max_confidence_index = result.index(max(result))
+    index_of_fallback_policy = 0
+    next_action = domain.action_for_index(max_confidence_index, None)
+
+    assert best_policy == f"policy_{index_of_fallback_policy}_{FallbackPolicy.__name__}"
+    assert next_action.name() == ACTION_DEFAULT_FALLBACK_NAME
 
 
 class LoadReturnsNonePolicy(Policy):

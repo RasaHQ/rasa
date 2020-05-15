@@ -12,12 +12,7 @@ from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import INTENT_MESSAGE_PREFIX, DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
-from rasa.core.lock_store import (
-    InMemoryLockStore,
-    LockError,
-    LockStore,
-    RedisLockStore,
-)
+from rasa.core.lock_store import InMemoryLockStore, LockError, LockStore, RedisLockStore
 
 
 class FakeRedisLockStore(RedisLockStore):

@@ -58,6 +58,13 @@ You can provide an initial value for a slot in your domain file:
         type: text
         initial_value: "human"
 
+You can get the value of a slot using ``.get_slot()`` inside ``actions.py`` for example:  
+
+.. code-block:: python
+
+       data = tracker.get_slot("slot-name")
+
+
 
 There are multiple ways that slots are set during a conversation:
 
@@ -228,6 +235,11 @@ Categorical Slot
 
   :Description:
      Creates a one-hot encoding describing which of the ``values`` matched.
+     A default value ``__other__`` is automatically added to the user-defined
+     values. All values encountered which are not explicitly defined in the 
+     domain are mapped to ``__other__`` for featurization. The value 
+     ``__other__`` should not be used as a user-defined value; if it is, it 
+     will still behave as the default to which all unseen values are mapped.
 
 Float Slot
 ~~~~~~~~~~

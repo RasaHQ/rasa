@@ -117,10 +117,8 @@ class Trainer:
     """Trainer will load the data and train all components.
 
     Requires a pipeline specification and configuration to use for
-    the training."""
-
-    # Officially supported languages (others might be used, but might fail)
-    SUPPORTED_LANGUAGES = ["de", "en"]
+    the training.
+    """
 
     def __init__(
         self,
@@ -146,11 +144,11 @@ class Trainer:
         # build pipeline
         self.pipeline = self._build_pipeline(cfg, component_builder)
 
-    @staticmethod
     def _build_pipeline(
-        cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
+        self, cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
     ) -> List[Component]:
-        """Transform the passed names of the pipeline components into classes"""
+        """Transform the passed names of the pipeline components into classes."""
+
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
@@ -158,6 +156,9 @@ class Trainer:
             component_cfg = cfg.for_component(i)
             component = component_builder.create_component(component_cfg, cfg)
             pipeline.append(component)
+
+        if not self.skip_validation:
+            components.validate_pipeline(pipeline)
 
         return pipeline
 
@@ -177,7 +178,6 @@ class Trainer:
 
         # Before the training starts: check that all arguments are provided
         if not self.skip_validation:
-            components.validate_arguments(self.pipeline, context)
             components.validate_required_components_from_data(
                 self.pipeline, self.training_data
             )

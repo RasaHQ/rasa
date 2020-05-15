@@ -6,3 +6,18 @@ dl.glossary dt {
 dl.glossary dd {
     margin-top: 2px;
 }
+
+.toggle .header {
+    display: block;
+    clear: both;
+}
+
+.toggle .header:after {
+    content: "▶ show";
+    cursor: pointer;
+}
+
+.toggle .header.open:after {
+    content: "▼ hide";
+    cursor: pointer;
+}

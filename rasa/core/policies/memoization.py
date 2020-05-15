@@ -163,20 +163,6 @@ class MemoizationPolicy(Policy):
         self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
         logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
 
-    def continue_training(
-        self,
-        training_trackers: List[DialogueStateTracker],
-        domain: Domain,
-        **kwargs: Any,
-    ) -> None:
-
-        # add only the last tracker, because it is the only new one
-        (
-            trackers_as_states,
-            trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(training_trackers[-1:], domain)
-        self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
-
     def _recall_states(self, states: List[Dict[Text, float]]) -> Optional[int]:
 
         return self.lookup.get(self._create_feature_key(states))
@@ -193,13 +179,13 @@ class MemoizationPolicy(Policy):
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
-        """Predicts the next action the bot should take
-            after seeing the tracker.
+        """Predicts the next action the bot should take after seeing the tracker.
 
-            Returns the list of probabilities for the next actions.
-            If memorized action was found returns 1.1 for its index,
-            else returns 0.0 for all actions."""
-        result = [0.0] * domain.num_actions
+        Returns the list of probabilities for the next actions.
+        If memorized action was found returns 1 for its index,
+        else returns 0 for all actions.
+        """
+        result = self._default_predictions(domain)
 
         if not self.is_enabled:
             return result
@@ -209,7 +195,9 @@ class MemoizationPolicy(Policy):
         logger.debug(f"Current tracker state {states}")
         recalled = self.recall(states, tracker, domain)
         if recalled is not None:
-            logger.debug(f"There is a memorised next action '{recalled}'")
+            logger.debug(
+                f"There is a memorised next action '{domain.action_names[recalled]}'"
+            )
 
             if self.USE_NLU_CONFIDENCE_AS_SCORE:
                 # the memoization will use the confidence of NLU on the latest

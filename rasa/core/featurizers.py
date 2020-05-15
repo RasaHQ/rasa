@@ -54,7 +54,7 @@ class SingleStateFeaturizer:
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
         """Create matrix with all actions from domain encoded in rows."""
 
-        pass
+        raise NotImplementedError("Featurizer must implement encoding actions.")
 
 
 class BinarySingleStateFeaturizer(SingleStateFeaturizer):

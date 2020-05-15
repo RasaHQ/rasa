@@ -27,7 +27,7 @@ class WebexTeamsBot(OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         recipient = self.room or recipient_id
-        for message_part in text.split("\n\n"):
+        for message_part in text.strip().split("\n\n"):
             self.api.messages.create(roomId=recipient, text=message_part)
 
     async def send_image_url(

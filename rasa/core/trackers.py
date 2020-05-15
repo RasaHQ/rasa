@@ -15,6 +15,12 @@ from typing import (
     Iterable,
 )
 
+from rasa.nlu.constants import (
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
+)
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
 from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
@@ -98,8 +104,9 @@ class DialogueStateTracker:
         evts: List[Event],
         slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
+        sender_source: Optional[Text] = None,
     ):
-        tracker = cls(sender_id, slots, max_event_history)
+        tracker = cls(sender_id, slots, max_event_history, sender_source)
         for e in evts:
             tracker.update(e)
         return tracker
@@ -109,6 +116,7 @@ class DialogueStateTracker:
         sender_id: Text,
         slots: Optional[Iterable[Slot]],
         max_event_history: Optional[int] = None,
+        sender_source: Optional[Text] = None,
     ) -> None:
         """Initialize the tracker.
 
@@ -127,6 +135,8 @@ class DialogueStateTracker:
             self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
         else:
             self.slots = AnySlotDict()
+        # file source of the messages
+        self.sender_source = sender_source
 
         ###
         # current state of the tracker - MUST be re-creatable by processing
@@ -230,17 +240,34 @@ class DialogueStateTracker:
             logger.info(f"Tried to access non existent slot '{key}'")
             return None
 
-    def get_latest_entity_values(self, entity_type: Text) -> Iterator[Text]:
-        """Get entity values found for the passed entity name in latest msg.
+    def get_latest_entity_values(
+        self,
+        entity_type: Text,
+        entity_role: Optional[Text] = None,
+        entity_group: Optional[Text] = None,
+    ) -> Iterator[Text]:
+        """Get entity values found for the passed entity type and optional role and
+        group in latest message.
 
         If you are only interested in the first entity of a given type use
         `next(tracker.get_latest_entity_values("my_entity_name"), None)`.
-        If no entity is found `None` is the default result."""
+        If no entity is found `None` is the default result.
+
+        Args:
+            entity_type: the entity type of interest
+            entity_role: optional entity role of interest
+            entity_group: optional entity group of interest
+
+        Returns:
+            Entity values.
+        """
 
         return (
-            x.get("value")
+            x.get(ENTITY_ATTRIBUTE_VALUE)
             for x in self.latest_message.entities
-            if x.get("entity") == entity_type
+            if x.get(ENTITY_ATTRIBUTE_TYPE) == entity_type
+            and (entity_group is None or x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group)
+            and (entity_role is None or x.get(ENTITY_ATTRIBUTE_ROLE) == entity_role)
         )
 
     def get_latest_input_channel(self) -> Optional[Text]:
@@ -304,6 +331,7 @@ class DialogueStateTracker:
             elif isinstance(event, ActionExecuted):
                 # yields the intermediate state
                 if tracker.active_form.get("name") is None:
+                    # no form is active, just yield as is
                     yield tracker
 
                 elif tracker.active_form.get("rejected"):
@@ -341,8 +369,13 @@ class DialogueStateTracker:
 
         # yields the final state
         if tracker.active_form.get("name") is None:
+            # no form is active, just yield as is
             yield tracker
-        elif tracker.active_form.get("rejected"):
+        elif (
+            tracker.active_form.get("rejected")
+            or tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
+            # either a form was rejected or user uttered smth yield trackers
             yield from ignored_trackers
             yield tracker
 
@@ -442,13 +475,18 @@ class DialogueStateTracker:
             for e in domain.slots_for_entities(event.parse_data["entities"]):
                 self.update(e)
 
-    def export_stories(self, e2e: bool = False) -> Text:
+    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
         from rasa.core.training.structures import Story
 
-        story = Story.from_events(self.applied_events(), self.sender_id)
+        story_name = (
+            f"{self.sender_id} ({self.sender_source})"
+            if include_source
+            else self.sender_id
+        )
+        story = Story.from_events(self.applied_events(), story_name)
         return story.as_story_string(flat=True, e2e=e2e)
 
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:

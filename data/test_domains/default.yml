@@ -19,8 +19,3 @@ responses:
     - text: goodbye :(
   utter_default:
     - text: default message
-
-actions:
-  - utter_default
-  - utter_greet
-  - utter_goodbye

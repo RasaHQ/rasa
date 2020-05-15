@@ -4,7 +4,7 @@ from typing import List, Text
 
 import rasa.train
 from rasa.cli.shell import shell
-from rasa.cli.utils import create_output_path, print_success
+from rasa.cli.utils import create_output_path, print_success, print_error_and_exit
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -28,6 +28,12 @@ def add_subparser(
         action="store_true",
         help="Automatically choose default options for prompts and suppress warnings.",
     )
+    scaffold_parser.add_argument(
+        "--init-dir",
+        default=None,
+        help="Directory where your project should be initialized.",
+    )
+
     scaffold_parser.set_defaults(func=run)
 
 
@@ -175,15 +181,21 @@ def run(args: argparse.Namespace) -> None:
             "Now let's start! 👇🏽\n".format(DOCS_BASE_URL)
         )
 
-    path = (
-        questionary.text(
-            "Please enter a path where the project will be "
-            "created [default: current directory]",
-            default=".",
+    if args.init_dir is not None:
+        path = args.init_dir
+    else:
+        path = (
+            questionary.text(
+                "Please enter a path where the project will be "
+                "created [default: current directory]",
+                default=".",
+            )
+            .skip_if(args.no_prompt, default=".")
+            .ask()
         )
-        .skip_if(args.no_prompt, default=".")
-        .ask()
-    )
+
+    if args.no_prompt and not os.path.isdir(path):
+        print_error_and_exit(f"Project init path '{path}' not found.")
 
     if path and not os.path.isdir(path):
         _ask_create_path(path)

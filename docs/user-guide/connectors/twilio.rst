@@ -1,4 +1,4 @@
-:desc: Build a Rasa Chat Bot on Twilio
+:desc: Deploy a Rasa Open Source assistant through text message or WhatsApp via the Twilio connector
 
 .. _twilio:
 
@@ -7,11 +7,16 @@ Twilio
 
 .. edit-link::
 
-You first have to create a Twilio app to get credentials.
-Once you have them you can add these to your ``credentials.yml``.
+You can use the Twilio connector to deploy an assistant that is available over text message.
+
+.. contents::
+   :local:
 
 Getting Credentials
 ^^^^^^^^^^^^^^^^^^^
+
+You first have to create a Twilio app to get credentials.
+Once you have them you can add these to your ``credentials.yml``.
 
 **How to get the Twilio credentials:**
 You need to set up a Twilio account.
@@ -25,24 +30,32 @@ You need to set up a Twilio account.
   3. Now you can use the ``Account SID``, ``Auth Token``, and the phone
      number you purchased in your ``credentials.yml``.
 
-For more information, see the `Twilio REST API
-<https://www.twilio.com/docs/iam/api>`_.
+For more information, see the `Twilio REST API <https://www.twilio.com/docs/iam/api>`_.
 
-Using run script
-^^^^^^^^^^^^^^^^
 
-If you want to connect to the Twilio input channel using the run
-script, e.g. using:
+Connecting to WhatsApp
+----------------------
 
-.. code-block:: bash
+You can deploy a Rasa Open Source assistant to WhatsApp through Twilio. However, to do so, you have
+to have a `WhatsApp Business <https://www.whatsapp.com/business/>`_ profile. Associate
+your Whatsapp Business profile with the phone number you purchased through Twilio to
+access the `Twilio API for WhatsApp <https://www.twilio.com/docs/whatsapp/api>`_.
 
-  rasa run
+According to the `Twilio API documentation <https://www.twilio.com/docs/whatsapp/api#using-phone-numbers-with-whatsapp>`_, 
+the phone number you use should be prefixed with `whatsapp:` in the ``credentials.yml`` described below.
 
-you need to supply a ``credentials.yml`` with the following content:
+
+Applying the Credentials
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Add the Twilio credentials to your  ``credentials.yml``:
 
 .. code-block:: yaml
 
    twilio:
      account_sid: "ACbc2dxxxxxxxxxxxx19d54bdcd6e41186"
      auth_token: "e231c197493a7122d475b4xxxxxxxxxx"
-     twilio_number: "+440123456789"
+     twilio_number: "+440123456789"  # if using WhatsApp: "whatsapp:+440123456789"
+
+Make sure to restart your Rasa Open Source server or container to make changes to
+which connectors are available. 

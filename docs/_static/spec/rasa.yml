@@ -834,6 +834,7 @@ components:
           - telegram
           - twilio
           - webexteams
+          - socketio
 
   responses:
 
@@ -1119,7 +1120,7 @@ components:
           type: array
           items:
             type: string
-          example: ['utter_greet', 'utter_goodbye', 'action_listen']
+          example: ['action_greet', 'action_goodbye', 'action_listen']
 
     BotMessage:
       type: object
@@ -1291,6 +1292,8 @@ components:
           $ref: '#/components/schemas/ConfigFile'
         nlu:
           $ref: '#/components/schemas/NLUTrainingData'
+        responses:
+          $ref: '#/components/schemas/RetrievalIntentsTrainingData'
         stories:
           $ref: '#/components/schemas/StoriesTrainingData'
         force:
@@ -1355,6 +1358,17 @@ components:
 
         - unhappy
 
+    RetrievalIntentsTrainingData:
+      type: string
+      description: Rasa response texts for retrieval intents in markdown format
+      example:  >-
+        ## ask name
+        * chitchat/ask_name
+            - my name is Sara, Rasa's documentation bot!
+
+        ## ask weather
+        * chitchat/ask_weather
+            - it's always sunny where I live
 
     StoriesTrainingData:
       type: string
@@ -1419,13 +1433,6 @@ components:
           - deny
           - mood_great
           - mood_unhappy
-
-        actions:
-          - utter_greet
-          - utter_cheer_up
-          - utter_did_that_help
-          - utter_happy
-          - utter_goodbye
 
         responses:
           utter_greet:

@@ -109,7 +109,7 @@ class BotFramework(OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
-        for message_part in text.split("\n\n"):
+        for message_part in text.strip().split("\n\n"):
             text_message = {"text": message_part}
             message = self.prepare_message(recipient_id, text_message)
             await self.send(message)

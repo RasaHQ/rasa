@@ -15,7 +15,9 @@ class DialogueTrainingData:
     def limit_training_data_to(self, max_samples: int) -> None:
         self.X = self.X[:max_samples]
         self.y = self.y[:max_samples]
-        self.true_length = self.true_length[:max_samples]
+        self.true_length = (
+            self.true_length[:max_samples] if self.true_length is not None else None
+        )
 
     def is_empty(self) -> bool:
         """Check if the training matrix does contain training samples."""

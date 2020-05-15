@@ -2,5 +2,5 @@ language: en
 pipeline:
 - name: "CountVectorsFeaturizer"
   max_ngram: 3
-- name: "EmbeddingIntentClassifier"
+- name: "DIETClassifier"
   epochs: 10

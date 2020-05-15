@@ -2,12 +2,12 @@ import logging
 
 from typing import Any, Dict, Optional, Text
 
-from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 
 logger = logging.getLogger(__name__)
 
 
-class NGramFeaturizer(Featurizer):
+class NGramFeaturizer(SparseFeaturizer):
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         super(NGramFeaturizer, self).__init__(component_config)
 

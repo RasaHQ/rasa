@@ -13,7 +13,6 @@ intents:
 
 entities:
   - cuisine
-  - num_people
   - number
   - feedback
   - seating
@@ -75,6 +74,12 @@ responses:
     - text: "Hello! I am restaurant search assistant! How can I help?"
   utter_iamabot:
     - text: "I am a bot, powered by Rasa."
+  utter_restart:
+    - text: "restarted"
 
 forms:
   - restaurant_form
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true

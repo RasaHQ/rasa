@@ -1,0 +1,3 @@
+Removed previously deprecated packages ``rasa_nlu`` and ``rasa_core``.
+
+Use imports from ``rasa.core`` and ``rasa.nlu`` instead.

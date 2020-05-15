@@ -28,10 +28,11 @@ Understand messages, hold conversations, and connect to messaging channels and A
    user-guide/command-line-interface
    user-guide/architecture
    user-guide/messaging-and-voice-channels
-   user-guide/evaluating-models
+   user-guide/testing-your-assistant
+   user-guide/setting-up-ci-cd
    user-guide/validate-files
-   user-guide/running-the-server
-   user-guide/running-rasa-with-docker
+   user-guide/configuring-http-api
+   user-guide/how-to-deploy
    user-guide/cloud-storage
 
 .. toctree::
@@ -42,10 +43,10 @@ Understand messages, hold conversations, and connect to messaging channels and A
    About <nlu/about>
    nlu/using-nlu-only
    nlu/training-data-format
-   nlu/choosing-a-pipeline
    nlu/language-support
-   nlu/entity-extraction
+   nlu/choosing-a-pipeline
    nlu/components
+   nlu/entity-extraction
 
 .. toctree::
    :maxdepth: 1
@@ -57,6 +58,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    core/domains
    core/responses
    core/actions
+   core/reminders-and-external-events
    core/policies
    core/slots
    core/forms
@@ -93,6 +95,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/lock-stores
    api/training-data-importers
    api/core-featurization
+   api/tensorflow_usage
    migration-guide
    changelog
 

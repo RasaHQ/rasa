@@ -1,20 +1,24 @@
 import typing
-from typing import Text, List
+from typing import Text, List, Any, Type
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.components import Component
+from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.training_data import Message
 
-from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.nlu.constants import SPACY_DOCS
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
 
 
+POS_TAG_KEY = "pos"
+
+
 class SpacyTokenizer(Tokenizer):
-
-    provides = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
-
-    requires = [SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [SpacyNLP]
 
     defaults = {
         # Flag to check whether to split intents
@@ -29,4 +33,18 @@ class SpacyTokenizer(Tokenizer):
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         doc = self.get_doc(message, attribute)
 
-        return [Token(t.text, t.idx, lemma=t.lemma_) for t in doc]
+        return [
+            Token(
+                t.text, t.idx, lemma=t.lemma_, data={POS_TAG_KEY: self._tag_of_token(t)}
+            )
+            for t in doc
+        ]
+
+    @staticmethod
+    def _tag_of_token(token: Any) -> Text:
+        import spacy
+
+        if spacy.about.__version__ > "2" and token._.has("tag"):
+            return token._.get("tag")
+        else:
+            return token.tag_

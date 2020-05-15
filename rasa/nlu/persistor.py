@@ -113,12 +113,19 @@ class AWSPersistor(Persistor):
 
     Fetches them when needed, instead of storing them on the local disk."""
 
-    def __init__(self, bucket_name: Text, endpoint_url: Optional[Text] = None) -> None:
+    def __init__(
+        self,
+        bucket_name: Text,
+        endpoint_url: Optional[Text] = None,
+        region_name: Optional[Text] = None,
+    ) -> None:
         import boto3
 
         super().__init__()
-        self.s3 = boto3.resource("s3", endpoint_url=endpoint_url)
-        self._ensure_bucket_exists(bucket_name)
+        self.s3 = boto3.resource(
+            "s3", endpoint_url=endpoint_url, region_name=region_name
+        )
+        self._ensure_bucket_exists(bucket_name, region_name)
         self.bucket_name = bucket_name
         self.bucket = self.s3.Bucket(bucket_name)
 
@@ -132,11 +139,16 @@ class AWSPersistor(Persistor):
             logger.warning(f"Failed to list models in AWS. {e}")
             return []
 
-    def _ensure_bucket_exists(self, bucket_name: Text) -> None:
+    def _ensure_bucket_exists(
+        self, bucket_name: Text, region_name: Optional[Text] = None
+    ) -> None:
         import boto3
         import botocore
 
-        bucket_config = {"LocationConstraint": boto3.DEFAULT_SESSION.region_name}
+        if not region_name:
+            region_name = boto3.DEFAULT_SESSION.region_name
+
+        bucket_config = {"LocationConstraint": region_name}
         # noinspection PyUnresolvedReferences
         try:
             self.s3.create_bucket(
