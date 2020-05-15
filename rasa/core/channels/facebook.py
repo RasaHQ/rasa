@@ -108,6 +108,7 @@ class Messenger:
         self, text: Text, sender_id: Text, metadata: Optional[Dict[Text, Any]]
     ) -> None:
         """Pass on the text to the dialogue engine for processing."""
+
         self.client.send_action(SenderAction(sender_action='mark_seen').to_dict(), sender_id)
         out_channel = MessengerBot(self.client)
         user_msg = UserMessage(
