@@ -35,9 +35,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
 )
-import rasa.nlu.utils as nlu_utils
-import rasa.nlu.training_data
-import rasa.nlu.config
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
@@ -252,7 +249,7 @@ def write_intent_successes(
     ]
 
     if successes:
-        nlu_utils.write_json_to_file(successes_filename, successes)
+        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful intent predictions saved to {successes_filename}.")
         logger.debug(f"\n\nSuccessfully predicted the following intents: \n{successes}")
     else:
@@ -282,7 +279,7 @@ def write_intent_errors(
     ]
 
     if errors:
-        nlu_utils.write_json_to_file(errors_filename, errors)
+        io_utils.dump_obj_as_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect intent predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -317,7 +314,7 @@ def write_response_successes(
     ]
 
     if successes:
-        nlu_utils.write_json_to_file(successes_filename, successes)
+        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
         logger.debug(
             f"\n\nSuccessfully predicted the following responses: \n{successes}"
@@ -350,7 +347,7 @@ def write_response_errors(
     ]
 
     if errors:
-        nlu_utils.write_json_to_file(errors_filename, errors)
+        io_utils.dump_obj_as_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect response predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese response examples could not be classified "
@@ -485,7 +482,7 @@ def evaluate_response_selections(
         report_filename = os.path.join(
             output_directory, "response_selection_report.json"
         )
-        nlu_utils.write_json_to_file(report_filename, report)
+        io_utils.dump_obj_as_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
@@ -655,7 +652,7 @@ def evaluate_intents(
         report = _add_confused_labels_to_report(report, confusion_matrix, labels)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
-        nlu_utils.write_json_to_file(report_filename, report)
+        io_utils.dump_obj_as_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
@@ -796,7 +793,7 @@ def write_incorrect_entity_predictions(
     )
 
     if errors:
-        nlu_utils.write_json_to_file(error_filename, errors)
+        io_utils.dump_obj_as_json_to_file(error_filename, errors)
         logger.info(f"Incorrect entity predictions saved to {error_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -856,7 +853,7 @@ def write_successful_entity_predictions(
     )
 
     if successes:
-        nlu_utils.write_json_to_file(successes_filename, successes)
+        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful entity predictions saved to {successes_filename}.")
         logger.debug(
             f"\n\nSuccessfully predicted the following entities: \n{successes}"
@@ -959,7 +956,7 @@ def evaluate_entities(
                 report, confusion_matrix, labels, [NO_ENTITY]
             )
 
-            nlu_utils.write_json_to_file(extractor_report_filename, report)
+            io_utils.dump_obj_as_json_to_file(extractor_report_filename, report)
 
             logger.info(
                 "Classification report for '{}' saved to '{}'."
@@ -1520,6 +1517,8 @@ def run_evaluation(
 
     Returns: dictionary containing evaluation results
     """
+    import rasa.nlu.training_data
+
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
@@ -1696,6 +1695,7 @@ def cross_validate(
         dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
+    import rasa.nlu.config
     from collections import defaultdict
 
     if isinstance(nlu_config, str):
@@ -1898,7 +1898,7 @@ def compare_nlu(
         io_utils.create_path(test_path)
 
         train, test = data.train_test_split()
-        nlu_utils.write_to_file(test_path, test.nlu_as_markdown())
+        io_utils.write_text_file(test_path, test.nlu_as_markdown())
 
         for percentage in exclusion_percentages:
             percent_string = f"{percentage}%_exclusion"
@@ -1913,8 +1913,8 @@ def compare_nlu(
             train_nlu_split_path = os.path.join(train_split_path, TRAIN_DATA_FILE)
             train_nlg_split_path = os.path.join(train_split_path, NLG_DATA_FILE)
             io_utils.create_path(train_nlu_split_path)
-            nlu_utils.write_to_file(train_nlu_split_path, train.nlu_as_markdown())
-            nlu_utils.write_to_file(train_nlg_split_path, train.nlg_as_markdown())
+            io_utils.write_text_file(train_nlu_split_path, train.nlu_as_markdown())
+            io_utils.write_text_file(train_nlg_split_path, train.nlg_as_markdown())
 
             for nlu_config, model_name in zip(configs, model_names):
                 logger.info(
