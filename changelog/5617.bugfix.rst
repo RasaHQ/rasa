@@ -1,1 +1,0 @@
-Don't create TensorBoard log files during prediction.
