@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Text, List, Type
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier, EntityTagSpec
 from rasa.nlu.constants import TEXT
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -109,7 +109,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
         # Default dense dimension to use if no dense features are present.
-        DENSE_DIMENSION: {TEXT: 512, LABEL: 20},
+        DENSE_DIMENSION: {TEXT: 256, LABEL: 20},
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
@@ -166,7 +166,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
-        index_tag_id_mapping: Optional[Dict[int, Text]] = None,
+        entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
     ) -> None:
 
@@ -180,7 +180,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         component_config[NUM_TRANSFORMER_LAYERS] = 0
 
         super().__init__(
-            component_config, index_label_id_mapping, index_tag_id_mapping, model
+            component_config, index_label_id_mapping, entity_tag_specs, model
         )
 
         common_utils.raise_warning(

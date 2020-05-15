@@ -278,8 +278,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
         errors=False,
     )
 
-    assert result["intent_evaluation"]
-    assert result["entity_evaluation"]["DIETClassifier"]
+    assert result.get("intent_evaluation")
 
 
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
