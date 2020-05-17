@@ -39,6 +39,7 @@ Learn how to make your assistant available on:
    connectors/mattermost
    connectors/hangouts
    connectors/custom-connectors
+   connectors/audiocodes-voice-ai-gateway
 
 
 .. _using-ngrok:

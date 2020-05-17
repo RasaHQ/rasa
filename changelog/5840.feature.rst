@@ -1,0 +1,1 @@
+Channel ``audiocodes`` for Rasa integration with AudioCodes Voice.AI Gateway is now supported out-of-the-box.
