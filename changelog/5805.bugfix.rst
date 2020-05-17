@@ -1,0 +1,1 @@
+Changed the connection URL log line to use the __to_string__ function in sql.py and tracker_store.py to obfuscate the password.
