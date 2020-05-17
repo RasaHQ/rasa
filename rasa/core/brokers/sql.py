@@ -46,7 +46,9 @@ class SQLEventBroker(EventBroker):
             dialect, host, port, db, username, password
         )
 
-        logger.debug(f"SQLEventBroker: Connecting to database: '{engine_url}'.")
+        logger.debug(
+            f"SQLEventBroker: Connecting to database: '{engine_url.__to_string__()}'."
+        )
 
         self.engine = sqlalchemy.create_engine(engine_url)
         self.Base.metadata.create_all(self.engine)

@@ -682,7 +682,9 @@ class SQLTrackerStore(TrackerStore):
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db, query
         )
-        logger.debug(f"Attempting to connect to database via '{engine_url}'.")
+        logger.debug(
+            f"Attempting to connect to database via '{engine_url.__to_string__()}'."
+        )
 
         # Database might take a while to come up
         while True:
