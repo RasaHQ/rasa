@@ -144,7 +144,7 @@ def ask_version() -> Text:
         validate=is_valid_version_number,
     ).ask()
 
-    if version in PRERELEASE_FLAVORS and not current_version.prerelease:
+    if version in PRERELEASE_FLAVORS and not current_version.pre:
         # at this stage it's hard to guess the kind of version bump the
         # releaser wants, so we ask them
         if version == "alpha":
