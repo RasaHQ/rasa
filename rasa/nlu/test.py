@@ -303,7 +303,7 @@ def write_response_successes(
         {
             "text": r.message,
             "intent_target": r.intent_target,
-            "response": r.response_target,
+            "response_target": r.response_target,
             "response_prediction": {
                 "name": r.response_prediction,
                 "confidence": r.confidence,
@@ -336,7 +336,7 @@ def write_response_errors(
         {
             "text": r.message,
             "intent_target": r.intent_target,
-            "response": r.response_target,
+            "response_target": r.response_target,
             "response_prediction": {
                 "name": r.response_prediction,
                 "confidence": r.confidence,
@@ -462,6 +462,10 @@ def evaluate_response_selections(
         f"of {num_examples} examples."
     )
 
+    response_to_intent_target = {}
+    for result in response_selection_results:
+        response_to_intent_target[result.response_target] = result.intent_target
+
     target_responses, predicted_responses = _targets_predictions_from(
         response_selection_results, "response_target", "response_prediction"
     )
@@ -512,9 +516,10 @@ def evaluate_response_selections(
             confusion_matrix_filename = os.path.join(
                 output_directory, confusion_matrix_filename
             )
+        _labels = [response_to_intent_target[label] for label in labels]
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
-            classes=labels,
+            classes=_labels,
             title="Response Selection Confusion Matrix",
             output_file=confusion_matrix_filename,
         )
@@ -1388,9 +1393,11 @@ def get_eval_data(
 
             response_target = example.get("response", "")
 
+            complete_intent = example.get_combined_intent_response_key()
+
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
-                    intent_target,
+                    complete_intent,
                     response_target,
                     response_prediction.get("name"),
                     result.get("text", {}),
