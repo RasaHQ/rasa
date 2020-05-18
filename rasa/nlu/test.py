@@ -147,10 +147,17 @@ def remove_empty_intent_examples(
     intent_results: List[IntentEvaluationResult],
 ) -> List[IntentEvaluationResult]:
     """Remove those examples without an intent.
+<<<<<<< HEAD
 
     Args:
         intent_results: intent evaluation results
 
+=======
+
+    Args:
+        intent_results: intent evaluation results
+
+>>>>>>> master
     Returns: intent evaluation results
     """
     filtered = []
@@ -1626,6 +1633,7 @@ def combine_result(
 
     If `intent_results`, `response_selection_results` or `entity_results` is provided
     as a list, prediction results are also collected.
+<<<<<<< HEAD
 
     Args:
         intent_metrics: intent metrics
@@ -1637,6 +1645,19 @@ def combine_result(
         entity_results: entity evaluation results
         response_selection_results: reponse selection evaluation results
 
+=======
+
+    Args:
+        intent_metrics: intent metrics
+        entity_metrics: entity metrics
+        response_selection_metrics: response selection metrics
+        interpreter: the interpreter
+        data: training data
+        intent_results: intent evaluation results
+        entity_results: entity evaluation results
+        response_selection_results: reponse selection evaluation results
+
+>>>>>>> master
     Returns: intent, entity, and response selection metrics
     """
     (
