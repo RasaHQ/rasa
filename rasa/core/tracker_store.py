@@ -688,7 +688,7 @@ class SQLTrackerStore(TrackerStore):
         )
 
         logger.debug(
-            f"Attempting to connect to database via " f"'{repr(self.engine.url)}'."
+            f"Attempting to connect to database via '{repr(self.engine.url)}'."
         )
 
         # Database might take a while to come up
