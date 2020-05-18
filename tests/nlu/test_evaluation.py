@@ -462,9 +462,9 @@ def test_intent_evaluation_report(tmpdir_factory):
     result = evaluate_intents(
         intent_results,
         report_folder,
-        successes=False,
-        errors=False,
-        disable_plotting=True,
+        successes=True,
+        errors=True,
+        disable_plotting=False,
     )
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
@@ -487,6 +487,11 @@ def test_intent_evaluation_report(tmpdir_factory):
     assert len(report.keys()) == 4
     assert report["greet"] == greet_results
     assert result["predictions"][0] == prediction
+
+    assert os.path.exists(os.path.join(report_folder, "intent_confusion_matrix.png"))
+    assert os.path.exists(os.path.join(report_folder, "intent_histogram.png"))
+    assert not os.path.exists(os.path.join(report_folder, "intent_errors.json"))
+    assert os.path.exists(os.path.join(report_folder, "intent_successes.json"))
 
 
 def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
@@ -571,9 +576,9 @@ def test_response_evaluation_report(tmpdir_factory):
     result = evaluate_response_selections(
         response_results,
         report_folder,
-        successes=False,
-        errors=False,
-        disable_plotting=True,
+        successes=True,
+        errors=True,
+        disable_plotting=False,
     )
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
@@ -597,6 +602,19 @@ def test_response_evaluation_report(tmpdir_factory):
     assert len(report.keys()) == 5
     assert report["My name is Mr.bot"] == name_query_results
     assert result["predictions"][1] == prediction
+
+    assert os.path.exists(
+        os.path.join(report_folder, "response_selection_confusion_matrix.png")
+    )
+    assert os.path.exists(
+        os.path.join(report_folder, "response_selection_histogram.png")
+    )
+    assert not os.path.exists(
+        os.path.join(report_folder, "response_selection_errors.json")
+    )
+    assert os.path.exists(
+        os.path.join(report_folder, "response_selection_successes.json")
+    )
 
 
 @pytest.mark.parametrize(
