@@ -604,7 +604,7 @@ def plot_story_evaluation(
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
     import matplotlib.pyplot as plt
-    from rasa.nlu.test import plot_confusion_matrix
+    from rasa.utils.plotting import plot_confusion_matrix
 
     log_evaluation_table(
         test_y,
