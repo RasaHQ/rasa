@@ -9,14 +9,14 @@ import argparse
 import os
 import re
 import sys
-import packaging.version as pep440_version
 from pathlib import Path
 from subprocess import CalledProcessError, check_call, check_output
 from typing import Text, Set
 
 import questionary
 import toml
-from semantic_version import Version as BaseVersion
+from pep440_version_utils import Version, is_valid_version
+
 
 VERSION_FILE_PATH = "rasa/version.py"
 
@@ -28,21 +28,7 @@ RELEASE_BRANCH_PREFIX = "prepare-release-"
 
 PRERELEASE_FLAVORS = ("alpha", "rc")
 
-PRERELEASE_FLAVOR_CODES = {"alpha": "a", "rc": "rc"}
-
-PRERELEASE_VERSION_PATTERN = re.compile(r"^(a|rc)([1-9]\d*)$")
-
 RELEASE_BRANCH_PATTERN = re.compile(r"^\d+\.\d+\.x$")
-
-
-class Version(BaseVersion):
-    """
-    A PEP440 compatible version that supports prereleases:
-    https://www.python.org/dev/peps/pep-0440/#pre-releases
-    """
-
-    def __str__(self):
-        return super().__str__().replace("-", "")
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -52,7 +38,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--next_version",
         type=str,
-        help="Either next version number or 'major', 'minor', 'patch', 'alpha', 'rc'",
+        help="Either next version number or 'major', 'minor', 'micro', 'alpha', 'rc'",
     )
 
     return parser
@@ -146,28 +132,36 @@ def ask_version() -> Text:
     """Allow the user to confirm the version number."""
 
     def is_valid_version_number(v: Text) -> bool:
-        return v in {"major", "minor", "patch", "alpha", "rc"} or validate_version(v)
+        return v in {"major", "minor", "micro", "alpha", "rc"} or is_valid_version(v)
 
-    current_version = Version.coerce(get_current_version())
-    next_patch_version = str(current_version.next_patch())
-    next_alpha_version = str(next_prerelease(current_version, "alpha"))
+    current_version = Version(get_current_version())
+    next_micro_version = str(current_version.next_micro())
+    next_alpha_version = str(current_version.next_alpha())
     version = questionary.text(
         f"What is the version number you want to release "
-        f"('major', 'minor', 'patch', 'alpha', 'rc' or valid version number "
-        f"e.g. '{next_patch_version}' or '{next_alpha_version}')?",
+        f"('major', 'minor', 'micro', 'alpha', 'rc' or valid version number "
+        f"e.g. '{next_micro_version}' or '{next_alpha_version}')?",
         validate=is_valid_version_number,
     ).ask()
 
     if version in PRERELEASE_FLAVORS and not current_version.prerelease:
         # at this stage it's hard to guess the kind of version bump the
         # releaser wants, so we ask them
+        if version == "alpha"
+            choices = [
+                str(current_version.next_alpha("minor")),
+                str(current_version.next_alpha("micro")),
+                str(current_version.next_alpha("major")),
+            ]
+        else:
+            choices = [
+                str(current_version.next_release_candidate("minor")),
+                str(current_version.next_release_candidate("micro")),
+                str(current_version.next_release_candidate("major")),
+            ]
         version = questionary.select(
             f"Which {version} do you want to release?",
-            choices=[
-                str(next_prerelease(current_version.next_minor(), version)),
-                str(next_prerelease(current_version.next_patch(), version)),
-                str(next_prerelease(current_version.next_major(), version)),
-            ],
+            choices=choices,
         ).ask()
 
     if version:
@@ -193,8 +187,8 @@ def get_rasa_sdk_version() -> Text:
 def validate_code_is_release_ready(version: Version) -> None:
     """Make sure the code base is valid (e.g. Rasa SDK is up to date)."""
 
-    sdk = get_rasa_sdk_version()
-    sdk_version = (Version.coerce(sdk).major, Version.coerce(sdk).minor)
+    sdk = Version(get_rasa_sdk_version())
+    sdk_version = (sdk.major, sdk.minor)
     rasa_version = (version.major, version.minor)
 
     if sdk_version != rasa_version:
@@ -267,74 +261,20 @@ def ensure_clean_git() -> None:
         sys.exit(1)
 
 
-def validate_version(version: Text) -> bool:
-    """
-    Ensure that the version follows semver
-    and that the prerelease follows the format `a1`, `rc2`, etc...
-    """
-    if isinstance(pep440_version.parse(version), pep440_version.LegacyVersion):
-        return False
-
-    version_object = Version.coerce(version)
-    return not version_object.prerelease or is_prerelease_version(version_object)
-
-
-def is_prerelease_version(version: Version) -> bool:
-    """
-    Validate that the prerelease part in a version follows
-    the pattern specified in `PRERELEASE_VERSION_PATTERN`.
-    """
-    return (
-        len(version.prerelease) == 1
-        and PRERELEASE_VERSION_PATTERN.match(version.prerelease[0]) is not None
-    )
-
-
-def is_alpha_version(version: Version) -> bool:
-    """
-    Validate that the alpha part in a version follows
-    the pattern specified in `PRERELEASE_VERSION_PATTERN`
-    and is an alpha (as opposed to a release candidate).
-    """
-    if len(version.prerelease) != 1:
-        return False
-
-    version_match = PRERELEASE_VERSION_PATTERN.match(version.prerelease[0])
-    if version_match is None:
-        return False
-
-    return version_match.group(1) == "a"
-
-
-def next_prerelease(version: Version, flavor: Text) -> Version:
-    """Bump the current version to the next prerelease."""
-    prerelease_number = 0
-    if version.prerelease:
-        prerelease_number = int(
-            PRERELEASE_VERSION_PATTERN.match(version.prerelease[0]).group(2)
-        )
-
-    return Version(
-        major=version.major,
-        minor=version.minor,
-        patch=version.patch,
-        prerelease=(f"{PRERELEASE_FLAVOR_CODES[flavor]}{prerelease_number + 1}",),
-        partial=version.partial,
-    )
-
-
 def parse_next_version(version: Text) -> Version:
     """Find the next version as a proper semantic version string."""
     if version == "major":
-        return Version.coerce(get_current_version()).next_major()
+        return Version(get_current_version()).next_major()
     elif version == "minor":
-        return Version.coerce(get_current_version()).next_minor()
-    elif version == "patch":
-        return Version.coerce(get_current_version()).next_patch()
-    elif version in PRERELEASE_FLAVORS:
-        return next_prerelease(Version.coerce(get_current_version()), version)
-    elif validate_version(version):
-        return Version.coerce(version)
+        return Version(get_current_version()).next_minor()
+    elif version == "micro":
+        return Version(get_current_version()).next_micro()
+    elif version == "alpha":
+        return Version(get_current_version()).next_alpha()
+    elif version == "rc":
+        return Version(get_current_version()).next_release_candidate()
+    elif is_valid_version(version):
+        return Version(version)
     else:
         raise Exception(f"Invalid version number '{cmdline_args.next_version}'.")
 
@@ -396,7 +336,7 @@ def main(args: argparse.Namespace) -> None:
         generate_changelog(version)
 
     # alpha workflow on feature branch when a version bump is required
-    if is_alpha_version(version) and not git_current_branch_is_master_or_release():
+    if version.is_alpha and not git_current_branch_is_master_or_release():
         create_commit(version)
         push_changes()
 
