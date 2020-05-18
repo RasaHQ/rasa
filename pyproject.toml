@@ -173,7 +173,7 @@ version = ">=2.1,<2.2"
 optional = true
 
 [tool.poetry.dependencies.tensorflow_text]
-version = "==2.1.0rc0"
+version = "~2.2.0"
 optional = true
 
 [tool.poetry.dependencies.pypandoc]
