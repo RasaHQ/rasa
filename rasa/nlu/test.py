@@ -331,7 +331,7 @@ def write_response_errors(
         {
             "text": r.message,
             "intent_target": r.intent_target,
-            "response": r.response_target,
+            "response_target": r.response_target,
             "response_prediction": {
                 "name": r.response_prediction,
                 "confidence": r.confidence,
