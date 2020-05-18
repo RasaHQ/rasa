@@ -43,9 +43,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
-    SENTENCE_FEATURES,
-    SEQUENCE_FEATURES,
-    CONCAT_DIMENSION,
+    FEATURIZERS,
 )
 import rasa.utils.common as common_utils
 from rasa.utils.tensorflow.models import RasaModel
@@ -97,8 +95,6 @@ class EmbeddingIntentClassifier(DIETClassifier):
         EMBEDDING_DIMENSION: 20,
         # Default dense dimension to use if no dense features are present.
         DENSE_DIMENSION: {TEXT: 256, LABEL: 20},
-        # Default dimension to use for concatenating sequence and sentence features.
-        CONCAT_DIMENSION: {TEXT: 512, LABEL: 20},
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
@@ -151,8 +147,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
-        SEQUENCE_FEATURES: [],
-        SENTENCE_FEATURES: [],
+        FEATURIZERS: [],
     }
 
     def __init__(

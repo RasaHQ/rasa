@@ -17,6 +17,7 @@ from rasa.nlu.constants import TEXT
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.common as common_utils
+from rasa.utils.train_utils import sequence_to_sentence_features
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ class SklearnIntentClassifier(IntentClassifier):
             y = self.transform_labels_str2num(labels)
             X = np.stack(
                 [
-                    self._get_sentence_features(example)
+                    sequence_to_sentence_features(example.get_dense_features(TEXT))
                     for example in training_data.intent_examples
                 ]
             )
@@ -167,7 +168,9 @@ class SklearnIntentClassifier(IntentClassifier):
             intent = None
             intent_ranking = []
         else:
-            X = self._get_sentence_features(message).reshape(1, -1)
+            X = sequence_to_sentence_features(message.get_dense_features(TEXT)).reshape(
+                1, -1
+            )
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))
             # `predict` returns a matrix as it is supposed

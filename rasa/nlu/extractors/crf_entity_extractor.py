@@ -95,7 +95,7 @@ class CRFEntityExtractor(EntityExtractor):
         # weight of the L2 regularization
         "L2_c": 0.1,
         # what dense featurizer should be used
-        "sequence_features": [],
+        "featurizers": [],
     }
 
     function_dict: Dict[Text, Callable[[CRFToken], Any]] = {
@@ -466,7 +466,7 @@ class CRFEntityExtractor(EntityExtractor):
     def _get_dense_features(self, message: Message) -> Optional[List]:
         """Convert dense features to python-crfsuite feature format."""
         features, _ = message.get_dense_features(
-            TEXT, self.component_config["sequence_features"], []
+            TEXT, self.component_config["featurizers"], []
         )
 
         if features is None:
