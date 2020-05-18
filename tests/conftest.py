@@ -1,14 +1,15 @@
-import os
+import asyncio
 import random
 import uuid
 
+from sanic.request import Request
 from sanic.testing import SanicTestClient
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
 from sanic import Sanic
-from typing import Text, List, Optional, Dict, Any, Tuple
+from typing import Text, List, Optional, Dict, Any, Tuple, Iterator
 from unittest.mock import Mock
 
 from rasa import server
@@ -35,14 +36,24 @@ from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
     END_TO_END_STORY_FILE,
     MOODBOT_MODEL_PATH,
+    INCORRECT_NLU_DATA,
 )
-from tests.utilities import update_number_of_epochs
+
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separatedly installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
+
+# https://github.com/pytest-dev/pytest-asyncio/issues/68
+# this event_loop is used by pytest-asyncio, and redefining it
+# is currently the only way of changing the scope of this fixture
+@pytest.yield_fixture(scope="session")
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -73,15 +84,10 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path(tmpdir_factory: TempdirFactory) -> Text:
-    output = tmpdir_factory.mktemp("moodbot").strpath
-    tmp_config_file = os.path.join(output, "config.yml")
-
-    update_number_of_epochs("examples/moodbot/config.yml", tmp_config_file)
-
+async def trained_moodbot_path() -> Text:
     return await train_async(
         domain="examples/moodbot/domain.yml",
-        config=tmp_config_file,
+        config="examples/moodbot/config.yml",
         training_files="examples/moodbot/data/",
         output_path=MOODBOT_MODEL_PATH,
     )
@@ -127,6 +133,11 @@ def default_stack_config() -> Text:
 @pytest.fixture(scope="session")
 def default_nlu_data() -> Text:
     return DEFAULT_NLU_DATA
+
+
+@pytest.fixture(scope="session")
+def incorrect_nlu_data() -> Text:
+    return INCORRECT_NLU_DATA
 
 
 @pytest.fixture(scope="session")

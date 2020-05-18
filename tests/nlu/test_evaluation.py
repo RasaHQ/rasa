@@ -1,11 +1,13 @@
-from typing import Text
+from typing import Text, Iterator
 
 import asyncio
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
+from sanic.request import Request
 
 import rasa.utils.io
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.test import compare_nlu_models
 from rasa.nlu.extractors.extractor import EntityExtractor
@@ -49,7 +51,17 @@ from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
-from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
+
+
+# https://github.com/pytest-dev/pytest-asyncio/issues/68
+# this event_loop is used by pytest-asyncio, and redefining it
+# is currently the only way of changing the scope of this fixture
+@pytest.yield_fixture(scope="session")
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -224,6 +236,8 @@ def test_determine_token_labels_with_extractors():
 
 
 def test_label_merging():
+    import numpy as np
+
     aligned_predictions = [
         {
             "target_labels": ["O", "O"],
@@ -235,8 +249,8 @@ def test_label_merging():
         },
     ]
 
-    assert all(merge_labels(aligned_predictions) == ["O", "O", "LOC", "O", "O"])
-    assert all(
+    assert np.all(merge_labels(aligned_predictions) == ["O", "O", "LOC", "O", "O"])
+    assert np.all(
         merge_labels(aligned_predictions, "EntityExtractorA")
         == ["O", "O", "O", "O", "O"]
     )
@@ -262,10 +276,11 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
         DEFAULT_DATA_PATH,
         os.path.join(unpacked_trained_moodbot_path, "nlu"),
         errors=False,
+        successes=False,
+        disable_plotting=True,
     )
 
     assert result.get("intent_evaluation")
-    assert result.get("entity_evaluation").get("DIETClassifier")
 
 
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
@@ -273,7 +288,12 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
-        td, n_folds, pretrained_embeddings_spacy_config
+        td,
+        n_folds,
+        pretrained_embeddings_spacy_config,
+        successes=False,
+        errors=False,
+        disable_plotting=True,
     )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
@@ -312,7 +332,12 @@ def test_run_cv_evaluation_with_response_selector():
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
-        training_data_obj, n_folds, nlu_config
+        training_data_obj,
+        n_folds,
+        nlu_config,
+        successes=False,
+        errors=False,
+        disable_plotting=True,
     )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
@@ -364,9 +389,7 @@ def test_intent_evaluation_report(tmpdir_factory):
         report_folder,
         successes=False,
         errors=False,
-        confmat_filename=None,
-        intent_hist_filename=None,
-        disable_plotting=False,
+        disable_plotting=True,
     )
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
@@ -417,9 +440,7 @@ def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
         report_folder,
         successes=False,
         errors=False,
-        confmat_filename=None,
-        intent_hist_filename=None,
-        disable_plotting=False,
+        disable_plotting=True,
     )
 
     report = json.loads(rasa.utils.io.read_file(str(report_filename)))
@@ -472,7 +493,13 @@ def test_response_evaluation_report(tmpdir_factory):
         ),
     ]
 
-    result = evaluate_response_selections(response_results, report_folder)
+    result = evaluate_response_selections(
+        response_results,
+        report_folder,
+        successes=False,
+        errors=False,
+        disable_plotting=True,
+    )
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
 
@@ -481,6 +508,7 @@ def test_response_evaluation_report(tmpdir_factory):
         "recall": 1.0,
         "f1-score": 1.0,
         "support": 1,
+        "confused_with": {},
     }
 
     prediction = {
@@ -494,6 +522,26 @@ def test_response_evaluation_report(tmpdir_factory):
     assert len(report.keys()) == 5
     assert report["My name is Mr.bot"] == name_query_results
     assert result["predictions"][1] == prediction
+
+
+@pytest.mark.parametrize(
+    "components, expected_extractors",
+    [
+        ([DIETClassifier({ENTITY_RECOGNITION: False})], set()),
+        ([DIETClassifier({ENTITY_RECOGNITION: True})], {"DIETClassifier"}),
+        ([CRFEntityExtractor()], {"CRFEntityExtractor"}),
+        (
+            [SpacyEntityExtractor(), CRFEntityExtractor()],
+            {"SpacyEntityExtractor", "CRFEntityExtractor"},
+        ),
+        ([ResponseSelector()], set()),
+    ],
+)
+def test_get_entity_extractors(components, expected_extractors):
+    mock_interpreter = Interpreter(components, None)
+    extractors = get_entity_extractors(mock_interpreter)
+
+    assert extractors == expected_extractors
 
 
 def test_entity_evaluation_report(tmpdir_factory):
@@ -639,13 +687,6 @@ def test_evaluate_entities_cv():
     }, "Wrong entity prediction alignment"
 
 
-def test_get_entity_extractors(pretrained_interpreter):
-    assert get_entity_extractors(pretrained_interpreter) == {
-        "SpacyEntityExtractor",
-        "DucklingHTTPExtractor",
-    }
-
-
 def test_remove_pretrained_extractors(pretrained_interpreter):
     target_components_names = ["SpacyNLP"]
     filtered_pipeline = remove_pretrained_extractors(pretrained_interpreter.pipeline)
@@ -714,8 +755,10 @@ def test_get_evaluation_metrics(
     assert NO_ENTITY not in report
 
 
-def test_nlu_comparison(tmpdir, config_path):
-    configs = [config_path, config_path]
+def test_nlu_comparison(tmpdir, config_path, config_path_duplicate):
+    # the configs need to be at a different path, otherwise the results are
+    # combined on the same dictionary key and cannot be plotted properly
+    configs = [config_path, config_path_duplicate]
 
     output = tmpdir.strpath
     compare_nlu_models(

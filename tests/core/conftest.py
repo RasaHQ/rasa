@@ -4,9 +4,10 @@ import os
 import uuid
 from datetime import datetime
 
-from typing import Text
+from typing import Text, Iterator
 
 import pytest
+from sanic.request import Request
 
 import rasa.utils.io
 from rasa.core.agent import Agent
@@ -36,9 +37,19 @@ DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
 DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.md"
 
+INCORRECT_NLU_DATA = "data/test/markdown_single_sections/incorrect_nlu_format.md"
+
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
+
+STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
+    "data/test_evaluations/stories_trip_circuit_breaker.md"
+)
+
+E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
+    "data/test_evaluations/end_to_end_trips_circuit_breaker.md"
+)
 
 MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
@@ -83,6 +94,16 @@ class MockedMongoTrackerStore(MongoTrackerStore):
         self.db = MongoClient().rasa
         self.collection = "conversations"
         super(MongoTrackerStore, self).__init__(_domain, None)
+
+
+# https://github.com/pytest-dev/pytest-asyncio/issues/68
+# this event_loop is used by pytest-asyncio, and redefining it
+# is currently the only way of changing the scope of this fixture
+@pytest.yield_fixture(scope="session")
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -178,7 +199,7 @@ def tracker_with_six_scheduled_reminders(
 
 
 @pytest.fixture(scope="session")
-def moodbot_domain(trained_moodbot_path):
+def moodbot_domain():
     domain_path = os.path.join("examples", "moodbot", "domain.yml")
     return Domain.load(domain_path)
 

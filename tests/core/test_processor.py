@@ -486,6 +486,34 @@ async def test_update_tracker_session(
 
 
 # noinspection PyProtectedMember
+async def test_update_tracker_session_with_metadata(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+):
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
+    # does something
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
+
+    metadata = {"metadataTestKey": "metadataTestValue"}
+
+    await default_processor._update_tracker_session(tracker, default_channel, metadata)
+
+    # the save is not called in _update_tracker_session()
+    default_processor._save_tracker(tracker)
+
+    # inspect tracker events and make sure SessionStarted event is present and has metadata.
+    tracker = default_processor.tracker_store.retrieve(sender_id)
+    session_event_idx = tracker.events.index(SessionStarted())
+    session_event_metadata = tracker.events[session_event_idx].metadata
+
+    assert session_event_metadata == metadata
+
+
+# noinspection PyProtectedMember
 async def test_update_tracker_session_with_slots(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
