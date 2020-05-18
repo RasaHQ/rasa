@@ -1,0 +1,19 @@
+# Configuration for Rasa NLU.
+# https://rasa.com/docs/rasa/nlu/components/
+language: pt
+
+pipeline:
+  - name: SpacyNLP
+  - name: SpacyTokenizer
+  - name: SpacyFeaturizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: "char_wb"
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+    epochs: 600
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+    epochs: 300
