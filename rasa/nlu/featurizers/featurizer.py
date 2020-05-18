@@ -3,7 +3,6 @@ import scipy.sparse
 from typing import Text, Union, Optional
 
 from rasa.nlu.components import Component
-from rasa.nlu.constants import VALID_FEATURE_TYPES
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
 
@@ -11,24 +10,13 @@ class Features:
     def __init__(
         self,
         features: Union[np.ndarray, scipy.sparse.spmatrix],
-        type: Text,
         message_attribute: Text,
         origin: Text,
     ):
-        self.validate_type(type)
-
         self.features = features
         self.type = type
         self.origin = origin
         self.message_attribute = message_attribute
-
-    @staticmethod
-    def validate_type(type: Text):
-        if type not in VALID_FEATURE_TYPES:
-            raise ValueError(
-                f"Invalid feature type '{type}' used. Valid feature types are: "
-                f"{VALID_FEATURE_TYPES}."
-            )
 
     def is_sparse(self):
         return isinstance(self.features, scipy.sparse.spmatrix)

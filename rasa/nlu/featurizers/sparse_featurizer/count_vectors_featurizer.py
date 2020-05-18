@@ -22,8 +22,6 @@ from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     RESPONSE,
     ALIAS,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
 )
 
 logger = logging.getLogger(__name__)
@@ -408,17 +406,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
     def _create_sequence(
         self, attribute: Text, all_tokens: List[List[Text]]
-    ) -> Tuple[
-        List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
-    ]:
-        seq_features = []
-        cls_features = []
+    ) -> List[Optional[scipy.sparse.coo_matrix]]:
+
+        X = []
 
         for i, tokens in enumerate(all_tokens):
             if not tokens:
                 # nothing to featurize
-                seq_features.append(None)
-                cls_features.append(None)
+                X.append(None)
                 continue
 
             # vectorizer.transform returns a sparse matrix of size
@@ -431,65 +426,47 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             if not tokens_without_cls:
                 # attribute is not set (e.g. response not present)
-                seq_features.append(None)
-                cls_features.append(None)
+                X.append(None)
                 continue
 
             seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
             seq_vec.sort_indices()
-
-            seq_features.append(seq_vec.tocoo())
 
             if attribute in [TEXT, RESPONSE]:
                 tokens_text = [" ".join(tokens_without_cls)]
                 cls_vec = self.vectorizers[attribute].transform(tokens_text)
                 cls_vec.sort_indices()
 
-                cls_features.append(cls_vec.tocoo())
+                x = scipy.sparse.vstack([seq_vec, cls_vec])
             else:
-                cls_features.append(None)
+                x = seq_vec
 
-        return seq_features, cls_features
+            X.append(x.tocoo())
+
+        return X
 
     def _get_featurized_attribute(
         self, attribute: Text, all_tokens: List[List[Text]]
-    ) -> Tuple[
-        List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
-    ]:
+    ) -> Optional[List[Optional[scipy.sparse.coo_matrix]]]:
         """Return features of a particular attribute for complete data"""
 
         if self._check_attribute_vocabulary(attribute):
             # count vectorizer was trained
             return self._create_sequence(attribute, all_tokens)
         else:
-            return [], []
+            return None
 
     def _set_attribute_features(
-        self,
-        attribute: Text,
-        sequence_features: List,
-        sentence_features: List,
-        training_data: TrainingData,
+        self, attribute: Text, attribute_features: List, training_data: TrainingData
     ) -> None:
         """Set computed features of the attribute to corresponding message objects"""
         for i, message in enumerate(training_data.training_examples):
             # create bag for each example
-            if sequence_features[i] is not None:
-                final_sequence_features = Features(
-                    sequence_features[i],
-                    FEATURE_TYPE_SEQUENCE,
-                    attribute,
-                    self.component_config[ALIAS],
+            if attribute_features[i] is not None:
+                final_features = Features(
+                    attribute_features[i], attribute, self.component_config[ALIAS]
                 )
-                message.add_features(final_sequence_features)
-            if sentence_features[i] is not None:
-                final_sentence_features = Features(
-                    sentence_features[i],
-                    FEATURE_TYPE_SENTENCE,
-                    attribute,
-                    self.component_config[ALIAS],
-                )
-                message.add_features(final_sentence_features)
+                message.add_features(final_features)
 
     def train(
         self,
@@ -550,24 +527,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         )
 
         # features shape (1, seq, dim)
-        seq_features, cls_features = self._create_sequence(attribute, [message_tokens])
+        features = self._create_sequence(attribute, [message_tokens])
 
-        if seq_features[0] is not None:
-            final_sequence_features = Features(
-                seq_features[0],
-                FEATURE_TYPE_SEQUENCE,
-                attribute,
-                self.component_config[ALIAS],
+        if features[0] is not None:
+            final_features = Features(
+                features[0], attribute, self.component_config[ALIAS]
             )
-            message.add_features(final_sequence_features)
-        if cls_features[0] is not None:
-            final_sentence_features = Features(
-                cls_features[0],
-                FEATURE_TYPE_SENTENCE,
-                attribute,
-                self.component_config[ALIAS],
-            )
-            message.add_features(final_sentence_features)
+            message.add_features(final_features)
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""

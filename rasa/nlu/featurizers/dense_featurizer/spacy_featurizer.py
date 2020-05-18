@@ -8,14 +8,7 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    TEXT,
-    SPACY_DOCS,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-    ALIAS,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
-)
+from rasa.nlu.constants import TEXT, SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES, ALIAS
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
 if typing.TYPE_CHECKING:
@@ -70,14 +63,7 @@ class SpacyFeaturizer(DenseFeaturizer):
             features = self._features_for_doc(message_attribute_doc)
             cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
 
-            final_sequence_features = Features(
-                features, FEATURE_TYPE_SEQUENCE, attribute, self.component_config[ALIAS]
-            )
-            message.add_features(final_sequence_features)
-            final_sentence_features = Features(
-                cls_token_vec,
-                FEATURE_TYPE_SENTENCE,
-                attribute,
-                self.component_config[ALIAS],
-            )
-            message.add_features(final_sentence_features)
+            features = np.concatenate([features, cls_token_vec])
+
+            final_features = Features(features, attribute, self.component_config[ALIAS])
+            message.add_features(final_features)

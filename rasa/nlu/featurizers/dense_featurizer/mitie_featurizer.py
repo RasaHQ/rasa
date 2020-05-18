@@ -8,13 +8,7 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    TEXT,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-    ALIAS,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
-)
+from rasa.nlu.constants import TEXT, DENSE_FEATURIZABLE_ATTRIBUTES, ALIAS
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 import rasa.utils.train_utils as train_utils
 
@@ -66,21 +60,10 @@ class MitieFeaturizer(DenseFeaturizer):
         tokens = train_utils.tokens_without_cls(example, attribute)
 
         if tokens is not None:
-            features, cls_features = self.features_for_tokens(
-                tokens, mitie_feature_extractor
-            )
+            features = self.features_for_tokens(tokens, mitie_feature_extractor)
 
-            final_sequence_features = Features(
-                features, FEATURE_TYPE_SEQUENCE, attribute, self.component_config[ALIAS]
-            )
-            example.add_features(final_sequence_features)
-            final_sentence_features = Features(
-                cls_features,
-                FEATURE_TYPE_SENTENCE,
-                attribute,
-                self.component_config[ALIAS],
-            )
-            example.add_features(final_sentence_features)
+            final_features = Features(features, attribute, self.component_config[ALIAS])
+            example.add_features(final_features)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
@@ -89,14 +72,8 @@ class MitieFeaturizer(DenseFeaturizer):
             tokens, mitie_feature_extractor
         )
 
-        final_sequence_features = Features(
-            features, FEATURE_TYPE_SEQUENCE, TEXT, self.component_config[ALIAS]
-        )
-        message.add_features(final_sequence_features)
-        final_sentence_features = Features(
-            cls_features, FEATURE_TYPE_SENTENCE, TEXT, self.component_config[ALIAS]
-        )
-        message.add_features(final_sentence_features)
+        final_features = Features(features, TEXT, self.component_config[ALIAS])
+        message.add_features(final_features)
 
     def _mitie_feature_extractor(self, **kwargs) -> Any:
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
@@ -114,7 +91,7 @@ class MitieFeaturizer(DenseFeaturizer):
         self,
         tokens: List[Token],
         feature_extractor: "mitie.total_word_feature_extractor",
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> np.ndarray:
         # calculate features
         features = []
         for token in tokens:
@@ -123,4 +100,6 @@ class MitieFeaturizer(DenseFeaturizer):
 
         cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
 
-        return features, cls_token_vec
+        features = np.concatenate([features, cls_token_vec])
+
+        return features
