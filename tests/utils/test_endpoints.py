@@ -15,6 +15,16 @@ import rasa.utils.endpoints as endpoint_utils
         ("https://example.com/", None, "https://example.com/"),
         ("https://example.com/", "test", "https://example.com/test"),
         ("https://example.com/", "test/", "https://example.com/test/"),
+        (
+            "http://duckling.rasa.com:8000",
+            "/parse",
+            "http://duckling.rasa.com:8000/parse",
+        ),
+        (
+            "http://duckling.rasa.com:8000/",
+            "/parse",
+            "http://duckling.rasa.com:8000/parse",
+        ),
     ],
 )
 def test_concat_url(base, subpath, expected_result):
