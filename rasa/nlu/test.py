@@ -422,6 +422,10 @@ def evaluate_response_selections(
         f"of {num_examples} examples."
     )
 
+    response_to_intent_target = {}
+    for result in response_selection_results:
+        response_to_intent_target[result.response_target] = result.intent_target
+
     target_responses, predicted_responses = _targets_predictions_from(
         response_selection_results, "response_target", "response_prediction"
     )
@@ -472,9 +476,10 @@ def evaluate_response_selections(
             confusion_matrix_filename = os.path.join(
                 output_directory, confusion_matrix_filename
             )
+        _labels = [response_to_intent_target[label] for label in labels]
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
-            classes=labels,
+            classes=_labels,
             title="Response Selection Confusion Matrix",
             output_file=confusion_matrix_filename,
         )
