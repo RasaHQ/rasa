@@ -330,7 +330,7 @@ def main(args: argparse.Namespace) -> None:
     write_version_file(version)
     write_version_to_pyproject(version)
 
-    if not version.prerelease:
+    if not version.pre:
         # never update changelog on a prerelease version
         generate_changelog(version)
 
