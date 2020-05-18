@@ -166,6 +166,7 @@ class Action:
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         """
         Execute the side effects of this action.
@@ -178,7 +179,8 @@ class Action:
                 ``tracker.get_slot(slot_name)`` and the most recent user
                 message is ``tracker.latest_message.text``.
             domain (Domain): the bot's domain
-
+            metadata: dictionary that can be sent to action server with custom
+            data.
         Returns:
             List[Event]: A list of :class:`rasa.core.events.Event` instances
         """
@@ -205,6 +207,7 @@ class ActionRetrieveResponse(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ):
         """Query the appropriate response and create a bot utterance with that."""
 
@@ -255,6 +258,7 @@ class ActionUtterTemplate(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         """Simple run implementation uttering a (hopefully defined) template."""
 
@@ -291,6 +295,7 @@ class ActionBack(ActionUtterTemplate):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         # only utter the template if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
@@ -313,6 +318,7 @@ class ActionListen(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         return []
 
@@ -334,6 +340,7 @@ class ActionRestart(ActionUtterTemplate):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         from rasa.core.events import Restarted
 
@@ -373,10 +380,11 @@ class ActionSessionStart(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         from rasa.core.events import SessionStarted
 
-        _events = [SessionStarted()]
+        _events = [SessionStarted(metadata=metadata)]
 
         if domain.session_config.carry_over_slots:
             _events.extend(self._slot_set_events_from_tracker(tracker))
@@ -402,6 +410,7 @@ class ActionDefaultFallback(ActionUtterTemplate):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         from rasa.core.events import UserUtteranceReverted
 
@@ -423,6 +432,7 @@ class ActionDeactivateForm(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         from rasa.core.events import Form, SlotSet
 
@@ -526,6 +536,7 @@ class RemoteAction(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         json_body = self._action_call_format(tracker, domain)
 
@@ -630,6 +641,7 @@ class ActionRevertFallbackEvents(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         from rasa.core.policies.two_stage_fallback import has_user_rephrased
 
@@ -709,6 +721,7 @@ class ActionDefaultAskAffirmation(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict] = None,
     ) -> List[Event]:
         intent_to_affirm = tracker.latest_message.intent.get("name")
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"

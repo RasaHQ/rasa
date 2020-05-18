@@ -172,14 +172,12 @@ class MessageProcessor:
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
 
-            if not (SessionStarted in tracker.events) and metadata:
-                tracker.events.append(SessionStarted(metadata=metadata))
-
             await self._run_action(
                 action=self._get_action(ACTION_SESSION_START_NAME),
                 tracker=tracker,
                 output_channel=output_channel,
                 nlg=self.nlg,
+                metadata=metadata,
             )
 
     async def get_tracker_with_session_start(
@@ -636,12 +634,24 @@ class MessageProcessor:
                         scheduler.remove_job(scheduled_job.id)
 
     async def _run_action(
-        self, action, tracker, output_channel, nlg, policy=None, confidence=None
+        self,
+        action,
+        tracker,
+        output_channel,
+        nlg,
+        policy=None,
+        confidence=None,
+        metadata: Optional[Dict] = None,
     ) -> bool:
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
-            events = await action.run(output_channel, nlg, tracker, self.domain)
+            if action.name() == ACTION_SESSION_START_NAME:
+                events = await action.run(
+                    output_channel, nlg, tracker, self.domain, metadata=metadata
+                )
+            else:
+                events = await action.run(output_channel, nlg, tracker, self.domain)
         except ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])
