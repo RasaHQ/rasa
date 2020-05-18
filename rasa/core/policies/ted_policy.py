@@ -1480,21 +1480,21 @@ class HierarchicalTED(RasaModel):
             self.config[WEIGHT_SPARSITY],
             layer_name_suffix=LABEL,
         )
-        self._tf_layers[f"{LABEL}_transformer"] = TransformerEncoder(
-            self.config[NUM_TRANSFORMER_LAYERS],
-            self.config[TRANSFORMER_SIZE],
-            self.config[NUM_HEADS],
-            self.config[TRANSFORMER_SIZE] * 4,
-            self.config[REGULARIZATION_CONSTANT],
-            dropout_rate=self.config[DROP_RATE_DIALOGUE],
-            attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
-            sparsity=self.config[WEIGHT_SPARSITY],
-            unidirectional=True,
-            use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
-            use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
-            max_relative_position=self.config[MAX_RELATIVE_POSITION],
-            name=LABEL + "_encoder",
-        )
+        # self._tf_layers[f"{LABEL}_transformer"] = TransformerEncoder(
+        #     self.config[NUM_TRANSFORMER_LAYERS],
+        #     self.config[TRANSFORMER_SIZE],
+        #     self.config[NUM_HEADS],
+        #     self.config[TRANSFORMER_SIZE] * 4,
+        #     self.config[REGULARIZATION_CONSTANT],
+        #     dropout_rate=self.config[DROP_RATE_DIALOGUE],
+        #     attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+        #     sparsity=self.config[WEIGHT_SPARSITY],
+        #     unidirectional=True,
+        #     use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+        #     use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+        #     max_relative_position=self.config[MAX_RELATIVE_POSITION],
+        #     name=LABEL + "_encoder",
+        # )
         self._tf_layers[f"transformer"] = TransformerEncoder(
             self.config[NUM_TRANSFORMER_LAYERS],
             self.config[TRANSFORMER_SIZE],
@@ -1559,9 +1559,10 @@ class HierarchicalTED(RasaModel):
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = self.tf_label_data[LABEL_FEATURES]
         all_labels = self._combine_sparse_dense_features(all_labels, LABEL_FEATURES)
-        all_labels = self._tf_layers[f"{LABEL}_transformer"](all_labels)
-        all_labels = tfa.activations.gelu(all_labels)
-        all_labels = all_labels[:,-1,:]
+        # all_labels = self._tf_layers[f"{LABEL}_transformer"](all_labels)
+        # all_labels = tfa.activations.gelu(all_labels)
+        # all_labels = all_labels[:,-1,:]
+        all_labels = tf.squeeze(all_labels, axis=1)
         all_labels_embed = self._embed_label(all_labels)
         return all_labels, all_labels_embed
 
@@ -1689,9 +1690,10 @@ class HierarchicalTED(RasaModel):
         all_labels, all_labels_embed = self._create_all_labels_embed()
 
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in, sequence_lengths, user_lengths, bot_lengths)
-        label_in = self._tf_layers[f"{LABEL}_transformer"](label_in)
-        label_in = tfa.activations.gelu(label_in)
-        label_in = label_in[:,-1,:]
+        # label_in = self._tf_layers[f"{LABEL}_transformer"](label_in)
+        # label_in = tfa.activations.gelu(label_in)
+        # label_in = label_in[:,-1,:]
+        label_in = tf.squeeze(label_in, axis=1)
         if self.max_history_tracker_featurizer_used:
             # add time dimension if max history featurizer is used
             label_in = label_in[:, tf.newaxis, :]

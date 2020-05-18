@@ -759,9 +759,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         """Transforms list of trackers to lists of states for prediction."""
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
         # required to have the DIET do the prediction;
-        self.state_featurizer.interpreter.interpreter = Interpreter(
-            self.state_featurizer.interpreter.trainer.pipeline, []
-        ).load(os.path.join(os.path.dirname(self.path), "nlu"))
+        # self.state_featurizer.interpreter.interpreter = Interpreter(
+        #     self.state_featurizer.interpreter.trainer.pipeline, []
+        # ).load(os.path.join(os.path.dirname(self.path), "nlu"))
 
 
         trackers_as_states_modified = []
