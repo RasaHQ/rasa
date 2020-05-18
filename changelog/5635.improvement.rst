@@ -1,1 +1,0 @@
-Update dependencies based on the ``dependabot`` check.

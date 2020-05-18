@@ -1,1 +1,0 @@
-Add ``full_retrieval_intent`` property to ``ResponseSelector`` rankings
