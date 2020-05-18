@@ -219,6 +219,8 @@ def test_determine_token_labels_with_extractors():
 
 
 def test_label_merging():
+    import numpy as np
+
     aligned_predictions = [
         {
             "target_labels": ["O", "O"],
@@ -230,8 +232,8 @@ def test_label_merging():
         },
     ]
 
-    assert all(merge_labels(aligned_predictions) == ["O", "O", "LOC", "O", "O"])
-    assert all(
+    assert np.all(merge_labels(aligned_predictions) == ["O", "O", "LOC", "O", "O"])
+    assert np.all(
         merge_labels(aligned_predictions, "EntityExtractorA")
         == ["O", "O", "O", "O", "O"]
     )
@@ -257,6 +259,8 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
         DEFAULT_DATA_PATH,
         os.path.join(unpacked_trained_moodbot_path, "nlu"),
         errors=False,
+        successes=False,
+        disable_plotting=True,
     )
 
     assert result.get("intent_evaluation")
@@ -267,7 +271,12 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
-        td, n_folds, pretrained_embeddings_spacy_config
+        td,
+        n_folds,
+        pretrained_embeddings_spacy_config,
+        successes=False,
+        errors=False,
+        disable_plotting=True,
     )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
@@ -306,7 +315,12 @@ def test_run_cv_evaluation_with_response_selector():
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
-        training_data_obj, n_folds, nlu_config
+        training_data_obj,
+        n_folds,
+        nlu_config,
+        successes=False,
+        errors=False,
+        disable_plotting=True,
     )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
@@ -358,9 +372,7 @@ def test_intent_evaluation_report(tmpdir_factory):
         report_folder,
         successes=False,
         errors=False,
-        confmat_filename=None,
-        intent_hist_filename=None,
-        disable_plotting=False,
+        disable_plotting=True,
     )
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
@@ -411,9 +423,7 @@ def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
         report_folder,
         successes=False,
         errors=False,
-        confmat_filename=None,
-        intent_hist_filename=None,
-        disable_plotting=False,
+        disable_plotting=True,
     )
 
     report = json.loads(rasa.utils.io.read_file(str(report_filename)))
@@ -466,7 +476,13 @@ def test_response_evaluation_report(tmpdir_factory):
         ),
     ]
 
-    result = evaluate_response_selections(response_results, report_folder)
+    result = evaluate_response_selections(
+        response_results,
+        report_folder,
+        successes=False,
+        errors=False,
+        disable_plotting=True,
+    )
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
 

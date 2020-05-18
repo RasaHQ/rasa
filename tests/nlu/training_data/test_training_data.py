@@ -245,7 +245,7 @@ def test_markdown_single_sections():
     assert td_syn_only.entity_synonyms == {"Chines": "chinese", "Chinese": "chinese"}
 
 
-def test_repeated_entities():
+def test_repeated_entities(tmp_path):
     data = """
 {
   "rasa_nlu_data": {
@@ -265,21 +265,20 @@ def test_repeated_entities():
     ]
   }
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert len(td.entity_examples) == 1
-        example = td.entity_examples[0]
-        entities = example.get("entities")
-        assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
-        assert start == 9
-        assert end == 10
+    f = tmp_path / "tmp_training_data.json"
+    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    td = training_data.load_data(str(f))
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example.get("entities")
+    assert len(entities) == 1
+    tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
+    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    assert start == 9
+    assert end == 10
 
 
-def test_multiword_entities():
+def test_multiword_entities(tmp_path):
     data = """
 {
   "rasa_nlu_data": {
@@ -299,21 +298,20 @@ def test_multiword_entities():
     ]
   }
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert len(td.entity_examples) == 1
-        example = td.entity_examples[0]
-        entities = example.get("entities")
-        assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
-        assert start == 4
-        assert end == 7
+    f = tmp_path / "tmp_training_data.json"
+    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    td = training_data.load_data(str(f))
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example.get("entities")
+    assert len(entities) == 1
+    tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
+    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    assert start == 4
+    assert end == 7
 
 
-def test_nonascii_entities():
+def test_nonascii_entities(tmp_path):
     data = """
 {
   "luis_schema_version": "5.0",
@@ -331,22 +329,21 @@ def test_nonascii_entities():
     }
   ]
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert len(td.entity_examples) == 1
-        example = td.entity_examples[0]
-        entities = example.get("entities")
-        assert len(entities) == 1
-        entity = entities[0]
-        assert entity["value"] == "ßäæ ?€ö)"
-        assert entity["start"] == 19
-        assert entity["end"] == 27
-        assert entity["entity"] == "description"
+    f = tmp_path / "tmp_training_data.json"
+    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    td = training_data.load_data(str(f))
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example.get("entities")
+    assert len(entities) == 1
+    entity = entities[0]
+    assert entity["value"] == "ßäæ ?€ö)"
+    assert entity["start"] == 19
+    assert entity["end"] == 27
+    assert entity["entity"] == "description"
 
 
-def test_entities_synonyms():
+def test_entities_synonyms(tmp_path):
     data = """
 {
   "rasa_nlu_data": {
@@ -384,11 +381,10 @@ def test_entities_synonyms():
     ]
   }
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert td.entity_synonyms["New York City"] == "nyc"
+    f = tmp_path / "tmp_training_data.json"
+    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    td = training_data.load_data(str(f))
+    assert td.entity_synonyms["New York City"] == "nyc"
 
 
 def cmp_message_list(firsts, seconds):
@@ -517,3 +513,24 @@ def test_load_data_from_non_existing_file():
 
 def test_is_empty():
     assert TrainingData().is_empty()
+
+
+def test_custom_attributes(tmp_path):
+    data = """
+{
+  "rasa_nlu_data": {
+    "common_examples" : [
+      {
+        "intent": "happy",
+        "text": "I'm happy.",
+        "sentiment": 0.8
+      }
+    ]
+  }
+}"""
+    f = tmp_path / "tmp_training_data.json"
+    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    td = training_data.load_data(str(f))
+    assert len(td.training_examples) == 1
+    example = td.training_examples[0]
+    assert example.get("sentiment") == 0.8

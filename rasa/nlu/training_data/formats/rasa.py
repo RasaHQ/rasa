@@ -37,7 +37,7 @@ class RasaReader(JsonTrainingDataReader):
 
         training_examples = []
         for ex in common_examples:
-            msg = Message.build(ex["text"], ex.get("intent"), ex.get("entities"))
+            msg = Message.build(**ex)
             training_examples.append(msg)
 
         return TrainingData(

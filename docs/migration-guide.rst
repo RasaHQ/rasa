@@ -137,9 +137,9 @@ General
       # ... any other parameters
 
   ``CRFEntityExtractor`` featurizes user messages on its own, it does not depend on any featurizer.
-  We extracted the featurization from the component into the new featurizer :ref:``LexicalSyntacticFeaturizer``. Thus,
+  We extracted the featurization from the component into the new featurizer :ref:`LexicalSyntacticFeaturizer`. Thus,
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
-  :ref:``diet-classifier``.
+  :ref:`diet-classifier`.
   Specifying ``CRFEntityExtractor`` in the configuration maps to the above component definition, the behaviour
   is unchanged from previous versions.
 

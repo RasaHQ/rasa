@@ -109,8 +109,8 @@ class MarkdownReader(TrainingDataReader):
                 '[<entity-text>]{"entity": "<entity-type>", "value": '
                 '"<entity-synonym>"}.'
                 "\nYou can use the following command to update your training data file:"
-                "\nsed -i .deprecated -E 's/\\[(.+)\\]\\((.+):(.+)\\)/\\[\\1\\]\\{"
-                '"entity": "\\2", "value": "\\3"\\}/g\' nlu.md',
+                "\nsed -i -E 's/\\[([^)]+)\\]\\(([^)]+):([^)]+)\\)/[\\1]{"
+                '"entity": "\\2", "value": "\\3"}/g\' nlu.md',
                 category=FutureWarning,
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )

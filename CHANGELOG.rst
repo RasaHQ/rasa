@@ -39,7 +39,7 @@ Features
 
   .. note::
 
-      Composite entities are currently just supported by the :ref:``diet-classifier`` and :ref:``CRFEntityExtractor``.
+      Composite entities are currently just supported by the :ref:`diet-classifier` and :ref:`CRFEntityExtractor`.
 - `#5465 <https://github.com/rasahq/rasa/issues/5465>`_: Update training data format for NLU to support entities with a role or group label.
 
   You can now specify synonyms, roles, and groups of entities using the following data format:
@@ -66,7 +66,7 @@ Features
 
   The markdown format ``[LA](location:Los Angeles)`` is deprecated. To update your training data file just
   execute the following command on the terminal of your choice:
-  ``sed -i .deprecated -E 's/\[(.*)\]\((.*):(.*)\)/\[\1\]\{"entity": "\2", "value": "\3"\}/g' nlu.md``
+  ``sed -i -E 's/\[([^)]+)\]\(([^)]+):([^)]+)\)/[\1]{"entity": "\2", "value": "\3"}/g' nlu.md``
 
   For more information about the new data format see :ref:`training-data-format`.
 
