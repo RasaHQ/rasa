@@ -25,9 +25,12 @@ class Message:
             self.output_properties = set()
 
     def set(self, prop, info, add_to_output=False) -> None:
-        self.data[prop] = info
-        if add_to_output:
-            self.output_properties.add(prop)
+        if prop == TEXT:
+            self.text = info
+        else:
+            self.data[prop] = info
+            if add_to_output:
+                self.output_properties.add(prop)
 
     def get(self, prop, default=None) -> Any:
         if prop == TEXT:
