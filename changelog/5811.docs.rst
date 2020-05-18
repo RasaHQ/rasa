@@ -1,0 +1,1 @@
+event brokers documentation should say 'url' instead of 'host'
