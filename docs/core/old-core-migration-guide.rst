@@ -35,7 +35,7 @@ General
 
 Asynchronous First
 ~~~~~~~~~~~~~~~~~~
-- **No more flask.** The flask webserver has been replaced with an asyncronous
+- **No more flask.** The flask webserver has been replaced with an asynchronous
   webserver called Sanic. If you run the server in production using a wsgi
   runner, there are instructions here on how to recreate that with the
   sanic webserver:

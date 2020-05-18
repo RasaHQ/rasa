@@ -440,7 +440,7 @@ Added
 Fixed
 -----
 - don't fail if rasa and rest input channels are used together
-- wrong paramter name in rocketchat channel methods
+- wrong parameter name in rocketchat channel methods
 - Software 2.0 link on interactive learning documentation page went to
   Tesla's homepage, now it links to Karpathy blogpost
 
@@ -553,7 +553,7 @@ Added
   model metadata
 - more emoji support for PY2
 - intent confidence support in RegexInterpreter
-- added paramter to train script to pull training data from an url instead
+- added parameter to train script to pull training data from an url instead
   of a stories file
 - added new policy: :ref:`embedding_policy` implemented in tensorflow
 
