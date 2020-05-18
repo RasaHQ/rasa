@@ -905,9 +905,9 @@ def evaluate_entities(
     entity_results: List[EntityEvaluationResult],
     extractors: Set[Text],
     output_directory: Optional[Text],
-    successes: bool = False,
-    errors: bool = True,
-    disable_plotting: bool = False,
+    successes: bool,
+    errors: bool,
+    disable_plotting: bool,
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for each entity extractor.
 
