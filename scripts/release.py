@@ -147,7 +147,7 @@ def ask_version() -> Text:
     if version in PRERELEASE_FLAVORS and not current_version.prerelease:
         # at this stage it's hard to guess the kind of version bump the
         # releaser wants, so we ask them
-        if version == "alpha"
+        if version == "alpha":
             choices = [
                 str(current_version.next_alpha("minor")),
                 str(current_version.next_alpha("micro")),
@@ -160,8 +160,7 @@ def ask_version() -> Text:
                 str(current_version.next_release_candidate("major")),
             ]
         version = questionary.select(
-            f"Which {version} do you want to release?",
-            choices=choices,
+            f"Which {version} do you want to release?", choices=choices,
         ).ask()
 
     if version:
