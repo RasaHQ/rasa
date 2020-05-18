@@ -1208,9 +1208,11 @@ def get_eval_data(
 
             response_target = example.get("response", "")
 
+            complete_intent = example.get_combined_intent_response_key()
+
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
-                    intent_target,
+                    complete_intent,
                     response_target,
                     response_prediction.get("name"),
                     result.get("text", {}),
