@@ -36,9 +36,7 @@ class SpacyEntityExtractor(EntityExtractor):
         extracted = SpacyEntityExtractor.filter_irrelevant_entities(
             all_extracted, dimensions
         )
-        message.set(
-            ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True,
-        )
+        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @staticmethod
     def extract_entities(doc: "Doc") -> List[Dict[Text, Any]]:

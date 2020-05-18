@@ -424,6 +424,13 @@ async def _train_nlu_async(
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
 ):
+    if not nlu_data:
+        print_error(
+            "No NLU data given. Please provide NLU data in order to train "
+            "a Rasa NLU model using the '--nlu' argument."
+        )
+        return
+
     # training NLU only hence the training files still have to be selected
     file_importer = TrainingDataImporter.load_nlu_importer_from_config(
         config, training_data_paths=[nlu_data]
@@ -432,8 +439,9 @@ async def _train_nlu_async(
     training_datas = await file_importer.get_nlu_data()
     if training_datas.is_empty():
         print_error(
-            "No NLU data given. Please provide NLU data in order to train "
-            "a Rasa NLU model using the '--nlu' argument."
+            f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
+            "Please verify the data format. "
+            "The NLU model training will be skipped now."
         )
         return
 

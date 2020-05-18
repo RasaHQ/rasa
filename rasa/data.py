@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import uuid
 import re
-from typing import Tuple, List, Text, Set, Union, Optional
+from typing import Tuple, List, Text, Set, Union, Optional, Iterable
 from rasa.nlu.training_data import loading
 from rasa.utils.io import DEFAULT_ENCODING
 
@@ -60,7 +60,7 @@ def get_core_nlu_directories(
 
 def get_core_nlu_files(
     paths: Optional[Union[Text, List[Text]]]
-) -> Tuple[Set[Text], Set[Text]]:
+) -> Tuple[List[Text], List[Text]]:
     """Recursively collects all training files from a list of paths.
 
     Args:
@@ -95,7 +95,7 @@ def get_core_nlu_files(
             story_files.update(new_story_files)
             nlu_data_files.update(new_nlu_data_files)
 
-    return story_files, nlu_data_files
+    return sorted(story_files), sorted(nlu_data_files)
 
 
 def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[Text]]:
@@ -203,7 +203,7 @@ def is_config_file(file_path: Text) -> bool:
     return file_name in ["config.yml", "config.yaml"]
 
 
-def _copy_files_to_new_dir(files: Set[Text]) -> Text:
+def _copy_files_to_new_dir(files: Iterable[Text]) -> Text:
     directory = tempfile.mkdtemp()
     for f in files:
         # makes sure files do not overwrite each other, hence the prefix
