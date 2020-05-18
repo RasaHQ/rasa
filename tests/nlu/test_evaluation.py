@@ -279,7 +279,6 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
     )
 
     assert result.get("intent_evaluation")
-    assert result.get("entity_evaluation").get("DIETClassifier")
 
 
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
@@ -742,8 +741,10 @@ def test_get_evaluation_metrics(
     assert NO_ENTITY not in report
 
 
-def test_nlu_comparison(tmpdir, config_path):
-    configs = [config_path, config_path]
+def test_nlu_comparison(tmpdir, config_path, config_path_duplicate):
+    # the configs need to be at a different path, otherwise the results are
+    # combined on the same dictionary key and cannot be plotted properly
+    configs = [config_path, config_path_duplicate]
 
     output = tmpdir.strpath
     compare_nlu_models(

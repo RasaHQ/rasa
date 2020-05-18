@@ -95,33 +95,64 @@ also be asked to sign a
 
 ## Development Internals
 
-### Building from source
+### Installing Poetry
 
 Rasa uses Poetry for packaging and dependency management. If you want to build it from source,
 you have to install Poetry first. This is how it can be done:
 
-```
-curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
+```bash
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 ```
 
 There are several other ways to install Poetry. Please, follow 
 [the official guide](https://python-poetry.org/docs/#installation) to see all possible options.
 
-To install dependencies and `rasa` itself in editable mode execute
+### Managing environments
+
+The official [Poetry guide](https://python-poetry.org/docs/managing-environments/) suggests to use
+[pyenv](https://github.com/pyenv/pyenv) or any other similar tool to easily switch between Python versions. 
+This is how it can be done:
+
+```bash
+pyenv install 3.7.6
+pyenv local 3.7.6  # Activate Python 3.7.6 for the current project
 ```
+
+By default, Poetry will try to use the currently activated Python version to create the virtual environment 
+for the current project automatically. You can also create and activate a virtual environment manually — in this
+case, Poetry should pick it up and use it to install the dependencies. For example:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+You can make sure that the environment is picked up by executing 
+
+```bash
+poetry env info
+```
+
+### Building from source
+
+To install dependencies and `rasa` itself in editable mode execute
+
+```bash
 make install
 ```
 
 ### Running and changing the documentation
 
 First of all, install all the required dependencies:
-```
+
+```bash
 make install
 ```
 
 After the installation has finished, you can run and view the documentation
 locally using:
-```
+
+```bash
 make livedocs
 ```
 
@@ -130,7 +161,9 @@ You can now change the docs locally and the web page will automatically reload
 and apply your changes.
 
 ### Running the Tests
+
 In order to run the tests, make sure that you have the development requirements installed:
+
 ```bash
 export PIP_USE_PEP517=false
 make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
@@ -138,16 +171,35 @@ make prepare-tests-macos  # Only on macOS
 ```
 
 Then, run the tests:
+
 ```bash
 make test
 ```
 
 They can also be run at multiple jobs to save some time:
+
 ```bash
 JOBS=[n] make test
 ```
 
 Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
+
+### Resolving merge conflicts
+
+Poetry doesn't include any solution that can help to resolve merge conflicts in
+the lock file `poetry.lock` by default.
+However, there is a great tool called [poetry-merge-lock](https://poetry-merge-lock.readthedocs.io/en/latest/).
+Here is how use can install it:
+
+```bash
+pip install poetry-merge-lock
+```
+
+Just execute this command to resolve merge conflicts in `poetry.lock` automatically:
+
+```bash
+poetry-merge-lock
+```
 
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by GitHub Actions.
@@ -163,6 +215,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
 2. Switch to the branch you want to cut the release from (`master` in case of a major / minor, the current feature branch for patch releases) 
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
+    - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
 3. Run `make release`
 4. Create a PR against master or the release branch (e.g. `1.2.x`)
 5. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using

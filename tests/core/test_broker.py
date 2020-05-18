@@ -1,7 +1,9 @@
 import json
+import logging
 from typing import Union, Text, List, Optional, Type
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -199,3 +201,26 @@ def test_kafka_broker_from_config():
     assert actual.sasl_username == expected.sasl_username
     assert actual.sasl_password == expected.sasl_password
     assert actual.topic == expected.topic
+
+
+def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
+    from rasa.core.brokers import pika
+
+    with pytest.raises(Exception):
+        pika.initialise_pika_connection(
+            "localhost", "user", "password", connection_attempts=1
+        )
+
+    assert len(caplog.records) == 0
+
+
+def test_pika_logs_in_debug_mode(caplog: LogCaptureFixture, monkeypatch: MonkeyPatch):
+    from rasa.core.brokers import pika
+
+    with caplog.at_level(logging.DEBUG):
+        with pytest.raises(Exception):
+            pika.initialise_pika_connection(
+                "localhost", "user", "password", connection_attempts=1
+            )
+
+    assert len(caplog.records) > 0

@@ -1,14 +1,10 @@
-import asyncio
+from typing import Text
 
-import pytest
-
-import rasa.utils.io
 from rasa.core import restore
 from rasa.core.agent import Agent
-from rasa.model import get_model
 
 
-async def test_restoring_tracker(trained_moodbot_path, recwarn):
+async def test_restoring_tracker(trained_moodbot_path: Text, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 
     agent = Agent.load(trained_moodbot_path)
