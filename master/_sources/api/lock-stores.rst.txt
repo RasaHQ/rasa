@@ -63,7 +63,7 @@ RedisLockStore
 :Parameters:
     - ``url`` (default: ``localhost``): The url of your redis instance
     - ``port`` (default: ``6379``): The port which redis is running on
-    - ``db`` (default: ``0``): The number of your redis database
+    - ``db`` (default: ``1``): The number of your redis database
     - ``password`` (default: ``None``): Password used for authentication
       (``None`` equals no authentication)
     - ``use_ssl`` (default: ``False``): Whether or not the communication is encrypted

@@ -300,7 +300,7 @@ If you want to use a form, you can add the specific role/group label of interest
 <code class="docutils literal notranslate"><span class="pre">from_entity</span></code> (see <a class="reference internal" href="../core/forms/#forms"><span class="std std-ref">Forms</span></a>).</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Composite entities are currently just supported by the :ref:<code class="docutils literal notranslate"><span class="pre">diet-classifier</span></code> and :ref:<code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>.</p>
+<p>Composite entities are currently just supported by the <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> and <a class="reference internal" href="../nlu/components/#crfentityextractor"><span class="std std-ref">CRFEntityExtractor</span></a>.</p>
 </div>
 </li>
 <li><p><a class="reference external" href="https://github.com/rasahq/rasa/issues/5465">#5465</a>: Update training data format for NLU to support entities with a role or group label.</p>
@@ -324,7 +324,7 @@ Markdown:</p>
 </div>
 <p>The markdown format <code class="docutils literal notranslate"><span class="pre">[LA](location:Los</span> <span class="pre">Angeles)</span></code> is deprecated. To update your training data file just
 execute the following command on the terminal of your choice:
-<code class="docutils literal notranslate"><span class="pre">sed</span> <span class="pre">-i</span> <span class="pre">.deprecated</span> <span class="pre">-E</span> <span class="pre">'s/\[(.*)\]\((.*):(.*)\)/\[\1\]\{&quot;entity&quot;:</span> <span class="pre">&quot;\2&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;\3&quot;\}/g'</span> <span class="pre">nlu.md</span></code></p>
+<code class="docutils literal notranslate"><span class="pre">sed</span> <span class="pre">-i</span> <span class="pre">-E</span> <span class="pre">'s/\[([^)]+)\]\(([^)]+):([^)]+)\)/[\1]{&quot;entity&quot;:</span> <span class="pre">&quot;\2&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;\3&quot;}/g'</span> <span class="pre">nlu.md</span></code></p>
 <p>For more information about the new data format see <a class="reference internal" href="../nlu/training-data-format/#training-data-format"><span class="std std-ref">Training Data Format</span></a>.</p>
 </li>
 </ul>

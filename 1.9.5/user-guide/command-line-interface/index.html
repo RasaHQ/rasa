@@ -397,6 +397,7 @@ using <code class="docutils literal notranslate"><span class="pre">--fixed-model
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
+                  [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force]
                   {core,nlu} ...
@@ -425,6 +426,9 @@ optional arguments:
                         their connections between story blocks in a file
                         called `story_blocks_connections.html`. (default:
                         False)
+  --num-threads NUM_THREADS
+                        Maximum amount of threads to use when training.
+                        (default: 1)
   --fixed-model-name FIXED_MODEL_NAME
                         If set, the name of the model file/directory will be
                         set to the given name. (default: None)
@@ -497,7 +501,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: 0bdedf8f2e1348ada91db19a580fa012)
+                        generated. (default: 2b2cc9180e0d4b57aea5aa781350f585)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
@@ -576,7 +580,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        d749462711674b6c866b769fa29e303a)
+                        c5fda4f700164c09b771b94e9a5a7c79)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this

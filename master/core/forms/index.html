@@ -517,9 +517,36 @@ belongs to a list of supported cuisines.</p>
 to set, you can set more slots than just the one you are validating from inside
 a helper validation method. However, you are responsible for making sure that
 those extra slot values are valid.</p>
-<p>You can also deactivate the form directly during this validation step (in case the
-slot is filled with something that you are certain can’t be handled) by returning
-<code class="docutils literal notranslate"><span class="pre">self.deactivate()</span></code></p>
+<p>In case the slot is filled with something that you are certain can’t be handled
+and you want to deactivate the form directly,
+you can overwrite the <code class="docutils literal notranslate"><span class="pre">request_next_slot()</span></code> method to do so. The example below
+checks the value of the <code class="docutils literal notranslate"><span class="pre">cuisine</span></code> slot directly, but you could use any logic
+you’d like to trigger deactivation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">request_next_slot</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">dispatcher</span><span class="p">:</span> <span class="s2">&quot;CollectingDispatcher&quot;</span><span class="p">,</span>
+    <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;Tracker&quot;</span><span class="p">,</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">EventType</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Request the next slot and utter template if needed,</span>
+<span class="sd">        else return None&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_slots</span><span class="p">(</span><span class="n">tracker</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_request_slot</span><span class="p">(</span><span class="n">tracker</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+
+            <span class="c1">## Condition of validated slot that triggers deactivation</span>
+            <span class="k">if</span> <span class="n">slot</span> <span class="o">==</span> <span class="s2">&quot;cuisine&quot;</span> <span class="ow">and</span> <span class="n">tracker</span><span class="o">.</span><span class="n">get_slot</span><span class="p">(</span><span class="s2">&quot;cuisine&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;caribbean&quot;</span><span class="p">:</span>
+                <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">&quot;Sorry, I can&#39;t help you with that&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">deactivate</span><span class="p">()</span>
+
+            <span class="c1">## For all other slots, continue as usual</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Request next slot &#39;</span><span class="si">{</span><span class="n">slot</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span>
+                <span class="n">template</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;utter_ask_</span><span class="si">{</span><span class="n">slot</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">tracker</span><span class="o">.</span><span class="n">slots</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">SlotSet</span><span class="p">(</span><span class="n">REQUESTED_SLOT</span><span class="p">,</span> <span class="n">slot</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+</div>
 <p>If nothing is extracted from the user’s utterance for any of the required slots, an
 <code class="docutils literal notranslate"><span class="pre">ActionExecutionRejection</span></code> error will be raised, meaning the action execution
 was rejected and therefore Core will fall back onto a different policy to
