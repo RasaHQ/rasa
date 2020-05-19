@@ -148,7 +148,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
     | 4. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
     | 3. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
     | 2. ``MappingPolicy``y``
-    | 1. ``TEDPolicy``, ``EmbeddingPolicy`` and ``SklearnPolicy``
+    | 1. ``TEDPolicy`` and ``SklearnPolicy``
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
 above the ``nlu_threshold``, the bot will still fall back. In general, it is not recommended to have more
