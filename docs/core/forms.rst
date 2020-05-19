@@ -142,10 +142,11 @@ Here's an example for the restaurant bot:
 
 The predefined functions work as follows:
 
-- ``self.from_entity(entity=entity_name, intent=intent_name)``
+- ``self.from_entity(entity=entity_name, intent=intent_name, role=role_name, group=group_name)``
   will look for an entity called ``entity_name`` to fill a slot
   ``slot_name`` regardless of user intent if ``intent_name`` is ``None``
-  else only if the users intent is ``intent_name``.
+  else only if the users intent is ``intent_name``. If ``role_name`` and/or ``group_name``
+  are provided, the role/group label of the entity also needs to match the given values.
 - ``self.from_intent(intent=intent_name, value=value)``
   will fill slot ``slot_name`` with ``value`` if user intent is ``intent_name``.
   To make a boolean slot, take a look at the definition of ``outdoor_seating``
@@ -190,9 +191,38 @@ to set, you can set more slots than just the one you are validating from inside
 a helper validation method. However, you are responsible for making sure that
 those extra slot values are valid.
 
-You can also deactivate the form directly during this validation step (in case the
-slot is filled with something that you are certain can't be handled) by returning
-``self.deactivate()``
+In case the slot is filled with something that you are certain can't be handled
+and you want to deactivate the form directly,
+you can overwrite the ``request_next_slot()`` method to do so. The example below
+checks the value of the ``cuisine`` slot directly, but you could use any logic
+you'd like to trigger deactivation:
+
+.. code-block:: python
+
+    def request_next_slot(
+        self,
+        dispatcher: "CollectingDispatcher",
+        tracker: "Tracker",
+        domain: Dict[Text, Any],
+    ) -> Optional[List[EventType]]:
+        """Request the next slot and utter template if needed,
+            else return None"""
+        for slot in self.required_slots(tracker):
+            if self._should_request_slot(tracker, slot):
+
+                ## Condition of validated slot that triggers deactivation
+                if slot == "cuisine" and tracker.get_slot("cuisine") == "caribbean":
+                    dispatcher.utter_message(text="Sorry, I can't help you with that")
+                    return self.deactivate()
+                
+                ## For all other slots, continue as usual
+                logger.debug(f"Request next slot '{slot}'")
+                dispatcher.utter_message(
+                    template=f"utter_ask_{slot}", **tracker.slots
+                )
+                return [SlotSet(REQUESTED_SLOT, slot)]
+        return None
+
 
 If nothing is extracted from the user's utterance for any of the required slots, an
 ``ActionExecutionRejection`` error will be raised, meaning the action execution
@@ -286,7 +316,7 @@ In the restaurant case, your stories would look something like this:
         ( ... all other slots the form set ... )
         - form{"name": null}
 
-Again, is is **strongly** recommended that you use interactive
+Again, it is **strongly** recommended that you use interactive
 learning to build these stories.
 Please read :ref:`section_interactive_learning_forms`
 on how to use interactive learning with forms.

@@ -15,7 +15,7 @@ Testing Your Assistant
    If you are looking to tune the hyperparameters of your NLU model,
    check out this `tutorial <https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/>`_.
 
-.. _end_to_end_testing:
+.. _end-to-end-testing:
 
 End-to-End Testing
 ------------------
@@ -198,7 +198,7 @@ to the left of the plot.
     is that an entity cannot stop or start inside a token.
     For example, if you have an example for a ``name`` entity
     like ``[Brian](name)'s house``, this is only valid if your tokenizer splits ``Brian's`` into
-    multiple tokens. A whitespace tokenizer would not work in this case.
+    multiple tokens.
 
 
 Response Selection

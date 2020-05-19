@@ -1,13 +1,15 @@
 # this builtin is needed so we can overwrite in test
+import asyncio
 import json
 import logging
-import asyncio
-from typing import Text, Optional, Dict, List
+import os
 
 import aiohttp
 import questionary
 from aiohttp import ClientTimeout
 from prompt_toolkit.styles import Style
+from typing import Any
+from typing import Text, Optional, Dict, List
 
 from rasa.cli import utils as cli_utils
 from rasa.core import utils
@@ -15,17 +17,45 @@ from rasa.core.channels.channel import RestInput
 from rasa.core.constants import DEFAULT_SERVER_URL
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.utils.io import DEFAULT_ENCODING
-from typing import Any, Coroutine
 
 logger = logging.getLogger(__name__)
 
+STREAM_READING_TIMEOUT_ENV = "RASA_SHELL_STREAM_READING_TIMEOUT_IN_SECONDS"
 DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 
 
-def print_bot_output(
-    message: Dict[Text, Any], color=cli_utils.bcolors.OKBLUE
+def print_buttons(
+    message: Dict[Text, Any],
+    is_latest_message: bool = False,
+    color=cli_utils.bcolors.OKBLUE,
 ) -> Optional[questionary.Question]:
-    if ("text" in message) and not ("buttons" in message):
+    if is_latest_message:
+        choices = cli_utils.button_choices_from_message_data(
+            message, allow_free_text_input=True
+        )
+        question = questionary.select(
+            message.get("text"),
+            choices,
+            style=Style([("qmark", "#6d91d3"), ("", "#6d91d3"), ("answer", "#b373d6")]),
+        )
+        return question
+    else:
+        cli_utils.print_color("Buttons:", color=color)
+        for idx, button in enumerate(message.get("buttons")):
+            cli_utils.print_color(cli_utils.button_to_string(button, idx), color=color)
+
+
+def print_bot_output(
+    message: Dict[Text, Any],
+    is_latest_message: bool = False,
+    color=cli_utils.bcolors.OKBLUE,
+) -> Optional[questionary.Question]:
+    if "buttons" in message:
+        question = print_buttons(message, is_latest_message, color)
+        if question:
+            return question
+
+    if "text" in message:
         cli_utils.print_color(message.get("text"), color=color)
 
     if "image" in message:
@@ -33,18 +63,6 @@ def print_bot_output(
 
     if "attachment" in message:
         cli_utils.print_color("Attachment: " + message.get("attachment"), color=color)
-
-    if "buttons" in message:
-        choices = cli_utils.button_choices_from_message_data(
-            message, allow_free_text_input=True
-        )
-
-        question = questionary.select(
-            message.get("text"),
-            choices,
-            style=Style([("qmark", "#6d91d3"), ("", "#6d91d3"), ("answer", "#b373d6")]),
-        )
-        return question
 
     if "elements" in message:
         cli_utils.print_color("Elements:", color=color)
@@ -63,12 +81,16 @@ def print_bot_output(
         cli_utils.print_color(json.dumps(message.get("custom"), indent=2), color=color)
 
 
-def get_user_input(button_question: questionary.Question) -> Optional[Text]:
-    if button_question is not None:
-        response = cli_utils.payload_from_button_question(button_question)
+def get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
+    button_response = None
+    if previous_response is not None:
+        button_response = print_bot_output(previous_response, is_latest_message=True)
+
+    if button_response is not None:
+        response = cli_utils.payload_from_button_question(button_response)
         if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
-            response = get_user_input(None)
+            response = get_user_input({})
     else:
         response = questionary.text(
             "",
@@ -97,7 +119,7 @@ async def send_message_receive_stream(
     url = f"{server_url}/webhooks/rest/webhook?stream=true&token={auth_token}"
 
     # Define timeout to not keep reading in case the server crashed in between
-    timeout = ClientTimeout(DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS)
+    timeout = _get_stream_reading_timeout()
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(url, json=payload, raise_for_status=True) as resp:
@@ -105,6 +127,16 @@ async def send_message_receive_stream(
             async for line in resp.content:
                 if line:
                     yield json.loads(line.decode(DEFAULT_ENCODING))
+
+
+def _get_stream_reading_timeout() -> ClientTimeout:
+    timeout_in_seconds = int(
+        os.environ.get(
+            STREAM_READING_TIMEOUT_ENV, DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS
+        )
+    )
+
+    return ClientTimeout(timeout_in_seconds)
 
 
 async def record_messages(
@@ -124,10 +156,10 @@ async def record_messages(
     )
 
     num_messages = 0
-    button_question = None
+    previous_response = None
     await asyncio.sleep(0.5)  # Wait for server to start
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = get_user_input(button_question)
+        text = get_user_input(previous_response)
 
         if text == exit_text or text is None:
             break
@@ -136,14 +168,20 @@ async def record_messages(
             bot_responses = send_message_receive_stream(
                 server_url, auth_token, sender_id, text
             )
+            previous_response = None
             async for response in bot_responses:
-                button_question = print_bot_output(response)
+                if previous_response is not None:
+                    print_bot_output(previous_response)
+                previous_response = response
         else:
             bot_responses = await send_message_receive_block(
                 server_url, auth_token, sender_id, text
             )
+            previous_response = None
             for response in bot_responses:
-                button_question = print_bot_output(response)
+                if previous_response is not None:
+                    print_bot_output(previous_response)
+                previous_response = response
 
         num_messages += 1
         await asyncio.sleep(0)  # Yield event loop for others coroutines

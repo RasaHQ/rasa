@@ -48,37 +48,37 @@ class RasaModel(tf.keras.models.Model):
 
         self.random_seed = random_seed
 
+        self.tensorboard_log_dir = tensorboard_log_dir
+        self.tensorboard_log_level = tensorboard_log_level
+
         self.train_summary_writer = None
         self.test_summary_writer = None
         self.model_summary_file = None
         self.tensorboard_log_on_epochs = True
 
-        self._set_up_tensorboard_writer(tensorboard_log_level, tensorboard_log_dir)
-
-    def _set_up_tensorboard_writer(
-        self, tensorboard_log_level: Text, tensorboard_log_dir: Optional[Text] = None
-    ) -> None:
-        if tensorboard_log_dir is not None:
-            if tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
+    def _set_up_tensorboard_writer(self) -> None:
+        if self.tensorboard_log_dir is not None:
+            if self.tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
                 raise ValueError(
-                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{tensorboard_log_level}') "
+                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{self.tensorboard_log_level}') "
                     f"is invalid! Valid values are: {TENSORBOARD_LOG_LEVELS}"
                 )
-
-            self.tensorboard_log_on_epochs = tensorboard_log_level == "epoch"
+            self.tensorboard_log_on_epochs = self.tensorboard_log_level == "epoch"
 
             current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             class_name = self.__class__.__name__
 
-            train_log_dir = f"{tensorboard_log_dir}/{class_name}/{current_time}/train"
-            test_log_dir = f"{tensorboard_log_dir}/{class_name}/{current_time}/test"
+            train_log_dir = (
+                f"{self.tensorboard_log_dir}/{class_name}/{current_time}/train"
+            )
+            test_log_dir = (
+                f"{self.tensorboard_log_dir}/{class_name}/{current_time}/test"
+            )
 
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
-            self.model_summary_file = (
-                f"{tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
-            )
+            self.model_summary_file = f"{self.tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -99,9 +99,14 @@ class RasaModel(tf.keras.models.Model):
         evaluate_every_num_epochs: int,
         batch_strategy: Text,
         silent: bool = False,
+        loading: bool = False,
         eager: bool = False,
     ) -> None:
         """Fit model data"""
+
+        # don't setup tensorboard writers when training during loading
+        if not loading:
+            self._set_up_tensorboard_writer()
 
         tf.random.set_seed(self.random_seed)
         np.random.seed(self.random_seed)
@@ -187,10 +192,36 @@ class RasaModel(tf.keras.models.Model):
     ) -> None:
         """Train on batch"""
 
-        with tf.GradientTape() as tape:
-            total_loss = self._total_batch_loss(batch_in)
+        # calculate supervision and regularization losses separately
+        with tf.GradientTape(persistent=True) as tape:
+            prediction_loss = self.batch_loss(batch_in)
+            regularization_loss = tf.math.add_n(self.losses)
+            total_loss = prediction_loss + regularization_loss
 
-        gradients = tape.gradient(total_loss, self.trainable_variables)
+        self.total_loss.update_state(total_loss)
+
+        # calculate the gradients that come from supervision signal
+        prediction_gradients = tape.gradient(prediction_loss, self.trainable_variables)
+        # calculate the gradients that come from regularization
+        regularization_gradients = tape.gradient(
+            regularization_loss, self.trainable_variables
+        )
+        # delete gradient tape manually
+        # since it was created with `persistent=True` option
+        del tape
+
+        gradients = []
+        for pred_grad, reg_grad in zip(prediction_gradients, regularization_gradients):
+            if pred_grad is not None and reg_grad is not None:
+                # remove regularization gradient for variables
+                # that don't have prediction gradient
+                gradients.append(
+                    pred_grad
+                    + tf.where(pred_grad > 0, reg_grad, tf.zeros_like(reg_grad))
+                )
+            else:
+                gradients.append(pred_grad)
+
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
     def build_for_predict(
@@ -231,6 +262,7 @@ class RasaModel(tf.keras.models.Model):
             evaluate_on_num_examples=0,
             batch_strategy=SEQUENCE,
             silent=True,  # don't confuse users with training output
+            loading=True,  # don't use tensorboard while loading
             eager=True,  # no need to build tf graph, eager is faster here
         )
         # load trained weights
