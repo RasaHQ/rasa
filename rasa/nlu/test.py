@@ -1168,6 +1168,7 @@ def determine_entity_for_token(
         token: a single token
         entities: entities found by a single extractor
         extractors: list of extractors
+
     Returns:
         entity type
     """
