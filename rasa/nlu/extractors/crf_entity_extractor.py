@@ -473,7 +473,7 @@ class CRFEntityExtractor(EntityExtractor):
         if features is None:
             return None
 
-        tokens = train_utils.tokens_without_cls(message, TEXT)
+        tokens = message.get(TOKENS_NAMES[TEXT])
         if len(tokens) != len(features):
             common_utils.raise_warning(
                 f"Number of dense features ({len(features)}) for attribute "
@@ -482,7 +482,7 @@ class CRFEntityExtractor(EntityExtractor):
             )
             return None
 
-        return features.tolist()
+        return list(features)
 
     def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:
         """Take a message and convert it to crfsuite format."""
