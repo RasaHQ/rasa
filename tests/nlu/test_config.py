@@ -24,15 +24,14 @@ def test_blank_config(blank_config):
     assert final_config.as_dict() == blank_config.as_dict()
 
 
-def test_invalid_config_json():
+def test_invalid_config_json(tmp_path):
     file_config = """pipeline: [pretrained_embeddings_spacy"""  # invalid yaml
 
-    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.json") as f:
-        f.write(file_config)
-        f.flush()
+    f = tmp_path / "tmp_config_file.json"
+    f.write_text(file_config)
 
-        with pytest.raises(config.InvalidConfigError):
-            config.load(f.name)
+    with pytest.raises(config.InvalidConfigError):
+        config.load(str(f))
 
 
 def test_invalid_pipeline_template():

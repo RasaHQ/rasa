@@ -9,12 +9,7 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    TEXT,
-    TOKENS_NAMES,
-    DENSE_FEATURE_NAMES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-)
+from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, DENSE_FEATURIZABLE_ATTRIBUTES
 import numpy as np
 import tensorflow as tf
 
@@ -79,11 +74,9 @@ class ConveRTFeaturizer(DenseFeaturizer):
         self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
-            example.get(TOKENS_NAMES[attribute]) for example in batch_examples
+            train_utils.tokens_without_cls(example, attribute)
+            for example in batch_examples
         ]
-
-        # remove CLS token from list of tokens
-        list_of_tokens = [sent_tokens[:-1] for sent_tokens in list_of_tokens]
 
         number_of_tokens_in_sentence = [
             len(sent_tokens) for sent_tokens in list_of_tokens
@@ -91,12 +84,17 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         # join the tokens to get a clean text to ensure the sequence length of
         # the returned embeddings from ConveRT matches the length of the tokens
+        # (including sub-tokens)
         tokenized_texts = self._tokens_to_text(list_of_tokens)
+        token_features = self._sequence_encoding_of_text(tokenized_texts)
 
-        return (
-            self._sequence_encoding_of_text(tokenized_texts),
-            number_of_tokens_in_sentence,
+        # ConveRT might split up tokens into sub-tokens
+        # take the mean of the sub-token vectors and use that as the token vector
+        token_features = train_utils.align_token_features(
+            list_of_tokens, token_features
         )
+
+        return token_features, number_of_tokens_in_sentence
 
     def _combine_encodings(
         self,

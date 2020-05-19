@@ -1,0 +1,1 @@
+Don't set roles and groups to ``O`` (nothing found) when constructing entities from model predictions.
