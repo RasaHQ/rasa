@@ -37,11 +37,11 @@ jobs:
       with:
         node-version: '10.x'
 
-    - name: Run Swagger 🕵️‍♀️
-      run: |
-        npm install -g swagger-cli
-        swagger-cli validate docs/_static/spec/action-server.yml
-        swagger-cli validate docs/_static/spec/rasa.yml
+#    - name: Run Swagger 🕵️‍♀️
+#      run: |
+#        npm install -g swagger-cli
+#        swagger-cli validate docs/_static/spec/action-server.yml
+#        swagger-cli validate docs/_static/spec/rasa.yml
 
   quality:
     name: Code Quality
@@ -78,17 +78,17 @@ jobs:
         sudo apt-get -y install libpq-dev
         make install-full
 
-    - name: Lint Code 🎎
-      run: make lint
+#    - name: Lint Code 🎎
+#      run: make lint
 
-    - name: Check Types 📚
-      run: make types
+#    - name: Check Types 📚
+#      run: make types
 
-    - name: Test CLI 🖥
+#    - name: Test CLI 🖥
       # makes sure we catch any dependency error early. they will create strange
       # errors during the docs build, so easier to catch them early on by
       # trying to run the `rasa` command once before the docs build.
-      run: poetry run rasa --help
+#      run: poetry run rasa --help
 
     - name: Build Changelog 🔨
       env:
@@ -103,7 +103,7 @@ jobs:
       with:
         docs-folder: "docs/"
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
-        build-command: "make SPHINXOPTS=\"-W --keep-going -A html_theme=rasabaster\" html"
+        build-command: "make SPHINXOPTS+=\"-W --keep-going -A html_theme=rasabaster\" html"
         pre-build-command: "apt-get update -y && apt-get install -y git"
 
   test:
