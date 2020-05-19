@@ -99,10 +99,9 @@ jobs:
         poetry run python -c "${build_command}"
 
     - name: Test Docs
-      uses: ammaraskar/sphinx-action@0.4
+      uses: ammaraskar/sphinx-action@master
       with:
         docs-folder: "docs/"
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
         build-command: "make SPHINXOPTS+=\"-W --keep-going -A html_theme=rasabaster\" html"
         pre-build-command: "apt-get update -y && apt-get install -y git"
 
