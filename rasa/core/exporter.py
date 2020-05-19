@@ -49,6 +49,10 @@ class Exporter:
     ) -> None:
         self.endpoints_path = endpoints_path
         self.tracker_store = tracker_store
+        # The `TrackerStore` should return all events on `retrieve` and not just the
+        # ones from the last session.
+        self.tracker_store.load_events_from_previous_conversation_sessions = True
+
         self.event_broker = event_broker
         self.requested_conversation_ids = requested_conversation_ids
         self.minimum_timestamp = minimum_timestamp
@@ -142,7 +146,7 @@ class Exporter:
         )
 
     def _validate_all_requested_ids_exist(
-        self, conversation_ids_in_tracker_store: Set[Text],
+        self, conversation_ids_in_tracker_store: Set[Text]
     ) -> None:
         """Warn user if `self.requested_conversation_ids` contains IDs not found in
         `conversation_ids_in_tracker_store`
