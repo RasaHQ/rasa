@@ -15,6 +15,16 @@ import rasa.utils.endpoints as endpoint_utils
         ("https://example.com/", None, "https://example.com/"),
         ("https://example.com/", "test", "https://example.com/test"),
         ("https://example.com/", "test/", "https://example.com/test/"),
+        (
+            "http://duckling.rasa.com:8000",
+            "/parse",
+            "http://duckling.rasa.com:8000/parse",
+        ),
+        (
+            "http://duckling.rasa.com:8000/",
+            "/parse",
+            "http://duckling.rasa.com:8000/parse",
+        ),
     ],
 )
 def test_concat_url(base, subpath, expected_result):
@@ -94,3 +104,19 @@ def test_endpoint_config_custom_token_name():
     actual = endpoint_utils.EndpointConfig.from_dict(test_data)
 
     assert actual.token_name == "test_token"
+
+
+async def test_request_non_json_response():
+    with aioresponses() as mocked:
+        endpoint = endpoint_utils.EndpointConfig("https://example.com/")
+
+        mocked.post(
+            "https://example.com/test",
+            payload="ok",
+            content_type="application/text",
+            status=200,
+        )
+
+        response = await endpoint.request("post", subpath="test",)
+
+        assert not response

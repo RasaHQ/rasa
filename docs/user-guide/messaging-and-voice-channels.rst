@@ -37,6 +37,7 @@ Learn how to make your assistant available on:
    connectors/cisco-webex-teams
    connectors/rocketchat
    connectors/mattermost
+   connectors/hangouts
    connectors/custom-connectors
 
 

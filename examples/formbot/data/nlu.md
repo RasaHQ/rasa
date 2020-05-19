@@ -35,20 +35,20 @@
 - id like a restaurant
 - im looking for a restaurant that serves [mediterranean](cuisine) food
 - can i find a restaurant that serves [chinese](cuisine)
-- i am looking for any place that serves [indonesian](cuisine) food for [three](num_people:3)
+- i am looking for any place that serves [indonesian](cuisine) food for three
 - i need to find a restaurant
 - uh im looking for a restaurant that serves [kosher](cuisine) food
 - uh can i find a restaurant and it should serve [brazilian](cuisine) food
 - im looking for a restaurant serving [italian](cuisine) food
 - restaurant please
-- i'd like to book a table for [two](num_people:2) with [spanish](cuisine) cuisine
-- i need a table for [4](num_people)
-- book me a table for [three](num_people:3) at the [italian](cuisine) restaurant
-- can you please book a table for [5](num_people)?
-- I would like to book a table for [2](num_people)
-- looking for a table at the [mexican](cuisine) restaurant for [five](num_people:5)
-- find me a table for [7](num_people) people
-- Can I get a table for [four](num_people:4) at the place which server [greek](cuisine) food?
+- i'd like to book a table for two with [spanish](cuisine) cuisine
+- i need a table for 4
+- book me a table for three at the [italian](cuisine) restaurant
+- can you please book a table for 5?
+- I would like to book a table for 2
+- looking for a table at the [mexican](cuisine) restaurant for five
+- find me a table for 7 people
+- Can I get a table for four at the place which server [greek](cuisine) food?
 
 ## intent:affirm
 - yeah a cheap restaurant serving international food
@@ -131,7 +131,7 @@
 - how about [indian](cuisine) type of food
 - [polynesian](cuisine) food
 - [mexican](cuisine)
-- instead could it be for [four](num_people:4) people
+- instead could it be for four people
 - any [japanese](cuisine) food
 - what about [thai](cuisine) food
 - how about [asian oriental](cuisine) food
@@ -202,13 +202,13 @@
 - it was [terrible](feedback)
 - i consider it [success](feedback)
 - you are [awful](feedback)
-- for [ten](num_people:10) people
-- [2](num_people) people
-- for [three](num_people:3) people
-- just [one](num_people:1) person
-- book for [seven](num_people:7) people
-- 2[num_people] please
-- [nine](num_people:9) people
+- for ten people
+- 2 people
+- for three people
+- just one person
+- book for seven people
+- 2 please
+- nine people
 
 ## intent:thankyou
 - um thank you good bye

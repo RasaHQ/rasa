@@ -8,6 +8,8 @@ linkcheck_anchors_ignore = [".*"]
 linkcheck_ignore = [
     r"http://localhost:\d+/",
     r"https://github.com/mit-nlp/MITIE/releases/download/",
+    r"https://github.com/rasahq/rasa/issues/.*",  # due to rate limiting
+    r"https://github.com/RasaHQ/rasa/issues/.*",  # due to rate limiting
 ]
 linkcheck_retries = 2
 linkcheck_timeout = 5
@@ -236,13 +238,13 @@ htmlhelp_basename = "rasa_doc"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
     # Latex figure (float) alignment
-    #'figure_align': 'htbp',
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -337,7 +339,9 @@ scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
 scv_whitelist_tags = (
     re.compile(r"^[2-9]+\.\d+\.\d+$"),
     re.compile(r"^1\.[1-9][0-9]+\.\d+$"),
-    re.compile(r"^1\.[789]\.\d+$"),
+    re.compile(r"^1\.9\.7$"),
+    re.compile(r"^1\.8\.3$"),
+    re.compile(r"^1\.7\.4$"),
     re.compile(r"^1\.6\.2$"),
     re.compile(r"^1\.5\.3$"),
     re.compile(r"^1\.4\.6$"),

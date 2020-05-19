@@ -5,6 +5,7 @@ import os
 import requests
 from typing import Any, List, Optional, Text, Dict
 
+import rasa.utils.endpoints as endpoints_utils
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
@@ -113,15 +114,23 @@ class DucklingHTTPExtractor(EntityExtractor):
         }
 
     def _duckling_parse(self, text: Text, reference_time: int) -> List[Dict[Text, Any]]:
-        """Sends the request to the duckling server and parses the result."""
+        """Sends the request to the duckling server and parses the result.
 
+        Args:
+            text: Text for duckling server to parse.
+            reference_time: Reference time in milliseconds.
+
+        Returns:
+            JSON response from duckling server with parse data.
+        """
+        parse_url = endpoints_utils.concat_url(self._url(), "/parse")
         try:
             payload = self._payload(text, reference_time)
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
             response = requests.post(
-                self._url() + "/parse",
+                parse_url,
                 data=payload,
                 headers=headers,
                 timeout=self.component_config.get("timeout"),
@@ -130,9 +139,8 @@ class DucklingHTTPExtractor(EntityExtractor):
                 return response.json()
             else:
                 logger.error(
-                    "Failed to get a proper response from remote "
-                    "duckling. Status Code: {}. Response: {}"
-                    "".format(response.status_code, response.text)
+                    f"Failed to get a proper response from remote "
+                    f"duckling at '{parse_url}. Status Code: {response.status_code}. Response: {response.text}"
                 )
                 return []
         except (
@@ -186,9 +194,7 @@ class DucklingHTTPExtractor(EntityExtractor):
             )
 
         extracted = self.add_extractor_name(extracted)
-        message.set(
-            ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True,
-        )
+        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @classmethod
     def load(

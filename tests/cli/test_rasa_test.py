@@ -22,31 +22,31 @@ def test_test(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project("test")
 
     assert os.path.exists("results")
-    assert os.path.exists("results/hist.png")
-    assert os.path.exists("results/confmat.png")
+    assert os.path.exists("results/intent_histogram.png")
+    assert os.path.exists("results/intent_confusion_matrix.png")
 
 
 def test_test_no_plot(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project("test", "--no-plot")
 
-    assert not os.path.exists("results/hist.png")
-    assert not os.path.exists("results/confmat.png")
+    assert not os.path.exists("results/intent_histogram.png")
+    assert not os.path.exists("results/intent_confusion_matrix.png")
     assert not os.path.exists("results/story_confmat.pdf")
 
 
 def test_test_nlu(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project("test", "nlu", "--nlu", "data", "--successes")
 
-    assert os.path.exists("results/hist.png")
-    assert os.path.exists("results/confmat.png")
+    assert os.path.exists("results/intent_histogram.png")
+    assert os.path.exists("results/intent_confusion_matrix.png")
     assert os.path.exists("results/intent_successes.json")
 
 
 def test_test_nlu_no_plot(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project("test", "nlu", "--no-plot")
 
-    assert not os.path.exists("results/confmat.png")
-    assert not os.path.exists("results/hist.png")
+    assert not os.path.exists("results/intent_histogram.png")
+    assert not os.path.exists("results/intent_confusion_matrix.png")
 
 
 def test_test_nlu_cross_validation(run_in_default_project: Callable[..., RunResult]):
@@ -54,8 +54,8 @@ def test_test_nlu_cross_validation(run_in_default_project: Callable[..., RunResu
         "test", "nlu", "--cross-validation", "-c", "config.yml", "-f", "2"
     )
 
-    assert os.path.exists("results/hist.png")
-    assert os.path.exists("results/confmat.png")
+    assert os.path.exists("results/intent_histogram.png")
+    assert os.path.exists("results/intent_confusion_matrix.png")
 
 
 def test_test_nlu_comparison(
@@ -161,11 +161,10 @@ def test_test_help(run: Callable[..., RunResult]):
     output = run("test", "--help")
 
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                 [--max-stories MAX_STORIES] [--e2e] [--endpoints ENDPOINTS]
+                 [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU] [--out OUT]
-                 [--successes] [--no-errors] [--histogram HISTOGRAM]
-                 [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
+                 [--successes] [--no-errors] [-c CONFIG [CONFIG ...]]
                  [--cross-validation] [-f FOLDS] [-r RUNS]
                  [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
                  {core,nlu} ..."""
@@ -180,8 +179,7 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [--successes] [--no-errors] [--histogram HISTOGRAM]
-                     [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
+                     [--successes] [--no-errors] [-c CONFIG [CONFIG ...]]
                      [--cross-validation] [-f FOLDS] [-r RUNS]
                      [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]"""
 

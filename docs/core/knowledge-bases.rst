@@ -37,7 +37,7 @@ custom action that inherits from ``ActionQueryKnowledgeBase``, a pre-written cus
 the logic to query a knowledge base for objects and their attributes.
 
 You can find a complete example in ``examples/knowledgebasebot``
-(`knowledge base bot <https://github.com/RasaHQ/rasa/blob/master/examples/knowledgebasebot/>`_), as well as instructions
+(`knowledge base bot <https://github.com/RasaHQ/rasa/tree/master/examples/knowledgebasebot/>`_), as well as instructions
 for implementing this custom action below.
 
 
@@ -208,6 +208,9 @@ To create your own knowledge base action, you need to inherit ``ActionQueryKnowl
 base to the constructor of ``ActionQueryKnowledgeBase``.
 
 .. code-block:: python
+
+    from rasa_sdk.knowledge_base.storage import InMemoryKnowledgeBase
+    from rasa_sdk.knowledge_base.actions import ActionQueryKnowledgeBase
 
     class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         def __init__(self):
