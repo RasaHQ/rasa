@@ -12,6 +12,7 @@ from slack import WebClient
 
 logger = logging.getLogger(__name__)
 
+ts = ''
 
 class SlackBot(OutputChannel):
     """A Slack communication channel"""
@@ -20,9 +21,10 @@ class SlackBot(OutputChannel):
     def name(cls) -> Text:
         return "slack"
 
-    def __init__(self, token: Text, slack_channel: Optional[Text] = None) -> None:
+    def __init__(self, token: Text, slack_channel: Optional[Text] = None, ts: Optional[Text] = None) -> None:
 
         self.slack_channel = slack_channel
+        self.ts = ts
         self.client = WebClient(token, run_async=True)
         super().__init__()
 
@@ -34,9 +36,10 @@ class SlackBot(OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
+        logger.debug(f"send_text_message, ts: {self.ts}, text: {text}")
         for message_part in text.strip().split("\n\n"):
             await self.client.chat_postMessage(
-                channel=recipient, as_user=True, text=message_part, type="mrkdwn",
+                channel=recipient, as_user=True, text=message_part, type="mrkdwn", thread_ts=self.ts if self.ts else None
             )
 
     async def send_image_url(
@@ -44,6 +47,7 @@ class SlackBot(OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
         image_block = {"type": "image", "image_url": image, "alt_text": image}
+        logger.debug(f"send_image_url, image_url: {image}")
         await self.client.chat_postMessage(
             channel=recipient, as_user=True, text=image, blocks=[image_block],
         )
@@ -52,6 +56,7 @@ class SlackBot(OutputChannel):
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
+        logger.debug(f"send_attachment")
         await self.client.chat_postMessage(
             channel=recipient, as_user=True, attachments=[attachment], **kwargs,
         )
@@ -94,6 +99,7 @@ class SlackBot(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
+        logger.debug(f"send_custom_json, json_message: {json_message}")
         json_message.setdefault("channel", self.slack_channel or recipient_id)
         json_message.setdefault("as_user", True)
         await self.client.chat_postMessage(**json_message)
@@ -118,6 +124,7 @@ class SlackInput(InputChannel):
             credentials.get("slack_retry_reason_header", "x-slack-retry-reason"),
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
             credentials.get("errors_ignore_retry", None),
+            credentials.get("use_threads", False),
         )
         # pytype: enable=attribute-error
 
@@ -128,6 +135,7 @@ class SlackInput(InputChannel):
         slack_retry_reason_header: Optional[Text] = None,
         slack_retry_number_header: Optional[Text] = None,
         errors_ignore_retry: Optional[List[Text]] = None,
+        use_threads: Optional[Text] = None,
     ) -> None:
         """Create a Slack input channel.
 
@@ -157,6 +165,7 @@ class SlackInput(InputChannel):
         self.errors_ignore_retry = errors_ignore_retry or ("http_timeout",)
         self.retry_reason_header = slack_retry_reason_header
         self.retry_num_header = slack_retry_number_header
+        self.use_threads = use_threads
 
     @staticmethod
     def _is_app_mention(slack_event: Dict) -> bool:
@@ -298,13 +307,17 @@ class SlackInput(InputChannel):
 
         if metadata is not None:
             output_channel = metadata.get("out_channel")
+            if self.use_threads:
+                ts = metadata.get("ts")
+            else:
+                ts = None
         else:
             output_channel = None
 
         try:
             user_msg = UserMessage(
                 text,
-                self.get_output_channel(output_channel),
+                self.get_output_channel(output_channel, ts),
                 sender_id,
                 input_channel=self.name(),
                 metadata=metadata,
@@ -327,15 +340,27 @@ class SlackInput(InputChannel):
             Metadata extracted from the sent event payload. This includes the output channel for the response,
             and users that have installed the bot.
         """
-        logger.error(f"slack request: {request}")
-        logger.error(f"slack request: {request.json}")
-        slack_event = request.json
-        event = slack_event.get("event", {})
+        if request.form:
+            logger.debug(f"request: {request.__dict__}")
+            output = request.form
+            payload = json.loads(output["payload"][0])
+            ts = payload.message.get("thread_ts", payload.message.get("ts"))
+            return {
+                "out_channel": payload.channel.get("id"),
+                "ts": ts,
+                "users": payload.user.get("id"),
+            }
+        elif request.json:
+            slack_event = request.json
+            event = slack_event.get("event", {})
+            logger.debug(f"get_metadata, event: {event}")
+            ts = event.get("thread_ts", event.get("ts"))
 
-        return {
-            "out_channel": event.get("channel"),
-            "users": slack_event.get("authed_users"),
-        }
+            return {
+                "out_channel": event.get("channel"),
+                "ts": ts,
+                "users": slack_event.get("authed_users"),
+            }
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -348,21 +373,31 @@ class SlackInput(InputChannel):
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request) -> HTTPResponse:
+            property_names=[p for p in dir(Request) if isinstance(getattr(Request,p),property)]
+            logger.debug(f"webhook request property_names: {property_names}")
             if request.form:
                 output = request.form
                 payload = json.loads(output["payload"][0])
+                logger.debug(f"slack form payload: {payload}")
 
                 if self._is_interactive_message(payload):
                     sender_id = payload["user"]["id"]
                     text = self._get_interactive_response(payload["actions"][0])
-                    if text is not None:
+                    logger.debug(f"form slack sender_id: {sender_id}, actions: {payload['actions']}")
+                    #if text is not None:
+                    #    metadata = self.get_metadata(request)
+                    #    return await self.process_message(
+                    #        request, on_new_message, text, sender_id, metadata
+                    #    )
+                    if payload["actions"][0]["type"] == "button":
+                        # link buttons don't have "value", don't send their clicks to bot
+                        #return response.text("User clicked link button")
                         metadata = self.get_metadata(request)
+                        logger.debug(f"button request: {request.__dict__}")
+                        text=payload["actions"][0]["value"]
                         return await self.process_message(
                             request, on_new_message, text, sender_id, metadata
                         )
-                    elif payload["actions"][0]["type"] == "button":
-                        # link buttons don't have "value", don't send their clicks to bot
-                        return response.text("User clicked link button")
                 return response.text(
                     "The input message could not be processed.", status=500
                 )
@@ -372,6 +407,9 @@ class SlackInput(InputChannel):
                 event = output.get("event", {})
                 user_message = event.get("text", "")
                 sender_id = event.get("user", "")
+                #logger.debug(f"slack request output: {output}, event: {event}")
+                logger.debug(f'slack request event.ts: {event.get("ts", "")}, event.thread_ts: {event.get("thread_ts", "")}')
+                #self.set_ts(event.get("ts", ""))
                 metadata = self.get_metadata(request)
 
                 if "challenge" in output:
@@ -380,6 +418,7 @@ class SlackInput(InputChannel):
                 elif self._is_user_message(output) and self._is_supported_channel(
                     output, metadata
                 ):
+                    logger.debug(f"calling process_message")
                     return await self.process_message(
                         request,
                         on_new_message,
@@ -399,15 +438,20 @@ class SlackInput(InputChannel):
         return slack_webhook
 
     def _is_supported_channel(self, slack_event: Dict, metadata: Dict) -> bool:
+        logger.debug(f"_is_supported_channel, self.slack_channel: {self.slack_channel}")
         return (
             self._is_direct_message(slack_event)
             or self._is_app_mention(slack_event)
             or metadata["out_channel"] == self.slack_channel
         )
 
-    def get_output_channel(self, channel: Optional[Text] = None) -> OutputChannel:
+    def get_output_channel(self, channel: Optional[Text] = None, ts: Optional[Text] = None) -> OutputChannel:
         channel = channel or self.slack_channel
-        return SlackBot(self.slack_token, channel)
+        return SlackBot(self.slack_token, channel, ts)
 
     def set_output_channel(self, channel: Text) -> None:
         self.slack_channel = channel
+
+    def set_ts(self, ts: Text) -> None:
+        self.ts = ts
+
