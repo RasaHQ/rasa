@@ -559,7 +559,7 @@ def _add_confused_labels_to_report(
     report: Dict[Text, Dict[Text, Any]],
     confusion_matrix: np.ndarray,
     labels: List[Text],
-    exclude_labels: List[Text] = None,
+    exclude_labels: Optional[List[Text]] = None,
 ) -> Dict[Text, Dict[Text, Union[Dict, Any]]]:
     """Adds a field "confused_with" to the evaluation report.
 
