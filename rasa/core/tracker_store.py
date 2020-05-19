@@ -682,14 +682,18 @@ class SQLTrackerStore(TrackerStore):
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db, query
         )
-        logger.debug(f"Attempting to connect to database via '{engine_url}'.")
+
+        self.engine = sa.engine.create_engine(
+            engine_url, **create_engine_kwargs(engine_url),
+        )
+
+        logger.debug(
+            f"Attempting to connect to database via '{repr(self.engine.url)}'."
+        )
 
         # Database might take a while to come up
         while True:
             try:
-                self.engine = sa.engine.create_engine(
-                    engine_url, **create_engine_kwargs(engine_url),
-                )
                 # if `login_db` has been provided, use current channel with
                 # that database to create working database `db`
                 if login_db:
