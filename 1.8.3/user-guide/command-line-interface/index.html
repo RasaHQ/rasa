@@ -219,8 +219,22 @@
               <a href="../../../1.10.1/user-guide/command-line-interface/">1.10.1</a>
               <a href="../../../1.10.0/user-guide/command-line-interface/">1.10.0</a>
               <a href="../../../1.9.7/user-guide/command-line-interface/">1.9.7</a>
+              <a href="../../../1.9.6/user-guide/command-line-interface/">1.9.6</a>
+              <a href="../../../1.9.5/user-guide/command-line-interface/">1.9.5</a>
+              <a href="../../../1.9.4/user-guide/command-line-interface/">1.9.4</a>
+              <a href="../../../1.9.3/user-guide/command-line-interface/">1.9.3</a>
+              <a href="../../../1.9.2/user-guide/command-line-interface/">1.9.2</a>
+              <a href="../../../1.9.1/user-guide/command-line-interface/">1.9.1</a>
+              <a href="../../../1.9.0/user-guide/command-line-interface/">1.9.0</a>
               <a href="../../../1.8.3/user-guide/command-line-interface/">1.8.3</a>
+              <a href="../../../1.8.2/user-guide/command-line-interface/">1.8.2</a>
+              <a href="../../../1.8.1/user-guide/command-line-interface/">1.8.1</a>
+              <a href="../../../1.8.0/user-guide/command-line-interface/">1.8.0</a>
               <a href="../../../1.7.4/user-guide/command-line-interface/">1.7.4</a>
+              <a href="../../../1.7.3/user-guide/command-line-interface/">1.7.3</a>
+              <a href="../../../1.7.2/user-guide/command-line-interface/">1.7.2</a>
+              <a href="../../../1.7.1/user-guide/command-line-interface/">1.7.1</a>
+              <a href="../../../1.7.0/user-guide/command-line-interface/">1.7.0</a>
               <a href="../../../1.6.2/user-guide/command-line-interface/">1.6.2</a>
               <a href="../../../1.5.3/user-guide/command-line-interface/">1.5.3</a>
               <a href="../../../1.4.6/user-guide/command-line-interface/">1.4.6</a>
@@ -379,7 +393,6 @@ using <code class="docutils literal notranslate"><span class="pre">--fixed-model
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
-                  [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force]
                   {core,nlu} ...
@@ -408,9 +421,6 @@ optional arguments:
                         their connections between story blocks in a file
                         called `story_blocks_connections.html`. (default:
                         False)
-  --num-threads NUM_THREADS
-                        Maximum amount of threads to use when training.
-                        (default: 1)
   --fixed-model-name FIXED_MODEL_NAME
                         If set, the name of the model file/directory will be
                         set to the given name. (default: None)
@@ -483,7 +493,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: db1c002786dd4097bb43bc9d955d43e6)
+                        generated. (default: 1b7ea6157c144cb488b0d9015f4b036b)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
@@ -562,7 +572,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        ed70cbd93a98424490f426791588e13f)
+                        eb5cc5aac92140529e4061b0ef2663e1)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
@@ -825,7 +835,8 @@ Check out more details in <a class="reference internal" href="../evaluating-mode
                  [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU] [--out OUT]
-                 [--successes] [--no-errors] [-c CONFIG [CONFIG ...]]
+                 [--successes] [--no-errors] [--histogram HISTOGRAM]
+                 [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
                  [--cross-validation] [-f FOLDS] [-r RUNS]
                  [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
                  {core,nlu} ...
@@ -877,17 +888,22 @@ NLU Test Arguments:
                         data)
   --out OUT             Output path for any files created during the
                         evaluation. (default: results)
-  --successes           If set successful predictions will be written to a
-                        file. (default: False)
-  --no-errors           If set incorrect predictions will NOT be written to a
-                        file. (default: False)
+  --successes           If set successful predictions (intent and entities)
+                        will be written to a file. (default: False)
+  --no-errors           If set incorrect predictions (intent and entities)
+                        will NOT be written to a file. (default: False)
+  --histogram HISTOGRAM
+                        Output path for the confidence histogram. (default:
+                        hist.png)
+  --confmat CONFMAT     Output path for the confusion matrix plot. (default:
+                        confmat.png)
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                         Model configuration file. If a single file is passed
                         and cross validation mode is chosen, cross-validation
                         is performed, if multiple configs or a folder of
                         configs are passed, models will be trained and
                         compared directly. (default: None)
-  --no-plot             Don&#39;t render evaluation plots. (default: False)
+  --no-plot             Don&#39;t render evaluation plots (default: False)
 </pre></div>
 </div>
 </div>
