@@ -416,7 +416,7 @@ expand it below.
 
         To use the ``pretrained_embeddings_convert`` template:
 
-        .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_convert_config_2.yml
+        .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_convert_config_1.yml
             :language: yaml
 
         To use the components and configure them separately:
