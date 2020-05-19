@@ -1,0 +1,34 @@
+You can now define what kind of features should be used by what component.
+
+You can set an alias for every featurizer in your pipeline.
+You can then specify on, for example, the :ref:`diet-classifier` what features from which featurizers should go in.
+If you don't set the option ``featurizers`` all available features will be used.
+This is also the default behaviour.
+
+Here is an example pipeline that shows the new option:
+
+.. code-block::
+    pipeline:
+    - name: ConveRTTokenizer
+    - name: ConveRTFeaturizer
+      alias: "convert"
+    - name: CountVectorsFeaturizer
+      alias: "cvf_word"
+    - name: CountVectorsFeaturizer
+      alias: "cvf_char"
+      analyzer: char_wb
+      min_ngram: 1
+      max_ngram: 4
+    - name: RegexFeaturizer
+      alias: "regex"
+    - name: LexicalSyntacticFeaturizer
+      alias: "lsf"
+    - name: DIETClassifier:
+      featurizers: ["convert", "cvf_word", "cvf_char", "regex", "lsf"]
+    - name: ResponseSelector
+      epochs: 50
+      featurizers: ["convert", "cvf_word"]
+    - name: EntitySynonymMapper
+
+.. warning::
+    This change is model breaking. Please, retrain your models.
