@@ -224,22 +224,8 @@
               <a href="../../1.10.1/changelog/">1.10.1</a>
               <a href="../../1.10.0/changelog/">1.10.0</a>
               <a href="../../1.9.7/changelog/">1.9.7</a>
-              <a href="../../1.9.6/changelog/">1.9.6</a>
-              <a href="../../1.9.5/changelog/">1.9.5</a>
-              <a href="../../1.9.4/changelog/">1.9.4</a>
-              <a href="../../1.9.3/changelog/">1.9.3</a>
-              <a href="../../1.9.2/changelog/">1.9.2</a>
-              <a href="../../1.9.1/changelog/">1.9.1</a>
-              <a href="../../1.9.0/changelog/">1.9.0</a>
               <a href="../../1.8.3/changelog/">1.8.3</a>
-              <a href="../../1.8.2/changelog/">1.8.2</a>
-              <a href="../../1.8.1/changelog/">1.8.1</a>
-              <a href="../../1.8.0/changelog/">1.8.0</a>
               <a href="../../1.7.4/changelog/">1.7.4</a>
-              <a href="../../1.7.3/changelog/">1.7.3</a>
-              <a href="../../1.7.2/changelog/">1.7.2</a>
-              <a href="../../1.7.1/changelog/">1.7.1</a>
-              <a href="../../1.7.0/changelog/">1.7.0</a>
               <a href="../../1.6.2/changelog/">1.6.2</a>
               <a href="../../1.5.3/changelog/">1.5.3</a>
               <a href="../../1.4.6/changelog/">1.4.6</a>
@@ -280,7 +266,7 @@
 <div class="section" id="rasa-open-source-change-log">
 <h1>Rasa Open Source Change Log<a class="headerlink" href="#rasa-open-source-change-log" title="Permalink to this headline">¶</a></h1>
 <p>All notable changes to this project will be documented in this file.
-This project adheres to <a class="reference external" href="http://semver.org/">Semantic Versioning</a> starting with version 1.0.</p>
+This project adheres to <a class="reference external" href="https://semver.org/">Semantic Versioning</a> starting with version 1.0.</p>
 <div class="section" id="id1">
 <h2>[1.10.0] - 2020-04-28<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="features">
@@ -1294,8 +1280,8 @@ exist in the domain file.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> updated to accept arbitrary token-level features like word
 vectors (issues/4214)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">SpacyFeaturizer</span></code> updated to add <code class="docutils literal notranslate"><span class="pre">ner_features</span></code> for <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></p></li>
-<li><p>Sanitizing incoming messages from slack to remove slack formatting like &lt;<a class="reference external" href="mailto:xyz&#37;&#52;&#48;rasa">mailto:xyz<span>&#64;</span>rasa</a>.com|xyz&#64;rasa.com&gt;
-or &lt;<a class="reference external" href="http://url">http://url</a>.com|url.com&gt; and substitute it with original content</p></li>
+<li><p>Sanitizing incoming messages from slack to remove slack formatting like <code class="docutils literal notranslate"><span class="pre">&lt;mailto:xyz&#64;rasa.com|xyz&#64;rasa.com&gt;</span></code>
+or <code class="docutils literal notranslate"><span class="pre">&lt;http://url.com|url.com&gt;</span></code> and substitute it with original content</p></li>
 <li><p>Added the ability to configure the number of Sanic worker processes in the HTTP
 server (<code class="docutils literal notranslate"><span class="pre">rasa.server</span></code>) and input channel server
 (<code class="docutils literal notranslate"><span class="pre">rasa.core.agent.handle_channels()</span></code>). The number of workers can be set using the

@@ -228,22 +228,8 @@ Natural Language Understanding pipeline" />
               <a href="../../../1.10.1/nlu/components/">1.10.1</a>
               <a href="../../../1.10.0/nlu/components/">1.10.0</a>
               <a href="../../../1.9.7/nlu/components/">1.9.7</a>
-              <a href="../../../1.9.6/nlu/components/">1.9.6</a>
-              <a href="../../../1.9.5/nlu/components/">1.9.5</a>
-              <a href="../../../1.9.4/nlu/components/">1.9.4</a>
-              <a href="../../../1.9.3/nlu/components/">1.9.3</a>
-              <a href="../../../1.9.2/nlu/components/">1.9.2</a>
-              <a href="../../../1.9.1/nlu/components/">1.9.1</a>
-              <a href="../../../1.9.0/nlu/components/">1.9.0</a>
               <a href="../../../1.8.3/nlu/components/">1.8.3</a>
-              <a href="../../../1.8.2/nlu/components/">1.8.2</a>
-              <a href="../../../1.8.1/nlu/components/">1.8.1</a>
-              <a href="../../../1.8.0/nlu/components/">1.8.0</a>
               <a href="../../../1.7.4/nlu/components/">1.7.4</a>
-              <a href="../../../1.7.3/nlu/components/">1.7.3</a>
-              <a href="../../../1.7.2/nlu/components/">1.7.2</a>
-              <a href="../../../1.7.1/nlu/components/">1.7.1</a>
-              <a href="../../../1.7.0/nlu/components/">1.7.0</a>
               <a href="../../../1.6.2/nlu/components/">1.6.2</a>
               <a href="../../../1.5.3/nlu/components/">1.5.3</a>
               <a href="../../../1.4.6/nlu/components/">1.4.6</a>
@@ -908,11 +894,11 @@ Regex features for entity extraction are currently only supported by the <a clas
 <dt class="field-odd">Description</dt>
 <dd class="field-odd"><p>Creates features for intent classification and response selection.
 Creates bag-of-words representation of user message, intent, and response using
-<a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn’s CountVectorizer</a>.
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn’s CountVectorizer</a>.
 All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.</p>
 </dd>
 <dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>See <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn’s CountVectorizer docs</a>
+<dd class="field-even"><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn’s CountVectorizer docs</a>
 for detailed description of the configuration parameters.</p>
 <p>This featurizer can be configured to use word or character n-grams, using the <code class="docutils literal notranslate"><span class="pre">analyzer</span></code> configuration parameter.
 By default <code class="docutils literal notranslate"><span class="pre">analyzer</span></code> is set to <code class="docutils literal notranslate"><span class="pre">word</span></code> so word token counts are used as features.
