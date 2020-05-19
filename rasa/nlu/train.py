@@ -87,7 +87,8 @@ async def train(
     if training_data.entity_roles_groups_used():
         common_utils.mark_as_experimental_feature("Entity Roles and Groups feature")
 
-    interpreter = trainer.train(training_data, **kwargs)
+    kwargs['model_checkpoint_dir'] = path
+    interpreter = trainer.train(training_data, **kwargs) # TODO: Pass path as kwarg?
 
     if path:
         persisted_path = trainer.persist(

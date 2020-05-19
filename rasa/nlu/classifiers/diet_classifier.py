@@ -711,6 +711,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
+        # add model_checkpoint_dir to the component config
+        if self.component_config.get('checkpoint_model', False):
+            self.component_config.update(model_checkpoint_dir=kwargs.pop('model_checkpoint_dir'))
+
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,

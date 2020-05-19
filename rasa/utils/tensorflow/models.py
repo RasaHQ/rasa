@@ -188,6 +188,25 @@ class RasaModel(tf.keras.models.Model):
 
             progress_bar.set_postfix(postfix_dict)
 
+        # Checkpoint the model one last time after training
+        if self.best_model_file is not None:
+            epoch_batch_size = self.linearly_increasing_batch_size(
+                epochs, batch_size, epochs
+            )
+
+            self._batch_loop(
+                evaluation_dataset_function,
+                tf_evaluation_on_batch_function,
+                epoch_batch_size,
+                False,
+                training_steps,
+                self.test_summary_writer,
+            )
+
+            val_results = self._get_metric_results(prefix="val_")
+            if self._update_best_metrics_so_far(val_results):
+                self.save(self.best_model_file, overwrite=True)
+
         if self.model_summary_file is not None:
             self._write_model_summary()
 
@@ -259,13 +278,15 @@ class RasaModel(tf.keras.models.Model):
         ckp_path = Path(ckp_dir)
 
         for f in ckp_path.glob(f'{ckp_file}*'):
-            shutil.copyfile(f, model_file_name + f.suffix)
+            shutil.move(f, model_file_name + f.suffix)
 
         # Generate the tf2 checkpoint file
         dest_path, dest_file = os.path.split(model_file_name)
         with open(os.path.join(ckp_dir, 'checkpoint')) as in_file, open(os.path.join(dest_path, 'checkpoint'), 'w') as out_file:
             for line in in_file:
                 out_file.write(line.replace(ckp_file, dest_file))
+        ckp_path.joinpath('checkpoint').unlink()
+
 
     @classmethod
     def load(
