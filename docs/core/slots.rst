@@ -58,6 +58,13 @@ You can provide an initial value for a slot in your domain file:
         type: text
         initial_value: "human"
 
+You can get the value of a slot using ``.get_slot()`` inside ``actions.py`` for example:  
+
+.. code-block:: python
+
+       data = tracker.get_slot("slot-name")
+
+
 
 There are multiple ways that slots are set during a conversation:
 

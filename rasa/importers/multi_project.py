@@ -41,8 +41,8 @@ class MultiProjectImporter(TrainingDataImporter):
         extra_story_files, extra_nlu_files = data.get_core_nlu_files(
             training_data_paths
         )
-        self._story_paths += list(extra_story_files)
-        self._nlu_paths += list(extra_nlu_files)
+        self._story_paths += extra_story_files
+        self._nlu_paths += extra_nlu_files
 
         logger.debug(
             "Selected projects: {}".format("".join([f"\n-{i}" for i in self._imports]))

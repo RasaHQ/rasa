@@ -13,6 +13,11 @@ from rasa.utils.tensorflow.constants import (
     RANKING_LENGTH,
     EPOCHS,
     MASKED_LM,
+    TENSORBOARD_LOG_LEVEL,
+    TENSORBOARD_LOG_DIR,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    BILOU_FLAG,
 )
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
@@ -300,3 +305,76 @@ async def test_set_random_seed(component_builder, tmpdir):
     result_b = loaded_b.parse("hello")["intent"]["confidence"]
 
     assert result_a == result_b
+
+
+async def test_train_tensorboard_logging(component_builder, tmpdir):
+    from pathlib import Path
+
+    tensorboard_log_dir = Path(tmpdir.strpath) / "tensorboard"
+
+    assert not tensorboard_log_dir.exists()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "DIETClassifier",
+                    EPOCHS: 3,
+                    TENSORBOARD_LOG_LEVEL: "epoch",
+                    TENSORBOARD_LOG_DIR: str(tensorboard_log_dir),
+                    EVAL_NUM_EXAMPLES: 15,
+                    EVAL_NUM_EPOCHS: 1,
+                },
+            ],
+            "language": "en",
+        }
+    )
+
+    await train(
+        _config,
+        path=tmpdir.strpath,
+        data="data/examples/rasa/demo-rasa-multi-intent.md",
+        component_builder=component_builder,
+    )
+
+    assert tensorboard_log_dir.exists()
+
+    all_files = list(tensorboard_log_dir.rglob("*.*"))
+    assert len(all_files) == 3
+
+
+@pytest.mark.parametrize(
+    "classifier_params",
+    [
+        {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: False},
+        {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
+    ],
+)
+async def test_train_persist_load_with_composite_entities(
+    classifier_params, component_builder, tmpdir
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "DIETClassifier"
+    )
+    assert pipeline[2]["name"] == "DIETClassifier"
+    pipeline[2].update(classifier_params)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+
+    (trainer, trained, persisted_path) = await train(
+        _config,
+        path=tmpdir.strpath,
+        data="data/test/demo-rasa-composite-entities.md",
+        component_builder=component_builder,
+    )
+
+    assert trainer.pipeline
+    assert trained.pipeline
+
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    assert loaded.pipeline
+    text = "I am looking for an italian restaurant"
+    assert loaded.parse(text) == trained.parse(text)

@@ -74,7 +74,8 @@ on their own.
 Real users will often ask questions like "which is better?" and "why?".
 It is frustrating for users if your assistant doesn't understand this,
 and can only answer full questions like "which of your savings accounts has a better interest rate?"
-Understanding contextual questions is a key difference between `level 2 and level 3 assistants <https://www.oreilly.com/ideas/the-next-generation-of-ai-assistants-in-enterprise>`_.
+Understanding contextual questions is a key difference between
+`level 2 and level 3 assistants <https://www.oreilly.com/radar/the-next-generation-of-ai-assistants-in-enterprise/>`_.
 
 
 .. conversations::

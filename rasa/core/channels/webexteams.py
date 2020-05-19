@@ -27,7 +27,7 @@ class WebexTeamsBot(OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         recipient = self.room or recipient_id
-        for message_part in text.split("\n\n"):
+        for message_part in text.strip().split("\n\n"):
             self.api.messages.create(roomId=recipient, text=message_part)
 
     async def send_image_url(
@@ -39,7 +39,7 @@ class WebexTeamsBot(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        json_message.setdefault("roomID", recipient_id)
+        json_message.setdefault("roomId", recipient_id)
         return self.api.messages.create(**json_message)
 
 
@@ -128,7 +128,7 @@ class WebexTeamsInput(InputChannel):
             else:
                 metadata = self.get_metadata(request)
                 await self.process_message(
-                    on_new_message, message.text, message.personId, metadata
+                    on_new_message, message.text, message.roomId, metadata
                 )
                 return response.text("")
 

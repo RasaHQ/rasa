@@ -13,11 +13,12 @@ from rasa.nlu.utils import ordered
 
 class Message:
     def __init__(
-        self, text: Text, data=None, output_properties=None, time=None
+        self, text: Text, data=None, output_properties=None, time=None, **kwargs
     ) -> None:
         self.text = text
         self.time = time
         self.data = data if data else {}
+        self.data.update(**kwargs)
 
         if output_properties:
             self.output_properties = output_properties
@@ -25,9 +26,12 @@ class Message:
             self.output_properties = set()
 
     def set(self, prop, info, add_to_output=False) -> None:
-        self.data[prop] = info
-        if add_to_output:
-            self.output_properties.add(prop)
+        if prop == TEXT:
+            self.text = info
+        else:
+            self.data[prop] = info
+            if add_to_output:
+                self.output_properties.add(prop)
 
     def get(self, prop, default=None) -> Any:
         if prop == TEXT:
@@ -69,7 +73,7 @@ class Message:
         return hash((self.text, str(ordered(self.data))))
 
     @classmethod
-    def build(cls, text, intent=None, entities=None) -> "Message":
+    def build(cls, text, intent=None, entities=None, **kwargs) -> "Message":
         data = {}
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(intent)
@@ -78,7 +82,7 @@ class Message:
                 data[RESPONSE_KEY_ATTRIBUTE] = response_key
         if entities:
             data[ENTITIES] = entities
-        return cls(text, data)
+        return cls(text, data, **kwargs)
 
     def get_combined_intent_response_key(self) -> Text:
         """Get intent as it appears in training data"""

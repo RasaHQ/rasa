@@ -177,7 +177,7 @@ at a time):
 .. note::
    Unlike regular stories, checkpoints are not restricted to starting with an
    input from the user. As long as the checkpoint is inserted at the right points
-   in the main stories, the first event can be a custom action or a response action 
+   in the main stories, the first event can be a custom action or a response action
    as well.
 
 
@@ -212,8 +212,7 @@ End-to-End Story Evaluation Format
 ----------------------------------
 
 The end-to-end story format is a format that combines both NLU and Core training data
-into a single file for evaluation. You can read more about it
-:ref:`here <end_to_end_evaluation>`.
+into a single file for evaluation. Read more about :ref:`testing-your-assistant`
 
 .. warning::
     This format is only used for end-to-end evaluation and cannot be used for training.

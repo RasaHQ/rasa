@@ -14,19 +14,33 @@ All configuration options are specified using environment variables as shown in 
 Optimizing CPU Performance
 --------------------------
 
+.. note::
+    We recommend that you configure these options only if you are an advanced TensorFlow user and understand the 
+    implementation of the machine learning components in your pipeline. These options affect how operations are carried 
+    out under the hood in Tensorflow. Leaving them at their default values is fine.
+
+Depending on the TensorFlow operations a NLU component or Core policy uses, you can leverage multi-core CPU
+parallelism by tuning these options.
+
 Parallelizing One Operation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Set ``TF_INTRA_OP_PARALLELISM_THREADS`` as an environment variable to specify the maximum number of threads that can be used
-to parallelize the execution of one operation. If left unspecified, this value defaults to ``0`` which means TensorFlow should
-pick an appropriate value depending on the system configuration.
+to parallelize the execution of one operation. For example, operations like ``tf.matmul()`` and ``tf.reduce_sum`` can be executed
+on multiple threads running in parallel. The default value for this variable is ``0`` which means TensorFlow would
+allocate one thread per CPU core.
 
 Parallelizing Multiple Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Set ``TF_INTER_OP_PARALLELISM_THREADS`` as an environment variable to specify the maximum number of threads that can be used
-to parallelize the execution of multiple **non-blocking** operations. If left unspecified, this value defaults to ``0``
-which means TensorFlow should pick an appropriate value depending on the system configuration.
+to parallelize the execution of multiple **non-blocking** operations. These would include operations that do not have a
+directed path between them in the TensorFlow graph. In other words, the computation of one operation does not affect the
+computation of the other operation. The default value for this variable is ``0`` which means TensorFlow would allocate one thread per CPU core.
+
+To understand more about how these two options differ from each other, refer to this
+`stackoverflow thread <https://stackoverflow.com/questions/41233635/meaning-of-inter-op-parallelism-threads-and-intra-op-parallelism-threads/41233901#41233901>`_.
+
 
 Optimizing GPU Performance
 --------------------------
@@ -35,18 +49,13 @@ Limiting GPU Memory Growth
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 TensorFlow by default blocks all the available GPU memory for the running process. This can be limiting if you are running
-multiple TensorFlow processes and want to distribute memory across them. To prevent this,
-set the environment variable ``TF_FORCE_GPU_ALLOW_GROWTH`` to ``True``.
+multiple TensorFlow processes and want to distribute memory across them. To prevent Rasa Open Source from blocking all
+of the available GPU memory, set the environment variable ``TF_FORCE_GPU_ALLOW_GROWTH`` to ``True``.
 
 Restricting Absolute GPU Memory Available
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Often, a developer wants to limit the absolute amount of GPU memory that can be used by a process.
+You may want to limit the absolute amount of GPU memory that can be used by a Rasa Open Source process.
 
-For example, you may have two visible GPUs(``GPU:0`` and ``GPU:1``) and you want to allocate 1024 MB from the first GPU
-and 2048 MB from the second GPU.
-You can do so by setting an environment variable as ``TF_GPU_MEMORY_ALLOC="0:1024, 1:2048"``.
-
-Another scenario can be where you have access to 2 GPUs(``GPU:0`` and ``GPU:1``) but you would like to use only the second
-GPU.
-``TF_GPU_MEMORY_ALLOC="1:2048"`` would make 2048 MB of memory available from GPU 1.
+For example, say you have two visible GPUs(``GPU:0`` and ``GPU:1``) and you want to allocate 1024 MB from the first GPU
+and 2048 MB from the second GPU. You can do this by setting the environment variable ``TF_GPU_MEMORY_ALLOC`` to ``"0:1024, 1:2048"``.

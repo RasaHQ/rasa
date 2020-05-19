@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 import rasa.cli.utils as cli_utils
 from rasa.core.brokers.broker import EventBroker
-from rasa.core.brokers.pika import PikaProducer, PikaEventBroker
+from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import EventVerbosity
@@ -98,7 +98,7 @@ class Exporter:
             `PikaEventBroker`, else `None`.
 
         """
-        if isinstance(self.event_broker, (PikaEventBroker, PikaProducer)):
+        if isinstance(self.event_broker, PikaEventBroker):
             return {RASA_EXPORT_PROCESS_ID_HEADER_NAME: uuid.uuid4().hex}
 
         return None
@@ -112,8 +112,9 @@ class Exporter:
             event: Serialized event to be published.
             headers: Message headers to be published if `self.event_broker` is a
                 `PikaEventBroker`.
+
         """
-        if isinstance(self.event_broker, (PikaEventBroker, PikaProducer)):
+        if isinstance(self.event_broker, PikaEventBroker):
             self.event_broker.publish(event=event, headers=headers)
         else:
             self.event_broker.publish(event)
@@ -257,14 +258,15 @@ class Exporter:
     def _sort_and_select_events_by_timestamp(
         self, events: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
-        """Sort list of events by ascending timestamp, and select events within time range.
+        """Sort list of events by ascending timestamp, and select events within time
+        range.
 
         Args:
             events: List of serialized events to be sorted and selected from.
 
         Returns:
-            List of serialized and sorted (by timestamp) events within the requested time
-            range.
+            List of serialized and sorted (by timestamp) events within the requested
+            time range.
 
         Raises:
              `NoEventsInTimeRangeError` error if no events are found within the

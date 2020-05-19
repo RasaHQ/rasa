@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import tempfile
-from typing import List
+from typing import List, Text, Dict, Any
 
 import fakeredis
 import pytest
@@ -20,7 +20,6 @@ from rasa.core.events import (
     ActionReverted,
     UserUtteranceReverted,
     SessionStarted,
-    Event,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
@@ -206,29 +205,70 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
     assert [e.type_name for e in tracker.events] == expected
 
 
-def test_tracker_entity_retrieval(default_domain: Domain):
+@pytest.mark.parametrize(
+    "entities, expected_values",
+    [
+        ([{"value": "greet", "entity": "entity_name"}], ["greet"]),
+        (
+            [
+                {"value": "greet", "entity": "entity_name"},
+                {"value": "bye", "entity": "other"},
+            ],
+            ["greet"],
+        ),
+        (
+            [
+                {"value": "greet", "entity": "entity_name"},
+                {"value": "bye", "entity": "entity_name"},
+            ],
+            ["greet", "bye"],
+        ),
+        (
+            [
+                {"value": "greet", "entity": "entity_name", "role": "role"},
+                {"value": "bye", "entity": "entity_name"},
+            ],
+            ["greet"],
+        ),
+        (
+            [
+                {"value": "greet", "entity": "entity_name", "group": "group"},
+                {"value": "bye", "entity": "entity_name"},
+            ],
+            ["greet"],
+        ),
+        (
+            [
+                {"value": "greet", "entity": "entity_name"},
+                {"value": "bye", "entity": "entity_name", "group": "group"},
+            ],
+            ["greet", "bye"],
+        ),
+    ],
+)
+def test_get_latest_entity_values(
+    entities: List[Dict[Text, Any]], expected_values: List[Text], default_domain: Domain
+):
+    entity_type = entities[0].get("entity")
+    entity_role = entities[0].get("role")
+    entity_group = entities[0].get("group")
+
     tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
-    assert list(tracker.get_latest_entity_values("entity_name")) == []
+    assert list(tracker.get_latest_entity_values(entity_type)) == []
 
     intent = {"name": "greet", "confidence": 1.0}
-    tracker.update(
-        UserUttered(
-            "/greet",
-            intent,
-            [
-                {
-                    "start": 1,
-                    "end": 5,
-                    "value": "greet",
-                    "entity": "entity_name",
-                    "extractor": "manual",
-                }
-            ],
+    tracker.update(UserUttered("/greet", intent, entities))
+
+    assert (
+        list(
+            tracker.get_latest_entity_values(
+                entity_type, entity_role=entity_role, entity_group=entity_group
+            )
         )
+        == expected_values
     )
-    assert list(tracker.get_latest_entity_values("entity_name")) == ["greet"]
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
 

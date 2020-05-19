@@ -18,6 +18,8 @@ if typing.TYPE_CHECKING:
 
 import matplotlib
 
+FAILED_STORIES_FILE = "failed_stories.md"
+
 # At first, matplotlib will be initialized with default OS-specific available backend
 # if that didn't happen, we'll try to set it up manually
 if matplotlib.get_backend() is not None:
@@ -288,7 +290,11 @@ def _emulate_form_rejection(processor, partial_tracker):
 
 
 def _collect_action_executed_predictions(
-    processor, partial_tracker, event, fail_on_prediction_errors
+    processor,
+    partial_tracker,
+    event,
+    fail_on_prediction_errors,
+    circuit_breaker_tripped,
 ):
     from rasa.core.policies.form_policy import FormPolicy
 
@@ -296,16 +302,21 @@ def _collect_action_executed_predictions(
 
     gold = event.action_name
 
-    action, policy, confidence = processor.predict_next_action(partial_tracker)
-    predicted = action.name()
-
-    if policy and predicted != gold and FormPolicy.__name__ in policy:
-        # FormPolicy predicted wrong action
-        # but it might be Ok if form action is rejected
-        _emulate_form_rejection(processor, partial_tracker)
-        # try again
+    if circuit_breaker_tripped:
+        predicted = "circuit breaker tripped"
+        policy = None
+        confidence = None
+    else:
         action, policy, confidence = processor.predict_next_action(partial_tracker)
         predicted = action.name()
+
+        if policy and predicted != gold and FormPolicy.__name__ in policy:
+            # FormPolicy predicted wrong action
+            # but it might be Ok if form action is rejected
+            _emulate_form_rejection(processor, partial_tracker)
+            # try again
+            action, policy, confidence = processor.predict_next_action(partial_tracker)
+            predicted = action.name()
 
     action_executed_eval_store.add_to_store(
         action_predictions=predicted, action_targets=gold
@@ -348,19 +359,31 @@ def _predict_tracker_actions(
     events = list(tracker.events)
 
     partial_tracker = DialogueStateTracker.from_events(
-        tracker.sender_id, events[:1], agent.domain.slots
+        tracker.sender_id,
+        events[:1],
+        agent.domain.slots,
+        sender_source=tracker.sender_source,
     )
 
     tracker_actions = []
+    should_predict_another_action = True
+    num_predicted_actions = 0
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
+            circuit_breaker_tripped = processor.is_action_limit_reached(
+                num_predicted_actions, should_predict_another_action
+            )
             (
                 action_executed_result,
                 policy,
                 confidence,
             ) = _collect_action_executed_predictions(
-                processor, partial_tracker, event, fail_on_prediction_errors
+                processor,
+                partial_tracker,
+                event,
+                fail_on_prediction_errors,
+                circuit_breaker_tripped,
             )
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(
@@ -371,6 +394,11 @@ def _predict_tracker_actions(
                     "confidence": confidence,
                 }
             )
+            should_predict_another_action = processor.should_predict_another_action(
+                action_executed_result.action_predictions[0]
+            )
+            num_predicted_actions += 1
+
         elif use_e2e and isinstance(event, UserUttered):
             user_uttered_result = _collect_user_uttered_predictions(
                 event, partial_tracker, fail_on_prediction_errors
@@ -379,6 +407,8 @@ def _predict_tracker_actions(
             tracker_eval_store.merge_store(user_uttered_result)
         else:
             partial_tracker.update(event)
+        if isinstance(event, UserUttered):
+            num_predicted_actions = 0
 
     return tracker_eval_store, partial_tracker, tracker_actions
 
@@ -471,13 +501,13 @@ def log_failed_stories(failed, out_directory):
     if not out_directory:
         return
     with open(
-        os.path.join(out_directory, "failed_stories.md"), "w", encoding=DEFAULT_ENCODING
+        os.path.join(out_directory, FAILED_STORIES_FILE), "w", encoding=DEFAULT_ENCODING
     ) as f:
         if len(failed) == 0:
             f.write("<!-- All stories passed -->")
         else:
             for failure in failed:
-                f.write(failure.export_stories())
+                f.write(failure.export_stories(include_source=True))
                 f.write("\n\n")
 
 
@@ -574,7 +604,7 @@ def plot_story_evaluation(
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
     import matplotlib.pyplot as plt
-    from rasa.nlu.test import plot_confusion_matrix
+    from rasa.utils.plotting import plot_confusion_matrix
 
     log_evaluation_table(
         test_y,
@@ -661,7 +691,7 @@ async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
 
 
 def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
-
+    """Plot NLU model comparison graph"""
     graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
 
     _plot_curve(
@@ -674,7 +704,7 @@ def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
 
 
 def plot_core_results(output: Text, number_of_examples: List[int]) -> None:
-
+    """Plot core model comparison graph"""
     graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
 
     _plot_curve(
