@@ -35,6 +35,9 @@ Getting Credentials
      the same URL you entered above for Interactivity & Shortcuts - ``http://<host>:<port>/webhooks/slack/webhook``.
      
   5. Go to the "Event Subscriptions" section, turn on the "Enable Events" and add the endpoint here also.
+  
+For more detailed steps, visit the	
+`Slack API docs <https://api.slack.com/events-api>`_.
 
 Running on Slack
 ^^^^^^^^^^^^^^^^
