@@ -1227,8 +1227,8 @@ def align_entity_predictions(
 
     return {
         "target_labels": true_token_labels,
-        "extractor_labels": dict(extractor_labels),
-        "confidences": dict(extractor_confidences),
+        "extractor_labels": extractor_labels,
+        "confidences": extractor_confidences,
     }
 
 
