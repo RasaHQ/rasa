@@ -1161,7 +1161,7 @@ def determine_entity_for_token(
     extractors: Optional[Set[Text]] = None,
 ) -> Optional[Dict[Text, Any]]:
     """
-    Determines the best fitting entity for the given token given entities that do
+    Determines the best fitting entity for the given token, given entities that do
     not overlap.
 
     Args:
