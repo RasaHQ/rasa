@@ -1171,7 +1171,6 @@ def determine_entity_for_token(
     Returns:
         entity type
     """
-
     if entities is None or len(entities) == 0:
         return None
     if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
