@@ -141,8 +141,8 @@ class RegexFeaturizer(SparseFeaturizer):
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
             common_utils.raise_warning(
-                f"Directly including lookup tables as a list is deprecated since Rasa "
-                f"1.6.",
+                "Directly including lookup tables as a list is deprecated since Rasa "
+                "1.6.",
                 FutureWarning,
                 docs=DOCS_URL_TRAINING_DATA_NLU + "#lookup-tables",
             )

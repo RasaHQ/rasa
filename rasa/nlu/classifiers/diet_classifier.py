@@ -868,7 +868,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         entity_tag_specs = (
-            [l._asdict() for l in self._entity_tag_specs]
+            [spec._asdict() for spec in self._entity_tag_specs]
             if self._entity_tag_specs
             else []
         )
