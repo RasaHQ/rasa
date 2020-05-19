@@ -89,12 +89,10 @@ from rasa.utils.tensorflow.constants import (
 logger = logging.getLogger(__name__)
 
 
-SENTENCE = "sentence"
-SEQUENCE = "sequence"
 TEXT_FEATURES = f"{TEXT}_features"
 LABEL_FEATURES = f"{LABEL}_features"
-TEXT_FEATURES_LENGTH = f"{TEXT}_lengths"
-LABEL_FEATURES_LENGTH = f"{LABEL}_lengths"
+TEXT_SEQ_LENGTH = f"{TEXT}_lengths"
+LABEL_SEQ_LENGTH = f"{LABEL}_lengths"
 LABEL_IDS = f"{LABEL}_ids"
 TAG_IDS = "tag_ids"
 
@@ -449,7 +447,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if sparse_features is not None and dense_features is not None:
             if sparse_features.shape[0] != dense_features.shape[0]:
                 raise ValueError(
-                    f"Sequence dimensions for sparse and dense sequence features "
+                    f"Sequence dimensions for sparse and dense features "
                     f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
 
@@ -490,7 +488,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         dense_features = []
 
         for e in label_examples:
-            (_sparse, _dense) = self._extract_features(e, attribute)
+            _sparse, _dense = self._extract_features(e, attribute)
             if _sparse is not None:
                 sparse_features.append(_sparse)
             if _dense is not None:
@@ -553,7 +551,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # to track correctly dynamic sequences
         label_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
 
-        label_data.add_lengths(LABEL_FEATURES_LENGTH, LABEL_FEATURES)
+        label_data.add_lengths(LABEL_SEQ_LENGTH, LABEL_FEATURES)
 
         return label_data
 
@@ -630,8 +628,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         for tag_name, tag_ids in tag_name_to_tag_ids.items():
             model_data.add_features(f"{tag_name}_{TAG_IDS}", [tag_ids])
 
-        model_data.add_lengths(TEXT_FEATURES_LENGTH, TEXT_FEATURES)
-        model_data.add_lengths(LABEL_FEATURES_LENGTH, LABEL_FEATURES)
+        model_data.add_lengths(TEXT_SEQ_LENGTH, TEXT_FEATURES)
+        model_data.add_lengths(LABEL_SEQ_LENGTH, LABEL_FEATURES)
         return model_data
 
     def _tag_ids_for_crf(self, example: Message, tag_spec: EntityTagSpec) -> np.ndarray:
@@ -1392,7 +1390,7 @@ class DIET(RasaModel):
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
         label_lengths = self._get_sequence_lengths(
-            self.tf_label_data[LABEL_FEATURES_LENGTH][0]
+            self.tf_label_data[LABEL_SEQ_LENGTH][0]
         )
         mask_label = self._compute_mask(label_lengths)
 
@@ -1497,9 +1495,7 @@ class DIET(RasaModel):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data[TEXT_FEATURES_LENGTH][0]
-        )
+        sequence_lengths = self._get_sequence_lengths(tf_batch_data[TEXT_SEQ_LENGTH][0])
         mask_text = self._compute_mask(sequence_lengths)
 
         (
@@ -1549,9 +1545,7 @@ class DIET(RasaModel):
         # get _cls_ vector for intent classification
         cls = self._last_token(text_transformed, sequence_lengths)
 
-        label_lengths = self._get_sequence_lengths(
-            tf_batch_data[LABEL_FEATURES_LENGTH][0]
-        )
+        label_lengths = self._get_sequence_lengths(tf_batch_data[LABEL_SEQ_LENGTH][0])
         mask_label = self._compute_mask(label_lengths)
 
         label_ids = tf_batch_data[LABEL_IDS][0]
@@ -1625,9 +1619,7 @@ class DIET(RasaModel):
             batch_in, self.predict_data_signature
         )
 
-        sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data[TEXT_FEATURES_LENGTH][0]
-        )
+        sequence_lengths = self._get_sequence_lengths(tf_batch_data[TEXT_SEQ_LENGTH][0])
         mask_text = self._compute_mask(sequence_lengths)
 
         text_transformed, _, _, _ = self._create_sequence(

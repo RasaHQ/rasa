@@ -17,8 +17,8 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     LABEL_IDS,
     EntityTagSpec,
-    TEXT_FEATURES_LENGTH,
-    LABEL_FEATURES_LENGTH,
+    TEXT_SEQ_LENGTH,
+    LABEL_SEQ_LENGTH,
     TEXT_FEATURES,
     LABEL_FEATURES,
 )
@@ -448,7 +448,7 @@ class DIET2DIET(DIET):
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
         sequence_lengths_label = self._get_sequence_lengths(
-            self.tf_label_data[LABEL_FEATURES_LENGTH][0]
+            self.tf_label_data[LABEL_SEQ_LENGTH][0]
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
@@ -467,7 +467,7 @@ class DIET2DIET(DIET):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         sequence_lengths_text = self._get_sequence_lengths(
-            tf_batch_data[TEXT_FEATURES_LENGTH][0]
+            tf_batch_data[TEXT_SEQ_LENGTH][0]
         )
         mask_text = self._compute_mask(sequence_lengths_text)
 
@@ -487,7 +487,7 @@ class DIET2DIET(DIET):
         )
 
         sequence_lengths_label = self._get_sequence_lengths(
-            tf_batch_data[LABEL_FEATURES_LENGTH][0]
+            tf_batch_data[LABEL_SEQ_LENGTH][0]
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
@@ -530,7 +530,7 @@ class DIET2DIET(DIET):
         )
 
         sequence_lengths_text = self._get_sequence_lengths(
-            tf_batch_data[TEXT_FEATURES_LENGTH][0]
+            tf_batch_data[TEXT_SEQ_LENGTH][0]
         )
         mask_text = self._compute_mask(sequence_lengths_text)
 

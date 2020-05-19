@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 
 import rasa.utils.io as io_utils
+import rasa.utils.train_utils as train_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
@@ -17,7 +18,6 @@ from rasa.nlu.constants import TEXT
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.common as common_utils
-from rasa.utils.train_utils import sequence_to_sentence_features
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,9 @@ class SklearnIntentClassifier(IntentClassifier):
             y = self.transform_labels_str2num(labels)
             X = np.stack(
                 [
-                    sequence_to_sentence_features(example.get_dense_features(TEXT))
+                    train_utils.sequence_to_sentence_features(
+                        example.get_dense_features(TEXT)
+                    )
                     for example in training_data.intent_examples
                 ]
             )
@@ -121,10 +123,6 @@ class SklearnIntentClassifier(IntentClassifier):
                 # if there are few intent examples, this is needed to prevent it
                 warnings.simplefilter("ignore")
                 self.clf.fit(X, y)
-
-    def _get_sentence_features(self, message: Message) -> np.ndarray:
-        _, sentence_features = message.get_dense_features(TEXT, [], [])
-        return sentence_features[0]
 
     def _num_cv_splits(self, y) -> int:
         folds = self.component_config["max_cross_validation_folds"]
@@ -168,9 +166,9 @@ class SklearnIntentClassifier(IntentClassifier):
             intent = None
             intent_ranking = []
         else:
-            X = sequence_to_sentence_features(message.get_dense_features(TEXT)).reshape(
-                1, -1
-            )
+            X = train_utils.sequence_to_sentence_features(
+                message.get_dense_features(TEXT)
+            ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))
             # `predict` returns a matrix as it is supposed

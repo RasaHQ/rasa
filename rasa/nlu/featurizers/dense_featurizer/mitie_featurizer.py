@@ -68,9 +68,7 @@ class MitieFeaturizer(DenseFeaturizer):
     def process(self, message: Message, **kwargs: Any) -> None:
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         tokens = train_utils.tokens_without_cls(message)
-        features, cls_features = self.features_for_tokens(
-            tokens, mitie_feature_extractor
-        )
+        features = self.features_for_tokens(tokens, mitie_feature_extractor)
 
         final_features = Features(features, TEXT, self.component_config[ALIAS])
         message.add_features(final_features)
