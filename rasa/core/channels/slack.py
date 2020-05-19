@@ -83,6 +83,7 @@ class SlackBot(OutputChannel):
                     "value": button["payload"],
                 }
             )
+        logger.debug(f"slack button_block: {button_block}")
         await self.client.chat_postMessage(
             channel=recipient,
             as_user=True,
@@ -326,6 +327,8 @@ class SlackInput(InputChannel):
             Metadata extracted from the sent event payload. This includes the output channel for the response,
             and users that have installed the bot.
         """
+        logger.error(f"slack request: {request}")
+        logger.error(f"slack request: {request.json}")
         slack_event = request.json
         event = slack_event.get("event", {})
 
