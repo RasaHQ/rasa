@@ -359,6 +359,8 @@ MitieFeaturizer
           # Specify what pooling operation should be used to calculate the vector of
           # the __CLS__ token. Available options: 'mean' and 'max'.
           "pooling": "mean"
+          # alias name of the featurizer
+          "alias": "mitie_featurizer"
 
 
 .. _SpacyFeaturizer:
@@ -386,6 +388,8 @@ SpacyFeaturizer
           # Specify what pooling operation should be used to calculate the vector of
           # the __CLS__ token. Available options: 'mean' and 'max'.
           "pooling": "mean"
+          # alias name of the featurizer
+          "alias": "spacy_featurizer"
 
 
 .. _ConveRTFeaturizer:
@@ -417,6 +421,8 @@ ConveRTFeaturizer
 
         pipeline:
         - name: "ConveRTFeaturizer"
+          # alias name of the featurizer
+          "alias": "convert_featurizer"
 
 
 .. _LanguageModelFeaturizer:
@@ -447,6 +453,8 @@ LanguageModelFeaturizer
 
         pipeline:
         - name: "LanguageModelFeaturizer"
+          # alias name of the featurizer
+          "alias": "language_model_featurizer"
 
 
 .. _RegexFeaturizer:
@@ -474,6 +482,8 @@ RegexFeaturizer
 
         pipeline:
         - name: "RegexFeaturizer"
+          # alias name of the featurizer
+          "alias": "regex_featurizer"
 
 .. _CountVectorsFeaturizer:
 
@@ -560,6 +570,8 @@ CountVectorsFeaturizer
           "OOV_token": "_oov_"
           # Whether to use a shared vocab
           "use_shared_vocab": False
+          # alias name of the featurizer
+          "alias": "convert_featurizer"
 
     .. container:: toggle
 
@@ -570,51 +582,53 @@ CountVectorsFeaturizer
 
         .. code-block:: none
 
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | Parameter         | Default Value     | Description                                                  |
-         +===================+===================+==============================================================+
-         | use_shared_vocab  | False             | If set to 'True' a common vocabulary is used for labels      |
-         |                   |                   | and user message.                                            |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | analyzer          | word              | Whether the features should be made of word n-gram or        |
-         |                   |                   | character n-grams. Option ‘char_wb’ creates character        |
-         |                   |                   | n-grams only from text inside word boundaries;               |
-         |                   |                   | n-grams at the edges of words are padded with space.         |
-         |                   |                   | Valid values: 'word', 'char', 'char_wb'.                     |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | token_pattern     | r"(?u)\b\w\w+\b"  | Regular expression used to detect tokens.                    |
-         |                   |                   | Only used if 'analyzer' is set to 'word'.                    |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | strip_accents     | None              | Remove accents during the pre-processing step.               |
-         |                   |                   | Valid values: 'ascii', 'unicode', 'None'.                    |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | stop_words        | None              | A list of stop words to use.                                 |
-         |                   |                   | Valid values: 'english' (uses an internal list of            |
-         |                   |                   | English stop words), a list of custom stop words, or         |
-         |                   |                   | 'None'.                                                      |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | min_df            | 1                 | When building the vocabulary ignore terms that have a        |
-         |                   |                   | document frequency strictly lower than the given threshold.  |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | max_df            | 1                 | When building the vocabulary ignore terms that have a        |
-         |                   |                   | document frequency strictly higher than the given threshold  |
-         |                   |                   | (corpus-specific stop words).                                |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | min_ngram         | 1                 | The lower boundary of the range of n-values for different    |
-         |                   |                   | word n-grams or char n-grams to be extracted.                |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | max_ngram         | 1                 | The upper boundary of the range of n-values for different    |
-         |                   |                   | word n-grams or char n-grams to be extracted.                |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | max_features      | None              | If not 'None', build a vocabulary that only consider the top |
-         |                   |                   | max_features ordered by term frequency across the corpus.    |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | lowercase         | True              | Convert all characters to lowercase before tokenizing.       |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | OOV_token         | None              | Keyword for unseen words.                                    |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | OOV_words         | []                | List of words to be treated as 'OOV_token' during training.  |
-         +-------------------+-------------------+--------------------------------------------------------------+
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | Parameter         | Default Value           | Description                                                  |
+         +===================+=========================+==============================================================+
+         | use_shared_vocab  | False                   | If set to 'True' a common vocabulary is used for labels      |
+         |                   |                         | and user message.                                            |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | analyzer          | word                    | Whether the features should be made of word n-gram or        |
+         |                   |                         | character n-grams. Option ‘char_wb’ creates character        |
+         |                   |                         | n-grams only from text inside word boundaries;               |
+         |                   |                         | n-grams at the edges of words are padded with space.         |
+         |                   |                         | Valid values: 'word', 'char', 'char_wb'.                     |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | token_pattern     | r"(?u)\b\w\w+\b"        | Regular expression used to detect tokens.                    |
+         |                   |                         | Only used if 'analyzer' is set to 'word'.                    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | strip_accents     | None                    | Remove accents during the pre-processing step.               |
+         |                   |                         | Valid values: 'ascii', 'unicode', 'None'.                    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | stop_words        | None                    | A list of stop words to use.                                 |
+         |                   |                         | Valid values: 'english' (uses an internal list of            |
+         |                   |                         | English stop words), a list of custom stop words, or         |
+         |                   |                         | 'None'.                                                      |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | min_df            | 1                       | When building the vocabulary ignore terms that have a        |
+         |                   |                         | document frequency strictly lower than the given threshold.  |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | max_df            | 1                       | When building the vocabulary ignore terms that have a        |
+         |                   |                         | document frequency strictly higher than the given threshold  |
+         |                   |                         | (corpus-specific stop words).                                |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | min_ngram         | 1                       | The lower boundary of the range of n-values for different    |
+         |                   |                         | word n-grams or char n-grams to be extracted.                |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | max_ngram         | 1                       | The upper boundary of the range of n-values for different    |
+         |                   |                         | word n-grams or char n-grams to be extracted.                |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | max_features      | None                    | If not 'None', build a vocabulary that only consider the top |
+         |                   |                         | max_features ordered by term frequency across the corpus.    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | lowercase         | True                    | Convert all characters to lowercase before tokenizing.       |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | OOV_token         | None                    | Keyword for unseen words.                                    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | OOV_words         | []                      | List of words to be treated as 'OOV_token' during training.  |
+         +-------------------+-------------------+--------------------------------------------------------------------+
+         | alias             | count_vector_featurizer | Alias name of featurizer.                                    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
 
 
 .. _LexicalSyntacticFeaturizer:
@@ -672,6 +686,8 @@ LexicalSyntacticFeaturizer
             ["BOS", "EOS", "low", "upper", "title", "digit"],
             ["low", "title", "upper"],
           ]
+          # alias name of the featurizer
+          "alias": "lexical_syntactic_featurizer"
 
     This configuration is also the default configuration.
 
@@ -1225,6 +1241,9 @@ CRFEntityExtractor
           "L1_c": 0.1
           # weight of the L2 regularization
           "L2_c": 0.1
+          # Name of dense featurizers to use.
+          # If list is empty all available dense features are used.
+          "featurizers": []
 
     .. note::
         If POS features are used (``pos`` or ``pos2`), you need to have ``SpacyTokenizer`` in your pipeline.
@@ -1513,6 +1532,10 @@ ResponseSelector
          |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
          |                                 |                   | training step ("minibatch").                                 |
          +---------------------------------+-------------------+--------------------------------------------------------------+
+         | featurizers                     | []                | List of featurizer names (alias names). Only features from   |
+         |                                 |                   | coming from the listed names are used. If list is empty      |
+         |                                 |                   | all available features are used.                             |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
                   be between ``-1`` and ``1``.
@@ -1748,6 +1771,10 @@ DIETClassifier
          | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
          |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
          |                                 |                  | training step ('minibatch').                                 |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | featurizers                     | []               | List of featurizer names (alias names). Only features from   |
+         |                                 |                  | coming from the listed names are used. If list is empty      |
+         |                                 |                  | all available features are used.                             |
          +---------------------------------+------------------+--------------------------------------------------------------+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should

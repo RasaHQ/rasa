@@ -24,7 +24,10 @@ logger = logging.getLogger(__name__)
 
 class RegexFeaturizer(SparseFeaturizer):
 
-    defaults = {ALIAS: "regex_featurizer"}
+    defaults = {
+        # alias name of the featurizer
+        ALIAS: "regex_featurizer"
+    }
 
     @classmethod
     def required_components(cls) -> List[Type[Component]]:

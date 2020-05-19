@@ -94,7 +94,8 @@ class CRFEntityExtractor(EntityExtractor):
         "L1_c": 0.1,
         # weight of the L2 regularization
         "L2_c": 0.1,
-        # what dense featurizer should be used
+        # Name of dense featurizers to use.
+        # If list is empty all available dense features are used.
         "featurizers": [],
     }
 

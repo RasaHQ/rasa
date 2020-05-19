@@ -77,6 +77,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings,
+        # alias name of the featurizer
         ALIAS: "count_vector_featurizer",
     }
 
