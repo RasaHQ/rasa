@@ -1,18 +1,13 @@
 import numpy as np
 import pytest
-
+import scipy.sparse
 from unittest.mock import Mock
 
 from nlu.featurizers.featurizer import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import (
-    TEXT,
-    INTENT,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
-)
+from rasa.nlu.constants import TEXT, INTENT
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     RANDOM_SEED,
@@ -55,35 +50,18 @@ def test_compute_default_label_features():
     [
         (
             [
-                Message(
-                    "test a",
-                    features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
-                    ],
-                ),
+                Message("test a", features=[Features(np.zeros(2), TEXT, "test")]),
                 Message(
                     "test b",
                     features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                        Features(np.zeros(2), TEXT, "test"),
+                        Features(scipy.sparse.csr_matrix([1, 1]), TEXT, "test"),
                     ],
                 ),
             ],
             True,
         ),
-        (
-            [
-                Message(
-                    "test a",
-                    features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
-                    ],
-                )
-            ],
-            False,
-        ),
+        ([Message("test a", features=[Features(np.zeros(2), INTENT, "test")])], False),
     ],
 )
 def test_check_labels_features_exist(messages, expected):
@@ -96,7 +74,7 @@ def test_check_labels_features_exist(messages, expected):
     [
         [
             {
-                "name": "WhitespaceTokenizer",
+                "name": "ConveRTTokenizer",
                 "intent_tokenization_flag": True,
                 "intent_split_symbol": "+",
             },

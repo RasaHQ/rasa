@@ -3,13 +3,11 @@ import pytest
 import scipy.sparse
 
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
-from rasa.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE
+from rasa.nlu.constants import TEXT
 
 
 def test_combine_with_existing_dense_features():
-    existing_features = Features(
-        np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "test"
-    )
+    existing_features = Features(np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), TEXT, "test")
     new_features = np.array([[1, 0], [0, 1]])
     expected_features = np.array([[1, 0, 2, 3, 1, 0], [2, 0, 0, 1, 0, 1]])
 
@@ -19,9 +17,7 @@ def test_combine_with_existing_dense_features():
 
 
 def test_combine_with_existing_dense_features_shape_mismatch():
-    existing_features = Features(
-        np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "test"
-    )
+    existing_features = Features(np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), TEXT, "test")
     new_features = np.array([[0, 1]])
 
     with pytest.raises(ValueError):
@@ -30,10 +26,7 @@ def test_combine_with_existing_dense_features_shape_mismatch():
 
 def test_combine_with_existing_sparse_features():
     existing_features = Features(
-        scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
-        FEATURE_TYPE_SEQUENCE,
-        TEXT,
-        "test",
+        scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]), TEXT, "test"
     )
     new_features = scipy.sparse.csr_matrix([[1, 0], [0, 1]])
     expected_features = [[1, 0, 2, 3, 1, 0], [2, 0, 0, 1, 0, 1]]
@@ -46,10 +39,7 @@ def test_combine_with_existing_sparse_features():
 
 def test_combine_with_existing_sparse_features_shape_mismatch():
     existing_features = Features(
-        scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
-        FEATURE_TYPE_SEQUENCE,
-        TEXT,
-        "test",
+        scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]), TEXT, "test"
     )
     new_features = scipy.sparse.csr_matrix([[0, 1]])
 

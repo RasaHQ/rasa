@@ -35,16 +35,14 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
 
     ftr.process(test_message)
 
-    seq_vecs, sen_vecs = test_message.get_sparse_features(TEXT, [], [])
+    vecs = test_message.get_sparse_features(TEXT, [])
 
-    assert isinstance(seq_vecs, scipy.sparse.coo_matrix)
-    assert isinstance(sen_vecs, scipy.sparse.coo_matrix)
+    assert isinstance(vecs, scipy.sparse.coo_matrix)
 
-    actual_seq_vecs = seq_vecs.toarray()
-    actual_sen_vecs = sen_vecs.toarray()
+    actual_vecs = vecs.toarray()
 
-    assert np.all(actual_seq_vecs[0] == expected)
-    assert np.all(actual_sen_vecs[-1] == expected_cls)
+    assert np.all(actual_vecs[0] == expected)
+    assert np.all(actual_vecs[-1] == expected_cls)
 
 
 @pytest.mark.parametrize(
@@ -73,24 +71,18 @@ def test_count_vector_featurizer_response_attribute_featurization(
     tk.train(data)
     ftr.train(data)
 
-    intent_seq_vecs, intent_sen_vecs = train_message.get_sparse_features(INTENT, [], [])
-    response_seq_vecs, response_sen_vecs = train_message.get_sparse_features(
-        RESPONSE, [], []
-    )
+    intent_vecs = train_message.get_sparse_features(INTENT, [])
+    response_vecs = train_message.get_sparse_features(RESPONSE, [])
 
     if intent_features:
-        assert intent_seq_vecs.toarray()[0] == intent_features
-        assert intent_sen_vecs is None
+        assert intent_vecs.toarray()[0] == intent_features
     else:
-        assert intent_seq_vecs is None
-        assert intent_sen_vecs is None
+        assert intent_vecs is None
 
     if response_features:
-        assert response_seq_vecs.toarray()[0] == response_features
-        assert response_sen_vecs is not None
+        assert response_vecs.toarray()[0] == response_features
     else:
-        assert response_seq_vecs is None
-        assert response_sen_vecs is None
+        assert response_vecs is None
 
 
 @pytest.mark.parametrize(
@@ -117,23 +109,17 @@ def test_count_vector_featurizer_attribute_featurization(
     tk.train(data)
     ftr.train(data)
 
-    intent_seq_vecs, intent_sen_vecs = train_message.get_sparse_features(INTENT, [], [])
-    response_seq_vecs, response_sen_vecs = train_message.get_sparse_features(
-        RESPONSE, [], []
-    )
+    intent_vecs = train_message.get_sparse_features(INTENT, [])
+    response_vecs = train_message.get_sparse_features(RESPONSE, [])
     if intent_features:
-        assert intent_seq_vecs.toarray()[0] == intent_features
-        assert intent_sen_vecs is None
+        assert intent_vecs.toarray()[0] == intent_features
     else:
-        assert intent_seq_vecs is None
-        assert intent_sen_vecs is None
+        assert intent_vecs is None
 
     if response_features:
-        assert response_seq_vecs.toarray()[0] == response_features
-        assert response_sen_vecs is not None
+        assert response_vecs.toarray()[0] == response_features
     else:
-        assert response_seq_vecs is None
-        assert response_sen_vecs is None
+        assert response_vecs is None
 
 
 @pytest.mark.parametrize(
@@ -167,12 +153,12 @@ def test_count_vector_featurizer_shared_vocab(
     tk.train(data)
     ftr.train(data)
 
-    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [], [])
-    assert np.all(seq_vec.toarray()[0] == text_features)
-    seq_vec, sen_vec = train_message.get_sparse_features(INTENT, [], [])
-    assert np.all(seq_vec.toarray()[0] == intent_features)
-    seq_vec, sen_vec = train_message.get_sparse_features(RESPONSE, [], [])
-    assert np.all(seq_vec.toarray()[0] == response_features)
+    vec = train_message.get_sparse_features(TEXT, [])
+    assert np.all(vec.toarray()[0] == text_features)
+    vec = train_message.get_sparse_features(INTENT, [])
+    assert np.all(vec.toarray()[0] == intent_features)
+    vec = train_message.get_sparse_features(RESPONSE, [])
+    assert np.all(vec.toarray()[0] == response_features)
 
 
 @pytest.mark.parametrize(
@@ -197,8 +183,8 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [], [])
-    assert np.all(seq_vec.toarray()[0] == expected)
+    vec = train_message.get_sparse_features(TEXT, [])
+    assert np.all(vec.toarray()[0] == expected)
 
 
 @pytest.mark.parametrize(
@@ -228,8 +214,8 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [], [])
-    assert np.all(seq_vec.toarray()[0] == expected)
+    vec = train_message.get_sparse_features(TEXT, [])
+    assert np.all(vec.toarray()[0] == expected)
 
 
 @pytest.mark.parametrize(
@@ -266,8 +252,8 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
     ftr.process(test_message)
 
-    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [], [])
-    assert np.all(seq_vec.toarray()[0] == expected)
+    vec = train_message.get_sparse_features(TEXT, [])
+    assert np.all(vec.toarray()[0] == expected)
 
 
 @pytest.mark.parametrize(
@@ -291,8 +277,8 @@ def test_count_vector_featurizer_char(sentence, expected):
     WhitespaceTokenizer().process(test_message)
     ftr.process(test_message)
 
-    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [], [])
-    assert np.all(seq_vec.toarray()[0] == expected)
+    vec = train_message.get_sparse_features(TEXT, [])
+    assert np.all(vec.toarray()[0] == expected)
 
 
 def test_count_vector_featurizer_persist_load(tmpdir):
@@ -350,16 +336,14 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     test_message2 = Message(sentence2)
     test_ftr.process(test_message2)
 
-    test_seq_vec_1, test_sen_vec_1 = test_message1.get_sparse_features(TEXT, [], [])
-    train_seq_vec_1, train_sen_vec_1 = train_message1.get_sparse_features(TEXT, [], [])
-    test_seq_vec_2, test_sen_vec_2 = test_message2.get_sparse_features(TEXT, [], [])
-    train_seq_vec_2, train_sen_vec_2 = train_message2.get_sparse_features(TEXT, [], [])
+    test_vec_1 = test_message1.get_sparse_features(TEXT, [])
+    train_vec_1 = train_message1.get_sparse_features(TEXT, [])
+    test_vec_2 = test_message2.get_sparse_features(TEXT, [])
+    train_vec_2 = train_message2.get_sparse_features(TEXT, [])
 
     # check that train features and test features after loading are the same
-    assert np.all(test_seq_vec_1.toarray() == train_seq_vec_1.toarray())
-    assert np.all(test_sen_vec_1.toarray() == train_sen_vec_1.toarray())
-    assert np.all(test_seq_vec_2.toarray() == train_seq_vec_2.toarray())
-    assert np.all(test_sen_vec_2.toarray() == train_sen_vec_2.toarray())
+    assert np.all(test_vec_1.toarray() == train_vec_1.toarray())
+    assert np.all(test_vec_2.toarray() == train_vec_2.toarray())
 
 
 def test_count_vectors_featurizer_train():
@@ -377,22 +361,19 @@ def test_count_vectors_featurizer_train():
     expected = np.array([0, 1, 0, 0, 0])
     expected_cls = np.array([1, 1, 1, 1, 1])
 
-    seq_vec, sen_vec = message.get_sparse_features(TEXT, [], [])
+    vec = message.get_sparse_features(TEXT, [])
 
-    assert (5, 5) == seq_vec.shape
-    assert (1, 5) == sen_vec.shape
-    assert np.all(seq_vec.toarray()[0] == expected)
-    assert np.all(sen_vec.toarray()[-1] == expected_cls)
+    assert (6, 5) == vec.shape
+    assert np.all(vec.toarray()[0] == expected)
+    assert np.all(vec.toarray()[-1] == expected_cls)
 
-    seq_vec, sen_vec = message.get_sparse_features(RESPONSE, [], [])
+    vec = message.get_sparse_features(RESPONSE, [])
 
-    assert (5, 5) == seq_vec.shape
-    assert (1, 5) == sen_vec.shape
-    assert np.all(seq_vec.toarray()[0] == expected)
-    assert np.all(sen_vec.toarray()[-1] == expected_cls)
+    assert (6, 5) == vec.shape
+    assert np.all(vec.toarray()[0] == expected)
+    assert np.all(vec.toarray()[-1] == expected_cls)
 
-    seq_vec, sen_vec = message.get_sparse_features(INTENT, [], [])
+    vec = message.get_sparse_features(INTENT, [])
 
-    assert sen_vec is None
-    assert (1, 1) == seq_vec.shape
-    assert np.all(seq_vec.toarray()[0] == np.array([1]))
+    assert (1, 1) == vec.shape
+    assert np.all(vec.toarray()[0] == np.array([1]))

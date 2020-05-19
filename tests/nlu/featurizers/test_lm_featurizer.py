@@ -187,14 +187,13 @@ def test_lm_featurizer_shape_values(
 
     for index in range(len(texts)):
 
-        computed_sequence_vec, computed_sentence_vec = messages[
-            index
-        ].get_dense_features(TEXT, [], [])
+        computed_feature_vec = messages[index].get_dense_features(TEXT, [])
+        computed_sequence_vec, computed_sentence_vec = (
+            computed_feature_vec[:-1],
+            computed_feature_vec[-1],
+        )
 
-        assert computed_sequence_vec.shape[0] == expected_shape[index][0] - 1
-        assert computed_sequence_vec.shape[1] == expected_shape[index][1]
-        assert computed_sentence_vec.shape[0] == 1
-        assert computed_sentence_vec.shape[1] == expected_shape[index][1]
+        assert computed_feature_vec.shape == expected_shape[index]
 
         # Look at the value of first dimension for a few starting timesteps
         assert np.allclose(
@@ -205,12 +204,9 @@ def test_lm_featurizer_shape_values(
 
         # Look at the first value of first five dimensions
         assert np.allclose(
-            computed_sentence_vec[0][:5], expected_cls_vec[index], atol=1e-5
+            computed_sentence_vec[:5], expected_cls_vec[index], atol=1e-5
         )
 
-        intent_sequence_vec, intent_sentence_vec = messages[index].get_dense_features(
-            INTENT, [], []
-        )
+        intent_vec = messages[index].get_dense_features(INTENT, [])
 
-        assert intent_sequence_vec is None
-        assert intent_sentence_vec is None
+        assert intent_vec is None

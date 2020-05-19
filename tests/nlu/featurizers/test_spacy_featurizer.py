@@ -18,15 +18,14 @@ def test_spacy_featurizer_cls_vector(spacy_nlp):
 
     featurizer._set_spacy_features(message)
 
-    seq_vecs, sen_vecs = message.get_dense_features(TEXT, [], [])
+    vecs = message.get_dense_features(TEXT, [])
 
     expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
     expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
 
-    assert 5 == len(seq_vecs)
-    assert 1 == len(sen_vecs)
-    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(sen_vecs[-1][:5], expected_cls, atol=1e-5)
+    assert 6 == len(vecs)
+    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
 
 @pytest.mark.parametrize("sentence", ["hey how are you today"])
@@ -104,8 +103,7 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
 
     ftr._set_spacy_features(message)
 
-    seq_vecs, sen_vecs = message.get_dense_features(TEXT, [], [])
-    vecs = seq_vecs[0][:5]
+    vecs = message.get_dense_features(TEXT, [])[0][:5]
 
     assert np.allclose(token_vectors[0][:5], vecs, atol=1e-4)
     assert np.allclose(vecs, expected, atol=1e-4)
@@ -152,21 +150,18 @@ def test_spacy_featurizer_train(spacy_nlp):
     expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
     expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
 
-    seq_vecs, sen_vecs = message.get_dense_features(TEXT, [], [])
+    vecs = message.get_dense_features(TEXT, [])
 
-    assert 5 == len(seq_vecs)
-    assert 1 == len(sen_vecs)
-    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(sen_vecs[-1][:5], expected_cls, atol=1e-5)
+    assert 6 == len(vecs)
+    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    seq_vecs, sen_vecs = message.get_dense_features(RESPONSE, [], [])
+    vecs = message.get_dense_features(RESPONSE, [])
 
-    assert 5 == len(seq_vecs)
-    assert 1 == len(sen_vecs)
-    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(sen_vecs[-1][:5], expected_cls, atol=1e-5)
+    assert 6 == len(vecs)
+    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    seq_vecs, sen_vecs = message.get_dense_features(INTENT, [], [])
+    vecs = message.get_dense_features(INTENT, [])
 
-    assert seq_vecs is None
-    assert sen_vecs is None
+    assert vecs is None

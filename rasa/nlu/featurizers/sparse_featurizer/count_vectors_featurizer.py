@@ -501,14 +501,12 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         # transform for all attributes
         for attribute in self._attributes:
-            sequence_features, sentence_features = self._get_featurized_attribute(
+            features = self._get_featurized_attribute(
                 attribute, processed_attribute_tokens[attribute]
             )
 
-            if sequence_features and sentence_features:
-                self._set_attribute_features(
-                    attribute, sequence_features, sentence_features, training_data
-                )
+            if features:
+                self._set_attribute_features(attribute, features, training_data)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Process incoming message and compute and set features"""

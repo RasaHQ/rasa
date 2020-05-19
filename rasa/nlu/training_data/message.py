@@ -10,8 +10,6 @@ from rasa.nlu.constants import (
     RESPONSE_KEY_ATTRIBUTE,
     TEXT,
     RESPONSE_IDENTIFIER_DELIMITER,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.utils import ordered
 
@@ -114,92 +112,45 @@ class Message:
         elif len(split_title) == 1:
             return split_title[0], None
 
-    def _filter_features(
-        self,
-        attribute: Text,
-        sequence_featurizers: List[Text],
-        sentence_featurizers: List[Text],
-        sparse: bool,
-    ) -> Tuple[Optional[List["Features"]], Optional[List["Features"]]]:
-        if sparse:
-            features = [
-                f
-                for f in self.features
-                if f.message_attribute == attribute and f.is_sparse()
-            ]
-        else:
-            features = [
-                f
-                for f in self.features
-                if f.message_attribute == attribute and f.is_dense()
-            ]
-
-        if not features:
-            return None, None
-
-        sequence_features = [
-            f
-            for f in features
-            if f.type == FEATURE_TYPE_SEQUENCE
-            and (f.origin in sequence_featurizers or not sequence_featurizers)
-        ]
-        sentence_features = [
-            f
-            for f in features
-            if f.type == FEATURE_TYPE_SENTENCE
-            and (f.origin in sentence_featurizers or not sentence_featurizers)
-        ]
-
-        return sequence_features, sentence_features
-
     def get_sparse_features(
-        self,
-        attribute: Text,
-        sequence_featurizers: List[Text],
-        sentence_featurizers: List[Text],
-    ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[scipy.sparse.spmatrix]]:
+        self, attribute: Text, featurizers: Optional[List[Text]] = None
+    ) -> Optional[scipy.sparse.spmatrix]:
+        if featurizers is None:
+            featurizers = []
 
-        sequence_features, sentence_features = self._filter_features(
-            attribute, sequence_featurizers, sentence_featurizers, sparse=True
-        )
+        features = [
+            f
+            for f in self.features
+            if f.message_attribute == attribute
+            and f.is_sparse()
+            and (f.origin in featurizers or not featurizers)
+        ]
 
-        if not sequence_features and not sentence_features:
-            return None, None
+        return self._combine_features(features)
 
-        return self._combine_features(sequence_features, sentence_features)
+    def get_dense_features(
+        self, attribute: Text, featurizers: Optional[List[Text]] = None
+    ) -> Optional[np.ndarray]:
+        if featurizers is None:
+            featurizers = []
+
+        features = [
+            f
+            for f in self.features
+            if f.message_attribute == attribute
+            and f.is_dense()
+            and (f.origin in featurizers or not featurizers)
+        ]
+
+        return self._combine_features(features)
 
     @staticmethod
     def _combine_features(
-        sequence_features: List["Features"], sentence_features: List["Features"]
-    ) -> Tuple[
-        Optional[Union[np.ndarray, scipy.sparse.spmatrix]],
-        Optional[Union[np.ndarray, scipy.sparse.spmatrix]],
-    ]:
-        combined_sequence_features = None
-        for f in sequence_features:
-            combined_sequence_features = f.combine_with_features(
-                combined_sequence_features
-            )
+        features: List["Features"],
+    ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
+        combined_features = None
 
-        combined_sentence_features = None
-        for f in sentence_features:
-            combined_sentence_features = f.combine_with_features(
-                combined_sentence_features
-            )
+        for f in features:
+            combined_features = f.combine_with_features(combined_features)
 
-        return combined_sequence_features, combined_sentence_features
-
-    def get_dense_features(
-        self,
-        attribute: Text,
-        sequence_featurizers: List[Text],
-        sentence_featurizers: List[Text],
-    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
-        sequence_features, sentence_features = self._filter_features(
-            attribute, sequence_featurizers, sentence_featurizers, sparse=False
-        )
-
-        if not sequence_features and not sentence_features:
-            return None, None
-
-        return self._combine_features(sequence_features, sentence_features)
+        return combined_features

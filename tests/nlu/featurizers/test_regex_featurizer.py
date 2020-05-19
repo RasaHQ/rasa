@@ -201,21 +201,18 @@ def test_regex_featurizer_train():
     expected = np.array([0, 1, 0])
     expected_cls = np.array([1, 1, 1])
 
-    seq_vecs, sen_vec = message.get_sparse_features(TEXT, [], [])
+    vec = message.get_sparse_features(TEXT, [])
 
-    assert (6, 3) == seq_vecs.shape
-    assert (1, 3) == sen_vec.shape
-    assert np.all(seq_vecs.toarray()[0] == expected)
-    assert np.all(sen_vec.toarray()[-1] == expected_cls)
+    assert (7, 3) == vec.shape
+    assert np.all(vec.toarray()[0] == expected)
+    assert np.all(vec.toarray()[-1] == expected_cls)
 
-    seq_vecs, sen_vec = message.get_sparse_features(RESPONSE, [], [])
+    vec = message.get_sparse_features(RESPONSE, [])
 
-    assert (6, 3) == seq_vecs.shape
-    assert (1, 3) == sen_vec.shape
-    assert np.all(seq_vecs.toarray()[0] == expected)
-    assert np.all(sen_vec.toarray()[-1] == expected_cls)
+    assert (7, 3) == vec.shape
+    assert np.all(vec.toarray()[0] == expected)
+    assert np.all(vec.toarray()[-1] == expected_cls)
 
-    seq_vecs, sen_vec = message.get_sparse_features(INTENT, [], [])
+    vec = message.get_sparse_features(INTENT, [])
 
-    assert seq_vecs is None
-    assert sen_vec is None
+    assert vec is None

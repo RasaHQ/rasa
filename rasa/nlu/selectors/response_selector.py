@@ -17,14 +17,10 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     LABEL_IDS,
     EntityTagSpec,
-    TEXT_SEQUENCE_LENGTH,
-    LABEL_SEQUENCE_LENGTH,
-    LABEL_SENTENCE_LENGTH,
-    TEXT_SENTENCE_LENGTH,
-    TEXT_SEQUENCE_FEATURES,
-    LABEL_SEQUENCE_FEATURES,
-    TEXT_SENTENCE_FEATURES,
-    LABEL_SENTENCE_FEATURES,
+    TEXT_FEATURES_LENGTH,
+    LABEL_FEATURES_LENGTH,
+    TEXT_FEATURES,
+    LABEL_FEATURES,
 )
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -71,9 +67,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
-    CONCAT_DIMENSION,
-    SEQUENCE_FEATURES,
-    SENTENCE_FEATURES,
+    FEATURIZERS,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -154,8 +148,6 @@ class ResponseSelector(DIETClassifier):
         EMBEDDING_DIMENSION: 20,
         # Default dense dimension to use if no dense features are present.
         DENSE_DIMENSION: {TEXT: 512, LABEL: 512},
-        # Default dimension to use for concatenating sequence and sentence features.
-        CONCAT_DIMENSION: {TEXT: 512, LABEL: 512},
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
@@ -216,8 +208,7 @@ class ResponseSelector(DIETClassifier):
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
-        SEQUENCE_FEATURES: [],
-        SENTENCE_FEATURES: [],
+        FEATURIZERS: [],
     }
 
     def __init__(
@@ -408,20 +399,20 @@ class ResponseSelector(DIETClassifier):
 
 class DIET2DIET(DIET):
     def _check_data(self) -> None:
-        if TEXT_SENTENCE_FEATURES not in self.data_signature:
+        if TEXT_FEATURES not in self.data_signature:
             raise InvalidConfigError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
-        if LABEL_SENTENCE_FEATURES not in self.data_signature:
+        if LABEL_FEATURES not in self.data_signature:
             raise InvalidConfigError(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if (
             self.config[SHARE_HIDDEN_LAYERS]
-            and self.data_signature[TEXT_SENTENCE_FEATURES]
-            != self.data_signature[LABEL_SENTENCE_FEATURES]
+            and self.data_signature[TEXT_FEATURES]
+            != self.data_signature[LABEL_FEATURES]
         ):
             raise ValueError(
                 "If hidden layer weights are shared, data signatures "
@@ -456,31 +447,13 @@ class DIET2DIET(DIET):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        sentence_mask_label = super()._get_mask_for(
-            self.tf_label_data, LABEL_SENTENCE_LENGTH
+        sequence_lengths_label = self._get_sequence_lengths(
+            self.tf_label_data[LABEL_FEATURES_LENGTH][0]
         )
-        sequence_mask_label = super()._get_mask_for(
-            self.tf_label_data, LABEL_SEQUENCE_LENGTH
-        )
-
-        if LABEL_SEQUENCE_LENGTH not in self.tf_label_data:
-            sequence_lengths_label = self._get_sequence_lengths(
-                self.tf_label_data[LABEL_SENTENCE_LENGTH][0]
-            )
-        else:
-            sequence_lengths_label = self._get_sequence_lengths(
-                self.tf_label_data[LABEL_SEQUENCE_LENGTH][0]
-            )
-            sequence_lengths_label += 1  # add cls token
         mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
-            self.tf_label_data[LABEL_SEQUENCE_FEATURES],
-            self.tf_label_data[LABEL_SENTENCE_FEATURES],
-            sequence_mask_label,
-            sentence_mask_label,
-            mask_label,
-            self.label_name,
+            self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name
         )
         cls_label = self._last_token(label_transformed, sequence_lengths_label)
 
@@ -493,19 +466,9 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-        sentence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
-
-        if TEXT_SEQUENCE_LENGTH not in self.tf_label_data:
-            sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
-            )
-        else:
-            sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
-            )
-            sequence_lengths_text += 1  # add cls token
-
+        sequence_lengths_text = self._get_sequence_lengths(
+            tf_batch_data[TEXT_FEATURES_LENGTH][0]
+        )
         mask_text = self._compute_mask(sequence_lengths_text)
 
         (
@@ -514,10 +477,7 @@ class DIET2DIET(DIET):
             text_seq_ids,
             lm_mask_bool_text,
         ) = self._create_sequence(
-            tf_batch_data[TEXT_SEQUENCE_FEATURES],
-            tf_batch_data[TEXT_SENTENCE_FEATURES],
-            sequence_mask_text,
-            sentence_mask_text,
+            tf_batch_data[TEXT_FEATURES],
             mask_text,
             self.text_name,
             sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
@@ -526,32 +486,13 @@ class DIET2DIET(DIET):
             sequence_ids=True,
         )
 
-        sequence_mask_label = super()._get_mask_for(
-            tf_batch_data, LABEL_SEQUENCE_LENGTH
+        sequence_lengths_label = self._get_sequence_lengths(
+            tf_batch_data[LABEL_FEATURES_LENGTH][0]
         )
-        sentence_mask_label = super()._get_mask_for(
-            tf_batch_data, LABEL_SENTENCE_LENGTH
-        )
-
-        if LABEL_SEQUENCE_LENGTH not in tf_batch_data:
-            sequence_lengths_label = self._get_sequence_lengths(
-                tf_batch_data[LABEL_SENTENCE_LENGTH][0]
-            )
-        else:
-            sequence_lengths_label = self._get_sequence_lengths(
-                tf_batch_data[LABEL_SEQUENCE_LENGTH][0]
-            )
-            sequence_lengths_label += 1  # add cls token
-
         mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data[LABEL_SEQUENCE_FEATURES],
-            tf_batch_data[LABEL_SENTENCE_FEATURES],
-            sequence_mask_label,
-            sentence_mask_label,
-            mask_label,
-            self.label_name,
+            tf_batch_data[LABEL_FEATURES], mask_label, self.label_name
         )
 
         losses = []
@@ -588,27 +529,13 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
-        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-        sentence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
-
-        if TEXT_SEQUENCE_LENGTH not in tf_batch_data:
-            sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
-            )
-        else:
-            sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
-            )
-            sequence_lengths_text += 1  # add cls token
+        sequence_lengths_text = self._get_sequence_lengths(
+            tf_batch_data[TEXT_FEATURES_LENGTH][0]
+        )
         mask_text = self._compute_mask(sequence_lengths_text)
 
         text_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data[TEXT_SEQUENCE_FEATURES],
-            tf_batch_data[TEXT_SENTENCE_FEATURES],
-            sequence_mask_text,
-            sentence_mask_text,
-            mask_text,
-            self.text_name,
+            tf_batch_data[TEXT_FEATURES], mask_text, self.text_name
         )
 
         out = {}

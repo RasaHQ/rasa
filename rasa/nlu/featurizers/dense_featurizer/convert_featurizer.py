@@ -2,21 +2,14 @@ import logging
 from typing import Any, Dict, List, Optional, Text, Tuple, Type
 from tqdm import tqdm
 
-from nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    TEXT,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-    ALIAS,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
-    NUMBER_OF_SUB_TOKENS,
-)
+from rasa.nlu.constants import TEXT, DENSE_FEATURIZABLE_ATTRIBUTES, ALIAS
 import numpy as np
 import tensorflow as tf
 
