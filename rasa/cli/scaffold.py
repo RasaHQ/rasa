@@ -16,7 +16,15 @@ from rasa.constants import (
 # noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+) -> None:
+    """Add subparser for `rasa init`.
+
+    Args:
+        subparsers: Subparsers action object to which `argparse.ArgumentParser`
+            objects can be added.
+        parents: `argparse.ArgumentParser` objects whose arguments should also be
+            included.
+    """
     scaffold_parser = subparsers.add_parser(
         "init",
         parents=parents,
@@ -38,6 +46,14 @@ def add_subparser(
 
 
 def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
+    """Print training info if the user wants to train or instructions on how to train
+    later.
+
+    Args:
+        args: `argparse.Namespace` object containing the parsed command-line
+            arguments.
+        path: Path of the Rasa project to initialise.
+    """
     import questionary
 
     print_success("Finished creating project structure.")
@@ -57,7 +73,7 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
         args.model = rasa.train(domain, config, training_files, output)
 
-        print_run_or_instructions(args, path)
+        print_run_or_instructions(args)
 
     else:
         print_success(
@@ -66,7 +82,14 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
         )
 
 
-def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
+def print_run_or_instructions(args: argparse.Namespace) -> None:
+    """Ask they user if they want to speak to the assistant on the command line and
+    start the assistant in the shell.
+
+    Args:
+        args: `argparse.Namespace` object containing the parsed command-line
+            arguments.
+    """
     from rasa.core import constants
     import questionary
 
@@ -113,24 +136,38 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
 
 def init_project(args: argparse.Namespace, path: Text) -> None:
+    """Initialize a Rasa project.
+
+    Args:
+        args: `argparse.Namespace` object containing the parsed command-line
+            arguments.
+        path: Path of the Rasa project to initialise.
+    """
     create_initial_project(path)
     print("Created project directory at '{}'.".format(os.path.abspath(path)))
     print_train_or_instructions(args, path)
 
 
 def create_initial_project(path: Text) -> None:
+    """Create a Rasa project.
+
+    Args:
+        path: Path of the Rasa project to initialise.
+    """
     from distutils.dir_util import copy_tree
 
     copy_tree(scaffold_path(), path)
 
 
 def scaffold_path() -> Text:
+    """Find the path of the Rasa scaffold project."""
     import pkg_resources
 
     return pkg_resources.resource_filename(__name__, "initial_project")
 
 
 def print_cancel() -> None:
+    """Print `rasa init` cancellation message."""
     print_success("Ok. You can continue setting up by running 'rasa init' 🙋🏽‍♀️")
     exit(0)
 
@@ -159,6 +196,12 @@ def _ask_overwrite(path: Text) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
+    """Run the Rasa project initialization command-line prompt.
+
+    Args:
+        args: `argparse.Namespace` object containing the parsed command-line
+            arguments.
+    """
     import questionary
 
     print_success("Welcome to Rasa! 🤖\n")

@@ -108,8 +108,9 @@ class StoryConflict:
             conflict_description = f"'{stories[0]}'"
         else:
             raise ValueError(
-                "An internal error occurred while trying to summarise a conflict without stories. "
-                "Please file a bug report at https://github.com/RasaHQ/rasa."
+                "An internal error occurred while trying to summarise a conflict "
+                "without stories. Please file a bug report at "
+                "https://github.com/RasaHQ/rasa."
             )
 
         return f"{action} predicted in {conflict_description}\n"
@@ -190,7 +191,8 @@ def _find_conflicting_states(
         max_history: Number of turns to take into account for the state descriptions.
 
     Returns:
-        A dictionary mapping state-hashes to a list of actions that follow from each state.
+        A dictionary mapping state-hashes to a list of actions that follow from each
+        state.
     """
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
@@ -220,8 +222,8 @@ def _build_conflicts_from_states(
         trackers: Trackers that contain the states.
         domain: The domain object.
         max_history: Number of turns to take into account for the state descriptions.
-        conflicting_state_action_mapping: A dictionary mapping state-hashes to a list of actions
-                                          that follow from each state.
+        conflicting_state_action_mapping: A dictionary mapping state-hashes to a list
+            of actions that follow from each state.
 
     Returns:
         A list of `StoryConflict` objects that describe inconsistencies in the story
