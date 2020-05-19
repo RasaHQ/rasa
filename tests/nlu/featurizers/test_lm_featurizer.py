@@ -8,6 +8,7 @@ from rasa.nlu.constants import TEXT, INTENT
 from rasa.nlu.training_data import Message
 
 
+@pytest.mark.skip(reason="Results in random crashing of github action workers")
 @pytest.mark.parametrize(
     "model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec",
     [

@@ -1,5 +1,6 @@
 import numpy as np
 import typing
+import logging
 from typing import Any, Optional, Text, Dict, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
@@ -13,6 +14,9 @@ from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
+
+
+logger = logging.getLogger(__name__)
 
 
 class SpacyFeaturizer(DenseFeaturizer):
@@ -49,22 +53,27 @@ class SpacyFeaturizer(DenseFeaturizer):
                 self._set_spacy_features(example, attribute)
 
     def get_doc(self, message: Message, attribute: Text) -> Any:
-
         return message.get(SPACY_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
         self._set_spacy_features(message)
 
-    def _set_spacy_features(self, message: Message, attribute: Text = TEXT):
+    def _set_spacy_features(self, message: Message, attribute: Text = TEXT) -> None:
         """Adds the spacy word vectors to the messages features."""
-        message_attribute_doc = self.get_doc(message, attribute)
+        doc = self.get_doc(message, attribute)
 
-        if message_attribute_doc is not None:
-            features = self._features_for_doc(message_attribute_doc)
-            cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
+        if doc is None:
+            return None
 
-            features = np.concatenate([features, cls_token_vec])
+        # in case an empty spaCy model was used, no vectors are present
+        if doc.vocab.vectors_length == 0:
+            logger.debug("No features present. You are using an empty spaCy model.")
+            return None
 
-            final_features = Features(features, attribute, self.component_config[ALIAS])
-            message.add_features(final_features)
+        features = self._features_for_doc(doc)
+
+        cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
+        features = np.concatenate([features, cls_token_vec])
+
+        final_features = Features(features, attribute, self.component_config[ALIAS])
+        message.add_features(final_features)

@@ -326,6 +326,7 @@ def test_train_help(run):
     help_text = """usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
+                  [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force]
                   {core,nlu} ..."""
@@ -340,7 +341,8 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
     output = run("train", "nlu", "--help")
 
     help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [--out OUT]
-                      [-u NLU] [--fixed-model-name FIXED_MODEL_NAME]
+                      [-u NLU] [--num-threads NUM_THREADS]
+                      [--fixed-model-name FIXED_MODEL_NAME]
                       [--persist-nlu-data]"""
 
     lines = help_text.split("\n")

@@ -39,7 +39,7 @@ class WebexTeamsBot(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        json_message.setdefault("roomID", recipient_id)
+        json_message.setdefault("roomId", recipient_id)
         return self.api.messages.create(**json_message)
 
 
@@ -128,7 +128,7 @@ class WebexTeamsInput(InputChannel):
             else:
                 metadata = self.get_metadata(request)
                 await self.process_message(
-                    on_new_message, message.text, message.personId, metadata
+                    on_new_message, message.text, message.roomId, metadata
                 )
                 return response.text("")
 
