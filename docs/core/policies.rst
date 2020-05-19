@@ -148,7 +148,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
     | 4. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
     | 3. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
     | 2. ``MappingPolicy``
-    | 1. ``TEDPolicy``, ``EmbeddingPolicy``, ``KerasPolicy``, and ``SklearnPolicy``
+    | 1. ``TEDPolicy``, ``EmbeddingPolicy`` and ``KerasPolicy``
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
 above the ``nlu_threshold``, the bot will still fall back. In general, it is not recommended to have more
@@ -170,7 +170,7 @@ Keras Policy
 ^^^^^^^^^^^^
 
 The ``KerasPolicy`` uses a neural network implemented in
-`Keras <http://keras.io>`_ to select the next action.
+`Keras <https://keras.io/>`_ to select the next action.
 The default architecture is based on an LSTM, but you can override the
 ``KerasPolicy.model_architecture`` method to implement your own architecture.
 

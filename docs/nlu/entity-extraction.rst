@@ -173,7 +173,7 @@ The entity object returned by the extractor will include the detected role/group
 
 .. note::
 
-    Composite entities are currently only supported by the :ref:``diet-classifier`` and :ref:``CRFEntityExtractor``.
+    Composite entities are currently only supported by the :ref:`diet-classifier` and :ref:`CRFEntityExtractor`.
 
 In order to properly train your model with entities that have roles/groups, make sure to include enough training data
 examples for every combination of entity and role/group label.
@@ -190,7 +190,7 @@ Extracting Places, Dates, People, Organisations
 
 spaCy has excellent pre-trained named-entity recognisers for a few different languages.
 You can test them out in this
-`interactive demo <https://demos.explosion.ai/displacy-ent/>`_.
+`interactive demo <https://explosion.ai/demos/displacy-ent>`_.
 We don't recommend that you try to train your own NER using spaCy,
 unless you have a lot of data and know what you are doing.
 Note that some spaCy models are highly case-sensitive.

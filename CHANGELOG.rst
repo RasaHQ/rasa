@@ -39,7 +39,7 @@ Features
 
   .. note::
 
-      Composite entities are currently just supported by the :ref:``diet-classifier`` and :ref:``CRFEntityExtractor``.
+      Composite entities are currently just supported by the :ref:`diet-classifier` and :ref:`CRFEntityExtractor`.
 - `#5465 <https://github.com/rasahq/rasa/issues/5465>`_: Update training data format for NLU to support entities with a role or group label.
 
   You can now specify synonyms, roles, and groups of entities using the following data format:
@@ -66,7 +66,7 @@ Features
 
   The markdown format ``[LA](location:Los Angeles)`` is deprecated. To update your training data file just
   execute the following command on the terminal of your choice:
-  ``sed -i .deprecated -E 's/\[(.*)\]\((.*):(.*)\)/\[\1\]\{"entity": "\2", "value": "\3"\}/g' nlu.md``
+  ``sed -i -E 's/\[([^)]+)\]\(([^)]+):([^)]+)\)/[\1]{"entity": "\2", "value": "\3"}/g' nlu.md``
 
   For more information about the new data format see :ref:`training-data-format`.
 
@@ -939,8 +939,8 @@ Features
 - ``CRFEntityExtractor`` updated to accept arbitrary token-level features like word
   vectors (issues/4214)
 - ``SpacyFeaturizer`` updated to add ``ner_features`` for ``CRFEntityExtractor``
-- Sanitizing incoming messages from slack to remove slack formatting like <mailto:xyz@rasa.com|xyz@rasa.com>
-  or <http://url.com|url.com> and substitute it with original content
+- Sanitizing incoming messages from slack to remove slack formatting like ``<mailto:xyz@rasa.com|xyz@rasa.com>``
+  or ``<http://url.com|url.com>`` and substitute it with original content
 - Added the ability to configure the number of Sanic worker processes in the HTTP
   server (``rasa.server``) and input channel server
   (``rasa.core.agent.handle_channels()``). The number of workers can be set using the
@@ -1705,4 +1705,4 @@ Bugfixes
 
 .. _`master`: https://github.com/RasaHQ/rasa/
 
-.. _`Semantic Versioning`: http://semver.org/
+.. _`Semantic Versioning`: https://semver.org/
