@@ -8,3 +8,28 @@ def test_sort_dicts_by_keys():
     actual = common_utils.sort_list_of_dicts_by_first_key(test_data)
 
     assert actual == expected
+
+
+def test_raise_warning():
+    with pytest.warns(UserWarning) as record:
+        raise_warning("My warning.")
+
+    assert len(record) == 1
+    assert record[0].message.args[0] == "My warning."
+
+
+def test_raise_future_warning():
+    with pytest.warns(FutureWarning) as record:
+        raise_warning("My future warning.")
+
+    assert len(record) == 1
+    assert record[0].message.args[0] == "My future warning."
+
+
+def test_raise_deprecation():
+    with pytest.warns(DeprecationWarning) as record:
+        raise_warning("My warning.", DeprecationWarning)
+
+    assert len(record) == 1
+    assert record[0].message.args[0] == "My warning."
+    assert isinstance(record[0].message, DeprecationWarning)
