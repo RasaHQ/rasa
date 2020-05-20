@@ -27,7 +27,7 @@ To send a message, you would run a command like:
 
 .. code-block:: bash
 
-    curl -XPOST http://localhost:5000/webhooks/myio/webhook \
+    curl -XPOST http://localhost:5005/webhooks/myio/webhook \
       -d '{"sender": "user1", "message": "hello"}' \
       -H "Content-type: application/json"
 
@@ -38,7 +38,9 @@ actions, you can add this information in the ``metadata`` dict of your user
 message. This information will accompany the user message through the rasa
 server into the action server when applicable, where you can find it stored in
 the ``tracker``. Message metadata will not directly affect NLU classification
-or action prediction.
+or action prediction. If you want to change the way metadata is extracted for an
+existing channel, you can overwrite the function ``get_metadata``. The return value
+of this method will be passed to the ``UserMessage``.
 
 Here are all the attributes of ``UserMessage``:
 

@@ -2,6 +2,7 @@ import logging
 import typing
 from typing import Any, Optional, Text, Tuple, Union, Dict
 
+import rasa.utils.common as common_utils
 from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
@@ -25,12 +26,18 @@ class TrainingException(Exception):
           message -- explanation of why the request is invalid
       """
 
-    def __init__(self, failed_target_project=None, exception=None):
+    def __init__(
+        self,
+        failed_target_project: Optional[Text] = None,
+        exception: Optional[Exception] = None,
+    ) -> None:
         self.failed_target_project = failed_target_project
         if exception:
             self.message = exception.args[0]
+        else:
+            self.message = ""
 
-    def __str__(self):
+    def __str__(self) -> Text:
         return self.message
 
 
@@ -54,7 +61,7 @@ async def train(
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
     persist_nlu_training_data: bool = False,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
     from rasa.importers.importer import TrainingDataImporter
@@ -77,6 +84,9 @@ async def train(
         training_data = load_data(data, nlu_config.language)
 
     training_data.print_stats()
+    if training_data.entity_roles_groups_used():
+        common_utils.mark_as_experimental_feature("Entity Roles and Groups feature")
+
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:

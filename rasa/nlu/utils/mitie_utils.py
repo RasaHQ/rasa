@@ -12,8 +12,6 @@ if typing.TYPE_CHECKING:
 
 class MitieNLP(Component):
 
-    provides = ["mitie_feature_extractor", "mitie_file"]
-
     defaults = {
         # name of the language model to load - this contains
         # the MITIE feature extractor
@@ -25,7 +23,7 @@ class MitieNLP(Component):
     ) -> None:
         """Construct a new language model from the MITIE framework."""
 
-        super(MitieNLP, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.extractor = extractor
 
@@ -76,7 +74,7 @@ class MitieNLP(Component):
 
     @staticmethod
     def ensure_proper_language_model(
-        extractor: Optional["mitie.total_word_feature_extractor"]
+        extractor: Optional["mitie.total_word_feature_extractor"],
     ) -> None:
 
         if extractor is None:
@@ -92,7 +90,7 @@ class MitieNLP(Component):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["MitieNLP"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "MitieNLP":
         import mitie
 

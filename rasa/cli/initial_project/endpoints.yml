@@ -1,7 +1,7 @@
 # This file contains the different endpoints your bot can use.
 
 # Server where the models are pulled from.
-# https://rasa.com/docs/rasa/user-guide/running-the-server/#fetching-models-from-a-server/
+# https://rasa.com/docs/rasa/user-guide/configuring-http-api/#fetching-models-from-a-server/
 
 #models:
 #  url: http://my-server.com/models/default_core@latest
@@ -23,6 +23,7 @@
 #    port: <port of your redis instance, usually 6379>
 #    db: <number of your database within redis, e.g. 0>
 #    password: <password used for authentication>
+#    use_ssl: <whether or not the communication is encrypted, default false>
 
 #tracker_store:
 #    type: mongod

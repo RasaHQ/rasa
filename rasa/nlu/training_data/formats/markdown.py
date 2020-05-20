@@ -1,18 +1,33 @@
 import logging
 import re
 import typing
-from typing import Any, Text
+from collections import OrderedDict
+from json import JSONDecodeError
+from typing import Any, Text, Optional, Tuple, List, Dict, NamedTuple, Match
+
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.core.constants import INTENT_MESSAGE_PREFIX
 
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
 from rasa.nlu.utils import build_entity
+from rasa.utils.common import raise_warning
 from rasa.nlu.constants import (
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_RESPONSE_KEY_ATTRIBUTE,
-    RESPONSE_IDENTIFIER_DELIMITER,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
 )
+
+GROUP_ENTITY_VALUE = "value"
+GROUP_ENTITY_TYPE = "entity"
+GROUP_ENTITY_DICT = "entity_dict"
+GROUP_ENTITY_TEXT = "entity_text"
+GROUP_COMPLETE_MATCH = 0
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -23,11 +38,10 @@ REGEX = "regex"
 LOOKUP = "lookup"
 available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
 
-# regex for: `[entity_text](entity_type(:entity_synonym)?)`
-ent_regex = re.compile(
-    r"\[(?P<entity_text>[^\]]+)" r"\]\((?P<entity>[^:)]*?)" r"(?:\:(?P<value>[^)]+))?\)"
+# regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict})`
+entity_regex = re.compile(
+    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\})"
 )
-
 item_regex = re.compile(r"\s*[-*+]\s*(.+)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
@@ -37,13 +51,21 @@ ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 ESCAPE = re.compile(r"[\b\f\n\r\t]")
 
 
-def encode_string(s):
-    """Return a encoded python string
+class EntityAttributes(NamedTuple):
+    """Attributes of an entity defined in the markdown data."""
 
-    """
+    type: Text
+    value: Text
+    text: Text
+    group: Optional[Text]
+    role: Optional[Text]
 
-    def replace(match):
-        return ESCAPE_DCT[match.group(0)]
+
+def encode_string(s: Text) -> Text:
+    """Return a encoded python string."""
+
+    def replace(match: Match) -> Text:
+        return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
 
     return ESCAPE.sub(replace, s)
 
@@ -60,14 +82,16 @@ class MarkdownReader(TrainingDataReader):
         self.training_examples = []
         self.entity_synonyms = {}
         self.regex_features = []
-        self.section_regexes = self._create_section_regexes(available_sections)
         self.lookup_tables = []
+
+        self._deprecated_synonym_format_was_used = False
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
         from rasa.nlu.training_data import TrainingData
 
         self.__init__()
+
         s = self._strip_comments(s)
         for line in s.splitlines():
             line = line.strip()
@@ -77,6 +101,20 @@ class MarkdownReader(TrainingDataReader):
             else:
                 self._parse_item(line)
                 self._load_files(line)
+
+        if self._deprecated_synonym_format_was_used:
+            raise_warning(
+                "You are using the deprecated training data format to declare synonyms."
+                " Please use the following format: \n"
+                '[<entity-text>]{"entity": "<entity-type>", "value": '
+                '"<entity-synonym>"}.'
+                "\nYou can use the following command to update your training data file:"
+                "\nsed -i -E 's/\\[([^)]+)\\]\\(([^)]+):([^)]+)\\)/[\\1]{"
+                '"entity": "\\2", "value": "\\3"}/g\' nlu.md',
+                category=FutureWarning,
+                docs=DOCS_URL_TRAINING_DATA_NLU,
+            )
+
         return TrainingData(
             self.training_examples,
             self.entity_synonyms,
@@ -90,22 +128,16 @@ class MarkdownReader(TrainingDataReader):
         return re.sub(comment_regex, "", text)
 
     @staticmethod
-    def _create_section_regexes(section_names):
-        def make_regex(section_name):
-            return re.compile(r"##\s*{}:(.+)".format(section_name))
-
-        return {sn: make_regex(sn) for sn in section_names}
-
-    def _find_section_header(self, line):
+    def _find_section_header(line: Text) -> Optional[Tuple[Text, Text]]:
         """Checks if the current line contains a section header
         and returns the section and the title."""
-        for name, regex in self.section_regexes.items():
-            match = re.search(regex, line)
-            if match is not None:
-                return name, match.group(1)
+        match = re.search(r"##\s*(.+?):(.+)", line)
+        if match is not None:
+            return match.group(1), match.group(2)
+
         return None
 
-    def _load_files(self, line):
+    def _load_files(self, line: Text) -> None:
         """Checks line to see if filename was supplied.  If so, inserts the
         filename into the lookup table slot for processing from the regex
         featurizer."""
@@ -117,13 +149,13 @@ class MarkdownReader(TrainingDataReader):
                     {"name": self.current_title, "elements": str(fname)}
                 )
 
-    def _parse_item(self, line):
+    def _parse_item(self, line: Text) -> None:
         """Parses an md list item line based on the current section type."""
         match = re.match(item_regex, line)
         if match:
             item = match.group(1)
             if self.current_section == INTENT:
-                parsed = self._parse_training_example(item)
+                parsed = self.parse_training_example(item)
                 self.training_examples.append(parsed)
             elif self.current_section == SYNONYM:
                 self._add_synonym(item, self.current_title)
@@ -134,7 +166,7 @@ class MarkdownReader(TrainingDataReader):
             elif self.current_section == LOOKUP:
                 self._add_item_to_lookup(item)
 
-    def _add_item_to_lookup(self, item):
+    def _add_item_to_lookup(self, item: Text) -> None:
         """Takes a list of lookup table dictionaries.  Finds the one associated
         with the current lookup, then adds the item to the list."""
         matches = [l for l in self.lookup_tables if l["name"] == self.current_title]
@@ -145,46 +177,125 @@ class MarkdownReader(TrainingDataReader):
             elements.append(item)
 
     @staticmethod
-    def _find_entities_in_training_example(example):
-        """Extracts entities from a markdown intent example."""
+    def _get_validated_dict(json_str: Text) -> Dict[Text, Text]:
+        """Converts the provided json_str to a valid dict containing the entity
+        attributes.
+
+        Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
+        [LA]{"entity": "city", "role": "to", "value": "Los Angeles"}
+
+        Args:
+            json_str: the entity dict as string without "{}"
+
+        Raises:
+            ValidationError if validation of entity dict fails.
+            JSONDecodeError if provided entity dict is not valid json.
+
+        Returns:
+            a proper python dict
+        """
+        import json
+        import rasa.utils.validation as validation_utils
+        import rasa.nlu.schemas.data_schema as schema
+
+        # add {} as they are not part of the regex
+        try:
+            data = json.loads(f"{{{json_str}}}")
+        except JSONDecodeError as e:
+            raise_warning(
+                f"Incorrect training data format ('{{{json_str}}}'), make sure your "
+                f"data is valid. For more information about the format visit "
+                f"{DOCS_URL_TRAINING_DATA_NLU}."
+            )
+            raise e
+
+        validation_utils.validate_training_data(data, schema.entity_dict_schema())
+
+        return data
+
+    def _find_entities_in_training_example(self, example: Text) -> List[Dict]:
+        """Extracts entities from a markdown intent example.
+
+        Args:
+            example: markdown intent example
+
+        Returns: list of extracted entities
+        """
         entities = []
         offset = 0
-        for match in re.finditer(ent_regex, example):
-            entity_text = match.groupdict()["entity_text"]
-            entity_type = match.groupdict()["entity"]
-            if match.groupdict()["value"]:
-                entity_value = match.groupdict()["value"]
-            else:
-                entity_value = entity_text
+
+        for match in re.finditer(entity_regex, example):
+            entity_attributes = self._extract_entity_attributes(match)
 
             start_index = match.start() - offset
-            end_index = start_index + len(entity_text)
-            offset += len(match.group(0)) - len(entity_text)
+            end_index = start_index + len(entity_attributes.text)
+            offset += len(match.group(0)) - len(entity_attributes.text)
 
-            entity = build_entity(start_index, end_index, entity_value, entity_type)
+            entity = build_entity(
+                start_index,
+                end_index,
+                entity_attributes.value,
+                entity_attributes.type,
+                entity_attributes.role,
+                entity_attributes.group,
+            )
             entities.append(entity)
 
         return entities
 
-    def _add_synonym(self, text, value):
+    def _extract_entity_attributes(self, match: Match) -> EntityAttributes:
+        """Extract the entity attributes, i.e. type, value, etc., from the
+        regex match."""
+        entity_text = match.groupdict()[GROUP_ENTITY_TEXT]
+
+        if match.groupdict()[GROUP_ENTITY_DICT]:
+            return self._extract_entity_attributes_from_dict(entity_text, match)
+
+        entity_type = match.groupdict()[GROUP_ENTITY_TYPE]
+
+        if match.groupdict()[GROUP_ENTITY_VALUE]:
+            entity_value = match.groupdict()[GROUP_ENTITY_VALUE]
+            self._deprecated_synonym_format_was_used = True
+        else:
+            entity_value = entity_text
+
+        return EntityAttributes(entity_type, entity_value, entity_text, None, None)
+
+    def _extract_entity_attributes_from_dict(
+        self, entity_text: Text, match: Match
+    ) -> EntityAttributes:
+        """Extract the entity attributes from the dict format."""
+        entity_dict_str = match.groupdict()[GROUP_ENTITY_DICT]
+        entity_dict = self._get_validated_dict(entity_dict_str)
+        return EntityAttributes(
+            entity_dict.get(ENTITY_ATTRIBUTE_TYPE),
+            entity_dict.get(ENTITY_ATTRIBUTE_VALUE, entity_text),
+            entity_text,
+            entity_dict.get(ENTITY_ATTRIBUTE_GROUP),
+            entity_dict.get(ENTITY_ATTRIBUTE_ROLE),
+        )
+
+    def _add_synonym(self, text: Text, value: Text) -> None:
         from rasa.nlu.training_data.util import check_duplicate_synonym
 
         check_duplicate_synonym(self.entity_synonyms, text, value, "reading markdown")
         self.entity_synonyms[text] = value
 
-    def _add_synonyms(self, plain_text, entities):
+    def _add_synonyms(self, plain_text: Text, entities: List[Dict]) -> None:
         """Adds synonyms found in intent examples"""
         for e in entities:
-            e_text = plain_text[e["start"] : e["end"]]
-            if e_text != e["value"]:
-                self._add_synonym(e_text, e["value"])
+            e_text = plain_text[e[ENTITY_ATTRIBUTE_START] : e[ENTITY_ATTRIBUTE_END]]
+            if e_text != e[ENTITY_ATTRIBUTE_VALUE]:
+                self._add_synonym(e_text, e[ENTITY_ATTRIBUTE_VALUE])
 
-    def _parse_training_example(self, example):
+    def parse_training_example(self, example: Text) -> "Message":
         """Extract entities and synonyms, and convert to plain text."""
         from rasa.nlu.training_data import Message
 
         entities = self._find_entities_in_training_example(example)
-        plain_text = re.sub(ent_regex, lambda m: m.groupdict()["entity_text"], example)
+        plain_text = re.sub(
+            entity_regex, lambda m: m.groupdict()[GROUP_ENTITY_TEXT], example
+        )
         self._add_synonyms(plain_text, entities)
 
         message = Message.build(plain_text, self.current_title)
@@ -193,13 +304,13 @@ class MarkdownReader(TrainingDataReader):
             message.set("entities", entities)
         return message
 
-    def _set_current_section(self, section, title):
+    def _set_current_section(self, section: Text, title: Text) -> None:
         """Update parsing mode."""
         if section not in available_sections:
             raise ValueError(
-                "Found markdown section {} which is not "
-                "in the allowed sections {},"
-                "".format(section, ",".join(available_sections))
+                "Found markdown section '{}' which is not "
+                "in the allowed sections '{}'."
+                "".format(section, "', '".join(available_sections))
             )
 
         self.current_section = section
@@ -207,8 +318,9 @@ class MarkdownReader(TrainingDataReader):
 
 
 class MarkdownWriter(TrainingDataWriter):
-    def dumps(self, training_data):
+    def dumps(self, training_data: "TrainingData") -> Text:
         """Transforms a TrainingData object into a markdown string."""
+
         md = ""
         md += self._generate_training_examples_md(training_data)
         md += self._generate_synonyms_md(training_data)
@@ -217,29 +329,41 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_training_examples_md(self, training_data):
-        """generates markdown training examples."""
-        training_examples = sorted(
-            [e.as_dict_nlu() for e in training_data.training_examples],
-            key=lambda k: k[MESSAGE_INTENT_ATTRIBUTE],
-        )
-        md = ""
-        for i, example in enumerate(training_examples):
-            intent = training_examples[i - 1][MESSAGE_INTENT_ATTRIBUTE]
-            if i == 0 or intent != example[MESSAGE_INTENT_ATTRIBUTE]:
-                md += self._generate_section_header_md(
-                    INTENT,
-                    example[MESSAGE_INTENT_ATTRIBUTE],
-                    example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE, None),
-                    i != 0,
-                )
+    def _generate_training_examples_md(self, training_data: "TrainingData") -> Text:
+        """Generates markdown training examples."""
 
-            md += self._generate_item_md(self._generate_message_md(example))
+        import rasa.nlu.training_data.util as rasa_nlu_training_data_utils
 
-        return md
+        training_examples = OrderedDict()
 
-    def _generate_synonyms_md(self, training_data):
-        """generates markdown for entity synomyms."""
+        # Sort by intent while keeping basic intent order
+        for example in [e.as_dict_nlu() for e in training_data.training_examples]:
+            rasa_nlu_training_data_utils.remove_untrainable_entities_from(example)
+            intent = example[INTENT]
+            training_examples.setdefault(intent, [])
+            training_examples[intent].append(example)
+
+        # Don't prepend newline for first line
+        prepend_newline = False
+        lines = []
+
+        for intent, examples in training_examples.items():
+            section_header = self._generate_section_header_md(
+                INTENT, intent, prepend_newline=prepend_newline
+            )
+            lines.append(section_header)
+            prepend_newline = True
+
+            lines += [
+                self._generate_item_md(self.generate_message_md(example))
+                for example in examples
+            ]
+
+        return "".join(lines)
+
+    def _generate_synonyms_md(self, training_data: "TrainingData") -> Text:
+        """Generates markdown for entity synomyms."""
+
         entity_synonyms = sorted(
             training_data.entity_synonyms.items(), key=lambda x: x[1]
         )
@@ -252,8 +376,9 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_regex_features_md(self, training_data):
-        """generates markdown for regex features."""
+    def _generate_regex_features_md(self, training_data: "TrainingData") -> Text:
+        """Generates markdown for regex features."""
+
         md = ""
         # regex features are already sorted
         regex_features = training_data.regex_features
@@ -265,12 +390,13 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_lookup_tables_md(self, training_data):
-        """generates markdown for regex features."""
+    def _generate_lookup_tables_md(self, training_data: "TrainingData") -> Text:
+        """Generates markdown for regex features."""
+
         md = ""
         # regex features are already sorted
         lookup_tables = training_data.lookup_tables
-        for i, lookup_table in enumerate(lookup_tables):
+        for lookup_table in lookup_tables:
             md += self._generate_section_header_md(LOOKUP, lookup_table["name"])
             elements = lookup_table["elements"]
             if isinstance(elements, list):
@@ -282,50 +408,81 @@ class MarkdownWriter(TrainingDataWriter):
 
     @staticmethod
     def _generate_section_header_md(
-        section_type, title, subtitle=None, prepend_newline=True
-    ):
-        """generates markdown section header."""
+        section_type: Text, title: Text, prepend_newline: bool = True
+    ) -> Text:
+        """Generates markdown section header."""
+
         prefix = "\n" if prepend_newline else ""
-        subtitle_suffix = (
-            "{}{}".format(RESPONSE_IDENTIFIER_DELIMITER, subtitle) if subtitle else ""
-        )
-        return prefix + "## {}:{}{}\n".format(
-            section_type, encode_string(title), encode_string(subtitle_suffix)
-        )
+        title = encode_string(title)
+
+        return f"{prefix}## {section_type}:{title}\n"
 
     @staticmethod
-    def _generate_item_md(text):
-        """generates markdown for a list item."""
-        return "- {}\n".format(encode_string(text))
+    def _generate_item_md(text: Text) -> Text:
+        """Generates markdown for a list item."""
+
+        return f"- {encode_string(text)}\n"
 
     @staticmethod
-    def _generate_fname_md(text):
-        """generates markdown for a lookup table file path."""
-        return "  {}\n".format(encode_string(text))
+    def _generate_fname_md(text: Text) -> Text:
+        """Generates markdown for a lookup table file path."""
 
-    def _generate_message_md(self, message):
-        """generates markdown for a message object."""
+        return f"  {encode_string(text)}\n"
+
+    @staticmethod
+    def generate_message_md(message: Dict[Text, Any]) -> Text:
+        """Generates markdown for a message object."""
+
         md = ""
         text = message.get("text", "")
-        entities = sorted(message.get("entities", []), key=lambda k: k["start"])
 
         pos = 0
-        for entity in entities:
-            md += text[pos : entity["start"]]
-            md += self._generate_entity_md(text, entity)
-            pos = entity["end"]
+
+        # If a message was prefixed with `INTENT_MESSAGE_PREFIX` (this can only happen
+        # in end-to-end stories) then potential entities were provided in the json
+        # format (e.g. `/greet{"name": "Rasa"}) and we don't have to add the NLU
+        # entity annotation
+        if not text.startswith(INTENT_MESSAGE_PREFIX):
+            entities = sorted(message.get("entities", []), key=lambda k: k["start"])
+
+            for entity in entities:
+                md += text[pos : entity["start"]]
+                md += MarkdownWriter.generate_entity_md(text, entity)
+                pos = entity["end"]
 
         md += text[pos:]
 
         return md
 
     @staticmethod
-    def _generate_entity_md(text, entity):
-        """generates markdown for an entity object."""
-        entity_text = text[entity["start"] : entity["end"]]
-        entity_type = entity["entity"]
-        if entity_text != entity["value"]:
-            # add synonym suffix
-            entity_type += ":{}".format(entity["value"])
+    def generate_entity_md(text: Text, entity: Dict[Text, Any]) -> Text:
+        """Generates markdown for an entity object."""
+        import json
 
-        return "[{}]({})".format(entity_text, entity_type)
+        entity_text = text[
+            entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
+        ]
+        entity_type = entity.get(ENTITY_ATTRIBUTE_TYPE)
+        entity_value = entity.get(ENTITY_ATTRIBUTE_VALUE)
+        entity_role = entity.get(ENTITY_ATTRIBUTE_ROLE)
+        entity_group = entity.get(ENTITY_ATTRIBUTE_GROUP)
+
+        if entity_value and entity_value == entity_text:
+            entity_value = None
+
+        use_short_syntax = (
+            entity_value is None and entity_role is None and entity_group is None
+        )
+
+        if use_short_syntax:
+            return f"[{entity_text}]({entity_type})"
+
+        entity_dict = {
+            ENTITY_ATTRIBUTE_TYPE: entity_type,
+            ENTITY_ATTRIBUTE_ROLE: entity_role,
+            ENTITY_ATTRIBUTE_GROUP: entity_group,
+            ENTITY_ATTRIBUTE_VALUE: entity_value,
+        }
+        entity_dict = {k: v for k, v in entity_dict.items() if v is not None}
+
+        return f"[{entity_text}]{json.dumps(entity_dict)}"

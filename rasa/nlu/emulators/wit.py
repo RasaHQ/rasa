@@ -6,7 +6,7 @@ from rasa.nlu.emulators.no_emulator import NoEmulator
 class WitEmulator(NoEmulator):
     def __init__(self) -> None:
 
-        super(WitEmulator, self).__init__()
+        super().__init__()
         self.name = "wit"
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> List[Dict[Text, Any]]:

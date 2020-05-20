@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
 import asyncio
 import json
 import logging
 import os
 import re
-import warnings
 from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
 
 import rasa.utils.io as io_utils
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import DOCS_BASE_URL, DOCS_URL_STORIES, DOCS_URL_DOMAINS
 from rasa.core import utils
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import ActionExecuted, UserUttered, Event, SlotSet
@@ -24,6 +22,7 @@ from rasa.core.training.structures import (
 )
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.core.domain import Domain
+from rasa.utils.common import raise_warning
 
 if TYPE_CHECKING:
     from rasa.nlu.training_data import Message
@@ -32,36 +31,53 @@ logger = logging.getLogger(__name__)
 
 
 class EndToEndReader(MarkdownReader):
+    def __init__(self) -> None:
+        super().__init__()
+        self._regex_interpreter = RegexInterpreter()
+
     def _parse_item(self, line: Text) -> Optional["Message"]:
-        """Parses an md list item line based on the current section type.
+        f"""Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>. For the
         syntax of <example> see the Rasa docs on NLU training data:
-        {}/nlu/training-data-format/#markdown-format""".format(
-            DOCS_BASE_URL
-        )
+        {DOCS_BASE_URL}/nlu/training-data-format/#markdown-format"""
 
-        item_regex = re.compile(r"\s*(.+?):\s*(.*)")
+        # Match three groups:
+        # 1) Potential "form" annotation
+        # 2) The correct intent
+        # 3) Optional entities
+        # 4) The message text
+        form_group = fr"({FORM_PREFIX}\s*)*"
+        item_regex = re.compile(r"\s*" + form_group + r"([^{}]+?)({.*})*:\s*(.*)")
         match = re.match(item_regex, line)
-        if match:
-            intent = match.group(1)
-            self.current_title = intent
-            message = match.group(2)
-            example = self._parse_training_example(message)
-            example.data["true_intent"] = intent
-            return example
 
-        raise ValueError(
-            "Encountered invalid end-to-end format for message "
-            "`{}`. Please visit the documentation page on "
-            "end-to-end evaluation at {}/user-guide/evaluating-models/"
-            "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
-        )
+        if not match:
+            raise ValueError(
+                "Encountered invalid end-to-end format for message "
+                "`{}`. Please visit the documentation page on "
+                "end-to-end testing at {}/user-guide/testing-your-assitant/"
+                "#end-to-end-testing/".format(line, DOCS_BASE_URL)
+            )
+
+        intent = match.group(2)
+        self.current_title = intent
+        message = match.group(4)
+        example = self.parse_training_example(message)
+
+        # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities
+        # are annotated in the json format (e.g. `/greet{"name": "Rasa"})
+        if message.startswith(INTENT_MESSAGE_PREFIX):
+            parsed = self._regex_interpreter.synchronous_parse(message)
+            example.data["entities"] = parsed["entities"]
+
+        example.data["true_intent"] = intent
+        return example
 
 
-class StoryStepBuilder(object):
-    def __init__(self, name):
+class StoryStepBuilder:
+    def __init__(self, name: Text, source_name: Text):
         self.name = name
+        self.source_name = source_name
         self.story_steps = []
         self.current_steps = []
         self.start_checkpoints = []
@@ -74,10 +90,11 @@ class StoryStepBuilder(object):
             self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
             if conditions:
-                logger.warning(
-                    "End or intermediate checkpoints "
-                    "do not support conditions! "
-                    "(checkpoint: {})".format(name)
+                raise_warning(
+                    f"End or intermediate checkpoints "
+                    f"do not support conditions! "
+                    f"(checkpoint: {name})",
+                    docs=DOCS_URL_STORIES + "#checkpoints",
                 )
             additional_steps = []
             for t in self.current_steps:
@@ -144,27 +161,33 @@ class StoryStepBuilder(object):
         if not start_checkpoints:
             start_checkpoints = [Checkpoint(STORY_START)]
         current_turns = [
-            StoryStep(block_name=self.name, start_checkpoints=start_checkpoints)
+            StoryStep(
+                block_name=self.name,
+                start_checkpoints=start_checkpoints,
+                source_name=self.source_name,
+            )
         ]
         return current_turns
 
 
-class StoryFileReader(object):
+class StoryFileReader:
     """Helper class to read a story file."""
 
     def __init__(
         self,
-        domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        domain: Optional[Domain] = None,
         template_vars: Optional[Dict] = None,
         use_e2e: bool = False,
+        source_name: Text = None,
     ):
         self.story_steps = []
-        self.current_step_builder = None  # type: Optional[StoryStepBuilder]
+        self.current_step_builder: Optional[StoryStepBuilder] = None
         self.domain = domain
         self.interpreter = interpreter
         self.template_variables = template_vars if template_vars else {}
         self.use_e2e = use_e2e
+        self.source_name = source_name
 
     @staticmethod
     async def read_from_folder(
@@ -232,9 +255,11 @@ class StoryFileReader(object):
         """Given a md file reads the contained stories."""
 
         try:
-            with open(filename, "r", encoding="utf-8") as f:
+            with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
                 lines = f.readlines()
-            reader = StoryFileReader(domain, interpreter, template_variables, use_e2e)
+            reader = StoryFileReader(
+                interpreter, domain, template_variables, use_e2e, filename
+            )
             return await reader.process_lines(lines)
         except ValueError as err:
             file_info = "Invalid story file format. Failed to parse '{}'".format(
@@ -285,8 +310,9 @@ class StoryFileReader(object):
             parameters = StoryFileReader._parameters_from_json_string(slots_str, line)
             return event_name, parameters
         else:
-            warnings.warn(
-                "Failed to parse action line '{}'. Ignoring this line.".format(line)
+            raise_warning(
+                f"Failed to parse action line '{line}'. Ignoring this line.",
+                docs=DOCS_URL_STORIES,
             )
             return "", {}
 
@@ -310,12 +336,12 @@ class StoryFileReader(object):
                 elif line.startswith("#"):
                     # reached a new story block
                     name = line[1:].strip("# ")
-                    self.new_story_part(name)
+                    self.new_story_part(name, self.source_name)
                 elif line.startswith(">"):
                     # reached a checkpoint
                     name, conditions = self._parse_event_line(line[1:].strip())
                     self.add_checkpoint(name, conditions)
-                elif re.match(r"^[*\-]\s+{}".format(FORM_PREFIX), line):
+                elif re.match(fr"^[*\-]\s+{FORM_PREFIX}", line):
                     logger.debug(
                         "Skipping line {}, "
                         "because it was generated by "
@@ -335,13 +361,12 @@ class StoryFileReader(object):
                 else:
                     # reached an unknown type of line
                     logger.warning(
-                        "Skipping line {}. "
+                        f"Skipping line {line_num}. "
                         "No valid command found. "
-                        "Line Content: '{}'"
-                        "".format(line_num, line)
+                        f"Line Content: '{line}'"
                     )
             except Exception as e:
-                msg = "Error in line {}: {}".format(line_num, e)
+                msg = f"Error in line {line_num}: {e}"
                 logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
                 raise ValueError(msg)
         self._add_current_stories_to_result()
@@ -373,9 +398,9 @@ class StoryFileReader(object):
             self.current_step_builder.flush()
             self.story_steps.extend(self.current_step_builder.story_steps)
 
-    def new_story_part(self, name):
+    def new_story_part(self, name: Text, source_name: Text):
         self._add_current_stories_to_result()
-        self.current_step_builder = StoryStepBuilder(name)
+        self.current_step_builder = StoryStepBuilder(name, source_name)
 
     def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:
 
@@ -388,7 +413,7 @@ class StoryFileReader(object):
 
         self.current_step_builder.add_checkpoint(name, conditions)
 
-    async def _parse_message(self, message: Text, line_num: int):
+    async def _parse_message(self, message: Text, line_num: int) -> UserUttered:
         if message.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = await RegexInterpreter().parse(message)
         else:
@@ -397,12 +422,13 @@ class StoryFileReader(object):
             message, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
         intent_name = utterance.intent.get("name")
-        if intent_name not in self.domain.intents:
-            logger.warning(
-                "Found unknown intent '{}' on line {}. "
+        if self.domain and intent_name not in self.domain.intents:
+            raise_warning(
+                f"Found unknown intent '{intent_name}' on line {line_num}. "
                 "Please, make sure that all intents are "
-                "listed in your domain yaml."
-                "".format(intent_name, line_num)
+                "listed in your domain yaml.",
+                UserWarning,
+                docs=DOCS_URL_DOMAINS,
             )
         return utterance
 
@@ -417,7 +443,7 @@ class StoryFileReader(object):
         )
         self.current_step_builder.add_user_messages(parsed_messages)
 
-    async def add_e2e_messages(self, e2e_messages, line_num):
+    async def add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "End-to-end message '{}' at invalid "

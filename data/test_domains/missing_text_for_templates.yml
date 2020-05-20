@@ -3,15 +3,10 @@ intents:
  - default
  - goodbye
 
-templates:
+responses:
   utter_greet:
     - hey there!
   utter_goodbye:
     - goodbye :(
   utter_default:
     - default message
-
-actions:
-  - utter_default
-  - utter_greet
-  - utter_goodbye

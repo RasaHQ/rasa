@@ -2,17 +2,16 @@ import asyncio
 import json
 import logging
 import os
-from typing import Text, Optional, Union
 
-from async_generator import asynccontextmanager, async_generator, yield_
+from async_generator import asynccontextmanager
+from typing import Text, Union, Optional, AsyncGenerator
 
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
-from rasa.core.lock import TicketLock, NO_TICKET_ISSUED
+from rasa.utils import common
+from rasa.core.lock import TicketLock
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
-ACCEPTED_LOCK_STORES = ["in_memory", "redis"]
 
 LOCK_LIFETIME = int(os.environ.get("TICKET_LOCK_LIFETIME", 0)) or DEFAULT_LOCK_LIFETIME
 
@@ -28,52 +27,15 @@ class LockError(Exception):
     pass
 
 
-# noinspection PyUnresolvedReferences
-class TicketExistsError(Exception):
-    """Exception that is raised when an already-existing ticket for a conversation
-    has been issued.
-
-     Attributes:
-          message (str): explanation of which `conversation_id` raised the error
-    """
-
-    pass
-
-
 class LockStore:
     @staticmethod
-    def find_lock_store(store: EndpointConfig = None) -> "LockStore":
-        if store is None or store.type is None or store.type == "in_memory":
-            lock_store = InMemoryLockStore()
-        elif store.type == "redis":
-            lock_store = RedisLockStore(host=store.url, **store.kwargs)
+    def create(obj: Union["LockStore", EndpointConfig, None]) -> "LockStore":
+        """Factory to create a lock store."""
+
+        if isinstance(obj, LockStore):
+            return obj
         else:
-            logger.debug(
-                "Could not load built-in `LockStore`, which needs to be of "
-                "type: {}. Trying to load `LockStore` from module path '{}' "
-                "instead."
-                "".format(store.type, ", ".join(ACCEPTED_LOCK_STORES), store.type)
-            )
-            lock_store = LockStore.load_lock_store_from_module_path(store.type)
-
-        logger.debug(
-            "Connected to lock store '{}'.".format(lock_store.__class__.__name__)
-        )
-
-        return lock_store
-
-    @staticmethod
-    def load_lock_store_from_module_path(module_path: Text) -> "LockStore":
-        """Given the name of a `LockStore` module tries to retrieve it."""
-
-        from rasa.utils.common import class_from_module_path
-
-        try:
-            return class_from_module_path(module_path)
-        except ImportError:
-            raise ImportError(
-                "Cannot retrieve `LockStore` from path '{}'.".format(module_path)
-            )
+            return _create_from_endpoint_config(obj)
 
     @staticmethod
     def create_lock(conversation_id: Text) -> TicketLock:
@@ -97,7 +59,7 @@ class LockStore:
         raise NotImplementedError
 
     def issue_ticket(
-        self, conversation_id: Text, lock_lifetime: Union[float, int] = LOCK_LIFETIME
+        self, conversation_id: Text, lock_lifetime: float = LOCK_LIFETIME
     ) -> int:
         """Issue new ticket with `lock_lifetime` for lock associated with
         `conversation_id`.
@@ -107,30 +69,17 @@ class LockStore:
 
         lock = self.get_or_create_lock(conversation_id)
         ticket = lock.issue_ticket(lock_lifetime)
-
-        while True:
-            try:
-                self.ensure_ticket_available(lock)
-                break
-            except TicketExistsError:
-                # issue a new ticket if current ticket number has been issued twice
-                logger.exception(
-                    "Ticket could not be issued. Issuing new ticket and retrying..."
-                )
-                ticket = lock.issue_ticket(lock_lifetime)
-
         self.save_lock(lock)
 
         return ticket
 
     @asynccontextmanager
-    @async_generator
     async def lock(
         self,
         conversation_id: Text,
-        lock_lifetime: int = LOCK_LIFETIME,
-        wait_time_in_seconds: Union[int, float] = 1,
-    ) -> None:
+        lock_lifetime: float = LOCK_LIFETIME,
+        wait_time_in_seconds: float = 1,
+    ) -> AsyncGenerator[TicketLock, None]:
         """Acquire lock with lifetime `lock_lifetime`for `conversation_id`.
 
         Try acquiring lock with a wait time of `wait_time_in_seconds` seconds
@@ -140,18 +89,15 @@ class LockStore:
         ticket = self.issue_ticket(conversation_id, lock_lifetime)
 
         try:
-            # have to use async_generator.yield_() for py 3.5 compatibility
-            await yield_(
-                await self._acquire_lock(conversation_id, ticket, wait_time_in_seconds)
+            yield await self._acquire_lock(
+                conversation_id, ticket, wait_time_in_seconds
             )
+
         finally:
             self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
-        self,
-        conversation_id: Text,
-        ticket: int,
-        wait_time_in_seconds: Union[int, float],
+        self, conversation_id: Text, ticket: int, wait_time_in_seconds: float
     ) -> TicketLock:
 
         while True:
@@ -167,8 +113,8 @@ class LockStore:
                 return lock
 
             logger.debug(
-                "Failed to acquire lock for conversation ID '{}'. Retrying..."
-                "".format(conversation_id)
+                f"Failed to acquire lock for conversation ID '{conversation_id}'. "
+                f"Retrying..."
             )
 
             # sleep and update lock
@@ -176,8 +122,7 @@ class LockStore:
             self.update_lock(conversation_id)
 
         raise LockError(
-            "Could not acquire lock for conversation_id '{}'."
-            "".format(conversation_id)
+            f"Could not acquire lock for conversation_id '{conversation_id}'."
         )
 
     def update_lock(self, conversation_id: Text) -> None:
@@ -230,33 +175,9 @@ class LockStore:
     @staticmethod
     def _log_deletion(conversation_id: Text, deletion_successful: bool) -> None:
         if deletion_successful:
-            logger.debug("Deleted lock for conversation '{}'.".format(conversation_id))
+            logger.debug(f"Deleted lock for conversation '{conversation_id}'.")
         else:
-            logger.debug(
-                "Could not delete lock for conversation '{}'.".format(conversation_id)
-            )
-
-    def ensure_ticket_available(self, lock: TicketLock) -> None:
-        """Check for duplicate tickets issued for `lock`.
-
-        This function should be called before saving `lock`. Raises `TicketExistsError`
-        if the last issued ticket for `lock` does not match the last ticket issued
-        for a lock fetched from storage for `lock.conversation_id`. This indicates
-        that some other process has issued a ticket for `lock` in the meantime.
-        """
-
-        existing_lock = self.get_lock(lock.conversation_id)
-        if not existing_lock or existing_lock.last_issued == NO_TICKET_ISSUED:
-            # lock does not yet exist for conversation or no ticket has been issued
-            return
-
-        # raise if the last issued ticket number of `existing_lock` is not the same as
-        # that of the one being acquired
-        if existing_lock.last_issued != lock.last_issued:
-            raise TicketExistsError(
-                "Ticket '{}' already exists for conversation ID '{}'."
-                "".format(existing_lock.last_issued, lock.conversation_id)
-            )
+            logger.debug(f"Could not delete lock for conversation '{conversation_id}'.")
 
 
 class RedisLockStore(LockStore):
@@ -268,11 +189,12 @@ class RedisLockStore(LockStore):
         port: int = 6379,
         db: int = 1,
         password: Optional[Text] = None,
+        use_ssl: bool = False,
     ):
         import redis
 
         self.red = redis.StrictRedis(
-            host=host, port=int(port), db=int(db), password=password
+            host=host, port=int(port), db=int(db), password=password, ssl=use_ssl
         )
         super().__init__()
 
@@ -292,7 +214,7 @@ class RedisLockStore(LockStore):
 class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.conversation_locks = {}
         super().__init__()
 
@@ -307,3 +229,40 @@ class InMemoryLockStore(LockStore):
 
     def save_lock(self, lock: TicketLock) -> None:
         self.conversation_locks[lock.conversation_id] = lock
+
+
+def _create_from_endpoint_config(
+    endpoint_config: Optional[EndpointConfig] = None,
+) -> "LockStore":
+    """Given an endpoint configuration, create a proper `LockStore` object."""
+
+    if (
+        endpoint_config is None
+        or endpoint_config.type is None
+        or endpoint_config.type == "in_memory"
+    ):
+        # this is the default type if no lock store type is set
+
+        lock_store = InMemoryLockStore()
+    elif endpoint_config.type == "redis":
+        lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
+    else:
+        lock_store = _load_from_module_string(endpoint_config.type)
+
+    logger.debug(f"Connected to lock store '{lock_store.__class__.__name__}'.")
+
+    return lock_store
+
+
+def _load_from_module_string(endpoint_config: EndpointConfig) -> "LockStore":
+    """Given the name of a `LockStore` module tries to retrieve it."""
+
+    try:
+        lock_store_class = common.class_from_module_path(endpoint_config.type)
+        return lock_store_class(endpoint_config=endpoint_config)
+    except (AttributeError, ImportError) as e:
+        raise Exception(
+            f"Could not find a class based on the module path "
+            f"'{endpoint_config.type}'. Failed to create a `LockStore` "
+            f"instance. Error: {e}"
+        )

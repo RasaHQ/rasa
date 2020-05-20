@@ -24,7 +24,7 @@ class FallbackPolicy(Policy):
     prediction. """
 
     @staticmethod
-    def _standard_featurizer():
+    def _standard_featurizer() -> None:
         return None
 
     def __init__(
@@ -49,7 +49,7 @@ class FallbackPolicy(Policy):
                 between confidences of the top two predictions
             fallback_action_name: name of the action to execute as a fallback
         """
-        super(FallbackPolicy, self).__init__(priority=priority)
+        super().__init__(priority=priority)
 
         self.nlu_threshold = nlu_threshold
         self.ambiguity_threshold = ambiguity_threshold
@@ -60,7 +60,7 @@ class FallbackPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
 
@@ -123,10 +123,12 @@ class FallbackPolicy(Policy):
 
         return False
 
-    def fallback_scores(self, domain, fallback_score=1.0):
+    def fallback_scores(
+        self, domain: Domain, fallback_score: float = 1.0
+    ) -> List[float]:
         """Prediction scores used if a fallback is necessary."""
 
-        result = [0.0] * domain.num_actions
+        result = self._default_predictions(domain)
         idx = domain.index_for_action(self.fallback_action_name)
         result[idx] = fallback_score
         return result
@@ -142,8 +144,16 @@ class FallbackPolicy(Policy):
 
         nlu_data = tracker.latest_message.parse_data
 
-        if tracker.latest_action_name == self.fallback_action_name:
-            result = [0.0] * domain.num_actions
+        if (
+            tracker.latest_action_name == self.fallback_action_name
+            and tracker.latest_action_name != ACTION_LISTEN_NAME
+        ):
+            logger.debug(
+                "Predicted 'action_listen' after fallback action '{}'".format(
+                    self.fallback_action_name
+                )
+            )
+            result = self._default_predictions(domain)
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
 
@@ -177,7 +187,7 @@ class FallbackPolicy(Policy):
             "fallback_action_name": self.fallback_action_name,
         }
         rasa.utils.io.create_directory_for_file(config_file)
-        utils.dump_obj_as_json_to_file(config_file, meta)
+        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":

@@ -1,14 +1,14 @@
-FROM python:3.6-slim as builder
-# if this installation process changes, the enterprise container needs to be
-# updated as well
-WORKDIR /build
-COPY . .
-RUN python setup.py sdist bdist_wheel
-RUN find dist -maxdepth 1 -mindepth 1 -name '*.tar.gz' -print0 | xargs -0 -I {} mv {} rasa.tar.gz
+FROM python:3.7-slim as base
 
-FROM python:3.6-slim
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    # required by psycopg2 at build and runtime
+    libpq-dev \
+     # required for health check
+    curl \
+ && apt-get autoremove -y
 
-SHELL ["/bin/bash", "-c"]
+FROM base as builder
 
 RUN apt-get update -qq && \
   apt-get install -y --no-install-recommends \
@@ -22,28 +22,50 @@ RUN apt-get update -qq && \
   libssl-dev \
   libffi6 \
   libffi-dev \
-  libpng-dev \
-  libpq-dev \
-  curl && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-  mkdir /install
+  libpng-dev
 
-WORKDIR /install
+# install poetry
+# keep this in sync with the version in pyproject.toml and Dockerfile
+ENV POETRY_VERSION 1.0.3
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+ENV PATH "/root/.poetry/bin:/opt/venv/bin:${PATH}"
 
-# Copy as early as possible so we can cache ...
-COPY requirements.txt .
+# copy files
+COPY . /build/
 
-RUN pip install -r requirements.txt --no-cache-dir
+# change working directory
+WORKDIR /build
 
-COPY --from=builder /build/rasa.tar.gz .
-RUN pip install ./rasa.tar.gz[sql]
+# install dependencies
+RUN python -m venv /opt/venv && \
+  . /opt/venv/bin/activate && \
+  pip install --no-cache-dir -U 'pip<20' && \
+  poetry install --no-dev --no-root --no-interaction && \
+  poetry build -f wheel -n && \
+  pip install --no-deps dist/*.whl && \
+  rm -rf dist *.egg-info
 
-VOLUME ["/app"]
+# start a new build stage
+FROM base as runner
+
+# copy everything from /opt
+COPY --from=builder /opt/venv /opt/venv
+
+# make sure we use the virtualenv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# update permissions & change user to not run as root
 WORKDIR /app
+RUN chgrp -R 0 /app && chmod -R g=u /app
+USER 1001
 
+# create a volume for temporary data
+VOLUME /tmp
+
+# change shell
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# the entry point
 EXPOSE 5005
-
 ENTRYPOINT ["rasa"]
-
 CMD ["--help"]

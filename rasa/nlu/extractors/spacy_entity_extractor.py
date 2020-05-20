@@ -1,7 +1,10 @@
 import typing
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Optional, Type
 
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.constants import ENTITIES
+from rasa.nlu.utils.spacy_utils import SpacyNLP
+from rasa.nlu.components import Component
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
@@ -9,10 +12,9 @@ if typing.TYPE_CHECKING:
 
 
 class SpacyEntityExtractor(EntityExtractor):
-
-    provides = ["entities"]
-
-    requires = ["spacy_nlp"]
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [SpacyNLP]
 
     defaults = {
         # by default all dimensions recognized by spacy are returned
@@ -21,8 +23,8 @@ class SpacyEntityExtractor(EntityExtractor):
         "dimensions": None
     }
 
-    def __init__(self, component_config: Text = None) -> None:
-        super(SpacyEntityExtractor, self).__init__(component_config)
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        super().__init__(component_config)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         # can't use the existing doc here (spacy_doc on the message)
@@ -34,9 +36,7 @@ class SpacyEntityExtractor(EntityExtractor):
         extracted = SpacyEntityExtractor.filter_irrelevant_entities(
             all_extracted, dimensions
         )
-        message.set(
-            "entities", message.get("entities", []) + extracted, add_to_output=True
-        )
+        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @staticmethod
     def extract_entities(doc: "Doc") -> List[Dict[Text, Any]]:

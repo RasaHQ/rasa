@@ -7,7 +7,7 @@ Build contextual chatbots and AI assistants with Rasa
 =====================================================
 
 .. note::
-    These docs are for Rasa 1.0 and later. Docs for older versions are at http://legacy-docs.rasa.com.
+    These docs are for Rasa 1.0 and later. Docs for older versions are at https://legacy-docs.rasa.com.
 
     This is the documentation for version |release| of Rasa. Please make sure you are reading the documentation
     that matches the version you have installed.
@@ -24,13 +24,15 @@ Understand messages, hold conversations, and connect to messaging channels and A
 
    user-guide/installation
    user-guide/rasa-tutorial
+   user-guide/building-assistants
    user-guide/command-line-interface
    user-guide/architecture
    user-guide/messaging-and-voice-channels
-   user-guide/evaluating-models
+   user-guide/testing-your-assistant
+   user-guide/setting-up-ci-cd
    user-guide/validate-files
-   user-guide/running-the-server
-   user-guide/running-rasa-with-docker
+   user-guide/configuring-http-api
+   user-guide/how-to-deploy
    user-guide/cloud-storage
 
 .. toctree::
@@ -41,10 +43,10 @@ Understand messages, hold conversations, and connect to messaging channels and A
    About <nlu/about>
    nlu/using-nlu-only
    nlu/training-data-format
-   nlu/choosing-a-pipeline
    nlu/language-support
-   nlu/entity-extraction
+   nlu/choosing-a-pipeline
    nlu/components
+   nlu/entity-extraction
 
 .. toctree::
    :maxdepth: 1
@@ -56,6 +58,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    core/domains
    core/responses
    core/actions
+   core/reminders-and-external-events
    core/policies
    core/slots
    core/forms
@@ -84,12 +87,15 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/jupyter-notebooks
    api/agent
    api/custom-nlu-components
+   api/rasa-sdk
    api/events
    api/tracker
    api/tracker-stores
    api/event-brokers
+   api/lock-stores
    api/training-data-importers
-   api/featurization
+   api/core-featurization
+   api/tensorflow_usage
    migration-guide
    changelog
 

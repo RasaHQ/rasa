@@ -4,7 +4,8 @@ import os
 import shutil
 import tempfile
 import typing
-from typing import Text, Tuple, Union, Optional, List, Dict
+from pathlib import Path
+from typing import Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
 import rasa.utils.io
 from rasa.cli.utils import print_success, create_output_path
@@ -13,6 +14,8 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
 
 from rasa.core.utils import get_dict_hash
@@ -22,25 +25,100 @@ from rasa.utils.common import TempDirectoryPath
 if typing.TYPE_CHECKING:
     from rasa.importers.importer import TrainingDataImporter
 
-# Type alias for the fingerprint
-Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
 
 logger = logging.getLogger(__name__)
+
+
+# Type alias for the fingerprint
+Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
 
 FINGERPRINT_FILE_PATH = "fingerprint.json"
 
 FINGERPRINT_CONFIG_KEY = "config"
 FINGERPRINT_CONFIG_CORE_KEY = "core-config"
 FINGERPRINT_CONFIG_NLU_KEY = "nlu-config"
-FINGERPRINT_DOMAIN_KEY = "domain"
+FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY = "domain"
+FINGERPRINT_NLG_KEY = "nlg"
 FINGERPRINT_RASA_VERSION_KEY = "version"
 FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
 FINGERPRINT_TRAINED_AT_KEY = "trained_at"
 
 
+class Section(NamedTuple):
+    """Defines relevant fingerprint sections which are used to decide whether a model
+    should be retrained."""
+
+    name: Text
+    relevant_keys: List[Text]
+
+
+SECTION_CORE = Section(
+    name="Core model",
+    relevant_keys=[
+        FINGERPRINT_CONFIG_KEY,
+        FINGERPRINT_CONFIG_CORE_KEY,
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY,
+        FINGERPRINT_STORIES_KEY,
+        FINGERPRINT_RASA_VERSION_KEY,
+    ],
+)
+SECTION_NLU = Section(
+    name="NLU model",
+    relevant_keys=[
+        FINGERPRINT_CONFIG_KEY,
+        FINGERPRINT_CONFIG_NLU_KEY,
+        FINGERPRINT_NLU_DATA_KEY,
+        FINGERPRINT_RASA_VERSION_KEY,
+    ],
+)
+SECTION_NLG = Section(name="NLG templates", relevant_keys=[FINGERPRINT_NLG_KEY])
+
+
+class FingerprintComparisonResult:
+    def __init__(
+        self,
+        nlu: bool = True,
+        core: bool = True,
+        nlg: bool = True,
+        force_training: bool = False,
+    ):
+        """Creates a `FingerprintComparisonResult` instance.
+
+        Args:
+            nlu: `True` if the NLU model should be retrained.
+            core: `True` if the Core model should be retrained.
+            nlg: `True` if the templates in the domain should be updated.
+            force_training: `True` if a training of all parts is forced.
+        """
+        self.nlu = nlu
+        self.core = core
+        self.nlg = nlg
+        self.force_training = force_training
+
+    def is_training_required(self) -> bool:
+        """Check if anything has to be retrained."""
+
+        return any([self.nlg, self.nlu, self.core, self.force_training])
+
+    def should_retrain_core(self) -> bool:
+        """Check if the Core model has to be updated."""
+
+        return self.force_training or self.core
+
+    def should_retrain_nlg(self) -> bool:
+        """Check if the templates have to be updated."""
+
+        return self.should_retrain_core() or self.nlg
+
+    def should_retrain_nlu(self) -> bool:
+        """Check if the NLU model has to be updated."""
+
+        return self.force_training or self.nlu
+
+
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
-    """Gets a model and unpacks it. Raises a `ModelNotFound` exception if
+    """Get a model and unpack it. Raises a `ModelNotFound` exception if
     no model could be found at the provided path.
 
     Args:
@@ -54,24 +132,22 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
     if not model_path:
         raise ModelNotFound("No path specified.")
     elif not os.path.exists(model_path):
-        raise ModelNotFound("No file or directory at '{}'.".format(model_path))
+        raise ModelNotFound(f"No file or directory at '{model_path}'.")
 
     if os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
         if not model_path:
             raise ModelNotFound(
-                "Could not find any Rasa model files in '{}'.".format(model_path)
+                f"Could not find any Rasa model files in '{model_path}'."
             )
     elif not model_path.endswith(".tar.gz"):
-        raise ModelNotFound(
-            "Path '{}' does not point to a Rasa model file.".format(model_path)
-        )
+        raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
 
     return unpack_model(model_path)
 
 
 def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
-    """Gets the latest model from a path.
+    """Get the latest model from a path.
 
     Args:
         model_path: Path to a directory containing zipped models.
@@ -92,9 +168,9 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
 
 def unpack_model(
-    model_file: Text, working_directory: Optional[Text] = None
+    model_file: Text, working_directory: Optional[Union[Path, Text]] = None
 ) -> TempDirectoryPath:
-    """Unpacks a zipped Rasa model.
+    """Unpack a zipped Rasa model.
 
     Args:
         model_file: Path to zipped model.
@@ -110,23 +186,22 @@ def unpack_model(
     if working_directory is None:
         working_directory = tempfile.mkdtemp()
 
-    tar = tarfile.open(model_file)
-
-    # cast `working_directory` as str for py3.5 compatibility
-    working_directory = str(working_directory)
-
     # All files are in a subdirectory.
-    tar.extractall(working_directory)
-    tar.close()
-    logger.debug("Extracted model to '{}'.".format(working_directory))
+    try:
+        with tarfile.open(model_file, mode="r:gz") as tar:
+            tar.extractall(working_directory)
+            logger.debug(f"Extracted model to '{working_directory}'.")
+    except Exception as e:
+        logger.error(f"Failed to extract model at {model_file}. Error: {e}")
+        raise
 
     return TempDirectoryPath(working_directory)
 
 
 def get_model_subdirectories(
-    unpacked_model_path: Text
+    unpacked_model_path: Text,
 ) -> Tuple[Optional[Text], Optional[Text]]:
-    """Returns paths for Core and NLU model directories, if they exist.
+    """Return paths for Core and NLU model directories, if they exist.
     If neither directories exist, a `ModelNotFound` exception is raised.
 
     Args:
@@ -137,7 +212,7 @@ def get_model_subdirectories(
                path to NLU subdirectory if it exists or `None` otherwise).
 
     """
-    core_path = os.path.join(unpacked_model_path, "core")
+    core_path = os.path.join(unpacked_model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
     nlu_path = os.path.join(unpacked_model_path, "nlu")
 
     if not os.path.isdir(core_path):
@@ -161,7 +236,7 @@ def create_package_rasa(
     output_filename: Text,
     fingerprint: Optional[Fingerprint] = None,
 ) -> Text:
-    """Creates a zipped Rasa model from trained model files.
+    """Create a zipped Rasa model from trained model files.
 
     Args:
         training_directory: Path to the directory which contains the trained
@@ -191,7 +266,7 @@ def create_package_rasa(
 
 
 async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
-    """Creates a model fingerprint from its used configuration and training data.
+    """Create a model fingerprint from its used configuration and training data.
 
     Args:
         file_importer: File importer which provides the training data and model config.
@@ -200,6 +275,8 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         The fingerprint.
 
     """
+    from rasa.core.domain import Domain
+
     import rasa
     import time
 
@@ -207,6 +284,10 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     domain = await file_importer.get_domain()
     stories = await file_importer.get_stories()
     nlu_data = await file_importer.get_nlu_data()
+
+    domain_dict = domain.as_dict()
+    templates = domain_dict.pop("responses")
+    domain_without_nlg = Domain.from_dict(domain_dict)
 
     return {
         FINGERPRINT_CONFIG_KEY: _get_hash_of_config(
@@ -218,7 +299,8 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         FINGERPRINT_CONFIG_NLU_KEY: _get_hash_of_config(
             config, include_keys=CONFIG_MANDATORY_KEYS_NLU
         ),
-        FINGERPRINT_DOMAIN_KEY: hash(domain),
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: hash(domain_without_nlg),
+        FINGERPRINT_NLG_KEY: get_dict_hash(templates),
         FINGERPRINT_NLU_DATA_KEY: hash(nlu_data),
         FINGERPRINT_STORIES_KEY: hash(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
@@ -236,13 +318,13 @@ def _get_hash_of_config(
 
     keys = include_keys or list(filter(lambda k: k not in exclude_keys, config.keys()))
 
-    sub_config = dict((k, config[k]) for k in keys if k in config)
+    sub_config = {k: config[k] for k in keys if k in config}
 
     return get_dict_hash(sub_config)
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:
-    """Loads a persisted fingerprint.
+    """Load a persisted fingerprint.
 
     Args:
         model_path: Path to directory containing the fingerprint.
@@ -262,77 +344,31 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
 
 
 def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
-    """Persists a model fingerprint.
+    """Persist a model fingerprint.
 
     Args:
         output_path: Directory in which the fingerprint should be saved.
         fingerprint: The fingerprint to be persisted.
 
     """
-    from rasa.core.utils import dump_obj_as_json_to_file
 
     path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
-    dump_obj_as_json_to_file(path, fingerprint)
+    rasa.utils.io.dump_obj_as_json_to_file(path, fingerprint)
 
 
-def core_fingerprint_changed(
-    fingerprint1: Fingerprint, fingerprint2: Fingerprint
+def did_section_fingerprint_change(
+    fingerprint1: Fingerprint, fingerprint2: Fingerprint, section: Section
 ) -> bool:
-    """Checks whether the fingerprints of the Core model changed.
-
-    Args:
-        fingerprint1: A fingerprint.
-        fingerprint2: Another fingerprint.
-
-    Returns:
-        `True` if the fingerprint for the Core model changed, else `False`.
-
-    """
-    relevant_keys = [
-        FINGERPRINT_CONFIG_KEY,
-        FINGERPRINT_CONFIG_CORE_KEY,
-        FINGERPRINT_DOMAIN_KEY,
-        FINGERPRINT_STORIES_KEY,
-        FINGERPRINT_RASA_VERSION_KEY,
-    ]
-
-    for k in relevant_keys:
+    """Check whether the fingerprint of a section has changed."""
+    for k in section.relevant_keys:
         if fingerprint1.get(k) != fingerprint2.get(k):
-            logger.info("Data ({}) for Core model changed.".format(k))
+            logger.info(f"Data ({k}) for {section.name} section changed.")
             return True
     return False
 
 
-def nlu_fingerprint_changed(
-    fingerprint1: Fingerprint, fingerprint2: Fingerprint
-) -> bool:
-    """Checks whether the fingerprints of the NLU model changed.
-
-    Args:
-        fingerprint1: A fingerprint.
-        fingerprint2: Another fingerprint.
-
-    Returns:
-        `True` if the fingerprint for the NLU model changed, else `False`.
-
-    """
-
-    relevant_keys = [
-        FINGERPRINT_CONFIG_KEY,
-        FINGERPRINT_CONFIG_NLU_KEY,
-        FINGERPRINT_NLU_DATA_KEY,
-        FINGERPRINT_RASA_VERSION_KEY,
-    ]
-
-    for k in relevant_keys:
-        if fingerprint1.get(k) != fingerprint2.get(k):
-            logger.info("Data ({}) for NLU model changed.".format(k))
-            return True
-    return False
-
-
-def merge_model(source: Text, target: Text) -> bool:
-    """Merges two model directories.
+def move_model(source: Text, target: Text) -> bool:
+    """Move two model directories.
 
     Args:
         source: The original folder which should be merged in another.
@@ -346,12 +382,14 @@ def merge_model(source: Text, target: Text) -> bool:
         shutil.move(source, target)
         return True
     except Exception as e:
-        logging.debug(e)
+        logging.debug(f"Could not merge model: {e}")
         return False
 
 
-def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text):
-    """Checks which component of a model should be retrained.
+def should_retrain(
+    new_fingerprint: Fingerprint, old_model: Text, train_path: Text
+) -> FingerprintComparisonResult:
+    """Check which components of a model should be retrained.
 
     Args:
         new_fingerprint: The fingerprint of the new model to be trained.
@@ -359,29 +397,46 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
         train_path: Path to the directory in which the new model will be trained.
 
     Returns:
-        A tuple of boolean values indicating whether Rasa Core and/or Rasa NLU needs
+        A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa NLU needs
         to be retrained or not.
 
     """
-    retrain_nlu = retrain_core = True
+    fingerprint_comparison = FingerprintComparisonResult()
 
     if old_model is None or not os.path.exists(old_model):
-        return retrain_core, retrain_nlu
+        return fingerprint_comparison
 
     with unpack_model(old_model) as unpacked:
         last_fingerprint = fingerprint_from_path(unpacked)
-
         old_core, old_nlu = get_model_subdirectories(unpacked)
 
-        if not core_fingerprint_changed(last_fingerprint, new_fingerprint):
-            target_path = os.path.join(train_path, "core")
-            retrain_core = not merge_model(old_core, target_path)
+        fingerprint_comparison = FingerprintComparisonResult(
+            core=did_section_fingerprint_change(
+                last_fingerprint, new_fingerprint, SECTION_CORE
+            ),
+            nlu=did_section_fingerprint_change(
+                last_fingerprint, new_fingerprint, SECTION_NLU
+            ),
+            nlg=did_section_fingerprint_change(
+                last_fingerprint, new_fingerprint, SECTION_NLG
+            ),
+        )
 
-        if not nlu_fingerprint_changed(last_fingerprint, new_fingerprint):
+        core_merge_failed = False
+        if not fingerprint_comparison.should_retrain_core():
+            target_path = os.path.join(train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
+            core_merge_failed = not move_model(old_core, target_path)
+            fingerprint_comparison.core = core_merge_failed
+
+        if not fingerprint_comparison.should_retrain_nlg() and core_merge_failed:
+            # If moving the Core model failed, we should also retrain NLG
+            fingerprint_comparison.nlg = True
+
+        if not fingerprint_comparison.should_retrain_nlu():
             target_path = os.path.join(train_path, "nlu")
-            retrain_nlu = not merge_model(old_nlu, target_path)
+            fingerprint_comparison.nlu = not move_model(old_nlu, target_path)
 
-        return retrain_core, retrain_nlu
+        return fingerprint_comparison
 
 
 def package_model(
@@ -392,7 +447,7 @@ def package_model(
     model_prefix: Text = "",
 ):
     """
-    Compresses a trained model.
+    Compress a trained model.
 
     Args:
         fingerprint: fingerprint of the model
@@ -415,3 +470,19 @@ def package_model(
     )
 
     return output_directory
+
+
+async def update_model_with_new_domain(
+    importer: "TrainingDataImporter", unpacked_model_path: Union[Path, Text]
+) -> None:
+    """Overwrites the domain of an unpacked model with a new domain.
+
+    Args:
+        importer: Importer which provides the new domain.
+        unpacked_model_path: Path to the unpacked model.
+    """
+
+    model_path = Path(unpacked_model_path) / DEFAULT_CORE_SUBDIRECTORY_NAME
+    domain = await importer.get_domain()
+
+    domain.persist(model_path / DEFAULT_DOMAIN_PATH)

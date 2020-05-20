@@ -19,7 +19,7 @@ async def parse(text: Text, model_path: Text):
 
     response = await agent.handle_text(text)
 
-    logger.info("Text: '{}'".format(text))
+    logger.info(f"Text: '{text}'")
     logger.info("Response:")
     logger.info(response)
 
@@ -49,7 +49,7 @@ async def train_core(
     model_path = os.path.join(model_directory, model_name, "core")
     agent.persist(model_path)
 
-    logger.info("Model trained. Stored in '{}'.".format(model_path))
+    logger.info(f"Model trained. Stored in '{model_path}'.")
 
     return model_path
 
@@ -73,7 +73,7 @@ def train_nlu(
     model_path = os.path.join(model_directory, model_name)
     model_directory = trainer.persist(model_path, fixed_model_name="nlu")
 
-    logger.info("Model trained. Stored in '{}'.".format(model_directory))
+    logger.info(f"Model trained. Stored in '{model_directory}'.")
 
     return model_directory
 

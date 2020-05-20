@@ -1,11 +1,13 @@
+import itertools
 import logging
 import typing
-from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
-import warnings
+from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults
-from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.constants import MESSAGE_RESPONSE_ATTRIBUTE
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
+from rasa.nlu.constants import TRAINABLE_EXTRACTORS
+from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
+from rasa.nlu.training_data import Message, TrainingData
+from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -14,8 +16,15 @@ logger = logging.getLogger(__name__)
 
 
 def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
-    """Tries to import all the package names and returns
-    the packages where it failed."""
+    """Tries to import all package names and returns the packages where it failed.
+
+    Args:
+        package_names: The package names to import.
+
+    Returns:
+        Package names that could not be imported.
+    """
+
     import importlib
 
     failed_imports = set()
@@ -28,8 +37,12 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 
 
 def validate_requirements(component_names: List[Text]) -> None:
-    """Ensures that all required importable python packages are installed to
-    instantiate and used the passed components."""
+    """Validates that all required importable python packages are installed.
+
+    Args:
+        component_names: The list of component names.
+    """
+
     from rasa.nlu import registry
 
     # Validate that all required packages are installed
@@ -43,73 +56,252 @@ def validate_requirements(component_names: List[Text]) -> None:
         # if available, use the development file to figure out the correct
         # version numbers for each requirement
         raise Exception(
-            "Not all required importable packages are installed. "
-            + "To use this pipeline, you need to install the "
-            "missing dependencies. "
-            + "Please install the package(s) that contain the module(s): {}".format(
-                ", ".join(failed_imports)
-            )
+            f"Not all required importable packages are installed. "
+            f"To use this pipeline, you need to install the "
+            f"missing dependencies. "
+            f"Please install the package(s) that contain the module(s): "
+            f"{', '.join(failed_imports)}"
         )
 
 
-def validate_arguments(
-    pipeline: List["Component"],
-    context: Dict[Text, Any],
-    allow_empty_pipeline: bool = False,
-) -> None:
-    """Validates a pipeline before it is run. Ensures, that all
-    arguments are present to train the pipeline."""
+def validate_empty_pipeline(pipeline: List["Component"]) -> None:
+    """Ensures the pipeline is not empty.
 
-    # Ensure the pipeline is not empty
-    if not allow_empty_pipeline and len(pipeline) == 0:
-        raise ValueError(
+    Args:
+        pipeline: the list of the :class:`rasa.nlu.components.Component`.
+    """
+
+    if len(pipeline) == 0:
+        raise InvalidConfigError(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
-            "the configuration using the `pipeline` key."
-            + "The `backend` configuration key is "
+            "the configuration using the 'pipeline' key. "
+            "The 'backend' configuration key is "
             "NOT supported anymore."
         )
 
-    provided_properties = set(context.keys())
 
+def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
+    """Validates that only one tokenizer is present in the pipeline.
+
+    Args:
+        pipeline: the list of the :class:`rasa.nlu.components.Component`.
+    """
+
+    from rasa.nlu.tokenizers.tokenizer import Tokenizer
+
+    tokenizer_names = []
     for component in pipeline:
-        for r in component.requires:
-            if r not in provided_properties:
-                raise Exception(
-                    "Failed to validate at component "
-                    "'{}'. Missing property: '{}'"
-                    "".format(component.name, r)
-                )
-        provided_properties.update(component.provides)
+        if isinstance(component, Tokenizer):
+            tokenizer_names.append(component.name)
+
+    if len(tokenizer_names) > 1:
+        raise InvalidConfigError(
+            f"More then one tokenizer is used: {tokenizer_names}. "
+            f"You can use only one tokenizer."
+        )
+
+
+def _required_component_in_pipeline(
+    required_component: Type["Component"], pipeline: List["Component"]
+) -> bool:
+    """Checks that required component present in the pipeline.
+
+    Args:
+        required_component: A class name of the required component.
+        pipeline: The list of the :class:`rasa.nlu.components.Component`.
+
+    Returns:
+        `True` if required_component is in the pipeline, `False` otherwise.
+    """
+
+    for previous_component in pipeline:
+        if isinstance(previous_component, required_component):
+            return True
+    return False
+
+
+def _check_deprecated_attributes(component: "Component") -> None:
+    """Checks that the component doesn't have deprecated attributes.
+
+    Args:
+        component: The :class:`rasa.nlu.components.Component`.
+    """
+
+    if hasattr(component, "provides"):
+        raise_warning(
+            f"'{component.name}' contains property 'provides', "
+            f"which is deprecated. There is no need to specify "
+            f"the list of attributes that a component provides.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+    if hasattr(component, "requires"):
+        raise_warning(
+            f"'{component.name}' contains property 'requires', "
+            f"which is deprecated. Use 'required_components()' method "
+            f"to specify which components are required to be present "
+            f"in the pipeline by this component.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
+
+def validate_required_components(pipeline: List["Component"]) -> None:
+    """Validates that all required components are present in the pipeline.
+
+    Args:
+        pipeline: The list of the :class:`rasa.nlu.components.Component`.
+    """
+
+    for i, component in enumerate(pipeline):
+        _check_deprecated_attributes(component)
+
+        missing_components = []
+        for required_component in component.required_components():
+            if not _required_component_in_pipeline(required_component, pipeline[:i]):
+                missing_components.append(required_component.name)
+
+        if missing_components:
+            raise InvalidConfigError(
+                f"'{component.name}' requires {missing_components}. "
+                f"Add required components to the pipeline."
+            )
+
+
+def validate_pipeline(pipeline: List["Component"]) -> None:
+    """Validates the pipeline.
+
+    Args:
+        pipeline: The list of the :class:`rasa.nlu.components.Component`.
+    """
+
+    validate_empty_pipeline(pipeline)
+    validate_only_one_tokenizer_is_used(pipeline)
+    validate_required_components(pipeline)
+
+
+def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):
+    """Check if any of the provided components are listed in the pipeline.
+
+    Args:
+        components: A list of :class:`rasa.nlu.components.Component`s to check.
+        pipeline: A list of :class:`rasa.nlu.components.Component`s.
+
+    Returns:
+        `True` if any of the `components` are in the `pipeline`, else `False`.
+
+    """
+    return any(any(component.name == c for component in pipeline) for c in components)
 
 
 def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
-):
+) -> None:
+    """Validates that all components are present in the pipeline based on data.
 
-    response_selector_exists = False
-    for component in pipeline:
-        # check if a response selector is part of NLU pipeline
-        if MESSAGE_RESPONSE_ATTRIBUTE in component.provides:
-            response_selector_exists = True
+    Args:
+        pipeline: The list of the :class:`rasa.nlu.components.Component`s.
+        data: The :class:`rasa.nlu.training_data.training_data.TrainingData`.
+    """
 
-    if len(data.response_examples) and not response_selector_exists:
-        warnings.warn(
-            "Training data consists examples for training a response selector but "
-            "no response selector component specified inside NLU pipeline"
+    if data.response_examples and not any_components_in_pipeline(
+        ["ResponseSelector"], pipeline
+    ):
+        raise_warning(
+            "You have defined training data with examples for training a response "
+            "selector, but your NLU pipeline does not include a response selector "
+            "component. To train a model on your response selector data, add a "
+            "'ResponseSelector' to your pipeline."
+        )
+
+    if data.entity_examples and not any_components_in_pipeline(
+        TRAINABLE_EXTRACTORS, pipeline
+    ):
+        raise_warning(
+            "You have defined training data consisting of entity examples, but "
+            "your NLU pipeline does not include an entity extractor trained on "
+            "your training data. To extract non-pretrained entities, add one of "
+            f"{TRAINABLE_EXTRACTORS} to your pipeline."
+        )
+
+    if data.entity_examples and not any_components_in_pipeline(
+        {"DIETClassifier", "CRFEntityExtractor"}, pipeline
+    ):
+        if data.entity_roles_groups_used():
+            raise_warning(
+                "You have defined training data with entities that have roles/groups, "
+                "but your NLU pipeline does not include a 'DIETClassifier' or a "
+                "'CRFEntityExtractor'. To train entities that have roles/groups, "
+                "add either 'DIETClassifier' or 'CRFEntityExtractor' to your "
+                "pipeline."
+            )
+
+    if data.regex_features and not any_components_in_pipeline(
+        ["RegexFeaturizer"], pipeline
+    ):
+        raise_warning(
+            "You have defined training data with regexes, but "
+            "your NLU pipeline does not include a 'RegexFeaturizer'. "
+            "To featurize regexes, include a 'RegexFeaturizer' in your pipeline."
+        )
+
+    if data.lookup_tables and not any_components_in_pipeline(
+        ["RegexFeaturizer"], pipeline
+    ):
+        raise_warning(
+            "You have defined training data consisting of lookup tables, but "
+            "your NLU pipeline does not include a 'RegexFeaturizer'. "
+            "To featurize lookup tables, add a 'RegexFeaturizer' to your pipeline."
+        )
+
+    if data.lookup_tables:
+        if not any_components_in_pipeline(
+            ["CRFEntityExtractor", "DIETClassifier"], pipeline
+        ):
+            raise_warning(
+                "You have defined training data consisting of lookup tables, but "
+                "your NLU pipeline does not include any components that use these "
+                "features. To make use of lookup tables, add a 'DIETClassifier' or a "
+                "'CRFEntityExtractor' with the 'pattern' feature to your pipeline."
+            )
+        elif any_components_in_pipeline(["CRFEntityExtractor"], pipeline):
+            crf_components = [c for c in pipeline if c.name == "CRFEntityExtractor"]
+            # check to see if any of the possible CRFEntityExtractors will
+            # featurize `pattern`
+            has_pattern_feature = False
+            for crf in crf_components:
+                crf_features = crf.component_config.get("features")
+                # iterate through [[before],[word],[after]] features
+                has_pattern_feature = "pattern" in itertools.chain(*crf_features)
+
+            if not has_pattern_feature:
+                raise_warning(
+                    "You have defined training data consisting of lookup tables, but "
+                    "your NLU pipeline's 'CRFEntityExtractor' does not include the "
+                    "'pattern' feature. To featurize lookup tables, add the 'pattern' "
+                    "feature to the 'CRFEntityExtractor' in your pipeline."
+                )
+
+    if data.entity_synonyms and not any_components_in_pipeline(
+        ["EntitySynonymMapper"], pipeline
+    ):
+        raise_warning(
+            "You have defined synonyms in your training data, but "
+            "your NLU pipeline does not include an 'EntitySynonymMapper'. "
+            "To map synonyms, add an 'EntitySynonymMapper' to your pipeline."
         )
 
 
 class MissingArgumentError(ValueError):
-    """Raised when a function is called and not all parameters can be
-    filled from the context / config.
+    """Raised when not all parameters can be filled from the context / config.
 
     Attributes:
         message -- explanation of which parameter is missing
     """
 
     def __init__(self, message: Text) -> None:
-        super(MissingArgumentError, self).__init__(message)
+        super().__init__(message)
         self.message = message
 
     def __str__(self) -> Text:
@@ -128,16 +320,16 @@ class UnsupportedLanguageError(Exception):
         self.component = component
         self.language = language
 
-        super(UnsupportedLanguageError, self).__init__(component, language)
+        super().__init__(component, language)
 
     def __str__(self) -> Text:
-        return "component {} does not support language {}".format(
-            self.component, self.language
+        return (
+            f"component '{self.component}' does not support language '{self.language}'."
         )
 
 
 class ComponentMetaclass(type):
-    """Metaclass with `name` class property"""
+    """Metaclass with `name` class property."""
 
     @property
     def name(cls):
@@ -146,7 +338,7 @@ class ComponentMetaclass(type):
         return cls.__name__
 
 
-class Component(object, metaclass=ComponentMetaclass):
+class Component(metaclass=ComponentMetaclass):
     """A component is a message processing unit in a pipeline.
 
     Components are collected sequentially in a pipeline. Each component
@@ -165,7 +357,8 @@ class Component(object, metaclass=ComponentMetaclass):
     components a component can use to do its own
     processing. For example, a featurizer component can provide
     features that are used by another component down
-    the pipeline to do intent classification."""
+    the pipeline to do intent classification.
+    """
 
     # Component class name is used when integrating it in a
     # pipeline. E.g. ``[ComponentA, ComponentB]``
@@ -177,18 +370,17 @@ class Component(object, metaclass=ComponentMetaclass):
 
         return type(self).name
 
-    # Defines what attributes the pipeline component will
-    # provide when called. The listed attributes
-    # should be set by the component on the message object
-    # during test and train, e.g.
-    # ```message.set("entities", [...])```
-    provides = []
+    # Which components are required by this component.
+    # Listed components should appear before the component itself in the pipeline.
+    @classmethod
+    def required_components(cls) -> List[Type["Component"]]:
+        """Specify which components need to be present in the pipeline.
 
-    # Which attributes on a message are required by this
-    # component. e.g. if requires contains "tokens", than a
-    # previous component in the pipeline needs to have "tokens"
-    # within the above described `provides` property.
-    requires = []
+        Returns:
+            The list of class names of required components.
+        """
+
+        return []
 
     # Defines the default configuration parameters of a component
     # these values can be overwritten in the pipeline configuration
@@ -218,13 +410,19 @@ class Component(object, metaclass=ComponentMetaclass):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
-        """Specify which python packages need to be installed to use this
-        component, e.g. ``["spacy"]``. More specifically, these should be
+        """Specify which python packages need to be installed.
+
+        E.g. ``["spacy"]``. More specifically, these should be
         importable python package names e.g. `sklearn` and not package
         names in the dependencies sense e.g. `scikit-learn`
 
         This list of requirements allows us to fail early during training
-        if a required package is not installed."""
+        if a required package is not installed.
+
+        Returns:
+            The list of required package names.
+        """
+
         return []
 
     @classmethod
@@ -234,7 +432,7 @@ class Component(object, metaclass=ComponentMetaclass):
         model_dir: Optional[Text] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["Component"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "Component":
         """Load this component from file.
 
@@ -243,12 +441,22 @@ class Component(object, metaclass=ComponentMetaclass):
         this component needs to be able to restore itself.
         Components can rely on any context attributes that are
         created by :meth:`components.Component.create`
-        calls to components previous
-        to this one."""
+        calls to components previous to this one.
+
+        Args:
+            meta: Any configuration parameter related to the model.
+            model_dir: The directory to load the component from.
+            model_metadata: The model's :class:`rasa.nlu.model.Metadata`.
+            cached_component: The cached component.
+
+        Returns:
+            the loaded component
+        """
+
         if cached_component:
             return cached_component
-        else:
-            return cls(meta)
+
+        return cls(meta)
 
     @classmethod
     def create(
@@ -256,7 +464,15 @@ class Component(object, metaclass=ComponentMetaclass):
     ) -> "Component":
         """Creates this component (e.g. before a training is started).
 
-        Method can access all configuration parameters."""
+        Method can access all configuration parameters.
+
+        Args:
+            component_config: The components configuration parameters.
+            config: The model configuration parameters.
+
+        Returns:
+            The created component.
+        """
 
         # Check language supporting
         language = config.language
@@ -267,7 +483,7 @@ class Component(object, metaclass=ComponentMetaclass):
         return cls(component_config)
 
     def provide_context(self) -> Optional[Dict[Text, Any]]:
-        """Initialize this component for a new pipeline
+        """Initialize this component for a new pipeline.
 
         This function will be called before the training
         is started and before the first message is processed using
@@ -277,11 +493,19 @@ class Component(object, metaclass=ComponentMetaclass):
         components do not need to implement this method.
         It's mostly used to initialize framework environments
         like MITIE and spacy
-        (e.g. loading word vectors for the pipeline)."""
+        (e.g. loading word vectors for the pipeline).
+
+        Returns:
+            The updated component configuration.
+        """
+
         pass
 
     def train(
-        self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
         """Train this component.
 
@@ -292,7 +516,15 @@ class Component(object, metaclass=ComponentMetaclass):
         of ANY component and
         on any context attributes created by a call to
         :meth:`rasa.nlu.components.Component.train`
-        of components previous to this one."""
+        of components previous to this one.
+
+        Args:
+            training_data:
+                The :class:`rasa.nlu.training_data.training_data.TrainingData`.
+            config: The model configuration parameters.
+
+        """
+
         pass
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -305,11 +537,25 @@ class Component(object, metaclass=ComponentMetaclass):
         of ANY component and
         on any context attributes created by a call to
         :meth:`rasa.nlu.components.Component.process`
-        of components previous to this one."""
+        of components previous to this one.
+
+        Args:
+            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+
+        """
+
         pass
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this component to disk for future loading."""
+        """Persist this component to disk for future loading.
+
+        Args:
+            file_name: The file name of the model.
+            model_dir: The directory to store the model to.
+
+        Returns:
+            An optional dictionary with any information about the stored model.
+        """
 
         pass
 
@@ -322,7 +568,15 @@ class Component(object, metaclass=ComponentMetaclass):
         If a component is unique to a model it should return None.
         Otherwise, an instantiation of the
         component will be reused for all models where the
-        metadata creates the same key."""
+        metadata creates the same key.
+
+        Args:
+            component_meta: The component configuration.
+            model_metadata: The component's :class:`rasa.nlu.model.Metadata`.
+
+        Returns:
+            A unique caching key.
+        """
 
         return None
 
@@ -335,7 +589,7 @@ class Component(object, metaclass=ComponentMetaclass):
             del d["partial_processing_pipeline"]
         return d
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.__dict__ == other.__dict__
 
     def prepare_partial_processing(
@@ -346,7 +600,13 @@ class Component(object, metaclass=ComponentMetaclass):
         The pipeline should be a list of components that are
         previous to this one in the pipeline and
         have already finished their training (and can therefore
-        be safely used to process messages)."""
+        be safely used to process messages).
+
+        Args:
+            pipeline: The list of components.
+            context: The context of processing.
+
+        """
 
         self.partial_processing_pipeline = pipeline
         self.partial_processing_context = context
@@ -356,7 +616,15 @@ class Component(object, metaclass=ComponentMetaclass):
         training (e.g. external training data).
 
         The passed message will be processed by all components
-        previous to this one in the pipeline."""
+        previous to this one in the pipeline.
+
+        Args:
+            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+
+        Returns:
+            The processed :class:`rasa.nlu.training_data.message.Message`.
+
+        """
 
         if self.partial_processing_context is not None:
             for component in self.partial_processing_pipeline:
@@ -370,7 +638,14 @@ class Component(object, metaclass=ComponentMetaclass):
         """Check if component supports a specific language.
 
         This method can be overwritten when needed. (e.g. dynamically
-        determine which language is supported.)"""
+        determine which language is supported.)
+
+        Args:
+            language: The language to check.
+
+        Returns:
+            `True` if component can handle specific language, `False` otherwise.
+        """
 
         # if language_list is set to `None` it means: support all languages
         if language is None or cls.language_list is None:
@@ -379,7 +654,7 @@ class Component(object, metaclass=ComponentMetaclass):
         return language in cls.language_list
 
 
-class ComponentBuilder(object):
+class ComponentBuilder:
     """Creates trainers and interpreters based on configurations.
 
     Caches components for reuse.
@@ -411,8 +686,8 @@ class ComponentBuilder(object):
             and cache_key in self.component_cache
         ):
             return self.component_cache[cache_key], cache_key
-        else:
-            return None, cache_key
+
+        return None, cache_key
 
     def __add_to_cache(self, component: Component, cache_key: Optional[Text]) -> None:
         """Add a component to the cache."""
@@ -420,8 +695,7 @@ class ComponentBuilder(object):
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
             logger.info(
-                "Added '{}' to component cache. Key '{}'."
-                "".format(component.name, cache_key)
+                f"Added '{component.name}' to component cache. Key '{cache_key}'."
             )
 
     def load_component(
@@ -429,21 +703,23 @@ class ComponentBuilder(object):
         component_meta: Dict[Text, Any],
         model_dir: Text,
         model_metadata: "Metadata",
-        **context: Any
+        **context: Any,
     ) -> Component:
-        """Tries to retrieve a component from the cache, else calls
+        """Loads a component.
+
+        Tries to retrieve a component from the cache, else calls
         ``load`` to create a new component.
 
         Args:
             component_meta:
-                the metadata of the component to load in the pipeline
+                The metadata of the component to load in the pipeline.
             model_dir:
-                the directory to read the model from
+                The directory to read the model from.
             model_metadata (Metadata):
-                the model's :class:`rasa.nlu.model.Metadata`
+                The model's :class:`rasa.nlu.model.Metadata`.
 
         Returns:
-            Component: the loaded component.
+            The loaded component.
         """
 
         from rasa.nlu import registry
@@ -462,15 +738,26 @@ class ComponentBuilder(object):
             return component
         except MissingArgumentError as e:  # pragma: no cover
             raise Exception(
-                "Failed to load component from file `{}`. "
-                "{}".format(component_meta.get("file"), e)
+                f"Failed to load component from file '{component_meta.get('file')}'. "
+                f"Error: {e}"
             )
 
     def create_component(
         self, component_config: Dict[Text, Any], cfg: RasaNLUModelConfig
     ) -> Component:
-        """Tries to retrieve a component from the cache,
-        calls `create` to create a new component."""
+        """Creates a component.
+
+        Tries to retrieve a component from the cache,
+        calls `create` to create a new component.
+
+        Args:
+            component_config: The component configuration.
+            cfg: The model configuration.
+
+        Returns:
+            The created component.
+        """
+
         from rasa.nlu import registry
         from rasa.nlu.model import Metadata
 
@@ -484,6 +771,6 @@ class ComponentBuilder(object):
             return component
         except MissingArgumentError as e:  # pragma: no cover
             raise Exception(
-                "Failed to create component `{}`. "
-                "{}".format(component_config["name"], e)
+                f"Failed to create component '{component_config['name']}'. "
+                f"Error: {e}"
             )

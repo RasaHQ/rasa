@@ -3,8 +3,8 @@
 
 .. _rasa-tutorial:
 
-Rasa Tutorial
-=============
+Tutorial: Rasa Basics
+=====================
 
 .. edit-link::
 
@@ -223,8 +223,22 @@ different model parts if something has changed in their data or configuration.
 
 The ``rasa train`` command will look for both NLU and Core data and will train a combined model.
 
+7. Test Your Assistant
+^^^^^^^^^^^^^^^^^^^^^^
 
-7. Talk to Your Assistant
+After you train a model, you always want to check that your assistant still behaves as you expect.
+In Rasa Open Source, you use end-to-end tests defined in your ``tests/`` directory to run through
+test conversations that ensure both NLU and Core make correct predictions.
+
+.. runnable::
+
+   rasa test
+
+   echo "Finished running tests."
+
+See :ref:`testing-your-assistant` to learn more about how to evaluate your model as you improve it.
+
+8. Talk to Your Assistant
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Congratulations! 🚀 You just built an assistant

@@ -54,7 +54,7 @@ async def visualize(
     )
 
     full_output_path = "file://{}".format(os.path.abspath(output_path))
-    logger.info("Finished graph creation. Saved into {}".format(full_output_path))
+    logger.info(f"Finished graph creation. Saved into {full_output_path}")
 
     import webbrowser
 

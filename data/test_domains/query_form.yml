@@ -10,7 +10,7 @@ slots:
   requested_slot:
     type: unfeaturized
 
-templates:
+responses:
   utter_ask_username:
     - text: "what is your name?"
   utter_ask_query:

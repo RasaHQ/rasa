@@ -1,16 +1,14 @@
 import logging
-import re
 import typing
-from typing import Optional, Text, Any, List, Dict
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData
+from typing import Any, Dict, List, Text
 
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
 
+if typing.TYPE_CHECKING:
+    from rasa.nlu.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -65,13 +63,12 @@ class NLGMarkdownReader(TrainingDataReader):
                 else:
                     # reached an unknown type of line
                     logger.warning(
-                        "Skipping line {}. "
+                        f"Skipping line {line_num}. "
                         "No valid command found. "
-                        "Line Content: '{}'"
-                        "".format(line_num, line)
+                        f"Line Content: '{line}'"
                     )
             except Exception as e:
-                msg = "Error in line {}: {}".format(line_num, e)
+                msg = f"Error in line {line_num}: {e}"
                 logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
                 raise ValueError(msg)
 
@@ -83,7 +80,7 @@ class NLGMarkdownReader(TrainingDataReader):
 
 
 class NLGMarkdownWriter(TrainingDataWriter):
-    def dumps(self, training_data):
+    def dumps(self, training_data: "TrainingData") -> Text:
         """Transforms the NlG part of TrainingData object into a markdown string."""
         md = ""
         md += self._generate_nlg_stories(training_data)
@@ -96,8 +93,8 @@ class NLGMarkdownWriter(TrainingDataWriter):
         md = ""
         for intent, utterances in training_data.nlg_stories.items():
             md += "## \n"
-            md += "* {}\n".format(intent)
+            md += f"* {intent}\n"
             for utterance in utterances:
-                md += "- {}\n".format(utterance)
+                md += f"- {utterance}\n"
             md += "\n"
         return md

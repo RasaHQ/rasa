@@ -1,12 +1,18 @@
 import logging
 import os
 import typing
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Type
 
+from rasa.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.utils.mitie_utils import MitieNLP
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.components import Component
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
+from rasa.utils.common import raise_warning
+import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -15,29 +21,30 @@ if typing.TYPE_CHECKING:
 
 
 class MitieEntityExtractor(EntityExtractor):
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [MitieNLP, Tokenizer]
 
-    provides = ["entities"]
-
-    requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
-
-    def __init__(self, component_config: Dict[Text, Any] = None, ner=None):
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""
 
-        super(MitieEntityExtractor, self).__init__(component_config)
+        super().__init__(component_config)
         self.ner = ner
 
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
-    def extract_entities(self, text, tokens, feature_extractor):
+    def extract_entities(
+        self, text: Text, tokens: List[Token], feature_extractor
+    ) -> List[Dict[Text, Any]]:
         ents = []
         tokens_strs = [token.text for token in tokens]
         if self.ner:
             entities = self.ner.extract_entities(tokens_strs, feature_extractor)
             for e in entities:
                 if len(e[0]):
-                    start = tokens[e[0][0]].offset
+                    start = tokens[e[0][0]].start
                     end = tokens[e[0][-1]].end
 
                     ents.append(
@@ -53,7 +60,10 @@ class MitieEntityExtractor(EntityExtractor):
         return ents
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
         import mitie
 
@@ -84,28 +94,34 @@ class MitieEntityExtractor(EntityExtractor):
         if found_one_entity:
             self.ner = trainer.train()
 
-    def _prepare_mitie_sample(self, training_example):
+    @staticmethod
+    def _prepare_mitie_sample(training_example: Message) -> Any:
         import mitie
 
         text = training_example.text
-        tokens = training_example.get("tokens")
+        tokens = train_utils.tokens_without_cls(training_example)
         sample = mitie.ner_training_instance([t.text for t in tokens])
-        for ent in training_example.get("entities", []):
+        for ent in training_example.get(ENTITIES, []):
             try:
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
             except ValueError as e:
-                logger.warning("Example skipped: {}".format(str(e)))
+                raise_warning(
+                    f"Failed to use example '{text}' to train MITIE "
+                    f"entity extractor. Example will be skipped."
+                    f"Error: {e}"
+                )
                 continue
             try:
                 # mitie will raise an exception on malicious
                 # input - e.g. on overlapping entities
                 sample.add_entity(list(range(start, end)), ent["entity"])
             except Exception as e:
-                logger.warning(
-                    "Failed to add entity example "
-                    "'{}' of sentence '{}'. Reason: "
-                    "{}".format(str(e), str(text), e)
+                raise_warning(
+                    f"Failed to add entity example "
+                    f"'{str(e)}' of sentence '{str(text)}'. "
+                    f"Example will be ignored. Reason: "
+                    f"{e}"
                 )
                 continue
         return sample
@@ -120,12 +136,12 @@ class MitieEntityExtractor(EntityExtractor):
             )
 
         ents = self.extract_entities(
-            message.text, message.get("tokens"), mitie_feature_extractor
+            message.text,
+            train_utils.tokens_without_cls(message),
+            mitie_feature_extractor,
         )
         extracted = self.add_extractor_name(ents)
-        message.set(
-            "entities", message.get("entities", []) + extracted, add_to_output=True
-        )
+        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @classmethod
     def load(
@@ -134,7 +150,7 @@ class MitieEntityExtractor(EntityExtractor):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["MitieEntityExtractor"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "MitieEntityExtractor":
         import mitie
 

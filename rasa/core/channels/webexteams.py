@@ -1,7 +1,9 @@
 import logging
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, Optional, Dict, Any
+from typing import Text, Optional, Dict, Any, Callable, Awaitable
+
+from sanic.response import HTTPResponse
 from webexteamssdk import WebexTeamsAPI, Webhook
 
 from rasa.core.channels.channel import InputChannel
@@ -14,10 +16,10 @@ class WebexTeamsBot(OutputChannel):
     """A Cisco WebexTeams communication channel."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "webexteams"
 
-    def __init__(self, access_token, room):
+    def __init__(self, access_token: Optional[Text], room: Optional[Text]) -> None:
         self.room = room
         self.api = WebexTeamsAPI(access_token)
 
@@ -25,7 +27,7 @@ class WebexTeamsBot(OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         recipient = self.room or recipient_id
-        for message_part in text.split("\n\n"):
+        for message_part in text.strip().split("\n\n"):
             self.api.messages.create(roomId=recipient, text=message_part)
 
     async def send_image_url(
@@ -37,7 +39,7 @@ class WebexTeamsBot(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        json_message.setdefault("roomID", recipient_id)
+        json_message.setdefault("roomId", recipient_id)
         return self.api.messages.create(**json_message)
 
 
@@ -45,15 +47,17 @@ class WebexTeamsInput(InputChannel):
     """WebexTeams input channel. Based on the HTTPInputChannel."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "webexteams"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
+        # pytype: disable=attribute-error
         return cls(credentials.get("access_token"), credentials.get("room"))
+        # pytype: enable=attribute-error
 
     def __init__(self, access_token: Text, room: Optional[Text] = None) -> None:
         """Create a Cisco Webex Teams input channel.
@@ -69,27 +73,39 @@ class WebexTeamsInput(InputChannel):
         self.room = room
         self.api = WebexTeamsAPI(access_token)
 
-    async def process_message(self, on_new_message, text, sender_id):
+    async def process_message(
+        self,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        text: Optional[Text],
+        sender_id: Optional[Text],
+        metadata: Optional[Dict],
+    ) -> Any:
 
         try:
             out_channel = self.get_output_channel()
             user_msg = UserMessage(
-                text, out_channel, sender_id, input_channel=self.name()
+                text,
+                out_channel,
+                sender_id,
+                input_channel=self.name(),
+                metadata=metadata,
             )
             await on_new_message(user_msg)
         except Exception as e:
-            logger.error("Exception when trying to handle message.{0}".format(e))
+            logger.error(f"Exception when trying to handle message.{e}")
             logger.error(str(e), exc_info=True)
 
-    def blueprint(self, on_new_message):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    ) -> Blueprint:
         webexteams_webhook = Blueprint("webexteams_webhook", __name__)
 
         @webexteams_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @webexteams_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request: Request):
+        async def webhook(request: Request) -> HTTPResponse:
             """Respond to inbound webhook HTTP POST from Webex Teams."""
 
             logger.debug("Received webex webhook call")
@@ -110,8 +126,9 @@ class WebexTeamsInput(InputChannel):
                 return response.text("OK")
 
             else:
+                metadata = self.get_metadata(request)
                 await self.process_message(
-                    on_new_message, text=message.text, sender_id=message.personId
+                    on_new_message, message.text, message.roomId, metadata
                 )
                 return response.text("")
 

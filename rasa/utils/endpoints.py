@@ -1,10 +1,9 @@
+import aiohttp
 import logging
 import os
-
-import aiohttp
-from typing import Any, Optional, Text, Dict
-
+from aiohttp.client_exceptions import ContentTypeError
 from sanic.request import Request
+from typing import Any, Optional, Text, Dict
 
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
@@ -43,14 +42,20 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     Strips leading slashes from the subpath if necessary. This behaves
     differently than `urlparse.urljoin` and will not treat the subpath
     as a base url if it starts with `/` but will always append it to the
-    `base`."""
+    `base`.
 
+    Args:
+        base: Base URL.
+        subpath: Optional path to append to the base URL.
+
+    Returns:
+        Concatenated URL with base and subpath.
+    """
     if not subpath:
         if base.endswith("/"):
             logger.debug(
-                "The URL '{}' has a trailing slash. Please make sure the "
-                "target server supports trailing slashes for this "
-                "endpoint.".format(base)
+                f"The URL '{base}' has a trailing slash. Please make sure the "
+                f"target server supports trailing slashes for this endpoint."
             )
         return base
 
@@ -62,7 +67,7 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     return url + subpath
 
 
-class EndpointConfig(object):
+class EndpointConfig:
     """Configuration for an external HTTP endpoint."""
 
     def __init__(
@@ -73,7 +78,7 @@ class EndpointConfig(object):
         basic_auth: Dict[Text, Text] = None,
         token: Optional[Text] = None,
         token_name: Text = "token",
-        **kwargs
+        **kwargs,
     ):
         self.url = url
         self.params = params if params else {}
@@ -84,7 +89,7 @@ class EndpointConfig(object):
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
         self.kwargs = kwargs
 
-    def session(self):
+    def session(self) -> aiohttp.ClientSession:
         # create authentication parameters
         if self.basic_auth:
             auth = aiohttp.BasicAuth(
@@ -99,7 +104,9 @@ class EndpointConfig(object):
             timeout=aiohttp.ClientTimeout(total=DEFAULT_REQUEST_TIMEOUT),
         )
 
-    def combine_parameters(self, kwargs=None):
+    def combine_parameters(
+        self, kwargs: Optional[Dict[Text, Any]] = None
+    ) -> Dict[Text, Any]:
         # construct GET parameters
         params = self.params.copy()
 
@@ -117,10 +124,9 @@ class EndpointConfig(object):
         method: Text = "post",
         subpath: Optional[Text] = None,
         content_type: Optional[Text] = "application/json",
-        return_method: Text = "json",
-        **kwargs: Any
-    ):
-        """Send a HTTP request to the endpoint.
+        **kwargs: Any,
+    ) -> Optional[Any]:
+        """Send a HTTP request to the endpoint. Return json response, if available.
 
         All additional arguments will get passed through
         to aiohttp's `session.request`."""
@@ -141,19 +147,22 @@ class EndpointConfig(object):
                 url,
                 headers=headers,
                 params=self.combine_parameters(kwargs),
-                **kwargs
-            ) as resp:
-                if resp.status >= 400:
+                **kwargs,
+            ) as response:
+                if response.status >= 400:
                     raise ClientResponseError(
-                        resp.status, resp.reason, await resp.content.read()
+                        response.status, response.reason, await response.content.read()
                     )
-                return await getattr(resp, return_method)()
+                try:
+                    return await response.json()
+                except ContentTypeError:
+                    return None
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data) -> "EndpointConfig":
         return EndpointConfig(**data)
 
-    def copy(self):
+    def copy(self) -> "EndpointConfig":
         return EndpointConfig(
             self.url,
             self.params,
@@ -161,10 +170,10 @@ class EndpointConfig(object):
             self.basic_auth,
             self.token,
             self.token_name,
-            **self.kwargs
+            **self.kwargs,
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(self, type(other)):
             return (
                 other.url == self.url
@@ -177,16 +186,16 @@ class EndpointConfig(object):
         else:
             return False
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
 
 class ClientResponseError(aiohttp.ClientError):
-    def __init__(self, status, message, text):
+    def __init__(self, status: int, message: Text, text: Text) -> None:
         self.status = status
         self.message = message
         self.text = text
-        super().__init__("{}, {}, body='{}'".format(status, message, text))
+        super().__init__(f"{status}, {message}, body='{text}'")
 
 
 def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
@@ -214,5 +223,5 @@ def float_arg(
     try:
         return float(str(arg))
     except (ValueError, TypeError):
-        logger.warning("Failed to convert '{}' to float.".format(arg))
+        logger.warning(f"Failed to convert '{arg}' to float.")
         return default

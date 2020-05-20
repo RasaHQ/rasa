@@ -5,17 +5,20 @@ from rasa.core import constants
 
 
 def set_run_arguments(parser: argparse.ArgumentParser):
+    """Arguments for running Rasa directly using `rasa run`."""
     add_model_param(parser)
     add_server_arguments(parser)
 
 
 def set_run_action_arguments(parser: argparse.ArgumentParser):
+    """Set arguments for running Rasa SDK."""
     import rasa_sdk.cli.arguments as sdk
 
     sdk.add_endpoint_arguments(parser)
 
 
 def add_server_arguments(parser: argparse.ArgumentParser):
+    """Add arguments for running API endpoint."""
     parser.add_argument(
         "--log-file",
         type=str,
@@ -57,6 +60,12 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         help="Start the web server API in addition to the input channel.",
     )
     server_arguments.add_argument(
+        "--response-timeout",
+        default=constants.DEFAULT_RESPONSE_TIMEOUT,
+        type=int,
+        help="Maximum time a response can take to process (sec).",
+    )
+    server_arguments.add_argument(
         "--remote-storage",
         help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
     )
@@ -66,6 +75,11 @@ def add_server_arguments(parser: argparse.ArgumentParser):
     )
     server_arguments.add_argument(
         "--ssl-keyfile", help="Set the SSL Keyfile to create a TLS secured server."
+    )
+    server_arguments.add_argument(
+        "--ssl-ca-file",
+        help="If your SSL certificate needs to be verified, you can specify the CA file "
+        "using this parameter.",
     )
     server_arguments.add_argument(
         "--ssl-password",

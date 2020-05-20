@@ -1,25 +1,33 @@
 import logging
+from typing import Text, Dict, Optional, Callable, Awaitable, Any
+
 from sanic import Blueprint, response
 from sanic.request import Request
 
-from rasa.core.channels.channel import CollectingOutputChannel, UserMessage, RestInput
+from rasa.core.channels.channel import (
+    CollectingOutputChannel,
+    UserMessage,
+    RestInput,
+    InputChannel,
+)
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
+from sanic.response import HTTPResponse
 
 logger = logging.getLogger(__name__)
 
 
 class CallbackOutput(CollectingOutputChannel):
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "callback"
 
     def __init__(self, endpoint: EndpointConfig) -> None:
 
         self.callback_endpoint = endpoint
-        super(CallbackOutput, self).__init__()
+        super().__init__()
 
-    async def _persist_message(self, message):
-        await super(CallbackOutput, self)._persist_message(message)
+    async def _persist_message(self, message: Dict[Text, Any]) -> None:
+        await super()._persist_message(message)
 
         try:
             await self.callback_endpoint.request(
@@ -40,25 +48,27 @@ class CallbackInput(RestInput):
     are sent asynchronously by calling a configured external REST endpoint."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "callback"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         return cls(EndpointConfig.from_dict(credentials))
 
-    def __init__(self, endpoint):
+    def __init__(self, endpoint: EndpointConfig) -> None:
         self.callback_endpoint = endpoint
 
-    def blueprint(self, on_new_message):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    ) -> Blueprint:
         callback_webhook = Blueprint("callback_webhook", __name__)
 
         @callback_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(_: Request):
             return response.json({"status": "ok"})
 
         @callback_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request: Request):
+        async def webhook(request: Request) -> HTTPResponse:
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
 

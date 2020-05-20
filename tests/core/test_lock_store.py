@@ -1,29 +1,32 @@
 import asyncio
-import copy
 import os
-from typing import Union, Text
-from unittest.mock import patch
 
 import numpy as np
 import pytest
 import time
 from _pytest.tmpdir import TempdirFactory
+from typing import Text
+from unittest.mock import patch
 
-import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import INTENT_MESSAGE_PREFIX, DEFAULT_LOCK_LIFETIME
-from rasa.core.lock import TicketLock, Ticket
-from rasa.core.lock_store import InMemoryLockStore, LockError, TicketExistsError
+from rasa.core.lock import TicketLock
+from rasa.core.lock_store import InMemoryLockStore, LockError, LockStore, RedisLockStore
 
 
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
+class FakeRedisLockStore(RedisLockStore):
+    """Fake `RedisLockStore` using `fakeredis` library."""
+
+    def __init__(self):
+        import fakeredis
+
+        self.red = fakeredis.FakeStrictRedis()
+
+        # added in redis==3.3.0, but not yet in fakeredis
+        self.red.connection_pool.connection_class.health_check_interval = 0
+
+        super(RedisLockStore, self).__init__()
 
 
 def test_issue_ticket():
@@ -61,8 +64,8 @@ def test_remove_expired_tickets():
     assert len(lock.tickets) == 1
 
 
-def test_create_lock_store():
-    lock_store = InMemoryLockStore()
+@pytest.mark.parametrize("lock_store", [InMemoryLockStore(), FakeRedisLockStore()])
+def test_create_lock_store(lock_store: LockStore):
     conversation_id = "my id 0"
 
     # create and lock
@@ -73,8 +76,8 @@ def test_create_lock_store():
     assert lock.conversation_id == conversation_id
 
 
-def test_serve_ticket():
-    lock_store = InMemoryLockStore()
+@pytest.mark.parametrize("lock_store", [InMemoryLockStore(), FakeRedisLockStore()])
+def test_serve_ticket(lock_store: LockStore):
     conversation_id = "my id 1"
 
     lock = lock_store.create_lock(conversation_id)
@@ -108,8 +111,9 @@ def test_serve_ticket():
     assert not lock.is_someone_waiting()
 
 
-def test_lock_expiration():
-    lock_store = InMemoryLockStore()
+# noinspection PyProtectedMember
+@pytest.mark.parametrize("lock_store", [InMemoryLockStore(), FakeRedisLockStore()])
+def test_lock_expiration(lock_store: LockStore):
     conversation_id = "my id 2"
     lock = lock_store.create_lock(conversation_id)
     lock_store.save_lock(lock)
@@ -129,37 +133,10 @@ def test_lock_expiration():
     assert lock.issue_ticket(10) == 1
 
 
-def test_ticket_exists_error():
-    def mocked_issue_ticket(
-        self,
-        conversation_id: Text,
-        lock_lifetime: Union[float, int] = DEFAULT_LOCK_LIFETIME,
-    ) -> None:
-        # mock LockStore.issue_ticket() so it issues two tickets for the same
-        # conversation ID simultaneously
-
-        lock = self.get_or_create_lock(conversation_id)
-        lock.issue_ticket(lock_lifetime)
-        self.save_lock(lock)
-
-        # issue another ticket for this lock
-        lock_2 = copy.deepcopy(lock)
-        lock_2.tickets.append(Ticket(1, time.time() + DEFAULT_LOCK_LIFETIME))
-
-        self.ensure_ticket_available(lock_2)
-
-    lock_store = InMemoryLockStore()
-    conversation_id = "my id 3"
-
-    with patch.object(InMemoryLockStore, "issue_ticket", mocked_issue_ticket):
-        with pytest.raises(TicketExistsError):
-            lock_store.issue_ticket(conversation_id)
-
-
 async def test_multiple_conversation_ids(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
 
-    conversation_ids = ["conversation {}".format(i) for i in range(2)]
+    conversation_ids = [f"conversation {i}" for i in range(2)]
 
     # ensure conversations are processed in order
     tasks = [default_agent.handle_text(text, sender_id=_id) for _id in conversation_ids]
@@ -185,9 +162,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
     # record messages as they come and and as they're processed in files so we
     # can check the order later on. We don't need the return value of this method so
     # we'll just return None.
-    async def mocked_handle_message(
-        self, message: UserMessage, wait: Union[int, float]
-    ) -> None:
+    async def mocked_handle_message(self, message: UserMessage, wait: float) -> None:
         # write incoming message to file
         with open(str(incoming_order_file), "a+") as f_0:
             f_0.write(message.text + "\n")
@@ -213,7 +188,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         wait_times = np.linspace(0.1, 0.05, n_messages)
         tasks = [
             default_agent.handle_message(
-                UserMessage("sender {0}".format(i), sender_id="some id"), wait=k
+                UserMessage(f"sender {i}", sender_id="some id"), wait=k
             )
             for i, k in enumerate(wait_times)
         ]
@@ -221,7 +196,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         # execute futures
         await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
 
-        expected_order = ["sender {0}".format(i) for i in range(len(wait_times))]
+        expected_order = [f"sender {i}" for i in range(len(wait_times))]
 
         # ensure order of incoming messages is as expected
         with open(str(incoming_order_file)) as f:
@@ -266,7 +241,7 @@ async def test_lock_error(default_agent: Agent):
         # meaning the second message will not be able to acquire a lock
         tasks = [
             default_agent.handle_message(
-                UserMessage("sender {0}".format(i), sender_id="some id")
+                UserMessage(f"sender {i}", sender_id="some id")
             )
             for i in range(2)
         ]

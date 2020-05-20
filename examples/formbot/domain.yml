@@ -13,7 +13,6 @@ intents:
 
 entities:
   - cuisine
-  - num_people
   - number
   - feedback
   - seating
@@ -37,7 +36,7 @@ slots:
   requested_slot:
     type: unfeaturized
 
-templates:
+responses:
   utter_ask_cuisine:
     - text: "what cuisine?"
   utter_ask_num_people:
@@ -75,14 +74,12 @@ templates:
     - text: "Hello! I am restaurant search assistant! How can I help?"
   utter_iamabot:
     - text: "I am a bot, powered by Rasa."
-
-actions:
-  - utter_slots_values
-  - utter_noworries
-  - utter_chitchat
-  - utter_ask_continue
-  - utter_greet
-  - utter_iamabot
+  utter_restart:
+    - text: "restarted"
 
 forms:
   - restaurant_form
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true

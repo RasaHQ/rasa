@@ -2,21 +2,17 @@ import copy
 import datetime
 import logging
 import os
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
+import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
 from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.persistor import Persistor
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
-import rasa.utils.io
 
 MODEL_NAME_PREFIX = "nlu_"
 
@@ -30,10 +26,10 @@ class InvalidModelError(Exception):
         message -- explanation of why the model is invalid
     """
 
-    def __init__(self, message):
+    def __init__(self, message: Text) -> None:
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> Text:
         return self.message
 
 
@@ -44,14 +40,14 @@ class UnsupportedModelError(Exception):
         message -- explanation of why the model is invalid
     """
 
-    def __init__(self, message):
+    def __init__(self, message: Text) -> None:
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> Text:
         return self.message
 
 
-class Metadata(object):
+class Metadata:
     """Captures all information about a model to load and prepare it."""
 
     @staticmethod
@@ -70,7 +66,7 @@ class Metadata(object):
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
             raise InvalidModelError(
-                "Failed to load model metadata from '{}'. {}".format(abspath, e)
+                f"Failed to load model metadata from '{abspath}'. {e}"
             )
 
     def __init__(self, metadata: Dict[Text, Any], model_dir: Optional[Text]):
@@ -78,7 +74,7 @@ class Metadata(object):
         self.metadata = metadata
         self.model_dir = model_dir
 
-    def get(self, property_name, default=None):
+    def get(self, property_name: Text, default: Any = None) -> Any:
         return self.metadata.get(property_name, default)
 
     @property
@@ -92,7 +88,7 @@ class Metadata(object):
     def number_of_components(self):
         return len(self.get("pipeline", []))
 
-    def for_component(self, index, defaults=None):
+    def for_component(self, index: int, defaults: Any = None) -> Dict[Text, Any]:
         return component_config_from_pipeline(index, self.get("pipeline", []), defaults)
 
     @property
@@ -117,14 +113,12 @@ class Metadata(object):
         write_json_to_file(filename, metadata, indent=4)
 
 
-class Trainer(object):
+class Trainer:
     """Trainer will load the data and train all components.
 
     Requires a pipeline specification and configuration to use for
-    the training."""
-
-    # Officially supported languages (others might be used, but might fail)
-    SUPPORTED_LANGUAGES = ["de", "en"]
+    the training.
+    """
 
     def __init__(
         self,
@@ -150,11 +144,11 @@ class Trainer(object):
         # build pipeline
         self.pipeline = self._build_pipeline(cfg, component_builder)
 
-    @staticmethod
     def _build_pipeline(
-        cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
+        self, cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
     ) -> List[Component]:
-        """Transform the passed names of the pipeline components into classes"""
+        """Transform the passed names of the pipeline components into classes."""
+
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
@@ -162,6 +156,9 @@ class Trainer(object):
             component_cfg = cfg.for_component(i)
             component = component_builder.create_component(component_cfg, cfg)
             pipeline.append(component)
+
+        if not self.skip_validation:
+            components.validate_pipeline(pipeline)
 
         return pipeline
 
@@ -181,7 +178,6 @@ class Trainer(object):
 
         # Before the training starts: check that all arguments are provided
         if not self.skip_validation:
-            components.validate_arguments(self.pipeline, context)
             components.validate_required_components_from_data(
                 self.pipeline, self.training_data
             )
@@ -190,7 +186,7 @@ class Trainer(object):
         working_data = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
-            logger.info("Starting to train component {}".format(component.name))
+            logger.info(f"Starting to train component {component.name}")
             component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(working_data, self.config, **context)
             logger.info("Finished training component.")
@@ -200,8 +196,8 @@ class Trainer(object):
         return Interpreter(self.pipeline, context)
 
     @staticmethod
-    def _file_name(index, name):
-        return "component_{}_{}".format(index, name)
+    def _file_name(index: int, name: Text) -> Text:
+        return f"component_{index}_{name}"
 
     def persist(
         self,
@@ -250,7 +246,7 @@ class Trainer(object):
         return dir_name
 
 
-class Interpreter(object):
+class Interpreter:
     """Use a trained pipeline of components to parse text messages."""
 
     # Defines all attributes (& default values)
