@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-runner-{{getenv "GITHUB_RUN_ID"}}
+  namespace: github-runner
+  labels:
+    app: github-runner
+    pod: github-runner-{{getenv "GITHUB_RUN_ID"}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-runner
+      pod: github-runner-{{getenv "GITHUB_RUN_ID"}}
+  template:
+    metadata:
+      labels:
+        app: github-runner
+        pod: github-runner-{{getenv "GITHUB_RUN_ID"}}
+    spec:
+      priorityClassName: high-priority
+      automountServiceAccountToken: false
+      serviceAccountName: github-runner
+      containers:
+      - name: github-runner
+        image: us.gcr.io/rasa-platform/github-runner:test-base
+        imagePullPolicy: Always
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+          requests:
+            nvidia.com/gpu: 1
+            memory: 10Gi
+        env:
+        - name: RUNNER_LABELS
+          value: "self-hosted,gpu,kubernetes"
+        - name: GITHUB_OWNER
+          valueFrom:
+            secretKeyRef:
+              name: github
+              key: owner
+        - name: GITHUB_REPOSITORY
+          valueFrom:
+            secretKeyRef:
+              name: github
+              key: repository
+        - name: GITHUB_PAT
+          valueFrom:
+            secretKeyRef:
+              name: github
+              key: pat
