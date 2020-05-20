@@ -328,6 +328,7 @@ This feature vector can be used in any bag-of-words model.
 The corresponding classifier can therefore decide what kind of features to use.
 
 
+
 .. _MitieFeaturizer:
 
 MitieFeaturizer
@@ -359,8 +360,6 @@ MitieFeaturizer
           # Specify what pooling operation should be used to calculate the vector of
           # the __CLS__ token. Available options: 'mean' and 'max'.
           "pooling": "mean"
-          # alias name of the featurizer
-          "alias": "mitie_featurizer"
 
 
 .. _SpacyFeaturizer:
@@ -388,8 +387,6 @@ SpacyFeaturizer
           # Specify what pooling operation should be used to calculate the vector of
           # the __CLS__ token. Available options: 'mean' and 'max'.
           "pooling": "mean"
-          # alias name of the featurizer
-          "alias": "spacy_featurizer"
 
 
 .. _ConveRTFeaturizer:
@@ -421,8 +418,6 @@ ConveRTFeaturizer
 
         pipeline:
         - name: "ConveRTFeaturizer"
-          # alias name of the featurizer
-          "alias": "convert_featurizer"
 
 
 .. _LanguageModelFeaturizer:
@@ -453,8 +448,6 @@ LanguageModelFeaturizer
 
         pipeline:
         - name: "LanguageModelFeaturizer"
-          # alias name of the featurizer
-          "alias": "language_model_featurizer"
 
 
 .. _RegexFeaturizer:
@@ -482,8 +475,6 @@ RegexFeaturizer
 
         pipeline:
         - name: "RegexFeaturizer"
-          # alias name of the featurizer
-          "alias": "regex_featurizer"
 
 .. _CountVectorsFeaturizer:
 
@@ -570,8 +561,6 @@ CountVectorsFeaturizer
           "OOV_token": "_oov_"
           # Whether to use a shared vocab
           "use_shared_vocab": False
-          # alias name of the featurizer
-          "alias": "convert_featurizer"
 
     .. container:: toggle
 
@@ -626,8 +615,8 @@ CountVectorsFeaturizer
          | OOV_token         | None                    | Keyword for unseen words.                                    |
          +-------------------+-------------------------+--------------------------------------------------------------+
          | OOV_words         | []                      | List of words to be treated as 'OOV_token' during training.  |
-         +-------------------+-------------------+--------------------------------------------------------------------+
-         | alias             | count_vector_featurizer | Alias name of featurizer.                                    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | alias             | CountVectorFeaturizer   | Alias name of featurizer.                                    |
          +-------------------+-------------------------+--------------------------------------------------------------+
 
 
@@ -686,8 +675,6 @@ LexicalSyntacticFeaturizer
             ["BOS", "EOS", "low", "upper", "title", "digit"],
             ["low", "title", "upper"],
           ]
-          # alias name of the featurizer
-          "alias": "lexical_syntactic_featurizer"
 
     This configuration is also the default configuration.
 
@@ -956,6 +943,10 @@ EmbeddingIntentClassifier
          | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
          |                                 |                  | logged. Either after every epoch ("epoch") or for every      |
          |                                 |                  | training step ("minibatch").                                 |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | featurizers                     | []               | List of featurizer names (alias names). Only features        |
+         |                                 |                  | coming from the listed names are used. If list is empty      |
+         |                                 |                  | all available features are used.                             |
          +---------------------------------+------------------+--------------------------------------------------------------+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
@@ -1532,7 +1523,7 @@ ResponseSelector
          |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
          |                                 |                   | training step ("minibatch").                                 |
          +---------------------------------+-------------------+--------------------------------------------------------------+
-         | featurizers                     | []                | List of featurizer names (alias names). Only features from   |
+         | featurizers                     | []                | List of featurizer names (alias names). Only features        |
          |                                 |                   | coming from the listed names are used. If list is empty      |
          |                                 |                   | all available features are used.                             |
          +---------------------------------+-------------------+--------------------------------------------------------------+
@@ -1772,7 +1763,7 @@ DIETClassifier
          |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
          |                                 |                  | training step ('minibatch').                                 |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | featurizers                     | []               | List of featurizer names (alias names). Only features from   |
+         | featurizers                     | []               | List of featurizer names (alias names). Only features        |
          |                                 |                  | coming from the listed names are used. If list is empty      |
          |                                 |                  | all available features are used.                             |
          +---------------------------------+------------------+--------------------------------------------------------------+
