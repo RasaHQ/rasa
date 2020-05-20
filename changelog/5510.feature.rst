@@ -1,9 +1,10 @@
-You can now define what kind of features should be used by what component.
+You can now define what kind of features should be used by what component (see :ref:`choosing-a-pipeline`).
 
-You can set an alias for every featurizer in your pipeline.
-You can then specify on, for example, the :ref:`diet-classifier` what features from which featurizers should go in.
+You can set an alias via the option ``alias`` for every featurizer in your pipeline.
+You can then specify, for example, on the :ref:`diet-classifier` what features from which featurizers should be used.
 If you don't set the option ``featurizers`` all available features will be used.
 This is also the default behaviour.
+Check :ref:`components` to see what components have the option ``featurizers`` available.
 
 Here is an example pipeline that shows the new option:
 
