@@ -22,7 +22,7 @@ from rasa.nlu.training_data import Message
             ],
             TEXT,
             [],
-            [1, 2, 1, 1, 1, 0],
+            [1, 2, 1, 1, 2, 2, 1, 1, 0],
         ),
         (
             [
@@ -68,7 +68,7 @@ def test_get_dense_features(
             ],
             TEXT,
             [],
-            [1, 2, 1, 1, 1, 0],
+            [1, 2, 1, 1, 2, 2, 1, 1, 0],
         ),
         (
             [
@@ -91,11 +91,56 @@ def test_get_sparse_features(
 
     message = Message("This is a test sentence.", features=features)
 
-    actual_features, actual_sen_features = message.get_sparse_features(
-        attribute, featurizers
-    )
+    actual_features = message.get_sparse_features(attribute, featurizers)
 
     if expected_features is None:
         assert actual_features is None
     else:
         assert np.all(actual_features.toarray() == expected_features)
+
+
+@pytest.mark.parametrize(
+    "features, attribute, featurizers, expected",
+    [
+        (None, TEXT, [], False),
+        ([Features(scipy.sparse.csr_matrix([1, 1, 0]), TEXT, "test")], TEXT, [], True),
+        (
+            [
+                Features(scipy.sparse.csr_matrix([1, 1, 0]), TEXT, "c2"),
+                Features(np.ndarray([1, 2, 2]), TEXT, "c1"),
+            ],
+            TEXT,
+            [],
+            True,
+        ),
+        (
+            [
+                Features(scipy.sparse.csr_matrix([1, 1, 0]), TEXT, "c2"),
+                Features(np.ndarray([1, 2, 2]), TEXT, "c1"),
+            ],
+            TEXT,
+            ["c1"],
+            True,
+        ),
+        (
+            [
+                Features(scipy.sparse.csr_matrix([1, 1, 0]), TEXT, "c2"),
+                Features(np.ndarray([1, 2, 2]), TEXT, "c1"),
+            ],
+            TEXT,
+            ["other"],
+            False,
+        ),
+    ],
+)
+def test_features_present(
+    features: Optional[List[Features]],
+    attribute: Text,
+    featurizers: List[Text],
+    expected: bool,
+):
+    message = Message("This is a test sentence.", features=features)
+
+    actual = message.features_present(attribute, featurizers)
+
+    assert actual == expected

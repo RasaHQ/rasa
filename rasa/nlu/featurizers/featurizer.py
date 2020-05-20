@@ -42,7 +42,7 @@ class Features:
     def _combine_dense_features(
         features: np.ndarray, additional_features: np.ndarray
     ) -> np.ndarray:
-        if len(features) != len(additional_features):
+        if features.ndim != additional_features.ndim:
             raise ValueError(
                 f"Cannot concatenate dense features as sequence dimension does not "
                 f"match: {len(features)} != {len(additional_features)}."
