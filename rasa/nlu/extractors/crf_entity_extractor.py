@@ -482,7 +482,17 @@ class CRFEntityExtractor(EntityExtractor):
             )
             return None
 
-        return list(features)
+        # convert to python-crfsuite feature format
+        features_out = []
+        for feature in features:
+            feature_dict = {
+                str(index): token_features
+                for index, token_features in enumerate(feature)
+            }
+            converted = {"text_dense_features": feature_dict}
+            features_out.append(converted)
+
+        return features_out
 
     def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:
         """Take a message and convert it to crfsuite format."""
