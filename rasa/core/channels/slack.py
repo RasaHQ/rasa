@@ -353,7 +353,12 @@ class SlackInput(InputChannel):
                     sender_id = payload["user"]["id"]
                     text = self._get_interactive_response(payload["actions"][0])
                     if text is not None:
-                        metadata = self.get_metadata(request)
+#                         metadata = self.get_metadata(request)
+                        out_channel = payload["channel"]["id"]
+                        lst = [ ]
+                        lst.append( payload["message"]["user"] )
+                        users = lst
+                        metadata = {'out_channel': out_channel, 'users': users}
                         return await self.process_message(
                             request, on_new_message, text, sender_id, metadata
                         )
