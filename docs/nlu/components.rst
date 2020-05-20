@@ -497,11 +497,11 @@ CountVectorsFeaturizer
 :Description:
     Creates features for intent classification and response selection.
     Creates bag-of-words representation of user message, intent, and response using
-    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
+    `sklearn's CountVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
     All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
 :Configuration:
-    See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
+    See `sklearn's CountVectorizer docs <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
     for detailed description of the configuration parameters.
 
     This featurizer can be configured to use word or character n-grams, using the ``analyzer`` configuration parameter.
