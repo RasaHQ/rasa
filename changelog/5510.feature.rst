@@ -8,7 +8,8 @@ Check :ref:`components` to see what components have the option ``featurizers`` a
 
 Here is an example pipeline that shows the new option:
 
-.. code-block::
+.. code-block:: none
+
     pipeline:
     - name: ConveRTTokenizer
     - name: ConveRTFeaturizer
