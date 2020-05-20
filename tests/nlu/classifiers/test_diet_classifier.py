@@ -3,7 +3,7 @@ import pytest
 import scipy.sparse
 from unittest.mock import Mock
 
-from nlu.featurizers.featurizer import Features
+from rasa.nlu.featurizers.featurizer import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
@@ -111,8 +111,6 @@ async def test_train_persist_load_with_different_settings(
 
 
 async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
-    from rasa.nlu import train
-
     _config = RasaNLUModelConfig(
         {
             "pipeline": [

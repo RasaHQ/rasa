@@ -11,7 +11,6 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.constants import TEXT, SPACY_DOCS, ENTITIES
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-import numpy as np
 
 
 def pipeline_from_components(*components: Text) -> List[Dict[Text, Text]]:

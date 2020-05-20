@@ -46,7 +46,7 @@ from rasa.utils.common import class_from_module_path, raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
-    from rasa.nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
+    from rasa.nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 

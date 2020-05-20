@@ -63,12 +63,12 @@ class SpacyFeaturizer(DenseFeaturizer):
         doc = self.get_doc(message, attribute)
 
         if doc is None:
-            return None
+            return
 
         # in case an empty spaCy model was used, no vectors are present
         if doc.vocab.vectors_length == 0:
             logger.debug("No features present. You are using an empty spaCy model.")
-            return None
+            return
 
         features = self._features_for_doc(doc)
 

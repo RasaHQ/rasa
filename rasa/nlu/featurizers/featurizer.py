@@ -36,7 +36,7 @@ class Features:
         if self.is_sparse() and isinstance(additional_features, scipy.sparse.spmatrix):
             return self._combine_sparse_features(self.features, additional_features)
 
-        raise ValueError(f"Cannot concatenate sparse and dense features.")
+        raise ValueError("Cannot concatenate sparse and dense features.")
 
     @staticmethod
     def _combine_dense_features(
@@ -83,14 +83,15 @@ class DenseFeaturizer(Featurizer):
 
         if pooling_operation == MEAN_POOLING:
             return np.mean(non_zero_features, axis=0, keepdims=True)
-        elif pooling_operation == MAX_POOLING:
+
+        if pooling_operation == MAX_POOLING:
             return np.max(non_zero_features, axis=0, keepdims=True)
-        else:
-            raise ValueError(
-                f"Invalid pooling operation specified. Available operations are "
-                f"'{MEAN_POOLING}' or '{MAX_POOLING}', but provided value is "
-                f"'{pooling_operation}'."
-            )
+
+        raise ValueError(
+            f"Invalid pooling operation specified. Available operations are "
+            f"'{MEAN_POOLING}' or '{MAX_POOLING}', but provided value is "
+            f"'{pooling_operation}'."
+        )
 
 
 class SparseFeaturizer(Featurizer):
