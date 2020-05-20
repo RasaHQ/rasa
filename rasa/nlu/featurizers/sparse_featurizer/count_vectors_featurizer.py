@@ -139,8 +139,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Check if trained vocabulary exists in attribute's count vectorizer"""
         try:
-            if not hasattr(self.vectorizers[attribute], "vocabulary_"):
-                self.vectorizers[attribute]._validate_vocabulary()
             return hasattr(self.vectorizers[attribute], "vocabulary_")
         except (AttributeError, TypeError):
             return False
@@ -671,4 +669,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 meta, vocabulary=vocabulary
             )
 
-        return cls(meta, vectorizers)
+        ftr = cls(meta, vectorizers)
+
+        for attribute in vectorizers:
+            ftr.vectorizers[attribute]._validate_vocabulary()
+
+        return ftr
