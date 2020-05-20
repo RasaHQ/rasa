@@ -2,6 +2,7 @@ from typing import Any, Optional, Tuple, Text, Dict, Set, List, Union
 
 import numpy as np
 import scipy.sparse
+import typing
 
 from rasa.nlu.constants import (
     ENTITIES,
@@ -12,6 +13,9 @@ from rasa.nlu.constants import (
     RESPONSE_IDENTIFIER_DELIMITER,
 )
 from rasa.nlu.utils import ordered
+
+if typing.TYPE_CHECKING:
+    from rasa.nlu.featurizers.featurizer import Features
 
 
 class Message:
@@ -73,7 +77,8 @@ class Message:
         else:
             d = self.data
 
-        # Filter all keys with None value. These could have come while building the Message object in markdown format
+        # Filter all keys with None value. These could have come while building the
+        # Message object in markdown format
         d = {key: value for key, value in d.items() if value is not None}
 
         return dict(d, text=self.text)
