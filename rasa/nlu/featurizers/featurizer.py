@@ -8,6 +8,10 @@ from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
 
 class Features:
+    """
+    Stores the features produces by any featurizer.
+    """
+
     def __init__(
         self,
         features: Union[np.ndarray, scipy.sparse.spmatrix],
@@ -20,14 +24,28 @@ class Features:
         self.message_attribute = message_attribute
 
     def is_sparse(self):
+        """
+        Returns: True, if features are sparse, false otherwise.
+        """
         return isinstance(self.features, scipy.sparse.spmatrix)
 
     def is_dense(self):
+        """
+        Returns: True, if features are dense, false otherwise.
+        """
         return not self.is_sparse()
 
     def combine_with_features(
         self, additional_features: Optional[Union[np.ndarray, scipy.sparse.spmatrix]]
     ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
+        """
+        Combine the incoming features with this features.
+
+        Args:
+            additional_features: additional features to add
+
+        Returns: combined features
+        """
         if additional_features is None:
             return self.features
 
