@@ -414,22 +414,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Checks if all labels have features set."""
 
         return all(
-            len(
-                [
-                    f
-                    for f in label_example.features
-                    if f.is_sparse() and f.message_attribute == attribute
-                ]
-            )
-            > 0
-            or len(
-                [
-                    f
-                    for f in label_example.features
-                    if f.is_dense() and f.message_attribute == attribute
-                ]
-            )
-            > 0
+            label_example.features_present(attribute)
             for label_example in labels_example
         )
 

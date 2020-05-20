@@ -121,26 +121,73 @@ class Message:
     def get_sparse_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Optional[scipy.sparse.spmatrix]:
+        """
+        Get all sparse features for the given attribute that are coming from the given
+        list of featurizers.
+
+        If no featurizers are provided, all available features will be considered.
+
+        Args:
+            attribute: message attribute
+            featurizers: names of featurizers to consider
+
+        Returns: A list of sparse features.
+        """
         if featurizers is None:
             featurizers = []
 
-        features = [
-            f
-            for f in self.features
-            if f.message_attribute == attribute
-            and f.is_sparse()
-            and (f.origin in featurizers or not featurizers)
-        ]
+        features = self._filter_sparse_features(attribute, featurizers)
 
         return self._combine_features(features)
 
     def get_dense_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Optional[np.ndarray]:
+        """
+        Get all dense features for the given attribute that are coming from the given
+        list of featurizers.
+
+        If no featurizers are provided, all available features will be considered.
+
+        Args:
+            attribute: message attribute
+            featurizers: names of featurizers to consider
+
+        Returns: A list of dense features.
+        """
         if featurizers is None:
             featurizers = []
 
-        features = [
+        features = self._filter_dense_features(attribute, featurizers)
+
+        return self._combine_features(features)
+
+    def features_present(
+        self, attribute: Text, featurizers: Optional[List[Text]] = None
+    ) -> bool:
+        """
+        Check if there are any features present for the given attribute and featurizers.
+
+        If no featurizers are provided, all available features will be considered.
+
+        Args:
+            attribute: message attribute
+            featurizers: names of featurizers to consider
+
+        Returns: True, if features are present, false otherwise
+        """
+        if featurizers is None:
+            featurizers = []
+
+        return (
+            len(self._filter_sparse_features(attribute, featurizers)) > 0
+            or len(self._filter_dense_features(attribute, featurizers)) > 0
+        )
+
+    def _filter_dense_features(
+        self, attribute: Text, featurizers: List[Text]
+    ) -> List["Features"]:
+        return [
             f
             for f in self.features
             if f.message_attribute == attribute
@@ -148,7 +195,16 @@ class Message:
             and (f.origin in featurizers or not featurizers)
         ]
 
-        return self._combine_features(features)
+    def _filter_sparse_features(
+        self, attribute: Text, featurizers: List[Text]
+    ) -> List["Features"]:
+        return [
+            f
+            for f in self.features
+            if f.message_attribute == attribute
+            and f.is_sparse()
+            and (f.origin in featurizers or not featurizers)
+        ]
 
     @staticmethod
     def _combine_features(
