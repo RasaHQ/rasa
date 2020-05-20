@@ -27,9 +27,7 @@ class SpacyFeaturizer(DenseFeaturizer):
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
         # the CLS token. Available options: 'mean' and 'max'
-        POOLING: MEAN_POOLING,
-        # alias name of the featurizer
-        ALIAS: "spacy_featurizer",
+        POOLING: MEAN_POOLING
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None):

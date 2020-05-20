@@ -45,9 +45,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             ["low", "title", "upper"],
             ["BOS", "EOS", "low", "upper", "title", "digit"],
             ["low", "title", "upper"],
-        ],
-        # alias name of the featurizer
-        ALIAS: "lexical_syntactic_featurizer",
+        ]
     }
 
     function_dict = {

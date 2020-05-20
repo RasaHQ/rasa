@@ -24,11 +24,6 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     level representations for dense featurizable attributes of each message object.
     """
 
-    defaults = {
-        # alias name of the featurizer
-        ALIAS: "language_model_featurizer"
-    }
-
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [HFTransformersNLP, LanguageModelTokenizer]

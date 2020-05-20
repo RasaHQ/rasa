@@ -1,7 +1,8 @@
 import numpy as np
 import scipy.sparse
-from typing import Text, Union, Optional
+from typing import Text, Union, Optional, Dict, Any
 
+from rasa.nlu.constants import ALIAS
 from rasa.nlu.components import Component
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
@@ -66,7 +67,15 @@ class Features:
 
 
 class Featurizer(Component):
-    pass
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        if not component_config:
+            component_config = {}
+
+        # makes sure the alias name is set
+        if ALIAS not in component_config:
+            component_config[ALIAS] = self.name
+
+        super().__init__(component_config)
 
 
 class DenseFeaturizer(Featurizer):

@@ -27,11 +27,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
     for dense featurizable attributes of each message object.
     """
 
-    defaults = {
-        # alias name of the featurizer
-        ALIAS: "convert_featurizer"
-    }
-
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [ConveRTTokenizer]
