@@ -16,16 +16,16 @@ def test_mitie_featurizer(mitie_feature_extractor):
     MitieTokenizer().process(message)
     tokens = message.get(TOKENS_NAMES[TEXT])[:-1]  # remove CLS token
 
-    seq_vec, sen_vec = featurizer.features_for_tokens(tokens, mitie_feature_extractor)
+    vecs = featurizer.features_for_tokens(tokens, mitie_feature_extractor)
 
     expected = np.array(
         [0.00000000e00, -5.12735510e00, 4.39929873e-01, -5.60760403e00, -8.26445103e00]
     )
     expected_cls = np.array([0.0, -4.4551446, 0.26073121, -1.46632245, -1.84205751])
 
-    assert 6 == len(seq_vec) + len(sen_vec)
-    assert np.allclose(seq_vec[0][:5], expected, atol=1e-5)
-    assert np.allclose(sen_vec[-1][:5], expected_cls, atol=1e-5)
+    assert 6 == len(vecs)
+    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
 
 def test_mitie_featurizer_train(mitie_feature_extractor):
@@ -49,18 +49,18 @@ def test_mitie_featurizer_train(mitie_feature_extractor):
     )
     expected_cls = np.array([0.0, -4.4551446, 0.26073121, -1.46632245, -1.84205751])
 
-    vec = message.get_dense_features(TEXT, [])
+    vecs = message.get_dense_features(TEXT, [])
 
-    assert len(message.get(TOKENS_NAMES[TEXT])) == len(vec)
-    assert np.allclose(vec[0][:5], expected, atol=1e-5)
-    assert np.allclose(vec[-1][:5], expected_cls, atol=1e-5)
+    assert len(message.get(TOKENS_NAMES[TEXT])) == len(vecs)
+    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vec = message.get_dense_features(RESPONSE, [])
+    vecs = message.get_dense_features(RESPONSE, [])
 
-    assert len(message.get(TOKENS_NAMES[RESPONSE])) == len(vec)
-    assert np.allclose(vec[0][:5], expected, atol=1e-5)
-    assert np.allclose(vec[-1][:5], expected_cls, atol=1e-5)
+    assert len(message.get(TOKENS_NAMES[RESPONSE])) == len(vecs)
+    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vec = message.get_dense_features(INTENT, [])
+    vecs = message.get_dense_features(INTENT, [])
 
-    assert vec is None
+    assert vecs is None

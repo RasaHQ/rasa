@@ -361,19 +361,19 @@ def test_count_vectors_featurizer_train():
     expected = np.array([0, 1, 0, 0, 0])
     expected_cls = np.array([1, 1, 1, 1, 1])
 
-    vec = message.get_sparse_features(TEXT, [])
+    vecs = message.get_sparse_features(TEXT, [])
 
-    assert (6, 5) == vec.shape
-    assert np.all(vec.toarray()[0] == expected)
-    assert np.all(vec.toarray()[-1] == expected_cls)
+    assert (6, 5) == vecs.shape
+    assert np.all(vecs.toarray()[0] == expected)
+    assert np.all(vecs.toarray()[-1] == expected_cls)
 
-    vec = message.get_sparse_features(RESPONSE, [])
+    vecs = message.get_sparse_features(RESPONSE, [])
 
-    assert (6, 5) == vec.shape
-    assert np.all(vec.toarray()[0] == expected)
-    assert np.all(vec.toarray()[-1] == expected_cls)
+    assert (6, 5) == vecs.shape
+    assert np.all(vecs.toarray()[0] == expected)
+    assert np.all(vecs.toarray()[-1] == expected_cls)
 
-    vec = message.get_sparse_features(INTENT, [])
+    vecs = message.get_sparse_features(INTENT, [])
 
-    assert (1, 1) == vec.shape
-    assert np.all(vec.toarray()[0] == np.array([1]))
+    assert (1, 1) == vecs.shape
+    assert np.all(vecs.toarray()[0] == np.array([1]))

@@ -56,10 +56,10 @@ def test_text_featurizer(sentence, expected_features):
 
     featurizer.process(test_message)
 
-    vec = test_message.get_sparse_features(TEXT, [])
+    actual = test_message.get_sparse_features(TEXT, [])
 
-    assert isinstance(vec, scipy.sparse.coo_matrix)
-    assert np.all(vec.toarray() == expected_features)
+    assert isinstance(actual, scipy.sparse.coo_matrix)
+    assert np.all(actual.toarray() == expected_features)
 
 
 @pytest.mark.parametrize(
@@ -67,8 +67,8 @@ def test_text_featurizer(sentence, expected_features):
     [
         (
             "hello 123 hello 123 hello",
-            [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0],
-            [2.0, 2.0, 3.0, 2.0, 3.0, 2.0, 2.0],
+            [[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0]],
+            [[2.0, 2.0, 3.0, 2.0, 3.0, 2.0, 2.0]],
         )
     ],
 )
@@ -87,12 +87,12 @@ def test_text_featurizer_window_size(sentence, expected, expected_cls):
 
     featurizer.process(test_message)
 
-    vec = test_message.get_sparse_features(TEXT, [])
+    actual = test_message.get_sparse_features(TEXT, [])
 
-    assert isinstance(vec, scipy.sparse.coo_matrix)
+    assert isinstance(actual, scipy.sparse.coo_matrix)
 
-    assert np.all(vec[0] == expected)
-    assert np.all(vec[-1] == expected_cls)
+    assert np.all(actual.toarray()[0] == expected)
+    assert np.all(actual.toarray()[-1] == expected_cls)
 
 
 @pytest.mark.parametrize(
@@ -126,8 +126,8 @@ def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
 
     featurizer.process(test_message)
 
-    vec = test_message.get_sparse_features(TEXT, [])
+    actual = test_message.get_sparse_features(TEXT, [])
 
-    assert isinstance(vec, scipy.sparse.coo_matrix)
+    assert isinstance(actual, scipy.sparse.coo_matrix)
 
-    assert np.all(vec.toarray() == expected)
+    assert np.all(actual.toarray() == expected)
