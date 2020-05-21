@@ -147,7 +147,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
     | 5. ``FormPolicy``
     | 4. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
     | 3. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
-    | 2. ``MappingPolicy``y``
+    | 2. ``MappingPolicy``
     | 1. ``TEDPolicy`` and ``SklearnPolicy``
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
