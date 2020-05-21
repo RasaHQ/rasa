@@ -42,6 +42,38 @@ When you're done installing, you can head over to the tutorial!
 Step-by-step Installation Guide
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Watch the Rasa Open Source installation video below to follow along with the installation
+instructions:
+
+.. tabs::
+
+    .. tab:: Ubuntu
+
+        .. raw:: html
+
+            <iframe width="770" height="450" src="https://www.youtube.com/embed/tXiYJM2vGJk"
+             frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope;
+             picture-in-picture" allowfullscreen></iframe>
+
+    .. tab:: macOS
+
+        .. raw:: html
+
+            <iframe width="770" height="450" src="https://www.youtube.com/embed/fqzsE70Rvr0"
+            frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope;
+            picture-in-picture" allowfullscreen></iframe>
+
+    .. tab:: Windows
+
+        .. raw:: html
+
+            <iframe width="770" height="450" src="https://www.youtube.com/embed/4ewIABo0OkU"
+            frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope;
+            picture-in-picture" allowfullscreen></iframe>
+
+
+
+
 1. Install the Python development environment
 ---------------------------------------------
 
