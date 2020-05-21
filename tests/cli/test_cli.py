@@ -14,7 +14,7 @@ def test_cli_start(run: Callable[..., RunResult]):
 
     duration = end - start
 
-    assert duration <= 5 + 2
+    assert duration <= 7
 
 
 def test_data_convert_help(run: Callable[..., RunResult]):
