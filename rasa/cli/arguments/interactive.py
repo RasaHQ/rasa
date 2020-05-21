@@ -16,7 +16,7 @@ from rasa.cli.arguments.train import (
     add_augmentation_param,
     add_persist_nlu_data_param,
 )
-from rasa.cli.arguments.run import add_port_arguments
+from rasa.cli.arguments.run import add_port_argument
 
 
 def set_interactive_arguments(parser: argparse.ArgumentParser) -> None:
@@ -26,7 +26,7 @@ def set_interactive_arguments(parser: argparse.ArgumentParser) -> None:
         help="Save story files in e2e format. In this format user messages "
         "will be included in the stories.",
     )
-    add_port_arguments(parser)
+    add_port_argument(parser)
 
     add_model_param(parser, default=None)
     add_data_param(parser)
@@ -44,7 +44,7 @@ def set_interactive_core_arguments(parser: argparse.ArgumentParser) -> None:
 
     _add_common_params(parser)
     _add_training_arguments(parser)
-    add_port_arguments(parser)
+    add_port_argument(parser)
 
 
 def _add_common_params(parser: argparse.ArgumentParser) -> None:
