@@ -280,4 +280,4 @@ Script parameters
 
 HTTP API
 ~~~~~~~~
-- There are numerous HTTP API endpoint changes which can be found `here <http://rasa.com/docs/rasa/api/http-api/>`_.
+- There are numerous HTTP API endpoint changes which can be found `here <https://rasa.com/docs/rasa/api/http-api/>`_.
