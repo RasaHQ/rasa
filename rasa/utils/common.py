@@ -285,7 +285,7 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
 def update_existing_keys(
     original: Dict[Any, Any], updates: Dict[Any, Any]
 ) -> Dict[Any, Any]:
-    """Iterate through all the updates an update a value in the original dictionary.
+    """Iterate through all the updates and update a value in the original dictionary.
 
     If the updates contain a key that is not present in the original dict, it will
     be ignored."""
