@@ -279,7 +279,7 @@ async def test_remote_action_utterances_with_none_values(
 
     assert events == [
         BotUttered(
-            "what dou want to eat?", metadata={"template_name": "utter_ask_cuisine"}
+            "what dou want to eat?", metadata={"response_name": "utter_ask_cuisine"}
         ),
         Form("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
@@ -358,7 +358,12 @@ async def test_action_utter_retrieved_response(
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
-            "response_selector": {"chitchat": {"response": {"name": "I am a bot."}}}
+            "response_selector": {
+                "chitchat": {
+                    "response": {"name": "I am a bot."},
+                    "full_retrieval_intent": "chitchat/ask_name",
+                }
+            }
         },
     )
     events = await ActionRetrieveResponse(action_name).run(
@@ -380,7 +385,12 @@ async def test_action_utter_default_retrieved_response(
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
-            "response_selector": {"default": {"response": {"name": "I am a bot."}}}
+            "response_selector": {
+                "default": {
+                    "response": {"name": "I am a bot."},
+                    "full_retrieval_intent": "chitchat/ask_name",
+                }
+            }
         },
     )
     events = await ActionRetrieveResponse(action_name).run(
@@ -401,7 +411,12 @@ async def test_action_utter_retrieved_empty_response(
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
-            "response_selector": {"dummy": {"response": {"name": "I am a bot."}}}
+            "response_selector": {
+                "dummy": {
+                    "response": {"name": "I am a bot."},
+                    "full_retrieval_intent": "chitchat/ask_name",
+                }
+            }
         },
     )
     events = await ActionRetrieveResponse(action_name).run(
