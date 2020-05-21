@@ -1,11 +1,9 @@
+import aiohttp
 import logging
 import os
-
-import aiohttp
 from aiohttp.client_exceptions import ContentTypeError
-from typing import Any, Optional, Text, Dict
-
 from sanic.request import Request
+from typing import Any, Optional, Text, Dict
 
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
@@ -44,14 +42,20 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     Strips leading slashes from the subpath if necessary. This behaves
     differently than `urlparse.urljoin` and will not treat the subpath
     as a base url if it starts with `/` but will always append it to the
-    `base`."""
+    `base`.
 
+    Args:
+        base: Base URL.
+        subpath: Optional path to append to the base URL.
+
+    Returns:
+        Concatenated URL with base and subpath.
+    """
     if not subpath:
         if base.endswith("/"):
             logger.debug(
-                "The URL '{}' has a trailing slash. Please make sure the "
-                "target server supports trailing slashes for this "
-                "endpoint.".format(base)
+                f"The URL '{base}' has a trailing slash. Please make sure the "
+                f"target server supports trailing slashes for this endpoint."
             )
         return base
 

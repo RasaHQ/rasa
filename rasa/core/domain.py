@@ -259,6 +259,8 @@ class Domain:
         # it is super important to sort the slots here!!!
         # otherwise state ordering is not consistent
         slots = []
+        # make a copy to not alter the input dictionary
+        slot_dict = copy.deepcopy(slot_dict)
         for slot_name in sorted(slot_dict):
             slot_class = Slot.resolve_by_type(slot_dict[slot_name].get("type"))
             if "type" in slot_dict[slot_name]:
@@ -332,6 +334,8 @@ class Domain:
         Returns:
             The intent properties to be stored in the domain.
         """
+        # make a copy to not alter the input argument
+        intents = copy.deepcopy(intents)
         intent_properties = {}
         duplicates = set()
         for intent in intents:

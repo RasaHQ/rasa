@@ -1,0 +1,1 @@
+Fix: DIET breaks with empty spaCy model
