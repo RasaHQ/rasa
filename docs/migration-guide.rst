@@ -11,6 +11,30 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+.. _migration-to-rasa-2.0:
+
+Rasa 1.10 to Rasa 2.0
+---------------------
+
+General
+~~~~~~~
+- The deprecated brokers ``FileProducer``, ``KafkaProducer``, ``PikaProducer``
+  and the ``SQLProducer`` have been removed. If you used these brokers in your
+  ``endpoints.yml`` make sure to use the renamed variants instead:
+  - ``FileProducer`` became ``FileEventBroker``
+  - ``KafkaProducer`` became ``KafkaEventBroker``
+  - ``PikaProducer`` became ``PikaEventBroker``
+  - ``SQLProducer`` became  ``SQLEventBroker``
+
+- The deprecated ``EmbeddingIntentClassifier`` has been removed. If you used this
+  component in your ``pipeline`` configuration (``config.yml``) you can replace it
+  with ``DIETClassifier``. It accepts the same configuration parameters.
+
+- The deprecated ``KerasPolicy`` has been removed. If you used this
+  component in your ``policies`` configuration (``config.yml``) you can replace it
+  with ``TEDPolicy``. It accepts the same configuration parameters.
+
+
 .. _migration-to-rasa-1.8:
 
 Rasa 1.7 to Rasa 1.8
