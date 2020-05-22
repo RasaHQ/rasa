@@ -191,6 +191,6 @@ def add_no_plot_param(
         dest="disable_plotting",
         action="store_true",
         default=default,
-        help=f"Don't render evaluation plots",
+        help="Don't render evaluation plots",
         required=required,
     )

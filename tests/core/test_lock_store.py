@@ -200,12 +200,12 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
 
         # ensure order of incoming messages is as expected
         with open(str(incoming_order_file)) as f:
-            incoming_order = [l for l in f.read().split("\n") if l]
+            incoming_order = [line for line in f.read().split("\n") if line]
             assert incoming_order == expected_order
 
         # ensure results are processed in expected order
         with open(str(results_file)) as f:
-            results_order = [l for l in f.read().split("\n") if l]
+            results_order = [line for line in f.read().split("\n") if line]
             assert results_order == expected_order
 
         # Every message after the first one will wait `lock_wait` seconds to acquire its

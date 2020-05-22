@@ -11,6 +11,7 @@ from rasa.nlu.constants import (
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 
+
 # TODO: need to fix this failing test
 @pytest.mark.xfail(strict=False)
 @pytest.mark.parametrize(
