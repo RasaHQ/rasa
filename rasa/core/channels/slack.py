@@ -355,7 +355,7 @@ class SlackInput(InputChannel):
                     if text is not None:
 #                         metadata = self.get_metadata(request)
                         out_channel = payload["channel"]["id"]
-                        lst = [ ]
+                        lst = []
                         lst.append( payload["message"]["user"] )
                         users = lst
                         metadata = {'out_channel': out_channel, 'users': users}
