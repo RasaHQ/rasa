@@ -34,8 +34,6 @@ and send you a fun picture to cheer you up if you are sad.
 
 The first step is to create a new Rasa project. To do this, run:
 
-
-
 .. runnable::
 
    rasa init --no-prompt
@@ -187,7 +185,7 @@ So what do the different parts mean?
 +---------------+-------------------------------------------------------------+
 | ``actions``   | things your assistant can do and say                        |
 +---------------+-------------------------------------------------------------+
-| ``templates`` | template strings for the things your assistant can say      |
+| ``responses`` | response strings for the things your assistant can say      |
 +---------------+-------------------------------------------------------------+
 
 
@@ -195,8 +193,8 @@ So what do the different parts mean?
 Rasa Core's job is to choose the right action to execute at each step
 of the conversation. In this case, our actions simply send a message to the user.
 These simple utterance actions are the ``actions`` in the domain that start
-with ``utter_``. The assistant will respond with a message based on a template
-from the ``templates`` section. See :ref:`custom-actions`
+with ``utter_``. The assistant will respond with a message based on a response
+from the ``responses`` section. See :ref:`custom-actions`
 to build actions that do more than just send a message.
 
 
