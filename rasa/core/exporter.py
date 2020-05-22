@@ -140,9 +140,9 @@ class Exporter:
             return conversation_ids_in_tracker_store
 
         raise NoConversationsInTrackerStoreError(
-            f"Could not find any conversations in connected tracker store. "
-            f"Please validate your `endpoints.yml` and make sure the defined "
-            f"tracker store exists. Exiting."
+            "Could not find any conversations in connected tracker store. "
+            "Please validate your `endpoints.yml` and make sure the defined "
+            "tracker store exists. Exiting."
         )
 
     def _validate_all_requested_ids_exist(
