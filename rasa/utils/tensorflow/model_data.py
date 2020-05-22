@@ -282,6 +282,8 @@ class RasaModelData:
                             batch_data.append(self._pad_dense_data_3d(_data))
                         else:
                             batch_data.append(self._pad_dense_data(_data))
+                    elif len(_data[0].shape)==3:
+                        batch_data.append(self._pad_dense_data_3d(_data))
                     else:
                         batch_data.append(self._pad_dense_data(_data))
 
@@ -308,6 +310,8 @@ class RasaModelData:
                     shapes.append((None, features[0][0].ndim + 2))
                     shapes.append((None,))
                     shapes.append((features[0][0].ndim + 2))
+                elif isinstance(features[0][0], np.ndarray) and len(features[0][0].shape)==2:
+                    shapes.append((None, None, None, 1))
                 else:
                     shapes.append((None, features[0].shape[-1]))
             elif features[0].ndim == 3:

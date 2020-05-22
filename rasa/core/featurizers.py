@@ -30,7 +30,11 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     RESPONSE,
     TEXT,
+    ENTITIES,
+    NO_ENTITY_TAG,
 )
+from rasa.nlu.test import determine_token_labels
+from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import is_logging_disabled
 from rasa.utils import train_utils
@@ -184,21 +188,38 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
         if self.interpreter.entities == []:
             entity_features = None
+            per_word_entities = None
         else:
             entity_features = np.zeros(len(self.interpreter.entities))
             if "user" in list(state.keys()):
-                if not state["user"].get("entities") is None:
+                if not state["user"].get(ENTITIES) is None:
                     user_entities = [
-                        entity["entity"] for entity in state["user"].get("entities")
+                        entity["entity"] for entity in state["user"].get(ENTITIES)
                     ]
                     for entity_name in user_entities:
                         entity_features[
                             self.interpreter.entities.index(entity_name)
                         ] = 1
+
+            if kwargs.get(ENTITY_RECOGNITION)==True:
+                if state.get('user') is not None:
+                    per_word_entities = np.zeros(len(state["user"].get('tokens')))
+                    if not state["user"].get(ENTITIES) is None:
+                        entities = state["user"].get(ENTITIES)
+                        for j, t in enumerate(state["user"].get('tokens')):
+                            _t = determine_token_labels(t, entities, None)
+                            if not _t == NO_ENTITY_TAG:
+                                per_word_entities[j] = self.interpreter.entities.index(_t)+1
+
+                else:
+                    per_word_entities = np.zeros(2)
+            else:
+                per_word_entities = None
+
         if kwargs.get('hierarchical'):
-            return sparse_user_features, sparse_bot_features, dense_user_features, dense_bot_features, entity_features
+            return sparse_user_features, sparse_bot_features, dense_user_features, dense_bot_features, entity_features, per_word_entities
         else:
-            return sparse_state, dense_state, entity_features
+            return sparse_state, dense_state, entity_features, per_word_entities
 
     def create_encoded_all_actions(self, domain, kwargs):
         label_data = [
@@ -301,13 +322,17 @@ class TrackerFeaturizer:
                 for event in state:
                     if isinstance(event, UserUttered):
                         if not event.message is None:
+                            # setting intent to text so that it is consistent with diet training
+                            event.message.set('intent', event.message.text)
                             state_dict["user"] = event.message
                     elif isinstance(event, ActionExecuted):
                         if event.message is not None:
+                            # setting intent to text so that it is consistent with diet training
                             state_dict["prev_action"] = event.message
                         # to turn the default actions such as action_listen into Message;
                         else:
                             state_dict["prev_action"] = Message(event.action_name)
+                            state_dict["prev_action"].set('intent', event.action_name)
                     state_dict["slots"] = self.collect_slots(tr)
             else:
                 state_dict = {}
