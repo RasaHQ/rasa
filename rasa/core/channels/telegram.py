@@ -171,6 +171,10 @@ class TelegramInput(InputChannel):
         return message.location is not None
 
     @staticmethod
+    def _is_contact(message) -> bool:
+        return message.contact is not None
+    
+    @staticmethod
     def _is_user_message(message) -> bool:
         return message.text is not None
 
@@ -214,6 +218,10 @@ class TelegramInput(InputChannel):
                     msg = update.message
                     if self._is_user_message(msg):
                         text = msg.text.replace("/bot", "")
+                    elif self._is_contact(msg):
+                        text = '{{"phone_number":{0}, "first_name":{1}, "last_name":{2}, "user_id":{3}}}'.format(
+                            msg.contact.phone_number, msg.contact.first_name, msg.contact.last_name, msg.contact.user_id
+                        )
                     elif self._is_location(msg):
                         text = '{{"lng":{0}, "lat":{1}}}'.format(
                             msg.location.longitude, msg.location.latitude
