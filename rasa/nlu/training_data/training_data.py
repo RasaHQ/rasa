@@ -502,4 +502,4 @@ class TrainingData:
             self.regex_features,
             self.lookup_tables,
         ]
-        return not any([len(l) > 0 for l in lists_to_check])
+        return not any([len(lst) > 0 for lst in lists_to_check])
