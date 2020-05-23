@@ -200,9 +200,9 @@ async def send_action(
             if action_name in NEW_TEMPLATES:
                 warning_questions = questionary.confirm(
                     f"WARNING: You have created a new action: '{action_name}', "
-                    f"with matching template: '{[*NEW_TEMPLATES[action_name]][0]}'. "
+                    f"with matching response: '{[*NEW_TEMPLATES[action_name]][0]}'. "
                     f"This action will not return its message in this session, "
-                    f"but the new utterance will be saved to your domain file "
+                    f"but the new response will be saved to your domain file "
                     f"when you exit and save this session. "
                     f"You do not need to do anything further."
                 )
@@ -358,10 +358,8 @@ async def _request_free_text_utterance(
 ) -> Text:
 
     question = questionary.text(
-        message=(
-            f"Please type the message for your new utterance template '{action}':"
-        ),
-        validate=io_utils.not_empty_validator("Please enter a template message"),
+        message=(f"Please type the message for your new bot response '{action}':"),
+        validate=io_utils.not_empty_validator("Please enter a response"),
     )
     return await _ask_questions(question, conversation_id, endpoint)
 
