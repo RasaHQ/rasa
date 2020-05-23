@@ -373,7 +373,9 @@ async def test_action_utter_retrieved_response(
     assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
         "text"
     )
-    assert events[0].as_dict().get("metadata").get("template_name") == action_name
+    assert (
+        events[0].as_dict().get("metadata").get("template_name") == "chitchat/ask_name"
+    )
 
 
 async def test_action_utter_default_retrieved_response(
