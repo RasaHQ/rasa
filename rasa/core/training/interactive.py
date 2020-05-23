@@ -1492,10 +1492,11 @@ def _serve_application(
     file_importer: TrainingDataImporter,
     skip_visualization: bool,
     conversation_id: Text,
+    port: int,
 ) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
 
-    endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
+    endpoint = EndpointConfig(url=DEFAULT_SERVER_FORMAT.format("http", port))
 
     async def run_interactive_io(running_app: Sanic) -> None:
         """Small wrapper to shut down the server once cmd io is done."""
@@ -1515,12 +1516,12 @@ def _serve_application(
 
     update_sanic_log_level()
 
-    app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT)
+    app.run(host="0.0.0.0", port=port)
 
     return app
 
 
-def start_visualization(image_path: Text = None) -> None:
+def start_visualization(image_path: Text, port: int) -> None:
     """Add routes to serve the conversation visualization files."""
 
     app = Sanic(__name__)
@@ -1546,7 +1547,7 @@ def start_visualization(image_path: Text = None) -> None:
 
     update_sanic_log_level()
 
-    app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT + 1, access_log=False)
+    app.run(host="0.0.0.0", port=port, access_log=False)
 
 
 # noinspection PyUnusedLocal
@@ -1615,16 +1616,22 @@ def run_interactive_learning(
     if server_args.get("domain"):
         PATHS["domain"] = server_args["domain"]
 
+    port = server_args.get("port", DEFAULT_SERVER_PORT)
+
     SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
-        p = Process(target=start_visualization, args=(DEFAULT_STORY_GRAPH_FILE,))
+        visualisation_port = port + 1
+        p = Process(
+            target=start_visualization,
+            args=(DEFAULT_STORY_GRAPH_FILE, visualisation_port),
+        )
         p.daemon = True
         p.start()
     else:
         p = None
 
-    app = run.configure_app(enable_api=True, conversation_id="default")
+    app = run.configure_app(port=port, conversation_id="default", enable_api=True)
     endpoints = AvailableEndpoints.read_endpoints(server_args.get("endpoints"))
 
     # before_server_start handlers make sure the agent is loaded before the
@@ -1634,7 +1641,7 @@ def run_interactive_learning(
         "before_server_start",
     )
 
-    _serve_application(app, file_importer, skip_visualization, conversation_id)
+    _serve_application(app, file_importer, skip_visualization, conversation_id, port)
 
     if not skip_visualization and p is not None:
         p.terminate()  # pytype: disable=attribute-error
