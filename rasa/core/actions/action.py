@@ -228,7 +228,7 @@ class ActionRetrieveResponse(Action):
         selected = response_selector_properties[query_key]
         message = {
             "text": selected[OPEN_UTTERANCE_PREDICTION_KEY]["name"],
-            "response_name": selected["full_retrieval_intent"],
+            "template_name": selected["full_retrieval_intent"],
         }
 
         return [create_bot_utterance(message)]
@@ -507,7 +507,7 @@ class RemoteAction(Action):
                 )
                 if not draft:
                     continue
-                draft["response_name"] = template
+                draft["template_name"] = template
             else:
                 draft = {}
 
@@ -722,7 +722,7 @@ class ActionDefaultAskAffirmation(Action):
                 {"title": "Yes", "payload": f"/{intent_to_affirm}"},
                 {"title": "No", "payload": f"/{USER_INTENT_OUT_OF_SCOPE}"},
             ],
-            "response_name": self.name(),
+            "template_name": self.name(),
         }
 
         return [create_bot_utterance(message)]

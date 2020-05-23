@@ -279,7 +279,7 @@ async def test_remote_action_utterances_with_none_values(
 
     assert events == [
         BotUttered(
-            "what dou want to eat?", metadata={"response_name": "utter_ask_cuisine"}
+            "what dou want to eat?", metadata={"template_name": "utter_ask_cuisine"}
         ),
         Form("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
