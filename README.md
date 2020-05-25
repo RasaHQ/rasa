@@ -189,7 +189,7 @@ Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatical
 Poetry doesn't include any solution that can help to resolve merge conflicts in
 the lock file `poetry.lock` by default.
 However, there is a great tool called [poetry-merge-lock](https://poetry-merge-lock.readthedocs.io/en/latest/).
-Here is how users can install it:
+Here is how you can install it:
 
 ```bash
 pip install poetry-merge-lock
