@@ -1,16 +1,17 @@
+from typing import Text, List, Optional, Union, Any, Dict, Tuple
 import logging
-import typing
-from typing import Dict, Text, Any, List, Union, Optional, Tuple
 
-from rasa_sdk import utils
-from rasa_sdk.events import SlotSet, Form, EventType
-from rasa_sdk.interfaces import Action, ActionExecutionRejection
+from rasa.core.channels import OutputChannel
+from rasa.core.domain import Domain
+
+from rasa.core.actions import Action
+from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
+from rasa.core.events import Event, SlotSet, Form
+from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    from rasa_sdk import Tracker
-    from rasa_sdk.executor import CollectingDispatcher
 
 # this slot is used to store information needed
 # to do the form handling
@@ -18,22 +19,24 @@ REQUESTED_SLOT = "requested_slot"
 
 
 class FormAction(Action):
+    def __init__(
+        self, form_name: Text, action_endpoint: Optional[EndpointConfig]
+    ) -> None:
+        self._form_name = form_name
+        self.action_endpoint = action_endpoint
+        self._domain: Optional[Domain] = None
+
     def name(self) -> Text:
-        """Unique identifier of the form"""
+        return self._form_name
 
-        raise NotImplementedError("A form must implement a name")
-
-    @staticmethod
-    def required_slots(tracker: "Tracker") -> List[Text]:
+    def required_slots(self, tracker: DialogueStateTracker) -> List[Text]:
         """A list of required slots that the form has to fill.
 
         Use `tracker` to request different list of slots
         depending on the state of the dialogue
         """
 
-        raise NotImplementedError(
-            "A form must implement required slots that it has to fill"
-        )
+        return list(self._config().keys())
 
     def from_entity(
         self,
@@ -152,7 +155,19 @@ class FormAction(Action):
         the slot to the extracted entity with the same name
         """
 
-        return {}
+        if not self._domain:
+            return {}
+        return self._config()
+
+    def _config(self) -> Dict:
+        return next(
+            (
+                form[self._form_name]
+                for form in self._domain.forms
+                if self._form_name in form.keys()
+            ),
+            {},
+        )
 
     def get_mappings_for_slot(self, slot_to_fill: Text) -> List[Dict[Text, Any]]:
         """Get mappings for requested slot.
@@ -175,13 +190,14 @@ class FormAction(Action):
 
     @staticmethod
     def intent_is_desired(
-        requested_slot_mapping: Dict[Text, Any], tracker: "Tracker"
+        requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker"
     ) -> bool:
         """Check whether user intent matches intent conditions"""
 
         mapping_intents = requested_slot_mapping.get("intent", [])
         mapping_not_intents = requested_slot_mapping.get("not_intent", [])
-        intent = tracker.latest_message.get("intent", {}).get("name")
+
+        intent = tracker.latest_message.intent.get("name")
 
         intent_not_blacklisted = (
             not mapping_intents and intent not in mapping_not_intents
@@ -190,7 +206,10 @@ class FormAction(Action):
         return intent_not_blacklisted or intent in mapping_intents
 
     def entity_is_desired(
-        self, requested_slot_mapping: Dict[Text, Any], slot: Text, tracker: "Tracker"
+        self,
+        requested_slot_mapping: Dict[Text, Any],
+        slot: Text,
+        tracker: "DialogueStateTracker",
     ) -> bool:
         """Check whether slot should be filled by an entity in the input or not.
 
@@ -221,7 +240,7 @@ class FormAction(Action):
     @staticmethod
     def get_entity_value(
         name: Text,
-        tracker: "Tracker",
+        tracker: "DialogueStateTracker",
         role: Optional[Text] = None,
         group: Optional[Text] = None,
     ) -> Any:
@@ -248,10 +267,7 @@ class FormAction(Action):
 
     # noinspection PyUnusedLocal
     def extract_other_slots(
-        self,
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: Dict[Text, Any],
+        self, tracker: DialogueStateTracker, domain: Domain
     ) -> Dict[Text, Any]:
         """Extract the values of the other slots
             if they are set by corresponding entities from the user input
@@ -302,10 +318,7 @@ class FormAction(Action):
 
     # noinspection PyUnusedLocal
     def extract_requested_slot(
-        self,
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: Dict[Text, Any],
+        self, tracker: "DialogueStateTracker", domain: Domain
     ) -> Dict[Text, Any]:
         """Extract the value of requested slot from a user input
             else return None
@@ -335,13 +348,14 @@ class FormAction(Action):
                     # from_trigger_intent is only used on form activation
                     continue
                 elif mapping_type == "from_text":
-                    value = tracker.latest_message.get("text")
+                    value = tracker.latest_message.text
                 else:
                     raise ValueError("Provided slot mapping type is not supported")
 
                 if value is not None:
                     logger.debug(
-                        f"Successfully extracted '{value}' for requested slot '{slot_to_fill}'"
+                        f"Successfully extracted '{value}' for requested slot "
+                        f"'{slot_to_fill}'"
                     )
                     return {slot_to_fill: value}
 
@@ -351,42 +365,45 @@ class FormAction(Action):
     async def validate_slots(
         self,
         slot_dict: Dict[Text, Any],
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: Dict[Text, Any],
-    ) -> List[EventType]:
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
+    ) -> List[Event]:
         """Validate slots using helper validation functions.
 
         Call validate_{slot} function for each slot, value pair to be validated.
         If this function is not implemented, set the slot to the value.
         """
 
-        for slot, value in list(slot_dict.items()):
-            validate_func = getattr(self, f"validate_{slot}", lambda *x: {slot: value})
-            if utils.is_coroutine_action(validate_func):
-                validation_output = await validate_func(
-                    value, dispatcher, tracker, domain
-                )
-            else:
-                validation_output = validate_func(value, dispatcher, tracker, domain)
-            if not isinstance(validation_output, dict):
-                logger.warning(
-                    "Returning values in helper validation methods is deprecated. "
-                    + f"Your `validate_{slot}()` method should return "
-                    + "a dict of {'slot_name': value} instead."
-                )
-                validation_output = {slot: validation_output}
-            slot_dict.update(validation_output)
+        validate_name = f"action_validate_{self._form_name}"
+        form_events = [
+            SlotSet(slot_name, value) for slot_name, value in slot_dict.items()
+        ]
 
-        # validation succeed, set slots to extracted values
-        return [SlotSet(slot, value) for slot, value in slot_dict.items()]
+        if validate_name not in domain.action_names or not tracker.active_form.get(
+            "validate"
+        ):
+            # TODO: Currently the remote action needs to return SlotSet events for every
+            # slot. it could be easy to forget to set one of them. We could
+            # only overwrite Slot events from `form_events` if they were returned by the
+            # form
+            return form_events
+
+        tracker = DialogueStateTracker.from_events(
+            tracker.sender_id, tracker.events_after_latest_restart() + form_events
+        )
+
+        action = RemoteAction(validate_name, self.action_endpoint)
+        return await action.run(output_channel, nlg, tracker, domain)
 
     async def validate(
         self,
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: Dict[Text, Any],
-    ) -> List[EventType]:
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
+    ) -> List[Event]:
         """Extract and validate value of requested slot.
 
         If nothing was extracted reject execution of the form action.
@@ -395,12 +412,12 @@ class FormAction(Action):
 
         # extract other slots that were not requested
         # but set by corresponding entity or trigger intent mapping
-        slot_values = self.extract_other_slots(dispatcher, tracker, domain)
+        slot_values = self.extract_other_slots(tracker, domain)
 
         # extract requested slot
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
         if slot_to_fill:
-            slot_values.update(self.extract_requested_slot(dispatcher, tracker, domain))
+            slot_values.update(self.extract_requested_slot(tracker, domain))
 
             if not slot_values:
                 # reject to execute the form action
@@ -411,44 +428,31 @@ class FormAction(Action):
                     f"Failed to extract slot {slot_to_fill} with action {self.name()}",
                 )
         logger.debug(f"Validating extracted slots: {slot_values}")
-        return await self.validate_slots(slot_values, dispatcher, tracker, domain)
+        return await self.validate_slots(
+            slot_values, tracker, domain, output_channel, nlg
+        )
 
     # noinspection PyUnusedLocal
     def request_next_slot(
-        self,
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: Dict[Text, Any],
-    ) -> Optional[List[EventType]]:
+        self, tracker: "DialogueStateTracker", domain: Domain
+    ) -> Optional[List[Event]]:
         """Request the next slot and utter template if needed,
             else return None"""
 
         for slot in self.required_slots(tracker):
             if self._should_request_slot(tracker, slot):
                 logger.debug(f"Request next slot '{slot}'")
-                dispatcher.utter_message(template=f"utter_ask_{slot}", **tracker.slots)
                 return [SlotSet(REQUESTED_SLOT, slot)]
 
         # no more required slots to fill
         return None
 
-    def deactivate(self) -> List[EventType]:
+    def deactivate(self) -> List[Event]:
         """Return `Form` event with `None` as name to deactivate the form
             and reset the requested slot"""
 
         logger.debug(f"Deactivating the form '{self.name()}'")
         return [Form(None), SlotSet(REQUESTED_SLOT, None)]
-
-    async def submit(
-        self,
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: Dict[Text, Any],
-    ) -> List[EventType]:
-        """Define what the form has to do
-            after all required slots are filled"""
-
-        raise NotImplementedError("A form must implement a submit method")
 
     # helpers
     @staticmethod
@@ -471,12 +475,13 @@ class FormAction(Action):
         """Check provided intent and not_intent"""
         if intent and not_intent:
             raise ValueError(
-                f"Providing  both intent '{intent}' and not_intent '{not_intent}' is not supported."
+                f"Providing  both intent '{intent}' and not_intent '{not_intent}' "
+                f"is not supported."
             )
 
         return self._to_list(intent), self._to_list(not_intent)
 
-    def _log_form_slots(self, tracker: "Tracker") -> None:
+    def _log_form_slots(self, tracker: "DialogueStateTracker") -> None:
         """Logs the values of all required slots before submitting the form."""
         slot_values = "\n".join(
             [
@@ -490,10 +495,11 @@ class FormAction(Action):
 
     async def _activate_if_required(
         self,
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: Dict[Text, Any],
-    ) -> List[EventType]:
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
+    ) -> List[Event]:
         """Activate form if the form is called for the first time.
 
         If activating, validate any required slots that were filled before
@@ -523,7 +529,7 @@ class FormAction(Action):
                 logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
                 events.extend(
                     await self.validate_slots(
-                        prefilled_slots, dispatcher, tracker, domain
+                        prefilled_slots, tracker, domain, output_channel, nlg
                     )
                 )
             else:
@@ -533,10 +539,11 @@ class FormAction(Action):
 
     async def _validate_if_required(
         self,
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: Dict[Text, Any],
-    ) -> List[EventType]:
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
+    ) -> List[Event]:
         """Return a list of events from `self.validate(...)`
             if validation is required:
             - the form is active
@@ -547,26 +554,24 @@ class FormAction(Action):
             "validate", True
         ):
             logger.debug(f"Validating user input '{tracker.latest_message}'")
-            if utils.is_coroutine_action(self.validate):
-                return await self.validate(dispatcher, tracker, domain)
-            else:
-                return self.validate(dispatcher, tracker, domain)
+            return await self.validate(tracker, domain, output_channel, nlg)
         else:
             logger.debug("Skipping validation")
             return []
 
     @staticmethod
-    def _should_request_slot(tracker: "Tracker", slot_name: Text) -> bool:
+    def _should_request_slot(tracker: "DialogueStateTracker", slot_name: Text) -> bool:
         """Check whether form action should request given slot"""
 
         return tracker.get_slot(slot_name) is None
 
     async def run(
         self,
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: Dict[Text, Any],
-    ) -> List[EventType]:
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
         """Execute the side effects of this form.
 
         Steps:
@@ -578,20 +583,21 @@ class FormAction(Action):
         - deactivate the form
         """
 
+        self._domain = domain
+
         # activate the form
-        events = await self._activate_if_required(dispatcher, tracker, domain)
+        events = await self._activate_if_required(tracker, domain, output_channel, nlg)
         # validate user input
-        events.extend(await self._validate_if_required(dispatcher, tracker, domain))
+        events.extend(
+            await self._validate_if_required(tracker, domain, output_channel, nlg)
+        )
         # check that the form wasn't deactivated in validation
         if Form(None) not in events:
+            temp_tracker = DialogueStateTracker.from_events(
+                tracker.sender_id, tracker.events_after_latest_restart() + events
+            )
 
-            # create temp tracker with populated slots from `validate` method
-            temp_tracker = tracker.copy()
-            for e in events:
-                if e["event"] == "slot":
-                    temp_tracker.slots[e["name"]] = e["value"]
-
-            next_slot_events = self.request_next_slot(dispatcher, temp_tracker, domain)
+            next_slot_events = self.request_next_slot(temp_tracker, domain)
 
             if next_slot_events is not None:
                 # request next slot
@@ -599,16 +605,8 @@ class FormAction(Action):
             else:
                 # there is nothing more to request, so we can submit
                 self._log_form_slots(temp_tracker)
-                logger.debug(f"Submitting the form '{self.name()}'")
-                if utils.is_coroutine_action(self.submit):
-                    events.extend(await self.submit(dispatcher, temp_tracker, domain))
-                else:
-                    events.extend(self.submit(dispatcher, temp_tracker, domain))
                 # deactivate the form after submission
-                if utils.is_coroutine_action(self.deactivate):
-                    events.extend(await self.deactivate())  # type: ignore
-                else:
-                    events.extend(self.deactivate())
+                events.extend(self.deactivate())  # type: ignore
 
         return events
 
