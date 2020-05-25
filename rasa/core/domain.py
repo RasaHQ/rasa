@@ -411,6 +411,7 @@ class Domain:
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
+        self.intent_names = list(self.intent_properties.keys())
         self.entities = entities
         self.form_names = form_names
         self.slots = slots
@@ -541,6 +542,22 @@ class Domain:
             return self.action_names.index(action_name)
         except ValueError:
             self._raise_action_not_found_exception(action_name)
+
+    def index_for_intent(self, intent_name: Text) -> Optional[int]:
+        """Look up which intent index corresponds to this action name."""
+
+        try:
+            return self.intent_names.index(intent_name)
+        except ValueError:
+            self._raise_intent_not_found_exception(intent_name)
+
+    def _raise_intent_not_found_exception(self, intent_name) -> typing.NoReturn:
+        raise NameError(
+            f"Cannot access intent '{intent_name}', "
+            f"as that name is not a registered "
+            f"intent for this domain. "
+            f"Available intents are: \n{self.intent_names}"
+        )
 
     def _raise_action_not_found_exception(self, action_name) -> typing.NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])

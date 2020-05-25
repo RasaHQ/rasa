@@ -10,7 +10,7 @@ import rasa.utils.io
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
-from rasa.core.events import ActionExecuted
+from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
@@ -257,6 +257,36 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
             for t in name.split(self.split_symbol):
                 encoded_all_actions[idx, self.bot_vocab[t]] = 1
         return encoded_all_actions
+
+
+class IntentTokenizerSingleStateFeaturizer(LabelTokenizerSingleStateFeaturizer):
+    def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
+        """Create matrix with all actions from domain encoded in rows as bag of words"""
+
+        encoded_all_actions = np.zeros(
+            (len(domain.intent_names), len(self.user_vocab)), dtype=np.int32
+        )
+        for idx, name in enumerate(domain.intent_names):
+            for t in name.split(self.split_symbol):
+                encoded_all_actions[idx, self.user_vocab[t]] = 1
+        return encoded_all_actions
+
+    @staticmethod
+    def action_as_one_hot(action: Text, domain: Domain) -> np.ndarray:
+        """Encode system action as one-hot vector."""
+
+        if action is None:
+            return np.ones(len(domain.intent_names), dtype=int) * -1
+
+        # y = np.zeros(domain.num_actions, dtype=int)
+        y = np.zeros(len(domain.intent_names), dtype=int)
+        # y[domain.index_for_action(action)] = 1
+        y[domain.index_for_intent(action)] = 1
+        # print('===========')
+        # print('All intents', domain.intent_names)
+        # print('Label intent', domain.index_for_intent(action), action)
+        # print('===========')
+        return y
 
 
 class TrackerFeaturizer:
@@ -663,3 +693,80 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         ]
 
         return trackers_as_states
+
+
+class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
+    def training_states_and_actions(
+        self, trackers: List[DialogueStateTracker], domain: Domain
+    ) -> Tuple[List[List[Optional[Dict[Text, float]]]], List[List[Text]]]:
+        """Transforms list of trackers to lists of states and actions.
+
+        Training data is padded up to the max_history with -1.
+        """
+
+        trackers_as_states = []
+        trackers_as_actions = []
+
+        # from multiple states that create equal featurizations
+        # we only need to keep one.
+        hashed_examples = set()
+
+        logger.debug(
+            "Creating states and action examples from "
+            "collected trackers (by {}({}))..."
+            "".format(type(self).__name__, type(self.state_featurizer).__name__)
+        )
+        # print(len(trackers))
+
+        pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
+        for tracker in pbar:
+
+            # print(len(tracker.events))
+            # for event in tracker.events:
+            #     # print(event).as_dict()
+            #     print(event)
+            states = self._create_states(tracker, domain, True)
+            # print('Created states: ', states)
+            idx = 0
+            # print('Applied events', tracker.applied_events())
+            for event in tracker.applied_events():
+                if isinstance(event, ActionExecuted):
+                    idx += 1
+                # print(event)
+                if isinstance(event, UserUttered):
+                    # print('user uttered')
+                    # print('user event: ', event.intent['name'])
+                    if not event.unpredictable:
+
+                        # only actions which can be
+                        # predicted at a stories start
+                        sliced_states = self.slice_state_history(
+                            states[:idx], self.max_history
+                        )
+                        # print('index: ', idx)
+                        # print('sliced states: ', sliced_states)
+                        # print('name', event.intent['name'])
+                        if self.remove_duplicates:
+                            hashed = self._hash_example(
+                                sliced_states, event.intent["name"]
+                            )
+
+                            # only continue with tracker_states that created a
+                            # hashed_featurization we haven't observed
+                            if hashed not in hashed_examples:
+                                hashed_examples.add(hashed)
+                                trackers_as_states.append(sliced_states)
+                                trackers_as_actions.append([event.intent["name"]])
+                        else:
+                            trackers_as_states.append(sliced_states)
+                            trackers_as_actions.append([event.intent["name"]])
+
+                        pbar.set_postfix(
+                            {"# actions": "{:d}".format(len(trackers_as_actions))}
+                        )
+
+            # print('----------------------------------')
+
+        logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
+
+        return trackers_as_states, trackers_as_actions

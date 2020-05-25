@@ -1,8 +1,12 @@
 # Import all policies at one place to be able to to resolve them via a common module
 # path. Don't do this in `__init__.py` to avoid importing them without need.
 
+
 # noinspection PyUnresolvedReferences
 from rasa.core.policies.ted_policy import TEDPolicy
+
+# noinspection PyUnresolvedReferences
+from rasa.core.policies.intent_ted_policy import IntentTEDPolicy
 
 # noinspection PyUnresolvedReferences
 from rasa.core.policies.embedding_policy import EmbeddingPolicy

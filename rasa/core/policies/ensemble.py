@@ -449,9 +449,10 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         predictions = {
             f"policy_{i}_{type(p).__name__}": Prediction(
-                p.predict_action_probabilities(tracker, domain), p.priority,
+                p.predict_action_probabilities(tracker, domain), p.priority
             )
             for i, p in enumerate(self.policies)
+            if type(p).__name__ != "IntentTEDPolicy"
         }
 
         if rejected_action_name:
