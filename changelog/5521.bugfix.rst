@@ -1,1 +1,1 @@
-Responses used in ResponseSelector now support new lines.
+Responses used in ResponseSelector now support new lines with explicitly adding ``\n`` between them.
