@@ -182,8 +182,7 @@ component in the config:
     - name: "ResponseSelector"
       retrieval_intent: faq
 
-You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single
- ``ResponseSelector`` component and leaving the ``retrieval_intent`` to its default value(None):
+You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single ``ResponseSelector`` component and leaving the ``retrieval_intent`` to its default value(None):
 
 .. code-block:: yaml
 
