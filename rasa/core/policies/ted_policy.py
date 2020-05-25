@@ -1042,20 +1042,23 @@ class HierarchicalTEDPolicy(Policy):
             Y_dense = np.stack(
                 [all_label_features[1][label_idx] for label_idx in label_ids]
             )
+            label_lengths = np.array([all_label_features[0][label_idx].shape[0] for label_idx in label_ids])
         elif len(all_label_features) == 1:
             if isinstance(all_label_features[0][0], scipy.sparse.spmatrix):
                 Y_sparse = np.array(
                     [all_label_features[0][label_idx] for label_idx in label_ids]
                 )
                 Y_dense = np.array([])
+                label_lengths = np.array([all_label_features[0][label_idx].shape[0] for label_idx in label_ids])
             elif isinstance(all_label_features[0][0], np.ndarray):
                 Y_sparse = np.array([])
                 Y_dense = np.array(
                     [all_label_features[1][label_idx] for label_idx in label_ids]
                 )
+                label_lengths = np.array([all_label_features[1][label_idx].shape[0] for label_idx in label_ids])
 
         # max history featurizer is used
-        return Y_sparse, Y_dense
+        return Y_sparse, Y_dense, label_lengths
 
     # noinspection PyPep8Naming
     def _create_model_data(
@@ -1068,11 +1071,12 @@ class HierarchicalTEDPolicy(Policy):
 
         label_ids = np.array([])
         Y_sparse, Y_dense = np.array([]), np.array([])
+        label_lengths = np.array([])
 
         if data_Y is not None:
             # label_ids = self._label_ids_for_Y(data_Y)
             label_ids = np.squeeze(data_Y, axis=-1)
-            Y_sparse, Y_dense = self._label_features_for_Y(label_ids)
+            Y_sparse, Y_dense, label_lengths = self._label_features_for_Y(label_ids)
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
             label_ids = np.expand_dims(label_ids, -1)
@@ -1148,6 +1152,7 @@ class HierarchicalTEDPolicy(Policy):
         )
         model_data.add_features(LABEL_FEATURES, [Y_sparse, Y_dense])
         model_data.add_features(LABEL_IDS, [label_ids])
+        model_data.add_features(f'{LABEL}_lengths', [label_lengths])
         if dialog_lengths is not None:
             model_data.add_features("dialog_lengths", [np.array(dialog_lengths)])
         model_data.add_features(f"{DIALOGUE}_{USER}_lengths", [np.array(X_user_lens)])
@@ -1161,16 +1166,23 @@ class HierarchicalTEDPolicy(Policy):
         from rasa.utils import train_utils
         sparse_features = []
         dense_features = []
+        label_lengths = []
         for feats in labels_example:
             if not feats[0] is None:
-                sparse_feature = train_utils.sequence_to_sentence_features(feats[0])
+                sparse_feature = feats[0]
+                # sparse_feature = train_utils.sequence_to_sentence_features(feats[0])
                 sparse_features.append(sparse_feature.tocsr().astype(np.float32))
             if not feats[1] is None:
                 dense_features.append([feats[1]])
 
+            if not feats[0] is None:
+                label_lengths.append(feats[0].shape[0])
+            elif not feats[1] is None:
+                label_lengths.append(feats[1].shape[0])
+        label_lengths = np.array(label_lengths, dtype = np.int32)
         sparse_features = np.array(sparse_features)
         dense_features = np.array(dense_features)
-        return [sparse_features, dense_features]
+        return [sparse_features, dense_features], label_lengths
 
     def _create_label_data(self, domain, kwargs) -> RasaModelData:
         # encode all label_ids with policies' featurizer
@@ -1180,7 +1192,7 @@ class HierarchicalTEDPolicy(Policy):
         )
         labels_idx_examples = sorted(labels_idx_examples, key=lambda x: x[0])
         labels_example = [example for (_, example) in labels_idx_examples]
-        label_features = self.collect_label_features(labels_example)
+        label_features, label_lengths = self.collect_label_features(labels_example)
 
         label_data = RasaModelData()
         label_data.add_features(LABEL_FEATURES, label_features)
@@ -1189,6 +1201,8 @@ class HierarchicalTEDPolicy(Policy):
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         label_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
+        label_data.add_features(f'{LABEL}_lengths', [label_lengths])
+
         return label_data
 
     def train(
@@ -1541,21 +1555,23 @@ class HierarchicalTED(RasaModel):
             self.config[WEIGHT_SPARSITY],
             layer_name_suffix=LABEL,
         )
-        # self._tf_layers[f"{LABEL}_transformer"] = TransformerEncoder(
-        #     self.config[NUM_TRANSFORMER_LAYERS],
-        #     self.config[TRANSFORMER_SIZE],
-        #     self.config[NUM_HEADS],
-        #     self.config[TRANSFORMER_SIZE] * 4,
-        #     self.config[REGULARIZATION_CONSTANT],
-        #     dropout_rate=self.config[DROP_RATE_DIALOGUE],
-        #     attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
-        #     sparsity=self.config[WEIGHT_SPARSITY],
-        #     unidirectional=True,
-        #     use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
-        #     use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
-        #     max_relative_position=self.config[MAX_RELATIVE_POSITION],
-        #     name=LABEL + "_encoder",
-        # )
+
+        self._tf_layers[f"{LABEL}_transformer"] = TransformerEncoder(
+            self.config[NUM_TRANSFORMER_LAYERS],
+            self.config[TRANSFORMER_SIZE],
+            self.config[NUM_HEADS],
+            self.config[TRANSFORMER_SIZE] * 4,
+            self.config[REGULARIZATION_CONSTANT],
+            dropout_rate=self.config[DROP_RATE_DIALOGUE],
+            attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+            sparsity=self.config[WEIGHT_SPARSITY],
+            unidirectional=True,
+            use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+            use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+            max_relative_position=self.config[MAX_RELATIVE_POSITION],
+            name=LABEL + "_encoder",
+        )
+
         self._tf_layers[f"transformer"] = TransformerEncoder(
             self.config[NUM_TRANSFORMER_LAYERS],
             self.config[TRANSFORMER_SIZE],
@@ -1619,9 +1635,11 @@ class HierarchicalTED(RasaModel):
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = self.tf_label_data[LABEL_FEATURES]
+        all_labels_lengths = tf.cast(self.tf_label_data[f'{LABEL}_lengths'][0], tf.int32)
         all_labels = self._combine_sparse_dense_features(all_labels, LABEL_FEATURES)
-        # all_labels = self._tf_layers[f"{LABEL}_transformer"](all_labels)
-        # all_labels = tfa.activations.gelu(all_labels)
+        all_labels = self._tf_layers[f"{LABEL}_transformer"](all_labels)
+        all_labels = tfa.activations.gelu(all_labels)
+        all_labels = self._last_token(all_labels, all_labels_lengths)
         # all_labels = all_labels[:,-1,:]
         all_labels = tf.squeeze(all_labels, axis=1)
         all_labels_embed = self._embed_label(all_labels)
@@ -1778,8 +1796,12 @@ class HierarchicalTED(RasaModel):
         bot_lengths = tf.cast(tf.reshape(bot_lengths, [-1]), tf.int32)
 
         label_in = batch[LABEL_FEATURES]
+        label_lengths = tf.cast(batch[f'{LABEL}_lengths'][0], tf.int32)
 
         label_in = self._combine_sparse_dense_features(label_in, LABEL_FEATURES)
+        label_in = self._tf_layers[f"{LABEL}_transformer"](label_in)
+        label_in = tfa.activations.gelu(label_in)
+        label_in = self._last_token(label_in, label_lengths)
         # label_in = tf.squeeze(label_in, axis=1)
         batch_dialogue_features = batch[DIALOGUE_FEATURES]
 
@@ -1832,13 +1854,17 @@ class HierarchicalTED(RasaModel):
         bot_lengths = batch[f"{DIALOGUE}_{BOT}_lengths"]
         user_lengths = tf.cast(tf.reshape(user_lengths, [-1]), tf.int32)
         bot_lengths = tf.cast(tf.reshape(bot_lengths, [-1]), tf.int32)
+        entities_per_word = batch[f"{ENTITIES}_per_word"]
+        if not entities_per_word == []:
+            entities_per_word = entities_per_word[0]
+        else:
+            entities_per_word = None
+
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
-        tf.print(tf.shape(batch[f"{ENTITIES}_per_word"][0]))
 
-        dialogue_embed, mask, _, entity_f1 = self._emebed_dialogue(dialogue_in, sequence_lengths, user_lengths, bot_lengths, batch[f"{ENTITIES}_per_word"][0])
-        tf.print(entity_f1)
+        dialogue_embed, mask, _, entity_f1 = self._emebed_dialogue(dialogue_in, sequence_lengths, user_lengths, bot_lengths, entities_per_word)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
             dialogue_embed[:, :, tf.newaxis, :],
