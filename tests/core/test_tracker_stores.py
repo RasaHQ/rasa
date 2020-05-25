@@ -1,6 +1,7 @@
 import logging
 import tempfile
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 import sqlalchemy
@@ -343,7 +344,25 @@ def test_get_db_url_with_query():
     )
 
 
-def test_db_url_with_query_from_endpoint_config():
+def test_sql_tracker_store_logs_do_not_show_password(caplog: LogCaptureFixture):
+    dialect = "postgresql"
+    host = "localhost"
+    port = 9901
+    db = "some-database"
+    username = "db-user"
+    password = "some-password"
+
+    with caplog.at_level(logging.DEBUG):
+        _ = SQLTrackerStore(None, dialect, host, port, db, username, password)
+
+    # the URL in the logs does not contain the password
+    assert password not in caplog.text
+
+    # instead the password is displayed as '***'
+    assert f"postgresql://{username}:***@{host}:{port}/{db}" in caplog.text
+
+
+def test_db_url_with_query_from_endpoint_config(tmp_path: Path):
     endpoint_config = """
     tracker_store:
       dialect: postgresql
@@ -356,11 +375,9 @@ def test_db_url_with_query_from_endpoint_config():
         driver: my-driver
         another: query
     """
-
-    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.yml") as f:
-        f.write(endpoint_config)
-        f.flush()
-        store_config = read_endpoint_config(f.name, "tracker_store")
+    f = tmp_path / "tmp_config_file.yml"
+    f.write_text(endpoint_config)
+    store_config = read_endpoint_config(str(f), "tracker_store")
 
     url = SQLTrackerStore.get_db_url(**store_config.kwargs)
 

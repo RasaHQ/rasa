@@ -97,7 +97,7 @@ Next, include response texts for all retrieval intents in a **separate** trainin
 The retrieval model is trained separately as part of the NLU training pipeline to select the correct response.
 One important thing to remember is that the retrieval model uses the text of the response messages
 to select the correct one. If you change the text of these responses, you have to retrain your retrieval model!
-This is a key difference to the response templates in your domain file.
+This is a key difference to the responses defined in your domain file.
 
 .. note::
     The file containing response texts must exist as a separate file inside the training data directory passed

@@ -67,7 +67,7 @@ The initial project files should all be there, as well as a ``models`` directory
    If you run into permission errors, it may be because the ``rasa/rasa`` images
    run as user ``1001`` as a best practice, to avoid giving the container ``root`` permissions.
    Hence, all files created by these containers will be owned by user ``1001``. See the `Docker documentation
-   <https://docs.docker.com/v17.12/edge/engine/reference/commandline/run/>`_
+   <https://docs.docker.com/edge/engine/reference/commandline/run/>`_
    if you want to run the containers as a different user.
 
 Talking to Your Assistant
