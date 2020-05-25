@@ -405,14 +405,20 @@ class Domain:
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
-        form_names: List[Text],
+        forms: List[Union[Text, Dict]],
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
-        self.form_names = form_names
+
+        if not forms or (forms and isinstance(forms[0], str)):
+            self.form_names = forms
+            self.forms: List[Dict] = []
+        elif isinstance(forms[0], dict):
+            self.forms: List[Dict] = forms
+            self.form_names = list(forms[0].keys())
         self.slots = slots
         self.templates = templates
         self.session_config = session_config
@@ -422,7 +428,8 @@ class Domain:
 
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-            action.combine_user_with_default_actions(self.user_actions) + form_names
+            action.combine_user_with_default_actions(self.user_actions)
+            + self.form_names
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -779,7 +786,7 @@ class Domain:
             "slots": self._slot_definitions(),
             "responses": self.templates,
             "actions": self.user_actions,  # class names of the actions
-            "forms": self.form_names,
+            "forms": self.forms,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:

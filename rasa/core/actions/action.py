@@ -15,6 +15,7 @@ from rasa.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     UTTER_PREFIX,
     RESPOND_PREFIX,
+    FORM_PREFIX,
 )
 from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
@@ -113,6 +114,10 @@ def action_from_name(
         return ActionUtterTemplate(name)
     elif name.startswith(RESPOND_PREFIX):
         return ActionRetrieveResponse(name)
+    elif name.endswith(FORM_PREFIX):
+        from rasa.core.actions.forms import FormAction
+
+        return FormAction(name, action_endpoint)
     else:
         return RemoteAction(name, action_endpoint)
 
