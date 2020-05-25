@@ -241,12 +241,18 @@ class Domain:
         merged_intents = merge_dicts(intents_1, intents_2, override)
         combined["intents"] = list(merged_intents.values())
 
+        # forms are list of dicts
+        forms1 = {list(i.keys())[0]: i for i in combined["forms"]}
+        forms2 = {list(i.keys())[0]: i for i in domain_dict["forms"]}
+        merged_forms = merge_dicts(forms1, forms2, override)
+        combined["forms"] = list(merged_forms.values())
+
         # remove existing forms from new actions
         for form in combined["forms"]:
             if form in domain_dict["actions"]:
                 domain_dict["actions"].remove(form)
 
-        for key in ["entities", "actions", "forms"]:
+        for key in ["entities", "actions"]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
         for key in ["responses", "slots"]:
@@ -405,14 +411,20 @@ class Domain:
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
-        form_names: List[Text],
+        forms: List[Union[Text, Dict]],
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
-        self.form_names = form_names
+
+        if not forms or (forms and isinstance(forms[0], str)):
+            self.form_names = forms
+            self.forms: List[Dict] = [{form_name: {}} for form_name in forms]
+        elif isinstance(forms[0], dict):
+            self.forms: List[Dict] = forms
+            self.form_names = list(forms[0].keys())
         self.slots = slots
         self.templates = templates
         self.session_config = session_config
@@ -422,7 +434,8 @@ class Domain:
 
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-            action.combine_user_with_default_actions(self.user_actions) + form_names
+            action.combine_user_with_default_actions(self.user_actions)
+            + self.form_names
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -779,7 +792,7 @@ class Domain:
             "slots": self._slot_definitions(),
             "responses": self.templates,
             "actions": self.user_actions,  # class names of the actions
-            "forms": self.form_names,
+            "forms": self.forms,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:
