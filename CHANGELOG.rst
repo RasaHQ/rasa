@@ -17,6 +17,150 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.0] - 2020-04-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Features
+--------
+- `#3765 <https://github.com/rasahq/rasa/issues/3765>`_: Add support for entities with roles and grouping of entities in Rasa NLU.
+
+  You can now define a role and/or group label in addition to the entity type for entities.
+  Use the role label if an entity can play different roles in your assistant.
+  For example, a city can be a destination or a departure city.
+  The group label can be used to group multiple entities together.
+  For example, you could group different pizza orders, so that you know what toppings goes with which pizza and
+  what size which pizza has.
+  For more details see :ref:`entities-roles-groups`.
+
+  To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
+  We updated the tracker method ``get_latest_entity_values`` to take an optional role/group label.
+  If you want to use a form, you can add the specific role/group label of interest to the slot mapping function
+  ``from_entity`` (see :ref:`forms`).
+
+  .. note::
+
+      Composite entities are currently just supported by the :ref:`diet-classifier` and :ref:`CRFEntityExtractor`.
+- `#5465 <https://github.com/rasahq/rasa/issues/5465>`_: Update training data format for NLU to support entities with a role or group label.
+
+  You can now specify synonyms, roles, and groups of entities using the following data format:
+  Markdown:
+
+  .. code-block:: none
+
+    [LA]{"entity": "location", "role": "city", "group": "CA", "value": "Los Angeles"}
+
+  JSON:
+
+  .. code-block:: none
+
+    "entities": [
+        {
+            "start": 10,
+            "end": 12,
+            "value": "Los Angeles",
+            "entity": "location",
+            "role": "city",
+            "group": "CA",
+        }
+    ]
+
+  The markdown format ``[LA](location:Los Angeles)`` is deprecated. To update your training data file just
+  execute the following command on the terminal of your choice:
+  ``sed -i -E 's/\[([^)]+)\]\(([^)]+):([^)]+)\)/[\1]{"entity": "\2", "value": "\3"}/g' nlu.md``
+
+  For more information about the new data format see :ref:`training-data-format`.
+
+Improvements
+------------
+- `#2224 <https://github.com/rasahq/rasa/issues/2224>`_: Suppressed ``pika`` logs when establishing the connection. These log messages
+  mostly happened when Rasa X and RabbitMQ were started at the same time. Since RabbitMQ
+  can take a few seconds to initialize, Rasa X has to re-try until the connection is
+  established.
+  In case you suspect a different problem (such as failing authentication) you can
+  re-enable the ``pika`` logs by setting the log level to ``DEBUG``. To run Rasa Open
+  Source in debug mode, use the ``--debug`` flag. To run Rasa X in debug mode, set the
+  environment variable ``DEBUG_MODE`` to ``true``.
+- `#3419 <https://github.com/rasahq/rasa/issues/3419>`_: Include the source filename of a story in the failed stories
+
+  Include the source filename of a story in the failed stories to make it easier to identify the file which contains the failed story.
+- `#5544 <https://github.com/rasahq/rasa/issues/5544>`_: Add confusion matrix and "confused_with" to response selection evaluation
+
+  If you are using ResponseSelectors, they now produce similiar outputs during NLU evaluation. Misclassfied responses are listed in a "confused_with" attribute in the evaluation report. Similiarily, a confusion matrix of all responses is plotted.
+- `#5578 <https://github.com/rasahq/rasa/issues/5578>`_: Added ``socketio`` to the compatible channels for :ref:`reminders-and-external-events`.
+- `#5595 <https://github.com/rasahq/rasa/issues/5595>`_: Update ``POST /model/train`` endpoint to accept retrieval action responses
+  at the ``responses`` key of the JSON payload.
+- `#5627 <https://github.com/rasahq/rasa/issues/5627>`_: All Rasa Open Source images are now using Python 3.7 instead of Python 3.6.
+- `#5635 <https://github.com/rasahq/rasa/issues/5635>`_: Update dependencies based on the ``dependabot`` check.
+- `#5636 <https://github.com/rasahq/rasa/issues/5636>`_: Add dropout between ``FFNN`` and ``DenseForSparse`` layers in ``DIETClassifier``,
+  ``ResponseSelector`` and ``EmbeddingIntentClassifier`` controlled by ``use_dense_input_dropout`` config parameter.
+- `#5646 <https://github.com/rasahq/rasa/issues/5646>`_: ``DIETClassifier`` only counts as extractor in ``rasa test`` if it was actually trained for entity recognition.
+- `#5669 <https://github.com/rasahq/rasa/issues/5669>`_: Remove regularization gradient for variables that don't have prediction gradient.
+- `#5672 <https://github.com/rasahq/rasa/issues/5672>`_: Raise a warning in ``CRFEntityExtractor`` and ``DIETClassifier`` if entities are not correctly annotated in the
+  training data, e.g. their start and end values do not match any start and end values of tokens.
+- `#5690 <https://github.com/rasahq/rasa/issues/5690>`_: Add ``full_retrieval_intent`` property to ``ResponseSelector`` rankings
+- `#5717 <https://github.com/rasahq/rasa/issues/5717>`_: Change default values for hyper-parameters in ``EmbeddingIntentClassifier`` and ``DIETClassifier``
+
+  Use ``scale_loss=False`` in ``DIETClassifier``. Reduce the number of dense dimensions for sparse features of text from 512 to 256 in ``EmbeddingIntentClassifier``.
+
+Bugfixes
+--------
+- `#5230 <https://github.com/rasahq/rasa/issues/5230>`_: Fixed issue where posting to certain callback channel URLs would return a 500 error on successful posts due to invalid response format.
+- `#5475 <https://github.com/rasahq/rasa/issues/5475>`_: One word can just have one entity label.
+
+  If you are using, for example, ``ConveRTTokenizer`` words can be split into multiple tokens.
+  Our entity extractors assign entity labels per token. So, it might happen, that a word, that was split into two tokens,
+  got assigned two different entity labels. This is now fixed. One word can just have one entity label at a time.
+- `#5509 <https://github.com/rasahq/rasa/issues/5509>`_: An entity label should always cover a complete word.
+
+  If you are using, for example, ``ConveRTTokenizer`` words can be split into multiple tokens.
+  Our entity extractors assign entity labels per token. So, it might happen, that just a part of a word has
+  an entity label. This is now fixed. An entity label always covers a complete word.
+- `#5574 <https://github.com/rasahq/rasa/issues/5574>`_: Fixed an issue that happened when metadata is passed in a new session.
+
+  Now the metadata is correctly passed to the ActionSessionStart.
+- `#5672 <https://github.com/rasahq/rasa/issues/5672>`_: Updated Python dependency ``ruamel.yaml`` to ``>=0.16``. We recommend to use at least
+  ``0.16.10`` due to the security issue
+  `CVE-2019-20478 <https://nvd.nist.gov/vuln/detail/CVE-2019-20478>`_ which is present in
+  in prior versions.
+
+Miscellaneous internal changes
+------------------------------
+- #5556, #5587, #5614, #5631, #5633
+
+
+[1.9.7] - 2020-04-23
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#4606 <https://github.com/rasahq/rasa/issues/4606>`_: The stream reading timeout for ``rasa shell` is now configurable by using the
+  environment variable ``RASA_SHELL_STREAM_READING_TIMEOUT_IN_SECONDS``.
+  This can help to fix problems when using ``rasa shell`` with custom actions which run
+  10 seconds or longer.
+
+Bugfixes
+--------
+- `#5709 <https://github.com/rasahq/rasa/issues/5709>`_: Reverted changes in 1.9.6 that led to model incompatibility. Upgrade to 1.9.7 to fix 
+  ``self.sequence_lengths_for(tf_batch_data[TEXT_SEQ_LENGTH][0]) IndexError: list index out of range`` 
+  error without needing to retrain earlier 1.9 models.
+
+  Therefore, all 1.9 models `except for 1.9.6` will be compatible; a model trained on 1.9.6 will need
+  to be retrained on 1.9.7.
+
+
+[1.9.6] - 2020-04-15
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5426 <https://github.com/rasahq/rasa/issues/5426>`_: Fix `rasa test nlu` plotting when using multiple runs.
+- `#5489 <https://github.com/rasahq/rasa/issues/5489>`_: Fixed issue where ``max_number_of_predictions`` was not considered when running end-to-end testing.
+
+Miscellaneous internal changes
+------------------------------
+- #5626
+
+
 [1.9.5] - 2020-04-01
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -272,7 +416,7 @@ Features
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
   recognition. You can read more about this component in our :ref:`documentation <diet-classifier>`.
-  The new component will replace the :ref:`EmbeddingIntentClassifier <embedding-intent-classifier>` and the
+  The new component will replace the ``EmbeddingIntentClassifier`` and the
   :ref:`CRFEntityExtractor` in the future.
   Those two components are deprecated from now on.
   See :ref:`migration guide <migration-to-rasa-1.8>` for details on how to
@@ -795,8 +939,8 @@ Features
 - ``CRFEntityExtractor`` updated to accept arbitrary token-level features like word
   vectors (issues/4214)
 - ``SpacyFeaturizer`` updated to add ``ner_features`` for ``CRFEntityExtractor``
-- Sanitizing incoming messages from slack to remove slack formatting like <mailto:xyz@rasa.com|xyz@rasa.com>
-  or <http://url.com|url.com> and substitute it with original content
+- Sanitizing incoming messages from slack to remove slack formatting like ``<mailto:xyz@rasa.com|xyz@rasa.com>``
+  or ``<http://url.com|url.com>`` and substitute it with original content
 - Added the ability to configure the number of Sanic worker processes in the HTTP
   server (``rasa.server``) and input channel server
   (``rasa.core.agent.handle_channels()``). The number of workers can be set using the
@@ -1561,4 +1705,4 @@ Bugfixes
 
 .. _`master`: https://github.com/RasaHQ/rasa/
 
-.. _`Semantic Versioning`: http://semver.org/
+.. _`Semantic Versioning`: https://semver.org/

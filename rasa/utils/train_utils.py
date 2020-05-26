@@ -1,9 +1,17 @@
 import numpy as np
 import logging
 import scipy.sparse
-from typing import Optional, Text, Dict, Any, Union, List
+from typing import Optional, Text, Dict, Any, Union, List, Tuple
+
+from rasa.nlu.training_data import Message
 from rasa.core.constants import DIALOGUE
-from rasa.nlu.constants import TEXT
+from rasa.nlu.constants import (
+    TEXT,
+    TOKENS_NAMES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    POSITION_OF_CLS_TOKEN,
+    NUMBER_OF_SUB_TOKENS,
+)
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
@@ -72,40 +80,51 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     return config
 
 
-def align_tokens(
-    tokens_in: List[Text], token_end: int, token_start: int
-) -> List[Token]:
-    """Align sub-tokens of Language model with tokens return by the WhitespaceTokenizer.
+def align_token_features(
+    list_of_tokens: List[List[Token]],
+    in_token_features: np.ndarray,
+    shape: Optional[Tuple] = None,
+) -> np.ndarray:
+    """Align token features to match tokens.
 
-    As a language model might split a single word into multiple tokens, we need to make
-    sure that the start and end value of first and last sub-token matches the
-    start and end value of the token return by the WhitespaceTokenizer as the
-    entities are using those start and end values.
+    ConveRT might split up tokens into sub-tokens. We need to take the mean of
+    the sub-token vectors and take that as token vector.
+
+    Args:
+        list_of_tokens: tokens for examples
+        in_token_features: token features from ConveRT
+        shape: shape of feature matrix
+
+    Returns:
+        Token features.
     """
+    if shape is None:
+        shape = in_token_features.shape
+    out_token_features = np.zeros(shape)
 
-    tokens_out = []
+    for example_idx, example_tokens in enumerate(list_of_tokens):
+        offset = 0
+        for token_idx, token in enumerate(example_tokens):
+            number_sub_words = token.get(NUMBER_OF_SUB_TOKENS, 1)
 
-    current_token_offset = token_start
+            if number_sub_words > 1:
+                token_start_idx = token_idx + offset
+                token_end_idx = token_idx + offset + number_sub_words
 
-    for index, string in enumerate(tokens_in):
-        if index == 0:
-            if index == len(tokens_in) - 1:
-                s_token_end = token_end
-            else:
-                s_token_end = current_token_offset + len(string)
-            tokens_out.append(Token(string, token_start, end=s_token_end))
-        elif index == len(tokens_in) - 1:
-            tokens_out.append(Token(string, current_token_offset, end=token_end))
-        else:
-            tokens_out.append(
-                Token(
-                    string, current_token_offset, end=current_token_offset + len(string)
+                mean_vec = np.mean(
+                    in_token_features[example_idx][token_start_idx:token_end_idx],
+                    axis=0,
                 )
-            )
 
-        current_token_offset += len(string)
+                offset += number_sub_words - 1
 
-    return tokens_out
+                out_token_features[example_idx][token_idx] = mean_vec
+            else:
+                out_token_features[example_idx][token_idx] = in_token_features[
+                    example_idx
+                ][token_idx + offset]
+
+    return out_token_features
 
 
 def sequence_to_sentence_features(
@@ -234,3 +253,29 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     )
 
     return config
+
+
+def tokens_without_cls(
+    message: Message, attribute: Text = TEXT
+) -> Optional[List[Token]]:
+    """Return tokens of given message without __CLS__ token.
+
+    All tokenizers add a __CLS__ token to the end of the list of tokens for
+    text and responses. The token captures the sentence features.
+
+    Args:
+        message: The message.
+        attribute: Return tokens of provided attribute.
+
+    Returns:
+        Tokens without CLS token.
+    """
+    # return all tokens up to __CLS__ token for text and responses
+    if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+        tokens = message.get(TOKENS_NAMES[attribute])
+        if tokens is not None:
+            return tokens[:POSITION_OF_CLS_TOKEN]
+        return None
+
+    # we don't add the __CLS__ token for intents, return all tokens
+    return message.get(TOKENS_NAMES[attribute])

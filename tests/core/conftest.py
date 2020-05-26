@@ -43,9 +43,13 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
-MOODBOT_MODEL_PATH = "examples/moodbot/models/"
+STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
+    "data/test_evaluations/stories_trip_circuit_breaker.md"
+)
 
-RESTAURANTBOT_PATH = "examples/restaurantbot/"
+E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
+    "data/test_evaluations/end_to_end_trips_circuit_breaker.md"
+)
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
@@ -53,7 +57,6 @@ TEST_DIALOGUES = [
     "data/test_dialogues/default.json",
     "data/test_dialogues/formbot.json",
     "data/test_dialogues/moodbot.json",
-    "data/test_dialogues/restaurantbot.json",
 ]
 
 EXAMPLE_DOMAINS = [
@@ -62,7 +65,6 @@ EXAMPLE_DOMAINS = [
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     "examples/formbot/domain.yml",
     "examples/moodbot/domain.yml",
-    "examples/restaurantbot/domain.yml",
 ]
 
 
@@ -191,7 +193,7 @@ def tracker_with_six_scheduled_reminders(
 
 
 @pytest.fixture(scope="session")
-def moodbot_domain(trained_moodbot_path):
+def moodbot_domain():
     domain_path = os.path.join("examples", "moodbot", "domain.yml")
     return Domain.load(domain_path)
 

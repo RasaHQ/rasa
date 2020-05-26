@@ -47,7 +47,22 @@ def config_path() -> Text:
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
+                {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
+            ],
+        }
+    ).name
+
+
+@pytest.fixture(scope="session")
+def config_path_duplicate() -> Text:
+    return write_file_config(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
             ],
         }
     ).name
@@ -88,7 +103,7 @@ def supervised_embeddings_config() -> RasaNLUModelConfig:
                     "min_ngram": 1,
                     "max_ngram": 4,
                 },
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
+                {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
             ],
         }
     )
@@ -102,7 +117,7 @@ def pretrained_embeddings_convert_config() -> RasaNLUModelConfig:
             "pipeline": [
                 {"name": "ConveRTTokenizer"},
                 {"name": "ConveRTFeaturizer"},
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 1, RANDOM_SEED: 42},
+                {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
             ],
         }
     )

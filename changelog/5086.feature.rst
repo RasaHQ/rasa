@@ -1,0 +1,1 @@
+Added a ``--num-threads`` CLI argument that can be passed to ``rasa train`` and will be used to train NLU components.

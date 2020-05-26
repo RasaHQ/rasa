@@ -378,15 +378,10 @@ expand it below.
         already knows that the words "apples" and "pears" are very similar. This is especially useful
         if you don't have enough training data.
 
-        To use the ``pretrained_embeddings_spacy`` template, use the following configuration:
-
-            .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_spacy_config_1.yml
-                :language: yaml
-
         See :ref:`pretrained-word-vectors` for more information about loading spacy language models.
         To use the components and configure them separately:
 
-            .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_spacy_config_2.yml
+            .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_spacy_config.yml
                 :language: yaml
 
     .. container:: toggle
@@ -402,7 +397,7 @@ expand it below.
                 be used if your training data is in English language.
 
         This pipeline uses the `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model to extract a vector representation of
-        a sentence and feeds them to the ``EmbeddingIntentClassifier`` for intent classification.
+        a sentence and feeds them to the ``DIETClassifier`` for intent classification.
         The advantage of using the ``pretrained_embeddings_convert`` pipeline is that it doesn't treat each word of the user
         message independently, but creates a contextual vector representation for the complete sentence. For example, if you
         have a training example, like: "can I book a car?", and Rasa is asked to predict the intent for "I need a ride from
@@ -414,14 +409,9 @@ expand it below.
                 Please also note that one of the dependencies(``tensorflow-text``) is currently only supported on Linux
                 platforms.
 
-        To use the ``pretrained_embeddings_convert`` template:
-
-        .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_convert_config_2.yml
-            :language: yaml
-
         To use the components and configure them separately:
 
-        .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_convert_config_2.yml
+        .. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_convert_config.yml
             :language: yaml
 
     .. container:: toggle
@@ -440,17 +430,11 @@ expand it below.
 
         You can read more about this topic `in this blog post <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`__ .
 
-        To train a Rasa model in your preferred language, define the
-        ``supervised_embeddings`` pipeline as your pipeline in your ``config.yml`` or other configuration file:
-
-            .. literalinclude:: ../../data/configs_for_docs/supervised_embeddings_config_1.yml
-                :language: yaml
-
         The ``supervised_embeddings`` pipeline supports any language that can be whitespace tokenized. By default it uses
         whitespace for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are
         the default components that make up the ``supervised_embeddings`` pipeline:
 
-            .. literalinclude:: ../../data/configs_for_docs/supervised_embeddings_config_2.yml
+            .. literalinclude:: ../../data/configs_for_docs/supervised_embeddings_config.yml
                 :language: yaml
 
         So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
