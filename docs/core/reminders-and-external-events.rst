@@ -109,7 +109,7 @@ External Events
 ---------------
 
 Let's say you want to send a message from some other device to change the course of an ongoing conversation.
-For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favourite
+For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favorite
 plant needs watering, and your assistant should then relay this message to you.
 
 To do this, your Raspberry Pi needs to send a message to the `trigger_intent endpoint <../../api/http-api/#operation/triggerConversationIntent>`_ of your conversation.
