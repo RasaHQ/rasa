@@ -114,6 +114,7 @@
         - perceptron
         - pika
         - pika's
+        - jieba
         - pretrained
         - pycodestyle
         - pykwalify
@@ -133,9 +134,14 @@
         - scipy
         - sklearn
         - spacy
+        - ish
         - spaCy
         - spaCy's
-        - strasse
+        - README
+        - crf
+        - backends
+        - whitespaced
+        - ngram
         - subsampled
         - testagent
         - tokenize
@@ -147,5 +153,6 @@
         - unfeaturized
         - unschedule
         - wsgi
+        - ruamel
        ##
     spellcheck_filenames: false

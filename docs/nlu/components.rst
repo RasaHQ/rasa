@@ -527,7 +527,7 @@ CountVectorsFeaturizer
 
             - ``OOV_token`` set a keyword for unseen words; if training data contains ``OOV_token`` as words in some
               messages, during prediction the words that were not seen during training will be substituted with
-              provided ``OOV_token``; if ``OOV_token=None`` (default behaviour) words that were not seen during
+              provided ``OOV_token``; if ``OOV_token=None`` (default behavior) words that were not seen during
               training will be ignored during prediction time;
             - ``OOV_words`` set a list of words to be treated as ``OOV_token`` during training; if a list of words
               that should be treated as Out-Of-Vocabulary is known, it can be set to ``OOV_words`` instead of manually
@@ -831,7 +831,7 @@ EmbeddingIntentClassifier
           For example, if you set ``text: [256, 128]``, we will add two feed forward layers in front of
           the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
           layers. The first layer will have an output dimension of 256 and the second layer will have an output
-          dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
+          dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
           added.
           Make sure to use only positive integer values. Usually, numbers of power of two are used.
           Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
@@ -947,7 +947,7 @@ EmbeddingIntentClassifier
 
         .. note:: There is an option to use linearly increasing batch size. The idea comes from
                   `<https://arxiv.org/abs/1711.00489>`_.
-                  In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+                  In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behavior).
                   If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
         .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
@@ -1155,7 +1155,7 @@ CRFEntityExtractor
 :Description:
     This component implements a conditional random fields (CRF) to do named entity recognition.
     CRFs can be thought of as an undirected Markov chain where the time steps are words
-    and the states are entity classes. Features of the words (capitalisation, POS tagging,
+    and the states are entity classes. Features of the words (capitalization, POS tagging,
     etc.) give probabilities to certain entity classes, as are transitions between
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
 
@@ -1368,7 +1368,7 @@ ResponseSelector
           For example, if you set ``text: [256, 128]``, we will add two feed forward layers in front of
           the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
           layers. The first layer will have an output dimension of 256 and the second layer will have an output
-          dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
+          dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
           added.
           Make sure to use only positive integer values. Usually, numbers of power of two are used.
           Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
@@ -1519,7 +1519,7 @@ ResponseSelector
 
         .. note:: There is an option to use linearly increasing batch size. The idea comes from
                   `<https://arxiv.org/abs/1711.00489>`_.
-                  In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+                  In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behavior).
                   If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
         .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
@@ -1607,7 +1607,7 @@ DIETClassifier
           For example, if you set ``text: [256, 128]``, we will add two feed forward layers in front of
           the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
           layers. The first layer will have an output dimension of 256 and the second layer will have an output
-          dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
+          dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
           added.
           Make sure to use only positive integer values. Usually, numbers of power of two are used.
           Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
@@ -1755,7 +1755,7 @@ DIETClassifier
 
         .. note:: There is an option to use linearly increasing batch size. The idea comes from
                   `<https://arxiv.org/abs/1711.00489>`_.
-                  In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+                  In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behavior).
                   If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
         .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original

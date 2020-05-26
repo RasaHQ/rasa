@@ -82,7 +82,7 @@ General
 - :ref:`embedding-intent-classifier` is now deprecated and will be replaced by :ref:`DIETClassifier <diet-classifier>`
   in the future.
   ``DIETClassfier`` performs intent classification as well as entity recognition.
-  If you want to get the same model behaviour as the current ``EmbeddingIntentClassifier``, you can use
+  If you want to get the same model behavior as the current ``EmbeddingIntentClassifier``, you can use
   the following configuration of ``DIETClassifier``:
 
   .. code-block:: yaml
@@ -102,10 +102,10 @@ General
 
   See :ref:`DIETClassifier <diet-classifier>` for more information about the new component.
   Specifying ``EmbeddingIntentClassifier`` in the configuration maps to the above component definition, the
-  behaviour is unchanged from previous versions.
+  behavior is unchanged from previous versions.
 
 - ``CRFEntityExtractor`` is now deprecated and will be replaced by ``DIETClassifier`` in the future. If you want to
-  get the same model behaviour as the current ``CRFEntityExtractor``, you can use the following configuration:
+  get the same model behavior as the current ``CRFEntityExtractor``, you can use the following configuration:
 
   .. code-block:: yaml
 
@@ -140,7 +140,7 @@ General
   We extracted the featurization from the component into the new featurizer :ref:`LexicalSyntacticFeaturizer`. Thus,
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
   :ref:`diet-classifier`.
-  Specifying ``CRFEntityExtractor`` in the configuration maps to the above component definition, the behaviour
+  Specifying ``CRFEntityExtractor`` in the configuration maps to the above component definition, the behavior
   is unchanged from previous versions.
 
 - If your pipeline contains ``CRFEntityExtractor`` and ``EmbeddingIntentClassifier`` you can substitute both
