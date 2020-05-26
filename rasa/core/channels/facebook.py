@@ -44,6 +44,33 @@ class Messenger:
             and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "audio"
         )
+    
+    @staticmethod
+    def _is_image_message(message: Dict[Text, Any]) -> bool:
+        """Check if the users message is an image."""
+        return (
+            "message" in message
+            and "attachments" in message["message"]
+            and message["message"]["attachments"][0]["type"] == "image"
+        )
+    
+    @staticmethod
+    def _is_video_message(message: Dict[Text, Any]) -> bool:
+        """Check if the users message is a video."""
+        return (
+            "message" in message
+            and "attachments" in message["message"]
+            and message["message"]["attachments"][0]["type"] == "video"
+        )
+    
+    @staticmethod
+    def _is_file_message(message: Dict[Text, Any]) -> bool:
+        """Check if the users message is a file."""
+        return (
+            "message" in message
+            and "attachments" in message["message"]
+            and message["message"]["attachments"][0]["type"] == "file"
+        )
 
     @staticmethod
     def _is_user_message(message: Dict[Text, Any]) -> bool:
@@ -84,6 +111,15 @@ class Messenger:
         elif self._is_user_message(message):
             text = message["message"]["text"]
         elif self._is_audio_message(message):
+            attachment = message["message"]["attachments"][0]
+            text = attachment["payload"]["url"]
+        elif self._is_image_message(message):
+            attachment = message["message"]["attachments"][0]
+            text = attachment["payload"]["url"]
+        elif self._is_video_message(message):
+            attachment = message["message"]["attachments"][0]
+            text = attachment["payload"]["url"]
+        elif self._is_file_message(message):
             attachment = message["message"]["attachments"][0]
             text = attachment["payload"]["url"]
         else:
