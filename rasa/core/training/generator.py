@@ -261,10 +261,11 @@ class TrainingDataGenerator:
         phase = 0  # one phase is one traversal of all story steps.
 
         # do not augment rule data
-        min_num_aug_phases = (
-            3 if not is_rule_data and self.config.augmentation_factor > 0 else 0
-        )
-        logger.debug(f"Number of augmentation rounds is {min_num_aug_phases}")
+        if not is_rule_data:
+            min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
+            logger.debug(f"Number of augmentation rounds is {min_num_aug_phases}")
+        else:
+            min_num_aug_phases = 0
 
         # placeholder to track gluing process of checkpoints
         used_checkpoints = set()
@@ -293,12 +294,9 @@ class TrainingDataGenerator:
             # track unused checkpoints for this phase
             unused_checkpoints = set()  # type: Set[Text]
 
-            pbar = tqdm(
-                story_steps,
-                desc="Processed Story Blocks",
-                disable=is_logging_disabled(),
-            )
-            for i, step in enumerate(pbar):
+            desc = f"Processed {'rules' if is_rule_data else 'story blocks'}"
+            pbar = tqdm(story_steps, desc=desc, disable=is_logging_disabled(),)
+            for step in pbar:
                 incoming_trackers = []  # type: List[TrackerWithCachedStates]
                 for start in step.start_checkpoints:
                     if active_trackers[start.name]:
