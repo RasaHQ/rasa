@@ -186,7 +186,6 @@ def test_count_vector_featurizer_shared_vocab(
         ("hello goodbye hello __oov__", [[0, 0, 1]]),
         ("a b c d e f __oov__ __OOV__ __OOV__", [[0, 1, 0, 0, 0, 0, 0]]),
         ("__OOV__ a 1 2 __oov__ __OOV__", [[0, 1, 0]]),
-        ("hello-hello __OOV__", [[0, 1]]),
     ],
 )
 def test_count_vector_featurizer_oov_token(sentence, expected):

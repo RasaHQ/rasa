@@ -53,6 +53,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         "analyzer": "word",  # use 'char' or 'char_wb' for character
         # regular expression for tokens
         # only used if analyzer == 'word'
+        # WARNING this pattern will currently not be used during processing!
         "token_pattern": r"(?u)\b\w\w+\b",
         # remove accents during the preprocessing step
         "strip_accents": None,  # {'ascii', 'unicode', None}
@@ -213,9 +214,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # declare class instance for CountVectorizer
         self.vectorizers = vectorizers
 
-        # pre-compile token pattern for processing
-        self.token_pattern_compiled = re.compile(self.token_pattern)
-
     @staticmethod
     def _get_message_tokens_by_attribute(
         message: "Message", attribute: Text
@@ -233,12 +231,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
-        # apply token_pattern to ensure OOV-tokens are recognized correctly
-        p_list = [self.token_pattern_compiled.findall(token) for token in tokens]
-        p_tokens = [item for token_list in p_list for item in token_list]
-
         # replace all digits with NUMBER token
-        tokens = [re.sub(r"\b[0-9]+\b", "__NUMBER__", text) for text in p_tokens]
+        tokens = [re.sub(r"\b[0-9]+\b", "__NUMBER__", text) for text in tokens]
 
         # convert to lowercase if necessary
         if self.lowercase:
