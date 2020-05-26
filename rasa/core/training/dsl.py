@@ -335,9 +335,9 @@ class StoryFileReader:
                     continue
                 elif multiline_comment:
                     continue
-                elif line.startswith(">"):  # this is a rule block
+                elif line.startswith(">>"):
                     # reached a new rule block
-                    rule_name = line[1:].strip()
+                    rule_name = line[1:].strip("> ")
                     self.new_rule_part(rule_name, self.source_name)
                 elif line.startswith("#"):
                     # reached a new story block

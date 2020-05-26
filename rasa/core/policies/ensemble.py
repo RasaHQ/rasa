@@ -179,6 +179,7 @@ class PolicyEnsemble:
                 training_trackers
             )
             self._emit_rule_policy_warning(rule_trackers)
+
             for policy in self.policies:
                 trackers_to_train = (
                     rule_trackers if isinstance(policy, RulePolicy) else ml_trackers

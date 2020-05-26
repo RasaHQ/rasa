@@ -45,9 +45,17 @@ class TrackerWithCachedStates(DialogueStateTracker):
     """A tracker wrapper that caches the state creation of the tracker."""
 
     def __init__(
-        self, sender_id, slots, max_event_history=None, domain=None, is_augmented=False
+        self,
+        sender_id,
+        slots,
+        max_event_history=None,
+        domain=None,
+        is_augmented=False,
+        is_rule_tracker: bool = False,
     ):
-        super().__init__(sender_id, slots, max_event_history)
+        super().__init__(
+            sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
+        )
         self._states = None
         self.domain = domain
         # T/F property to filter augmented stories
@@ -95,6 +103,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             self._max_event_history,
             self.domain,
             self.is_augmented,
+            self.is_rule_tracker,
         )
 
     def copy(
@@ -208,7 +217,22 @@ class TrainingDataGenerator:
         else:
             return f"data generation round {phase}"
 
+    def _generate_ml_trackers(self) -> List[TrackerWithCachedStates]:
+        steps = [step for step in self.story_graph.ordered_steps() if not step.is_rule]
+
+        return self._generate(steps, is_rule_data=False)
+
+    def _generate_rule_trackers(self) -> List[TrackerWithCachedStates]:
+        steps = [step for step in self.story_graph.ordered_steps() if step.is_rule]
+
+        return self._generate(steps, is_rule_data=True)
+
     def generate(self) -> List[TrackerWithCachedStates]:
+        return self._generate_ml_trackers() + self._generate_rule_trackers()
+
+    def _generate(
+        self, story_steps: List[StoryStep], is_rule_data: bool = False
+    ) -> List[TrackerWithCachedStates]:
         if self.config.remove_duplicates and self.config.unique_last_num_states:
             logger.debug(
                 "Generated trackers will be deduplicated "
@@ -225,6 +249,7 @@ class TrainingDataGenerator:
             self.domain.slots,
             max_event_history=self.config.tracker_limit,
             domain=self.domain,
+            is_rule_tracker=is_rule_data,
         )
         active_trackers[STORY_START].append(init_tracker)
 
@@ -234,7 +259,11 @@ class TrainingDataGenerator:
         story_end_trackers = []
 
         phase = 0  # one phase is one traversal of all story steps.
-        min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
+
+        # do not augment rule data
+        min_num_aug_phases = (
+            3 if not is_rule_data and self.config.augmentation_factor > 0 else 0
+        )
         logger.debug(f"Number of augmentation rounds is {min_num_aug_phases}")
 
         # placeholder to track gluing process of checkpoints
@@ -246,6 +275,7 @@ class TrainingDataGenerator:
         # checkpoints that seem to be reachable. This is a heuristic,
         # if we did not reach any new checkpoints in an iteration, we
         # assume we have reached all and stop.
+
         while not everything_reachable_is_reached or phase < min_num_aug_phases:
             phase_name = self._phase_name(everything_reachable_is_reached, phase)
 
@@ -264,11 +294,11 @@ class TrainingDataGenerator:
             unused_checkpoints = set()  # type: Set[Text]
 
             pbar = tqdm(
-                self.story_graph.ordered_steps(),
+                story_steps,
                 desc="Processed Story Blocks",
                 disable=is_logging_disabled(),
             )
-            for step in pbar:
+            for i, step in enumerate(pbar):
                 incoming_trackers = []  # type: List[TrackerWithCachedStates]
                 for start in step.start_checkpoints:
                     if active_trackers[start.name]:
@@ -280,7 +310,6 @@ class TrainingDataGenerator:
                         # had this start checkpoint as an end checkpoint
                         # it will be processed in next phases
                         unused_checkpoints.add(start.name)
-
                 if not incoming_trackers:
                     # if there are no trackers,
                     # we can skip the rest of the loop
@@ -293,6 +322,7 @@ class TrainingDataGenerator:
                     incoming_trackers, end_trackers = self._remove_duplicate_trackers(
                         incoming_trackers
                     )
+
                     # append end trackers to finished trackers
                     finished_trackers.extend(end_trackers)
 
@@ -306,6 +336,7 @@ class TrainingDataGenerator:
                 pbar.set_postfix({"# trackers": "{:d}".format(len(incoming_trackers))})
 
                 trackers, end_trackers = self._process_step(step, incoming_trackers)
+
                 # add end trackers to finished trackers
                 finished_trackers.extend(end_trackers)
 
@@ -315,7 +346,6 @@ class TrainingDataGenerator:
                 # that start with the checkpoint this step ended with
 
                 for end in step.end_checkpoints:
-
                     start_name = self._find_start_checkpoint_name(end.name)
 
                     active_trackers[start_name].extend(trackers)
@@ -619,7 +649,7 @@ class TrainingDataGenerator:
 
         for tracker in trackers:
             states = tuple(tracker.past_states(self.domain))
-            hashed = hash(states)
+            hashed = hash(states + (tracker.is_rule_tracker,))
 
             # only continue with trackers that created a
             # hashed_featurization we haven't observed
