@@ -1,184 +1,185 @@
-:desc: Learn to handle greetings, off-topic chitchat, and other small talk
-       in your bot using features provided by Rasa's open source chat assistant
-       platform.
-
-.. _small-talk:
-
-==========
-Small Talk
-==========
-
-.. edit-link::
-
-Small talk includes the back-and-forth that makes conversations natural,
-but doesn’t directly relate to the user's goal. This includes greetings,
-acknowledgements, reactions, and off-topic chitchat.
-
-.. contents::
-   :local:
-
-.. _greetings:
-
-Greetings
----------
-
-Greetings and goodbyes are some of the simplest interactions. Just about every system needs them.
-
-.. conversations::
-   examples:
-     -
-       - hello
-       - ( hi, how are you?
-     -
-       - how are you?
-       - ( I am well, and you?
-     -
-       - goodbye
-       - ( bye bye!
-
-
-To respond correctly to greetings and goodbyes, you need to define responses
-for each of these. If you always want the same responses, you can use the ``MappingPolicy``
-to trigger these responses when the corresponding intent is predicted.
-
-In your domain file, add the ``triggers`` metadata to the relevant intents:
-
-.. code-block:: yaml
-
-   intents:
-     - greet: {triggers: utter_greet}
-     - goodbye: {triggers: utter_goodbye}
-
-And make sure the mapping policy is present in your ``config.yml``:
-
-.. code-block:: yaml
-
-    policies:
-      - name: "MappingPolicy"
-      ...
-
-If you want to implement less rigid behaviour, use regular stories
-instead of the mapping policy. For example, if you want to send a special
-response if the user says goodbye immediately after saying hello, remove the
-``triggers`` metadata from the domain file, and include relevant stories in your
-training data:
-
-.. code-block:: story
-
-   * greet
-     - utter_greet
-   * goodbye
-     - utter_ask_why_leaving
-
-
-Acknowledgements
-----------------
-
-Your users will often react to the things your assistant says, and will expect an acknowledgement.
-Acknowledgements can be as simple as a thumbs up.
-They reassure the user that their message has been received.
-For the most common reactions, it is worth implementing specific responses.
-
-.. conversations::
-   examples:
-     -
-       - woah that's expensive!
-       - ( we offer good value.
-       - ( would you like to continue getting a quote?
-     -
-       - that's awesome!
-       - ( glad you think so :)
-
-
-First, you need NLU data for reactions and acknowledgements:
-
-.. code-block:: md
-
-    ## intent:acknowledge
-    - ok
-    - got it
-    - understood
-    - k
-
-    ## intent:opinion+positive
-    - nice!
-    - excellent
-    - that's awesome
-
-    ## intent:opinion+negative
-    - ugh
-    - that sucks
-    - woah! that's [expensive](price)
-
-
-And then you need training stories to teach Rasa how to respond:
-
-.. code-block:: story
-
-    ## price reaction
-    * opinion+negative{"price": "expensive"}
-      - utter_good_value
-      - utter_ask_continue
-
-    ## simple acknowledgement
-    * opinion+positive
-      - utter_positive_feedback_reaction
-
-
-Chitchat
---------
-
-Your assistant will often receive unexpected or unprompted input.
-We call this chitchat.
-While it's not possible to coherently respond to everything a user
-might say, you can at least acknowledge that the message was received.
-One strategy is to collect training data from your users and define intents
-and responses for some of the more common topics.
-See :ref:`explaining-possibilities` for how to handle out-of-scope input.
-
-.. conversations::
-   examples:
-     -
-       - will you marry me?
-       - ( no
-     -
-       - I can juggle 7 oranges
-       - ( wow!
-     -
-       - aahhh
-       - ( I feel you
-
-
-Insults
--------
-
-Unfortunately users will often abuse your assistant. You should acknowledge the nature of their
-comment and respond in a way that reflects your assistant's persona.
-Responding with a joke can encourage users to continue sending abuse, so consider your responses carefully.
-You can read more about this topic in `this paper <https://www.aclweb.org/anthology/W18-0802>`_.
-
-
-.. conversations::
-   examples:
-     -
-       - stupid bot
-       - ( that's not very nice
-
-
-The simplest approach is to create a single ``insult`` intent and use the mapping policy
-to respond to it:
-
-In your domain file:
-
-.. code-block:: yaml
-
-    intents:
-      - insult: {triggers: utter_respond_insult}
-
-And in your configuration file:
-
-.. code-block:: yaml
-
-    policies:
-      - name: "MappingPolicy"
-      ...
+:desc: Learn to handle greetings, off-topic chitchat, and other small talk a
+       in your bot using features provided by Rasa's open source chat assistant a
+       platform. a
+ a
+.. _small-talk: a
+ a
+========== a
+Small Talk a
+========== a
+ a
+.. edit-link:: a
+ a
+Small talk includes the back-and-forth that makes conversations natural, a
+but doesn’t directly relate to the user's goal. This includes greetings, a
+acknowledgements, reactions, and off-topic chitchat. a
+ a
+.. contents:: a
+   :local: a
+ a
+.. _greetings: a
+ a
+Greetings a
+--------- a
+ a
+Greetings and goodbyes are some of the simplest interactions. Just about every system needs them. a
+ a
+.. conversations:: a
+   examples: a
+     - a
+       - hello a
+       - ( hi, how are you? a
+     - a
+       - how are you? a
+       - ( I am well, and you? a
+     - a
+       - goodbye a
+       - ( bye bye! a
+ a
+ a
+To respond correctly to greetings and goodbyes, you need to define responses a
+for each of these. If you always want the same responses, you can use the ``MappingPolicy`` a
+to trigger these responses when the corresponding intent is predicted. a
+ a
+In your domain file, add the ``triggers`` metadata to the relevant intents: a
+ a
+.. code-block:: yaml a
+ a
+   intents: a
+     - greet: {triggers: utter_greet} a
+     - goodbye: {triggers: utter_goodbye} a
+ a
+And make sure the mapping policy is present in your ``config.yml``: a
+ a
+.. code-block:: yaml a
+ a
+    policies: a
+      - name: "MappingPolicy" a
+      ... a
+ a
+If you want to implement less rigid behaviour, use regular stories a
+instead of the mapping policy. For example, if you want to send a special a
+response if the user says goodbye immediately after saying hello, remove the a
+``triggers`` metadata from the domain file, and include relevant stories in your a
+training data: a
+ a
+.. code-block:: story a
+ a
+   * greet a
+     - utter_greet a
+   * goodbye a
+     - utter_ask_why_leaving a
+ a
+ a
+Acknowledgements a
+---------------- a
+ a
+Your users will often react to the things your assistant says, and will expect an acknowledgement. a
+Acknowledgements can be as simple as a thumbs up. a
+They reassure the user that their message has been received. a
+For the most common reactions, it is worth implementing specific responses. a
+ a
+.. conversations:: a
+   examples: a
+     - a
+       - woah that's expensive! a
+       - ( we offer good value. a
+       - ( would you like to continue getting a quote? a
+     - a
+       - that's awesome! a
+       - ( glad you think so :) a
+ a
+ a
+First, you need NLU data for reactions and acknowledgements: a
+ a
+.. code-block:: md a
+ a
+    ## intent:acknowledge a
+    - ok a
+    - got it a
+    - understood a
+    - k a
+ a
+    ## intent:opinion+positive a
+    - nice! a
+    - excellent a
+    - that's awesome a
+ a
+    ## intent:opinion+negative a
+    - ugh a
+    - that sucks a
+    - woah! that's [expensive](price) a
+ a
+ a
+And then you need training stories to teach Rasa how to respond: a
+ a
+.. code-block:: story a
+ a
+    ## price reaction a
+    * opinion+negative{"price": "expensive"} a
+      - utter_good_value a
+      - utter_ask_continue a
+ a
+    ## simple acknowledgement a
+    * opinion+positive a
+      - utter_positive_feedback_reaction a
+ a
+ a
+Chitchat a
+-------- a
+ a
+Your assistant will often receive unexpected or unprompted input. a
+We call this chitchat. a
+While it's not possible to coherently respond to everything a user a
+might say, you can at least acknowledge that the message was received. a
+One strategy is to collect training data from your users and define intents a
+and responses for some of the more common topics. a
+See :ref:`explaining-possibilities` for how to handle out-of-scope input. a
+ a
+.. conversations:: a
+   examples: a
+     - a
+       - will you marry me? a
+       - ( no a
+     - a
+       - I can juggle 7 oranges a
+       - ( wow! a
+     - a
+       - aahhh a
+       - ( I feel you a
+ a
+ a
+Insults a
+------- a
+ a
+Unfortunately users will often abuse your assistant. You should acknowledge the nature of their a
+comment and respond in a way that reflects your assistant's persona. a
+Responding with a joke can encourage users to continue sending abuse, so consider your responses carefully. a
+You can read more about this topic in `this paper <https://www.aclweb.org/anthology/W18-0802>`_. a
+ a
+ a
+.. conversations:: a
+   examples: a
+     - a
+       - stupid bot a
+       - ( that's not very nice a
+ a
+ a
+The simplest approach is to create a single ``insult`` intent and use the mapping policy a
+to respond to it: a
+ a
+In your domain file: a
+ a
+.. code-block:: yaml a
+ a
+    intents: a
+      - insult: {triggers: utter_respond_insult} a
+ a
+And in your configuration file: a
+ a
+.. code-block:: yaml a
+ a
+    policies: a
+      - name: "MappingPolicy" a
+      ... a
+ a
