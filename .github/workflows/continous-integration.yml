@@ -268,6 +268,14 @@ jobs:
     needs: [quality, test, api, docker]
     steps:
       - uses: actions/checkout@v1
+      - name: Make sure there is a github token
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" ]; then
+            echo ::set-env name=MERGE_TOKEN::${{ secrets.GITHUB_TOKEN }}
+          else
+            echo ::set-env name=MERGE_TOKEN::${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}
+          fi
       - uses: rasahq/merge-pal-action@master
         with:
-          token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}
+          token: ${{ env.MERGE_TOKEN }}
