@@ -178,12 +178,7 @@ class PolicyEnsemble:
             ml_trackers, rule_trackers = self._split_ml_and_rule_trackers(
                 training_trackers
             )
-
             self._emit_rule_policy_warning(rule_trackers)
-            print("have ML tracker, rule trackers")
-            print(ml_trackers)
-            print()
-            print(rule_trackers)
             for policy in self.policies:
                 trackers_to_train = (
                     rule_trackers if isinstance(policy, RulePolicy) else ml_trackers
@@ -380,7 +375,6 @@ class PolicyEnsemble:
                     raise Exception(f"Could not initialize {policy_name}. {e}")
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError) as e:
-                print(e)
                 raise InvalidPolicyConfig(
                     "Module for policy '{}' could not "
                     "be loaded. Please make sure the "
