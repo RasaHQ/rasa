@@ -145,6 +145,15 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _form_training_trackers(domain: Domain) -> List[DialogueStateTracker]:
+        """Add a rule for every form which triggers the `FormAction` whenever we are
+           in a form.
+
+        Args:
+            domain: The current domain.
+
+        Returns:
+            The additional training trackers.
+        """
         return [
             RulePolicy._form_trigger_rule(form_name, domain)
             for form_name in domain.form_names
@@ -158,10 +167,13 @@ class RulePolicy(MemoizationPolicy):
             "bla",
             slots=domain.slots,
             evts=[
+                # When we are in a form
                 Form(form_name),
                 SlotSet(REQUESTED_SLOT, "some value"),
+                # We don't mind about previous conversation context
                 ActionExecuted(RULE_SNIPPET_ACTION_NAME),
                 ActionExecuted(ACTION_LISTEN_NAME),
+                # Trigger form when we have an active form with that name
                 ActionExecuted(form_name),
                 ActionExecuted(ACTION_LISTEN_NAME),
             ],
@@ -218,7 +230,15 @@ class RulePolicy(MemoizationPolicy):
         possible_keys = set(self.lookup.keys())
         for i, state in enumerate(reversed(states)):
             possible_keys = set(
-                filter(lambda _key: self._rule_is_good(_key, i, state), possible_keys,)
+                filter(lambda _key: self._rule_is_good(_key, i, state), possible_keys)
+            )
+
+        active_form_name = tracker.active_form_name()
+        if active_form_name and tracker.events[-1] == ActionExecutionRejected(
+            active_form_name
+        ):
+            possible_keys = self._remove_keys_which_trigger_form_action_again(
+                possible_keys, domain, active_form_name
             )
 
         if possible_keys:
@@ -242,3 +262,23 @@ class RulePolicy(MemoizationPolicy):
                 logger.debug("There is no memorised next action")
 
         return result
+
+    def _remove_keys_which_trigger_form_action_again(
+        self, possible_keys: typing.Set[Text], domain: Domain, current_form_name: Text
+    ) -> typing.Set[Text]:
+        """Remove any matching rules which would predict the `FormAction`.
+
+        This is used when the Form rejected its execution and we are entering an
+        unhappy path.
+
+        Args:
+            possible_keys: Possible rule keys which match the current state.
+            domain: The current domain.
+            current_form_name: The currently active form.
+
+        Returns:
+            Possible keys without keys which predict the `FormAction`.
+        """
+        form_action_idx = domain.index_for_action(current_form_name)
+
+        return {key for key in possible_keys if self.lookup[key] != form_action_idx}

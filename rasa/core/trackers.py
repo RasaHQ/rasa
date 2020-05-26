@@ -634,3 +634,9 @@ class DialogueStateTracker:
             if e["entity"] in self.slots.keys()
         ]
         return new_slots
+
+    def active_form_name(self) -> Optional[Text]:
+        if not self.active_form:
+            return None
+
+        return self.active_form.get("name")
