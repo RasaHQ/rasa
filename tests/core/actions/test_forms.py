@@ -25,6 +25,39 @@ forms:
     assert events == [Form(form_name), SlotSet(REQUESTED_SLOT, slot_name)]
 
 
+async def test_activate_and_immediate_deactivate():
+    slot_name = "num_people"
+    slot_value = 5
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id="bla",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                "haha",
+                {"name": "greet"},
+                entities=[{"entity": slot_name, "value": slot_value}],
+            ),
+        ],
+    )
+    form_name = "my form"
+    action = FormAction(form_name, None)
+    domain = f"""
+    forms:
+    - {form_name}:
+        {slot_name}:
+        - type: from_entity
+          entity: {slot_name}
+    """
+    domain = Domain.from_yaml(domain)
+    events = await action.run(None, None, tracker, domain)
+    assert events == [
+        SlotSet(slot_name, slot_value),
+        Form(None),
+        SlotSet(REQUESTED_SLOT, None),
+    ]
+
+
 async def test_set_slot_and_deactivate():
     form_name = "my form"
     slot_name = "num_people"

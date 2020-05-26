@@ -585,12 +585,13 @@ class FormAction(Action):
 
         self._domain = domain
 
-        # activate the form
-        events = await self._activate_if_required(tracker, domain, output_channel, nlg)
-        # validate user input
-        events.extend(
-            await self._validate_if_required(tracker, domain, output_channel, nlg)
+        # activate the form (we don't return these events in case form immediately
+        # finishes)
+        activation_events = await self._activate_if_required(
+            tracker, domain, output_channel, nlg
         )
+        # validate user input
+        events = await self._validate_if_required(tracker, domain, output_channel, nlg)
         # check that the form wasn't deactivated in validation
         if Form(None) not in events:
             temp_tracker = DialogueStateTracker.from_events(
@@ -601,7 +602,7 @@ class FormAction(Action):
 
             if next_slot_events is not None:
                 # request next slot
-                events.extend(next_slot_events)
+                events = activation_events + events + next_slot_events
             else:
                 # there is nothing more to request, so we can submit
                 self._log_form_slots(temp_tracker)
