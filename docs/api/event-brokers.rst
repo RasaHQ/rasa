@@ -22,7 +22,7 @@ also known as a message broker, to forward Rasa :ref:`events` from the Rasa serv
 Format
 ------
 
-All events are streamed to the broker as serialised dictionaries every time
+All events are streamed to the broker as serialized dictionaries every time
 the tracker updates its state. An example event emitted from the ``default``
 tracker looks like this:
 

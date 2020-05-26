@@ -260,7 +260,7 @@ some more advanced Rasa features.
 - Learn how to implement business logic using :ref:`forms <forms>`
 - Learn how to integrate other APIs using :ref:`custom actions <actions>`
 - Learn how to connect your bot to different :ref:`messaging apps <messaging-and-voice-channels>`
-- Learn about customising the :ref:`components <components>` in your NLU pipeline
+- Learn about customizing the :ref:`components <components>` in your NLU pipeline
 - Read about custom and built-in :ref:`entities <entity-extraction>`
 
 You can also use Rasa X to collect more conversations
