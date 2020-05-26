@@ -67,7 +67,6 @@ graph.html
 story_graph.html
 story_graph.dot
 debug.md
-examples/restaurantbot/models*
 examples/moodbot/*.png
 examples/moodbot/errors.json
 examples/formbot/models*

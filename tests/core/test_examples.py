@@ -123,22 +123,3 @@ async def test_formbot_example():
 
     responses = await agent.handle_text("/thankyou")
     assert responses[0]["text"] == "you are welcome :)"
-
-
-async def test_restaurantbot_example():
-    sys.path.append("examples/restaurantbot/")
-    from run import train_core, train_nlu, parse
-
-    p = "examples/restaurantbot/"
-    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
-    nlu_data = os.path.join(p, "data", "nlu.md")
-    await train_core(
-        os.path.join(p, "domain.yml"), os.path.join(p, "models"), "current", stories
-    )
-    train_nlu(
-        os.path.join(p, "config.yml"), os.path.join(p, "models"), "current", nlu_data
-    )
-
-    responses = await parse("hello", os.path.join(p, "models", "current"))
-
-    assert responses[0]["text"] == "how can I help you?"
