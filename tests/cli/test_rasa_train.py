@@ -1,5 +1,4 @@
 import os
-import shutil
 import tempfile
 
 import pytest
@@ -12,8 +11,8 @@ from rasa.nlu.training_data import training_data
 from rasa.cli.train import _get_valid_config
 from rasa.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
-    CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_NLU,
+    CONFIG_MANDATORY_KEYS,
 )
 import rasa.utils.io as io_utils
 
@@ -372,7 +371,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
                 "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
-            "error": True,
+            "error": False,
         },
         {
             "config_data": {},
