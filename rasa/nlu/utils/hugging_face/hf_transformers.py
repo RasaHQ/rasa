@@ -1,6 +1,8 @@
 import logging
 from typing import Any, Dict, List, Text, Tuple, Optional
 
+from rasa.core.utils import get_dict_hash
+from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
@@ -92,6 +94,15 @@ class HFTransformersNLP(Component):
         # Also, this does not hurt the model predictions since we use an attention mask
         # while feeding input.
         self.pad_token_id = self.tokenizer.unk_token_id
+
+    @classmethod
+    def cache_key(
+        cls, component_meta: Dict[Text, Any], model_metadata: Metadata
+    ) -> Optional[Text]:
+
+        weights = component_meta.get("model_weights") or {}
+
+        return f"{cls.name}-{component_meta.get('model_name')}-{get_dict_hash(weights)}"
 
     @classmethod
     def required_packages(cls) -> List[Text]:
