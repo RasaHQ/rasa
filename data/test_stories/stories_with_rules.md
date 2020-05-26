@@ -1,18 +1,18 @@
 >> rule 1
-    - form{"name": "q_form"}  <!-- condition that form is active-->
+    - form{"name": "loop_q_form"}  <!-- condition that form is active-->
     - slot{"requested_slot": "some_slot"}  <!-- some condition -->
     - ...
 * inform{"some_slot":"bla"} <!-- can be ANY -->
-    - validate_some_slot
-    - action_loop_q_form <!-- can be internal core action, can be anything -->
+    - loop_q_form <!-- can be internal core action, can be anything -->
 
 >> rule 2
-    - form{"name": "q_form"} <!-- condition that form is active-->
+    - form{"name": "loop_q_form"} <!-- condition that form is active-->
     - slot{"requested_slot": "some_slot"}  <!-- some condition -->
     - ...
 * explain                          <!-- can be anything -->
     - utter_explain_some_slot
-    - action_loop_q_form
+    - loop_q_form
+    - form{"name": "loop_q_form"} <!-- condition that form is active-->
     
 ## ML story 1
 * greet
@@ -24,13 +24,14 @@
     - utter_slots_values
 * thankyou
     - utter_noworries
-    
+
 >> rule 3
-    - form{"name": "q_form"} <!-- condition that form is active-->
-    - slot{"requested_slot": null} <!-- some condition to finish -->
+    - form{"name": "loop_q_form"} <!-- condition that form is active-->
     - ...
-    - action_stop_q_form
+    - loop_q_form <!-- condition that form is active -->
     - form{"name": null}
+    - slot{"requested_slot": null}
+    - action_stop_q_form
 
 ## ML story 2
 * greet

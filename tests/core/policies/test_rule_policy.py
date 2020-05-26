@@ -1,5 +1,8 @@
 from typing import List, Text
 
+import pytest
+
+from rasa.core import training
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.constants import REQUESTED_SLOT, RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
@@ -507,3 +510,51 @@ def test_form_submit_rule():
         form_conversation, domain
     )
     assert_predicted_action(action_probabilities, domain, submit_action_name)
+
+
+@pytest.fixture(scope="session")
+def trained_rule_policy_domain() -> Domain:
+    return Domain.load("examples/rules/domain.yml")
+
+
+@pytest.fixture(scope="session")
+async def trained_rule_policy(trained_rule_policy_domain: Domain) -> RulePolicy:
+    trackers = await training.load_data(
+        "examples/rules/data/stories.md", trained_rule_policy_domain
+    )
+
+    rule_policy = RulePolicy()
+    rule_policy.train(trackers, trained_rule_policy_domain)
+
+    return rule_policy
+
+
+async def test_rule_policy_slot_filling_from_text(
+    trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
+):
+    form_conversation = DialogueStateTracker.from_events(
+        "in a form",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # User responds and fills requested slot
+            UserUttered("/activate_q_form", {"name": "activate_q_form"}),
+            ActionExecuted("loop_q_form"),
+            Form("loop_q_form"),
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("/bla", {"name": "greet"}),
+            ActionExecuted("loop_q_form"),
+            SlotSet("some_slot", "/bla"),
+            Form(None),
+            SlotSet(REQUESTED_SLOT, None),
+        ],
+        slots=trained_rule_policy_domain.slots,
+    )
+
+    # RulePolicy predicts action which handles submit
+    action_probabilities = trained_rule_policy.predict_action_probabilities(
+        form_conversation, trained_rule_policy_domain
+    )
+    assert_predicted_action(
+        action_probabilities, trained_rule_policy_domain, "utter_stop"
+    )

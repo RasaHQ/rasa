@@ -22,10 +22,6 @@ slots:
     type: text
 
 actions:
-- ...
-- action_activate_q_form
-- action_loop_q_form
-- validate_some_slot
 - utter_explain_some_slot
 - action_stop_q_form
 - utter_list_possibilities
@@ -37,6 +33,14 @@ actions:
 - utter_stop
 - utter_greet
 - action_switch_faq
+
+forms:
+- loop_q_form:
+    some_slot:
+    - type: from_entity
+      entity: some_slot
+#    some_slot:
+#    - type: from_text
 
 session_config:
   session_expiration_time: 60  # value in minutes
