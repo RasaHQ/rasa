@@ -1,5 +1,7 @@
 import json
 import logging
+from pathlib import Path
+
 from typing import Union, Text, List, Optional, Type
 
 import pytest
@@ -134,8 +136,8 @@ def test_file_broker_from_config():
     assert actual.path == "rasa_event.log"
 
 
-def test_file_broker_logs_to_file(tmpdir):
-    log_file_path = tmpdir.join("events.log").strpath
+def test_file_broker_logs_to_file(tmp_path: Path):
+    log_file_path = str(tmp_path / "events.log")
 
     actual = EventBroker.create(
         EndpointConfig(**{"type": "file", "path": log_file_path})
@@ -153,8 +155,8 @@ def test_file_broker_logs_to_file(tmpdir):
     assert recovered == TEST_EVENTS
 
 
-def test_file_broker_properly_logs_newlines(tmpdir):
-    log_file_path = tmpdir.join("events.log").strpath
+def test_file_broker_properly_logs_newlines(tmp_path):
+    log_file_path = str(tmp_path / "events.log")
 
     actual = EventBroker.create(
         EndpointConfig(**{"type": "file", "path": log_file_path})
