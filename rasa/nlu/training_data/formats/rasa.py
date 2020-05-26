@@ -29,29 +29,14 @@ class RasaReader(JsonTrainingDataReader):
 
         data = js["rasa_nlu_data"]
         common_examples = data.get("common_examples", [])
-        intent_examples = data.get("intent_examples", [])
-        entity_examples = data.get("entity_examples", [])
         entity_synonyms = data.get("entity_synonyms", [])
         regex_features = data.get("regex_features", [])
         lookup_tables = data.get("lookup_tables", [])
 
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
-        if intent_examples or entity_examples:
-            raise_warning(
-                "Your rasa data "
-                "contains 'intent_examples' "
-                "or 'entity_examples' which will be "
-                "removed in the future. Consider "
-                "putting all your examples "
-                "into the 'common_examples' section.",
-                FutureWarning,
-                docs=DOCS_URL_TRAINING_DATA_NLU,
-            )
-
-        all_examples = common_examples + intent_examples + entity_examples
         training_examples = []
-        for ex in all_examples:
+        for ex in common_examples:
             msg = Message.build(**ex)
             training_examples.append(msg)
 

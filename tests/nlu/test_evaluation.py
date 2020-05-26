@@ -14,7 +14,7 @@ from rasa.test import compare_nlu_models
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa.nlu.model import Interpreter
+from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.test import (
     is_token_within_entity,
     do_entities_overlap,
@@ -76,25 +76,6 @@ def loop():
     loop = rasa.utils.io.enable_async_loop_debugging(loop)
     yield loop
     loop.close()
-
-
-@pytest.fixture(scope="session")
-async def pretrained_interpreter(component_builder, tmpdir_factory):
-    conf = RasaNLUModelConfig(
-        {
-            "pipeline": [
-                {"name": "SpacyNLP"},
-                {"name": "SpacyEntityExtractor"},
-                {"name": "DucklingHTTPExtractor"},
-            ]
-        }
-    )
-    return await utilities.interpreter_for(
-        component_builder,
-        data="./data/examples/rasa/demo-rasa.json",
-        path=tmpdir_factory.mktemp("projects").strpath,
-        config=conf,
-    )
 
 
 # Chinese Example
@@ -829,9 +810,20 @@ def test_evaluate_entities_cv():
     }, "Wrong entity prediction alignment"
 
 
-def test_remove_pretrained_extractors(pretrained_interpreter):
+def test_remove_pretrained_extractors(component_builder):
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "SpacyNLP"},
+                {"name": "SpacyEntityExtractor"},
+                {"name": "DucklingHTTPExtractor"},
+            ]
+        }
+    )
+    trainer = Trainer(_config, component_builder)
+
     target_components_names = ["SpacyNLP"]
-    filtered_pipeline = remove_pretrained_extractors(pretrained_interpreter.pipeline)
+    filtered_pipeline = remove_pretrained_extractors(trainer.pipeline)
     filtered_components_names = [c.name for c in filtered_pipeline]
     assert filtered_components_names == target_components_names
 
