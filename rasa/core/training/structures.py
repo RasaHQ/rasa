@@ -114,6 +114,7 @@ class StoryStep:
         end_checkpoints: Optional[List[Checkpoint]] = None,
         events: Optional[List[Event]] = None,
         source_name: Optional[Text] = None,
+        is_rule: bool = None,
     ) -> None:
 
         self.end_checkpoints = end_checkpoints if end_checkpoints else []
@@ -121,6 +122,7 @@ class StoryStep:
         self.events = events if events else []
         self.block_name = block_name
         self.source_name = source_name
+        self.is_rule = is_rule
         # put a counter prefix to uuid to get reproducible sorting results
         global STEP_COUNT
         self.id = "{}_{}".format(STEP_COUNT, uuid.uuid4().hex)
@@ -135,6 +137,7 @@ class StoryStep:
             self.end_checkpoints,
             self.events[:],
             self.source_name,
+            self.is_rule,
         )
         if not use_new_id:
             copied.id = self.id
@@ -375,10 +378,12 @@ class StoryStep:
             "block_name={!r}, "
             "start_checkpoints={!r}, "
             "end_checkpoints={!r}, "
+            "is_rule={!r}, "
             "events={!r})".format(
                 self.block_name,
                 self.start_checkpoints,
                 self.end_checkpoints,
+                self.is_rule,
                 self.events,
             )
         )
