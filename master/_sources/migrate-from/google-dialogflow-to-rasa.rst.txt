@@ -97,7 +97,7 @@ To start a server with your NLU model, run:
 
 .. code-block:: bash
 
-   rasa run nlu
+   rasa run
 
 This will start a server listening on port 5005.
 
