@@ -597,7 +597,7 @@ As a final step, let’s add the FormPolicy to our config file:
 
    policies:
      - name: MemoizationPolicy
-     - name: KerasPolicy
+     - name: TEDPolicy
      - name: MappingPolicy
      - name: FormPolicy
 
