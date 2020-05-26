@@ -63,7 +63,9 @@ async def train(
     training_data = await agent.load_data(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
+
     agent.train(training_data, **additional_arguments)
+
     agent.persist(output_path)
 
     return agent

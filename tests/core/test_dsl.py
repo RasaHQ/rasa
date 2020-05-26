@@ -367,6 +367,27 @@ async def test_read_stories_with_multiline_comments(tmpdir, default_domain):
     assert len(story_steps[3].events) == 2
 
 
+async def test_read_stories_with_rules(tmpdir, default_domain):
+    story_steps = await StoryFileReader.read_from_file(
+        "data/test_stories/stories_with_rules.md", default_domain, RegexInterpreter(),
+    )
+
+    # this file contains three rules and two ML stories
+    assert len(story_steps) == 5
+
+    ml_steps = [s for s in story_steps if not s.is_rule]
+    rule_steps = [s for s in story_steps if s.is_rule]
+
+    assert len(ml_steps) == 2
+    assert len(rule_steps) == 3
+
+    assert story_steps[0].block_name == "rule 1"
+    assert story_steps[1].block_name == "rule 2"
+    assert story_steps[2].block_name == "ML story 1"
+    assert story_steps[3].block_name == "rule 3"
+    assert story_steps[4].block_name == "ML story 2"
+
+
 @pytest.mark.parametrize(
     "line, expected",
     [

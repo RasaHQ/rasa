@@ -103,7 +103,10 @@ class RulePolicy(MemoizationPolicy):
     ) -> None:
         """Trains the policy on given training trackers."""
         self.lookup = {}
-        # only considers original trackers (no augmented ones)
+        # only use trackers from rule-based training data
+        training_trackers = [t for t in training_trackers if t.is_rule_tracker]
+
+        # only consider original trackers (no augmented ones)
         training_trackers = [
             t
             for t in training_trackers

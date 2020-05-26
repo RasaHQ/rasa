@@ -75,9 +75,10 @@ class EndToEndReader(MarkdownReader):
 
 
 class StoryStepBuilder:
-    def __init__(self, name: Text, source_name: Text):
+    def __init__(self, name: Text, source_name: Text, is_rule: bool = False) -> None:
         self.name = name
         self.source_name = source_name
+        self.is_rule = is_rule
         self.story_steps = []
         self.current_steps = []
         self.start_checkpoints = []
@@ -165,6 +166,7 @@ class StoryStepBuilder:
                 block_name=self.name,
                 start_checkpoints=start_checkpoints,
                 source_name=self.source_name,
+                is_rule=self.is_rule,
             )
         ]
         return current_turns
@@ -333,6 +335,10 @@ class StoryFileReader:
                     continue
                 elif multiline_comment:
                     continue
+                elif line.startswith(">"):  # this is a rule block
+                    # reached a new rule block
+                    rule_name = line[1:].strip()
+                    self.new_rule_part(rule_name, self.source_name)
                 elif line.startswith("#"):
                     # reached a new story block
                     name = line[1:].strip("# ")
@@ -401,6 +407,10 @@ class StoryFileReader:
     def new_story_part(self, name: Text, source_name: Text):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name)
+
+    def new_rule_part(self, name: Text, source_name: Text):
+        self._add_current_stories_to_result()
+        self.current_step_builder = StoryStepBuilder(name, source_name, is_rule=True)
 
     def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:
 
