@@ -208,7 +208,7 @@ Example CI/CD pipelines
 As examples, see the CI/CD pipelines for
 `Sara <https://github.com/RasaHQ/rasa-demo/blob/master/.github/workflows/build_and_deploy.yml>`_,
 the Rasa assistant that you can talk to in the Rasa Docs, and
-`Carbon Bot <https://github.com/RasaHQ/carbon-bot/blob/master/.github/workflows/model_ci.yml>`_.
+`Carbon Bot <https://github.com/RasaHQ/carbon-bot/blob/master/.github/workflows/>`_.
 Both use `Github Actions <https://github.com/features/actions>`_ as a CI/CD tool.
 
 These examples are just two of many possibilities. If you have a CI/CD setup you like, please
