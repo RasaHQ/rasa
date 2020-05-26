@@ -17,6 +17,7 @@ from rasa.core.events import (
     Restarted,
     Event,
 )
+from rasa.core.slots import Slot
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.structures import (
     StoryGraph,
@@ -51,6 +52,21 @@ class TrackerWithCachedStates(DialogueStateTracker):
         self.domain = domain
         # T/F property to filter augmented stories
         self.is_augmented = is_augmented
+
+    @classmethod
+    def from_events(
+        cls,
+        sender_id: Text,
+        evts: List[Event],
+        slots: Optional[List[Slot]] = None,
+        max_event_history: Optional[int] = None,
+        sender_source: Optional[Text] = None,
+        domain: Optional[Domain] = None,
+    ):
+        tracker = cls(sender_id, slots, max_event_history, domain)
+        for e in evts:
+            tracker.update(e)
+        return tracker
 
     def past_states(self, domain: Domain) -> deque:
         """Return the states of the tracker based on the logged events."""

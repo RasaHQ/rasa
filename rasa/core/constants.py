@@ -61,6 +61,8 @@ UTTER_PREFIX = "utter_"
 RESPOND_PREFIX = "respond_"
 FORM_PREFIX = "_form"
 
+RULE_SNIPPET_ACTION_NAME = "..."
+
 DIALOGUE = "dialogue"
 DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 

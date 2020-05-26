@@ -9,12 +9,17 @@ from collections import defaultdict, deque
 import rasa.utils.io
 
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted
+from rasa.core.events import ActionExecuted, Form, SlotSet, ActionExecutionRejected
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
+from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import is_logging_disabled
-from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
+from rasa.core.constants import (
+    MEMOIZATION_POLICY_PRIORITY,
+    REQUESTED_SLOT,
+    RULE_SNIPPET_ACTION_NAME,
+)
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
@@ -103,6 +108,8 @@ class RulePolicy(MemoizationPolicy):
     ) -> None:
         """Trains the policy on given training trackers."""
         self.lookup = {}
+
+        training_trackers += self._form_training_trackers(domain)
         # only considers original trackers (no augmented ones)
         training_trackers = [
             t
@@ -135,6 +142,31 @@ class RulePolicy(MemoizationPolicy):
 
         self.lookup = updated_lookup
         logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
+
+    @staticmethod
+    def _form_training_trackers(domain: Domain) -> List[DialogueStateTracker]:
+        return [
+            RulePolicy._form_trigger_rule(form_name, domain)
+            for form_name in domain.form_names
+        ]
+
+    @staticmethod
+    def _form_trigger_rule(form_name: Text, domain: Domain) -> DialogueStateTracker:
+        from rasa.core.training.generator import TrackerWithCachedStates
+
+        return TrackerWithCachedStates.from_events(
+            "bla",
+            slots=domain.slots,
+            evts=[
+                Form(form_name),
+                SlotSet(REQUESTED_SLOT, "some value"),
+                ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                ActionExecuted(form_name),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            domain=domain,
+        )
 
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
