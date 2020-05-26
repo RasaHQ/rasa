@@ -320,9 +320,7 @@ def raise_warning(
         # try to set useful defaults for the most common warning categories
         if category == DeprecationWarning:
             kwargs["stacklevel"] = 3
-        elif category == UserWarning:
-            kwargs["stacklevel"] = 2
-        elif category == FutureWarning:
+        elif category in (UserWarning, FutureWarning):
             kwargs["stacklevel"] = 2
 
     warnings.formatwarning = formatwarning

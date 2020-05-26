@@ -10,7 +10,7 @@ def test_sort_dicts_by_keys():
     assert actual == expected
 
 
-def test_raise_warning():
+def test_raise_user_warning():
     with pytest.warns(UserWarning) as record:
         raise_warning("My warning.")
 
@@ -20,7 +20,7 @@ def test_raise_warning():
 
 def test_raise_future_warning():
     with pytest.warns(FutureWarning) as record:
-        raise_warning("My future warning.")
+        raise_warning("My future warning.", FutureWarning)
 
     assert len(record) == 1
     assert record[0].message.args[0] == "My future warning."
