@@ -123,7 +123,7 @@ components should be placed before ``ResponseSelector`` in the NLU configuration
     - name: "WhitespaceTokenizer"
       intent_split_symbol: "_"
     - name: "CountVectorsFeaturizer"
-    - name: "EmbeddingIntentClassifier"
+    - name: "DIETClassifier"
     - name: "ResponseSelector"
 
 Domain
@@ -176,7 +176,7 @@ component in the config:
     - name: "WhitespaceTokenizer"
       intent_split_symbol: "_"
     - name: "CountVectorsFeaturizer"
-    - name: "EmbeddingIntentClassifier"
+    - name: "DIETClassifier"
     - name: "ResponseSelector"
       retrieval_intent: chitchat
     - name: "ResponseSelector"
@@ -193,7 +193,7 @@ You could still have two separate retrieval actions but both actions can share t
     - name: "WhitespaceTokenizer"
       intent_split_symbol: "_"
     - name: "CountVectorsFeaturizer"
-    - name: "EmbeddingIntentClassifier"
+    - name: "DIETClassifier"
     - name: "ResponseSelector"
 
 
