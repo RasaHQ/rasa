@@ -165,7 +165,7 @@ def set_log_and_warnings_filters() -> None:
     Filters only propagate on handlers, not loggers.
     """
     for handler in logging.getLogger().handlers:
-        handler.addFilter(DuplicateLogFilter())
+        handler.addFilter(RepeatedLogFilter())
 
     warnings.filterwarnings("once", category=UserWarning)
     warnings.filterwarnings("once", category=DeprecationWarning)
@@ -366,9 +366,9 @@ def raise_warning(
     warnings.formatwarning = original_formatter
 
 
-class DuplicateLogFilter(logging.Filter):
+class RepeatedLogFilter(logging.Filter):
     """
-    Filter duplicate log records.
+    Filter repeated log records.
     """
 
     last_log = None
