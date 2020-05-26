@@ -238,7 +238,7 @@ class RulePolicy(MemoizationPolicy):
         if active_form_name and tracker.events[-1] == ActionExecutionRejected(
             active_form_name
         ):
-            possible_keys = self._remove_keys_which_trigger_form_action_again(
+            possible_keys = self._remove_keys_which_trigger_action(
                 possible_keys, domain, active_form_name
             )
 
@@ -264,22 +264,22 @@ class RulePolicy(MemoizationPolicy):
 
         return result
 
-    def _remove_keys_which_trigger_form_action_again(
-        self, possible_keys: typing.Set[Text], domain: Domain, current_form_name: Text
+    def _remove_keys_which_trigger_action(
+        self, possible_keys: typing.Set[Text], domain: Domain, action_name: Text
     ) -> typing.Set[Text]:
-        """Remove any matching rules which would predict the `FormAction`.
+        """Remove any matching rules which would predict `action_name`
 
-        This is used when the Form rejected its execution and we are entering an
+        This is e.g. used when the Form rejected its execution and we are entering an
         unhappy path.
 
         Args:
             possible_keys: Possible rule keys which match the current state.
             domain: The current domain.
-            current_form_name: The currently active form.
+            action_name: The action which is not allowed to be predicted.
 
         Returns:
             Possible keys without keys which predict the `FormAction`.
         """
-        form_action_idx = domain.index_for_action(current_form_name)
+        form_action_idx = domain.index_for_action(action_name)
 
         return {key for key in possible_keys if self.lookup[key] != form_action_idx}
