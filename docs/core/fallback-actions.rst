@@ -20,7 +20,7 @@ Fallback Policy
 The ``FallbackPolicy`` has one fallback action, which will
 be executed if the intent recognition has a confidence below ``nlu_threshold``
 or if none of the dialogue policies predict an action with
-confidence higher than ``core_threshold`` or if highest ranked intent differs in
+confidence higher than ``core_threshold`` or if the highest ranked intent differs in
 confidence with the second highest ranked intent by less than ``ambiguity_threshold``.
 
 The thresholds and fallback action can be adjusted in the policy configuration
