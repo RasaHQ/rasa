@@ -1,1 +1,1 @@
-Stack level for FutureWarning updated to level 2 
+Stack level for ``FutureWarning`` updated to level 2.
