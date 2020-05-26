@@ -44,7 +44,7 @@ class Messenger:
             and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "audio"
         )
-    
+
     @staticmethod
     def _is_image_message(message: Dict[Text, Any]) -> bool:
         """Check if the users message is an image."""
@@ -53,7 +53,7 @@ class Messenger:
             and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "image"
         )
-    
+
     @staticmethod
     def _is_video_message(message: Dict[Text, Any]) -> bool:
         """Check if the users message is a video."""
@@ -62,7 +62,7 @@ class Messenger:
             and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "video"
         )
-    
+
     @staticmethod
     def _is_file_message(message: Dict[Text, Any]) -> bool:
         """Check if the users message is a file."""
