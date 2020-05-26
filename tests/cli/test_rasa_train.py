@@ -8,6 +8,8 @@ from _pytest.pytester import RunResult
 from rasa import model
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import training_data
+
+# noinspection PyProtectedMember
 from rasa.cli.train import _get_valid_config
 from rasa.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
@@ -430,17 +432,15 @@ def test_train_core_help(run: Callable[..., RunResult]):
     ],
 )
 def test_get_valid_config(parameters):
-    import rasa.utils.io
-
     config_path = None
     if parameters["config_data"] is not None:
         config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
-        rasa.utils.io.write_yaml_file(parameters["config_data"], config_path)
+        io_utils.write_yaml_file(parameters["config_data"], config_path)
 
     default_config_path = None
     if parameters["default_config"] is not None:
         default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
-        rasa.utils.io.write_yaml_file(parameters["default_config"], default_config_path)
+        io_utils.write_yaml_file(parameters["default_config"], default_config_path)
 
     if parameters["error"]:
         with pytest.raises(SystemExit):
@@ -451,7 +451,7 @@ def test_get_valid_config(parameters):
             config_path, parameters["mandatory_keys"], default_config_path
         )
 
-        config_data = rasa.utils.io.read_yaml_file(config_path)
+        config_data = io_utils.read_yaml_file(config_path)
 
         for k in parameters["mandatory_keys"]:
             assert k in config_data

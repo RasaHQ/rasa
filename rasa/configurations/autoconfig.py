@@ -47,5 +47,14 @@ def create_config_for_keys(config: Dict[Text, Any], keys: List[Text]) -> None:
 
 
 def dump_config(config: Dict[Text, Any], config_path: Text) -> None:
-    # only write section for a key if that key is in config.autoconfigured
-    io_utils.write_yaml_file(config, config_path)
+    # only write sections for keys that were autoconfigured
+    new_sections = {}
+    for key in config.get("autoconfigured"):
+        new_sections[key] = config.get(key)
+
+    io_utils.change_sections_in_yaml_file(new_sections, config_path)
+
+    logger.debug(
+        f"Added automatically configured key(s) {config.get('autoconfigured')} "
+        f"to the config file at {config_path}"
+    )

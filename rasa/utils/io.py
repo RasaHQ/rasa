@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Text, Any, Dict, Union, List, Type, Callable
 
 import ruamel.yaml as yaml
+from ruamel.yaml import YAML
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
 
@@ -105,13 +106,25 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
      Args:
         content: A text containing yaml content.
     """
+    yaml_parser = _get_yaml_parser()
+    content = _fix_ascii_encoding(content)
+
+    return yaml_parser.load(content) or {}
+
+
+def _get_yaml_parser(typ: Text = "safe", add_version: bool = True) -> YAML:
     fix_yaml_loader()
 
     replace_environment_variables()
 
-    yaml_parser = yaml.YAML(typ="safe")
-    yaml_parser.version = YAML_VERSION
+    yaml_parser = yaml.YAML(typ=typ)
+    if add_version:
+        yaml_parser.version = YAML_VERSION
 
+    return yaml_parser
+
+
+def _fix_ascii_encoding(content: Text) -> Text:
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
         content = (
@@ -121,7 +134,28 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
             .decode("utf-16")
         )
 
-    return yaml_parser.load(content) or {}
+    return content
+
+
+def change_sections_in_yaml_file(data: Dict[Text, Any], filename: Text) -> None:
+    """Changes specific sections (given by keys) in a yaml file.
+
+     Args:
+        data: The keys are the sections to be changed, the values the contents of the
+              respective sections.
+        filename: Name of the file to be changed.
+    """
+    old_content = read_file(filename, DEFAULT_ENCODING)
+
+    yaml_parser = _get_yaml_parser(typ="rt", add_version=False)
+    old_content = _fix_ascii_encoding(old_content)
+
+    new_content = yaml_parser.load(old_content) or {}
+
+    for key in data.keys():
+        new_content[key] = data[key]
+
+    yaml_parser.dump(new_content, Path(filename))
 
 
 def _is_ascii(text: Text) -> bool:
