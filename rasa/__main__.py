@@ -18,7 +18,7 @@ from rasa.cli import (
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
-from rasa.utils.common import set_log_level, set_log_filters
+from rasa.utils.common import set_log_level, set_log_and_warnings_filters
 import rasa.utils.tensorflow.environment as tf_env
 
 logger = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ def main() -> None:
 
     if hasattr(cmdline_arguments, "func"):
         rasa.utils.io.configure_colored_logging(log_level)
-        set_log_filters()
+        set_log_and_warnings_filters()
         cmdline_arguments.func(cmdline_arguments)
     elif hasattr(cmdline_arguments, "version"):
         print_version()

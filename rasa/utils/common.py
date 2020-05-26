@@ -158,14 +158,18 @@ def update_asyncio_log_level() -> None:
     logging.getLogger("asyncio").setLevel(log_level)
 
 
-def set_log_filters() -> None:
+def set_log_and_warnings_filters() -> None:
     """
-    Set log filters on the root logger.
+    Set log filters on the root logger, and duplicate filters for warnings.
 
     Filters only propagate on handlers, not loggers.
     """
     for handler in logging.getLogger().handlers:
         handler.addFilter(DuplicateLogFilter())
+
+    warnings.filterwarnings("once", category=UserWarning)
+    warnings.filterwarnings("once", category=DeprecationWarning)
+    warnings.filterwarnings("once", category=FutureWarning)
 
 
 def obtain_verbosity() -> int:
