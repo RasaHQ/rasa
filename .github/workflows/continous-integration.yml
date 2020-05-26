@@ -268,6 +268,6 @@ jobs:
     needs: [quality, test, api, docker]
     steps:
       - uses: actions/checkout@v1
-      - uses: rasahq/merge-pal-action@v0.5.1
+      - uses: rasahq/merge-pal-action@master
         with:
           token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}

@@ -65,32 +65,18 @@ def test_lookup_table_json():
     lookup_fname = "data/test/lookup_tables/plates.txt"
     td_lookup = training_data.load_data("data/test/lookup_tables/lookup_table.json")
     assert not td_lookup.is_empty()
+    assert len(td_lookup.lookup_tables) == 1
     assert td_lookup.lookup_tables[0]["name"] == "plates"
     assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
-    assert td_lookup.lookup_tables[1]["name"] == "drinks"
-    assert td_lookup.lookup_tables[1]["elements"] == [
-        "mojito",
-        "lemonade",
-        "sweet berry wine",
-        "tea",
-        "club mate",
-    ]
 
 
 def test_lookup_table_md():
     lookup_fname = "data/test/lookup_tables/plates.txt"
     td_lookup = training_data.load_data("data/test/lookup_tables/lookup_table.md")
     assert not td_lookup.is_empty()
+    assert len(td_lookup.lookup_tables) == 1
     assert td_lookup.lookup_tables[0]["name"] == "plates"
     assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
-    assert td_lookup.lookup_tables[1]["name"] == "drinks"
-    assert td_lookup.lookup_tables[1]["elements"] == [
-        "mojito",
-        "lemonade",
-        "sweet berry wine",
-        "tea",
-        "club mate",
-    ]
 
 
 def test_composite_entities_data():
@@ -505,7 +491,7 @@ def test_get_file_format():
 
     assert fformat == "json"
 
-    fformat = get_file_format("examples/restaurantbot/data/nlu.md")
+    fformat = get_file_format("examples/moodbot/data/nlu.md")
 
     assert fformat == "md"
 
