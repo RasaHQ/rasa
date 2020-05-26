@@ -34,7 +34,6 @@ intents:
 - greet
 actions:
 - {UTTER_GREET_ACTION}
-- {RULE_SNIPPET_ACTION_NAME}
     """
     )
 
@@ -66,7 +65,6 @@ async def test_predict_form_action_if_in_form():
     - greet
     actions:
     - {UTTER_GREET_ACTION}
-    - {RULE_SNIPPET_ACTION_NAME}
     - some-action
     slots:
       requested_slot:
@@ -109,7 +107,6 @@ async def test_predict_form_action_if_multiple_turns():
     - {other_intent}
     actions:
     - {UTTER_GREET_ACTION}
-    - {RULE_SNIPPET_ACTION_NAME}
     - some-action
     slots:
       requested_slot:
@@ -157,7 +154,6 @@ async def test_dont_predict_form_if_already_finished():
     - greet
     actions:
     - {UTTER_GREET_ACTION}
-    - {RULE_SNIPPET_ACTION_NAME}
     - some-action
     slots:
       requested_slot:
@@ -207,7 +203,6 @@ async def test_form_unhappy_path():
         - greet
         actions:
         - {UTTER_GREET_ACTION}
-        - {RULE_SNIPPET_ACTION_NAME}
         - some-action
         slots:
           requested_slot:
@@ -254,7 +249,6 @@ async def test_form_unhappy_path_triggering_form_again():
         - greet
         actions:
         - {UTTER_GREET_ACTION}
-        - {RULE_SNIPPET_ACTION_NAME}
         - {handle_rejection_action_name}
         - some-action
         slots:
@@ -326,7 +320,6 @@ async def test_form_unhappy_path_without_rule():
         - {other_intent}
         actions:
         - {UTTER_GREET_ACTION}
-        - {RULE_SNIPPET_ACTION_NAME}
         - some-action
         slots:
           requested_slot:
@@ -369,7 +362,6 @@ async def test_form_activation_rule():
         - {other_intent}
         actions:
         - {UTTER_GREET_ACTION}
-        - {RULE_SNIPPET_ACTION_NAME}
         - some-action
         slots:
           requested_slot:
@@ -421,7 +413,6 @@ async def test_failing_form_activation_due_to_no_rule():
         - {other_intent}
         actions:
         - {UTTER_GREET_ACTION}
-        - {RULE_SNIPPET_ACTION_NAME}
         - some-action
         slots:
           requested_slot:
@@ -459,7 +450,6 @@ def test_form_submit_rule():
         - greet
         actions:
         - {UTTER_GREET_ACTION}
-        - {RULE_SNIPPET_ACTION_NAME}
         - some-action
         - {submit_action_name}
         slots:

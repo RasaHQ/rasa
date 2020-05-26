@@ -16,6 +16,7 @@ from rasa.core.constants import (
     UTTER_PREFIX,
     RESPOND_PREFIX,
     FORM_PREFIX,
+    RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
@@ -78,7 +79,7 @@ def default_actions() -> List["Action"]:
 
 def default_action_names() -> List[Text]:
     """List default action names."""
-    return [a.name() for a in default_actions()]
+    return [a.name() for a in default_actions()] + [RULE_SNIPPET_ACTION_NAME]
 
 
 def combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
