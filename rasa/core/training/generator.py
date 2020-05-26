@@ -70,8 +70,11 @@ class TrackerWithCachedStates(DialogueStateTracker):
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
         domain: Optional[Domain] = None,
+        is_rule_tracker: bool = False,
     ):
-        tracker = cls(sender_id, slots, max_event_history, domain)
+        tracker = cls(
+            sender_id, slots, max_event_history, domain, is_rule_tracker=is_rule_tracker
+        )
         for e in evts:
             tracker.update(e)
         return tracker

@@ -28,6 +28,7 @@ GREET_RULE = DialogueStateTracker.from_events(
         ActionExecuted(UTTER_GREET_ACTION),
     ],
 )
+GREET_RULE.is_rule_tracker = True
 
 
 def test_faq_rule():
@@ -279,6 +280,7 @@ async def test_form_unhappy_path_triggering_form_again():
             ActionExecuted(form_name),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
+        is_rule_tracker=True,
     )
 
     policy = RulePolicy()
@@ -386,6 +388,7 @@ async def test_form_activation_rule():
             ActionExecuted(form_name),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
+        is_rule_tracker=True,
     )
     policy = RulePolicy()
     policy.train([GREET_RULE, form_activation_rule], domain)
@@ -481,6 +484,7 @@ def test_form_submit_rule():
             ActionExecuted(submit_action_name),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
+        is_rule_tracker=True,
     )
 
     policy = RulePolicy()
