@@ -236,8 +236,8 @@ Changed
 - loading training data from a URL requires an instance of ``EndpointConfig``
 
 - Changed evaluate behavior to plot two histogram bars per bin.
-  Plotting confidence of right predictions in a wine-ish colour
-  and wrong ones in a blue-ish colour.
+  Plotting confidence of right predictions in a wine-ish color
+  and wrong ones in a blue-ish color.
 
 Removed
 -------
@@ -409,7 +409,7 @@ Changed
 - Ignore hidden files when listing projects or models
 - Docker Images now run on python 3.6 for better non-latin character set support
 - changed key name for a file in ngram featurizer
-- changed ``jsonObserver`` to generate logs without a record seperator
+- changed ``jsonObserver`` to generate logs without a record separator
 - Improve jsonschema validation: text attribute of training data samples
   can not be empty
 - made the NLU server's ``/evaluate`` endpoint asynchronous
