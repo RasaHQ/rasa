@@ -1,12 +1,21 @@
-import io
 import json
 import os
 import re
 from typing import Any, Dict, List, Optional, Text
 
+import rasa.utils.io as io_utils
+
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.utils.io import read_json_file
+from rasa.nlu.constants import (
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_VALUE,
+)
 
 
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
@@ -48,21 +57,49 @@ def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
     write_to_file(filename, json_to_string(obj, **kwargs))
 
 
-def write_to_file(filename: Text, text: Text) -> None:
+def write_to_file(filename: Text, text: Any) -> None:
     """Write a text to a file."""
 
-    with io.open(filename, "w", encoding="utf-8") as f:
-        f.write(str(text))
+    io_utils.write_text_file(str(text), filename)
 
 
 def build_entity(
-    start: int, end: int, value: Text, entity_type: Text, **kwargs: Dict[Text, Any]
+    start: int,
+    end: int,
+    value: Text,
+    entity_type: Text,
+    role: Optional[Text] = None,
+    group: Optional[Text] = None,
+    **kwargs: Any,
 ) -> Dict[Text, Any]:
     """Builds a standard entity dictionary.
 
-    Adds additional keyword parameters."""
+    Adds additional keyword parameters.
 
-    entity = {"start": start, "end": end, "value": value, "entity": entity_type}
+    Args:
+        start: start position of entity
+        end: end position of entity
+        value: text value of the entity
+        entity_type: name of the entity type
+        role: role of the entity
+        group: group of the entity
+        **kwargs: additional parameters
+
+    Returns:
+        an entity dictionary
+    """
+
+    entity = {
+        ENTITY_ATTRIBUTE_START: start,
+        ENTITY_ATTRIBUTE_END: end,
+        ENTITY_ATTRIBUTE_VALUE: value,
+        ENTITY_ATTRIBUTE_TYPE: entity_type,
+    }
+
+    if role:
+        entity[ENTITY_ATTRIBUTE_ROLE] = role
+    if group:
+        entity[ENTITY_ATTRIBUTE_GROUP] = group
 
     entity.update(kwargs)
     return entity
@@ -104,25 +141,3 @@ def remove_model(model_dir: Text) -> bool:
             "Cannot remove {}, it seems it is not a model "
             "directory".format(model_dir)
         )
-
-
-def json_unpickle(file_name: Text) -> Any:
-    """Unpickle an object from file using json."""
-    import jsonpickle.ext.numpy as jsonpickle_numpy
-    import jsonpickle
-
-    jsonpickle_numpy.register_handlers()
-
-    with open(file_name, "r", encoding="utf-8") as f:
-        return jsonpickle.loads(f.read())
-
-
-def json_pickle(file_name: Text, obj: Any) -> None:
-    """Pickle an object to a file using json."""
-    import jsonpickle.ext.numpy as jsonpickle_numpy
-    import jsonpickle
-
-    jsonpickle_numpy.register_handlers()
-
-    with open(file_name, "w", encoding="utf-8") as f:
-        f.write(jsonpickle.dumps(obj))

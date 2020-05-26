@@ -18,7 +18,7 @@ slots:
   search_results:
     type: unfeaturized
 
-templates:
+responses:
   utter_ask_people:
     - text: "for how many people?"
   utter_ask_cuisine:

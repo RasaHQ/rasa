@@ -1,34 +1,51 @@
 import collections
+import copy
 import json
 import logging
 import os
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
+from pathlib import Path
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Union
 
 import rasa.core.constants
-import rasa.utils.common as common_utils
+from rasa.utils.common import (
+    raise_warning,
+    lazy_property,
+    sort_list_of_dicts_by_first_key,
+)
 import rasa.utils.io
-from rasa.cli.utils import bcolors
-from rasa.constants import DOMAIN_SCHEMA_FILE
+from rasa.cli.utils import bcolors, wrap_with_color
+from rasa.constants import (
+    DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+    DOMAIN_SCHEMA_FILE,
+    DOCS_URL_DOMAINS,
+)
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
 from rasa.core.constants import (
-    REQUESTED_SLOT,
     DEFAULT_KNOWLEDGE_BASE_ACTION,
-    SLOT_LISTED_ITEMS,
-    SLOT_LAST_OBJECT_TYPE,
+    REQUESTED_SLOT,
     SLOT_LAST_OBJECT,
+    SLOT_LAST_OBJECT_TYPE,
+    SLOT_LISTED_ITEMS,
 )
 from rasa.core.events import SlotSet, UserUttered
-from rasa.core.slots import Slot, UnfeaturizedSlot
+from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
-from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
+from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
 
 logger = logging.getLogger(__name__)
 
 PREV_PREFIX = "prev_"
 ACTIVE_FORM_PREFIX = "active_form_"
+
+CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
+SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
+SESSION_CONFIG_KEY = "session_config"
+USED_ENTITIES_KEY = "used_entities"
+USE_ENTITIES_KEY = "use_entities"
+IGNORE_ENTITIES_KEY = "ignore_entities"
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -37,19 +54,32 @@ if typing.TYPE_CHECKING:
 class InvalidDomain(Exception):
     """Exception that can be raised when domain is not valid."""
 
-    def __init__(self, message):
+    def __init__(self, message) -> None:
         self.message = message
 
     def __str__(self):
         # return message in error colours
-        return bcolors.FAIL + self.message + bcolors.ENDC
+        return wrap_with_color(self.message, color=bcolors.FAIL)
 
 
-class Domain(object):
+class SessionConfig(NamedTuple):
+    session_expiration_time: float  # in minutes
+    carry_over_slots: bool
+
+    @staticmethod
+    def default() -> "SessionConfig":
+        # TODO: 2.0, reconsider how to apply sessions to old projects
+        return SessionConfig(0, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION)
+
+    def are_sessions_enabled(self) -> bool:
+        return self.session_expiration_time > 0
+
+
+class Domain:
     """The domain specifies the universe in which the bot's policy acts.
 
     A Domain subclass provides the actions the bot can take, the intents
-    and entities it can recognise"""
+    and entities it can recognise."""
 
     @classmethod
     def empty(cls) -> "Domain":
@@ -104,9 +134,21 @@ class Domain(object):
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
-        utter_templates = cls.collect_templates(data.get("templates", {}))
+        utter_templates = cls.collect_templates(data.get("responses", {}))
+        if "templates" in data:
+            raise_warning(
+                "Your domain file contains the key: 'templates'. This has been "
+                "deprecated and renamed to 'responses'. The 'templates' key will "
+                "no longer work in future versions of Rasa. Please replace "
+                "'templates' with 'responses'",
+                FutureWarning,
+                docs=DOCS_URL_DOMAINS,
+            )
+            utter_templates = cls.collect_templates(data.get("templates", {}))
+
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
+        session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get("intents", {})
 
         return cls(
@@ -116,8 +158,31 @@ class Domain(object):
             utter_templates,
             data.get("actions", []),
             data.get("forms", []),
-            **additional_arguments
+            session_config=session_config,
+            **additional_arguments,
         )
+
+    @staticmethod
+    def _get_session_config(session_config: Dict) -> SessionConfig:
+        session_expiration_time = session_config.get(SESSION_EXPIRATION_TIME_KEY)
+
+        # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
+        if session_expiration_time is None:
+            raise_warning(
+                "No tracker session configuration was found in the loaded domain. "
+                "Domains without a session config will automatically receive a "
+                "session expiration time of 60 minutes in Rasa version 2.0 if not "
+                "configured otherwise.",
+                FutureWarning,
+                docs=DOCS_URL_DOMAINS + "#session-configuration",
+            )
+            session_expiration_time = 0
+
+        carry_over_slots = session_config.get(
+            CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
+        )
+
+        return SessionConfig(session_expiration_time, carry_over_slots)
 
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
@@ -125,7 +190,7 @@ class Domain(object):
         from rasa import data
 
         domain = Domain.empty()
-        for root, _, files in os.walk(path):
+        for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
                 if data.is_domain_file(full_path):
@@ -167,6 +232,9 @@ class Domain(object):
             for key, val in config.items():  # pytype: disable=attribute-error
                 combined["config"][key] = val
 
+        if override or self.session_config == SessionConfig.default():
+            combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
+
         # intents is list of dicts
         intents_1 = {list(i.keys())[0]: i for i in combined["intents"]}
         intents_2 = {list(i.keys())[0]: i for i in domain_dict["intents"]}
@@ -181,16 +249,18 @@ class Domain(object):
         for key in ["entities", "actions", "forms"]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
-        for key in ["templates", "slots"]:
+        for key in ["responses", "slots"]:
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
         return self.__class__.from_dict(combined)
 
     @staticmethod
-    def collect_slots(slot_dict):
+    def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
         # it is super important to sort the slots here!!!
         # otherwise state ordering is not consistent
         slots = []
+        # make a copy to not alter the input dictionary
+        slot_dict = copy.deepcopy(slot_dict)
         for slot_name in sorted(slot_dict):
             slot_class = Slot.resolve_by_type(slot_dict[slot_name].get("type"))
             if "type" in slot_dict[slot_name]:
@@ -200,67 +270,127 @@ class Domain(object):
         return slots
 
     @staticmethod
-    def collect_intent_properties(
-        intents: List[Union[Text, Dict[Text, Any]]]
-    ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
-        intent_properties = {}
-        for intent in intents:
-            if isinstance(intent, dict):
-                name = list(intent.keys())[0]
-                for properties in intent.values():
-                    properties.setdefault("use_entities", True)
-                    properties.setdefault("ignore_entities", [])
-                    if (
-                        properties["use_entities"] is None
-                        or properties["use_entities"] is False
-                    ):
-                        properties["use_entities"] = []
-            else:
-                name = intent
-                intent = {intent: {"use_entities": True, "ignore_entities": []}}
+    def _transform_intent_properties_for_internal_use(
+        intent: Dict[Text, Any], entities: List
+    ) -> Dict[Text, Any]:
+        """Transform intent properties coming from a domain file for internal use.
 
+        In domain files, `use_entities` or `ignore_entities` is used. Internally, there
+        is a property `used_entities` instead that lists all entities to be used.
+
+        Args:
+            intent: The intents as provided by a domain file.
+            entities: All entities as provided by a domain file.
+
+        Returns:
+            The intents as they should be used internally.
+        """
+        name, properties = list(intent.items())[0]
+
+        properties.setdefault(USE_ENTITIES_KEY, True)
+        properties.setdefault(IGNORE_ENTITIES_KEY, [])
+        if not properties[USE_ENTITIES_KEY]:  # this covers False, None and []
+            properties[USE_ENTITIES_KEY] = []
+
+        # `use_entities` is either a list of explicitly included entities
+        # or `True` if all should be included
+        if properties[USE_ENTITIES_KEY] is True:
+            included_entities = set(entities)
+        else:
+            included_entities = set(properties[USE_ENTITIES_KEY])
+        excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
+        used_entities = list(included_entities - excluded_entities)
+        used_entities.sort()
+
+        # Only print warning for ambiguous configurations if entities were included
+        # explicitly.
+        explicitly_included = isinstance(properties[USE_ENTITIES_KEY], list)
+        ambiguous_entities = included_entities.intersection(excluded_entities)
+        if explicitly_included and ambiguous_entities:
+            raise_warning(
+                f"Entities: '{ambiguous_entities}' are explicitly included and"
+                f" excluded for intent '{name}'."
+                f"Excluding takes precedence in this case. "
+                f"Please resolve that ambiguity.",
+                docs=f"{DOCS_URL_DOMAINS}#ignoring-entities-for-certain-intents",
+            )
+
+        properties[USED_ENTITIES_KEY] = used_entities
+        del properties[USE_ENTITIES_KEY]
+        del properties[IGNORE_ENTITIES_KEY]
+
+        return intent
+
+    @classmethod
+    def collect_intent_properties(
+        cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]
+    ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
+        """Get intent properties for a domain from what is provided by a domain file.
+
+        Args:
+            intents: The intents as provided by a domain file.
+            entities: All entities as provided by a domain file.
+
+        Returns:
+            The intent properties to be stored in the domain.
+        """
+        # make a copy to not alter the input argument
+        intents = copy.deepcopy(intents)
+        intent_properties = {}
+        duplicates = set()
+        for intent in intents:
+            if not isinstance(intent, dict):
+                intent = {intent: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
+
+            name = list(intent.keys())[0]
             if name in intent_properties.keys():
-                raise InvalidDomain(
-                    "Intents are not unique! Found two intents with name '{}'. "
-                    "Either rename or remove one of them.".format(name)
-                )
+                duplicates.add(name)
+
+            intent = cls._transform_intent_properties_for_internal_use(intent, entities)
 
             intent_properties.update(intent)
+
+        if duplicates:
+            raise InvalidDomain(
+                f"Intents are not unique! Found multiple intents with name(s) {sorted(duplicates)}. "
+                f"Either rename or remove the duplicate ones."
+            )
+
         return intent_properties
 
     @staticmethod
     def collect_templates(
         yml_templates: Dict[Text, List[Any]]
     ) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Go through the templates and make sure they are all in dict format
-        """
+        """Go through the templates and make sure they are all in dict format."""
         templates = {}
         for template_key, template_variations in yml_templates.items():
             validated_variations = []
             if template_variations is None:
                 raise InvalidDomain(
-                    "Utterance '{}' does not have any defined templates.".format(
+                    "Response '{}' does not have any defined variations.".format(
                         template_key
                     )
                 )
 
             for t in template_variations:
 
-                # templates should be a dict with options
+                # responses should be a dict with options
                 if isinstance(t, str):
-                    logger.warning(
-                        "Deprecated: Templates should not be strings anymore. "
-                        "Utterance template '{}' should contain either '- text: ' or "
-                        "'- custom: ' attribute to be a proper template.".format(
-                            template_key
-                        )
+                    raise_warning(
+                        f"Responses should not be strings anymore. "
+                        f"Response '{template_key}' should contain "
+                        f"either a '- text: ' or a '- custom: ' "
+                        f"attribute to be a proper response.",
+                        FutureWarning,
+                        docs=DOCS_URL_DOMAINS + "#responses",
                     )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(
-                        "Utter template '{}' needs to contain either "
-                        "'- text: ' or '- custom: ' attribute to be a proper "
-                        "template.".format(template_key)
+                        f"Response '{template_key}' needs to contain either "
+                        f"'- text: ' or '- custom: ' attribute to be a proper "
+                        f"response."
                     )
                 else:
                     validated_variations.append(t)
@@ -273,30 +403,32 @@ class Domain(object):
         intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
         entities: List[Text],
         slots: List[Slot],
-        templates: Dict[Text, Any],
+        templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         form_names: List[Text],
         store_entities_as_slots: bool = True,
+        session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
 
-        self.intent_properties = self.collect_intent_properties(intents)
+        self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
         self.form_names = form_names
         self.slots = slots
         self.templates = templates
+        self.session_config = session_config
 
         # only includes custom actions and utterance actions
-        self.user_actions = action_names
+        self.user_actions = action.combine_with_templates(action_names, templates)
+
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-            action.combine_user_with_default_actions(action_names) + form_names
+            action.combine_user_with_default_actions(self.user_actions) + form_names
         )
-        self.store_entities_as_slots = store_entities_as_slots
 
+        self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
     def __hash__(self) -> int:
-        from rasa.utils.common import sort_list_of_dicts_by_first_key
 
         self_as_dict = self.as_dict()
         self_as_dict["intents"] = sort_list_of_dicts_by_first_key(
@@ -307,24 +439,33 @@ class Domain(object):
 
         return int(text_hash, 16)
 
-    @common_utils.lazy_property
+    @lazy_property
     def user_actions_and_forms(self):
-        """Returns combination of user actions and forms"""
+        """Returns combination of user actions and forms."""
 
         return self.user_actions + self.form_names
 
-    @common_utils.lazy_property
+    @lazy_property
     def num_actions(self):
         """Returns the number of available actions."""
 
         # noinspection PyTypeChecker
         return len(self.action_names)
 
-    @common_utils.lazy_property
+    @lazy_property
     def num_states(self):
         """Number of used input states for the action prediction."""
 
         return len(self.input_states)
+
+    def add_categorical_slot_default_value(self) -> None:
+        """Add a default value to all categorical slots.
+
+        All unseen values found for the slot will be mapped to this default value
+        for featurization.
+        """
+        for slot in [s for s in self.slots if type(s) is CategoricalSlot]:
+            slot.add_default_value()
 
     def add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.
@@ -335,7 +476,7 @@ class Domain(object):
         if self.form_names and REQUESTED_SLOT not in [s.name for s in self.slots]:
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
 
-    def add_knowledge_base_slots(self):
+    def add_knowledge_base_slots(self) -> None:
         """
         Add slots for the knowledge base action to the list of slots, if the
         default knowledge base action name is present.
@@ -363,7 +504,7 @@ class Domain(object):
     def action_for_name(
         self, action_name: Text, action_endpoint: Optional[EndpointConfig]
     ) -> Optional[Action]:
-        """Looks up which action corresponds to this action name."""
+        """Look up which action corresponds to this action name."""
 
         if action_name not in self.action_names:
             self._raise_action_not_found_exception(action_name)
@@ -388,30 +529,29 @@ class Domain(object):
 
         return self.action_for_name(self.action_names[index], action_endpoint)
 
-    def actions(self, action_endpoint):
+    def actions(self, action_endpoint) -> List[Optional[Action]]:
         return [
             self.action_for_name(name, action_endpoint) for name in self.action_names
         ]
 
     def index_for_action(self, action_name: Text) -> Optional[int]:
-        """Looks up which action index corresponds to this action name"""
+        """Look up which action index corresponds to this action name."""
 
         try:
             return self.action_names.index(action_name)
         except ValueError:
             self._raise_action_not_found_exception(action_name)
 
-    def _raise_action_not_found_exception(self, action_name):
-        action_names = "\n".join(["\t - {}".format(a) for a in self.action_names])
+    def _raise_action_not_found_exception(self, action_name) -> typing.NoReturn:
+        action_names = "\n".join([f"\t - {a}" for a in self.action_names])
         raise NameError(
-            "Cannot access action '{}', "
-            "as that name is not a registered "
-            "action for this domain. "
-            "Available actions are: \n{}"
-            "".format(action_name, action_names)
+            f"Cannot access action '{action_name}', "
+            f"as that name is not a registered "
+            f"action for this domain. "
+            f"Available actions are: \n{action_names}"
         )
 
-    def random_template_for(self, utter_action):
+    def random_template_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
         import numpy as np
 
         if utter_action in self.templates:
@@ -420,53 +560,53 @@ class Domain(object):
             return None
 
     # noinspection PyTypeChecker
-    @common_utils.lazy_property
+    @lazy_property
     def slot_states(self) -> List[Text]:
         """Returns all available slot state strings."""
 
         return [
-            "slot_{}_{}".format(s.name, i)
+            f"slot_{s.name}_{i}"
             for s in self.slots
             for i in range(0, s.feature_dimensionality())
         ]
 
     # noinspection PyTypeChecker
-    @common_utils.lazy_property
+    @lazy_property
     def prev_action_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return [PREV_PREFIX + a for a in self.action_names]
 
     # noinspection PyTypeChecker
-    @common_utils.lazy_property
+    @lazy_property
     def intent_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return ["intent_{0}".format(i) for i in self.intents]
+        return [f"intent_{i}" for i in self.intents]
 
     # noinspection PyTypeChecker
-    @common_utils.lazy_property
+    @lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return ["entity_{0}".format(e) for e in self.entities]
+        return [f"entity_{e}" for e in self.entities]
 
     # noinspection PyTypeChecker
-    @common_utils.lazy_property
+    @lazy_property
     def form_states(self) -> List[Text]:
-        return ["active_form_{0}".format(f) for f in self.form_names]
+        return [f"active_form_{f}" for f in self.form_names]
 
     def index_of_state(self, state_name: Text) -> Optional[int]:
-        """Provides the index of a state."""
+        """Provide the index of a state."""
 
         return self.input_state_map.get(state_name)
 
-    @common_utils.lazy_property
+    @lazy_property
     def input_state_map(self) -> Dict[Text, int]:
-        """Provides a mapping from state names to indices."""
+        """Provide a mapping from state names to indices."""
         return {f: i for i, f in enumerate(self.input_states)}
 
-    @common_utils.lazy_property
+    @lazy_property
     def input_states(self) -> List[Text]:
         """Returns all available states."""
 
@@ -492,7 +632,7 @@ class Domain(object):
 
         if intent_name:
             for entity_name in self._get_featurized_entities(latest_message):
-                key = "entity_{0}".format(entity_name)
+                key = f"entity_{entity_name}"
                 state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
@@ -500,7 +640,7 @@ class Domain(object):
             if slot is not None:
                 for i, slot_value in enumerate(slot.as_feature()):
                     if slot_value != 0:
-                        slot_id = "slot_{}_{}".format(key, i)
+                        slot_id = f"slot_{key}_{i}"
                         state_dict[slot_id] = slot_value
 
         if "intent_ranking" in latest_message.parse_data:
@@ -523,31 +663,14 @@ class Domain(object):
             entity["entity"] for entity in entities if "entity" in entity.keys()
         }
 
-        # `use_entities` is either a list of explicitly included entities
-        # or `True` if all should be included
-        include = intent_config.get("use_entities", True)
-        included_entities = set(entity_names if include is True else include)
-        excluded_entities = set(intent_config.get("ignore_entities", []))
-        wanted_entities = included_entities - excluded_entities
-
-        # Only print warning for ambiguous configurations if entities were included
-        # explicitly.
-        explicitly_included = isinstance(include, list)
-        ambiguous_entities = included_entities.intersection(excluded_entities)
-        if explicitly_included and ambiguous_entities:
-            logger.warning(
-                "Entities: '{}' are explicitly included and excluded for intent '{}'. "
-                "Excluding takes precedence in this case. "
-                "Please resolve that ambiguity."
-                "".format(ambiguous_entities, intent_name)
-            )
+        wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
         return entity_names.intersection(wanted_entities)
 
     def get_prev_action_states(
         self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, float]:
-        """Turns the previous taken action into a state name."""
+        """Turn the previous taken action into a state name."""
 
         latest_action = tracker.latest_action_name
         if latest_action:
@@ -555,21 +678,13 @@ class Domain(object):
             if prev_action_name in self.input_state_map:
                 return {prev_action_name: 1.0}
             else:
-                logger.warning(
-                    "Failed to use action '{}' in history. "
-                    "Please make sure all actions are listed in the "
-                    "domains action list. If you recently removed an "
-                    "action, don't worry about this warning. It "
-                    "should stop appearing after a while. "
-                    "".format(latest_action)
-                )
                 return {}
         else:
             return {}
 
     @staticmethod
     def get_active_form(tracker: "DialogueStateTracker") -> Dict[Text, float]:
-        """Turns tracker's active form into a state name."""
+        """Turn tracker's active form into a state name."""
         form = tracker.active_form.get("name")
         if form is not None:
             return {ACTIVE_FORM_PREFIX + form: 1.0}
@@ -577,7 +692,7 @@ class Domain(object):
             return {}
 
     def get_active_states(self, tracker: "DialogueStateTracker") -> Dict[Text, float]:
-        """Return a bag of active states from the tracker state"""
+        """Return a bag of active states from the tracker state."""
         state_dict = self.get_parsing_states(tracker)
         state_dict.update(self.get_prev_action_states(tracker))
         state_dict.update(self.get_active_form(tracker))
@@ -591,7 +706,7 @@ class Domain(object):
             self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()
         ]
 
-    def slots_for_entities(self, entities):
+    def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
@@ -609,13 +724,13 @@ class Domain(object):
             return []
 
     def persist_specification(self, model_path: Text) -> None:
-        """Persists the domain specification to storage."""
+        """Persist the domain specification to storage."""
 
         domain_spec_path = os.path.join(model_path, "domain.json")
         rasa.utils.io.create_directory_for_file(domain_spec_path)
 
         metadata = {"states": self.input_states}
-        utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        rasa.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
     @classmethod
     def load_specification(cls, path: Text) -> Dict[Text, Any]:
@@ -626,7 +741,7 @@ class Domain(object):
         return specification
 
     def compare_with_specification(self, path: Text) -> bool:
-        """Compares the domain spec of the current and the loaded domain.
+        """Compare the domain spec of the current and the loaded domain.
 
         Throws exception if the loaded domain specification is different
         to the current domain are different."""
@@ -638,48 +753,86 @@ class Domain(object):
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
             raise InvalidDomain(
-                "Domain specification has changed. "
-                "You MUST retrain the policy. "
-                + "Detected mismatch in domain specification. "
-                + "The following states have been \n"
-                "\t - removed: {} \n"
-                "\t - added:   {} ".format(missing, additional)
+                f"Domain specification has changed. "
+                f"You MUST retrain the policy. "
+                f"Detected mismatch in domain specification. "
+                f"The following states have been \n"
+                f"\t - removed: {missing} \n"
+                f"\t - added:   {additional} "
             )
         else:
             return True
 
-    def _slot_definitions(self):
+    def _slot_definitions(self) -> Dict[Any, Dict[str, Any]]:
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self) -> Dict[Text, Any]:
-        additional_config = {"store_entities_as_slots": self.store_entities_as_slots}
 
         return {
-            "config": additional_config,
-            "intents": [{k: v} for k, v in self.intent_properties.items()],
+            "config": {"store_entities_as_slots": self.store_entities_as_slots},
+            SESSION_CONFIG_KEY: {
+                SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
+                CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
+            },
+            "intents": self._transform_intents_for_file(),
             "entities": self.entities,
             "slots": self._slot_definitions(),
-            "templates": self.templates,
+            "responses": self.templates,
             "actions": self.user_actions,  # class names of the actions
             "forms": self.form_names,
         }
 
-    def persist(self, filename: Text) -> None:
+    def persist(self, filename: Union[Text, Path]) -> None:
         """Write domain to a file."""
 
         domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
-    def cleaned_domain(self) -> Dict[Text, Any]:
-        """Fetch cleaned domain, replacing redundant keys with default values."""
+    def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
+        """Transform intent properties for displaying or writing into a domain file.
 
+        Internally, there is a property `used_entities` that lists all entities to be
+        used. In domain files, `use_entities` or `ignore_entities` is used instead to
+        list individual entities to ex- or include, because this is easier to read.
+
+        Returns:
+            The intent properties as they are used in domain files.
+        """
+        intent_properties = copy.deepcopy(self.intent_properties)
+        intents_for_file = []
+
+        for intent_name, intent_props in intent_properties.items():
+            use_entities = set(intent_props[USED_ENTITIES_KEY])
+            ignore_entities = set(self.entities) - use_entities
+            if len(use_entities) == len(self.entities):
+                intent_props[USE_ENTITIES_KEY] = True
+            elif len(use_entities) <= len(self.entities) / 2:
+                intent_props[USE_ENTITIES_KEY] = list(use_entities)
+            else:
+                intent_props[IGNORE_ENTITIES_KEY] = list(ignore_entities)
+            intent_props.pop(USED_ENTITIES_KEY)
+            intents_for_file.append({intent_name: intent_props})
+
+        return intents_for_file
+
+    def cleaned_domain(self) -> Dict[Text, Any]:
+        """Fetch cleaned domain to display or write into a file.
+
+        The internal `used_entities` property is replaced by `use_entities` or
+        `ignore_entities` and redundant keys are replaced with default values
+        to make the domain easier readable.
+
+        Returns:
+            A cleaned dictionary version of the domain.
+        """
         domain_data = self.as_dict()
+
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
-                if intent.get("use_entities") is True:
-                    intent.pop("use_entities")
-                if not intent.get("ignore_entities"):
-                    intent.pop("ignore_entities", None)
+                if intent.get(USE_ENTITIES_KEY) is True:
+                    del intent[USE_ENTITIES_KEY]
+                if not intent.get(IGNORE_ENTITIES_KEY):
+                    intent.pop(IGNORE_ENTITIES_KEY, None)
                 if len(intent) == 0:
                     domain_data["intents"][idx] = name
 
@@ -707,7 +860,7 @@ class Domain(object):
         cleaned_domain_data = self.cleaned_domain()
         utils.dump_obj_as_yaml_to_file(filename, cleaned_domain_data)
 
-    def as_yaml(self, clean_before_dump=False):
+    def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
             domain_data = self.cleaned_domain()
         else:
@@ -719,7 +872,7 @@ class Domain(object):
         """Return the configuration for an intent."""
         return self.intent_properties.get(intent_name, {})
 
-    @common_utils.lazy_property
+    @lazy_property
     def intents(self):
         return sorted(self.intent_properties.keys())
 
@@ -799,7 +952,7 @@ class Domain(object):
             "slot_warnings": slot_warnings,
         }
 
-    def _check_domain_sanity(self):
+    def _check_domain_sanity(self) -> None:
         """Make sure the domain is properly configured.
         If the domain contains any duplicate slots, intents, actions
         or entities, an InvalidDomain error is raised.  This error
@@ -867,9 +1020,9 @@ class Domain(object):
                     if message:
                         message += "\n"
                     message += (
-                        "Duplicate {0} in domain. "
-                        "These {0} occur more than once in "
-                        "the domain: '{1}'".format(name, "', '".join(d))
+                        f"Duplicate {name} in domain. "
+                        f"These {name} occur more than once in "
+                        f"the domain: '{', '.join(d)}'."
                     )
             return message
 
@@ -908,15 +1061,16 @@ class Domain(object):
 
         if missing_templates:
             for template in missing_templates:
-                logger.warning(
-                    "Utterance '{}' is listed as an "
-                    "action in the domain file, but there is "
-                    "no matching utterance template. Please "
-                    "check your domain.".format(template)
+                raise_warning(
+                    f"Action '{template}' is listed as a "
+                    f"response action in the domain file, but there is "
+                    f"no matching response defined. Please "
+                    f"check your domain.",
+                    docs=DOCS_URL_DOMAINS + "#responses",
                 )
 
     def is_empty(self) -> bool:
-        """Checks whether the domain is empty."""
+        """Check whether the domain is empty."""
 
         return self.as_dict() == Domain.empty().as_dict()
 

@@ -1,0 +1,62 @@
+name: Publish Documentation
+
+on:
+  push:
+    branches:
+    - '[0-9]+.[0-9]+.x'
+    - 'master'
+    tags:
+    - '**'
+
+# SECRETS
+# - GITHUB_DOCS_KEY: generated locally, added to github repo (public key)
+#                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
+# - GITHUB_TOKEN: (default, from github actions)
+
+jobs:
+  docs:
+    name: Build Docs
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.6 🐍
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-3.6-non-full-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-3.6-non-full
+
+    - name: Install Dependencies 📦
+      run: make install
+
+    - name: Build & Publish Docs 🏃‍♀️
+      env:
+        GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
+      run: |
+        eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
+        echo "$GITHUB_DOCS_KEY" > "docs_key"
+        ssh-add docs_key
+
+        git config --global user.email "builds@github-ci.com"
+        git config --global user.name "GitHub CI"
+        git remote set-url --push origin "git@github.com:${{github.repository}}"
+
+        poetry run sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster

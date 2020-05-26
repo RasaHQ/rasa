@@ -51,6 +51,9 @@ Glossary
 
         This is a powerful way to write complicated stories by enabling users to explore what a bot can do and easily fix any mistakes it makes.
 
+    Minimum viable assistant
+        A basic assistant that can handle the most important happy path stories.
+
     NLG
         Natural Language Generation (NLG) is the process of generating natural language messages to send to a user.
 

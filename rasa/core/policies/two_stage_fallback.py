@@ -5,7 +5,6 @@ import typing
 from typing import List, Text, Optional
 
 import rasa.utils.io
-from rasa.core import utils
 from rasa.core.actions.action import (
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
@@ -13,6 +12,9 @@ from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_LISTEN_NAME,
 )
+
+from rasa.core.events import UserUttered, ActionExecuted
+
 from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.policies.fallback import FallbackPolicy
@@ -78,7 +80,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             deny_suggestion_intent_name: The name of the intent which is used
                  to detect that the user denies the suggested intents.
         """
-        super(TwoStageFallbackPolicy, self).__init__(
+        super().__init__(
             priority,
             nlu_threshold,
             ambiguity_threshold,
@@ -124,9 +126,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         if self._is_user_input_expected(tracker):
             result = confidence_scores_for(ACTION_LISTEN_NAME, 1.0, domain)
         elif self._has_user_denied(last_intent_name, tracker):
-            logger.debug(
-                "User '{}' denied suggested intents.".format(tracker.sender_id)
-            )
+            logger.debug(f"User '{tracker.sender_id}' denied suggested intents.")
             result = self._results_for_user_denied(tracker, domain)
         elif user_rephrased and should_nlu_fallback:
             logger.debug(
@@ -137,7 +137,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 ACTION_DEFAULT_ASK_AFFIRMATION_NAME, 1.0, domain
             )
         elif user_rephrased:
-            logger.debug("User '{}' rephrased intent".format(tracker.sender_id))
+            logger.debug(f"User '{tracker.sender_id}' rephrased intent")
             result = confidence_scores_for(
                 ACTION_REVERT_FALLBACK_EVENTS_NAME, 1.0, domain
             )
@@ -175,11 +175,19 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         return result
 
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
-        return tracker.latest_action_name in [
+        action_requires_input = tracker.latest_action_name in [
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
             ACTION_DEFAULT_ASK_REPHRASE_NAME,
             self.fallback_action_name,
         ]
+        try:
+            last_utterance_time = tracker.get_last_event_for(UserUttered).timestamp
+            last_action_time = tracker.get_last_event_for(ActionExecuted).timestamp
+            input_given = last_action_time < last_utterance_time
+        except AttributeError:
+            input_given = False
+
+        return action_requires_input and not input_given
 
     def _has_user_denied(
         self, last_intent: Text, tracker: DialogueStateTracker
@@ -214,7 +222,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
         }
         rasa.utils.io.create_directory_for_file(config_file)
-        utils.dump_obj_as_json_to_file(config_file, meta)
+        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":

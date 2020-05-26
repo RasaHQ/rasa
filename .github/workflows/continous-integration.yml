@@ -1,0 +1,273 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+    - master
+    tags:
+    - '*'
+  pull_request:
+
+# SECRETS
+# - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
+#                           (login for account in 1pw)
+# - SLACK_WEBHOOK_TOKEN: token to post to RasaHQ slack account (in 1password)
+# - PYPI_TOKEN: publishing token for amn41 account, needs to be maintainer of
+#               RasaHQ/rasa on pypi (account credentials in 1password)
+# - DOCKERHUB_PASSWORD: password for an account with write access to the rasa
+#                       repo on hub.docker.com. used to pull and upload containers
+
+env:
+  # needed to fix issues with boto during testing:
+  # https://github.com/travis-ci/travis-ci/issues/7940
+  BOTO_CONFIG: /dev/null
+  PIP_USE_PEP517: false
+
+jobs:
+  api:
+    name: Test API specification
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Setup Node 🦝
+      uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+
+    - name: Run Swagger 🕵️‍♀️
+      run: |
+        npm install -g swagger-cli
+        swagger-cli validate docs/_static/spec/action-server.yml
+        swagger-cli validate docs/_static/spec/rasa.yml
+
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.7 🐍
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-3.7
+
+    - name: Install Dependencies 📦
+      run: |
+        sudo apt-get -y install libpq-dev
+        make install-full
+
+    - name: Lint Code 🎎
+      run: make lint
+
+    - name: Check Types 📚
+      run: make types
+
+    - name: Test CLI 🖥
+      # makes sure we catch any dependency error early. they will create strange
+      # errors during the docs build, so easier to catch them early on by
+      # trying to run the `rasa` command once before the docs build.
+      run: poetry run rasa --help
+
+# DOES NOT WORK YET DUE TO TENSORFLOW 1.5 (some issue with no tensorflow-cpu verison)
+#  -> should work with 2.0 and replace the below "Test Docs":
+#
+#    - name: Test Docs
+#      uses: ammaraskar/sphinx-action@0.3
+#      with:
+#        docs-folder: "docs/"
+#        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+#        build-command: "make SPHINXOPTS=\"-W --keep-going -A html_theme=rasabaster\" html"
+#        pre-build-command: "apt-get update -y && apt-get install -y git"
+
+    - name: Test Docs 📃
+      run: |
+        make install-full
+        poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
+        export SPHINXBUILD=$(poetry run which sphinx-build)
+        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html && make SPHINXBUILD=$SPHINXBUILD linkcheck
+        
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [3.6, 3.7]
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }} 🐍
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
+
+    - name: Install Dependencies 📦
+      run: |
+        sudo apt-get -y install libpq-dev
+        make install-full | tee .output
+        if grep 'The lock file is not up to date' .output; then exit 1; fi
+        make prepare-tests-ubuntu
+
+    - name: Test Code 🔍
+      run: JOBS=2 make test
+
+    - name: Send Coverage Report 📊
+      if: matrix.python-version == 3.6
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_SERVICE_NAME: github
+      run: poetry run coveralls
+
+  docker:
+    name: Build Docker
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        image:
+          - {"file": "Dockerfile", "tag_ext": ""}
+          - {"file": "docker/Dockerfile_full", "tag_ext": "-full"}
+          - {"file": "docker/Dockerfile_pretrained_embeddings_mitie_en", "tag_ext": "-mitie-en"}
+          - {"file": "docker/Dockerfile_pretrained_embeddings_spacy_de", "tag_ext": "-spacy-de"}
+          - {"file": "docker/Dockerfile_pretrained_embeddings_spacy_en", "tag_ext": "-spacy-en"}
+
+    env:
+      DOCKERHUB_USERNAME: tmbo
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Free disk space
+      # tries to make sure we do not run out of disk space, see
+      # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
+      run: |
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt clean
+        docker rmi $(docker image ls -aq)
+        df -h
+
+    - name: Login to DockerHub Registry 🔢
+      run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
+
+    - name: Pull latest${{ matrix.image.tag_ext }} Docker image for caching
+      run: docker pull rasa/rasa:latest${{ matrix.image.tag_ext }} || true
+
+    - name: Build latest${{ matrix.image.tag_ext }} Docker image
+      run: docker build . --file ${{ matrix.image.file }} --tag rasa/rasa:latest${{ matrix.image.tag_ext }} --cache-from rasa/rasa:latest${{ matrix.image.tag_ext }}
+
+    - name: Push image with latest tag 📦
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      run: docker push rasa/rasa:latest${{ matrix.image.tag_ext }}
+
+    - name: Push image with ${{github.ref}} tag 📦
+      env:
+        GITHUB_TAG: ${{ github.ref }}
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+      run: |
+        GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+        docker tag rasa/rasa:latest${{ matrix.image.tag_ext }} rasa/rasa:${GITHUB_TAG}${{ matrix.image.tag_ext }}
+        docker push rasa/rasa:${GITHUB_TAG}${{ matrix.image.tag_ext }}
+
+  deploy:
+    name: Deploy to PyPI
+    runs-on: ubuntu-latest
+
+    # deploy will only be run when there is a tag available
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    needs: [quality, test, api, docker]  # only run after all other stages succeeded
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.6 🐍
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Build ⚒️ Distributions
+      run: poetry build
+
+    - name: Publish to PyPI 📦
+      uses: pypa/gh-action-pypi-publish@37e305e7413032d8422456179fee28fac7d25187
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_TOKEN }}
+
+    - name: Notify Slack & Publish Release Notes 🗞
+      env:
+        GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
+        SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+        GITHUB_TAG: ${{ github.ref }}
+        GITHUB_REPO_SLUG: ${{ github.repository }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+        sudo apt-get update
+        sudo apt-get -y install pandoc
+        pip install -U github3.py pypandoc
+        python3 scripts/publish_gh_release_notes.py
+        ./scripts/ping_slack_about_package_release.sh
+
+  mergepal-merge: # run merge pal in the end
+    runs-on: ubuntu-latest
+    needs: [quality, test, api, docker]
+    steps:
+      - uses: actions/checkout@v1
+      - uses: rasahq/merge-pal-action@v0.5.1
+        with:
+          token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}

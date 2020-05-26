@@ -17,7 +17,7 @@ def run(
     endpoints: Text,
     connector: Text = None,
     credentials: Text = None,
-    **kwargs: Dict
+    **kwargs: Dict,
 ):
     """Runs a Rasa model.
 
@@ -53,24 +53,21 @@ def run(
         channel=connector,
         credentials=credentials,
         endpoints=_endpoints,
-        **kwargs
+        **kwargs,
     )
 
 
 def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     from rasa.core.tracker_store import TrackerStore
-    import rasa.core.brokers.utils as broker_utils
     from rasa.core.utils import AvailableEndpoints
     from rasa.core.agent import Agent
+    from rasa.core.brokers.broker import EventBroker
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
-    _broker = broker_utils.from_endpoint_config(_endpoints.event_broker)
-
-    _tracker_store = TrackerStore.find_tracker_store(
-        None, _endpoints.tracker_store, _broker
-    )
-    _lock_store = LockStore.find_lock_store(_endpoints.lock_store)
+    _broker = EventBroker.create(_endpoints.event_broker)
+    _tracker_store = TrackerStore.create(_endpoints.tracker_store, event_broker=_broker)
+    _lock_store = LockStore.create(_endpoints.lock_store)
 
     return Agent.load(
         model,

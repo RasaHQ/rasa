@@ -1,12 +1,13 @@
 import json
 import logging
-import sys
-import uuid
 from collections import deque, defaultdict
+
+import uuid
+import typing
 from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 
 from rasa.core import utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -17,7 +18,12 @@ from rasa.core.events import (
     SlotSet,
     Event,
     ActionExecutionRejected,
+    SessionStarted,
 )
+from rasa.core.trackers import DialogueStateTracker
+
+if typing.TYPE_CHECKING:
+    import networkx as nx
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +45,7 @@ FORM_PREFIX = "form: "
 STEP_COUNT = 1
 
 
-class StoryStringHelper(object):
+class StoryStringHelper:
     """A helper class to mark story steps that are inside a form with `form: `
     """
 
@@ -50,7 +56,7 @@ class StoryStringHelper(object):
         form_rejected=False,
         form_prefix_string="",
         no_form_prefix_string="",
-    ):
+    ) -> None:
         # track active form
         self.active_form = active_form
         # track whether a from should be validated
@@ -63,7 +69,7 @@ class StoryStringHelper(object):
         self.no_form_prefix_string = no_form_prefix_string
 
 
-class Checkpoint(object):
+class Checkpoint:
     def __init__(
         self, name: Optional[Text], conditions: Optional[Dict[Text, Any]] = None
     ) -> None:
@@ -71,11 +77,13 @@ class Checkpoint(object):
         self.name = name
         self.conditions = conditions if conditions else {}
 
-    def as_story_string(self):
+    def as_story_string(self) -> Text:
         dumped_conds = json.dumps(self.conditions) if self.conditions else ""
-        return "{}{}".format(self.name, dumped_conds)
+        return f"{self.name}{dumped_conds}"
 
-    def filter_trackers(self, trackers):
+    def filter_trackers(
+        self, trackers: List[DialogueStateTracker]
+    ) -> List[DialogueStateTracker]:
         """Filters out all trackers that do not satisfy the conditions."""
 
         if not self.conditions:
@@ -85,13 +93,13 @@ class Checkpoint(object):
             trackers = [t for t in trackers if t.get_slot(slot_name) == slot_value]
         return trackers
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return "Checkpoint(name={!r}, conditions={})".format(
             self.name, json.dumps(self.conditions)
         )
 
 
-class StoryStep(object):
+class StoryStep:
     """A StoryStep is a section of a story block between two checkpoints.
 
     NOTE: Checkpoints are not only limited to those manually written
@@ -105,12 +113,14 @@ class StoryStep(object):
         start_checkpoints: Optional[List[Checkpoint]] = None,
         end_checkpoints: Optional[List[Checkpoint]] = None,
         events: Optional[List[Event]] = None,
+        source_name: Optional[Text] = None,
     ) -> None:
 
         self.end_checkpoints = end_checkpoints if end_checkpoints else []
         self.start_checkpoints = start_checkpoints if start_checkpoints else []
         self.events = events if events else []
         self.block_name = block_name
+        self.source_name = source_name
         # put a counter prefix to uuid to get reproducible sorting results
         global STEP_COUNT
         self.id = "{}_{}".format(STEP_COUNT, uuid.uuid4().hex)
@@ -118,32 +128,37 @@ class StoryStep(object):
 
         self.story_string_helper = StoryStringHelper()
 
-    def create_copy(self, use_new_id):
+    def create_copy(self, use_new_id: bool) -> "StoryStep":
         copied = StoryStep(
             self.block_name,
             self.start_checkpoints,
             self.end_checkpoints,
             self.events[:],
+            self.source_name,
         )
         if not use_new_id:
             copied.id = self.id
         return copied
 
-    def add_user_message(self, user_message):
+    def add_user_message(self, user_message: UserUttered) -> None:
         self.add_event(user_message)
 
-    def add_event(self, event):
+    def add_event(self, event: Event) -> None:
         self.events.append(event)
 
     @staticmethod
-    def _checkpoint_string(story_step_element):
+    def _checkpoint_string(story_step_element: UserUttered) -> Text:
         return "> {}\n".format(story_step_element.as_story_string())
 
     @staticmethod
-    def _user_string(story_step_element, e2e, prefix=""):
+    def _user_string(
+        story_step_element: UserUttered, e2e: bool, prefix: Text = ""
+    ) -> Text:
         return "* {}{}\n".format(prefix, story_step_element.as_story_string(e2e))
 
-    def _store_user_strings(self, story_step_element, e2e, prefix=""):
+    def _store_user_strings(
+        self, story_step_element: UserUttered, e2e: bool, prefix: Text = ""
+    ) -> None:
         self.story_string_helper.no_form_prefix_string += self._user_string(
             story_step_element, e2e
         )
@@ -152,10 +167,10 @@ class StoryStep(object):
         )
 
     @staticmethod
-    def _bot_string(story_step_element, prefix=""):
+    def _bot_string(story_step_element: Event, prefix: Text = "") -> Text:
         return "    - {}{}\n".format(prefix, story_step_element.as_story_string())
 
-    def _store_bot_strings(self, story_step_element, prefix=""):
+    def _store_bot_strings(self, story_step_element: Event, prefix: Text = "") -> None:
         self.story_string_helper.no_form_prefix_string += self._bot_string(
             story_step_element
         )
@@ -163,11 +178,11 @@ class StoryStep(object):
             story_step_element, prefix
         )
 
-    def _reset_stored_strings(self):
+    def _reset_stored_strings(self) -> None:
         self.story_string_helper.form_prefix_string = ""
         self.story_string_helper.no_form_prefix_string = ""
 
-    def as_story_string(self, flat=False, e2e=False):
+    def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
 
@@ -179,7 +194,7 @@ class StoryStep(object):
         if flat:
             result = ""
         else:
-            result = "\n## {}\n".format(self.block_name)
+            result = f"\n## {self.block_name}\n"
             for s in self.start_checkpoints:
                 if s.name != STORY_START:
                     result += self._checkpoint_string(s)
@@ -208,6 +223,10 @@ class StoryStep(object):
 
                 result += self._bot_string(s)
 
+            elif isinstance(s, SessionStarted):
+                # `SessionStarted` events are not dumped in stories
+                continue
+
             elif isinstance(s, FormValidation):
                 self.story_string_helper.form_validation = s.validate
 
@@ -218,6 +237,8 @@ class StoryStep(object):
 
             elif isinstance(s, ActionExecuted):
                 if self._is_action_listen(s):
+                    pass
+                elif self._is_action_session_start(s):
                     pass
                 elif self.story_string_helper.active_form is None:
                     result += self._bot_string(s)
@@ -280,7 +301,7 @@ class StoryStep(object):
                         self._store_bot_strings(s, FORM_PREFIX)
 
             else:
-                raise Exception("Unexpected element in story step: {}".format(s))
+                raise Exception(f"Unexpected element in story step: {s}")
 
         if (
             not self.end_checkpoints
@@ -299,12 +320,25 @@ class StoryStep(object):
         return result
 
     @staticmethod
-    def _is_action_listen(event):
+    def _is_action_listen(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
+        # pytype: disable=attribute-error
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
+        # pytype: enable=attribute-error
 
-    def _add_action_listen(self, events):
+    @staticmethod
+    def _is_action_session_start(event: Event) -> bool:
+        # this is not an `isinstance` because
+        # we don't want to allow subclasses here
+        # pytype: disable=attribute-error
+        return (
+            type(event) == ActionExecuted
+            and event.action_name == ACTION_SESSION_START_NAME
+        )
+        # pytype: enable=attribute-error
+
+    def _add_action_listen(self, events: List[Event]) -> None:
         if not events or not self._is_action_listen(events[-1]):
             # do not add second action_listen
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
@@ -312,13 +346,13 @@ class StoryStep(object):
     def explicit_events(
         self, domain: Domain, should_append_final_listen: bool = True
     ) -> List[Event]:
-        """Returns events contained in the story step
-            including implicit events.
+        """Returns events contained in the story step including implicit events.
 
         Not all events are always listed in the story dsl. This
         includes listen actions as well as implicitly
         set slots. This functions makes these events explicit and
-        returns them with the rest of the steps events."""
+        returns them with the rest of the steps events.
+        """
 
         events = []
 
@@ -335,7 +369,7 @@ class StoryStep(object):
 
         return events
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return (
             "StoryStep("
             "block_name={!r}, "
@@ -350,7 +384,7 @@ class StoryStep(object):
         )
 
 
-class Story(object):
+class Story:
     def __init__(
         self, story_steps: List[StoryStep] = None, story_name: Optional[Text] = None
     ) -> None:
@@ -358,7 +392,7 @@ class Story(object):
         self.story_name = story_name
 
     @staticmethod
-    def from_events(events, story_name=None):
+    def from_events(events: List[Event], story_name: Optional[Text] = None) -> "Story":
         """Create a story from a list of events."""
 
         story_step = StoryStep()
@@ -366,7 +400,7 @@ class Story(object):
             story_step.add_event(event)
         return Story([story_step], story_name)
 
-    def as_dialogue(self, sender_id, domain):
+    def as_dialogue(self, sender_id: Text, domain: Domain) -> Dialogue:
         events = []
         for step in self.story_steps:
             events.extend(
@@ -376,7 +410,7 @@ class Story(object):
         events.append(ActionExecuted(ACTION_LISTEN_NAME))
         return Dialogue(sender_id, events)
 
-    def as_story_string(self, flat=False, e2e=False):
+    def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         story_content = ""
 
         # initialize helper for first story step
@@ -395,16 +429,19 @@ class Story(object):
                 name = self.story_name
             else:
                 name = "Generated Story {}".format(hash(story_content))
-            return "## {}\n{}".format(name, story_content)
+            return f"## {name}\n{story_content}"
         else:
             return story_content
 
-    def dump_to_file(self, filename, flat=False, e2e=False):
-        with open(filename, "a", encoding="utf-8") as f:
-            f.write(self.as_story_string(flat, e2e))
+    def dump_to_file(
+        self, filename: Text, flat: bool = False, e2e: bool = False
+    ) -> None:
+        from rasa.utils import io
+
+        io.write_text_file(self.as_story_string(flat, e2e), filename, append=True)
 
 
-class StoryGraph(object):
+class StoryGraph:
     """Graph of the story-steps pooled from all stories in the training data."""
 
     def __init__(
@@ -467,15 +504,7 @@ class StoryGraph(object):
         # we need to remove the start steps and replace them with steps ending
         # in a special end checkpoint
 
-        # as in python 3.5, dict is not ordered, in order to generate
-        # reproducible result with random seed in python 3.5, we have
-        # to use OrderedDict
-        if sys.version_info >= (3, 6):
-            story_steps = {s.id: s for s in self.story_steps}
-        else:
-            from collections import OrderedDict
-
-            story_steps = OrderedDict([(s.id, s) for s in self.story_steps])
+        story_steps = {s.id: s for s in self.story_steps}
 
         # collect all overlapping checkpoints
         # we will remove unused start ones
@@ -658,7 +687,7 @@ class StoryGraph(object):
 
     @staticmethod
     def order_steps(
-        story_steps: List[StoryStep]
+        story_steps: List[StoryStep],
     ) -> Tuple[deque, List[Tuple[Text, Text]]]:
         """Topological sort of the steps returning the ids of the steps."""
 
@@ -673,7 +702,7 @@ class StoryGraph(object):
 
     @staticmethod
     def _group_by_start_checkpoint(
-        story_steps: List[StoryStep]
+        story_steps: List[StoryStep],
     ) -> Dict[Text, List[StoryStep]]:
         """Returns all the start checkpoint of the steps"""
 
@@ -733,7 +762,7 @@ class StoryGraph(object):
 
         return ordered, sorted(removed_edges)
 
-    def visualize(self, output_file=None):
+    def visualize(self, output_file: Optional[Text] = None) -> "nx.MultiDiGraph":
         import networkx as nx
         from rasa.core.training import visualization  # pytype: disable=pyi-error
         from colorhash import ColorHash
@@ -742,7 +771,7 @@ class StoryGraph(object):
         next_node_idx = [0]
         nodes = {"STORY_START": 0, "STORY_END": -1}
 
-        def ensure_checkpoint_is_drawn(cp):
+        def ensure_checkpoint_is_drawn(cp: Checkpoint) -> None:
             if cp.name not in nodes:
                 next_node_idx[0] += 1
                 nodes[cp.name] = next_node_idx[0]

@@ -1,39 +1,76 @@
-MESSAGE_TEXT_ATTRIBUTE = "text"
+TEXT = "text"
 
-MESSAGE_RESPONSE_KEY_ATTRIBUTE = "response_key"
+RESPONSE_KEY_ATTRIBUTE = "response_key"
 
-MESSAGE_INTENT_ATTRIBUTE = "intent"
+INTENT = "intent"
 
-MESSAGE_RESPONSE_ATTRIBUTE = "response"
+RESPONSE = "response"
 
-MESSAGE_ENTITIES_ATTRIBUTE = "entities"
+ENTITIES = "entities"
+BILOU_ENTITIES = "bilou_entities"
+BILOU_ENTITIES_ROLE = "bilou_entities_role"
+BILOU_ENTITIES_GROUP = "bilou_entities_group"
+NO_ENTITY_TAG = "O"
 
-MESSAGE_ATTRIBUTES = [
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_RESPONSE_ATTRIBUTE,
-]
+ENTITY_ATTRIBUTE_TYPE = "entity"
+ENTITY_ATTRIBUTE_GROUP = "group"
+ENTITY_ATTRIBUTE_ROLE = "role"
+ENTITY_ATTRIBUTE_VALUE = "value"
+ENTITY_ATTRIBUTE_TEXT = "text"
+ENTITY_ATTRIBUTE_START = "start"
+ENTITY_ATTRIBUTE_END = "end"
+ENTITY_ATTRIBUTE_CONFIDENCE = "confidence"
+ENTITY_ATTRIBUTE_CONFIDENCE_TYPE = (
+    f"{ENTITY_ATTRIBUTE_CONFIDENCE}_{ENTITY_ATTRIBUTE_TYPE}"
+)
+ENTITY_ATTRIBUTE_CONFIDENCE_GROUP = (
+    f"{ENTITY_ATTRIBUTE_CONFIDENCE}_{ENTITY_ATTRIBUTE_GROUP}"
+)
+ENTITY_ATTRIBUTE_CONFIDENCE_ROLE = (
+    f"{ENTITY_ATTRIBUTE_CONFIDENCE}_{ENTITY_ATTRIBUTE_ROLE}"
+)
 
-MESSAGE_TOKENS_NAMES = {
-    MESSAGE_TEXT_ATTRIBUTE: "tokens",
-    MESSAGE_INTENT_ATTRIBUTE: "intent_tokens",
-    MESSAGE_RESPONSE_ATTRIBUTE: "response_tokens",
+EXTRACTOR = "extractor"
+
+PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
+TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
+
+CLS_TOKEN = "__CLS__"
+POSITION_OF_CLS_TOKEN = -1
+NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
+
+MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE]
+
+TOKENS_NAMES = {TEXT: "tokens", INTENT: "intent_tokens", RESPONSE: "response_tokens"}
+
+SPARSE_FEATURE_NAMES = {
+    TEXT: "text_sparse_features",
+    INTENT: "intent_sparse_features",
+    RESPONSE: "response_sparse_features",
 }
 
-MESSAGE_VECTOR_FEATURE_NAMES = {
-    MESSAGE_TEXT_ATTRIBUTE: "text_features",
-    MESSAGE_INTENT_ATTRIBUTE: "intent_features",
-    MESSAGE_RESPONSE_ATTRIBUTE: "response_features",
+DENSE_FEATURE_NAMES = {
+    TEXT: "text_dense_features",
+    INTENT: "intent_dense_features",
+    RESPONSE: "response_dense_features",
 }
 
-MESSAGE_SPACY_FEATURES_NAMES = {
-    MESSAGE_TEXT_ATTRIBUTE: "spacy_doc",
-    MESSAGE_RESPONSE_ATTRIBUTE: "response_spacy_doc",
+LANGUAGE_MODEL_DOCS = {
+    TEXT: "text_language_model_doc",
+    RESPONSE: "response_language_model_doc",
 }
 
-SPACY_FEATURIZABLE_ATTRIBUTES = [MESSAGE_TEXT_ATTRIBUTE, MESSAGE_RESPONSE_ATTRIBUTE]
+TOKEN_IDS = "token_ids"
+TOKENS = "tokens"
+SEQUENCE_FEATURES = "sequence_features"
+SENTENCE_FEATURES = "sentence_features"
 
-MESSAGE_SELECTOR_PROPERTY_NAME = "response_selector"
+SPACY_DOCS = {TEXT: "text_spacy_doc", RESPONSE: "response_spacy_doc"}
+
+
+DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE]
+
+RESPONSE_SELECTOR_PROPERTY_NAME = "response_selector"
 DEFAULT_OPEN_UTTERANCE_TYPE = "default"
 OPEN_UTTERANCE_PREDICTION_KEY = "response"
 OPEN_UTTERANCE_RANKING_KEY = "ranking"

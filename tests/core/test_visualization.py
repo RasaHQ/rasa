@@ -1,5 +1,6 @@
 from rasa.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.core.training import visualization
+import rasa.utils.io
 
 
 def test_style_transfer():
@@ -94,8 +95,26 @@ async def test_graph_persistence(default_domain, tmpdir):
 
     assert isfile(out_file)
 
-    with open(out_file, "r") as graph_file:
-        content = graph_file.read()
+    content = rasa.utils.io.read_file(out_file)
 
     assert "isClient = true" in content
     assert "graph = `{}`".format(generated_graph.to_string()) in content
+
+
+async def test_merge_nodes(default_domain, tmpdir):
+    from os.path import isfile
+    from rasa.core.training.dsl import StoryFileReader
+    from rasa.core.interpreter import RegexInterpreter
+
+    story_steps = await StoryFileReader.read_from_file(
+        "data/test_stories/stories.md", default_domain, interpreter=RegexInterpreter()
+    )
+    out_file = tmpdir.join("graph.html").strpath
+    await visualization.visualize_stories(
+        story_steps,
+        default_domain,
+        output_file=out_file,
+        max_history=3,
+        should_merge_nodes=True,
+    )
+    assert isfile(out_file)

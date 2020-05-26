@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # -- General configuration ------------------------------------------------
 import re
@@ -9,6 +8,8 @@ linkcheck_anchors_ignore = [".*"]
 linkcheck_ignore = [
     r"http://localhost:\d+/",
     r"https://github.com/mit-nlp/MITIE/releases/download/",
+    r"https://github.com/rasahq/rasa/issues/.*",  # due to rate limiting
+    r"https://github.com/RasaHQ/rasa/issues/.*",  # due to rate limiting
 ]
 linkcheck_retries = 2
 linkcheck_timeout = 5
@@ -53,7 +54,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Rasa"
-copyright = "2019, Rasa Technologies"
+copyright = "2020, Rasa Technologies"
 author = "Rasa Technologies"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -62,7 +63,7 @@ author = "Rasa Technologies"
 #
 # The short X.Y version.
 __version__ = None
-exec (open("../rasa/version.py").read())
+exec(open("../rasa/version.py").read())
 version = ".".join(__version__.split(".")[:2])
 # The full version, including alpha/beta/rc tags.
 release = __version__
@@ -140,6 +141,7 @@ html_theme_options = {
     "fixed_sidebar": True,
     "product": "Rasa",
     "base_url": "https://rasa.com/docs/rasa/",
+    "canonical_url": "https://rasa.com/docs/rasa/",
 }
 # html_theme_options = {}
 
@@ -236,13 +238,13 @@ htmlhelp_basename = "rasa_doc"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
     # Latex figure (float) alignment
-    #'figure_align': 'htbp',
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -324,9 +326,7 @@ os.chdir(os.path.abspath('..'))
 
 # extlinks configuration
 
-extlinks = {
-    "gh-code": ("https://github.com/RasaHQ/rasa/tree/{}/%s".format(release), "github ")
-}
+extlinks = {"gh-code": (f"https://github.com/RasaHQ/rasa/tree/{release}/%s", "github ")}
 
 # Sphinxcontrib configuration
 scv_priority = "tags"
@@ -338,11 +338,17 @@ scv_whitelist_branches = (re.compile("^master$"),)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
 scv_whitelist_tags = (
     re.compile(r"^[2-9]+\.\d+\.\d+$"),
-    re.compile(r"^1\.[456789]+\.\d+$"),
-    re.compile(r"^1\.3\.\d+$"),
-    "1.2.7",
-    "1.1.8",
-    "1.0.9",
+    re.compile(r"^1\.[1-9][0-9]+\.\d+$"),
+    re.compile(r"^1\.9\.7$"),
+    re.compile(r"^1\.8\.3$"),
+    re.compile(r"^1\.7\.4$"),
+    re.compile(r"^1\.6\.2$"),
+    re.compile(r"^1\.5\.3$"),
+    re.compile(r"^1\.4\.6$"),
+    re.compile(r"^1\.3\.10$"),
+    re.compile(r"^1\.2\.9$"),
+    re.compile(r"^1\.1\.8$"),
+    re.compile(r"^1\.0\.9$"),
 )
 scv_greatest_tag = True
 
@@ -353,6 +359,7 @@ nitpick_ignore = [
     ("py:class", "bool"),
     ("py:class", "int"),
     ("py:class", "Any"),
+    ("py:class", "dict"),
     ("py:class", "Dict"),
     ("py:class", "List"),
     ("py:class", "Text"),
@@ -364,6 +371,7 @@ nitpick_ignore = [
     ("py:class", "typing.Optional"),
     ("py:class", "typing.Generator"),
     ("py:class", "typing.Iterator"),
+    ("py:class", "typing.Type"),
     ("py:class", "collections.deque"),
     ("py:class", "sanic.app.Sanic"),
     ("py:data", "typing.Any"),
@@ -399,4 +407,4 @@ def setup(sphinx):
 
         sphinx.add_lexer("story", StoryLexer())
     except ImportError:
-        print ("No Story Lexer :( Sad times!")
+        print("No Story Lexer :( Sad times!")

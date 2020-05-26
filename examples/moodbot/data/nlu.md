@@ -14,11 +14,11 @@
 - good afternoon
 
 ## intent:goodbye
+- good afternoon
 - cu
 - good by
 - cee you later
 - good night
-- good afternoon
 - bye
 - goodbye
 - have a nice day
@@ -42,7 +42,6 @@
 
 ## intent:mood_great
 - perfect
-- very good
 - great
 - amazing
 - feeling like a king
@@ -51,7 +50,7 @@
 - I am great
 - I am amazing
 - I am going to save the world
-- super
+- super stoked
 - extremely good
 - so so perfect
 - so good
@@ -67,7 +66,7 @@
 - sad
 - very sad
 - unhappy
-- not so good
+- not good
 - not very good
 - extremly sad
 - so saad

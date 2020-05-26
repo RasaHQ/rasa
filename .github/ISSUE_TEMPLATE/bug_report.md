@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help us improve
 title: ''
-labels: bug
+labels: 'area:rasa-oss :ferris_wheel:,type:bug :bug:'
 assignees: ''
 
 ---
@@ -12,6 +12,8 @@ Please format any code or console output with three ticks ``` above and below.
 If you are asking a usage question (e.g. "How do I do xyz") please post your question on https://forum.rasa.com instead -->
 
 **Rasa version**:
+
+**Rasa SDK version** (if used & relevant):
 
 **Rasa X version** (if used & relevant):
 

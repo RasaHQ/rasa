@@ -3,9 +3,12 @@ import shutil
 import tempfile
 
 import pytest
+from typing import Callable
+from _pytest.pytester import RunResult
 
 from rasa import model
-
+from rasa.nlu.model import Metadata
+from rasa.nlu.training_data import training_data
 from rasa.cli.train import _get_valid_config
 from rasa.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
@@ -15,10 +18,10 @@ from rasa.constants import (
 import rasa.utils.io as io_utils
 
 
-def test_train(run_in_default_project):
+def test_train(run_in_default_project_without_models: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
-    run_in_default_project(
+    run_in_default_project_without_models(
         "train",
         "-c",
         "config.yml",
@@ -36,9 +39,51 @@ def test_train(run_in_default_project):
     files = io_utils.list_files(os.path.join(temp_dir, "train_models"))
     assert len(files) == 1
     assert os.path.basename(files[0]) == "test-model.tar.gz"
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is None
+    assert not os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
 
 
-def test_train_core_compare(run_in_default_project):
+def test_train_persist_nlu_data(
+    run_in_default_project_without_models: Callable[..., RunResult]
+):
+    temp_dir = os.getcwd()
+
+    run_in_default_project_without_models(
+        "train",
+        "-c",
+        "config.yml",
+        "-d",
+        "domain.yml",
+        "--data",
+        "data",
+        "--out",
+        "train_models",
+        "--fixed-model-name",
+        "test-model",
+        "--persist-nlu-data",
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "train_models"))
+    files = io_utils.list_files(os.path.join(temp_dir, "train_models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]) == "test-model.tar.gz"
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is not None
+    assert os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
+
+
+def test_train_core_compare(
+    run_in_default_project_without_models: Callable[..., RunResult]
+):
     temp_dir = os.getcwd()
 
     io_utils.write_yaml_file(
@@ -59,7 +104,7 @@ def test_train_core_compare(run_in_default_project):
         "config_2.yml",
     )
 
-    run_in_default_project(
+    run_in_default_project_without_models(
         "train",
         "core",
         "-c",
@@ -90,10 +135,12 @@ def test_train_core_compare(run_in_default_project):
     assert model_files[0].endswith("tar.gz")
 
 
-def test_train_no_domain_exists(run_in_default_project):
+def test_train_no_domain_exists(
+    run_in_default_project_without_models: Callable[..., RunResult]
+) -> None:
 
     os.remove("domain.yml")
-    run_in_default_project(
+    run_in_default_project_without_models(
         "train",
         "-c",
         "config.yml",
@@ -116,7 +163,9 @@ def test_train_no_domain_exists(run_in_default_project):
     assert os.path.exists(metadata_path)
 
 
-def test_train_skip_on_model_not_changed(run_in_default_project):
+def test_train_skip_on_model_not_changed(
+    run_in_default_project: Callable[..., RunResult]
+):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
@@ -146,14 +195,13 @@ def test_train_force(run_in_default_project):
     assert len(files) == 2
 
 
-def test_train_with_only_nlu_data(run_in_default_project):
+def test_train_with_only_nlu_data(run_in_default_project_without_models):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "data/stories.md"))
     os.remove(os.path.join(temp_dir, "data/stories.md"))
-    shutil.rmtree(os.path.join(temp_dir, "models"))
 
-    run_in_default_project("train", "--fixed-model-name", "test-model")
+    run_in_default_project_without_models("train", "--fixed-model-name", "test-model")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
@@ -161,14 +209,13 @@ def test_train_with_only_nlu_data(run_in_default_project):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
-def test_train_with_only_core_data(run_in_default_project):
+def test_train_with_only_core_data(run_in_default_project_without_models):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "data/nlu.md"))
     os.remove(os.path.join(temp_dir, "data/nlu.md"))
-    shutil.rmtree(os.path.join(temp_dir, "models"))
 
-    run_in_default_project("train", "--fixed-model-name", "test-model")
+    run_in_default_project_without_models("train", "--fixed-model-name", "test-model")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
@@ -176,8 +223,8 @@ def test_train_with_only_core_data(run_in_default_project):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
-def test_train_core(run_in_default_project):
-    run_in_default_project(
+def test_train_core(run_in_default_project_without_models: Callable[..., RunResult]):
+    run_in_default_project_without_models(
         "train",
         "core",
         "-c",
@@ -196,10 +243,12 @@ def test_train_core(run_in_default_project):
     assert os.path.isfile("train_rasa_models/rasa-model.tar.gz")
 
 
-def test_train_core_no_domain_exists(run_in_default_project):
+def test_train_core_no_domain_exists(
+    run_in_default_project_without_models: Callable[..., RunResult]
+):
 
     os.remove("domain.yml")
-    run_in_default_project(
+    run_in_default_project_without_models(
         "train",
         "core",
         "--config",
@@ -218,31 +267,8 @@ def test_train_core_no_domain_exists(run_in_default_project):
     assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
 
 
-def count_rasa_temp_files():
-    count = 0
-    for entry in os.scandir(tempfile.gettempdir()):
-        if not entry.is_dir():
-            continue
-
-        try:
-            for f in os.listdir(entry.path):
-                if f.endswith("_nlu.md") or f.endswith("_stories.md"):
-                    count += 1
-        except PermissionError:
-            # Ignore permission errors
-            pass
-
-    return count
-
-
-def test_train_core_temp_files(run_in_default_project):
-    count = count_rasa_temp_files()
-    run_in_default_project("train", "core")
-    assert count == count_rasa_temp_files()
-
-
-def test_train_nlu(run_in_default_project):
-    run_in_default_project(
+def test_train_nlu(run_in_default_project_without_models: Callable[..., RunResult]):
+    run_in_default_project_without_models(
         "train",
         "nlu",
         "-c",
@@ -257,12 +283,41 @@ def test_train_nlu(run_in_default_project):
     files = io_utils.list_files("train_models")
     assert len(files) == 1
     assert os.path.basename(files[0]).startswith("nlu-")
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is None
+    assert not os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
 
 
-def test_train_nlu_temp_files(run_in_default_project):
-    count = count_rasa_temp_files()
-    run_in_default_project("train", "nlu")
-    assert count == count_rasa_temp_files()
+def test_train_nlu_persist_nlu_data(
+    run_in_default_project_without_models: Callable[..., RunResult]
+) -> None:
+    run_in_default_project_without_models(
+        "train",
+        "nlu",
+        "-c",
+        "config.yml",
+        "--nlu",
+        "data/nlu.md",
+        "--out",
+        "train_models",
+        "--persist-nlu-data",
+    )
+
+    assert os.path.exists("train_models")
+    files = io_utils.list_files("train_models")
+    assert len(files) == 1
+    assert os.path.basename(files[0]).startswith("nlu-")
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is not None
+    assert os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
 
 
 def test_train_help(run):
@@ -271,7 +326,8 @@ def test_train_help(run):
     help_text = """usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
-                  [--dump-stories] [--fixed-model-name FIXED_MODEL_NAME]
+                  [--num-threads NUM_THREADS]
+                  [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force]
                   {core,nlu} ..."""
 
@@ -281,11 +337,13 @@ def test_train_help(run):
         assert output.outlines[i] == line
 
 
-def test_train_nlu_help(run):
+def test_train_nlu_help(run: Callable[..., RunResult]):
     output = run("train", "nlu", "--help")
 
     help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [--out OUT]
-                      [-u NLU] [--fixed-model-name FIXED_MODEL_NAME]"""
+                      [-u NLU] [--num-threads NUM_THREADS]
+                      [--fixed-model-name FIXED_MODEL_NAME]
+                      [--persist-nlu-data]"""
 
     lines = help_text.split("\n")
 
@@ -293,13 +351,12 @@ def test_train_nlu_help(run):
         assert output.outlines[i] == line
 
 
-def test_train_core_help(run):
+def test_train_core_help(run: Callable[..., RunResult]):
     output = run("train", "core", "--help")
 
     help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
                        [-c CONFIG [CONFIG ...]] [--out OUT]
-                       [--augmentation AUGMENTATION] [--debug-plots]
-                       [--dump-stories] [--force]
+                       [--augmentation AUGMENTATION] [--debug-plots] [--force]
                        [--fixed-model-name FIXED_MODEL_NAME]
                        [--percentages [PERCENTAGES [PERCENTAGES ...]]]
                        [--runs RUNS]"""

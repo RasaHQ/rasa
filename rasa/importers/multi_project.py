@@ -12,7 +12,7 @@ from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
-import rasa.utils.common
+from rasa.utils.common import raise_warning, mark_as_experimental_feature
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class MultiProjectImporter(TrainingDataImporter):
             self._domain_paths = []
         self._story_paths = []
         self._nlu_paths = []
-        self._imports = set()
+        self._imports = []
         self._additional_paths = training_data_paths or []
         self._project_directory = project_directory or os.path.dirname(config_file)
 
@@ -41,18 +41,14 @@ class MultiProjectImporter(TrainingDataImporter):
         extra_story_files, extra_nlu_files = data.get_core_nlu_files(
             training_data_paths
         )
-        self._story_paths += list(extra_story_files)
-        self._nlu_paths += list(extra_nlu_files)
+        self._story_paths += extra_story_files
+        self._nlu_paths += extra_nlu_files
 
         logger.debug(
-            "Selected projects: {}".format(
-                "".join(["\n-{}".format(i) for i in self._imports])
-            )
+            "Selected projects: {}".format("".join([f"\n-{i}" for i in self._imports]))
         )
 
-        rasa.utils.common.mark_as_experimental_feature(
-            feature_name="MultiProjectImporter"
-        )
+        mark_as_experimental_feature(feature_name="MultiProjectImporter")
 
     def _init_from_path(self, path: Text) -> None:
         if os.path.isfile(path):
@@ -68,17 +64,21 @@ class MultiProjectImporter(TrainingDataImporter):
             parent_directory = os.path.dirname(path)
             self._init_from_dict(config, parent_directory)
         else:
-            logger.warning(
-                "'{}' does not exist or is not a valid config file.".format(path)
-            )
+            raise_warning(f"'{path}' does not exist or is not a valid config file.")
 
     def _init_from_dict(self, _dict: Dict[Text, Any], parent_directory: Text) -> None:
         imports = _dict.get("imports") or []
-        imports = {os.path.join(parent_directory, i) for i in imports}
+        imports = [os.path.join(parent_directory, i) for i in imports]
         # clean out relative paths
-        imports = {os.path.abspath(i) for i in imports}
-        import_candidates = [p for p in imports if not self._is_explicitly_imported(p)]
-        self._imports = self._imports.union(import_candidates)
+        imports = [os.path.abspath(i) for i in imports]
+
+        # remove duplication
+        import_candidates = []
+        for i in imports:
+            if i not in import_candidates and not self._is_explicitly_imported(i):
+                import_candidates.append(i)
+
+        self._imports.extend(import_candidates)
 
         # import config files from paths which have not been processed so far
         for p in import_candidates:
@@ -88,7 +88,7 @@ class MultiProjectImporter(TrainingDataImporter):
         return not self.no_skills_selected() and self.is_imported(path)
 
     def _init_from_directory(self, path: Text):
-        for parent, _, files in os.walk(path):
+        for parent, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(parent, file)
                 if not self.is_imported(full_path):
@@ -157,11 +157,11 @@ class MultiProjectImporter(TrainingDataImporter):
 
         return included
 
-    def _is_in_imported_paths(self, path):
+    def _is_in_imported_paths(self, path) -> bool:
         return any([io_utils.is_subdirectory(path, i) for i in self._imports])
 
     def add_import(self, path: Text) -> None:
-        self._imports.add(path)
+        self._imports.append(path)
 
     async def get_domain(self) -> Domain:
         domains = [Domain.load(path) for path in self._domain_paths]

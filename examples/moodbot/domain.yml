@@ -7,15 +7,7 @@ intents:
   - mood_unhappy
   - bot_challenge
 
-actions:
-- utter_greet
-- utter_cheer_up
-- utter_did_that_help
-- utter_happy
-- utter_goodbye
-- utter_iamabot
-
-templates:
+responses:
   utter_greet:
   - text: "Hey! How are you?"
     buttons:
@@ -39,3 +31,7 @@ templates:
 
   utter_iamabot:
   - text: "I am a bot, powered by Rasa."
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true

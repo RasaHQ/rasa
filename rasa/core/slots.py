@@ -1,42 +1,55 @@
 import logging
+from typing import Any, Dict, List, NoReturn, Optional, Text, Type
 
 from rasa.core import utils
-from rasa.utils.common import class_from_module_path
+from typing import Any, Dict, List, NoReturn, Optional, Text, Type
+from rasa.core.constants import DEFAULT_CATEGORICAL_SLOT_VALUE
+from rasa.utils.common import class_from_module_path, raise_warning
 
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class Slot:
     type_name = None
 
     def __init__(
-        self, name, initial_value=None, value_reset_delay=None, auto_fill=True
-    ):
+        self,
+        name: Text,
+        initial_value: Any = None,
+        value_reset_delay: Optional[int] = None,
+        auto_fill: bool = True,
+    ) -> None:
         self.name = name
         self.value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
         self.auto_fill = auto_fill
 
-    def feature_dimensionality(self):
+    def feature_dimensionality(self) -> int:
         """How many features this single slot creates.
 
         The dimensionality of the array returned by `as_feature` needs
         to correspond to this value."""
         return 1
 
-    def has_features(self):
+    def add_default_value(self) -> None:
+        """Add a default value to a slots user-defined values"""
+        raise NotImplementedError(
+            "Each slot type needs to specify its own" "default value to add, if any"
+        )
+
+    def has_features(self) -> bool:
         """Indicate if the slot creates any features."""
         return self.feature_dimensionality() != 0
 
-    def value_reset_delay(self):
+    def value_reset_delay(self) -> Optional[int]:
         """After how many turns the slot should be reset to the initial_value.
 
         If the delay is set to `None`, the slot will keep its value forever."""
         # TODO: FUTURE this needs to be implemented - slots are not reset yet
         return self._value_reset_delay
 
-    def as_feature(self):
+    def as_feature(self) -> NoReturn:
         raise NotImplementedError(
             "Each slot type needs to specify how its "
             "value can be converted to a feature. Slot "
@@ -49,17 +62,17 @@ class Slot(object):
             "".format(self.name)
         )
 
-    def reset(self):
+    def reset(self) -> None:
         self.value = self.initial_value
 
-    def __str__(self):
-        return "{}({}: {})".format(self.__class__.__name__, self.name, self.value)
+    def __str__(self) -> Text:
+        return f"{self.__class__.__name__}({self.name}: {self.value})"
 
-    def __repr__(self):
-        return "<{}({}: {})>".format(self.__class__.__name__, self.name, self.value)
+    def __repr__(self) -> Text:
+        return f"<{self.__class__.__name__}({self.name}: {self.value})>"
 
     @staticmethod
-    def resolve_by_type(type_name):
+    def resolve_by_type(type_name) -> Type["Slot"]:
         """Returns a slots class by its type name."""
         for cls in utils.all_subclasses(Slot):
             if cls.type_name == type_name:
@@ -73,7 +86,7 @@ class Slot(object):
                 "sure its module path is correct.".format(type_name)
             )
 
-    def persistence_info(self):
+    def persistence_info(self) -> Dict[str, Any]:
         return {
             "type": utils.module_path_from_instance(self),
             "initial_value": self.initial_value,
@@ -86,16 +99,14 @@ class FloatSlot(Slot):
 
     def __init__(
         self,
-        name,
-        initial_value=None,
-        value_reset_delay=None,
-        auto_fill=True,
-        max_value=1.0,
-        min_value=0.0,
-    ):
-        super(FloatSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+        name: Text,
+        initial_value: Optional[float] = None,
+        value_reset_delay: Optional[int] = None,
+        auto_fill: bool = True,
+        max_value: float = 1.0,
+        min_value: float = 0.0,
+    ) -> None:
+        super().__init__(name, initial_value, value_reset_delay, auto_fill)
         self.max_value = max_value
         self.min_value = min_value
 
@@ -108,13 +119,13 @@ class FloatSlot(Slot):
             )
 
         if initial_value is not None and not (min_value <= initial_value <= max_value):
-            logger.warning(
-                "Float slot ('{}') created with an initial value {}"
-                "outside of configured min ({}) and max ({}) values."
-                "".format(self.name, self.value, self.min_value, self.max_value)
+            raise_warning(
+                f"Float slot ('{self.name}') created with an initial value "
+                f"{self.value}. This value is outside of the configured min "
+                f"({self.min_value}) and max ({self.max_value}) values."
             )
 
-    def as_feature(self):
+    def as_feature(self) -> List[float]:
         try:
             capped_value = max(self.min_value, min(self.max_value, float(self.value)))
             if abs(self.max_value - self.min_value) > 0:
@@ -125,8 +136,8 @@ class FloatSlot(Slot):
         except (TypeError, ValueError):
             return [0.0]
 
-    def persistence_info(self):
-        d = super(FloatSlot, self).persistence_info()
+    def persistence_info(self) -> Dict[Text, Any]:
+        d = super().persistence_info()
         d["max_value"] = self.max_value
         d["min_value"] = self.min_value
         return d
@@ -135,7 +146,7 @@ class FloatSlot(Slot):
 class BooleanSlot(Slot):
     type_name = "bool"
 
-    def as_feature(self):
+    def as_feature(self) -> List[float]:
         try:
             if self.value is not None:
                 return [1.0, float(float(self.value) != 0.0)]
@@ -145,21 +156,21 @@ class BooleanSlot(Slot):
             # we couldn't convert the value to float - using default value
             return [0.0, 0.0]
 
-    def feature_dimensionality(self):
+    def feature_dimensionality(self) -> int:
         return len(self.as_feature())
 
 
 class TextSlot(Slot):
     type_name = "text"
 
-    def as_feature(self):
+    def as_feature(self) -> List[float]:
         return [1.0 if self.value is not None else 0.0]
 
 
 class ListSlot(Slot):
     type_name = "list"
 
-    def as_feature(self):
+    def as_feature(self) -> List[float]:
         try:
             if self.value is not None and len(self.value) > 0:
                 return [1.0]
@@ -173,10 +184,10 @@ class ListSlot(Slot):
 class UnfeaturizedSlot(Slot):
     type_name = "unfeaturized"
 
-    def as_feature(self):
+    def as_feature(self) -> List[float]:
         return []
 
-    def feature_dimensionality(self):
+    def feature_dimensionality(self) -> int:
         return 0
 
 
@@ -185,23 +196,26 @@ class CategoricalSlot(Slot):
 
     def __init__(
         self,
-        name,
-        values=None,
-        initial_value=None,
-        value_reset_delay=None,
-        auto_fill=True,
-    ):
-        super(CategoricalSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+        name: Text,
+        values: Optional[List[Any]] = None,
+        initial_value: Any = None,
+        value_reset_delay: Optional[int] = None,
+        auto_fill: bool = True,
+    ) -> None:
+        super().__init__(name, initial_value, value_reset_delay, auto_fill)
         self.values = [str(v).lower() for v in values] if values else []
 
-    def persistence_info(self):
-        d = super(CategoricalSlot, self).persistence_info()
+    def add_default_value(self) -> None:
+        values = set(self.values)
+        if DEFAULT_CATEGORICAL_SLOT_VALUE not in values:
+            self.values.append(DEFAULT_CATEGORICAL_SLOT_VALUE)
+
+    def persistence_info(self) -> Dict[Text, Any]:
+        d = super().persistence_info()
         d["values"] = self.values
         return d
 
-    def as_feature(self):
+    def as_feature(self) -> List[float]:
         r = [0.0] * self.feature_dimensionality()
 
         try:
@@ -211,31 +225,39 @@ class CategoricalSlot(Slot):
                     break
             else:
                 if self.value is not None:
-                    logger.warning(
-                        "Categorical slot '{}' is set to a value ('{}') "
-                        "that is not specified in the domain. "
-                        "Value will be ignored and the slot will "
-                        "behave as if no value is set. "
-                        "Make sure to add all values a categorical "
-                        "slot should store to the domain."
-                        "".format(self.name, self.value)
-                    )
+                    if DEFAULT_CATEGORICAL_SLOT_VALUE in self.values:
+                        i = self.values.index(DEFAULT_CATEGORICAL_SLOT_VALUE)
+                        r[i] = 1.0
+                    else:
+                        raise_warning(
+                            f"Categorical slot '{self.name}' is set to a value "
+                            f"('{self.value}') "
+                            "that is not specified in the domain. "
+                            "Value will be ignored and the slot will "
+                            "behave as if no value is set. "
+                            "Make sure to add all values a categorical "
+                            "slot should store to the domain."
+                        )
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
             return r
         return r
 
-    def feature_dimensionality(self):
+    def feature_dimensionality(self) -> int:
         return len(self.values)
 
 
 class DataSlot(Slot):
-    def __init__(self, name, initial_value=None, value_reset_delay=1, auto_fill=True):
-        super(DataSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+    def __init__(
+        self,
+        name: Text,
+        initial_value: Any = None,
+        value_reset_delay: Optional[int] = 1,
+        auto_fill: bool = True,
+    ):
+        super().__init__(name, initial_value, value_reset_delay, auto_fill)
 
-    def as_feature(self):
+    def as_feature(self) -> List[float]:
         raise NotImplementedError(
             "Each slot type needs to specify how its "
             "value can be converted to a feature."

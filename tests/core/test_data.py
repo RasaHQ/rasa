@@ -8,6 +8,7 @@ import rasa.data as data
 from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
 from rasa.nlu.training_data import load_data
 from rasa.nlu.utils import json_to_string
+from rasa.utils import io
 
 
 def test_get_core_directory(project):
@@ -109,40 +110,48 @@ def test_same_file_names_get_resolved(tmpdir):
     [
         (
             "dialogflow",
-            {
-                "data/examples/dialogflow/entities/cuisine.json",
-                "data/examples/dialogflow/intents/affirm.json",
-                "data/examples/dialogflow/entities/location_entries_es.json",
-                "data/examples/dialogflow/intents/affirm_usersays_en.json",
-                "data/examples/dialogflow/intents/hi_usersays_es.json",
-                "data/examples/dialogflow/entities/cuisine_entries_es.json",
-                "data/examples/dialogflow/intents/inform_usersays_en.json",
-                "data/examples/dialogflow/intents/hi.json",
-                "data/examples/dialogflow/intents/goodbye_usersays_en.json",
+            [
                 "data/examples/dialogflow/agent.json",
-                "data/examples/dialogflow/intents/hi_usersays_en.json",
-                "data/examples/dialogflow/entities/location.json",
-                "data/examples/dialogflow/intents/affirm_usersays_es.json",
+                "data/examples/dialogflow/entities/cuisine.json",
                 "data/examples/dialogflow/entities/cuisine_entries_en.json",
-                "data/examples/dialogflow/package.json",
-                "data/examples/dialogflow/intents/Default Fallback Intent.json",
-                "data/examples/dialogflow/intents/goodbye_usersays_es.json",
-                "data/examples/dialogflow/intents/goodbye.json",
+                "data/examples/dialogflow/entities/cuisine_entries_es.json",
+                "data/examples/dialogflow/entities/location.json",
                 "data/examples/dialogflow/entities/location_entries_en.json",
+                "data/examples/dialogflow/entities/location_entries_es.json",
+                "data/examples/dialogflow/intents/Default Fallback Intent.json",
+                "data/examples/dialogflow/intents/affirm.json",
+                "data/examples/dialogflow/intents/affirm_usersays_en.json",
+                "data/examples/dialogflow/intents/affirm_usersays_es.json",
+                "data/examples/dialogflow/intents/goodbye.json",
+                "data/examples/dialogflow/intents/goodbye_usersays_en.json",
+                "data/examples/dialogflow/intents/goodbye_usersays_es.json",
+                "data/examples/dialogflow/intents/hi.json",
+                "data/examples/dialogflow/intents/hi_usersays_en.json",
+                "data/examples/dialogflow/intents/hi_usersays_es.json",
                 "data/examples/dialogflow/intents/inform.json",
+                "data/examples/dialogflow/intents/inform_usersays_en.json",
                 "data/examples/dialogflow/intents/inform_usersays_es.json",
-            },
+                "data/examples/dialogflow/package.json",
+            ],
         ),
-        ("luis", {"data/examples/luis/demo-restaurants.json"}),
+        (
+            "luis",
+            [
+                "data/examples/luis/demo-restaurants_v2.json",
+                "data/examples/luis/demo-restaurants_v4.json",
+                "data/examples/luis/demo-restaurants_v5.json",
+            ],
+        ),
         (
             "rasa",
-            {
+            [
+                "data/examples/rasa/demo-rasa-multi-intent.md",
+                "data/examples/rasa/demo-rasa-responses.md",
                 "data/examples/rasa/demo-rasa.json",
                 "data/examples/rasa/demo-rasa.md",
-                "data/examples/rasa/demo-rasa-responses.md",
-            },
+            ],
         ),
-        ("wit", {"data/examples/wit/demo-flights.json"}),
+        ("wit", ["data/examples/wit/demo-flights.json"]),
     ],
 )
 def test_find_nlu_files_with_different_formats(test_input, expected):
@@ -163,8 +172,8 @@ def test_is_nlu_file_with_json():
 
     directory = tempfile.mkdtemp()
     file = os.path.join(directory, "test.json")
-    with open(file, "w", encoding="utf-8") as f:
-        f.write(json_to_string(test))
+
+    io.write_text_file(json_to_string(test), file)
 
     assert data.is_nlu_file(file)
 
@@ -172,7 +181,6 @@ def test_is_nlu_file_with_json():
 def test_is_not_nlu_file_with_json():
     directory = tempfile.mkdtemp()
     file = os.path.join(directory, "test.json")
-    with open(file, "w", encoding="utf-8") as f:
-        f.write('{"test": "a"}')
+    io.write_text_file('{"test": "a"}', file)
 
     assert not data.is_nlu_file(file)

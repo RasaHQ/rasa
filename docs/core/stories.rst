@@ -74,21 +74,27 @@ to predict the next action based on a *combination* of both the intent and
 entities (you can, however, change this behavior using the
 :ref:`use_entities <use_entities>` attribute).
 
+.. warning::
+    ``/`` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers.
+    Refer to ``Training Data Format`` section of :ref:`retrieval-actions` for more details on this format.
+    If any of the intent names contain the delimiter, the file containing these stories will be considered as a training
+    file for :ref:`response-selector` model and will be ignored for training Core models.
+
 Actions
 ~~~~~~~
-While writing stories, you will encounter two types of actions: utterances
-and custom actions. Utterances are hardcoded messages that a bot can respond
+While writing stories, you will encounter two types of actions: utterance actions
+and custom actions. Utterance actions are hardcoded messages that a bot can respond
 with. Custom actions, on the other hand, involve custom code being executed.
 
-All actions (both utterances and custom actions) executed by the bot are shown
+All actions (both utterance actions and custom actions) executed by the bot are shown
 as lines starting with ``-`` followed by the name of the action.
 
-All utterances must begin with the prefix ``utter_``, and must match the name
-of the template defined in the domain.
+The responses for utterance actions must begin with the prefix ``utter_``, and must match the name
+of the response defined in the domain.
 
 For custom actions, the action name is the string you choose to return from
 the ``name`` method of the custom action class. Although there is no restriction
-on naming your custom actions (unlike utterances), the best practice here is to
+on naming your custom actions (unlike utterance actions), the best practice here is to
 prefix the name with ``action_``.
 
 Events
@@ -99,7 +105,7 @@ returned by a custom action separately, when that custom action is already
 part of a story might seem redundant. However, since Rasa cannot
 determine this fact during training, this step is necessary.
 
-You can read more about events :ref:`here <end_to_end_evaluation>`.
+You can read more about events :ref:`here <events>`.
 
 Slot Events
 ***********
@@ -123,8 +129,12 @@ forms in stories.
     way to write these stories is to use :ref:`interactive learning <interactive-learning>`.
 
 
-Writing Fewer and Shorter Stories
----------------------------------
+Checkpoints and OR statements
+-----------------------------
+
+Checkpoints and OR statements should both be used with caution, if at all.
+There is usually a better way to achieve what you want by using forms and/or
+retrieval actions.
 
 
 Checkpoints
@@ -167,13 +177,7 @@ at a time):
 .. note::
    Unlike regular stories, checkpoints are not restricted to starting with an
    input from the user. As long as the checkpoint is inserted at the right points
-   in the main stories, the first event can be an action or an utterance
-   as well.
-
-.. note::
-   Unlike regular stories, checkpoints are not restricted to starting with an
-   input from the user. As long as the checkpoint is inserted at the right points
-   in the main stories, the first event can be an action or an utterance
+   in the main stories, the first event can be a custom action or a response action
    as well.
 
 
@@ -208,8 +212,7 @@ End-to-End Story Evaluation Format
 ----------------------------------
 
 The end-to-end story format is a format that combines both NLU and Core training data
-into a single file for evaluation. You can read more about it
-:ref:`here <end_to_end_evaluation>`.
+into a single file for evaluation. Read more about :ref:`testing-your-assistant`
 
 .. warning::
     This format is only used for end-to-end evaluation and cannot be used for training.

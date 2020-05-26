@@ -39,6 +39,13 @@ def set_split_arguments(parser: argparse.ArgumentParser):
         help="Percentage of the data which should be in the training data.",
     )
 
+    parser.add_argument(
+        "--random-seed",
+        type=int,
+        default=None,
+        help="Seed to generate the same train/test split.",
+    )
+
     add_out_param(
         parser,
         default="train_test_split",

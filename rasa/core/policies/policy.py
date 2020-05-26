@@ -1,6 +1,5 @@
 import copy
 import logging
-import tensorflow as tf
 from typing import Any, List, Optional, Text, Dict, Callable
 
 import rasa.utils.common
@@ -18,15 +17,15 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 logger = logging.getLogger(__name__)
 
 
-class Policy(object):
+class Policy:
     SUPPORTS_ONLINE_TRAINING = False
 
     @staticmethod
-    def _standard_featurizer():
+    def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
 
     @classmethod
-    def _create_featurizer(cls, featurizer=None):
+    def _create_featurizer(cls, featurizer=None) -> TrackerFeaturizer:
         if featurizer:
             return copy.deepcopy(featurizer)
         else:
@@ -46,27 +45,43 @@ class Policy(object):
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
-        # filter out kwargs that cannot be passed to func
+        """Filters out kwargs that cannot be passed to func.
+
+        Args:
+            func: a callable function
+
+        Returns:
+            the dictionary of parameters
+        """
+
         valid_keys = rasa.utils.common.arguments_of(func)
 
         params = {key: kwargs.get(key) for key in valid_keys if kwargs.get(key)}
         ignored_params = {
             key: kwargs.get(key) for key in kwargs.keys() if not params.get(key)
         }
-        logger.debug(
-            "Parameters ignored by `model.fit(...)`: {}".format(ignored_params)
-        )
+        logger.debug(f"Parameters ignored by `model.fit(...)`: {ignored_params}")
         return params
 
     def featurize_for_training(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> DialogueTrainingData:
         """Transform training trackers into a vector representation.
+
         The trackers, consisting of multiple turns, will be transformed
-        into a float vector which can be used by a ML model."""
+        into a float vector which can be used by a ML model.
+
+        Args:
+            training_trackers:
+                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
+
+        Returns:
+            the :class:`rasa.core.training.data.DialogueTrainingData`
+        """
 
         training_data = self.featurizer.featurize_trackers(training_trackers, domain)
 
@@ -84,81 +99,81 @@ class Policy(object):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
-        """Trains the policy on given training trackers."""
+        """Trains the policy on given training trackers.
+
+        Args:
+            training_trackers:
+                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
+        """
 
         raise NotImplementedError("Policy must have the capacity to train.")
-
-    def _training_data_for_continue_training(
-        self,
-        batch_size: int,
-        training_trackers: List[DialogueStateTracker],
-        domain: Domain,
-    ) -> DialogueTrainingData:
-        """Creates training_data for `continue_training` by
-            taking the new labelled example training_trackers[-1:]
-            and inserting it in batch_size-1 parts of the old training data,
-        """
-        import numpy as np
-
-        num_samples = batch_size - 1
-        num_prev_examples = len(training_trackers) - 1
-
-        sampled_idx = np.random.choice(
-            range(num_prev_examples),
-            replace=False,
-            size=min(num_samples, num_prev_examples),
-        )
-        trackers = [training_trackers[i] for i in sampled_idx] + training_trackers[-1:]
-        return self.featurize_for_training(trackers, domain)
-
-    def continue_training(
-        self,
-        training_trackers: List[DialogueStateTracker],
-        domain: Domain,
-        **kwargs: Any
-    ) -> None:
-        """Continues training an already trained policy.
-
-        This doesn't need to be supported by every policy. If it is supported,
-        the policy can be used for online training and the implementation for
-        the continued training should be put into this function."""
-
-        pass
 
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
-        """Predicts the next action the bot should take
-        after seeing the tracker.
+        """Predicts the next action the bot should take after seeing the tracker.
 
-        Returns the list of probabilities for the next actions"""
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
+
+        Returns:
+             the list of probabilities for the next actions
+        """
 
         raise NotImplementedError("Policy must have the capacity to predict.")
 
     def persist(self, path: Text) -> None:
-        """Persists the policy to a storage."""
+        """Persists the policy to a storage.
+
+        Args:
+            path: the path where to save the policy to
+        """
+
         raise NotImplementedError("Policy must have the capacity to persist itself.")
 
     @classmethod
     def load(cls, path: Text) -> "Policy":
         """Loads a policy from the storage.
-            Needs to load its featurizer"""
+
+        Needs to load its featurizer.
+
+        Args:
+            path: the path from where to load the policy
+        """
+
         raise NotImplementedError("Policy must have the capacity to load itself.")
 
+    @staticmethod
+    def _default_predictions(domain: Domain) -> List[float]:
+        """Creates a list of zeros.
 
-def confidence_scores_for(action_name, value, domain):
+        Args:
+            domain: the :class:`rasa.core.domain.Domain`
+        Returns:
+            the list of the length of the number of actions
+        """
+
+        return [0.0] * domain.num_actions
+
+
+def confidence_scores_for(
+    action_name: Text, value: float, domain: Domain
+) -> List[float]:
     """Returns confidence scores if a single action is predicted.
 
     Args:
-        action_name: Name of action for which the score should be set.
-        value: Confidence for `action_name`.
-        domain: Domain which contains all actions.
+        action_name: the name of the action for which the score should be set
+        value: the confidence for `action_name`
+        domain: the :class:`rasa.core.domain.Domain`
 
-    Returns: List of length `len(nr_actions)`.
-
+    Returns:
+        the list of the length of the number of actions
     """
+
     results = [0.0] * domain.num_actions
     idx = domain.index_for_action(action_name)
     results[idx] = value
