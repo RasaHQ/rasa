@@ -282,6 +282,21 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
     )
 
 
+def update_existing_keys(
+    original: Dict[Any, Any], updates: Dict[Any, Any]
+) -> Dict[Any, Any]:
+    """Iterate through all the updates and update a value in the original dictionary.
+
+    If the updates contain a key that is not present in the original dict, it will
+    be ignored."""
+
+    updated = original.copy()
+    for k, v in updates.items():
+        if k in updated:
+            updated[k] = v
+    return updated
+
+
 def lazy_property(function: Callable) -> Any:
     """Allows to avoid recomputing a property over and over.
 
@@ -342,10 +357,8 @@ def raise_warning(
         # try to set useful defaults for the most common warning categories
         if category == DeprecationWarning:
             kwargs["stacklevel"] = 3
-        elif category == UserWarning:
+        elif category in (UserWarning, FutureWarning):
             kwargs["stacklevel"] = 2
-        elif category == FutureWarning:
-            kwargs["stacklevel"] = 3
 
     warnings.formatwarning = formatwarning
     warnings.warn(message, category=category, **kwargs)

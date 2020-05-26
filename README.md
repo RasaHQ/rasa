@@ -11,7 +11,7 @@
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png">
 
-Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contexual assistants on:
+Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contextual assistants on:
 - Facebook Messenger
 - Slack
 - Google Hangouts
@@ -189,7 +189,7 @@ Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatical
 Poetry doesn't include any solution that can help to resolve merge conflicts in
 the lock file `poetry.lock` by default.
 However, there is a great tool called [poetry-merge-lock](https://poetry-merge-lock.readthedocs.io/en/latest/).
-Here is how use can install it:
+Here is how you can install it:
 
 ```bash
 pip install poetry-merge-lock
@@ -215,6 +215,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
 2. Switch to the branch you want to cut the release from (`master` in case of a major / minor, the current feature branch for patch releases) 
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
+    - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
 3. Run `make release`
 4. Create a PR against master or the release branch (e.g. `1.2.x`)
 5. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using

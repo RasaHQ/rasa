@@ -481,7 +481,7 @@ which will do something with the information the user has provided once the form
        return []
 
 In this case, we only tell the user that we’ll be in touch with them, however
-usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L69>`_
+usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L69>`_
 for an example of how to store this information in a spreadsheet.
 
 We’ll need to add the form we just created to a new section in our ``domain.yml`` file:
@@ -597,7 +597,7 @@ As a final step, let’s add the FormPolicy to our config file:
 
    policies:
      - name: MemoizationPolicy
-     - name: KerasPolicy
+     - name: TEDPolicy
      - name: MappingPolicy
      - name: FormPolicy
 
@@ -946,7 +946,8 @@ There are also a bunch of ways in which you can customise this policy. In Sara, 
 we’ve customised it to suggest intents to the user within a certain confidence range to make
 it easier for the user to give the bot the information it needs.
 
-This is done by customising the action ``ActionDefaultAskAffirmation`` as shown in the `Sara rasa-demo action server <https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L443>`_
+This is done by customising the action ``ActionDefaultAskAffirmation`` as shown in the
+`Sara rasa-demo action server <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L443>`_
 We define some intent mappings to make it more intuitive to the user what an intent means.
 
 .. image:: /_static/images/intent_mappings.png

@@ -5,13 +5,7 @@
 from rasa.core.policies.ted_policy import TEDPolicy
 
 # noinspection PyUnresolvedReferences
-from rasa.core.policies.embedding_policy import EmbeddingPolicy
-
-# noinspection PyUnresolvedReferences
 from rasa.core.policies.fallback import FallbackPolicy
-
-# noinspection PyUnresolvedReferences
-from rasa.core.policies.keras_policy import KerasPolicy
 
 # noinspection PyUnresolvedReferences
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy

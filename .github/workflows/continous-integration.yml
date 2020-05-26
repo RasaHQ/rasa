@@ -104,8 +104,10 @@ jobs:
     - name: Test Docs 📃
       run: |
         make install-full
+        poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
         export SPHINXBUILD=$(poetry run which sphinx-build)
-        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html && make SPHINXBUILD=$SPHINXBUILD linkcheck
+        
 
   test:
     name: Run Tests
@@ -144,7 +146,8 @@ jobs:
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
-        make install-full
+        make install-full | tee .output
+        if grep 'The lock file is not up to date' .output; then exit 1; fi
         make prepare-tests-ubuntu
 
     - name: Test Code 🔍
@@ -259,3 +262,12 @@ jobs:
         pip install -U github3.py pypandoc
         python3 scripts/publish_gh_release_notes.py
         ./scripts/ping_slack_about_package_release.sh
+
+  mergepal-merge: # run merge pal in the end
+    runs-on: ubuntu-latest
+    needs: [quality, test, api, docker]
+    steps:
+      - uses: actions/checkout@v1
+      - uses: rasahq/merge-pal-action@master
+        with:
+          token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}

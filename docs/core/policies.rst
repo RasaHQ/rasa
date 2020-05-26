@@ -40,7 +40,7 @@ policy class and pass arguments to it.
 .. code-block:: yaml
 
   policies:
-    - name: "KerasPolicy"
+    - name: "TEDPolicy"
       featurizer:
       - name: MaxHistoryTrackerFeaturizer
         max_history: 5
@@ -148,7 +148,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
     | 4. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
     | 3. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
     | 2. ``MappingPolicy``
-    | 1. ``TEDPolicy``, ``EmbeddingPolicy``, ``KerasPolicy``, and ``SklearnPolicy``
+    | 1. ``TEDPolicy`` and ``SklearnPolicy``
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
 above the ``nlu_threshold``, the bot will still fall back. In general, it is not recommended to have more
@@ -163,34 +163,6 @@ learning policies.
     All policy priorities are configurable via the ``priority:`` parameter in the configuration,
     but we **do not recommend** changing them outside of specific cases such as custom policies.
     Doing so can lead to unexpected and undesired bot behavior.
-
-.. _keras_policy:
-
-Keras Policy
-^^^^^^^^^^^^
-
-The ``KerasPolicy`` uses a neural network implemented in
-`Keras <http://keras.io>`_ to select the next action.
-The default architecture is based on an LSTM, but you can override the
-``KerasPolicy.model_architecture`` method to implement your own architecture.
-
-
-.. literalinclude:: ../../rasa/core/policies/keras_policy.py
-   :dedent: 4
-   :pyobject: KerasPolicy.model_architecture
-
-and the training is run here:
-
-.. literalinclude:: ../../rasa/core/policies/keras_policy.py
-   :dedent: 4
-   :pyobject: KerasPolicy.train
-
-You can implement the model of your choice by overriding these methods,
-or initialize ``KerasPolicy`` with pre-defined ``keras model``.
-
-In order to get reproducible training results for the same inputs you can
-set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer.
-
 
 .. _embedding_policy:
 
@@ -531,7 +503,7 @@ The ``FallbackPolicy`` invokes a :ref:`fallback action
     .. code-block:: python
 
        from rasa.core.policies.fallback import FallbackPolicy
-       from rasa.core.policies.keras_policy import KerasPolicy
+       from rasa.core.policies.keras_policy import TEDPolicy
        from rasa.core.agent import Agent
 
        fallback = FallbackPolicy(fallback_action_name="action_default_fallback",
@@ -539,7 +511,7 @@ The ``FallbackPolicy`` invokes a :ref:`fallback action
                                  nlu_threshold=0.3,
                                  ambiguity_threshold=0.1)
 
-       agent = Agent("domain.yml", policies=[KerasPolicy(), fallback])
+       agent = Agent("domain.yml", policies=[TEDPolicy(), fallback])
 
     .. note::
 
