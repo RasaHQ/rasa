@@ -370,6 +370,6 @@ be triggered at the very beginning of conversations).
   A session start triggers the default action ``action_session_start``. Its default
   implementation moves all existing slots into the new session. Note that all
   conversations begin with an ``action_session_start``. Overriding this action could
-  for instance be used to initialise the tracker with slots from an external API
+  for instance be used to initialize the tracker with slots from an external API
   call, or to start the conversation with a bot message. The docs on
   :ref:`custom_session_start` shows you how to do that.
