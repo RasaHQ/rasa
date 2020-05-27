@@ -54,7 +54,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         "analyzer": "word",  # use 'char' or 'char_wb' for character
         # regular expression for tokens
         # only used if analyzer == 'word'
-        # WARNING this pattern is used during training but not currently used during inference!
+        # WARNING this pattern is used during training
+        # but not currently used during inference!
         "token_pattern": r"(?u)\b\w\w+\b",
         # remove accents during the preprocessing step
         "strip_accents": None,  # {'ascii', 'unicode', None}
@@ -668,33 +669,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         # make sure the vocabulary has been loaded correctly
         for attribute in vectorizers:
-            vocabulary = ftr.vectorizers[attribute].vocabulary
-            if vocabulary is not None:
-                if isinstance(vocabulary, set):
-                    vocabulary = sorted(vocabulary)
-                if not isinstance(vocabulary, Mapping):
-                    vocab = {}
-                    for i, t in enumerate(vocabulary):
-                        if vocab.setdefault(t, i) != i:
-                            msg = "Duplicate term in vocabulary: %r" % t
-                            raise ValueError(msg)
-                    vocabulary = vocab
-                else:
-                    indices = set(vocabulary.values())
-                    if len(indices) != len(vocabulary):
-                        raise ValueError("Vocabulary contains repeated indices.")
-                    for i in range(len(vocabulary)):
-                        if i not in indices:
-                            msg = (
-                                "Vocabulary of size %d doesn't contain index "
-                                "%d." % (len(vocabulary), i,)
-                            )
-                            raise ValueError(msg)
-                if not vocabulary:
-                    raise ValueError("empty vocabulary passed")
-                ftr.vectorizers[attribute].fixed_vocabulary_ = True
-                ftr.vectorizers[attribute].vocabulary_ = dict(vocabulary)
-            else:
-                ftr.vectorizers[attribute].fixed_vocabulary_ = False
+            ftr.vectorizers[attribute]._validate_vocabulary()
 
         return ftr
