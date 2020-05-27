@@ -73,15 +73,14 @@ jobs:
       # Get the GKE credentials so we can deploy to the cluster
       - run: |-
           gcloud container clusters get-credentials "${{ secrets.GKE_CLUSTER }}" --zone "$GKE_ZONE"
+
       - name: Deploy Github Runner
         run: |-
-          kubectl get nodes
           kubectl apply -f runner_deployment.yaml
-          kubectl -n github-runner rollout status --timeout=10m deployment/github-runner-$GITHUB_RUN_ID
-
+          kubectl -n github-runner rollout status --timeout=15m deployment/github-runner-$GITHUB_RUN_ID
 
   model_regression_test_gpu:
-    name: Model Regression Tests
+    name: Model Regression Tests - GPU
     needs:
     - deploy_runner_gpu
     - read_test_configuration
@@ -121,19 +120,18 @@ jobs:
 
       - name: Install Dependencies 📦
         run: |
-          poetry install --extras convert
+          poetry install --extras full
           make install
           
       - name: Validate that GPUs are working
         run: |-
-          echo $LD_LIBRARY_PATH
           poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
           
       - name: Checkout dataset
         uses: actions/checkout@v2
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
-          token: ${{ secrets.PAT_CHECKOUT }}
+          token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
           
       - name: Run test
@@ -145,6 +143,106 @@ jobs:
           poetry run rasa --version
           poetry run rasa train nlu -u dataset/${{ matrix.dataset }} -c dataset/configs/${{ matrix.config }} --out models/${{ matrix.dataset }}/${{ matrix.config }}
           poetry run rasa test nlu -u dataset/${{ matrix.dataset }}/test -m models/${{ matrix.dataset }}/${{ matrix.config }} --out results/${{ matrix.dataset }}/${{ matrix.config }}
+          
+      - name: Get results
+        id: get_results
+        env:
+          DATASET: ${{ matrix.dataset }}
+        run: |
+          OUTPUT=$(gomplate -f .github/templates/model_regression_test_results.tmpl)
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          echo "::set-output name=result::$OUTPUT"
+
+      - name: Publish results
+        uses: marocchino/sticky-pull-request-comment@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          header: ${{ github.run_id }}
+          append: true
+          message: |-
+            Commit: ${{ github.sha }}, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
+            
+            ${{ steps.get_results.outputs.result }}
+          
+  model_regression_test_cpu:
+    name: Model Regression Tests - CPU
+    needs:
+    - read_test_configuration
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+    if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.event.pull_request.author_association == 'MEMBER' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v2
+          
+      - name: Set up Python 3.7 🐍
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@v1
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: ${{ runner.os }}-poetry-3.7
+
+      - name: Install Dependencies 📦
+        run: |
+          poetry install --extras full
+          make install
+
+      - name: Checkout dataset
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ secrets.DATASET_REPOSITORY }}
+          token: ${{ secrets.ML_TEST_SA_PAT }}
+          path: 'dataset'
+
+      - name: Run test
+        env:
+          TFHUB_CACHE_DIR: ~/.tfhub_cache/
+          OMP_NUM_THREADS: 1
+        run: |-
+          echo ${{ matrix.dataset }} ${{ matrix.config }}
+          poetry run rasa --version
+          poetry run rasa train nlu -u dataset/${{ matrix.dataset }} -c dataset/configs/${{ matrix.config }} --out models/${{ matrix.dataset }}/${{ matrix.config }}
+          poetry run rasa test nlu -u dataset/${{ matrix.dataset }}/test -m models/${{ matrix.dataset }}/${{ matrix.config }} --out results/${{ matrix.dataset }}/${{ matrix.config }}
+
+      - name: Get results
+        id: get_results
+        env:
+          DATASET: ${{ matrix.dataset }}
+        run: |
+          OUTPUT=$(gomplate -f .github/templates/model_regression_test_results.tmpl)
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          echo "::set-output name=result::$OUTPUT"
+
+      - name: Publish results
+        uses: marocchino/sticky-pull-request-comment@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          header: ${{ github.run_id }}
+          append: true
+          message: |-
+            Commit: ${{ github.sha }}, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
+
+            ${{ steps.get_results.outputs.result }}
 
   remove_runner_gpu:
     name: Delete Github Runner - GPU
@@ -166,5 +264,10 @@ jobs:
           gcloud container clusters get-credentials "${{ secrets.GKE_CLUSTER }}" --zone "$GKE_ZONE"
 
       - name: Remove Github Runner
-        run: |-
-          kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30
+        run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30
+
+  remove_configuration_file:
+    name: Check if test configuration file is removed
+    runs-on: ubuntu-latest
+    steps:
+      - run: test ! -f mr-test.yaml

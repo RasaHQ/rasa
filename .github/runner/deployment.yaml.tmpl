@@ -20,10 +20,9 @@ spec:
     spec:
       priorityClassName: high-priority
       automountServiceAccountToken: false
-      serviceAccountName: github-runner
       containers:
       - name: github-runner
-        image: us.gcr.io/rasa-platform/github-runner:test-base
+        image: us.gcr.io/rasa-platform/github-runner:2.262.1
         imagePullPolicy: Always
         resources:
           limits:

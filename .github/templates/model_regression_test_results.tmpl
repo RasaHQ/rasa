@@ -1,0 +1,44 @@
+{{- range $file := file.Walk "./results" }}
+{{- if not (file.IsDir $file) }}
+{{- if and ((filepath.Base .) | strings.Contains "intent_report.json") ($file | strings.Contains (getenv "DATASET")) -}}
+{{- $intent_report := ((file.Read .) | json) -}}
+
+**Intent prediction scores**
+accuracy: **{{$intent_report.accuracy }}**
+file: `{{ $file }}`
+
+|  | macro avg | weighted avg |
+|-----|---|-----|
+| precision | {{- (index $intent_report "macro avg").precision -}} | {{- (index $intent_report "weighted avg").precision -}}|
+| recall | {{- (index $intent_report "macro avg").recall -}}  | {{- (index $intent_report "weighted avg").precision -}} |
+| f1-score | {{- index (index $intent_report "macro avg") "f1-score" -}}  | {{- (index $intent_report "weighted avg").precision -}}|
+{{"\n"}}
+{{- end -}}
+{{- if and ( or ((filepath.Base .) | strings.Contains "CRFEntityExtractor_report.json") ((filepath.Base .) | strings.Contains "DIETClassifier_report.json")) ($file | strings.Contains (getenv "DATASET")) -}}
+{{- $CRFEntityExtractor_report := ((file.Read .) | json) -}}
+
+**Entity prediction scores**
+file: `{{ $file }}`
+
+|  | micro avg | macro avg | weighted avg |
+|----|---|---|-----|
+| precision | {{- (index $CRFEntityExtractor_report "micro avg").precision -}} | {{- (index $CRFEntityExtractor_report "macro avg").precision -}} | {{- (index $CRFEntityExtractor_report "weighted avg").precision -}}|
+| recall | {{- (index $CRFEntityExtractor_report "micro avg").recall -}} | {{- (index $CRFEntityExtractor_report "macro avg").recall -}}  | {{- (index $CRFEntityExtractor_report "weighted avg").precision -}} |
+| f1-score | {{- index (index $CRFEntityExtractor_report "micro avg") "f1-score" -}} | {{- index (index $CRFEntityExtractor_report "macro avg") "f1-score" -}}  | {{- (index $CRFEntityExtractor_report "weighted avg").precision -}}|
+{{"\n"}}
+{{- end -}}
+{{- if and ((filepath.Base .) | strings.Contains "response_selection_report.json") ($file | strings.Contains (getenv "DATASET")) -}}
+{{- $response_selection_report := ((file.Read .) | json) -}}
+
+**Response Selection scores**
+file: `{{ $file }}`
+
+|  | macro avg | weighted avg |
+|----|---|-----|
+| precision | {{- (index $response_selection_report "macro avg").precision -}} | {{- (index $response_selection_report "weighted avg").precision -}}|
+| recall | {{- (index $response_selection_report "macro avg").recall -}}  | {{- (index $response_selection_report "weighted avg").precision -}} |
+| f1-score | {{- index (index $response_selection_report "macro avg") "f1-score" -}}  | {{- (index $response_selection_report "weighted avg").precision -}}|
+{{"\n"}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
