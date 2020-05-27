@@ -2,8 +2,10 @@ from aioresponses import aioresponses
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.actions.forms import FormAction, REQUESTED_SLOT
+from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain
-from rasa.core.events import Form, SlotSet, UserUttered, ActionExecuted
+from rasa.core.events import Form, SlotSet, UserUttered, ActionExecuted, BotUttered
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
@@ -19,10 +21,20 @@ forms:
     {slot_name}:
     - type: from_entity
       entity: number
+responses:
+    utter_ask_num_people:
+    - text: "How many people?"
 """
     domain = Domain.from_yaml(domain)
-    events = await action.run(None, None, tracker, domain)
-    assert events == [Form(form_name), SlotSet(REQUESTED_SLOT, slot_name)]
+
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        tracker,
+        domain,
+    )
+    assert events[:-1] == [Form(form_name), SlotSet(REQUESTED_SLOT, slot_name)]
+    assert isinstance(events[-1], BotUttered)
 
 
 async def test_activate_and_immediate_deactivate():

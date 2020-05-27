@@ -1,6 +1,7 @@
 from typing import Text, List, Optional, Union, Any, Dict, Tuple
 import logging
 
+from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
 from rasa.core.domain import Domain
 
@@ -433,8 +434,12 @@ class FormAction(Action):
         )
 
     # noinspection PyUnusedLocal
-    def request_next_slot(
-        self, tracker: "DialogueStateTracker", domain: Domain
+    async def request_next_slot(
+        self,
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
     ) -> Optional[List[Event]]:
         """Request the next slot and utter template if needed,
             else return None"""
@@ -442,10 +447,31 @@ class FormAction(Action):
         for slot in self.required_slots(tracker):
             if self._should_request_slot(tracker, slot):
                 logger.debug(f"Request next slot '{slot}'")
-                return [SlotSet(REQUESTED_SLOT, slot)]
+
+                bot_message_events = await self._ask_for_slot(
+                    domain, nlg, output_channel, slot, tracker
+                )
+                return [SlotSet(REQUESTED_SLOT, slot), *bot_message_events]
 
         # no more required slots to fill
         return None
+
+    @staticmethod
+    async def _ask_for_slot(
+        domain: Domain,
+        nlg: NaturalLanguageGenerator,
+        output_channel: OutputChannel,
+        slot_name: Text,
+        tracker: DialogueStateTracker,
+    ) -> List[Event]:
+        name_of_utterance = f"utter_ask_{slot_name}"
+        action_to_ask_for_next_slot = action.action_from_name(
+            name_of_utterance, None, domain.user_actions
+        )
+        events_to_ask_for_next_slot = await action_to_ask_for_next_slot.run(
+            output_channel, nlg, tracker, domain
+        )
+        return events_to_ask_for_next_slot
 
     def deactivate(self) -> List[Event]:
         """Return `Form` event with `None` as name to deactivate the form
@@ -598,7 +624,9 @@ class FormAction(Action):
                 tracker.sender_id, tracker.events_after_latest_restart() + events
             )
 
-            next_slot_events = self.request_next_slot(temp_tracker, domain)
+            next_slot_events = await self.request_next_slot(
+                temp_tracker, domain, output_channel, nlg
+            )
 
             if next_slot_events is not None:
                 # request next slot
