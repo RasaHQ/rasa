@@ -54,7 +54,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         "analyzer": "word",  # use 'char' or 'char_wb' for character
         # regular expression for tokens
         # only used if analyzer == 'word'
-        # WARNING this pattern will currently not be used during processing!
+        # WARNING this pattern is used during training but not currently used during inference!
         "token_pattern": r"(?u)\b\w\w+\b",
         # remove accents during the preprocessing step
         "strip_accents": None,  # {'ascii', 'unicode', None}
