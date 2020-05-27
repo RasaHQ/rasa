@@ -18,24 +18,66 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
 
 UTTER_GREET_ACTION = "utter_greet"
+GREET_INTENT_NAME = "greet"
 GREET_RULE = DialogueStateTracker.from_events(
     "bla",
     evts=[
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
         ActionExecuted(ACTION_LISTEN_NAME),
         # Greet is a FAQ here and gets triggered in any context
-        UserUttered("haha", {"name": "greet"}),
+        UserUttered("haha", {"name": GREET_INTENT_NAME}),
         ActionExecuted(UTTER_GREET_ACTION),
     ],
 )
 GREET_RULE.is_rule_tracker = True
 
 
+def _form_submit_rule(
+    domain: Domain, submit_action_name: Text, form_name: Text
+) -> DialogueStateTracker:
+    return TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            # Any events in between
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            # Form got deactivated
+            ActionExecuted(form_name),
+            Form(None),
+            SlotSet(REQUESTED_SLOT, None),
+            ActionExecuted(submit_action_name),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+
+def _form_activation_rule(
+    domain: Domain, form_name: Text, activation_intent_name: Text
+) -> DialogueStateTracker:
+    return TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            # The intent `other_intent` activates the form
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": activation_intent_name}),
+            ActionExecuted(form_name),
+            Form(form_name),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+
 def test_faq_rule():
     domain = Domain.from_yaml(
         f"""
 intents:
-- greet
+- {GREET_INTENT_NAME}
 actions:
 - {UTTER_GREET_ACTION}
     """
@@ -66,7 +108,7 @@ async def test_predict_form_action_if_in_form():
     domain = Domain.from_yaml(
         f"""
     intents:
-    - greet
+    - {GREET_INTENT_NAME}
     actions:
     - {UTTER_GREET_ACTION}
     - some-action
@@ -89,7 +131,7 @@ async def test_predict_form_action_if_in_form():
             SlotSet(REQUESTED_SLOT, "some value"),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User sends message as response to a requested slot
-            UserUttered("haha", {"name": "greet"}),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
         ],
         slots=domain.slots,
     )
@@ -107,7 +149,7 @@ async def test_predict_form_action_if_multiple_turns():
     domain = Domain.from_yaml(
         f"""
     intents:
-    - greet
+    - {GREET_INTENT_NAME}
     - {other_intent}
     actions:
     - {UTTER_GREET_ACTION}
@@ -131,7 +173,7 @@ async def test_predict_form_action_if_multiple_turns():
             SlotSet(REQUESTED_SLOT, "some value"),
             # User responds to slot request
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("haha", {"name": "greet"}),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
             # Form validates input and requests another slot
             ActionExecuted(form_name),
             SlotSet(REQUESTED_SLOT, "some other"),
@@ -155,7 +197,7 @@ async def test_dont_predict_form_if_already_finished():
     domain = Domain.from_yaml(
         f"""
     intents:
-    - greet
+    - {GREET_INTENT_NAME}
     actions:
     - {UTTER_GREET_ACTION}
     - some-action
@@ -178,7 +220,7 @@ async def test_dont_predict_form_if_already_finished():
             SlotSet(REQUESTED_SLOT, "some value"),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User sends message as response to a requested slot
-            UserUttered("haha", {"name": "greet"}),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
             # Form is happy and deactivates itself
             ActionExecuted(form_name),
             Form(None),
@@ -186,7 +228,7 @@ async def test_dont_predict_form_if_already_finished():
             # User sends another message. Form is already done. Shouldn't get triggered
             # again
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("haha", {"name": "greet"}),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
         ],
         slots=domain.slots,
     )
@@ -204,7 +246,7 @@ async def test_form_unhappy_path():
     domain = Domain.from_yaml(
         f"""
         intents:
-        - greet
+        - {GREET_INTENT_NAME}
         actions:
         - {UTTER_GREET_ACTION}
         - some-action
@@ -227,7 +269,7 @@ async def test_form_unhappy_path():
             SlotSet(REQUESTED_SLOT, "some value"),
             # User responds to slot request
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("haha", {"name": "greet"}),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
             # Form isn't happy with the answer and rejects execution
             Form(form_name),
             ActionExecutionRejected(form_name),
@@ -250,7 +292,7 @@ async def test_form_unhappy_path_triggering_form_again():
     domain = Domain.from_yaml(
         f"""
         intents:
-        - greet
+        - {GREET_INTENT_NAME}
         actions:
         - {UTTER_GREET_ACTION}
         - {handle_rejection_action_name}
@@ -275,7 +317,7 @@ async def test_form_unhappy_path_triggering_form_again():
             ActionExecuted(ACTION_LISTEN_NAME),
             # When a user says "hi", and the form is unhappy, we want to run a specific
             # action
-            UserUttered("haha", {"name": "greet"}),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
             ActionExecuted(handle_rejection_action_name),
             ActionExecuted(form_name),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -291,7 +333,7 @@ async def test_form_unhappy_path_triggering_form_again():
         Form(form_name),
         SlotSet(REQUESTED_SLOT, "some value"),
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("haha", {"name": "greet"}),
+        UserUttered("haha", {"name": GREET_INTENT_NAME}),
         Form(form_name),
         ActionExecutionRejected(form_name),
     ]
@@ -321,7 +363,7 @@ async def test_form_unhappy_path_without_rule():
     domain = Domain.from_yaml(
         f"""
         intents:
-        - greet
+        - {GREET_INTENT_NAME}
         - {other_intent}
         actions:
         - {UTTER_GREET_ACTION}
@@ -363,7 +405,7 @@ async def test_form_activation_rule():
     domain = Domain.from_yaml(
         f"""
         intents:
-        - greet
+        - {GREET_INTENT_NAME}
         - {other_intent}
         actions:
         - {UTTER_GREET_ACTION}
@@ -376,20 +418,7 @@ async def test_form_activation_rule():
     """
     )
 
-    form_activation_rule = TrackerWithCachedStates.from_events(
-        "bla",
-        domain=domain,
-        slots=domain.slots,
-        evts=[
-            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-            # The intent `other_intent` activates the form
-            ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("haha", {"name": other_intent}),
-            ActionExecuted(form_name),
-            ActionExecuted(ACTION_LISTEN_NAME),
-        ],
-        is_rule_tracker=True,
-    )
+    form_activation_rule = _form_activation_rule(domain, form_name, other_intent)
     policy = RulePolicy()
     policy.train([GREET_RULE, form_activation_rule], domain)
 
@@ -415,7 +444,7 @@ async def test_failing_form_activation_due_to_no_rule():
     domain = Domain.from_yaml(
         f"""
         intents:
-        - greet
+        - {GREET_INTENT_NAME}
         - {other_intent}
         actions:
         - {UTTER_GREET_ACTION}
@@ -453,7 +482,7 @@ def test_form_submit_rule():
     domain = Domain.from_yaml(
         f"""
         intents:
-        - greet
+        - {GREET_INTENT_NAME}
         actions:
         - {UTTER_GREET_ACTION}
         - some-action
@@ -466,23 +495,7 @@ def test_form_submit_rule():
     """
     )
 
-    form_submit_rule = TrackerWithCachedStates.from_events(
-        "bla",
-        domain=domain,
-        slots=domain.slots,
-        evts=[
-            # Any events in between
-            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-            # Form got deactivated
-            # TODO: Rule does not work without the action before
-            ActionExecuted(form_name),
-            Form(None),
-            SlotSet(REQUESTED_SLOT, None),
-            ActionExecuted(submit_action_name),
-            ActionExecuted(ACTION_LISTEN_NAME),
-        ],
-        is_rule_tracker=True,
-    )
+    form_submit_rule = _form_submit_rule(domain, submit_action_name, form_name)
 
     policy = RulePolicy()
     policy.train([GREET_RULE, form_submit_rule], domain)
@@ -492,12 +505,12 @@ def test_form_submit_rule():
         evts=[
             # Form was activated
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("haha", {"name": "greet"}),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
             Form(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User responds and fills requested slot
-            UserUttered("haha", {"name": "greet"}),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
             ActionExecuted(form_name),
             # Form get's deactivated
             Form(None),
@@ -521,7 +534,7 @@ def test_immediate_submit():
     domain = Domain.from_yaml(
         f"""
         intents:
-        - greet
+        - {GREET_INTENT_NAME}
         actions:
         - {UTTER_GREET_ACTION}
         - some-action
@@ -538,35 +551,21 @@ def test_immediate_submit():
     """
     )
 
-    form_submit_rule = TrackerWithCachedStates.from_events(
-        "bla",
-        domain=domain,
-        slots=domain.slots,
-        evts=[
-            # Any events in between
-            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-            # Form got deactivated
-            # TODO: Rule does not work without the action before
-            ActionExecuted(form_name),
-            Form(None),
-            SlotSet(REQUESTED_SLOT, None),
-            ActionExecuted(submit_action_name),
-            ActionExecuted(ACTION_LISTEN_NAME),
-        ],
-        is_rule_tracker=True,
-    )
+    form_activation_rule = _form_activation_rule(domain, form_name, GREET_INTENT_NAME)
+    form_submit_rule = _form_submit_rule(domain, submit_action_name, form_name)
 
     policy = RulePolicy()
-    policy.train([GREET_RULE, form_submit_rule], domain)
+    policy.train([GREET_RULE, form_activation_rule, form_submit_rule], domain)
 
     form_conversation = DialogueStateTracker.from_events(
         "in a form",
         evts=[
             # Form was activated
             ActionExecuted(ACTION_LISTEN_NAME),
+            # The same intent which activates the form also deactivates it
             UserUttered(
                 "haha",
-                {"name": "greet"},
+                {"name": GREET_INTENT_NAME},
                 entities=[{"entity": entity, "value": "Bruce Wayne"}],
             ),
             SlotSet(slot, "Bruce"),
@@ -615,7 +614,7 @@ async def test_rule_policy_slot_filling_from_text(
             Form("loop_q_form"),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("/bla", {"name": "greet"}),
+            UserUttered("/bla", {"name": GREET_INTENT_NAME}),
             ActionExecuted("loop_q_form"),
             SlotSet("some_slot", "/bla"),
             Form(None),
