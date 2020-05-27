@@ -639,6 +639,10 @@ class DialogueStateTracker:
         return new_slots
 
     def active_form_name(self) -> Optional[Text]:
+        """Get the name of the currently active form.
+
+        Returns: `None` if no active form or the name of the currenly active form.
+        """
         if not self.active_form:
             return None
 

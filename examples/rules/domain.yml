@@ -35,6 +35,10 @@ actions:
 forms:
 - loop_q_form:
     some_slot:
+    # Slot mappings can be defined in the domain.
+    # There will be an option in the future to overwrite this from the custom action
+    # server.
+    # The slot mappings follow the same syntax as currently in the SDK implementation
     - type: from_entity
       entity: some_slot
 #    some_slot:

@@ -10,8 +10,7 @@ from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import FORM_POLICY_PRIORITY
-
+from rasa.core.constants import FORM_POLICY_PRIORITY, RULE_SNIPPET_ACTION_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +87,7 @@ class RulePolicy(MemoizationPolicy):
     ) -> None:
         """Trains the policy on given training trackers."""
         self.lookup = {}
+
         # only use trackers from rule-based training data
         training_trackers = [t for t in training_trackers if t.is_rule_tracker]
 
@@ -109,9 +109,11 @@ class RulePolicy(MemoizationPolicy):
         for key in self.lookup.keys():
             # Delete rules if there is no prior action or if it would predict
             # the `...` action
-            if "prev" not in key or self.lookup[key] == domain.index_for_action("..."):
+            if "prev" not in key or self.lookup[key] == domain.index_for_action(
+                RULE_SNIPPET_ACTION_NAME
+            ):
                 del updated_lookup[key]
-            elif "..." in key:
+            elif RULE_SNIPPET_ACTION_NAME in key:
                 # If the previous action is `...` -> remove any specific state
                 # requirements for that state (anything can match this state)
                 new_key = re.sub(r".*prev_\.\.\.[^|]*", "", key)
@@ -230,7 +232,7 @@ class RulePolicy(MemoizationPolicy):
     def _remove_keys_which_trigger_action(
         self, possible_keys: typing.Set[Text], domain: Domain, action_name: Text
     ) -> typing.Set[Text]:
-        """Remove any matching rules which would predict `action_name`
+        """Remove any matching rules which would predict `action_name`.
 
         This is e.g. used when the Form rejected its execution and we are entering an
         unhappy path.

@@ -1,13 +1,14 @@
-<!-- each story will be perceived as independent rule -->
+<!-- each story starting with `>>` will be perceived as independent rule -->
 
->> activate loop q_form
-<!-- required slots for q_form should be listed somewhere else -->
-    - ...
+>> Activate form 'q_form'
+<!-- required slots for q_form are listed in the domain. -->
+    - ... <!-- `...` indicates that this rule applies at any point within a conversation -->
 * activate_q_form  <!-- like request_restaurant -->
-    - loop_q_form  <!-- Activate form -->
+    - loop_q_form  <!-- Activate and run form -->
+    - form{"name": "loop_q_form"}
 
 
->> explain loop q_form (unhappy path)
+>> Example of an unhappy path for the 'q_form'
     - form{"name": "loop_q_form"} <!-- condition that form is active-->
     - slot{"requested_slot": "some_slot"}  <!-- some condition -->
     - ...
@@ -18,19 +19,19 @@
 
 >> submit form
     - ...
-    - loop_q_form
+    - loop_q_form <!-- condition that form is active -->
     - form{"name": null}
     - slot{"requested_slot": null}
-    - utter_stop
+    - utter_stop  <!-- can be any action -->
 
 
->> questions
+>> FAQ question
     - ...
 * ask_possibilities
     - utter_list_possibilities
 
 
->> switch faq
+>> Another FAQ example
     - ...
 * switch_faq
     - action_switch_faq

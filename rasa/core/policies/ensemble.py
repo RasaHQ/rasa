@@ -118,6 +118,9 @@ class PolicyEnsemble:
                     docs=DOCS_URL_POLICIES,
                 )
 
+    # TODO: This is a temporary implementation for the RulePolicy prototype.
+    # Policies should be able to decide themselves whether to use rules or stories
+    # for training.
     @staticmethod
     def _split_ml_and_rule_trackers(
         training_trackers: List[DialogueStateTracker],
@@ -375,7 +378,7 @@ class PolicyEnsemble:
                 except TypeError as e:
                     raise Exception(f"Could not initialize {policy_name}. {e}")
                 parsed_policies.append(policy_object)
-            except (ImportError, AttributeError) as e:
+            except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(
                     "Module for policy '{}' could not "
                     "be loaded. Please make sure the "
@@ -513,7 +516,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         predictions = {
             f"policy_{i}_{type(p).__name__}": Prediction(
-                p.predict_action_probabilities(tracker, domain), p.priority,
+                p.predict_action_probabilities(tracker, domain), p.priority
             )
             for i, p in enumerate(self.policies)
         }

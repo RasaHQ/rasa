@@ -64,6 +64,7 @@ async def test_activate_and_immediate_deactivate():
     domain = Domain.from_yaml(domain)
     events = await action.run(None, None, tracker, domain)
     assert events == [
+        Form(form_name),
         SlotSet(slot_name, slot_value),
         Form(None),
         SlotSet(REQUESTED_SLOT, None),

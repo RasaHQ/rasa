@@ -18,6 +18,11 @@ logger = logging.getLogger(__name__)
 # to do the form handling
 REQUESTED_SLOT = "requested_slot"
 
+# TODO: Temporary implementation as part of the RulePolicy prototype
+# - add more tests
+# - simplify / refactor
+# - add proper docstrings
+
 
 class FormAction(Action):
     def __init__(
@@ -30,14 +35,13 @@ class FormAction(Action):
     def name(self) -> Text:
         return self._form_name
 
-    def required_slots(self, tracker: DialogueStateTracker) -> List[Text]:
+    def required_slots(self) -> List[Text]:
         """A list of required slots that the form has to fill.
 
-        Use `tracker` to request different list of slots
-        depending on the state of the dialogue
+        Returns:
+            A list of slot names.
         """
-
-        return list(self._config().keys())
+        return list(self.slot_mappings().keys())
 
     def from_entity(
         self,
@@ -158,9 +162,7 @@ class FormAction(Action):
 
         if not self._domain:
             return {}
-        return self._config()
 
-    def _config(self) -> Dict:
         return next(
             (
                 form[self._form_name]
@@ -277,7 +279,7 @@ class FormAction(Action):
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
         slot_values = {}
-        for slot in self.required_slots(tracker):
+        for slot in self.required_slots():
             # look for other slots
             if slot != slot_to_fill:
                 # list is used to cover the case of list slot type
@@ -444,7 +446,7 @@ class FormAction(Action):
         """Request the next slot and utter template if needed,
             else return None"""
 
-        for slot in self.required_slots(tracker):
+        for slot in self.required_slots():
             if self._should_request_slot(tracker, slot):
                 logger.debug(f"Request next slot '{slot}'")
 
@@ -510,10 +512,7 @@ class FormAction(Action):
     def _log_form_slots(self, tracker: "DialogueStateTracker") -> None:
         """Logs the values of all required slots before submitting the form."""
         slot_values = "\n".join(
-            [
-                f"\t{slot}: {tracker.get_slot(slot)}"
-                for slot in self.required_slots(tracker)
-            ]
+            [f"\t{slot}: {tracker.get_slot(slot)}" for slot in self.required_slots()]
         )
         logger.debug(
             f"No slots left to request, all required slots are filled:\n{slot_values}"
@@ -547,7 +546,7 @@ class FormAction(Action):
             # collect values of required slots filled before activation
             prefilled_slots = {}
 
-            for slot_name in self.required_slots(tracker):
+            for slot_name in self.required_slots():
                 if not self._should_request_slot(tracker, slot_name):
                     prefilled_slots[slot_name] = tracker.get_slot(slot_name)
 
@@ -628,7 +627,7 @@ class FormAction(Action):
 
             if next_slot_events is not None:
                 # request next slot
-                events = events + next_slot_events
+                events += next_slot_events
             else:
                 # there is nothing more to request, so we can submit
                 self._log_form_slots(temp_tracker)
