@@ -2,7 +2,6 @@ import logging
 import os
 import re
 import scipy.sparse
-from collections.abc import Mapping
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.constants import DOCS_URL_COMPONENTS
