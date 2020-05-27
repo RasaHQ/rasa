@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import scipy.sparse
+from collections.abc import Mapping
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.constants import DOCS_URL_COMPONENTS
@@ -665,7 +666,35 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         ftr = cls(meta, vectorizers)
 
+        # make sure the vocabulary has been loaded correctly
         for attribute in vectorizers:
-            ftr.vectorizers[attribute]._validate_vocabulary()
+            vocabulary = ftr.vectorizers[attribute].vocabulary
+            if vocabulary is not None:
+                if isinstance(vocabulary, set):
+                    vocabulary = sorted(vocabulary)
+                if not isinstance(vocabulary, Mapping):
+                    vocab = {}
+                    for i, t in enumerate(vocabulary):
+                        if vocab.setdefault(t, i) != i:
+                            msg = "Duplicate term in vocabulary: %r" % t
+                            raise ValueError(msg)
+                    vocabulary = vocab
+                else:
+                    indices = set(vocabulary.values())
+                    if len(indices) != len(vocabulary):
+                        raise ValueError("Vocabulary contains repeated indices.")
+                    for i in range(len(vocabulary)):
+                        if i not in indices:
+                            msg = (
+                                "Vocabulary of size %d doesn't contain index "
+                                "%d." % (len(vocabulary), i,)
+                            )
+                            raise ValueError(msg)
+                if not vocabulary:
+                    raise ValueError("empty vocabulary passed")
+                ftr.vectorizers[attribute].fixed_vocabulary_ = True
+                ftr.vectorizers[attribute].vocabulary_ = dict(vocabulary)
+            else:
+                ftr.vectorizers[attribute].fixed_vocabulary_ = False
 
         return ftr
