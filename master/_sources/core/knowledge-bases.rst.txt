@@ -401,7 +401,7 @@ The knowledge base action would detect that the user wants to obtain the value o
 If no mention or object was detected by the NER, the action assumes the user is referring to the most recently
 mentioned object, "PastaBar".
 
-You can disable this behaviour by setting ``use_last_object_mention`` to ``False`` when initializing the action.
+You can disable this behavior by setting ``use_last_object_mention`` to ``False`` when initializing the action.
 
 
 Customization

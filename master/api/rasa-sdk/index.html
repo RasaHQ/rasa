@@ -228,22 +228,8 @@ external APIs or improve dialogue with custom actions written in Python." />
               <a href="../../../1.10.1/api/rasa-sdk/">1.10.1</a>
               <a href="../../../1.10.0/api/rasa-sdk/">1.10.0</a>
               <a href="../../../1.9.7/api/rasa-sdk/">1.9.7</a>
-              <a href="../../../1.9.6/api/rasa-sdk/">1.9.6</a>
-              <a href="../../../1.9.5/api/rasa-sdk/">1.9.5</a>
-              <a href="../../../1.9.4/api/rasa-sdk/">1.9.4</a>
-              <a href="../../../1.9.3/api/rasa-sdk/">1.9.3</a>
-              <a href="../../../1.9.2/api/rasa-sdk/">1.9.2</a>
-              <a href="../../../1.9.1/api/rasa-sdk/">1.9.1</a>
-              <a href="../../../1.9.0/api/rasa-sdk/">1.9.0</a>
               <a href="../../../1.8.3/api/rasa-sdk/">1.8.3</a>
-              <a href="../../../1.8.2/api/rasa-sdk/">1.8.2</a>
-              <a href="../../../1.8.1/api/rasa-sdk/">1.8.1</a>
-              <a href="../../../1.8.0/api/rasa-sdk/">1.8.0</a>
               <a href="../../../1.7.4/api/rasa-sdk/">1.7.4</a>
-              <a href="../../../1.7.3/api/rasa-sdk/">1.7.3</a>
-              <a href="../../../1.7.2/api/rasa-sdk/">1.7.2</a>
-              <a href="../../../1.7.1/api/rasa-sdk/">1.7.1</a>
-              <a href="../../../1.7.0/api/rasa-sdk/">1.7.0</a>
               <a href="../../../1.6.2/api/rasa-sdk/">1.6.2</a>
               <a href="../../../1.5.3/index/">1.5.3</a>
               <a href="../../../1.4.6/index/">1.4.6</a>
@@ -293,7 +279,7 @@ external APIs or improve dialogue with custom actions written in Python." />
 <li><p><a class="reference internal" href="#running-the-action-server" id="id3">Running the Action Server</a></p></li>
 <li><p><a class="reference internal" href="#actions" id="id4">Actions</a></p>
 <ul>
-<li><p><a class="reference internal" href="#customising-the-session-start-action" id="id5">Customising the session start action</a></p></li>
+<li><p><a class="reference internal" href="#customizing-the-session-start-action" id="id5">Customizing the session start action</a></p></li>
 </ul>
 </li>
 <li><p><a class="reference internal" href="#events" id="id6">Events</a></p></li>
@@ -449,9 +435,9 @@ is <code class="docutils literal notranslate"><span class="pre">tracker.latest_m
 </dl>
 </dd></dl>
 
-<div class="section" id="customising-the-session-start-action">
-<span id="custom-session-start"></span><h3><a class="toc-backref" href="#id5">Customising the session start action</a><a class="headerlink" href="#customising-the-session-start-action" title="Permalink to this headline">¶</a></h3>
-<p>The default behaviour of the session start action is to take all existing slots and to
+<div class="section" id="customizing-the-session-start-action">
+<span id="custom-session-start"></span><h3><a class="toc-backref" href="#id5">Customizing the session start action</a><a class="headerlink" href="#customizing-the-session-start-action" title="Permalink to this headline">¶</a></h3>
+<p>The default behavior of the session start action is to take all existing slots and to
 carry them over into the next session. Let’s say you do not want to carry over all
 slots, but only a user’s name and their phone number. To do that, you’d override the
 <code class="docutils literal notranslate"><span class="pre">action_session_start</span></code> with a custom action that might look like this:</p>

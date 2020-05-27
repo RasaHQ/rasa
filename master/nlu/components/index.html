@@ -228,22 +228,8 @@ Natural Language Understanding pipeline" />
               <a href="../../../1.10.1/nlu/components/">1.10.1</a>
               <a href="../../../1.10.0/nlu/components/">1.10.0</a>
               <a href="../../../1.9.7/nlu/components/">1.9.7</a>
-              <a href="../../../1.9.6/nlu/components/">1.9.6</a>
-              <a href="../../../1.9.5/nlu/components/">1.9.5</a>
-              <a href="../../../1.9.4/nlu/components/">1.9.4</a>
-              <a href="../../../1.9.3/nlu/components/">1.9.3</a>
-              <a href="../../../1.9.2/nlu/components/">1.9.2</a>
-              <a href="../../../1.9.1/nlu/components/">1.9.1</a>
-              <a href="../../../1.9.0/nlu/components/">1.9.0</a>
               <a href="../../../1.8.3/nlu/components/">1.8.3</a>
-              <a href="../../../1.8.2/nlu/components/">1.8.2</a>
-              <a href="../../../1.8.1/nlu/components/">1.8.1</a>
-              <a href="../../../1.8.0/nlu/components/">1.8.0</a>
               <a href="../../../1.7.4/nlu/components/">1.7.4</a>
-              <a href="../../../1.7.3/nlu/components/">1.7.3</a>
-              <a href="../../../1.7.2/nlu/components/">1.7.2</a>
-              <a href="../../../1.7.1/nlu/components/">1.7.1</a>
-              <a href="../../../1.7.0/nlu/components/">1.7.0</a>
               <a href="../../../1.6.2/nlu/components/">1.6.2</a>
               <a href="../../../1.5.3/nlu/components/">1.5.3</a>
               <a href="../../../1.4.6/nlu/components/">1.4.6</a>
@@ -948,7 +934,7 @@ Then an algorithm will likely classify a message with unknown words as this inte
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> set a keyword for unseen words; if training data contains <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> as words in some
 messages, during prediction the words that were not seen during training will be substituted with
-provided <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code>; if <code class="docutils literal notranslate"><span class="pre">OOV_token=None</span></code> (default behaviour) words that were not seen during
+provided <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code>; if <code class="docutils literal notranslate"><span class="pre">OOV_token=None</span></code> (default behavior) words that were not seen during
 training will be ignored during prediction time;</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> set a list of words to be treated as <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> during training; if a list of words
 that should be treated as Out-Of-Vocabulary is known, it can be set to <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> instead of manually
@@ -1658,7 +1644,7 @@ Every entry in the list corresponds to a feed forward layer.
 For example, if you set <code class="docutils literal notranslate"><span class="pre">text:</span> <span class="pre">[256,</span> <span class="pre">128]</span></code>, we will add two feed forward layers in front of
 the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
 layers. The first layer will have an output dimension of 256 and the second layer will have an output
-dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
+dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
 added.
 Make sure to use only positive integer values. Usually, numbers of power of two are used.
 Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
@@ -1812,7 +1798,7 @@ be between <code class="docutils literal notranslate"><span class="pre">-1</span
 <p class="admonition-title">Note</p>
 <p>There is an option to use linearly increasing batch size. The idea comes from
 <a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>.
-In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[64,</span> <span class="pre">256]</span></code> (default behaviour).
+In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[64,</span> <span class="pre">256]</span></code> (default behavior).
 If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">64</span></code>.</p>
 </div>
 <div class="admonition note">
@@ -1908,7 +1894,7 @@ Every entry in the list corresponds to a feed forward layer.
 For example, if you set <code class="docutils literal notranslate"><span class="pre">text:</span> <span class="pre">[256,</span> <span class="pre">128]</span></code>, we will add two feed forward layers in front of
 the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
 layers. The first layer will have an output dimension of 256 and the second layer will have an output
-dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
+dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
 added.
 Make sure to use only positive integer values. Usually, numbers of power of two are used.
 Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
@@ -2058,7 +2044,7 @@ be between <code class="docutils literal notranslate"><span class="pre">-1</span
 <p class="admonition-title">Note</p>
 <p>There is an option to use linearly increasing batch size. The idea comes from
 <a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>.
-In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[64,</span> <span class="pre">256]</span></code> (default behaviour).
+In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[64,</span> <span class="pre">256]</span></code> (default behavior).
 If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">64</span></code>.</p>
 </div>
 <div class="admonition note">

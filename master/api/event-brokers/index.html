@@ -228,22 +228,8 @@ you to stream events to a message broker." />
               <a href="../../../1.10.1/api/event-brokers/">1.10.1</a>
               <a href="../../../1.10.0/api/event-brokers/">1.10.0</a>
               <a href="../../../1.9.7/api/event-brokers/">1.9.7</a>
-              <a href="../../../1.9.6/api/event-brokers/">1.9.6</a>
-              <a href="../../../1.9.5/api/event-brokers/">1.9.5</a>
-              <a href="../../../1.9.4/api/event-brokers/">1.9.4</a>
-              <a href="../../../1.9.3/api/event-brokers/">1.9.3</a>
-              <a href="../../../1.9.2/api/event-brokers/">1.9.2</a>
-              <a href="../../../1.9.1/api/event-brokers/">1.9.1</a>
-              <a href="../../../1.9.0/api/event-brokers/">1.9.0</a>
               <a href="../../../1.8.3/api/event-brokers/">1.8.3</a>
-              <a href="../../../1.8.2/api/event-brokers/">1.8.2</a>
-              <a href="../../../1.8.1/api/event-brokers/">1.8.1</a>
-              <a href="../../../1.8.0/api/event-brokers/">1.8.0</a>
               <a href="../../../1.7.4/api/event-brokers/">1.7.4</a>
-              <a href="../../../1.7.3/api/event-brokers/">1.7.3</a>
-              <a href="../../../1.7.2/api/event-brokers/">1.7.2</a>
-              <a href="../../../1.7.1/api/event-brokers/">1.7.1</a>
-              <a href="../../../1.7.0/api/event-brokers/">1.7.0</a>
               <a href="../../../1.6.2/api/event-brokers/">1.6.2</a>
               <a href="../../../1.5.3/api/event-brokers/">1.5.3</a>
               <a href="../../../1.4.6/api/event-brokers/">1.4.6</a>
@@ -302,7 +288,7 @@ also known as a message broker, to forward Rasa <a class="reference internal" hr
 </div>
 <div class="section" id="format">
 <h2><a class="toc-backref" href="#id4">Format</a><a class="headerlink" href="#format" title="Permalink to this headline">¶</a></h2>
-<p>All events are streamed to the broker as serialised dictionaries every time
+<p>All events are streamed to the broker as serialized dictionaries every time
 the tracker updates its state. An example event emitted from the <code class="docutils literal notranslate"><span class="pre">default</span></code>
 tracker looks like this:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
@@ -451,7 +437,7 @@ events. In this example we are going to use the <a class="reference external" hr
 <span class="n">tracker_store</span> <span class="o">=</span> <span class="n">InMemoryTrackerStore</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span> <span class="n">event_broker</span><span class="o">=</span><span class="n">kafka_broker</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The host variable can be either a list of brokers adresses or a single one.
+<p>The host variable can be either a list of brokers addresses or a single one.
 If only one broker address is available, the client will connect to it and
 request the cluster Metadata.
 Therefore, the remain brokers in the cluster can be discovered
@@ -483,7 +469,7 @@ previously configured in the broker server.</p>
 </pre></div>
 </div>
 <p>If the clients or the brokers in the kafka cluster are located in different
-machines, it’s important to use ssl protocal to assure encryption of data and client
+machines, it’s important to use ssl protocol to assure encryption of data and client
 authentication. After generating valid certificates for the brokers and the
 clients, the path to the certificate and key generated for the producer must
 be provided as arguments, as well as the CA’s root certificate.</p>

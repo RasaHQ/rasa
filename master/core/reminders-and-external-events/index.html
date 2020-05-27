@@ -224,22 +224,8 @@
               <a href="../../../1.10.1/core/reminders-and-external-events/">1.10.1</a>
               <a href="../../../1.10.0/core/reminders-and-external-events/">1.10.0</a>
               <a href="../../../1.9.7/core/reminders-and-external-events/">1.9.7</a>
-              <a href="../../../1.9.6/core/reminders-and-external-events/">1.9.6</a>
-              <a href="../../../1.9.5/core/reminders-and-external-events/">1.9.5</a>
-              <a href="../../../1.9.4/core/reminders-and-external-events/">1.9.4</a>
-              <a href="../../../1.9.3/core/reminders-and-external-events/">1.9.3</a>
-              <a href="../../../1.9.2/core/reminders-and-external-events/">1.9.2</a>
-              <a href="../../../1.9.1/core/reminders-and-external-events/">1.9.1</a>
-              <a href="../../../1.9.0/core/reminders-and-external-events/">1.9.0</a>
               <a href="../../../1.8.3/core/reminders-and-external-events/">1.8.3</a>
-              <a href="../../../1.8.2/core/reminders-and-external-events/">1.8.2</a>
-              <a href="../../../1.8.1/core/reminders-and-external-events/">1.8.1</a>
-              <a href="../../../1.8.0/core/reminders-and-external-events/">1.8.0</a>
               <a href="../../../1.7.4/index/">1.7.4</a>
-              <a href="../../../1.7.3/index/">1.7.3</a>
-              <a href="../../../1.7.2/index/">1.7.2</a>
-              <a href="../../../1.7.1/index/">1.7.1</a>
-              <a href="../../../1.7.0/index/">1.7.0</a>
               <a href="../../../1.6.2/index/">1.6.2</a>
               <a href="../../../1.5.3/index/">1.5.3</a>
               <a href="../../../1.4.6/index/">1.4.6</a>
@@ -433,7 +419,7 @@ during its creation</p></li>
 <div class="section" id="external-events">
 <span id="external-event-guide"></span><h2><a class="toc-backref" href="#id8">External Events</a><a class="headerlink" href="#external-events" title="Permalink to this headline">¶</a></h2>
 <p>Let’s say you want to send a message from some other device to change the course of an ongoing conversation.
-For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favourite
+For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favorite
 plant needs watering, and your assistant should then relay this message to you.</p>
 <p>To do this, your Raspberry Pi needs to send a message to the <a class="reference external" href="../../api/http-api/#operation/triggerConversationIntent">trigger_intent endpoint</a> of your conversation.
 As the name says, this injects a user intent (possibly with entities) into your conversation.
@@ -483,7 +469,7 @@ For example:</p>
 <p>Now, when you ask “What is the ID of this conversation?”, the assistant replies with something like “The ID of this
 conversation is: 38cc25d7e23e4dde800353751b7c2d3e”.</p>
 <p>If you want your assistant to link to the Raspberry Pi automatically, you will have to write a custom action that
-informs the Pi about the conversation id when your conversation starts (see <a class="reference internal" href="../../api/rasa-sdk/#custom-session-start"><span class="std std-ref">Customising the session start action</span></a>).</p>
+informs the Pi about the conversation id when your conversation starts (see <a class="reference internal" href="../../api/rasa-sdk/#custom-session-start"><span class="std std-ref">Customizing the session start action</span></a>).</p>
 </div>
 <div class="section" id="responding-to-external-events">
 <span id="id4"></span><h3><a class="toc-backref" href="#id10">Responding to External Events</a><a class="headerlink" href="#responding-to-external-events" title="Permalink to this headline">¶</a></h3>

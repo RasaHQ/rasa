@@ -232,22 +232,8 @@ AI assistants" />
               <a href="../../../1.10.1/nlu/entity-extraction/">1.10.1</a>
               <a href="../../../1.10.0/nlu/entity-extraction/">1.10.0</a>
               <a href="../../../1.9.7/nlu/entity-extraction/">1.9.7</a>
-              <a href="../../../1.9.6/nlu/entity-extraction/">1.9.6</a>
-              <a href="../../../1.9.5/nlu/entity-extraction/">1.9.5</a>
-              <a href="../../../1.9.4/nlu/entity-extraction/">1.9.4</a>
-              <a href="../../../1.9.3/nlu/entity-extraction/">1.9.3</a>
-              <a href="../../../1.9.2/nlu/entity-extraction/">1.9.2</a>
-              <a href="../../../1.9.1/nlu/entity-extraction/">1.9.1</a>
-              <a href="../../../1.9.0/nlu/entity-extraction/">1.9.0</a>
               <a href="../../../1.8.3/nlu/entity-extraction/">1.8.3</a>
-              <a href="../../../1.8.2/nlu/entity-extraction/">1.8.2</a>
-              <a href="../../../1.8.1/nlu/entity-extraction/">1.8.1</a>
-              <a href="../../../1.8.0/nlu/entity-extraction/">1.8.0</a>
               <a href="../../../1.7.4/nlu/entity-extraction/">1.7.4</a>
-              <a href="../../../1.7.3/nlu/entity-extraction/">1.7.3</a>
-              <a href="../../../1.7.2/nlu/entity-extraction/">1.7.2</a>
-              <a href="../../../1.7.1/nlu/entity-extraction/">1.7.1</a>
-              <a href="../../../1.7.0/nlu/entity-extraction/">1.7.0</a>
               <a href="../../../1.6.2/nlu/entity-extraction/">1.6.2</a>
               <a href="../../../1.5.3/nlu/entity-extraction/">1.5.3</a>
               <a href="../../../1.4.6/nlu/entity-extraction/">1.4.6</a>
@@ -346,7 +332,7 @@ on top of a transformer</p></td>
 <li><p><a class="reference internal" href="#the-entity-object" id="id2">The “entity” Object</a></p></li>
 <li><p><a class="reference internal" href="#custom-entities" id="id3">Custom Entities</a></p></li>
 <li><p><a class="reference internal" href="#entities-roles-and-groups" id="id4">Entities Roles and Groups</a></p></li>
-<li><p><a class="reference internal" href="#extracting-places-dates-people-organisations" id="id5">Extracting Places, Dates, People, Organisations</a></p></li>
+<li><p><a class="reference internal" href="#extracting-places-dates-people-organizations" id="id5">Extracting Places, Dates, People, Organizations</a></p></li>
 <li><p><a class="reference internal" href="#dates-amounts-of-money-durations-distances-ordinals" id="id6">Dates, Amounts of Money, Durations, Distances, Ordinals</a></p></li>
 <li><p><a class="reference internal" href="#regular-expressions-regex" id="id7">Regular Expressions (regex)</a></p></li>
 <li><p><a class="reference internal" href="#passing-custom-features-to-crfentityextractor" id="id8">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a></p></li>
@@ -487,9 +473,9 @@ For example, you should not only have example like <code class="docutils literal
 <p>To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
 <a class="reference internal" href="../../core/forms/#forms"><span class="std std-ref">Forms</span></a> or use <a class="reference internal" href="../../core/actions/#custom-actions"><span class="std std-ref">Custom Actions</span></a> to extract the corresponding entity directly from the tracker.</p>
 </div>
-<div class="section" id="extracting-places-dates-people-organisations">
-<h2><a class="toc-backref" href="#id5">Extracting Places, Dates, People, Organisations</a><a class="headerlink" href="#extracting-places-dates-people-organisations" title="Permalink to this headline">¶</a></h2>
-<p>spaCy has excellent pre-trained named-entity recognisers for a few different languages.
+<div class="section" id="extracting-places-dates-people-organizations">
+<h2><a class="toc-backref" href="#id5">Extracting Places, Dates, People, Organizations</a><a class="headerlink" href="#extracting-places-dates-people-organizations" title="Permalink to this headline">¶</a></h2>
+<p>spaCy has excellent pre-trained named-entity recognizers for a few different languages.
 You can test them out in this
 <a class="reference external" href="https://explosion.ai/demos/displacy-ent">interactive demo</a>.
 We don’t recommend that you try to train your own NER using spaCy,

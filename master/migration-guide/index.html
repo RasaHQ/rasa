@@ -228,22 +228,8 @@ Rasa Core and how you can migrate from one version to another." />
               <a href="../../1.10.1/migration-guide/">1.10.1</a>
               <a href="../../1.10.0/migration-guide/">1.10.0</a>
               <a href="../../1.9.7/migration-guide/">1.9.7</a>
-              <a href="../../1.9.6/migration-guide/">1.9.6</a>
-              <a href="../../1.9.5/migration-guide/">1.9.5</a>
-              <a href="../../1.9.4/migration-guide/">1.9.4</a>
-              <a href="../../1.9.3/migration-guide/">1.9.3</a>
-              <a href="../../1.9.2/migration-guide/">1.9.2</a>
-              <a href="../../1.9.1/migration-guide/">1.9.1</a>
-              <a href="../../1.9.0/migration-guide/">1.9.0</a>
               <a href="../../1.8.3/migration-guide/">1.8.3</a>
-              <a href="../../1.8.2/migration-guide/">1.8.2</a>
-              <a href="../../1.8.1/migration-guide/">1.8.1</a>
-              <a href="../../1.8.0/migration-guide/">1.8.0</a>
               <a href="../../1.7.4/migration-guide/">1.7.4</a>
-              <a href="../../1.7.3/migration-guide/">1.7.3</a>
-              <a href="../../1.7.2/migration-guide/">1.7.2</a>
-              <a href="../../1.7.1/migration-guide/">1.7.1</a>
-              <a href="../../1.7.0/migration-guide/">1.7.0</a>
               <a href="../../1.6.2/migration-guide/">1.6.2</a>
               <a href="../../1.5.3/migration-guide/">1.5.3</a>
               <a href="../../1.4.6/migration-guide/">1.4.6</a>
@@ -420,7 +406,7 @@ However, these will be deprecated in a future release.</p>
 <li><p>The Embedding Intent Classifier is now deprecated and will be replaced by <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a>
 in the future.
 <code class="docutils literal notranslate"><span class="pre">DIETClassfier</span></code> performs intent classification as well as entity recognition.
-If you want to get the same model behaviour as the current <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, you can use
+If you want to get the same model behavior as the current <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, you can use
 the following configuration of <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="c1"># - ... other components</span>
@@ -438,10 +424,10 @@ the following configuration of <code class="docutils literal notranslate"><span 
 </div>
 <p>See <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> for more information about the new component.
 Specifying <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> in the configuration maps to the above component definition, the
-behaviour is unchanged from previous versions.</p>
+behavior is unchanged from previous versions.</p>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> is now deprecated and will be replaced by <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> in the future. If you want to
-get the same model behaviour as the current <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>, you can use the following configuration:</p>
+get the same model behavior as the current <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>, you can use the following configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="c1"># - ... other components</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
@@ -474,7 +460,7 @@ get the same model behaviour as the current <code class="docutils literal notran
 We extracted the featurization from the component into the new featurizer <a class="reference internal" href="../nlu/components/#lexicalsyntacticfeaturizer"><span class="std std-ref">LexicalSyntacticFeaturizer</span></a>. Thus,
 in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
 <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a>.
-Specifying <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> in the configuration maps to the above component definition, the behaviour
+Specifying <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> in the configuration maps to the above component definition, the behavior
 is unchanged from previous versions.</p>
 </li>
 <li><p>If your pipeline contains <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> and <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> you can substitute both
