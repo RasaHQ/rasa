@@ -18,10 +18,10 @@ from rasa.constants import (
 import rasa.utils.io as io_utils
 
 
-def test_train(run_in_default_project_without_models: Callable[..., RunResult]):
+def test_train(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "-c",
         "config.yml",
@@ -48,12 +48,10 @@ def test_train(run_in_default_project_without_models: Callable[..., RunResult]):
     )
 
 
-def test_train_persist_nlu_data(
-    run_in_default_project_without_models: Callable[..., RunResult]
-):
+def test_train_persist_nlu_data(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "-c",
         "config.yml",
@@ -81,16 +79,14 @@ def test_train_persist_nlu_data(
     )
 
 
-def test_train_core_compare(
-    run_in_default_project_without_models: Callable[..., RunResult]
-):
+def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
     io_utils.write_yaml_file(
         {
             "language": "en",
             "pipeline": "supervised_embeddings",
-            "policies": [{"name": "KerasPolicy"}],
+            "policies": [{"name": "MemoizationPolicy"}],
         },
         "config_1.yml",
     )
@@ -104,7 +100,7 @@ def test_train_core_compare(
         "config_2.yml",
     )
 
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "core",
         "-c",
@@ -136,11 +132,11 @@ def test_train_core_compare(
 
 
 def test_train_no_domain_exists(
-    run_in_default_project_without_models: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult]
 ) -> None:
 
     os.remove("domain.yml")
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "-c",
         "config.yml",
@@ -164,7 +160,7 @@ def test_train_no_domain_exists(
 
 
 def test_train_skip_on_model_not_changed(
-    run_in_default_project: Callable[..., RunResult]
+    run_in_simple_project_with_model: Callable[..., RunResult]
 ):
     temp_dir = os.getcwd()
 
@@ -173,7 +169,7 @@ def test_train_skip_on_model_not_changed(
     assert len(files) == 1
 
     file_name = files[0]
-    run_in_default_project("train")
+    run_in_simple_project_with_model("train")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
@@ -181,27 +177,27 @@ def test_train_skip_on_model_not_changed(
     assert file_name == files[0]
 
 
-def test_train_force(run_in_default_project):
+def test_train_force(run_in_simple_project_with_model):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 1
 
-    run_in_default_project("train", "--force")
+    run_in_simple_project_with_model("train", "--force")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 2
 
 
-def test_train_with_only_nlu_data(run_in_default_project_without_models):
+def test_train_with_only_nlu_data(run_in_simple_project):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "data/stories.md"))
     os.remove(os.path.join(temp_dir, "data/stories.md"))
 
-    run_in_default_project_without_models("train", "--fixed-model-name", "test-model")
+    run_in_simple_project("train", "--fixed-model-name", "test-model")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
@@ -209,13 +205,13 @@ def test_train_with_only_nlu_data(run_in_default_project_without_models):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
-def test_train_with_only_core_data(run_in_default_project_without_models):
+def test_train_with_only_core_data(run_in_simple_project):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "data/nlu.md"))
     os.remove(os.path.join(temp_dir, "data/nlu.md"))
 
-    run_in_default_project_without_models("train", "--fixed-model-name", "test-model")
+    run_in_simple_project("train", "--fixed-model-name", "test-model")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
@@ -223,8 +219,8 @@ def test_train_with_only_core_data(run_in_default_project_without_models):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
-def test_train_core(run_in_default_project_without_models: Callable[..., RunResult]):
-    run_in_default_project_without_models(
+def test_train_core(run_in_simple_project: Callable[..., RunResult]):
+    run_in_simple_project(
         "train",
         "core",
         "-c",
@@ -243,12 +239,10 @@ def test_train_core(run_in_default_project_without_models: Callable[..., RunResu
     assert os.path.isfile("train_rasa_models/rasa-model.tar.gz")
 
 
-def test_train_core_no_domain_exists(
-    run_in_default_project_without_models: Callable[..., RunResult]
-):
+def test_train_core_no_domain_exists(run_in_simple_project: Callable[..., RunResult]):
 
     os.remove("domain.yml")
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "core",
         "--config",
@@ -267,8 +261,8 @@ def test_train_core_no_domain_exists(
     assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
 
 
-def test_train_nlu(run_in_default_project_without_models: Callable[..., RunResult]):
-    run_in_default_project_without_models(
+def test_train_nlu(run_in_simple_project: Callable[..., RunResult]):
+    run_in_simple_project(
         "train",
         "nlu",
         "-c",
@@ -293,9 +287,9 @@ def test_train_nlu(run_in_default_project_without_models: Callable[..., RunResul
 
 
 def test_train_nlu_persist_nlu_data(
-    run_in_default_project_without_models: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult]
 ) -> None:
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "nlu",
         "-c",
@@ -375,7 +369,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
             "error": True,
@@ -385,20 +379,20 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
             "error": True,
         },
         {
             "config_data": {
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
                 "imports": "other-folder",
             },
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
             "error": True,
@@ -407,7 +401,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "config_data": None,
             "default_config": {
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
             "error": True,
@@ -417,7 +411,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
             "error": False,
