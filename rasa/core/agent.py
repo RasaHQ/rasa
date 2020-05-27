@@ -463,14 +463,10 @@ class Agent:
         """Handle a single message."""
 
         if not isinstance(message, UserMessage):
-            raise_warning(
+            # DEPRECATION EXCEPTION - remove in 2.1
+            raise Exception(
                 "Passing a text to `agent.handle_message(...)` is "
-                "deprecated. Rather use `agent.handle_text(...)`.",
-                DeprecationWarning,
-            )
-            # noinspection PyTypeChecker
-            return await self.handle_text(
-                message, message_preprocessor=message_preprocessor, **kwargs
+                "not supported anymore. Rather use `agent.handle_text(...)`.",
             )
 
         def noop(_):
@@ -557,7 +553,7 @@ class Agent:
 
             >>> from rasa.core.agent import Agent
             >>> from rasa.core.interpreter import RasaNLUInterpreter
-            >>> agent = Agent.load("examples/restaurantbot/models/current")
+            >>> agent = Agent.load("examples/moodbot/models")
             >>> await agent.handle_text("hello")
             [u'how can I help you?']
 
@@ -577,7 +573,7 @@ class Agent:
         the prediction of that policy. When set to ``False`` the Memoization
         policies present in the policy ensemble will not make any predictions.
         Hence, the prediction result from the ensemble always needs to come
-        from a different policy (e.g. ``KerasPolicy``). Useful to test
+        from a different policy (e.g. ``TEDPolicy``). Useful to test
         prediction
         capabilities of an ensemble when ignoring memorized turns from the
         training data."""
@@ -706,44 +702,6 @@ class Agent:
 
         self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
         self._set_fingerprint()
-
-    def handle_channels(
-        self,
-        channels: List[InputChannel],
-        http_port: int = constants.DEFAULT_SERVER_PORT,
-        route: Text = "/webhooks/",
-        cors: Union[Text, List[Text], None] = None,
-    ) -> Sanic:
-        """Start a webserver attaching the input channels and handling msgs."""
-
-        from rasa.core import run
-
-        raise_warning(
-            "Using `handle_channels` is deprecated. "
-            "Please use `rasa.run(...)` or see "
-            "`rasa.core.run.configure_app(...)` if you want to implement "
-            "this on a more detailed level.",
-            DeprecationWarning,
-        )
-
-        app = run.configure_app(channels, cors, None, enable_api=False, route=route)
-
-        app.agent = self
-
-        update_sanic_log_level()
-
-        app.run(
-            host="0.0.0.0",
-            port=http_port,
-            backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
-            workers=rasa.core.utils.number_of_sanic_workers(self.lock_store),
-        )
-
-        # this might seem unnecessary (as run does not return until the server
-        # is killed) - but we use it for tests where we mock `.run` to directly
-        # return and need the app to inspect if we created a properly
-        # configured server
-        return app
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:
 

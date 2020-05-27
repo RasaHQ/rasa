@@ -416,7 +416,7 @@ Features
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
   recognition. You can read more about this component in our :ref:`documentation <diet-classifier>`.
-  The new component will replace the :ref:`EmbeddingIntentClassifier <embedding-intent-classifier>` and the
+  The new component will replace the ``EmbeddingIntentClassifier`` and the
   :ref:`CRFEntityExtractor` in the future.
   Those two components are deprecated from now on.
   See :ref:`migration guide <migration-to-rasa-1.8>` for details on how to
