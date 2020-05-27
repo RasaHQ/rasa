@@ -26,7 +26,7 @@ jobs:
 
   read_test_configuration:
     name: Reads tests configuration
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.event.pull_request.author_association == 'MEMBER' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "(github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -49,7 +49,7 @@ jobs:
     name: Deploy Github Runner - GPU
     needs: read_test_configuration
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.event.pull_request.author_association == 'MEMBER' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && (github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
     steps:
       - name: Checkout
@@ -62,7 +62,7 @@ jobs:
 
       - name: Render deployment template
         run: |-
-          ./gomplate -f .github/workflows/runner/deployment.yaml.tmpl -o runner_deployment.yaml
+          ./gomplate -f .github/runner/deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
       - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
@@ -90,7 +90,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.event.pull_request.author_association == 'MEMBER' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && (github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
     steps:
       - name: Checkout
@@ -173,7 +173,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
-    if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.event.pull_request.author_association == 'MEMBER' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && (github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
     steps: 
       - name: Checkout
@@ -250,7 +250,7 @@ jobs:
     - deploy_runner_gpu
     - model_regression_test_gpu
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.event.pull_request.author_association == 'MEMBER' && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && (github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
     steps:
       # Setup gcloud CLI
@@ -268,7 +268,9 @@ jobs:
 
   remove_configuration_file:
     name: Check if test configuration file is removed
+    if: always()
     runs-on: ubuntu-latest
     steps:
-      - run: echo ${{ github.event.pull_request.author_association }}
+      - name: Checkout
+        uses: actions/checkout@v2
       - run: test ! -f .github/mr-test.yaml
