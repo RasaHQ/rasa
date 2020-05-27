@@ -118,7 +118,7 @@ You actually want to teach your policy to **ignore** the dialogue history
 when it isn't relevant and just respond with the same action no matter
 what happened before.
 
-You can alter this behaviour with the ``--augmentation`` flag.
+You can alter this behavior with the ``--augmentation`` flag.
 Which allows you to set the ``augmentation_factor``.
 The ``augmentation_factor`` determines how many augmented stories are
 subsampled during training. The augmented stories are subsampled before training
@@ -214,7 +214,7 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
           For example, if you set ``dialogue: [256, 128]``, we will add two feed forward layers in front of
           the transformer. The vectors of the input tokens (coming from the dialogue) will be passed on to those
           layers. The first layer will have an output dimension of 256 and the second layer will have an output
-          dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
+          dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
           added.
           Make sure to use only positive integer values. Usually, numbers of power of two are used.
           Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
@@ -362,7 +362,7 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
 
             There is an option to use linearly increasing batch size. The idea comes from
             `<https://arxiv.org/abs/1711.00489>`_. In order to do it pass a list to ``batch_size``, e.g.
-            ``"batch_size": [8, 32]`` (default behaviour). If constant ``batch_size`` is required, pass an ``int``,
+            ``"batch_size": [8, 32]`` (default behavior). If constant ``batch_size`` is required, pass an ``int``,
             e.g. ``"batch_size": 8``.
 
         .. note::
