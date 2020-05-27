@@ -71,8 +71,8 @@ async def test_predict_form_action_if_in_form():
     - {UTTER_GREET_ACTION}
     - some-action
     slots:
-      requested_slot:
-        type: text
+      {REQUESTED_SLOT}:
+        type: unfeaturized
     forms:
     - {form_name}
 """
@@ -113,8 +113,8 @@ async def test_predict_form_action_if_multiple_turns():
     - {UTTER_GREET_ACTION}
     - some-action
     slots:
-      requested_slot:
-        type: text
+      {REQUESTED_SLOT}:
+        type: unfeaturized
     forms:
     - {form_name}
 """
@@ -160,8 +160,8 @@ async def test_dont_predict_form_if_already_finished():
     - {UTTER_GREET_ACTION}
     - some-action
     slots:
-      requested_slot:
-        type: text
+      {REQUESTED_SLOT}:
+        type: unfeaturized
     forms:
     - {form_name}
 """
@@ -209,8 +209,8 @@ async def test_form_unhappy_path():
         - {UTTER_GREET_ACTION}
         - some-action
         slots:
-          requested_slot:
-            type: text
+          {REQUESTED_SLOT}:
+            type: unfeaturized
         forms:
         - {form_name}
     """
@@ -256,8 +256,8 @@ async def test_form_unhappy_path_triggering_form_again():
         - {handle_rejection_action_name}
         - some-action
         slots:
-          requested_slot:
-            type: text
+          {REQUESTED_SLOT}:
+            type: unfeaturized
         forms:
         - {form_name}
     """
@@ -327,8 +327,8 @@ async def test_form_unhappy_path_without_rule():
         - {UTTER_GREET_ACTION}
         - some-action
         slots:
-          requested_slot:
-            type: text
+          {REQUESTED_SLOT}:
+            type: unfeaturized
         forms:
         - {form_name}
     """
@@ -369,8 +369,8 @@ async def test_form_activation_rule():
         - {UTTER_GREET_ACTION}
         - some-action
         slots:
-          requested_slot:
-            type: text
+          {REQUESTED_SLOT}:
+            type: unfeaturized
         forms:
         - {form_name}
     """
@@ -421,8 +421,8 @@ async def test_failing_form_activation_due_to_no_rule():
         - {UTTER_GREET_ACTION}
         - some-action
         slots:
-          requested_slot:
-            type: text
+          {REQUESTED_SLOT}:
+            type: unfeaturized
         forms:
         - {form_name}
     """
@@ -459,8 +459,8 @@ def test_form_submit_rule():
         - some-action
         - {submit_action_name}
         slots:
-          requested_slot:
-            type: text
+          {REQUESTED_SLOT}:
+            type: unfeaturized
         forms:
         - {form_name}
     """
@@ -527,8 +527,8 @@ def test_immediate_submit():
         - some-action
         - {submit_action_name}
         slots:
-          requested_slot:
-            type: text
+          {REQUESTED_SLOT}:
+            type: unfeaturized
           {slot}:
             type: unfeaturized
         forms:

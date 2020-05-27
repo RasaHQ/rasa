@@ -18,8 +18,6 @@ slots:
     type: unfeaturized
   detailed_faq:
     type: bool
-  requested_slot:
-    type: text
 
 actions:
 - utter_explain_some_slot
