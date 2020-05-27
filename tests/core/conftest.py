@@ -51,17 +51,12 @@ E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
     "data/test_evaluations/end_to_end_trips_circuit_breaker.md"
 )
 
-MOODBOT_MODEL_PATH = "examples/moodbot/models/"
-
-RESTAURANTBOT_PATH = "examples/restaurantbot/"
-
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
 TEST_DIALOGUES = [
     "data/test_dialogues/default.json",
     "data/test_dialogues/formbot.json",
     "data/test_dialogues/moodbot.json",
-    "data/test_dialogues/restaurantbot.json",
 ]
 
 EXAMPLE_DOMAINS = [
@@ -70,7 +65,6 @@ EXAMPLE_DOMAINS = [
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     "examples/formbot/domain.yml",
     "examples/moodbot/domain.yml",
-    "examples/restaurantbot/domain.yml",
 ]
 
 

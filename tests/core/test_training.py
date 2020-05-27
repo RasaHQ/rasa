@@ -111,7 +111,7 @@ async def test_training_script_with_restart_stories(tmpdir):
 def configs_for_random_seed_test():
     # define the configs for the random_seed tests
     return [
-        "data/test_config/keras_random_seed.yaml",
+        "data/test_config/ted_random_seed.yaml",
         "data/test_config/embedding_random_seed.yaml",
     ]
 
