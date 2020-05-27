@@ -148,43 +148,6 @@ class RulePolicy(MemoizationPolicy):
         self.lookup = updated_lookup
         logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
 
-    @staticmethod
-    def _form_training_trackers(domain: Domain) -> List[DialogueStateTracker]:
-        """Add a rule for every form which triggers the `FormAction` whenever we are
-           in a form.
-
-        Args:
-            domain: The current domain.
-
-        Returns:
-            The additional training trackers.
-        """
-        return [
-            RulePolicy._form_trigger_rule(form_name, domain)
-            for form_name in domain.form_names
-        ]
-
-    @staticmethod
-    def _form_trigger_rule(form_name: Text, domain: Domain) -> DialogueStateTracker:
-        from rasa.core.training.generator import TrackerWithCachedStates
-
-        return TrackerWithCachedStates.from_events(
-            "bla",
-            slots=domain.slots,
-            evts=[
-                # When we are in a form
-                Form(form_name),
-                SlotSet(REQUESTED_SLOT, "some value"),
-                # We don't mind about previous conversation context
-                ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-                ActionExecuted(ACTION_LISTEN_NAME),
-                # Trigger form when we have an active form with that name
-                ActionExecuted(form_name),
-                ActionExecuted(ACTION_LISTEN_NAME),
-            ],
-            domain=domain,
-        )
-
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
@@ -198,6 +161,31 @@ class RulePolicy(MemoizationPolicy):
 
         if not self.is_enabled:
             return result
+
+        active_form_name = tracker.active_form_name()
+        last_action_was_rejection = active_form_name and tracker.events[
+            -1
+        ] == ActionExecutionRejected(active_form_name)
+        should_predict_form = (
+            active_form_name
+            and not last_action_was_rejection
+            and tracker.latest_action_name != active_form_name
+        )
+
+        # If we are in a form, and the form didn't run previously or rejected, we can
+        # simply force predict the form.
+        if should_predict_form:
+            result[domain.index_for_action(active_form_name)] = 1
+            return result
+
+        possible_keys = set(self.lookup.keys())
+
+        # If an active form just rejected its execution, then we need to try to predict
+        # something else.
+        if last_action_was_rejection:
+            possible_keys = self._remove_keys_which_trigger_action(
+                possible_keys, domain, active_form_name
+            )
 
         states = [
             domain.get_active_states(tr)
@@ -232,18 +220,9 @@ class RulePolicy(MemoizationPolicy):
 
         logger.debug(f"Current tracker state {states}")
 
-        possible_keys = set(self.lookup.keys())
         for i, state in enumerate(reversed(states)):
             possible_keys = set(
                 filter(lambda _key: self._rule_is_good(_key, i, state), possible_keys)
-            )
-
-        active_form_name = tracker.active_form_name()
-        if active_form_name and tracker.events[-1] == ActionExecutionRejected(
-            active_form_name
-        ):
-            possible_keys = self._remove_keys_which_trigger_action(
-                possible_keys, domain, active_form_name
             )
 
         if possible_keys:

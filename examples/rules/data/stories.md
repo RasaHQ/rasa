@@ -7,7 +7,7 @@
     - loop_q_form  <!-- Activate form -->
 
 
->> explain loop q_form
+>> explain loop q_form (unhappy path)
     - form{"name": "loop_q_form"} <!-- condition that form is active-->
     - slot{"requested_slot": "some_slot"}  <!-- some condition -->
     - ...
