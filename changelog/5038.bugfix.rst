@@ -1,3 +1,1 @@
-Fixed a bug in the CountVectorizer Featurizer which resulted in tokens which are in the vocabulary being replaced by the OOV_token, because the token_pattern was only applied afterwards
-
 Fixed a bug in the CountVectorizer Featurizer which resulted in the very first message after loading a model to be processed incorrectly due to the vocabulary not being loaded yet.
