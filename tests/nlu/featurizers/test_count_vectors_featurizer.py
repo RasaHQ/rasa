@@ -211,7 +211,6 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
         ("hello goodbye hello oov_word0 OOV_word0", [[0, 0, 1]]),
         ("a b c d e f __oov__ OOV_word0 oov_word1", [[0, 1, 0, 0, 0, 0, 0]]),
         ("__OOV__ a 1 2 __oov__ OOV_word1", [[0, 1, 0]]),
-        ("hello-hello __OOV__", [[0, 1]]),
     ],
 )
 def test_count_vector_featurizer_oov_words(sentence, expected):
