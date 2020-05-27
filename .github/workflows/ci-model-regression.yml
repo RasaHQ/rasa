@@ -39,11 +39,11 @@ jobs:
         curl --location https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64 -o yq
         chmod +x yq
 
-    - run: test -f mr-test.yaml
+    - run: test -f .github/mr-test.yaml
 
     - id: set-matrix
       shell: bash
-      run: echo "::set-output name=matrix::$(./yq -j r mr-test.yaml)"
+      run: echo "::set-output name=matrix::$(./yq -j r .github/mr-test.yaml)"
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
@@ -72,7 +72,7 @@ jobs:
 
       # Get the GKE credentials so we can deploy to the cluster
       - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_CLUSTER }}" --zone "$GKE_ZONE"
+          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE"
 
       - name: Deploy Github Runner
         run: |-
@@ -261,7 +261,7 @@ jobs:
 
       # Get the GKE credentials so we can deploy to the cluster
       - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_CLUSTER }}" --zone "$GKE_ZONE"
+          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE"
 
       - name: Remove Github Runner
         run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30
@@ -270,4 +270,5 @@ jobs:
     name: Check if test configuration file is removed
     runs-on: ubuntu-latest
     steps:
-      - run: test ! -f mr-test.yaml
+      - run: echo ${{ github.event.pull_request.author_association }}
+      - run: test ! -f .github/mr-test.yaml

@@ -36,15 +36,15 @@ spec:
         - name: GITHUB_OWNER
           valueFrom:
             secretKeyRef:
-              name: github
+              name: github-rasa
               key: owner
         - name: GITHUB_REPOSITORY
           valueFrom:
             secretKeyRef:
-              name: github
+              name: github-rasa
               key: repository
         - name: GITHUB_PAT
           valueFrom:
             secretKeyRef:
-              name: github
+              name: github-rasa
               key: pat
