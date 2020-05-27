@@ -6,6 +6,7 @@
 * activate_q_form  <!-- like request_restaurant -->
     - loop_q_form  <!-- Activate form -->
 
+
 >> explain loop q_form
     - form{"name": "loop_q_form"} <!-- condition that form is active-->
     - slot{"requested_slot": "some_slot"}  <!-- some condition -->
@@ -14,12 +15,14 @@
     - utter_explain_some_slot
     - loop_q_form
 
+
 >> submit form
     - ...
     - loop_q_form
     - form{"name": null}
     - slot{"requested_slot": null}
     - utter_stop
+
 
 >> questions
     - ...
@@ -39,6 +42,7 @@
 * faq
     - utter_faq
 <!-- no ... means predict action_listen here -->
+
 
 >> FAQ detailed
     - slot{"detailed_faq": true}
@@ -89,13 +93,7 @@
     - utter_stop
 
 
-
 >> Greet
 <!-- lack of ... is story start indicator condition -->
 * greet
     - utter_greet
-    
-    
-## my story
-* greet
-  - utter_greet

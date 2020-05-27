@@ -127,9 +127,13 @@ class RulePolicy(MemoizationPolicy):
         # remove action_listens that were added after conditions
         updated_lookup = self.lookup.copy()
         for key in self.lookup.keys():
+            # Delete rules if there is no prior action or if it would predict
+            # the `...` action
             if "prev" not in key or self.lookup[key] == domain.index_for_action("..."):
                 del updated_lookup[key]
             elif "..." in key:
+                # If the previous action is `...` -> remove any specific state
+                # requirements for that state (anything can match this state)
                 new_key = re.sub(r".*prev_\.\.\.[^|]*", "", key)
 
                 if new_key:

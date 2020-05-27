@@ -471,9 +471,6 @@ def test_form_submit_rule():
         domain=domain,
         slots=domain.slots,
         evts=[
-            # Form was activated
-            Form(form_name),
-            SlotSet(REQUESTED_SLOT, "some value"),
             # Any events in between
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             # Form got deactivated
@@ -503,6 +500,78 @@ def test_form_submit_rule():
             UserUttered("haha", {"name": "greet"}),
             ActionExecuted(form_name),
             # Form get's deactivated
+            Form(None),
+            SlotSet(REQUESTED_SLOT, None),
+        ],
+        slots=domain.slots,
+    )
+
+    # RulePolicy predicts action which handles submit
+    action_probabilities = policy.predict_action_probabilities(
+        form_conversation, domain
+    )
+    assert_predicted_action(action_probabilities, domain, submit_action_name)
+
+
+def test_immediate_submit():
+    form_name = "some_form"
+    submit_action_name = "utter_submit"
+    entity = "some_entity"
+    slot = "some_slot"
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - greet
+        actions:
+        - {UTTER_GREET_ACTION}
+        - some-action
+        - {submit_action_name}
+        slots:
+          requested_slot:
+            type: text
+          {slot}:
+            type: unfeaturized
+        forms:
+        - {form_name}
+        entities:
+        - {entity}
+    """
+    )
+
+    form_submit_rule = TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            # Any events in between
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            # Form got deactivated
+            # TODO: Rule does not work without the action before
+            ActionExecuted(form_name),
+            Form(None),
+            SlotSet(REQUESTED_SLOT, None),
+            ActionExecuted(submit_action_name),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    policy = RulePolicy()
+    policy.train([GREET_RULE, form_submit_rule], domain)
+
+    form_conversation = DialogueStateTracker.from_events(
+        "in a form",
+        evts=[
+            # Form was activated
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                "haha",
+                {"name": "greet"},
+                entities=[{"entity": entity, "value": "Bruce Wayne"}],
+            ),
+            SlotSet(slot, "Bruce"),
+            ActionExecuted(form_name),
+            SlotSet("bla", "bla"),
             Form(None),
             SlotSet(REQUESTED_SLOT, None),
         ],
