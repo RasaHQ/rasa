@@ -202,8 +202,8 @@ can be sent like so:
 Channel-Specific Responses
 --------------------------
 
-For each response, you can have multiple **response templates** (see :ref:`variations`).
-If you have certain response templates that you would like sent only to specific
+For each response, you can have multiple **response variations** (see :ref:`variations`).
+If you have certain response variations that you would like sent only to specific
 channels, you can specify this with the ``channel:`` key. The value should match
 the name defined in the ``name()`` method of the channel's ``OutputChannel``
 class. Channel-specific responses are especially useful if creating custom
@@ -228,10 +228,10 @@ output payloads that will only work in certain channels.
         payload: '/inform{"game": "fortnite"}'
 
 Each time your bot looks for responses, it will first check to see if there
-are any channel-specific response templates for the connected channel. If there are, it
-will choose **only** from these response templates. If no channel-specific response templates are
-found, it will choose from any response templates that do not have a defined ``channel``.
-Therefore, it is good practice to always have at least one response template for each
+are any channel-specific response variations for the connected channel. If there are, it
+will choose **only** from these response variations. If no channel-specific response variations are
+found, it will choose from any response variations that do not have a defined ``channel``.
+Therefore, it is good practice to always have at least one response variation for each
 response that has no ``channel`` specified so that your bot can respond in all
 environments, including in the shell and in interactive learning.
 
@@ -284,7 +284,7 @@ Variations
 ----------
 
 If you want to randomly vary the response sent to the user, you can list
-multiple **response templates** and Rasa will randomly pick one of them, e.g.:
+multiple **response variations** and Rasa will randomly pick one of them, e.g.:
 
 .. code-block:: yaml
 
@@ -370,6 +370,6 @@ be triggered at the very beginning of conversations).
   A session start triggers the default action ``action_session_start``. Its default
   implementation moves all existing slots into the new session. Note that all
   conversations begin with an ``action_session_start``. Overriding this action could
-  for instance be used to initialise the tracker with slots from an external API
+  for instance be used to initialize the tracker with slots from an external API
   call, or to start the conversation with a bot message. The docs on
   :ref:`custom_session_start` shows you how to do that.

@@ -618,7 +618,7 @@ async def test_handle_message_with_session_start(
         ),
         SlotSet(entity, slot_1[entity]),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there Core!"),
+        BotUttered("hey there Core!", metadata={"template_name": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),

@@ -313,11 +313,7 @@ This will evaluate each of the models on the provided stories
 (can be either training or test set) and plot some graphs
 to show you which policy performs best. By evaluating on the full set of stories, you
 can measure how well Rasa Core is predicting the held-out stories.
-
 To compare single policies create config files containing only one policy each.
-If you're not sure which policies to compare, we'd recommend trying out the
-``EmbeddingPolicy`` and the ``KerasPolicy`` to see which one works better for
-you.
 
 .. note::
     This training process can take a long time, so we'd suggest letting it run

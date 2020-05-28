@@ -1,0 +1,4 @@
+Added template name to the metadata of bot utterance events.
+
+``BotUttered`` event contains a ``template_name`` property in its metadata for any
+new bot message.
