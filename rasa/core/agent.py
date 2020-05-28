@@ -592,7 +592,8 @@ class Agent:
         max_histories = [
             policy.featurizer.max_history
             for policy in self.policy_ensemble.policies
-            if hasattr(policy.featurizer, "max_history")
+            if policy.featurizer
+            and hasattr(policy.featurizer, "max_history")
             and policy.featurizer.max_history is not None
         ]
 
