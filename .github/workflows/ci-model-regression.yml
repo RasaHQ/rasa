@@ -141,7 +141,7 @@ jobs:
         run: |-
           echo ${{ matrix.dataset }} ${{ matrix.config }}
           poetry run rasa --version
-          poetry run rasa train nlu -u dataset/${{ matrix.dataset }} -c dataset/configs/${{ matrix.config }} --out models/${{ matrix.dataset }}/${{ matrix.config }}
+          poetry run rasa train nlu -u dataset/${{ matrix.dataset }}/train -c dataset/configs/${{ matrix.config }} --out models/${{ matrix.dataset }}/${{ matrix.config }}
           poetry run rasa test nlu -u dataset/${{ matrix.dataset }}/test -m models/${{ matrix.dataset }}/${{ matrix.config }} --out results/${{ matrix.dataset }}/${{ matrix.config }}
           
       - name: Get results
@@ -220,7 +220,7 @@ jobs:
         run: |-
           echo ${{ matrix.dataset }} ${{ matrix.config }}
           poetry run rasa --version
-          poetry run rasa train nlu -u dataset/${{ matrix.dataset }} -c dataset/configs/${{ matrix.config }} --out models/${{ matrix.dataset }}/${{ matrix.config }}
+          poetry run rasa train nlu -u dataset/${{ matrix.dataset }}/train -c dataset/configs/${{ matrix.config }} --out models/${{ matrix.dataset }}/${{ matrix.config }}
           poetry run rasa test nlu -u dataset/${{ matrix.dataset }}/test -m models/${{ matrix.dataset }}/${{ matrix.config }} --out results/${{ matrix.dataset }}/${{ matrix.config }}
 
       - name: Get results
@@ -267,7 +267,7 @@ jobs:
         run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30
 
   remove_configuration_file:
-    name: Check if test configuration file is removed
+    name: The model regression configuration file doesn't exist
     if: always()
     runs-on: ubuntu-latest
     steps:

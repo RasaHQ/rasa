@@ -5,12 +5,12 @@ config:
   - en/cvf_diet_responset2t.yml
   - en/bert_diet_responset2t.yml
 
+#exclude:
+#  - dataset: public/carbon-bot/
+#    config: en/bert_diet_responset2t.yml
+
 #include:
-#  - dataset:
-#      - public/carbon-bot/
-#    config:
-#      - cvf_embedding.yml
-#  - dataset:
-#      - public/test1/
-#    config:
-#      - convert_diet.yml
+#  - dataset: public/carbon-bot/
+#    config: cvf_embedding.yml
+#  - dataset: public/test1/
+#    config: convert_diet.yml
