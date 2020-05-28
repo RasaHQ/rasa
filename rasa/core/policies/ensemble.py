@@ -9,7 +9,11 @@ from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple
 
 import rasa.core
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL, DOCS_URL_POLICIES
+from rasa.constants import (
+    MINIMUM_COMPATIBLE_VERSION,
+    DOCS_URL_POLICIES,
+    DEFAULT_CONFIG_PATH,
+)
 
 from rasa.core import utils
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
@@ -25,6 +29,7 @@ from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
 from rasa.utils.common import class_from_module_path, raise_warning
@@ -113,6 +118,59 @@ class PolicyEnsemble:
                     docs=DOCS_URL_POLICIES,
                 )
 
+    # TODO: This is a temporary implementation for the RulePolicy prototype.
+    # Policies should be able to decide themselves whether to use rules or stories
+    # for training.
+    @staticmethod
+    def _split_ml_and_rule_trackers(
+        training_trackers: List[DialogueStateTracker],
+    ) -> Tuple[List[DialogueStateTracker], List[DialogueStateTracker]]:
+        """Return trackers to be trained on ML-based policies and `RulePolicy`.
+
+        Args:
+            training_trackers: Trackers to split.
+
+        Returns:
+            Trackers from ML-based training data and rule-based data.
+        """
+        ml_trackers = []
+        rule_trackers = []
+        for tracker in training_trackers:
+
+            if tracker.is_rule_tracker:
+                rule_trackers.append(tracker)
+            else:
+                ml_trackers.append(tracker)
+
+        return ml_trackers, rule_trackers
+
+    def _policy_ensemble_contains_rule_policy(self) -> bool:
+        """Determine whether `RulePolicy` is part of the policy ensemble."""
+        return any(isinstance(policy, RulePolicy) for policy in self.policies)
+
+    def _emit_rule_policy_warning(
+        self, rule_trackers: List[DialogueStateTracker]
+    ) -> None:
+        """Emit `UserWarning`s about missing `RulePolicy` training data."""
+        rule_policy_is_active = self._policy_ensemble_contains_rule_policy()
+
+        # TODO: add new docs links to these warnings
+        if rule_policy_is_active and not rule_trackers:
+            raise_warning(
+                f"Found `{RulePolicy.__name__}` in your pipeline but "
+                f"no rule-based training data. Please add rule-based "
+                f"stories to your training data or "
+                f"remove the `{RulePolicy.__name__}` entry in "
+                f"your pipeline."
+            )
+        elif not rule_policy_is_active and rule_trackers:
+            raise_warning(
+                f"Found rule-based training data but `{RulePolicy.__name__}` "
+                f"is not part of the configuration. Please add "
+                f"`{RulePolicy.__name__}` to the "
+                f"`policies` section in `{DEFAULT_CONFIG_PATH}`."
+            )
+
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
@@ -120,8 +178,17 @@ class PolicyEnsemble:
         **kwargs: Any,
     ) -> None:
         if training_trackers:
+            ml_trackers, rule_trackers = self._split_ml_and_rule_trackers(
+                training_trackers
+            )
+            self._emit_rule_policy_warning(rule_trackers)
+
             for policy in self.policies:
-                policy.train(training_trackers, domain, **kwargs)
+                trackers_to_train = (
+                    rule_trackers if isinstance(policy, RulePolicy) else ml_trackers
+                )
+
+                policy.train(trackers_to_train, domain, **kwargs)
 
             training_events = self._training_events_from_trackers(training_trackers)
             self.action_fingerprints = self._create_action_fingerprints(training_events)
@@ -449,7 +516,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         predictions = {
             f"policy_{i}_{type(p).__name__}": Prediction(
-                p.predict_action_probabilities(tracker, domain), p.priority,
+                p.predict_action_probabilities(tracker, domain), p.priority
             )
             for i, p in enumerate(self.policies)
         }

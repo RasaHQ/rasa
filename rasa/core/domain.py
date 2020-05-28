@@ -227,6 +227,16 @@ class Domain:
         def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
             return sorted(list(set(l1 + l2)))
 
+        def merge_lists_of_dicts(
+            dict_list1: List[Dict],
+            dict_list2: List[Dict],
+            override_existing_values: bool = False,
+        ) -> List[Dict]:
+            dict1 = {list(i.keys())[0]: i for i in dict_list1}
+            dict2 = {list(i.keys())[0]: i for i in dict_list2}
+            merged_dicts = merge_dicts(dict1, dict2, override_existing_values)
+            return list(merged_dicts.values())
+
         if override:
             config = domain_dict["config"]
             for key, val in config.items():  # pytype: disable=attribute-error
@@ -235,18 +245,19 @@ class Domain:
         if override or self.session_config == SessionConfig.default():
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
-        # intents is list of dicts
-        intents_1 = {list(i.keys())[0]: i for i in combined["intents"]}
-        intents_2 = {list(i.keys())[0]: i for i in domain_dict["intents"]}
-        merged_intents = merge_dicts(intents_1, intents_2, override)
-        combined["intents"] = list(merged_intents.values())
+        combined["intents"] = merge_lists_of_dicts(
+            combined["intents"], domain_dict["intents"], override
+        )
+        combined["forms"] = merge_lists_of_dicts(
+            combined["forms"], domain_dict["forms"], override
+        )
 
         # remove existing forms from new actions
         for form in combined["forms"]:
             if form in domain_dict["actions"]:
                 domain_dict["actions"].remove(form)
 
-        for key in ["entities", "actions", "forms"]:
+        for key in ["entities", "actions"]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
         for key in ["responses", "slots"]:
@@ -405,14 +416,23 @@ class Domain:
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
-        form_names: List[Text],
+        forms: List[Union[Text, Dict]],
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
-        self.form_names = form_names
+
+        # Forms used to be a list of form names. Now they can also contain
+        # `SlotMapping`s
+        if not forms or (forms and isinstance(forms[0], str)):
+            self.form_names = forms
+            self.forms: List[Dict] = [{form_name: {}} for form_name in forms]
+        elif isinstance(forms[0], dict):
+            self.forms: List[Dict] = forms
+            self.form_names = [list(f.keys())[0] for f in forms]
+
         self.slots = slots
         self.templates = templates
         self.session_config = session_config
@@ -422,7 +442,8 @@ class Domain:
 
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-            action.combine_user_with_default_actions(self.user_actions) + form_names
+            action.combine_user_with_default_actions(self.user_actions)
+            + self.form_names
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -779,7 +800,7 @@ class Domain:
             "slots": self._slot_definitions(),
             "responses": self.templates,
             "actions": self.user_actions,  # class names of the actions
-            "forms": self.form_names,
+            "forms": self.forms,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:

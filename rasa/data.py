@@ -154,7 +154,10 @@ def is_story_file(file_path: Text) -> bool:
         with open(
             file_path, encoding=DEFAULT_ENCODING, errors="surrogateescape"
         ) as lines:
-            return any(_contains_story_pattern(line) for line in lines)
+            return any(
+                _contains_story_pattern(line) or _contains_rule_pattern(line)
+                for line in lines
+            )
     except Exception as e:
         # catch-all because we might be loading files we are not expecting to load
         logger.error(
@@ -171,6 +174,12 @@ def _contains_story_pattern(text: Text) -> bool:
     story_pattern = r".*##.+"
 
     return re.match(story_pattern, text) is not None
+
+
+def _contains_rule_pattern(text: Text) -> bool:
+    rule_pattern = r".*>>.+"
+
+    return re.match(rule_pattern, text) is not None
 
 
 def is_domain_file(file_path: Text) -> bool:

@@ -41,7 +41,7 @@ from rasa.core.events import (
     UserUttered,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
-from rasa.core.constants import USER_INTENT_SESSION_START
+from rasa.core.constants import USER_INTENT_SESSION_START, RULE_SNIPPET_ACTION_NAME
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
@@ -108,12 +108,12 @@ def test_domain_action_instantiation():
         slots=[],
         templates={},
         action_names=["my_module.ActionTest", "utter_test", "respond_test"],
-        form_names=[],
+        forms=[],
     )
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 12
+    assert len(instantiated_actions) == 13
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -123,9 +123,10 @@ def test_domain_action_instantiation():
     assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
     assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
     assert instantiated_actions[8].name() == ACTION_BACK_NAME
-    assert instantiated_actions[9].name() == "my_module.ActionTest"
-    assert instantiated_actions[10].name() == "utter_test"
-    assert instantiated_actions[11].name() == "respond_test"
+    assert instantiated_actions[9].name() == RULE_SNIPPET_ACTION_NAME
+    assert instantiated_actions[10].name() == "my_module.ActionTest"
+    assert instantiated_actions[11].name() == "utter_test"
+    assert instantiated_actions[12].name() == "respond_test"
 
 
 async def test_remote_action_runs(

@@ -238,7 +238,7 @@ async def test_generate_training_data_with_cycles(default_domain):
     num_tens = len(training_trackers) - 1
     # if new default actions are added the keys of the actions will be changed
 
-    assert Counter(y) == {0: 6, 10: num_tens, 12: 1, 1: 2, 11: 3}
+    assert Counter(y) == {0: 6, 11: num_tens, 13: 1, 1: 2, 12: 3}
 
 
 async def test_generate_training_data_with_unused_checkpoints(tmpdir, default_domain):
@@ -365,6 +365,27 @@ async def test_read_stories_with_multiline_comments(tmpdir, default_domain):
     assert len(story_steps[2].events) == 7
     assert story_steps[3].block_name == "say goodbye"
     assert len(story_steps[3].events) == 2
+
+
+async def test_read_stories_with_rules(tmpdir, default_domain):
+    story_steps = await StoryFileReader.read_from_file(
+        "data/test_stories/stories_with_rules.md", default_domain, RegexInterpreter()
+    )
+
+    # this file contains three rules and two ML stories
+    assert len(story_steps) == 5
+
+    ml_steps = [s for s in story_steps if not s.is_rule]
+    rule_steps = [s for s in story_steps if s.is_rule]
+
+    assert len(ml_steps) == 2
+    assert len(rule_steps) == 3
+
+    assert story_steps[0].block_name == "rule 1"
+    assert story_steps[1].block_name == "rule 2"
+    assert story_steps[2].block_name == "ML story 1"
+    assert story_steps[3].block_name == "rule 3"
+    assert story_steps[4].block_name == "ML story 2"
 
 
 @pytest.mark.parametrize(

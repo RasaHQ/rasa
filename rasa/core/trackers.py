@@ -117,6 +117,7 @@ class DialogueStateTracker:
         slots: Optional[Iterable[Slot]],
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
+        is_rule_tracker: bool = False,
     ) -> None:
         """Initialize the tracker.
 
@@ -137,6 +138,8 @@ class DialogueStateTracker:
             self.slots = AnySlotDict()
         # file source of the messages
         self.sender_source = sender_source
+        # whether the tracker belongs to a rule-based data
+        self.is_rule_tracker = is_rule_tracker
 
         ###
         # current state of the tracker - MUST be re-creatable by processing
@@ -634,3 +637,13 @@ class DialogueStateTracker:
             if e["entity"] in self.slots.keys()
         ]
         return new_slots
+
+    def active_form_name(self) -> Optional[Text]:
+        """Get the name of the currently active form.
+
+        Returns: `None` if no active form or the name of the currenly active form.
+        """
+        if not self.active_form:
+            return None
+
+        return self.active_form.get("name")

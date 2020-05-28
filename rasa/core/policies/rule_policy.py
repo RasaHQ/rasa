@@ -1,32 +1,16 @@
 import logging
 import typing
 from typing import List, Dict, Text, Optional, Any
-from tqdm import tqdm
-import json
+
 import re
 from collections import defaultdict, deque
 
-import rasa.utils.io
-
+from rasa.core.events import ActionExecutionRejected
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted
-from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
-from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.common import is_logging_disabled
-from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
-
-from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
-from rasa.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import FORM_POLICY_PRIORITY
-
-if typing.TYPE_CHECKING:
-    from rasa.core.policies.ensemble import PolicyEnsemble
-
+from rasa.core.constants import FORM_POLICY_PRIORITY, RULE_SNIPPET_ACTION_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +87,11 @@ class RulePolicy(MemoizationPolicy):
     ) -> None:
         """Trains the policy on given training trackers."""
         self.lookup = {}
-        # only considers original trackers (no augmented ones)
+
+        # only use trackers from rule-based training data
+        training_trackers = [t for t in training_trackers if t.is_rule_tracker]
+
+        # only consider original trackers (no augmented ones)
         training_trackers = [
             t
             for t in training_trackers
@@ -119,9 +107,15 @@ class RulePolicy(MemoizationPolicy):
         # remove action_listens that were added after conditions
         updated_lookup = self.lookup.copy()
         for key in self.lookup.keys():
-            if "prev" not in key or self.lookup[key] == domain.index_for_action("..."):
+            # Delete rules if there is no prior action or if it would predict
+            # the `...` action
+            if "prev" not in key or self.lookup[key] == domain.index_for_action(
+                RULE_SNIPPET_ACTION_NAME
+            ):
                 del updated_lookup[key]
-            elif "..." in key:
+            elif RULE_SNIPPET_ACTION_NAME in key:
+                # If the previous action is `...` -> remove any specific state
+                # requirements for that state (anything can match this state)
                 new_key = re.sub(r".*prev_\.\.\.[^|]*", "", key)
 
                 if new_key:
@@ -149,6 +143,31 @@ class RulePolicy(MemoizationPolicy):
 
         if not self.is_enabled:
             return result
+
+        active_form_name = tracker.active_form_name()
+        last_action_was_rejection = active_form_name and tracker.events[
+            -1
+        ] == ActionExecutionRejected(active_form_name)
+        should_predict_form = (
+            active_form_name
+            and not last_action_was_rejection
+            and tracker.latest_action_name != active_form_name
+        )
+
+        # If we are in a form, and the form didn't run previously or rejected, we can
+        # simply force predict the form.
+        if should_predict_form:
+            result[domain.index_for_action(active_form_name)] = 1
+            return result
+
+        possible_keys = set(self.lookup.keys())
+
+        # If an active form just rejected its execution, then we need to try to predict
+        # something else.
+        if last_action_was_rejection:
+            possible_keys = self._remove_keys_which_trigger_action(
+                possible_keys, domain, active_form_name
+            )
 
         states = [
             domain.get_active_states(tr)
@@ -183,10 +202,9 @@ class RulePolicy(MemoizationPolicy):
 
         logger.debug(f"Current tracker state {states}")
 
-        possible_keys = set(self.lookup.keys())
         for i, state in enumerate(reversed(states)):
             possible_keys = set(
-                filter(lambda _key: self._rule_is_good(_key, i, state), possible_keys,)
+                filter(lambda _key: self._rule_is_good(_key, i, state), possible_keys)
             )
 
         if possible_keys:
@@ -210,3 +228,23 @@ class RulePolicy(MemoizationPolicy):
                 logger.debug("There is no memorised next action")
 
         return result
+
+    def _remove_keys_which_trigger_action(
+        self, possible_keys: typing.Set[Text], domain: Domain, action_name: Text
+    ) -> typing.Set[Text]:
+        """Remove any matching rules which would predict `action_name`.
+
+        This is e.g. used when the Form rejected its execution and we are entering an
+        unhappy path.
+
+        Args:
+            possible_keys: Possible rule keys which match the current state.
+            domain: The current domain.
+            action_name: The action which is not allowed to be predicted.
+
+        Returns:
+            Possible keys without keys which predict the `FormAction`.
+        """
+        form_action_idx = domain.index_for_action(action_name)
+
+        return {key for key in possible_keys if self.lookup[key] != form_action_idx}
