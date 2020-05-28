@@ -55,7 +55,7 @@ CVEvaluationResult = namedtuple("Results", "train test")
 NO_ENTITY = "no_entity"
 
 IntentEvaluationResult = namedtuple(
-    "IntentEvaluationResult", "intent_target intent_prediction message confidence"
+    "IntentEvaluationResult", "intent_target intent_prediction message confidence fallback"
 )
 
 ResponseSelectionEvaluationResult = namedtuple(
@@ -238,6 +238,7 @@ def write_intent_successes(
                 "name": r.intent_prediction,
                 "confidence": r.confidence,
             },
+            "fallback": r.fallback,
         }
         for r in intent_results
         if r.intent_target == r.intent_prediction
@@ -268,6 +269,7 @@ def write_intent_errors(
                 "name": r.intent_prediction,
                 "confidence": r.confidence,
             },
+            "fallback": r.fallback,
         }
         for r in intent_results
         if r.intent_target != r.intent_prediction
@@ -615,12 +617,12 @@ def evaluate_intents(
         if isinstance(report, str):
             log_evaluation_table(report, precision, f1, accuracy)
 
-    if successes:
-        successes_filename = "intent_successes.json"
-        if output_directory:
-            successes_filename = os.path.join(output_directory, successes_filename)
-        # save classified samples to file for debugging
-        write_intent_successes(intent_results, successes_filename)
+    # if successes:
+    successes_filename = "intent_successes.json"
+    if output_directory:
+        successes_filename = os.path.join(output_directory, successes_filename)
+    # save classified samples to file for debugging
+    write_intent_successes(intent_results, successes_filename)
 
     if errors:
         errors_filename = "intent_errors.json"
@@ -1192,6 +1194,7 @@ def get_eval_data(
                     intent_prediction.get("name"),
                     result.get("text", {}),
                     intent_prediction.get("confidence"),
+                    intent_prediction.get("fallback"),
                 )
             )
 

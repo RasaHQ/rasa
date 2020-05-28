@@ -750,10 +750,23 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             return label, label_ranking
 
         message_sim = predict_out["i_scores"].numpy()
+        # message_sim = message_sim.flatten()  # sim is a matrix
 
-        message_sim = message_sim.flatten()  # sim is a matrix
+        label_ids = message_sim.argsort()[:, ::-1]
 
-        label_ids = message_sim.argsort()[::-1]
+        unique_label_ids, counts_label_ids = np.unique(
+            label_ids[:, 0], return_counts=True, axis=0
+        )
+        x = label_ids[0, 0]
+        c_x = counts_label_ids[unique_label_ids == x][0]
+        f = c_x
+        # if c_x < 10:
+        #     f = True
+        # else:
+        #     f = False
+
+        message_sim = message_sim[0]
+        label_ids = label_ids[0]
 
         if (
             self.component_config[LOSS_TYPE] == SOFTMAX
@@ -771,6 +784,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label = {
                 "name": self.index_label_id_mapping[label_ids[0]],
                 "confidence": message_sim[0],
+                "fallback": str(f),
             }
 
             if (
@@ -1350,6 +1364,15 @@ class DIET(RasaModel):
         inputs = self._combine_sparse_dense_features(
             features, mask, name, sparse_dropout, dense_dropout
         )
+        if not self._training:
+            noisy_inputs = inputs[1:, :, :]
+            noisy_inputs += tf.random.normal(
+                shape=tf.shape(noisy_inputs),
+                mean=0.,
+                stddev=tf.abs(tf.reduce_max(inputs)-tf.reduce_min(inputs))/10,
+                dtype=inputs.dtype
+            )
+            inputs = tf.concat([inputs[:1, :, :], noisy_inputs], axis=0)
 
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 
@@ -1481,6 +1504,8 @@ class DIET(RasaModel):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         sequence_lengths = self._get_sequence_lengths(tf_batch_data[TEXT_SEQ_LENGTH][0])
+        if not self._training:
+            sequence_lengths = tf.tile(sequence_lengths, (101,))
         mask_text = self._compute_mask(sequence_lengths)
 
         (
@@ -1605,6 +1630,8 @@ class DIET(RasaModel):
         )
 
         sequence_lengths = self._get_sequence_lengths(tf_batch_data[TEXT_SEQ_LENGTH][0])
+        if not self._training:
+            sequence_lengths = tf.tile(sequence_lengths,  (101,))
         mask_text = self._compute_mask(sequence_lengths)
 
         text_transformed, _, _, _ = self._create_sequence(
