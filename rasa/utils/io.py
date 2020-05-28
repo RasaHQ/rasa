@@ -372,7 +372,10 @@ def create_validator(
     """Helper method to create `Validator` classes from callable functions. Should be
     removed when questionary supports `Validator` objects."""
 
-    from prompt_toolkit.validation import Validator, ValidationError
+    from prompt_toolkit.validation import ValidationError
+
+    if not typing.TYPE_CHECKING:  # otherwise it is already imported in outer scope
+        from prompt_toolkit.validation import Validator
     from prompt_toolkit.document import Document
 
     class FunctionValidator(Validator):

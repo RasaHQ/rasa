@@ -35,7 +35,7 @@ def get_autoconfiguration(config_file):
 
 
 def create_config_for_keys(config: Dict[Text, Any], keys: List[Text]) -> None:
-    """Complete a configuration by adding automatic configuration for the specified keys.
+    """Complete a config by adding automatic configuration for the specified keys.
 
     Args:
         config: The provided configuration.
