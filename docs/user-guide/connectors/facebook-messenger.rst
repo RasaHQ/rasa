@@ -103,7 +103,7 @@ In addition to typical text, image, and custom responses, the Facebook Messenger
 
    Both Quick Reply and Button titles in Facebook Messenger have a character limit of 20.  Titles longer than 20 characters will be truncated.
 
-* `Generic Template Elements <https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic>`_: provide a way to create a horizontally scrollable list up to 10 content elements that integrate buttons, images, and more alongside text a single message.
+* `Elements <https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic>`_: provide a way to create a horizontally scrollable list up to 10 content elements that integrate buttons, images, and more alongside text a single message.
 
 .. code-block:: yaml
 
