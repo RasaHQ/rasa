@@ -404,6 +404,7 @@ def _predict_tracker_actions(
                 fail_on_prediction_errors,
                 circuit_breaker_tripped,
             )
+            
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(
                 {
