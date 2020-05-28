@@ -75,23 +75,7 @@ Supported response attachments
 
 In addition to typical text, image, and custom responses, the Facebook Messenger channel supports the following additional response template attachments:
 
-* `Buttons <https://developers.facebook.com/docs/messenger-platform/send-messages/buttons>`_: sends a text message with up to three attached buttons
-
-.. code-block:: yaml
-
-   utter_fb_buttons_example:
-      - text: Hello World!
-        buttons:
-          - title: Button Title
-            payload: /example_intent
-          - title: Button Title
-            payload: /example_intent
-          - title: Button title over 20 characters # this will be truncated to: "Button title over..."
-            payload: /example_intent
-
-.. warning::
-
-   Facebook API limits the amount of buttons you can sent in a message to 3.  If more than 3 buttons are provided in a message, Rasa will ignore all provided buttons.
+* `Buttons <https://developers.facebook.com/docs/messenger-platform/send-messages/buttons>`_: are structured the same as other Rasa buttons. Facebook API limits the amount of buttons you can sent in a message to 3. If more than 3 buttons are provided in a message, Rasa will ignore all provided buttons.
 
 * `Quick Replies <https://developers.facebook.com/docs/messenger-platform/send-messages/quick-replies>`_: provide a way to present a set of up to 13 buttons in-conversation that contain a title and optional image, and appear prominently above the composer. You can also use quick replies to request a person's email address or phone number.
 
