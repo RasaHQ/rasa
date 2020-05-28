@@ -18,6 +18,7 @@ from typing import Text, Any, Dict, Union, List, Type, Callable
 import ruamel.yaml as yaml
 from ruamel.yaml import YAML
 
+from rasa.cli import utils as cli_utils
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
 
 if typing.TYPE_CHECKING:
@@ -103,7 +104,7 @@ def replace_environment_variables() -> None:
 def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses yaml from a text.
 
-     Args:
+    Args:
         content: A text containing yaml content.
     """
     yaml_parser = _get_yaml_parser()
@@ -140,20 +141,24 @@ def _fix_ascii_encoding(content: Text) -> Text:
 def change_sections_in_yaml_file(data: Dict[Text, Any], filename: Text) -> None:
     """Changes specific sections (given by keys) in a yaml file.
 
-     Args:
+    Args:
         data: The keys are the sections to be changed, the values the contents of the
               respective sections.
         filename: Name of the file to be changed.
     """
-    old_content = read_file(filename, DEFAULT_ENCODING)
+    try:
+        old_content = read_file(filename, DEFAULT_ENCODING)
+    except ValueError:
+        cli_utils.print_warning(f"File {filename} does not exist. Creating it now.")
+        old_content = {}
 
     yaml_parser = _get_yaml_parser(typ="rt", add_version=False)
     old_content = _fix_ascii_encoding(old_content)
 
     new_content = yaml_parser.load(old_content) or {}
 
-    for key in data.keys():
-        new_content[key] = data[key]
+    for key, value in data.items():
+        new_content[key] = value
 
     yaml_parser.dump(new_content, Path(filename))
 
@@ -216,7 +221,7 @@ def pickle_load(filename: Union[Text, Path]) -> Any:
 def read_config_file(filename: Text) -> Dict[Text, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary
 
-     Args:
+    Args:
         filename: The path to the file which should be read.
     """
     content = read_yaml(read_file(filename))
@@ -236,7 +241,7 @@ def read_config_file(filename: Text) -> Dict[Text, Any]:
 def read_yaml_file(filename: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
-     Args:
+    Args:
         filename: The path to the file which should be read.
     """
     return read_yaml(read_file(filename, DEFAULT_ENCODING))
@@ -262,7 +267,7 @@ def unarchive(byte_array: bytes, directory: Text) -> Text:
 def write_yaml_file(data: Dict, filename: Union[Text, Path]) -> None:
     """Writes a yaml file.
 
-     Args:
+    Args:
         data: The data to write.
         filename: The path to the file which should be written.
     """

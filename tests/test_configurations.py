@@ -1,8 +1,11 @@
 from typing import List, Text, Set
+from unittest.mock import Mock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.configurations import autoconfig
+from rasa.constants import AUTOCONFIGURATION_KEY
 from rasa.utils import io as io_utils
 
 EMPTY_CONFIG = "rasa/cli/initial_project/config.yml"
@@ -23,12 +26,16 @@ DEFAULT_CONFIG = "rasa/configurations/default_config.yml"
         (DEFAULT_CONFIG, set()),
     ],
 )
-def test_get_autoconfiguration(config_path: Text, autoconfig_keys: Set):
-    config = io_utils.read_config_file(config_path)
-    actual = autoconfig.get_autoconfiguration(config)
+def test_get_autoconfiguration(
+    config_path: Text, autoconfig_keys: Set, monkeypatch: MonkeyPatch
+):
+
+    monkeypatch.setattr(autoconfig, "dump_config", Mock())
+
+    actual = autoconfig.get_autoconfiguration(config_path)
 
     expected = io_utils.read_config_file(DEFAULT_CONFIG)
-    expected["autoconfigured"] = autoconfig_keys
+    expected[AUTOCONFIGURATION_KEY] = autoconfig_keys
 
     assert actual == expected
 
@@ -40,6 +47,6 @@ def test_create_config_for_keys(keys: List[Text]):
     config = {}
     autoconfig.create_config_for_keys(config, keys)
 
-    assert config["autoconfigured"] == set(keys)
+    assert config[AUTOCONFIGURATION_KEY] == set(keys)
     for k in keys:
         assert config[k] == default_config[k]

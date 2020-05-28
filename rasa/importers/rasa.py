@@ -33,29 +33,19 @@ class RasaFileImporter(TrainingDataImporter):
             training_data_paths
         )
 
-        if config_file and os.path.exists(config_file):
-            config = io_utils.read_config_file(config_file)
-
-            # Would it be better to already check for missing config keys here, such
-            # that training data will only be loaded if needed? => Faster performance
-            # (Effectively, that would mean moving the autoconfig.get_autoconfiguration
-            # into this class instead of keeping it in the autoconfig module.)
-
-            self.config = autoconfig.get_autoconfiguration(config)
-            # # In future iterations, instead sth. like:
-            # training_data = await self.get_nlu_data(language=config["language"])
-            # domain = await self.get_domain()
-            # stories = await self.get_stories()
-            # self.config = autoconfig.get_autoconfiguration(
-            #     config,
-            #     training_data,
-            #     domain,
-            #     stories,
-            # )
-
-            autoconfig.dump_config(config, config_file)
-        else:
-            self.config = {}
+        self.config = autoconfig.get_autoconfiguration(config_file)
+        # # In future iterations, instead sth. like:
+        # self.config = autoconfig.get_autoconfiguration(config_file, self)
+        # # or
+        # training_data = await self.get_nlu_data(language=config["language"])
+        # domain = await self.get_domain()
+        # stories = await self.get_stories()
+        # self.config = autoconfig.get_autoconfiguration(
+        #     config,
+        #     training_data,
+        #     domain,
+        #     stories,
+        # )
 
     async def get_config(self) -> Dict:
         return self.config
