@@ -1,1 +1,1 @@
-updated Facebook Messenger channel docs with supported attachment information
+Updated Facebook Messenger channel docs with supported attachment information
