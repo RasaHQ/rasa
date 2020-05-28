@@ -40,9 +40,10 @@ def _form_submit_rule(
         domain=domain,
         slots=domain.slots,
         evts=[
+            Form(form_name),
             # Any events in between
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-            # Form got deactivated
+            # Form runs and deactivates itself
             ActionExecuted(form_name),
             Form(None),
             SlotSet(REQUESTED_SLOT, None),

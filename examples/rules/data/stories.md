@@ -15,9 +15,11 @@
 * explain                          <!-- can be anything -->
     - utter_explain_some_slot
     - loop_q_form
+    - form{"name": "loop_q_form"}
 
 
 >> submit form
+    - form{"name": "loop_q_form"} <!-- condition that form is active-->
     - ...
     - loop_q_form <!-- condition that form is active -->
     - form{"name": null}
