@@ -8,8 +8,7 @@ from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
-
-# from slack import WebClient
+from slack import WebClient
 
 logger = logging.getLogger(__name__)
 
