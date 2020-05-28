@@ -71,7 +71,7 @@ the host and port with the appropriate values. This is the URL
 you should add in the configuration of the webhook.
 
 Supported response attachments
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------
 
 In addition to typical text, image, button, and custom responses, the Facebook Messenger channel supports the following additional response template attachments:
 
