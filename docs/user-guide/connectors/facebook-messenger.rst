@@ -73,7 +73,7 @@ you should add in the configuration of the webhook.
 Supported response attachments
 ------------------------------
 
-In addition to typical text, image, button, and custom responses, the Facebook Messenger channel supports the following additional response template attachments:
+In addition to typical text, image, and custom responses, the Facebook Messenger channel supports the following additional response template attachments:
 
 * `Buttons <https://developers.facebook.com/docs/messenger-platform/send-messages/buttons>`_: sends a text message with up to three attached buttons
 
