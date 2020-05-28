@@ -238,7 +238,7 @@ async def test_generate_training_data_with_cycles(default_domain):
     num_tens = len(training_trackers) - 1
     # if new default actions are added the keys of the actions will be changed
 
-    assert Counter(y) == {0: 6, 10: num_tens, 12: 1, 1: 2, 11: 3}
+    assert Counter(y) == {0: 6, 11: num_tens, 13: 1, 1: 2, 12: 3}
 
 
 async def test_generate_training_data_with_unused_checkpoints(tmpdir, default_domain):
@@ -369,7 +369,7 @@ async def test_read_stories_with_multiline_comments(tmpdir, default_domain):
 
 async def test_read_stories_with_rules(tmpdir, default_domain):
     story_steps = await StoryFileReader.read_from_file(
-        "data/test_stories/stories_with_rules.md", default_domain, RegexInterpreter(),
+        "data/test_stories/stories_with_rules.md", default_domain, RegexInterpreter()
     )
 
     # this file contains three rules and two ML stories
