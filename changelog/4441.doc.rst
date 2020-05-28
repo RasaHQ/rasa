@@ -1,2 +1,1 @@
-Added ambiguity_threshold in fallback actions page.
-Previously ambiguity_threshold was missing in fallback actions page.
+Added documentation on ``ambiguity_threshold`` parameter in Fallback Actions page.
