@@ -110,6 +110,8 @@ class MessageProcessor:
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
 
+        # print('Tracker state', tracker.events)
+
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
         else:
@@ -539,12 +541,29 @@ class MessageProcessor:
         should_predict_another_action = True
         num_predicted_actions = 0
 
+        intent_tedp = [
+            p
+            for p in self.policy_ensemble.policies
+            if type(p).__name__ == "IntentTEDPolicy"
+        ]
+
         # action loop. predicts actions until we hit action listen
         while (
             should_predict_another_action
             and self._should_handle_message(tracker)
             and num_predicted_actions < self.max_number_of_predictions
         ):
+
+            # Do this only once and that too before the first action.
+            if num_predicted_actions == 0 and len(intent_tedp):
+                i_tedp = intent_tedp[0]
+                latest_intent_possibility = i_tedp.predict_action_probabilities(
+                    tracker, self.domain
+                )
+                print(latest_intent_possibility)
+
+                tracker.modify_user_intent_possibility(latest_intent_possibility)
+
             # this actually just calls the policy's method by the same name
             action, policy, confidence = self.predict_next_action(tracker)
 

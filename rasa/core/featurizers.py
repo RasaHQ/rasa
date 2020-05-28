@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import os
 from tqdm import tqdm
+import copy
 from typing import Tuple, List, Optional, Dict, Text, Any
 
 import rasa.utils.io
@@ -216,6 +217,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         # we are going to use floats and convert to int later if possible
         used_features = np.zeros(self.num_features, dtype=np.float)
         using_only_ints = True
+        added_tokens = {}
         for state_name, prob in state.items():
             using_only_ints = using_only_ints and utils.is_int(prob)
             if state_name in self.user_labels:
@@ -223,11 +225,17 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                     # else we predict next action from bot action and memory
                     for t in state_name.split(self.split_symbol):
                         used_features[self.user_vocab[t]] += prob
+                        if t not in added_tokens:
+                            added_tokens[t] = 0
+                        added_tokens[t] += prob
 
             elif state_name in self.slot_labels:
                 offset = len(self.user_vocab)
                 idx = self.slot_labels.index(state_name)
                 used_features[offset + idx] += prob
+                if state_name not in added_tokens:
+                    added_tokens[state_name] = 0
+                added_tokens[state_name] += prob
 
             elif state_name[len(PREV_PREFIX) :] in self.bot_labels:
                 action_name = state_name[len(PREV_PREFIX) :]
@@ -235,11 +243,14 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                     offset = len(self.user_vocab) + len(self.slot_labels)
                     idx = self.bot_vocab[t]
                     used_features[offset + idx] += prob
-
+                    if t not in added_tokens:
+                        added_tokens[t] = 0
+                    added_tokens[t] += prob
             else:
                 logger.warning(
                     f"Feature '{state_name}' could not be found in feature map."
                 )
+        # print('Added tokens during encode', added_tokens)
 
         if using_only_ints:
             # this is an optimization - saves us a bit of memory
@@ -313,6 +324,8 @@ class TrackerFeaturizer:
         pick the most probable intent out of all provided ones and
         set its probability to 1.0, while all the others to 0.0.
         """
+
+        # print('events in tracker before creating states', tracker.events)
 
         states = tracker.past_states(domain)
 
@@ -770,3 +783,33 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions
+
+    def prediction_states(
+        self, trackers: List[DialogueStateTracker], domain: Domain
+    ) -> List[List[Dict[Text, float]]]:
+        """Transforms list of trackers to lists of states for prediction."""
+
+        copy_trackers = copy.deepcopy(trackers)
+
+        # print(len(trackers[0].events), len(copy_trackers[0].events))
+
+        # tracker length is always 1 at prediction time
+        # popped_event = copy_trackers[0].events.pop()
+
+        # print(len(trackers[0].events), len(copy_trackers[0].events))
+
+        trackers_as_states = [
+            self._create_states(tracker, domain) for tracker in copy_trackers
+        ]
+        # print(trackers_as_states)
+
+        # remove last state because we expect latest UserUttered event to have been added to incoming tracker also.
+        # TODO: add a None in the beginning as well, otherwise effectively max history is reduced by 1 here
+        trackers_as_states = [
+            self.slice_state_history(states, self.max_history)[:-1]
+            for states in trackers_as_states
+        ]
+
+        # print('sliced states for prediction', trackers_as_states)
+
+        return trackers_as_states

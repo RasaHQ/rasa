@@ -455,6 +455,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             if type(p).__name__ != "IntentTEDPolicy"
         }
 
+        # print('Ensemble predictions', predictions)
+
         if rejected_action_name:
             logger.debug(
                 f"Execution of '{rejected_action_name}' was rejected. "

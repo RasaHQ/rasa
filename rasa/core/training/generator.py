@@ -232,6 +232,7 @@ class TrainingDataGenerator:
         # assume we have reached all and stop.
         while not everything_reachable_is_reached or phase < min_num_aug_phases:
             phase_name = self._phase_name(everything_reachable_is_reached, phase)
+            # print(everything_reachable_is_reached, phase, min_num_aug_phases, phase_name)
 
             num_active_trackers = self._count_trackers(active_trackers)
 
@@ -375,6 +376,9 @@ class TrainingDataGenerator:
                 active_trackers = self._create_start_trackers_for_augmentation(
                     story_end_trackers
                 )
+
+            # print(everything_reachable_is_reached, phase, min_num_aug_phases, phase_name, num_active_trackers)
+            # print('------------------------------------')
 
         finished_trackers.extend(story_end_trackers)
         self._issue_unused_checkpoint_notification(previous_unused)

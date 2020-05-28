@@ -193,7 +193,9 @@ class WronglyClassifiedUserUtterance(UserUttered):
         )
 
 
-async def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=False):
+async def _generate_trackers(
+    resource_name, agent, max_stories=None, use_e2e=False, augmentation_factor=0
+):
     from rasa.core.training.generator import TrainingDataGenerator
 
     from rasa.core import training
@@ -205,7 +207,7 @@ async def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=Fal
         story_graph,
         agent.domain,
         use_story_concatenation=False,
-        augmentation_factor=0,
+        augmentation_factor=augmentation_factor,
         tracker_limit=max_stories,
     )
     return g.generate()

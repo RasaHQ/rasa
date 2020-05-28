@@ -236,6 +236,7 @@ class UserUttered(Event):
                 "metadata": self.metadata,
             }
         self.unpredictable = False
+        self.contextually_possible = True
 
     @staticmethod
     def _from_parse_data(
@@ -256,6 +257,9 @@ class UserUttered(Event):
             message_id,
             metadata,
         )
+
+    def set_contextual_possibility(self, possible: bool):
+        self.contextually_possible = possible
 
     def __hash__(self) -> int:
         return hash(

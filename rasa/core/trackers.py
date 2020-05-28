@@ -462,6 +462,18 @@ class DialogueStateTracker:
 
         return Dialogue(self.sender_id, list(self.events))
 
+    def modify_user_intent_possibility(self, intent_distributions: Dict[Text, float]):
+        """Modifies the contextual possibility of last UserUttered Event."""
+
+        if isinstance(self.events[-1], UserUttered):
+
+            intent_name = self.events[-1].intent["name"]
+            possibility = intent_distributions[intent_name] > 0.1
+            self.events[-1].set_contextual_possibility(possibility)
+
+            if not possibility:
+                print(f"Last intent {intent_name} is not contextually possible")
+
     def update(self, event: Event, domain: Optional[Domain] = None) -> None:
         """Modify the state of the tracker according to an ``Event``. """
         if not isinstance(event, Event):  # pragma: no cover

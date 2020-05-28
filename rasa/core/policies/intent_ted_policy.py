@@ -188,3 +188,33 @@ class IntentTEDPolicy(TEDPolicy):
         return IntentMaxHistoryFeaturizer(
             IntentTokenizerSingleStateFeaturizer(), max_history=max_history
         )
+
+    def predict_action_probabilities(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> List[float]:
+        """Predict the next action the bot should take.
+
+        Return the list of probabilities for the next actions.
+        """
+
+        if self.model is None:
+            return self._default_predictions(domain)
+
+        # create model data from tracker
+        data_X = self.featurizer.create_X([tracker], domain)
+        model_data = self._create_model_data(data_X)
+
+        output = self.model.predict(model_data)
+
+        confidence = output["action_scores"].numpy()
+        # remove batch dimension and take the last prediction in the sequence
+        confidence = confidence[0, -1, :]
+
+        # if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
+        #     confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
+
+        intent_names = domain.intent_names
+        intent_confidence = {
+            key: val for (key, val) in zip(intent_names, confidence.tolist())
+        }
+        return intent_confidence
