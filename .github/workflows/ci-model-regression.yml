@@ -81,6 +81,7 @@ jobs:
 
   model_regression_test_gpu:
     name: Model Regression Tests - GPU
+    continue-on-error: true
     needs:
     - deploy_runner_gpu
     - read_test_configuration
@@ -167,6 +168,7 @@ jobs:
           
   model_regression_test_cpu:
     name: Model Regression Tests - CPU
+    continue-on-error: true
     needs:
     - read_test_configuration
     runs-on: ubuntu-latest
