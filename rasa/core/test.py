@@ -380,27 +380,11 @@ def _predict_tracker_actions(
                 policy,
                 confidence,
             ) = _collect_action_executed_predictions(
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
                 processor,
                 partial_tracker,
                 event,
                 fail_on_prediction_errors,
-                circuit_breaker_tripped,
-=======
-                processor, partial_tracker, event, fail_on_prediction_errors, agent.interpreter
->>>>>>> pass interpreter through steps for testing
-=======
-                processor,
-                partial_tracker,
-                event,
-                fail_on_prediction_errors
->>>>>>> small fix
-=======
-                processor, partial_tracker, event, fail_on_prediction_errors
->>>>>>> black formatting
-            )
+                circuit_breaker_tripped,)
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(
                 {

@@ -311,7 +311,7 @@ class MarkdownReader(TrainingDataReader):
         entities = self._find_entities_in_training_example(example)
 
         plain_text = re.sub(
-            ent_regex, lambda m: "<" + m.groupdict()["entity"] + ">", example
+            entity_regex, lambda m: "<" + m.groupdict()["entity"] + ">", example
         )
         message = Message(plain_text.replace(":", ""))
 
