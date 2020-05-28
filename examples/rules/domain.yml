@@ -9,6 +9,7 @@ intents:
 - deny
 - greet
 - switch_faq
+- nlu_fallback
 
 entities:
 - some_slot
@@ -31,6 +32,8 @@ actions:
 - utter_stop
 - utter_greet
 - action_switch_faq
+- utter_did_you_mean
+- action_validate_loop_q_form
 
 forms:
 - loop_q_form:
@@ -69,3 +72,9 @@ responses:
     - text: "utter_stop"
   utter_greet:
     - text: "utter_greet"
+  utter_did_you_mean:
+    - text: "utter_did_you_mean"
+  utter_revert_fallback_and_reapply_last_intent:
+    - text: "utter_revert_fallback_and_reapply_last_intent"
+  utter_default:
+    - text: "please rephrase"

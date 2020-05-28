@@ -1,9 +1,15 @@
 from typing import List, Text
 
 import pytest
+from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 
 from rasa.core import training
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ActionDefaultFallback,
+)
+from rasa.core.channels import CollectingOutputChannel
 from rasa.core.constants import REQUESTED_SLOT, RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -13,6 +19,7 @@ from rasa.core.events import (
     SlotSet,
     ActionExecutionRejected,
 )
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
@@ -631,3 +638,76 @@ async def test_rule_policy_slot_filling_from_text(
     assert_predicted_action(
         action_probabilities, trained_rule_policy_domain, "utter_stop"
     )
+
+
+async def test_one_stage_fallback_rule():
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {GREET_INTENT_NAME}
+        - {DEFAULT_NLU_FALLBACK_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+    """
+    )
+
+    fallback_recover_rule = TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": DEFAULT_NLU_FALLBACK_INTENT_NAME}),
+            ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    greet_rule_which_only_applies_at_start = TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(UTTER_GREET_ACTION),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy = RulePolicy()
+    policy.train(
+        [greet_rule_which_only_applies_at_start, fallback_recover_rule], domain
+    )
+
+    # RulePolicy predicts fallback action
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("dasdakl;fkasd", {"name": DEFAULT_NLU_FALLBACK_INTENT_NAME}),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        "casd", evts=conversation_events, slots=domain.slots
+    )
+    action_probabilities = policy.predict_action_probabilities(tracker, domain)
+    assert_predicted_action(action_probabilities, domain, ACTION_DEFAULT_FALLBACK_NAME)
+
+    # Fallback action reverts fallback events, next action is `ACTION_LISTEN`
+    conversation_events += await ActionDefaultFallback().run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        tracker,
+        domain,
+    )
+
+    # Rasa is back on track when user rephrased intent
+    conversation_events += [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": GREET_INTENT_NAME}),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        "casd", evts=conversation_events, slots=domain.slots
+    )
+
+    action_probabilities = policy.predict_action_probabilities(tracker, domain)
+    assert_predicted_action(action_probabilities, domain, UTTER_GREET_ACTION)
