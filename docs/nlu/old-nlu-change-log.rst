@@ -98,7 +98,7 @@ Added
 Changed
 -------
 - updated requirements to match Core and SDK
-- pinned keras dependecies
+- pinned keras dependencies
 
 [0.14.1] - 2019-01-23
 ^^^^^^^^^^^^^^^^^^^^^
@@ -136,7 +136,7 @@ Changed
 - updated scikit-learn version to 0.20.2
 - updated cloudpickle version to 0.6.1
 - updated requirements to match Core and SDK
-- pinned keras dependecies
+- pinned keras dependencies
 
 Removed
 -------
@@ -152,7 +152,7 @@ Fixed
 - If the ``token_name`` is not given in the endpoint configuration, the default
   value is ``token`` instead of ``None``
 - Throws error only if ``ner_crf`` picks up overlapping entities. If the
-  entity extractor supports overlapping entitis no error is thrown.
+  entity extractor supports overlapping entities no error is thrown.
 - Updated CORS support for the server.
   Added the ``Access-Control-Allow-Headers`` and ``Content-Type`` headers
   for nlu server
@@ -202,7 +202,7 @@ Fixed
 Changed
 -------
 - Training data is now validated after loading from files in ``loading.py``
-  instead of on initialisation of ``TrainingData`` object
+  instead of on initialization of ``TrainingData`` object
 
 Fixed
 -----
@@ -235,9 +235,9 @@ Changed
 -------
 - loading training data from a URL requires an instance of ``EndpointConfig``
 
-- Changed evaluate behaviour to plot two histogram bars per bin.
-  Plotting confidence of right predictions in a wine-ish colour
-  and wrong ones in a blue-ish colour.
+- Changed evaluate behavior to plot two histogram bars per bin.
+  Plotting confidence of right predictions in a wine-ish color
+  and wrong ones in a blue-ish color.
 
 Removed
 -------
@@ -267,7 +267,7 @@ Added
 
 Fixed
 -----
-- correctly pass reference time in miliseconds to duckling_http
+- correctly pass reference time in milliseconds to duckling_http
 
 .. _nluv0-13-0:
 
@@ -309,7 +309,7 @@ Added
 Changed
 -------
 - renamed CRF features ``wordX`` to ``suffixX`` and ``preX`` to ``suffixX``
-- L1 and L2 regularisation defaults in ``ner_crf`` both set to 0.1
+- L1 and L2 regularization defaults in ``ner_crf`` both set to 0.1
 - ``whitespace_tokenizer`` ignores punctuation ``.,!?`` before
   whitespace or end of string
 - Allow multiple training processes per project
@@ -345,7 +345,7 @@ Added
 
 Fixed
 -----
-- readded possibility to set fixed model name from http train endpoint
+- re-added possibility to set fixed model name from http train endpoint
 
 
 [0.12.2] - 2018-04-20
@@ -402,14 +402,14 @@ Changed
   **retrain your model if you use regex features**
 - The keyword intent classifier now returns ``null`` instead
   of ``"None"`` as intent name in the json result if there's no match
-- in teh evaluation results, replaced ``O`` with the string
+- in the evaluation results, replaced ``O`` with the string
   ``no_entity`` for better understanding
 - The ``CRFEntityExtractor`` now only trains entity examples that have
   ``"extractor": "ner_crf"`` or no extractor at all
 - Ignore hidden files when listing projects or models
 - Docker Images now run on python 3.6 for better non-latin character set support
 - changed key name for a file in ngram featurizer
-- changed ``jsonObserver`` to generate logs without a record seperator
+- changed ``jsonObserver`` to generate logs without a record separator
 - Improve jsonschema validation: text attribute of training data samples
   can not be empty
 - made the NLU server's ``/evaluate`` endpoint asynchronous
