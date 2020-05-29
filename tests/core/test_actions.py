@@ -27,6 +27,7 @@ from rasa.core.actions.action import (
     RemoteAction,
     ActionSessionStart,
 )
+from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain, SessionConfig
 from rasa.core.events import (
@@ -666,3 +667,31 @@ async def test_action_default_ask_rephrase(
             "can you rephrase that?", metadata={"template_name": "utter_ask_rephrase"}
         )
     ]
+
+
+def test_get_form_action():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+    forms:
+    - {form_action_name}
+    """
+    )
+
+    actual = domain.action_for_name(form_action_name, None)
+    assert isinstance(actual, FormAction)
+
+
+def test_get_form_action_if_not_in_forms():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+    """
+    )
+
+    with pytest.raises(NameError):
+        assert not domain.action_for_name(form_action_name, None)

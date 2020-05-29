@@ -531,7 +531,7 @@ class Domain:
             self._raise_action_not_found_exception(action_name)
 
         return action.action_from_name(
-            action_name, action_endpoint, self.user_actions_and_forms
+            action_name, action_endpoint, self.user_actions_and_forms, self.form_names
         )
 
     def action_for_index(

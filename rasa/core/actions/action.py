@@ -2,7 +2,7 @@ import copy
 import json
 import logging
 import typing
-from typing import List, Text, Optional, Dict, Any, Generator
+from typing import List, Text, Optional, Dict, Any
 
 import aiohttp
 
@@ -15,7 +15,6 @@ from rasa.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     UTTER_PREFIX,
     RESPOND_PREFIX,
-    FORM_PREFIX,
     RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.nlu.constants import (
@@ -103,7 +102,10 @@ def combine_with_templates(
 
 
 def action_from_name(
-    name: Text, action_endpoint: Optional[EndpointConfig], user_actions: List[Text]
+    name: Text,
+    action_endpoint: Optional[EndpointConfig],
+    user_actions: List[Text],
+    form_names: Optional[List[Text]] = None,
 ) -> "Action":
     """Return an action instance for the name."""
 
@@ -115,7 +117,7 @@ def action_from_name(
         return ActionUtterTemplate(name)
     elif name.startswith(RESPOND_PREFIX):
         return ActionRetrieveResponse(name)
-    elif name.endswith(FORM_PREFIX):
+    elif form_names and name in form_names:
         from rasa.core.actions.forms import FormAction
 
         return FormAction(name, action_endpoint)
