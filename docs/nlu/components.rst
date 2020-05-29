@@ -968,7 +968,7 @@ CRFEntityExtractor
 :Description:
     This component implements a conditional random fields (CRF) to do named entity recognition.
     CRFs can be thought of as an undirected Markov chain where the time steps are words
-    and the states are entity classes. Features of the words (capitalisation, POS tagging,
+    and the states are entity classes. Features of the words (capitalization, POS tagging,
     etc.) give probabilities to certain entity classes, as are transitions between
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
 
