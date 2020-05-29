@@ -119,6 +119,7 @@ jobs:
           path: 'dataset'
           
       - name: Run test
+        id: run_test
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
@@ -158,10 +159,10 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+          RESULT_DIR: "${{ github.workspace }}/results"
         run: |-
-          export RESULT_DIR="$HOME/$GITHUB_WORKSPACE/results"
           poetry run pip install analytics-python
-          poetry run python .github/workflows/scripts/mr_publish_results.py
+          poetry run python .github/scripts/mr_publish_results.py
           
   remove_runner_gpu:
     name: Delete Github Runner - GPU

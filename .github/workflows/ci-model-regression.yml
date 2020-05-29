@@ -138,6 +138,7 @@ jobs:
           path: 'dataset'
           
       - name: Run test
+        id: run_test
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
@@ -177,8 +178,8 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+          RESULT_DIR: "${{ github.workspace }}/results"
         run: |-
-          export RESULT_DIR="$HOME/$GITHUB_WORKSPACE/results"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
 
@@ -191,7 +192,7 @@ jobs:
           header: ${{ github.run_id }}
           append: true
           message: |-
-            Commit: `${{ github.sha }}`, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
+            Commit: ${{ github.sha }}, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
             Execution time: test: `${{ steps.run_test.outputs.test_run_time }}`, train: `${{ steps.run_test.outputs.train_run_time }}`, total: `${{ steps.run_test.outputs.total_run_time }}`
             
             ${{ steps.get_results.outputs.result }}
@@ -253,6 +254,7 @@ jobs:
           chmod 755 gomplate
 
       - name: Run test
+        id: run_test
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
@@ -277,8 +279,6 @@ jobs:
 
       - name: Get results
         id: get_results
-        env:
-          DATASET: ${{ matrix.dataset }}
         run: |
           OUTPUT=$(./gomplate -f .github/templates/model_regression_test_results.tmpl)
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
@@ -294,8 +294,8 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+          RESULT_DIR: "${{ github.workspace }}/results"
         run: |-
-          export RESULT_DIR="$HOME/$GITHUB_WORKSPACE/results"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
 
@@ -307,7 +307,7 @@ jobs:
           header: ${{ github.run_id }}
           append: true
           message: |-
-            Commit: `${{ github.sha }}`, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
+            Commit: ${{ github.sha }}, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
             Execution time: test: `${{ steps.run_test.outputs.test_run_time }}`, train: `${{ steps.run_test.outputs.train_run_time }}`, total: `${{ steps.run_test.outputs.total_run_time }}`
 
             ${{ steps.get_results.outputs.result }}

@@ -1,4 +1,3 @@
----
 {{- range $file := file.Walk "./results" }}
 {{- if not (file.IsDir $file) }}
 {{- if and ((filepath.Base .) | strings.Contains "intent_report.json") ($file | strings.Contains (getenv "DATASET")) -}}

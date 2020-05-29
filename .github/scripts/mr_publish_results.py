@@ -44,9 +44,9 @@ def read_results(file):
 
     return result
 
-def push_results(file_name, path):
-    result = read_results(os.path.join(path, file_name))
-    result["file_name"] = f
+def push_results(file_name, file):
+    result = read_results(file)
+    result["file_name"] = file_name
     send_to_segment(result)
 
 
