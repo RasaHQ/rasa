@@ -16,6 +16,8 @@ from rasa.core.events import (
     UserUtteranceReverted,
     Restarted,
     Event,
+    SlotSet,
+    Form,
 )
 from rasa.core.slots import Slot
 from rasa.core.trackers import DialogueStateTracker
@@ -585,6 +587,14 @@ class TrainingDataGenerator:
                     event, (ActionReverted, UserUtteranceReverted, Restarted)
                 ):
                     end_trackers.append(tracker.copy(tracker.sender_id))
+                if step.is_rule:
+                    # TODO: this is a hack to make a rule know
+                    #  that slot or form should not be set
+                    if isinstance(event, Form) and event.name is None:
+                        event.name = "None"
+                    if isinstance(event, SlotSet) and event.value is None:
+                        event.value = "None"
+
                 tracker.update(event)
 
         # end trackers should be returned separately

@@ -659,10 +659,17 @@ class Domain:
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
             if slot is not None:
-                for i, slot_value in enumerate(slot.as_feature()):
-                    if slot_value != 0:
-                        slot_id = f"slot_{key}_{i}"
-                        state_dict[slot_id] = slot_value
+                # TODO: this is a hack to make a rule know
+                #  that slot or form should not be set
+                #  but only if the slot is featurized
+                if slot.value == "None" and slot.as_feature():
+                    slot_id = f"slot_{key}_None"
+                    state_dict[slot_id] = 1
+                else:
+                    for i, slot_value in enumerate(slot.as_feature()):
+                        if slot_value != 0:
+                            slot_id = f"slot_{key}_{i}"
+                            state_dict[slot_id] = slot_value
 
         if "intent_ranking" in latest_message.parse_data:
             for intent in latest_message.parse_data["intent_ranking"]:

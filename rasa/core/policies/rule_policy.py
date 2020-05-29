@@ -11,6 +11,7 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY, RULE_SNIPPET_ACTION_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +55,12 @@ class RulePolicy(MemoizationPolicy):
 
         f_slots = defaultdict(set)
         for f in fs:
-            if f not in state:
+            if f.endswith("_None"):
+                if any(f[: f.rfind("_")] in key for key in state.keys()):
+                    return False
+            elif f not in state:
                 return False
-
-            if f.startswith("slot"):
+            elif f.startswith("slot"):
                 f_slots[f[: f.rfind("_")]].add(f)
 
         for k, v in f_slots.items():
@@ -153,11 +156,20 @@ class RulePolicy(MemoizationPolicy):
             and not last_action_was_rejection
             and tracker.latest_action_name != active_form_name
         )
+        should_predict_listen = (
+            active_form_name
+            and not last_action_was_rejection
+            and tracker.latest_action_name == active_form_name
+        )
 
         # If we are in a form, and the form didn't run previously or rejected, we can
         # simply force predict the form.
         if should_predict_form:
             result[domain.index_for_action(active_form_name)] = 1
+            return result
+        # predict action_listen if form action was run successfully
+        elif should_predict_listen:
+            result[domain.index_for_action(ACTION_LISTEN_NAME)] = 1
             return result
 
         possible_keys = set(self.lookup.keys())
