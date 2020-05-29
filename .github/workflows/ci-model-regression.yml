@@ -247,6 +247,11 @@ jobs:
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
 
+      - name: Download gomplate
+        run: |-
+          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          chmod 755 gomplate
+
       - name: Run test
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
@@ -255,27 +260,27 @@ jobs:
           CONFIG_NAME: "${{ matrix.config }}"
         run: |-
           # determine DATASET and CONFIG environment variables
-          source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
+          source <(./gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
           echo "::set-env name=DATASET::${DATASET}"
 
           poetry run rasa --version
 
-          export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          export NOW_TRAIN=$(./gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           poetry run rasa train nlu -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
-          echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          echo "::set-output name=train_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
-          export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          export NOW_TEST=$(./gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           poetry run rasa test nlu -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
 
-          echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
-          echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          echo "::set-output name=test_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          echo "::set-output name=total_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
       - name: Get results
         id: get_results
         env:
           DATASET: ${{ matrix.dataset }}
         run: |
-          OUTPUT=$(gomplate -f .github/templates/model_regression_test_results.tmpl)
+          OUTPUT=$(./gomplate -f .github/templates/model_regression_test_results.tmpl)
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
