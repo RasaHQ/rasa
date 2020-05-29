@@ -52,11 +52,11 @@ LEGACY_DOCS_BASE_URL = "http://legacy-docs.rasa.com"
 CONFIG_KEYS_CORE = ["policies"]
 CONFIG_KEYS_NLU = ["language", "pipeline"]
 CONFIG_KEYS = CONFIG_KEYS_CORE + CONFIG_KEYS_NLU
-CONFIG_MANDATORY_KEYS_CORE = []
-CONFIG_MANDATORY_KEYS_NLU = ["language"]
-CONFIG_MANDATORY_KEYS = CONFIG_MANDATORY_KEYS_CORE + CONFIG_MANDATORY_KEYS_NLU
+# below, keys with `True` need content, keys with `False` can be left empty
+CONFIG_MANDATORY_KEYS_CORE = {"policies": False}
+CONFIG_MANDATORY_KEYS_NLU = {"language": True, "pipeline": False}
+CONFIG_MANDATORY_KEYS = {**CONFIG_MANDATORY_KEYS_CORE, **CONFIG_MANDATORY_KEYS_NLU}
 CONFIG_AUTOCONFIGURABLE_KEYS = ["policies", "pipeline"]
-AUTOCONFIGURATION_KEY = "autoconfigured"
 
 
 MINIMUM_COMPATIBLE_VERSION = "1.11.0a1"

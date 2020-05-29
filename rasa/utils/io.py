@@ -16,9 +16,7 @@ from pathlib import Path
 from typing import Text, Any, Dict, Union, List, Type, Callable
 
 import ruamel.yaml as yaml
-from ruamel.yaml import YAML
 
-from rasa.cli import utils as cli_utils
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
 
 if typing.TYPE_CHECKING:
@@ -101,19 +99,20 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
+def read_yaml(
+    content: Text,
+    typ: Text = "safe",
+    add_version: bool = False,
+    return_parser: bool = False,
+) -> Union[List[Any], Dict[Text, Any]]:
     """Parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
+        typ: Argument `typ` for the YAML function.
+        add_version: True if the yaml version should be added to the parser.
+        return_parser: True if the function should also return the yaml parser.
     """
-    yaml_parser = _get_yaml_parser()
-    content = _fix_ascii_encoding(content)
-
-    return yaml_parser.load(content) or {}
-
-
-def _get_yaml_parser(typ: Text = "safe", add_version: bool = True) -> YAML:
     fix_yaml_loader()
 
     replace_environment_variables()
@@ -122,10 +121,6 @@ def _get_yaml_parser(typ: Text = "safe", add_version: bool = True) -> YAML:
     if add_version:
         yaml_parser.version = YAML_VERSION
 
-    return yaml_parser
-
-
-def _fix_ascii_encoding(content: Text) -> Text:
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
         content = (
@@ -135,32 +130,14 @@ def _fix_ascii_encoding(content: Text) -> Text:
             .decode("utf-16")
         )
 
-    return content
+    loaded_content = yaml_parser.load(content) or {}
 
+    if return_parser:
+        return_value = [loaded_content, yaml_parser]
+    else:
+        return_value = loaded_content
 
-def change_sections_in_yaml_file(data: Dict[Text, Any], filename: Text) -> None:
-    """Changes specific sections (given by keys) in a yaml file.
-
-    Args:
-        data: The keys are the sections to be changed, the values the contents of the
-              respective sections.
-        filename: Name of the file to be changed.
-    """
-    try:
-        old_content = read_file(filename, DEFAULT_ENCODING)
-    except ValueError:
-        cli_utils.print_warning(f"File {filename} does not exist. Creating it now.")
-        old_content = {}
-
-    yaml_parser = _get_yaml_parser(typ="rt", add_version=False)
-    old_content = _fix_ascii_encoding(old_content)
-
-    new_content = yaml_parser.load(old_content) or {}
-
-    for key, value in data.items():
-        new_content[key] = value
-
-    yaml_parser.dump(new_content, Path(filename))
+    return return_value
 
 
 def _is_ascii(text: Text) -> bool:

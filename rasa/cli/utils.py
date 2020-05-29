@@ -58,15 +58,19 @@ def get_validated_path(
     return current
 
 
-def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List:
+def missing_config_keys(path: Text, mandatory_keys: Dict[Text, bool]) -> List:
     import rasa.utils.io
 
     if not os.path.exists(path):
-        return mandatory_keys
+        return list(mandatory_keys)
 
     config_data = rasa.utils.io.read_config_file(path)
 
-    return [k for k in mandatory_keys if k not in config_data or config_data[k] is None]
+    return [
+        k
+        for k in mandatory_keys.keys()
+        if k not in config_data or (mandatory_keys[k] and config_data[k] is None)
+    ]
 
 
 def cancel_cause_not_found(

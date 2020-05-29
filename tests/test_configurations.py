@@ -5,7 +5,6 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.configurations import autoconfig
-from rasa.constants import AUTOCONFIGURATION_KEY
 from rasa.utils import io as io_utils
 
 EMPTY_CONFIG = "rasa/cli/initial_project/config.yml"
@@ -35,7 +34,6 @@ def test_get_autoconfiguration(
     actual = autoconfig.get_autoconfiguration(config_path)
 
     expected = io_utils.read_config_file(DEFAULT_CONFIG)
-    expected[AUTOCONFIGURATION_KEY] = autoconfig_keys
 
     assert actual == expected
 
@@ -47,6 +45,5 @@ def test_create_config_for_keys(keys: List[Text]):
     config = {}
     autoconfig.create_config_for_keys(config, keys)
 
-    assert config[AUTOCONFIGURATION_KEY] == set(keys)
     for k in keys:
         assert config[k] == default_config[k]

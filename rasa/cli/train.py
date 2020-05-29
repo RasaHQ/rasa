@@ -165,7 +165,7 @@ def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
 
 def _get_valid_config(
     config: Optional[Text],
-    mandatory_keys: List[Text],
+    mandatory_keys: Dict[Text, bool],
     default_config: Text = DEFAULT_CONFIG_PATH,
 ) -> Text:
     config = get_validated_path(config, "config", default_config)

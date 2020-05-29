@@ -1,5 +1,7 @@
 language: en
 
+pipeline:
+
 policies:
   - name: MemoizationPolicy
   - name: TEDPolicy

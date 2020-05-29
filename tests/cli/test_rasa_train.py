@@ -373,6 +373,20 @@ def test_train_core_help(run: Callable[..., RunResult]):
                 "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
+            "error": True,
+        },
+        {
+            "config_data": {
+                "language": "en",
+                "pipeline": "supervised",
+                "policies": None,
+            },
+            "default_config": {
+                "language": "en",
+                "pipeline": "supervised",
+                "policies": ["TEDPolicy", "FallbackPolicy"],
+            },
+            "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
             "error": False,
         },
         {

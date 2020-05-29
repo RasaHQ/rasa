@@ -290,9 +290,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     domain_without_nlg = Domain.from_dict(domain_dict)
 
     return {
-        FINGERPRINT_CONFIG_KEY: _get_hash_of_config(
-            config, exclude_keys=CONFIG_KEYS + ["autoconfigured"]
-        ),
+        FINGERPRINT_CONFIG_KEY: _get_hash_of_config(config, exclude_keys=CONFIG_KEYS),
         FINGERPRINT_CONFIG_CORE_KEY: _get_hash_of_config(
             config, include_keys=CONFIG_KEYS_CORE
         ),
