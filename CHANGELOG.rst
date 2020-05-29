@@ -440,7 +440,7 @@ Features
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
   recognition. You can read more about this component in our :ref:`documentation <diet-classifier>`.
-  The new component will replace the :ref:`EmbeddingIntentClassifier <embedding-intent-classifier>` and the
+  The new component will replace the ``EmbeddingIntentClassifier`` and the
   :ref:`CRFEntityExtractor` in the future.
   Those two components are deprecated from now on.
   See :ref:`migration guide <migration-to-rasa-1.8>` for details on how to
@@ -963,8 +963,8 @@ Features
 - ``CRFEntityExtractor`` updated to accept arbitrary token-level features like word
   vectors (issues/4214)
 - ``SpacyFeaturizer`` updated to add ``ner_features`` for ``CRFEntityExtractor``
-- Sanitizing incoming messages from slack to remove slack formatting like <mailto:xyz@rasa.com|xyz@rasa.com>
-  or <http://url.com|url.com> and substitute it with original content
+- Sanitizing incoming messages from slack to remove slack formatting like ``<mailto:xyz@rasa.com|xyz@rasa.com>``
+  or ``<http://url.com|url.com>`` and substitute it with original content
 - Added the ability to configure the number of Sanic worker processes in the HTTP
   server (``rasa.server``) and input channel server
   (``rasa.core.agent.handle_channels()``). The number of workers can be set using the
@@ -1729,4 +1729,4 @@ Bugfixes
 
 .. _`master`: https://github.com/RasaHQ/rasa/
 
-.. _`Semantic Versioning`: http://semver.org/
+.. _`Semantic Versioning`: https://semver.org/

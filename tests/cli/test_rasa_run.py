@@ -4,13 +4,11 @@ from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_run_does_not_start(
-    run_in_default_project_without_models: Callable[..., RunResult]
-):
+def test_run_does_not_start(run_in_simple_project: Callable[..., RunResult]):
     os.remove("domain.yml")
 
     # the server should not start as no model is configured
-    output = run_in_default_project_without_models("run")
+    output = run_in_simple_project("run")
 
     assert "No model found." in output.outlines[0]
 

@@ -37,7 +37,7 @@ custom action that inherits from ``ActionQueryKnowledgeBase``, a pre-written cus
 the logic to query a knowledge base for objects and their attributes.
 
 You can find a complete example in ``examples/knowledgebasebot``
-(`knowledge base bot <https://github.com/RasaHQ/rasa/blob/master/examples/knowledgebasebot/>`_), as well as instructions
+(`knowledge base bot <https://github.com/RasaHQ/rasa/tree/master/examples/knowledgebasebot/>`_), as well as instructions
 for implementing this custom action below.
 
 

@@ -37,14 +37,14 @@ class RegexFeaturizer(SparseFeaturizer):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         known_patterns: Optional[List[Dict[Text, Text]]] = None,
-        lookup_tables: Optional[List[Dict[Text, Union[Text, List]]]] = None,
     ) -> None:
 
         super().__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
-        lookup_tables = lookup_tables or []
-        self._add_lookup_table_regexes(lookup_tables)
+
+    def add_lookup_tables(self, lookup_tables: List[Dict[Text, Union[Text, List]]]):
+        self.known_patterns.extend(self._lookup_table_regexes(lookup_tables))
 
     def train(
         self,
@@ -54,7 +54,8 @@ class RegexFeaturizer(SparseFeaturizer):
     ) -> None:
 
         self.known_patterns = training_data.regex_features
-        self._add_lookup_table_regexes(training_data.lookup_tables)
+
+        self.add_lookup_tables(training_data.lookup_tables)
 
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE]:
@@ -71,20 +72,22 @@ class RegexFeaturizer(SparseFeaturizer):
             )
             message.set(SPARSE_FEATURE_NAMES[attribute], features)
 
-    def _add_lookup_table_regexes(
-        self, lookup_tables: List[Dict[Text, Union[Text, List]]]
-    ) -> None:
+    def _lookup_table_regexes(
+        self, lookup_tables: List[Dict[Text, Any]]
+    ) -> List[Dict[Text, Text]]:
         """appends the regex features from the lookup tables to self.known_patterns"""
+
+        patterns = []
         for table in lookup_tables:
             regex_pattern = self._generate_lookup_regex(table)
             lookup_regex = {"name": table["name"], "pattern": regex_pattern}
-            self.known_patterns.append(lookup_regex)
+            patterns.append(lookup_regex)
+        return patterns
 
     def _features_for_patterns(
         self, message: Message, attribute: Text
     ) -> Optional[scipy.sparse.coo_matrix]:
         """Checks which known patterns match the message.
-
         Given a sentence, returns a vector of {1,0} values indicating which
         regexes did match. Furthermore, if the
         message is tokenized, the function will mark all tokens with a dict
@@ -192,7 +195,6 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
-
         Return the metadata necessary to load the model again."""
         file_name = file_name + ".pkl"
         regex_file = os.path.join(model_dir, file_name)

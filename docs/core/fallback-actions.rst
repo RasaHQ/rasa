@@ -20,7 +20,8 @@ Fallback Policy
 The ``FallbackPolicy`` has one fallback action, which will
 be executed if the intent recognition has a confidence below ``nlu_threshold``
 or if none of the dialogue policies predict an action with
-confidence higher than ``core_threshold``.
+confidence higher than ``core_threshold`` or if the highest ranked intent differs in
+confidence with the second highest ranked intent by less than ``ambiguity_threshold``.
 
 The thresholds and fallback action can be adjusted in the policy configuration
 file as parameters of the ``FallbackPolicy``.
@@ -31,6 +32,7 @@ file as parameters of the ``FallbackPolicy``.
     - name: "FallbackPolicy"
       nlu_threshold: 0.4
       core_threshold: 0.3
+      ambiguity_threshold: 0.1
       fallback_action_name: "action_default_fallback"
 
 ``action_default_fallback`` is a default action in Rasa Core which sends the
@@ -54,6 +56,7 @@ your policy configuration file. For example:
     - name: "FallbackPolicy"
       nlu_threshold: 0.4
       core_threshold: 0.3
+      ambiguity_threshold: 0.1
       fallback_action_name: "my_fallback_action"
 
 
@@ -119,6 +122,7 @@ policy configuration file.
       - name: TwoStageFallbackPolicy
         nlu_threshold: 0.3
         core_threshold: 0.3
+        ambiguity_threshold: 0.1
         fallback_core_action_name: "action_default_fallback"
         fallback_nlu_action_name: "action_default_fallback"
         deny_suggestion_intent_name: "out_of_scope"

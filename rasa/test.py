@@ -33,16 +33,19 @@ def test_core_models_in_directory(
 
 
 def _get_sanitized_model_directory(model_directory: Text) -> Text:
-    """Adjusts the `--model` argument of `rasa test core` when called with `--evaluate-model-directory`.
+    """Adjusts the `--model` argument of `rasa test core` when called with
+    `--evaluate-model-directory`.
 
-    By default rasa uses the latest model for the `--model` parameter. However, for `--evaluate-model-directory` we
-    need a directory. This function checks if the passed parameter is a model or an individual model file.
+    By default rasa uses the latest model for the `--model` parameter. However, for
+    `--evaluate-model-directory` we need a directory. This function checks if the
+    passed parameter is a model or an individual model file.
 
     Args:
-        model_directory: The model_directory argument that was given to `test_core_models_in_directory`.
+        model_directory: The model_directory argument that was given to
+        `test_core_models_in_directory`.
 
-    Returns:
-        The adjusted model_directory that should be used in `test_core_models_in_directory`.
+    Returns: The adjusted model_directory that should be used in
+        `test_core_models_in_directory`.
     """
     import rasa.model
 
@@ -50,7 +53,8 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     if p.is_file():
         if model_directory != rasa.model.get_latest_model():
             print_warning(
-                "You passed a file as '--model'. Will use the directory containing this file instead."
+                "You passed a file as '--model'. Will use the directory containing "
+                "this file instead."
             )
         model_directory = str(p.parent)
 
@@ -229,8 +233,8 @@ def perform_nlu_cross_validation(
     from rasa.nlu.test import (
         drop_intents_below_freq,
         cross_validate,
-        return_results,
-        return_entity_results,
+        log_results,
+        log_entity_results,
     )
 
     additional_arguments = additional_arguments or {}
@@ -246,13 +250,13 @@ def perform_nlu_cross_validation(
 
     if any(results):
         logger.info("Intent evaluation results")
-        return_results(results.train, "train")
-        return_results(results.test, "test")
+        log_results(results.train, "train")
+        log_results(results.test, "test")
     if any(entity_results):
         logger.info("Entity evaluation results")
-        return_entity_results(entity_results.train, "train")
-        return_entity_results(entity_results.test, "test")
+        log_entity_results(entity_results.train, "train")
+        log_entity_results(entity_results.test, "test")
     if any(response_selection_results):
         logger.info("Response Selection evaluation results")
-        return_results(response_selection_results.train, "train")
-        return_results(response_selection_results.test, "test")
+        log_results(response_selection_results.train, "train")
+        log_results(response_selection_results.test, "test")
