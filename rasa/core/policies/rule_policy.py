@@ -56,6 +56,8 @@ class RulePolicy(MemoizationPolicy):
         f_slots = defaultdict(set)
         for f in fs:
             if f.endswith("_None"):
+                # TODO: this is a hack to make a rule know
+                #  that slot or form should not be set
                 if any(f[: f.rfind("_")] in key for key in state.keys()):
                     return False
             elif f not in state:

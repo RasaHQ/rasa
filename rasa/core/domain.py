@@ -659,10 +659,10 @@ class Domain:
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
             if slot is not None:
-                # TODO: this is a hack to make a rule know
-                #  that slot or form should not be set
-                #  but only if the slot is featurized
                 if slot.value == "None" and slot.as_feature():
+                    # TODO: this is a hack to make a rule know
+                    #  that slot or form should not be set
+                    #  but only if the slot is featurized
                     slot_id = f"slot_{key}_None"
                     state_dict[slot_id] = 1
                 else:
