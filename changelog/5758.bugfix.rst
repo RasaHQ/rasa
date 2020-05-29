@@ -1,4 +1,4 @@
 Fixed a bug in
 `rasa export <https://rasa.com/docs/rasa-x/installation-and-setup/existing-deployment/#migrate-conversations>`_
- (:ref:`section_export`) which caused Rasa Open Source to only migrate conversation
+(:ref:`section_export`) which caused Rasa Open Source to only migrate conversation
 events from the last :ref:`session_config`.
