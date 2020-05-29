@@ -145,7 +145,7 @@ async def test_validate_slots():
         {slot_name}:
         - type: from_text
     actions:
-    - action_validate_{form_name}
+    - validate_{slot_name}
     """
     domain = Domain.from_yaml(domain)
     action_server_url = "http:/my-action-server:5055/webhook"
