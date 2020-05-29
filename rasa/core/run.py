@@ -190,8 +190,7 @@ def serve_application(
     protocol = "https" if ssl_context else "http"
 
     logger.info(
-        "Starting Rasa server on "
-        "{}".format(constants.DEFAULT_SERVER_FORMAT.format(protocol, port))
+        f"Starting Rasa server on {constants.DEFAULT_SERVER_FORMAT.format(protocol, port)}"
     )
 
     app.register_listener(
