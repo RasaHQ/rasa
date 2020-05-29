@@ -272,6 +272,7 @@ async def load_agent_on_start(
             remote_storage=remote_storage,
         )
 
+    logger.info("Rasa server is up and running.")
     return app.agent
 
 
