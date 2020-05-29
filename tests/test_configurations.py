@@ -4,13 +4,13 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.configurations import autoconfig
+from rasa.importers import autoconfig
 from rasa.utils import io as io_utils
 
 EMPTY_CONFIG = "rasa/cli/initial_project/config.yml"
 CONFIG_PIPELINE_ONLY = "data/test_config/config_default_pipeline.yml"
 CONFIG_POLICIES_ONLY = "data/test_config/config_default_policies.yml"
-DEFAULT_CONFIG = "rasa/configurations/default_config.yml"
+DEFAULT_CONFIG = "rasa/importers/default_config.yml"
 
 # Possible improvement: instead of the following test, use configs that have different
 # stuff than the default it should end up with. that ensures that nothing is overwritten
