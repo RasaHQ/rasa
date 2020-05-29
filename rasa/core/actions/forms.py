@@ -380,24 +380,20 @@ class FormAction(Action):
         If this function is not implemented, set the slot to the value.
         """
 
-        validate_name = f"action_validate_{self._form_name}"
-        form_events = [
-            SlotSet(slot_name, value) for slot_name, value in slot_dict.items()
-        ]
+        events = []
+        for slot_name, value in slot_dict.items():
+            validate_name = f"validate_{slot_name}"
+            slot_events = [SlotSet(slot_name, value)]
 
-        if validate_name not in domain.action_names or not tracker.active_form.get(
-            "validate"
-        ):
-            # TODO: Currently the remote action needs to return SlotSet events for every
-            # slot. it could be easy to forget to set one of them. We could
-            # only overwrite Slot events from `form_events` if they were returned by the
-            # form
-            return form_events
+            if validate_name in domain.action_names:
+                _tracker = self._temporary_tracker(tracker, slot_events, domain)
+                _action = RemoteAction(validate_name, self.action_endpoint)
+                slot_events = await _action.run(output_channel, nlg, _tracker, domain)
 
-        tracker = self._temporary_tracker(tracker, form_events, domain)
+            tracker = self._temporary_tracker(tracker, slot_events, domain)
+            events.extend(slot_events)
 
-        action = RemoteAction(validate_name, self.action_endpoint)
-        return await action.run(output_channel, nlg, tracker, domain)
+        return events
 
     @staticmethod
     def _temporary_tracker(
