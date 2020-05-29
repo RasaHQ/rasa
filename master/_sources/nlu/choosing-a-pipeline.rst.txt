@@ -422,7 +422,7 @@ expand it below.
 
         .. _section_supervised_embeddings_pipeline:
 
-        The advantage of the ``supervised_embeddings`` pipeline is that your word vectors will be customised
+        The advantage of the ``supervised_embeddings`` pipeline is that your word vectors will be customized
         for your domain. For example, in general English, the word "balance" is closely related to "symmetry",
         but very different to the word "cash". In a banking domain, "balance" and "cash" are closely related
         and you'd like your model to capture that. This pipeline doesn't use a language-specific model,

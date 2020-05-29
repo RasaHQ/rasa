@@ -34,8 +34,6 @@ and send you a fun picture to cheer you up if you are sad.
 
 The first step is to create a new Rasa project. To do this, run:
 
-
-
 .. runnable::
 
    rasa init --no-prompt
@@ -187,7 +185,7 @@ So what do the different parts mean?
 +---------------+-------------------------------------------------------------+
 | ``actions``   | things your assistant can do and say                        |
 +---------------+-------------------------------------------------------------+
-| ``responses`` | responses for the things your assistant can say             |
+| ``responses`` | response strings for the things your assistant can say      |
 +---------------+-------------------------------------------------------------+
 
 

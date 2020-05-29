@@ -842,7 +842,7 @@ use the <code class="docutils literal notranslate"><span class="pre">from_text</
 </div>
 <p>Now our bot will extract the full user message when asking for the use case slot,
 and we don’t need to use the <code class="docutils literal notranslate"><span class="pre">use_case</span></code> entity defined before.</p>
-<p>All of the methods within a form can be customised to handle different branches in your
+<p>All of the methods within a form can be customized to handle different branches in your
 business logic. Read more about this <a class="reference external" href="https://rasa.com/docs/rasa/core/forms/#">here</a>.
 However, you should make sure not to handle any unhappy paths inside the form. These
 should be handled by writing regular stories, so your model can learn this behavior.</p>
@@ -1106,7 +1106,7 @@ rasa shell
 </pre></div>
 </div>
 <p>There are also a bunch of ways in which you can customise this policy. In Sara, our demo bot,
-we’ve customised it to suggest intents to the user within a certain confidence range to make
+we’ve customized it to suggest intents to the user within a certain confidence range to make
 it easier for the user to give the bot the information it needs.</p>
 <p>This is done by customizing the action <code class="docutils literal notranslate"><span class="pre">ActionDefaultAskAffirmation</span></code> as shown in the
 <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L443">Sara rasa-demo action server</a>
