@@ -69,6 +69,12 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
 
     try:
         content = io_utils.read_file(config_file, io_utils.DEFAULT_ENCODING)
+        if not content:
+            cli_utils.print_warning(
+                f"Configuration file {config_file} does not have any content. "
+                f"Filling it with the current configuration."
+            )
+            set_language = True
     except ValueError:
         cli_utils.print_warning(
             f"Configuration file {config_file} does not exist. "
@@ -90,17 +96,18 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
         if not content.get(key):
             autoconfigured.add(key)
             content[key] = config.get(key)
-            ct = yaml.tokens.CommentToken(
-                f"# Configuration for {key} was provided by "
-                f"the auto configuration.\n",
-                yaml.error.CommentMark(0),
-                None,
-            )
-            item = content.ca.items[key]
-            if item[1]:
-                item[1].append(ct)
-            else:
-                item[1] = [ct]
+            # ct = yaml.tokens.CommentToken(
+            #     f"# Configuration for {key} was provided by "
+            #     f"the auto configuration.\n",
+            #     yaml.error.CommentMark(0),
+            #     None,
+            # )
+            # if hasattr(content, "ca"):
+            #     item = content.ca.items[key]
+            #     if item[1]:
+            #         item[1].append(ct)
+            #     else:
+            #         item[1] = [ct]
 
     if autoconfigured:
         cli_utils.print_info(
