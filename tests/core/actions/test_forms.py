@@ -4,7 +4,14 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.actions.forms import FormAction, REQUESTED_SLOT
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain
-from rasa.core.events import Form, SlotSet, UserUttered, ActionExecuted, BotUttered
+from rasa.core.events import (
+    Form,
+    SlotSet,
+    UserUttered,
+    ActionExecuted,
+    BotUttered,
+    Restarted,
+)
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
@@ -143,3 +150,24 @@ async def test_validate_slots():
             Form(None),
             SlotSet(REQUESTED_SLOT, None),
         ]
+
+
+def test_temporary_tracker():
+    extra_slot = "some_slot"
+    sender_id = "test"
+    domain = Domain.from_yaml(
+        f"""
+        slots:
+          {extra_slot}:
+            type: unfeaturized
+        """
+    )
+
+    old_tracker = DialogueStateTracker.from_events(
+        sender_id, [ActionExecuted(ACTION_LISTEN_NAME)], slots=domain.slots
+    )
+    new_events = [Restarted()]
+    temp_tracker = FormAction._temporary_tracker(old_tracker, new_events, domain)
+
+    assert extra_slot in temp_tracker.slots.keys()
+    assert len(temp_tracker.events) == 2

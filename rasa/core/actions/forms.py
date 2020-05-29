@@ -394,12 +394,22 @@ class FormAction(Action):
             # form
             return form_events
 
-        tracker = DialogueStateTracker.from_events(
-            tracker.sender_id, tracker.events_after_latest_restart() + form_events
-        )
+        tracker = self._temporary_tracker(tracker, form_events, domain)
 
         action = RemoteAction(validate_name, self.action_endpoint)
         return await action.run(output_channel, nlg, tracker, domain)
+
+    @staticmethod
+    def _temporary_tracker(
+        current_tracker: DialogueStateTracker,
+        additional_events: List[Event],
+        domain: Domain,
+    ) -> DialogueStateTracker:
+        return DialogueStateTracker.from_events(
+            current_tracker.sender_id,
+            current_tracker.events_after_latest_restart() + additional_events,
+            slots=domain.slots,
+        )
 
     async def validate(
         self,
@@ -618,9 +628,7 @@ class FormAction(Action):
         events += await self._validate_if_required(tracker, domain, output_channel, nlg)
         # check that the form wasn't deactivated in validation
         if Form(None) not in events:
-            temp_tracker = DialogueStateTracker.from_events(
-                tracker.sender_id, tracker.events_after_latest_restart() + events
-            )
+            temp_tracker = self._temporary_tracker(tracker, events, domain)
 
             next_slot_events = await self.request_next_slot(
                 temp_tracker, domain, output_channel, nlg
