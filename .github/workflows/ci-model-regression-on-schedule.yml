@@ -1,0 +1,185 @@
+name: CI - Model Regression 
+
+on:
+  schedule:
+    - cron:  '1 23 * * */7'
+
+env:
+  GKE_ZONE: us-central1-a
+
+jobs:
+  read_test_configuration:
+    name: Reads tests configuration
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Checkout master
+      uses: actions/checkout@v2
+
+    - name: Download yq
+      run: |
+        curl --location https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64 -o yq
+        chmod +x yq
+
+    - run: test -f .github/configs/mr-test.yaml
+
+    - id: set-matrix
+      shell: bash
+      run: echo "::set-output name=matrix::$(./yq -j r .github/configs/mr-test-schedule.yaml)"
+
+  deploy_runner_gpu:
+    name: Deploy Github Runner - GPU
+    needs: read_test_configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download gomplate
+        run: |-
+          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          chmod 755 gomplate
+
+      - name: Render deployment template
+        run: |-
+          ./gomplate -f .github/runner/deployment.yaml.tmpl -o runner_deployment.yaml
+
+      # Setup gcloud CLI
+      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
+          project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}
+
+      # Get the GKE credentials so we can deploy to the cluster
+      - run: |-
+          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE"
+
+      - name: Deploy Github Runner
+        run: |-
+          kubectl apply -f runner_deployment.yaml
+          kubectl -n github-runner rollout status --timeout=15m deployment/github-runner-$GITHUB_RUN_ID
+
+  model_regression_test_gpu:
+    name: Model Regression Tests - GPU
+    continue-on-error: true
+    needs:
+    - deploy_runner_gpu
+    - read_test_configuration
+    env:
+      LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+    runs-on: [self-hosted, gpu]
+    strategy:
+      max-parallel: 1
+      matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.7 🐍
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@v1
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: ${{ runner.os }}-poetry-3.7
+
+      - name: Install Dependencies 📦
+        run: |
+          poetry install --extras full
+          make install
+          poetry run python -m spacy download de_core_news_md
+          poetry run python -m spacy link --force de_core_news_md de
+          
+      - name: Validate that GPUs are working
+        run: |-
+          poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
+          
+      - name: Checkout dataset
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ secrets.DATASET_REPOSITORY }}
+          token: ${{ secrets.ML_TEST_SA_PAT }}
+          path: 'dataset'
+          
+      - name: Run test
+        env:
+          TFHUB_CACHE_DIR: ~/.tfhub_cache/
+          OMP_NUM_THREADS: 1
+          DATASET_NAME: "${{ matrix.dataset }}"
+          CONFIG_NAME: "${{ matrix.config }}"
+        run: |-
+          # determine DATASET and CONFIG environment variables
+          source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
+          echo "::set-env name=DATASET::${DATASET}"
+          
+          poetry run rasa --version
+          
+          export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          poetry run rasa train nlu -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
+          echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          
+          export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          poetry run rasa test nlu -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
+          
+          echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          
+      - name: Get results
+        id: get_results
+        run: |
+          OUTPUT=$(gomplate -f .github/templates/model_regression_test_results.tmpl)
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          echo "::set-output name=result::$OUTPUT"
+
+      - name: Publish results to Segment
+        env:
+          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
+          DATASET_NAME: ${{ matrix.dataset }}
+          CONFIG: ${{ matrix.config }}
+          RUNNER_TYPE: "GPU"
+          TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
+          TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
+          TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+        run: |-
+          export RESULT_DIR="$HOME/$GITHUB_WORKSPACE/results"
+          poetry run pip install analytics-python
+          poetry run python .github/workflows/scripts/mr_publish_results.py
+          
+  remove_runner_gpu:
+    name: Delete Github Runner - GPU
+    needs:
+    - deploy_runner_gpu
+    - model_regression_test_gpu
+    runs-on: ubuntu-latest
+
+    steps:
+      # Setup gcloud CLI
+      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
+          project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}
+
+      # Get the GKE credentials so we can deploy to the cluster
+      - run: |-
+          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE"
+
+      - name: Remove Github Runner
+        run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30

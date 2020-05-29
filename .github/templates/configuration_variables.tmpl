@@ -1,0 +1,6 @@
+{{- $mapping := (datasource "mapping") -}}
+{{- $dataset := (index $mapping.datasets (getenv "DATASET_NAME")) -}}
+{{- $config := (index $mapping.configurations (getenv "CONFIG_NAME")) -}}
+
+export DATASET="{{ $dataset.path }}"
+export CONFIG="{{ $dataset.language }}/{{ $config }}"

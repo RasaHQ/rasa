@@ -39,11 +39,11 @@ jobs:
         curl --location https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64 -o yq
         chmod +x yq
 
-    - run: test -f .github/mr-test.yaml
+    - run: test -f .github/configs/mr-test.yaml
 
     - id: set-matrix
       shell: bash
-      run: echo "::set-output name=matrix::$(./yq -j r .github/mr-test.yaml)"
+      run: echo "::set-output name=matrix::$(./yq -j r .github/configs/mr-test.yaml)"
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
@@ -123,6 +123,8 @@ jobs:
         run: |
           poetry install --extras full
           make install
+          poetry run python -m spacy download de_core_news_md
+          poetry run python -m spacy link --force de_core_news_md de
           
       - name: Validate that GPUs are working
         run: |-
@@ -139,30 +141,58 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
+          DATASET_NAME: "${{ matrix.dataset }}"
+          CONFIG_NAME: "${{ matrix.config }}"
         run: |-
-          echo ${{ matrix.dataset }} ${{ matrix.config }}
+          # determine DATASET and CONFIG environment variables
+          source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
+          echo "::set-env name=DATASET::${DATASET}"
+          
           poetry run rasa --version
-          poetry run rasa train nlu -u dataset/${{ matrix.dataset }}/train -c dataset/configs/${{ matrix.config }} --out models/${{ matrix.dataset }}/${{ matrix.config }}
-          poetry run rasa test nlu -u dataset/${{ matrix.dataset }}/test -m models/${{ matrix.dataset }}/${{ matrix.config }} --out results/${{ matrix.dataset }}/${{ matrix.config }}
+          
+          export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          poetry run rasa train nlu -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
+          echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          
+          export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          poetry run rasa test nlu -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
+          
+          echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           
       - name: Get results
         id: get_results
-        env:
-          DATASET: ${{ matrix.dataset }}
         run: |
           OUTPUT=$(gomplate -f .github/templates/model_regression_test_results.tmpl)
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
 
-      - name: Publish results
+      - name: Publish results to Segment
+        env:
+          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
+          DATASET_NAME: ${{ matrix.dataset }}
+          CONFIG: ${{ matrix.config }}
+          RUNNER_TYPE: "GPU"
+          TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
+          TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
+          TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+        run: |-
+          export RESULT_DIR="$HOME/$GITHUB_WORKSPACE/results"
+          poetry run pip install analytics-python
+          poetry run python .github/workflows/scripts/mr_publish_results.py
+
+
+      - name: Publish results as a PR comment
         uses: marocchino/sticky-pull-request-comment@v1
+        continue-on-error: true
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: ${{ github.run_id }}
           append: true
           message: |-
-            Commit: ${{ github.sha }}, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
+            Commit: `${{ github.sha }}`, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
+            Execution time: test: `${{ steps.run_test.outputs.test_run_time }}`, train: `${{ steps.run_test.outputs.train_run_time }}`, total: `${{ steps.run_test.outputs.total_run_time }}`
             
             ${{ steps.get_results.outputs.result }}
           
@@ -207,6 +237,8 @@ jobs:
         run: |
           poetry install --extras full
           make install
+          poetry run python -m spacy download de_core_news_md
+          poetry run python -m spacy link --force de_core_news_md de
 
       - name: Checkout dataset
         uses: actions/checkout@v2
@@ -219,11 +251,24 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
+          DATASET_NAME: "${{ matrix.dataset }}"
+          CONFIG_NAME: "${{ matrix.config }}"
         run: |-
-          echo ${{ matrix.dataset }} ${{ matrix.config }}
+          # determine DATASET and CONFIG environment variables
+          source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
+          echo "::set-env name=DATASET::${DATASET}"
+
           poetry run rasa --version
-          poetry run rasa train nlu -u dataset/${{ matrix.dataset }}/train -c dataset/configs/${{ matrix.config }} --out models/${{ matrix.dataset }}/${{ matrix.config }}
-          poetry run rasa test nlu -u dataset/${{ matrix.dataset }}/test -m models/${{ matrix.dataset }}/${{ matrix.config }} --out results/${{ matrix.dataset }}/${{ matrix.config }}
+
+          export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          poetry run rasa train nlu -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
+          echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+
+          export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          poetry run rasa test nlu -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
+
+          echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
       - name: Get results
         id: get_results
@@ -235,14 +280,30 @@ jobs:
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
 
-      - name: Publish results
+      - name: Publish results to Segment
+        env:
+          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
+          DATASET_NAME: ${{ matrix.dataset }}
+          CONFIG: ${{ matrix.config }}
+          RUNNER_TYPE: "CPU"
+          TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
+          TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
+          TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+        run: |-
+          export RESULT_DIR="$HOME/$GITHUB_WORKSPACE/results"
+          poetry run pip install analytics-python
+          poetry run python .github/workflows/scripts/mr_publish_results.py
+
+      - name: Publish results as a PR comment
         uses: marocchino/sticky-pull-request-comment@v1
+        continue-on-error: true
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: ${{ github.run_id }}
           append: true
           message: |-
-            Commit: ${{ github.sha }}, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
+            Commit: `${{ github.sha }}`, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
+            Execution time: test: `${{ steps.run_test.outputs.test_run_time }}`, train: `${{ steps.run_test.outputs.train_run_time }}`, total: `${{ steps.run_test.outputs.total_run_time }}`
 
             ${{ steps.get_results.outputs.result }}
 
@@ -275,4 +336,4 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - run: test ! -f .github/mr-test.yaml
+      - run: test ! -f .github/configs/mr-test.yaml
