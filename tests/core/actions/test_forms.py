@@ -67,9 +67,17 @@ async def test_activate_and_immediate_deactivate():
         {slot_name}:
         - type: from_entity
           entity: {slot_name}
+    slots:
+      {slot_name}:
+        type: unfeaturized
     """
     domain = Domain.from_yaml(domain)
-    events = await action.run(None, None, tracker, domain)
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        tracker,
+        domain,
+    )
     assert events == [
         Form(form_name),
         SlotSet(slot_name, slot_value),
@@ -95,11 +103,19 @@ async def test_set_slot_and_deactivate():
     - {form_name}:
         {slot_name}:
         - type: from_text
+    slots:
+      {slot_name}:
+        type: unfeaturized
     """
     domain = Domain.from_yaml(domain)
 
     action = FormAction(form_name, None)
-    events = await action.run(None, None, tracker, domain)
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        tracker,
+        domain,
+    )
     assert events == [
         SlotSet(slot_name, slot_value),
         Form(None),
@@ -121,6 +137,9 @@ async def test_validate_slots():
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
 
     domain = f"""
+    slots:
+      {slot_name}:
+        type: unfeaturized
     forms:
     - {form_name}:
         {slot_name}:
@@ -144,7 +163,12 @@ async def test_validate_slots():
         action_server = EndpointConfig(action_server_url)
         action = FormAction(form_name, action_server)
 
-        events = await action.run(None, None, tracker, domain)
+        events = await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.templates),
+            tracker,
+            domain,
+        )
         assert events == [
             SlotSet(slot_name, validated_slot_value),
             Form(None),
