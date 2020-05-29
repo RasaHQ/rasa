@@ -180,12 +180,12 @@ jobs:
         run: |-
           export RESULT_DIR="$HOME/$GITHUB_WORKSPACE/results"
           poetry run pip install analytics-python
-          poetry run python .github/workflows/scripts/mr_publish_results.py
+          poetry run python .github/scripts/mr_publish_results.py
 
 
       - name: Publish results as a PR comment
         uses: marocchino/sticky-pull-request-comment@v1
-        continue-on-error: true
+        if: always()
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: ${{ github.run_id }}
@@ -297,11 +297,11 @@ jobs:
         run: |-
           export RESULT_DIR="$HOME/$GITHUB_WORKSPACE/results"
           poetry run pip install analytics-python
-          poetry run python .github/workflows/scripts/mr_publish_results.py
+          poetry run python .github/scripts/mr_publish_results.py
 
       - name: Publish results as a PR comment
         uses: marocchino/sticky-pull-request-comment@v1
-        continue-on-error: true
+        if: always()
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: ${{ github.run_id }}
