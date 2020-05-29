@@ -12,6 +12,9 @@ pipeline:
   - name: DIETClassifier
     epochs: 100
   - name: EntitySynonymMapper
+  - name: FallbackClassifier
+    threshold: 0.5
+    fallback_intent_name: nlu_fallback
 
 policies:
   - name: RulePolicy

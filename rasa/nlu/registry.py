@@ -9,6 +9,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
@@ -86,6 +87,7 @@ component_classes = [
     MitieIntentClassifier,
     KeywordIntentClassifier,
     DIETClassifier,
+    FallbackClassifier,
     # selectors
     ResponseSelector,
 ]

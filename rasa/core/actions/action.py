@@ -539,7 +539,6 @@ class RemoteAction(Action):
         domain: "Domain",
     ) -> List[Event]:
         json_body = self._action_call_format(tracker, domain)
-
         if not self.action_endpoint:
             logger.error(
                 "The model predicted the custom action '{}', "

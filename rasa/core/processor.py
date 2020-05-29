@@ -6,7 +6,11 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 
-from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_DOMAINS
+from rasa.constants import (
+    DOCS_URL_POLICIES,
+    DOCS_URL_DOMAINS,
+    DEFAULT_NLU_FALLBACK_INTENT_NAME,
+)
 from rasa.core import jobs
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -59,6 +63,7 @@ DEFAULT_INTENTS = [
     USER_INTENT_BACK,
     USER_INTENT_OUT_OF_SCOPE,
     USER_INTENT_SESSION_START,
+    DEFAULT_NLU_FALLBACK_INTENT_NAME,
 ]
 
 

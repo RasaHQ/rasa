@@ -100,3 +100,9 @@
 <!-- lack of ... is story start indicator condition -->
 * greet
     - utter_greet
+
+
+>> fallback story
+    - ...
+* nlu_fallback
+    - action_default_fallback
