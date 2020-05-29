@@ -104,7 +104,7 @@ def read_yaml(
     typ: Text = "safe",
     add_version: bool = False,
     return_parser: bool = False,
-) -> Union[List[Any], Dict[Text, Any]]:
+) -> Any:
     """Parses yaml from a text.
 
     Args:
