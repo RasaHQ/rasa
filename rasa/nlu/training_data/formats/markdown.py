@@ -169,7 +169,9 @@ class MarkdownReader(TrainingDataReader):
     def _add_item_to_lookup(self, item: Text) -> None:
         """Takes a list of lookup table dictionaries.  Finds the one associated
         with the current lookup, then adds the item to the list."""
-        matches = [l for l in self.lookup_tables if l["name"] == self.current_title]
+        matches = [
+            table for table in self.lookup_tables if table["name"] == self.current_title
+        ]
         if not matches:
             self.lookup_tables.append({"name": self.current_title, "elements": [item]})
         else:

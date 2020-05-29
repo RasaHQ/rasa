@@ -126,7 +126,7 @@ Train script
   ``--fallback_action_name``), specify these in the policy config file instead,
   see :ref:`policy_file`
 
-visualization script
+Visualization script
 ~~~~~~~~~~~~~~~~~~~~
 
 - You **must** pass a policy config flag with ``-c/--config`` now,
