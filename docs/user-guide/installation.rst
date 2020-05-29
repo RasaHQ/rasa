@@ -23,6 +23,7 @@ You can install Rasa Open Source using pip (requires Python 3.6 or 3.7).
 - You can also :ref:`build Rasa Open Source from source <build_from_source>`.
 - For advanced installation options such as building from source and installation instructions for
   custom pipelines, head over :ref:`here <pipeline_dependencies>`.
+- Prefer following video instructions? Watch our installation series on `Youtube <https://www.youtube.com/playlist?list=PL75e0qA87dlEWUA5ToqLLR026wIkk2evk>`_.
 
 
 When you're done installing, you can head over to the tutorial!
@@ -41,37 +42,6 @@ When you're done installing, you can head over to the tutorial!
 
 Step-by-step Installation Guide
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Watch the Rasa Open Source installation video below to follow along with the installation
-instructions:
-
-.. tabs::
-
-    .. tab:: Ubuntu
-
-        .. raw:: html
-
-            <iframe width="770" height="450" src="https://www.youtube.com/embed/tXiYJM2vGJk"
-             frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope;
-             picture-in-picture" allowfullscreen></iframe>
-
-    .. tab:: macOS
-
-        .. raw:: html
-
-            <iframe width="770" height="450" src="https://www.youtube.com/embed/fqzsE70Rvr0"
-            frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope;
-            picture-in-picture" allowfullscreen></iframe>
-
-    .. tab:: Windows
-
-        .. raw:: html
-
-            <iframe width="770" height="450" src="https://www.youtube.com/embed/4ewIABo0OkU"
-            frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope;
-            picture-in-picture" allowfullscreen></iframe>
-
-
 
 
 1. Install the Python development environment
