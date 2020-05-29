@@ -16,21 +16,15 @@ from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted, UserUttered, Event
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
-from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
-    CountVectorsFeaturizer,
-)
 import scipy.sparse
 
 from rasa.core.interpreter import RasaE2EInterpreter
-from rasa.nlu.model import Trainer
 from rasa.nlu.constants import (
-    CLS_TOKEN,
     SPARSE_FEATURE_NAMES,
     DENSE_FEATURE_NAMES,
-    RESPONSE,
     TEXT,
 )
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data import Message
 from rasa.utils.common import is_logging_disabled
 from rasa.utils import train_utils
 
@@ -402,19 +396,6 @@ class TrackerFeaturizer:
         featurizer_file = os.path.join(path, "featurizer.json")
 
         rasa.utils.io.create_directory_for_file(featurizer_file)
-        # DIET cannot be json-ed; because we already save it through
-        # the interpreter.persist in RasaE2EInterpreter.prepare_training_data_and_train()
-        # we can load it from there at time of prediction;
-        if isinstance(
-            self.state_featurizer.interpreter.trainer.pipeline[-1],
-            rasa.nlu.classifiers.diet_classifier.DIETClassifier,
-        ):
-            self.state_featurizer.interpreter.trainer.pipeline = self.state_featurizer.interpreter.trainer.pipeline[
-                :-1
-            ]
-            self.state_featurizer.interpreter.interpreter.pipeline = self.state_featurizer.interpreter.interpreter.pipeline[
-                :-1
-            ]
 
         # noinspection PyTypeChecker
         rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
@@ -707,10 +688,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         """Transforms list of trackers to lists of states for prediction."""
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
-        # required to have the DIET do the prediction;
-        self.state_featurizer.interpreter.interpreter = Interpreter(
-            self.state_featurizer.interpreter.trainer.pipeline, []
-        ).load(os.path.join(os.path.dirname(self.path), "nlu"))
+        # !!! To have DIET at prediction time, we would need to load it at 
+        # every prediction step which I don't think is a good idea.  
 
         trackers_as_states_modified = []
         for tracker in trackers_as_states:
