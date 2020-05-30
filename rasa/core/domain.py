@@ -368,29 +368,29 @@ class Domain:
             validated_variations = []
             if template_variations is None:
                 raise InvalidDomain(
-                    "Utterance '{}' does not have any defined templates.".format(
+                    "Response '{}' does not have any defined variations.".format(
                         template_key
                     )
                 )
 
             for t in template_variations:
 
-                # templates should be a dict with options
+                # responses should be a dict with options
                 if isinstance(t, str):
                     raise_warning(
-                        f"Templates should not be strings anymore. "
-                        f"Utterance template '{template_key}' should contain "
+                        f"Responses should not be strings anymore. "
+                        f"Response '{template_key}' should contain "
                         f"either a '- text: ' or a '- custom: ' "
-                        f"attribute to be a proper template.",
+                        f"attribute to be a proper response.",
                         FutureWarning,
-                        docs=DOCS_URL_DOMAINS + "#utterance-templates",
+                        docs=DOCS_URL_DOMAINS + "#responses",
                     )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(
-                        f"Utter template '{template_key}' needs to contain either "
+                        f"Response '{template_key}' needs to contain either "
                         f"'- text: ' or '- custom: ' attribute to be a proper "
-                        f"template."
+                        f"response."
                     )
                 else:
                     validated_variations.append(t)
@@ -1062,11 +1062,11 @@ class Domain:
         if missing_templates:
             for template in missing_templates:
                 raise_warning(
-                    f"Utterance '{template}' is listed as an "
-                    f"action in the domain file, but there is "
-                    f"no matching utterance template. Please "
+                    f"Action '{template}' is listed as a "
+                    f"response action in the domain file, but there is "
+                    f"no matching response defined. Please "
                     f"check your domain.",
-                    docs=DOCS_URL_DOMAINS + "#utterance-templates",
+                    docs=DOCS_URL_DOMAINS + "#responses",
                 )
 
     def is_empty(self) -> bool:

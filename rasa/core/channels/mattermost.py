@@ -136,7 +136,7 @@ class MattermostInput(InputChannel):
                 "Mattermost recently switched to bot accounts. 'user' and 'pw' "
                 "should not be used anymore, you should rather convert your "
                 "account to a bot account and use a token. Password based "
-                "authentication will be removed in Rasa Open Source 2.0.",
+                "authentication will be removed in a future Rasa Open Source version.",
                 FutureWarning,
                 docs=DOCS_URL_CONNECTORS + "mattermost/",
             )

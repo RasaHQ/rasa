@@ -1,0 +1,13 @@
+Removed previously deprecated classes:
+- event brokers (``EventChannel`` and ``FileProducer``, ``KafkaProducer``, ``PikaProducer``, ``SQLProducer``)
+- intent classifier ``EmbeddingIntentClassifier``
+- policy ``KerasPolicy``
+
+Removed previously deprecated methods:
+- ``Agent.handle_channels``
+- ``TrackerStore.create_tracker_store``
+
+Removed support for pipeline templates in ``config.yml``
+
+Removed deprecated training data keys ``entity_examples`` and ``intent_examples`` from
+json training data format.

@@ -11,7 +11,7 @@
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png">
 
-Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contexual assistants on:
+Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contextual assistants on:
 - Facebook Messenger
 - Slack
 - Google Hangouts
@@ -189,7 +189,7 @@ Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatical
 Poetry doesn't include any solution that can help to resolve merge conflicts in
 the lock file `poetry.lock` by default.
 However, there is a great tool called [poetry-merge-lock](https://poetry-merge-lock.readthedocs.io/en/latest/).
-Here is how use can install it:
+Here is how you can install it:
 
 ```bash
 pip install poetry-merge-lock

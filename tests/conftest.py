@@ -37,7 +37,6 @@ from tests.core.conftest import (
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
     END_TO_END_STORY_FILE,
-    MOODBOT_MODEL_PATH,
     INCORRECT_NLU_DATA,
 )
 
@@ -47,6 +46,7 @@ DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separatedly installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
+
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -86,12 +86,11 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path() -> Text:
-    return await train_async(
+async def trained_moodbot_path(trained_async) -> Text:
+    return await trained_async(
         domain="examples/moodbot/domain.yml",
         config="examples/moodbot/config.yml",
         training_files="examples/moodbot/data/",
-        output_path=MOODBOT_MODEL_PATH,
     )
 
 
