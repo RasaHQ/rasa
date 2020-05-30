@@ -430,10 +430,7 @@ component in the config:</p>
   <span class="nt">retrieval_intent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">faq</span>
 </pre></div>
 </div>
-<dl class="simple">
-<dt>You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single</dt><dd><p><code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> component and leaving the <code class="docutils literal notranslate"><span class="pre">retrieval_intent</span></code> to its default value(None):</p>
-</dd>
-</dl>
+<p>You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> component and leaving the <code class="docutils literal notranslate"><span class="pre">retrieval_intent</span></code> to its default value(None):</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="nt">pipeline</span><span class="p">:</span>
