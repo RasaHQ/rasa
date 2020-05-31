@@ -88,7 +88,7 @@ class FingerprintComparisonResult:
         Args:
             nlu: `True` if the NLU model should be retrained.
             core: `True` if the Core model should be retrained.
-            nlg: `True` if the templates in the domain should be updated.
+            nlg: `True` if the responses in the domain should be updated.
             force_training: `True` if a training of all parts is forced.
         """
         self.nlu = nlu
@@ -107,7 +107,7 @@ class FingerprintComparisonResult:
         return self.force_training or self.core
 
     def should_retrain_nlg(self) -> bool:
-        """Check if the templates have to be updated."""
+        """Check if the responses have to be updated."""
 
         return self.should_retrain_core() or self.nlg
 
@@ -286,7 +286,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     nlu_data = await file_importer.get_nlu_data()
 
     domain_dict = domain.as_dict()
-    templates = domain_dict.pop("responses")
+    responses = domain_dict.pop("responses")
     domain_without_nlg = Domain.from_dict(domain_dict)
 
     return {
@@ -300,7 +300,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
             config, include_keys=CONFIG_MANDATORY_KEYS_NLU
         ),
         FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: hash(domain_without_nlg),
-        FINGERPRINT_NLG_KEY: get_dict_hash(templates),
+        FINGERPRINT_NLG_KEY: get_dict_hash(responses),
         FINGERPRINT_NLU_DATA_KEY: hash(nlu_data),
         FINGERPRINT_STORIES_KEY: hash(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
