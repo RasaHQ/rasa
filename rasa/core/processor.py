@@ -290,14 +290,14 @@ class MessageProcessor:
         return tracker
 
     def predict_next_action(
-        self, tracker: DialogueStateTracker
+        self, tracker: DialogueStateTracker, action_index=None
     ) -> Tuple[Action, Text, float]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
         ML to predict the action. Returns the index of the next action."""
 
-        action_confidences, policy = self._get_next_action_probabilities(tracker)
+        action_confidences, policy = self._get_next_action_probabilities(tracker, action_index)
 
         max_confidence_index = int(np.argmax(action_confidences))
         action = self.domain.action_for_index(
@@ -776,7 +776,7 @@ class MessageProcessor:
             return None, None
 
     def _get_next_action_probabilities(
-        self, tracker: DialogueStateTracker
+        self, tracker: DialogueStateTracker, action_index
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Collect predictions from ensemble and return action and predictions."""
 
@@ -794,5 +794,5 @@ class MessageProcessor:
                 )
 
         return self.policy_ensemble.probabilities_using_best_policy(
-            tracker, self.domain
+            tracker, self.domain, action_index
         )

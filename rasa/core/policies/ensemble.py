@@ -424,7 +424,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return predictions[best_policy_name].probabilities, best_policy_name
 
     def _best_policy_prediction(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self, tracker: DialogueStateTracker, domain: Domain, action_index
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Finds the best policy prediction.
 
@@ -447,7 +447,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         predictions = {
             f"policy_{i}_{type(p).__name__}": Prediction(
-                p.predict_action_probabilities(tracker, domain), p.priority,
+                p.predict_action_probabilities(tracker, domain, action_index), p.priority,
             )
             for i, p in enumerate(self.policies)
         }
@@ -504,7 +504,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return probabilities, policy_name
 
     def probabilities_using_best_policy(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self, tracker: DialogueStateTracker, domain: Domain, action_index
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Predicts the next action the bot should take after seeing the tracker.
 
@@ -520,7 +520,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_policy_name: the name of the picked policy
         """
 
-        probabilities, policy_name = self._best_policy_prediction(tracker, domain)
+        probabilities, policy_name = self._best_policy_prediction(tracker, domain, action_index)
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME
