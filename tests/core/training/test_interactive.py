@@ -9,7 +9,7 @@ import uuid
 
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from mock import Mock
+from mock import call, Mock
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -624,3 +624,31 @@ async def test_not_getting_trackers_when_skipping_visualization(
         )
 
     get_trackers.assert_not_called()
+
+
+async def test_retry_on_error(monkeypatch: MonkeyPatch):
+    class QuestionaryConfirmMock:
+        def __init__(self, tries: int) -> None:
+            self.tries = tries
+
+        def __call__(self, text: Text) -> "QuestionaryConfirmMock":
+            return self
+
+        def ask(self) -> bool:
+            self.tries -= 1
+            if self.tries == 0:
+                return False
+            else:
+                return True
+
+    monkeypatch.setattr(interactive.questionary, "confirm", QuestionaryConfirmMock(3))
+
+    m = Mock(return_value=None)
+    await interactive._retry_on_error(m, "export_path", 1, a=2)
+    m.assert_called_once_with("export_path", 1, a=2)
+
+    m = Mock(side_effect=PermissionError())
+    with pytest.raises(PermissionError):
+        await interactive._retry_on_error(m, "export_path", 1, a=2)
+    c = call("export_path", 1, a=2)
+    m.assert_has_calls([c, c, c])

@@ -580,6 +580,21 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     return slot_strings
 
 
+async def _retry_on_error(
+    func: Callable, export_path: Text, *args: Any, **kwargs: Any
+) -> None:
+    while True:
+        try:
+            return func(export_path, *args, **kwargs)
+        except OSError as e:
+            answer = questionary.confirm(
+                f"Failed to export '{export_path}': {e}. Please make sure 'rasa' "
+                f"has read and write access to this file. Would you like to retry?"
+            ).ask()
+            if not answer:
+                raise e
+
+
 async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
     """Write stories and nlu data to file."""
 
@@ -591,9 +606,9 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
     serialised_domain = await retrieve_domain(endpoint)
     domain = Domain.from_dict(serialised_domain)
 
-    _write_stories_to_file(story_path, events, domain)
-    _write_nlu_to_file(nlu_path, events)
-    _write_domain_to_file(domain_path, events, domain)
+    await _retry_on_error(_write_stories_to_file, story_path, events, domain)
+    await _retry_on_error(_write_nlu_to_file, nlu_path, events)
+    await _retry_on_error(_write_domain_to_file, domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
