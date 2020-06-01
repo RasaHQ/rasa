@@ -134,7 +134,7 @@ Define the NLU Data
 In this section:
 
 - we will introduce a new intent, ``query_knowledge_base``
-- we will to annotate ``mention`` entities so that our model detects indirect mentions of objects like "the
+- we will annotate ``mention`` entities so that our model detects indirect mentions of objects like "the
   first one"
 - we will use :ref:`synonyms <entity_synonyms>` extensively
 
