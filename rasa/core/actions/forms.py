@@ -2,10 +2,10 @@ from typing import Text, List, Optional, Union, Any, Dict, Tuple
 import logging
 
 from rasa.core.actions import action
+from rasa.core.actions.loop import LoopAction
 from rasa.core.channels import OutputChannel
 from rasa.core.domain import Domain
 
-from rasa.core.actions import Action
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.core.events import Event, SlotSet, Form
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -24,7 +24,7 @@ REQUESTED_SLOT = "requested_slot"
 # - add proper docstrings
 
 
-class FormAction(Action):
+class FormAction(LoopAction):
     def __init__(
         self, form_name: Text, action_endpoint: Optional[EndpointConfig]
     ) -> None:
@@ -35,13 +35,13 @@ class FormAction(Action):
     def name(self) -> Text:
         return self._form_name
 
-    def required_slots(self) -> List[Text]:
+    def required_slots(self, domain: Domain) -> List[Text]:
         """A list of required slots that the form has to fill.
 
         Returns:
             A list of slot names.
         """
-        return list(self.slot_mappings().keys())
+        return list(self.slot_mappings(domain).keys())
 
     def from_entity(
         self,
@@ -146,7 +146,9 @@ class FormAction(Action):
         return {"type": "from_text", "intent": intent, "not_intent": not_intent}
 
     # noinspection PyMethodMayBeStatic
-    def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict[Text, Any]]]]:
+    def slot_mappings(
+        self, domain: Domain
+    ) -> Dict[Text, Union[Dict, List[Dict[Text, Any]]]]:
         """A dictionary to map required slots.
 
         Options:
@@ -160,26 +162,21 @@ class FormAction(Action):
         the slot to the extracted entity with the same name
         """
 
-        if not self._domain:
-            return {}
-
         return next(
-            (
-                form[self._form_name]
-                for form in self._domain.forms
-                if self._form_name in form.keys()
-            ),
+            (form[self.name()] for form in domain.forms if self.name() in form.keys()),
             {},
         )
 
-    def get_mappings_for_slot(self, slot_to_fill: Text) -> List[Dict[Text, Any]]:
+    def get_mappings_for_slot(
+        self, slot_to_fill: Text, domain: Domain
+    ) -> List[Dict[Text, Any]]:
         """Get mappings for requested slot.
 
         If None, map requested slot to an entity with the same name
         """
 
         requested_slot_mappings = self._to_list(
-            self.slot_mappings().get(slot_to_fill, self.from_entity(slot_to_fill))
+            self.slot_mappings(domain).get(slot_to_fill, self.from_entity(slot_to_fill))
         )
         # check provided slot mappings
         for requested_slot_mapping in requested_slot_mappings:
@@ -280,11 +277,11 @@ class FormAction(Action):
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
         slot_values = {}
-        for slot in self.required_slots():
+        for slot in self.required_slots(domain):
             # look for other slots
             if slot != slot_to_fill:
                 # list is used to cover the case of list slot type
-                other_slot_mappings = self.get_mappings_for_slot(slot)
+                other_slot_mappings = self.get_mappings_for_slot(slot, domain)
 
                 for other_slot_mapping in other_slot_mappings:
                     # check whether the slot should be filled by an entity in the input
@@ -331,7 +328,7 @@ class FormAction(Action):
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
         # get mapping for requested slot
-        requested_slot_mappings = self.get_mappings_for_slot(slot_to_fill)
+        requested_slot_mappings = self.get_mappings_for_slot(slot_to_fill, domain)
 
         for requested_slot_mapping in requested_slot_mappings:
             logger.debug(f"Got mapping '{requested_slot_mapping}'")
@@ -449,11 +446,11 @@ class FormAction(Action):
         domain: Domain,
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
-    ) -> Optional[List[Event]]:
+    ) -> List[Event]:
         """Request the next slot and utter template if needed,
             else return None"""
 
-        for slot in self.required_slots():
+        for slot in self.required_slots(domain):
             if self._should_request_slot(tracker, slot):
                 logger.debug(f"Request next slot '{slot}'")
 
@@ -463,7 +460,7 @@ class FormAction(Action):
                 return [SlotSet(REQUESTED_SLOT, slot), *bot_message_events]
 
         # no more required slots to fill
-        return None
+        return [SlotSet(REQUESTED_SLOT, None)]
 
     @staticmethod
     async def _ask_for_slot(
@@ -481,13 +478,6 @@ class FormAction(Action):
             output_channel, nlg, tracker, domain
         )
         return events_to_ask_for_next_slot
-
-    def deactivate(self) -> List[Event]:
-        """Return `Form` event with `None` as name to deactivate the form
-            and reset the requested slot"""
-
-        logger.debug(f"Deactivating the form '{self.name()}'")
-        return [Form(None), SlotSet(REQUESTED_SLOT, None)]
 
     # helpers
     @staticmethod
@@ -515,15 +505,6 @@ class FormAction(Action):
             )
 
         return self._to_list(intent), self._to_list(not_intent)
-
-    def _log_form_slots(self, tracker: "DialogueStateTracker") -> None:
-        """Logs the values of all required slots before submitting the form."""
-        slot_values = "\n".join(
-            [f"\t{slot}: {tracker.get_slot(slot)}" for slot in self.required_slots()]
-        )
-        logger.debug(
-            f"No slots left to request, all required slots are filled:\n{slot_values}"
-        )
 
     async def _activate_if_required(
         self,
@@ -553,7 +534,7 @@ class FormAction(Action):
             # collect values of required slots filled before activation
             prefilled_slots = {}
 
-            for slot_name in self.required_slots():
+            for slot_name in self.required_slots(domain):
                 if not self._should_request_slot(tracker, slot_name):
                     prefilled_slots[slot_name] = tracker.get_slot(slot_name)
 
@@ -597,49 +578,59 @@ class FormAction(Action):
 
         return tracker.get_slot(slot_name) is None
 
-    async def run(
+    def __str__(self) -> Text:
+        return f"FormAction('{self.name()}')"
+
+    async def activate(
         self,
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        """Execute the side effects of this form.
+        # collect values of required slots filled before activation
+        prefilled_slots = {}
 
-        Steps:
-        - activate if needed
-        - validate user input if needed
-        - set validated slots
-        - utter_ask_{slot} template with the next required slot
-        - submit the form if all required slots are set
-        - deactivate the form
-        """
+        for slot_name in self.required_slots(domain):
+            if not self._should_request_slot(tracker, slot_name):
+                prefilled_slots[slot_name] = tracker.get_slot(slot_name)
 
-        self._domain = domain
+        if not prefilled_slots:
+            logger.debug("No pre-filled required slots to validate.")
+            return []
 
-        # activate the form (we don't return these events in case form immediately
-        # finishes)
-        events = await self._activate_if_required(tracker, domain, output_channel, nlg)
-        # validate user input
-        events += await self._validate_if_required(tracker, domain, output_channel, nlg)
-        # check that the form wasn't deactivated in validation
-        if Form(None) not in events:
-            temp_tracker = self._temporary_tracker(tracker, events, domain)
+        logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
+        return await self.validate_slots(
+            prefilled_slots, tracker, domain, output_channel, nlg
+        )
 
-            next_slot_events = await self.request_next_slot(
-                temp_tracker, domain, output_channel, nlg
-            )
+    async def do(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        events_so_far: List[Event],
+    ) -> List[Event]:
+        events = await self._validate_if_required(tracker, domain, output_channel, nlg)
 
-            if next_slot_events is not None:
-                # request next slot
-                events += next_slot_events
-            else:
-                # there is nothing more to request, so we can submit
-                self._log_form_slots(temp_tracker)
-                # deactivate the form after submission
-                events.extend(self.deactivate())  # type: ignore
+        temp_tracker = self._temporary_tracker(tracker, events_so_far + events, domain)
+        events += await self.request_next_slot(
+            temp_tracker, domain, output_channel, nlg
+        )
 
         return events
 
-    def __str__(self) -> Text:
-        return f"FormAction('{self.name()}')"
+    async def is_done(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        events_so_far: List[Event],
+    ) -> bool:
+        return SlotSet(REQUESTED_SLOT, None) in events_so_far
+
+    async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:
+        logger.debug(f"Deactivating the form '{self.name()}'")
+        return []

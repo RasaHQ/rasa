@@ -81,8 +81,8 @@ async def test_activate_and_immediate_deactivate():
     assert events == [
         Form(form_name),
         SlotSet(slot_name, slot_value),
-        Form(None),
         SlotSet(REQUESTED_SLOT, None),
+        Form(None),
     ]
 
 
@@ -118,8 +118,8 @@ async def test_set_slot_and_deactivate():
     )
     assert events == [
         SlotSet(slot_name, slot_value),
-        Form(None),
         SlotSet(REQUESTED_SLOT, None),
+        Form(None),
     ]
 
 
@@ -171,8 +171,8 @@ async def test_validate_slots():
         )
         assert events == [
             SlotSet(slot_name, validated_slot_value),
-            Form(None),
             SlotSet(REQUESTED_SLOT, None),
+            Form(None),
         ]
 
 
