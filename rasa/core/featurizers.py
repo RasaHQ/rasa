@@ -176,14 +176,6 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             sparse_state, dense_state = self.combine_state_features(
             state_extracted_features
         )
-        entity_features = np.zeros(len(self.interpreter.entities))
-        if "user" in list(state.keys()):
-            if not state["user"].get("entities") is None:
-                user_entities = [
-                    entity["entity"] for entity in state["user"].get("entities")
-                ]
-                for entity_name in user_entities:
-                    entity_features[self.interpreter.entities.index(entity_name)] = 1
 
 
         if self.interpreter.entities == []:
@@ -227,23 +219,6 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             for j, action in enumerate(domain.action_names)
         ]
         return label_data
-
-    def create_encoded_all_actions(self, domain):
-        label_data = {j: self._extract_features(self.interpreter.parse(action), TEXT) 
-                        for j, action in enumerate(domain.action_names)}
-
-        sparse_features = []
-        dense_features = []
-        for idx, feats in sorted(label_data.items(), key=lambda x:x[0]):
-            if feats[0] is not None:
-                sparse_features.append(feats[0].tocsr().astype(np.float32))
-            if feats[1] is not None:
-                dense_features.append(feats[1])
-
-        sparse_features = scipy.sparse.vstack(sparse_features)
-        # dense_features = np.vstack(dense_features).astype(np.float32)
-        return sparse_features #, dense_features
-
 
 class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
@@ -465,30 +440,9 @@ class TrackerFeaturizer:
         featurizer_file = os.path.join(path, "featurizer.json")
 
         rasa.utils.io.create_directory_for_file(featurizer_file)
-        # DIET cannot be json-ed; because we already save it through
+        # TODO: DIET cannot be json-ed; because we already save it through
         # the interpreter.persist in RasaE2EInterpreter.prepare_training_data_and_train()
-        # we can load it from there at time of prediction;
-        if isinstance(
-            self.state_featurizer.interpreter.trainer.pipeline[-1],
-            rasa.nlu.classifiers.diet_classifier.DIETClassifier,
-        ):
-            self.state_featurizer.interpreter.trainer.pipeline = self.state_featurizer.interpreter.trainer.pipeline[
-                :-1
-            ]
-            self.state_featurizer.interpreter.interpreter.pipeline = self.state_featurizer.interpreter.interpreter.pipeline[
-                :-1
-            ]
-
-        if isinstance(
-            self.state_featurizer.interpreter.trainer.pipeline[-1],
-            rasa.nlu.classifiers.diet_classifier.DIETClassifier,
-        ):
-            self.state_featurizer.interpreter.trainer.pipeline = self.state_featurizer.interpreter.trainer.pipeline[
-                :-1
-            ]
-            self.state_featurizer.interpreter.interpreter.pipeline = self.state_featurizer.interpreter.interpreter.pipeline[
-                :-1
-            ]
+        # we can load it from there at time of prediction
 
         # noinspection PyTypeChecker
         rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
@@ -783,11 +737,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         """Transforms list of trackers to lists of states for prediction."""
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
-        # required to have the DIET do the prediction;
-        # self.state_featurizer.interpreter.interpreter = Interpreter(
-        #     self.state_featurizer.interpreter.trainer.pipeline, []
-        # ).load(os.path.join(os.path.dirname(self.path), "nlu"))
-
 
         trackers_as_states_modified = []
         for tracker in trackers_as_states:

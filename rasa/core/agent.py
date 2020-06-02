@@ -702,7 +702,7 @@ class Agent:
 
 
         self.policy_ensemble.train(
-            training_trackers, self.domain, self.interpreter, **kwargs
+            training_trackers, self.domain, **kwargs
         )
         self._set_fingerprint()
 
