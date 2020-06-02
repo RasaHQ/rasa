@@ -96,18 +96,18 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
         if not content.get(key):
             autoconfigured.add(key)
             content[key] = config.get(key)
-            # ct = yaml.tokens.CommentToken(
-            #     f"# Configuration for {key} was provided by "
-            #     f"the auto configuration.\n",
-            #     yaml.error.CommentMark(0),
-            #     None,
-            # )
-            # if hasattr(content, "ca"):
-            #     item = content.ca.items[key]
-            #     if item[1]:
-            #         item[1].append(ct)
-            #     else:
-            #         item[1] = [ct]
+            ct = yaml.tokens.CommentToken(
+                f"# Configuration for {key} was provided by "
+                f"the auto configuration.\n",
+                yaml.error.CommentMark(0),
+                None,
+            )
+            if hasattr(content, "ca"):
+                item = content.ca.items[key]
+                if item[1]:
+                    item[1].append(ct)
+                else:
+                    item[1] = [ct]
 
     if autoconfigured:
         cli_utils.print_info(
