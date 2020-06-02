@@ -12,8 +12,6 @@ from slack import WebClient
 
 logger = logging.getLogger(__name__)
 
-ts = ''
-
 class SlackBot(OutputChannel):
     """A Slack communication channel"""
 
@@ -21,7 +19,12 @@ class SlackBot(OutputChannel):
     def name(cls) -> Text:
         return "slack"
 
-    def __init__(self, token: Text, slack_channel: Optional[Text] = None, ts: Optional[Text] = None) -> None:
+    def __init__(
+        self, 
+        token: Text, 
+        slack_channel: Optional[Text] = None,
+        ts: Optional[Text] = None,
+    ) -> None:
 
         self.slack_channel = slack_channel
         self.ts = ts
@@ -39,7 +42,11 @@ class SlackBot(OutputChannel):
         logger.debug(f"send_text_message, ts: {self.ts}, text: {text}")
         for message_part in text.strip().split("\n\n"):
             await self.client.chat_postMessage(
-                channel=recipient, as_user=True, text=message_part, type="mrkdwn", thread_ts=self.ts if self.ts else None
+                channel=recipient, 
+                as_user=True, 
+                text=message_part, 
+                type="mrkdwn", 
+                thread_ts=self.ts if self.ts else None,
             )
 
     async def send_image_url(
@@ -49,7 +56,11 @@ class SlackBot(OutputChannel):
         image_block = {"type": "image", "image_url": image, "alt_text": image}
         logger.debug(f"send_image_url, image_url: {image}")
         await self.client.chat_postMessage(
-            channel=recipient, as_user=True, text=image, blocks=[image_block],
+            channel=recipient, 
+            as_user=True, 
+            text=image, 
+            blocks=[image_block], 
+            thread_ts=self.ts if self.ts else None,
         )
 
     async def send_attachment(
@@ -58,7 +69,11 @@ class SlackBot(OutputChannel):
         recipient = self.slack_channel or recipient_id
         logger.debug(f"send_attachment")
         await self.client.chat_postMessage(
-            channel=recipient, as_user=True, attachments=[attachment], **kwargs,
+            channel=recipient, 
+            as_user=True, 
+            attachments=[attachment],
+            thread_ts=self.ts if self.ts else None, 
+            **kwargs,
         )
 
     async def send_text_with_buttons(
@@ -94,6 +109,7 @@ class SlackBot(OutputChannel):
             as_user=True,
             text=text,
             blocks=[text_block, button_block],
+            thread_ts=self.ts if self.ts else None,
         )
 
     async def send_custom_json(
@@ -102,6 +118,7 @@ class SlackBot(OutputChannel):
         logger.debug(f"send_custom_json, json_message: {json_message}")
         json_message.setdefault("channel", self.slack_channel or recipient_id)
         json_message.setdefault("as_user", True)
+        json_message.setdefault("thread_ts", self.ts if self.ts else None)
         await self.client.chat_postMessage(**json_message)
 
 
@@ -340,15 +357,17 @@ class SlackInput(InputChannel):
             Metadata extracted from the sent event payload. This includes the output channel for the response,
             and users that have installed the bot.
         """
+
         if request.form:
-            logger.debug(f"request: {request.__dict__}")
             output = request.form
             payload = json.loads(output["payload"][0])
-            ts = payload.message.get("thread_ts", payload.message.get("ts"))
+            logger.debug(f"get_metadata, payload: {payload}")
+            message = payload.get("message", {})
+            ts = message.get("thread_ts", message.get("ts"))
             return {
-                "out_channel": payload.channel.get("id"),
+                "out_channel": payload.get("channel", {}).get("id"),
                 "ts": ts,
-                "users": payload.user.get("id"),
+                "users": payload.get("user", {}).get("id"),
             }
         elif request.json:
             slack_event = request.json
@@ -393,7 +412,7 @@ class SlackInput(InputChannel):
                         # link buttons don't have "value", don't send their clicks to bot
                         #return response.text("User clicked link button")
                         metadata = self.get_metadata(request)
-                        logger.debug(f"button request: {request.__dict__}")
+                        logger.debug(f"button request: {request}")
                         text=payload["actions"][0]["value"]
                         return await self.process_message(
                             request, on_new_message, text, sender_id, metadata
@@ -451,7 +470,4 @@ class SlackInput(InputChannel):
 
     def set_output_channel(self, channel: Text) -> None:
         self.slack_channel = channel
-
-    def set_ts(self, ts: Text) -> None:
-        self.ts = ts
 
