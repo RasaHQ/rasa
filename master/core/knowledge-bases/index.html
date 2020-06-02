@@ -228,22 +228,8 @@ in open source bot framework Rasa." />
               <a href="../../../1.10.1/core/knowledge-bases/">1.10.1</a>
               <a href="../../../1.10.0/core/knowledge-bases/">1.10.0</a>
               <a href="../../../1.9.7/core/knowledge-bases/">1.9.7</a>
-              <a href="../../../1.9.6/core/knowledge-bases/">1.9.6</a>
-              <a href="../../../1.9.5/core/knowledge-bases/">1.9.5</a>
-              <a href="../../../1.9.4/core/knowledge-bases/">1.9.4</a>
-              <a href="../../../1.9.3/core/knowledge-bases/">1.9.3</a>
-              <a href="../../../1.9.2/core/knowledge-bases/">1.9.2</a>
-              <a href="../../../1.9.1/core/knowledge-bases/">1.9.1</a>
-              <a href="../../../1.9.0/core/knowledge-bases/">1.9.0</a>
               <a href="../../../1.8.3/core/knowledge-bases/">1.8.3</a>
-              <a href="../../../1.8.2/core/knowledge-bases/">1.8.2</a>
-              <a href="../../../1.8.1/core/knowledge-bases/">1.8.1</a>
-              <a href="../../../1.8.0/core/knowledge-bases/">1.8.0</a>
               <a href="../../../1.7.4/core/knowledge-bases/">1.7.4</a>
-              <a href="../../../1.7.3/core/knowledge-bases/">1.7.3</a>
-              <a href="../../../1.7.2/core/knowledge-bases/">1.7.2</a>
-              <a href="../../../1.7.1/core/knowledge-bases/">1.7.1</a>
-              <a href="../../../1.7.0/core/knowledge-bases/">1.7.0</a>
               <a href="../../../1.6.2/core/knowledge-bases/">1.6.2</a>
               <a href="../../../1.5.3/core/knowledge-bases/">1.5.3</a>
               <a href="../../../1.4.6/core/knowledge-bases/">1.4.6</a>
@@ -417,7 +403,7 @@ If it doesn’t, you’ll have to <a class="reference internal" href="#customize
 <p>In this section:</p>
 <ul class="simple">
 <li><p>we will introduce a new intent, <code class="docutils literal notranslate"><span class="pre">query_knowledge_base</span></code></p></li>
-<li><p>we will to annotate <code class="docutils literal notranslate"><span class="pre">mention</span></code> entities so that our model detects indirect mentions of objects like “the
+<li><p>we will annotate <code class="docutils literal notranslate"><span class="pre">mention</span></code> entities so that our model detects indirect mentions of objects like “the
 first one”</p></li>
 <li><p>we will use <a class="reference internal" href="../../nlu/training-data-format/#entity-synonyms"><span class="std std-ref">synonyms</span></a> extensively</p></li>
 </ul>
@@ -447,7 +433,7 @@ attribute of an object. The intent should contain lots of variations of both of 
 <p>The above example just shows examples related to the restaurant domain.
 You should add examples for every object type that exists in your knowledge base to the same <code class="docutils literal notranslate"><span class="pre">query_knowledge_base</span></code> intent.</p>
 <p>In addition to adding a variety of training examples for each query type,
-you need to specify the and annotate the following entities in your training examples:</p>
+you need to specify and annotate the following entities in your training examples:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">object_type</span></code>: Whenever a training example references a specific object type from your knowledge base, the object type should
 be marked as an entity. Use <a class="reference internal" href="../../nlu/training-data-format/#entity-synonyms"><span class="std std-ref">synonyms</span></a> to map e.g. <code class="docutils literal notranslate"><span class="pre">restaurants</span></code> to <code class="docutils literal notranslate"><span class="pre">restaurant</span></code>, the correct
