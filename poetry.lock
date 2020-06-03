@@ -2080,8 +2080,8 @@ category = "dev"
 description = "Python type inferencer"
 name = "pytype"
 optional = false
-python-versions = "*"
-version = "2020.2.6"
+python-versions = "<3.9,>=3.5"
+version = "2020.6.1"
 
 [package.dependencies]
 attrs = "*"
@@ -4419,7 +4419,7 @@ python-telegram-bot = [
     {file = "python_telegram_bot-12.7-py2.py3-none-any.whl", hash = "sha256:6878cc642114c8c116ceada41639a9df487f42d5478d9f34cae513cc5c260dee"},
 ]
 pytype = [
-    {file = "pytype-2020.2.6.tar.gz", hash = "sha256:53803f0f1fadf4923efc88a0bd0cfa4c242d2fa3f04421b6f8ab4d658ffd2b90"},
+    {file = "pytype-2020.6.1.tar.gz", hash = "sha256:08ddb9940764492b701a8985c30437239eb2c34003448cca760769264f5ff2f8"},
 ]
 pytz = [
     {file = "pytz-2020.1-py2.py3-none-any.whl", hash = "sha256:a494d53b6d39c3c6e44c3bec237336e14305e4f29bbf800b599253057fbb79ed"},
