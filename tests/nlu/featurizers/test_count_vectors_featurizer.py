@@ -345,6 +345,9 @@ def test_count_vector_featurizer_persist_load(tmp_path):
 
     assert train_vect_params == test_vect_params
 
+    # check if vocaculary was loaded correctly
+    assert hasattr(test_ftr.vectorizers[TEXT], "vocabulary_")
+
     test_message1 = Message(sentence1)
     test_ftr.process(test_message1)
     test_message2 = Message(sentence2)
