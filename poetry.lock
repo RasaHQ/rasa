@@ -2012,7 +2012,7 @@ description = "Engine.IO server"
 name = "python-engineio"
 optional = false
 python-versions = "*"
-version = "3.12.1"
+version = "3.13.0"
 
 [package.dependencies]
 six = ">=1.9.0"
@@ -3310,7 +3310,7 @@ transformers = ["transformers"]
 
 [metadata]
 content-hash = "23c99b1378288b2648e2a06866bd4e62b305362465c51a5114722467fdc74bf6"
-python-versions = "^3.6"
+python-versions = ">=3.6,<3.8"
 
 [metadata.files]
 absl-py = [
@@ -4403,8 +4403,8 @@ python-dateutil = [
     {file = "python_dateutil-2.8.1-py2.py3-none-any.whl", hash = "sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a"},
 ]
 python-engineio = [
-    {file = "python-engineio-3.12.1.tar.gz", hash = "sha256:2481732d93646998f7372ef0ecf003af7817b82720b881db173c3d50b4887916"},
-    {file = "python_engineio-3.12.1-py2.py3-none-any.whl", hash = "sha256:222926adb4bc6e03a8fc8e0ef2a3309f030c1c3f8e0fcc94c9ba214574565f02"},
+    {file = "python-engineio-3.13.0.tar.gz", hash = "sha256:2da5e1e5565e170a17169d1a76eb6a099cc96f0a25a5b1e0f9785f151485daea"},
+    {file = "python_engineio-3.13.0-py2.py3-none-any.whl", hash = "sha256:5423045623f094df67ace05d53737b88e39395ac3b1129798a31be2dbc6011cf"},
 ]
 python-jose = [
     {file = "python-jose-3.1.0.tar.gz", hash = "sha256:8484b7fdb6962e9d242cce7680469ecf92bda95d10bbcbbeb560cacdff3abfce"},
