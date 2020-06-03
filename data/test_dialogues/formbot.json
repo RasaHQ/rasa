@@ -187,7 +187,7 @@
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":0.7680902069097734,
-      "policy":"policy_0_KerasPolicy",
+      "policy":"policy_0_TEDPolicy",
       "timestamp":1551884216.705635,
       "unpredictable":false
     }

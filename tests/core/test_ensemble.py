@@ -306,7 +306,7 @@ def test_from_dict_does_not_change_passed_dict_parameter():
     config = {
         "policies": [
             {
-                "name": "KerasPolicy",
+                "name": "TEDPolicy",
                 "featurizer": [
                     {
                         "name": "MaxHistoryTrackerFeaturizer",

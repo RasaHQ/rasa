@@ -604,38 +604,3 @@ def create_rabbitmq_ssl_options(
         return pika.SSLOptions(ssl_context, rabbitmq_host)
     else:
         return None
-
-
-class PikaProducer(PikaEventBroker):
-    def __init__(
-        self,
-        host: Text,
-        username: Text,
-        password: Text,
-        port: Union[int, Text] = 5672,
-        queues: Union[List[Text], Tuple[Text], Text, None] = ("rasa_core_events",),
-        should_keep_unpublished_messages: bool = True,
-        raise_on_failure: bool = False,
-        log_level: Union[Text, int] = os.environ.get(
-            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
-        ),
-        **kwargs: Any,
-    ):
-        raise_warning(
-            "The `PikaProducer` class is deprecated, please inherit "
-            "from `PikaEventBroker` instead. `PikaProducer` will be "
-            "removed in future Rasa versions.",
-            FutureWarning,
-            docs=DOCS_URL_PIKA_EVENT_BROKER,
-        )
-        super(PikaProducer, self).__init__(
-            host,
-            username,
-            password,
-            port,
-            queues,
-            should_keep_unpublished_messages,
-            raise_on_failure,
-            log_level,
-            **kwargs,
-        )

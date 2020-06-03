@@ -1,0 +1,1 @@
+Added documentation on ``ambiguity_threshold`` parameter in Fallback Actions page.
