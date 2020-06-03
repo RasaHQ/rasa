@@ -3290,7 +3290,6 @@ multidict = ">=4.0"
 [[package]]
 category = "main"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-marker = "python_version < \"3.7\" and python_version != \"3.4\" or python_version < \"3.8\""
 name = "zipp"
 optional = false
 python-versions = ">=3.6"
