@@ -128,7 +128,7 @@ To create your image:
       .. parsed-literal::
 
          # Extend the official Rasa SDK image
-         FROM rasa/rasa-sdk:\ |version|.0
+         FROM rasa/rasa-sdk:|rasa_sdk_version|
 
          # Use subdirectory as working directory
          WORKDIR /app
