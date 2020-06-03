@@ -207,6 +207,9 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
     train_request.terminate()
 
 
+# due to unknown reasons this test can not be run in pycharm, it
+# results in segfaults...will skip in that case - test will still get run on CI
+@pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
 def test_train_status_is_not_blocked_by_training(
     background_server: Process, shared_statuses: DictProxy, training_request: Process
 ):
@@ -416,6 +419,42 @@ def test_train_core_success(
             domain=domain_file.read(),
             config=config_file.read(),
             stories=core_file.read(),
+        )
+
+    _, response = rasa_app.post("/model/train", json=payload)
+    assert response.status == 200
+
+    # save model to temporary file
+    tempdir = tempfile.mkdtemp()
+    model_path = os.path.join(tempdir, "model.tar.gz")
+    with open(model_path, "wb") as f:
+        f.write(response.body)
+
+    # unpack model and ensure fingerprint is present
+    model_path = unpack_model(model_path)
+    assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
+
+
+def test_train_with_retrieval_events_success(rasa_app, default_stack_config):
+    with ExitStack() as stack:
+        domain_file = stack.enter_context(
+            open("data/test_domains/default_retrieval_intents.yml")
+        )
+        config_file = stack.enter_context(open(default_stack_config))
+        core_file = stack.enter_context(
+            open("data/test_stories/stories_retrieval_intents.md")
+        )
+        responses_file = stack.enter_context(open("data/test_responses/default.md"))
+        nlu_file = stack.enter_context(
+            open("data/test_nlu/default_retrieval_intents.md")
+        )
+
+        payload = dict(
+            domain=domain_file.read(),
+            config=config_file.read(),
+            stories=core_file.read(),
+            responses=responses_file.read(),
+            nlu=nlu_file.read(),
         )
 
     _, response = rasa_app.post("/model/train", json=payload)

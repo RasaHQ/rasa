@@ -834,6 +834,7 @@ components:
           - telegram
           - twilio
           - webexteams
+          - socketio
 
   responses:
 
@@ -1253,7 +1254,7 @@ components:
           type: string
           description: >-
             Policy which predicted the most likely action
-          example: policy_2_KerasPolicy
+          example: policy_2_TEDPolicy
         tracker:
           $ref: '#/components/schemas/Tracker'
 
@@ -1291,6 +1292,8 @@ components:
           $ref: '#/components/schemas/ConfigFile'
         nlu:
           $ref: '#/components/schemas/NLUTrainingData'
+        responses:
+          $ref: '#/components/schemas/RetrievalIntentsTrainingData'
         stories:
           $ref: '#/components/schemas/StoriesTrainingData'
         force:
@@ -1355,6 +1358,17 @@ components:
 
         - unhappy
 
+    RetrievalIntentsTrainingData:
+      type: string
+      description: Rasa response texts for retrieval intents in markdown format
+      example:  >-
+        ## ask name
+        * chitchat/ask_name
+            - my name is Sara, Rasa's documentation bot!
+
+        ## ask weather
+        * chitchat/ask_weather
+            - it's always sunny where I live
 
     StoriesTrainingData:
       type: string
@@ -1447,7 +1461,7 @@ components:
 
         policies:
           - name: MemoizationPolicy
-          - name: KerasPolicy
+          - name: TEDPolicy
 
     TrainingResult:
       type: string

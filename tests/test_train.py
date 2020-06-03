@@ -3,6 +3,7 @@ import os
 from typing import Text
 
 import pytest
+from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
@@ -129,3 +130,38 @@ def test_train_nlu_temp_files(
     )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
+
+
+def test_train_nlu_wrong_format_error_message(
+    capsys: CaptureFixture,
+    tmp_path: Text,
+    monkeypatch: MonkeyPatch,
+    default_stack_config: Text,
+    incorrect_nlu_data: Text,
+):
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+
+    train_nlu(
+        default_stack_config,
+        incorrect_nlu_data,
+        output="test_train_nlu_temp_files_models",
+    )
+
+    captured = capsys.readouterr()
+    assert "Please verify the data format" in captured.out
+
+
+def test_train_nlu_no_nlu_file_error_message(
+    capsys: CaptureFixture,
+    tmp_path: Text,
+    monkeypatch: MonkeyPatch,
+    default_stack_config: Text,
+):
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+
+    train_nlu(
+        default_stack_config, "", output="test_train_nlu_temp_files_models",
+    )
+
+    captured = capsys.readouterr()
+    assert "No NLU data given" in captured.out

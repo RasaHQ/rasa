@@ -23,6 +23,7 @@ You can install Rasa Open Source using pip (requires Python 3.6 or 3.7).
 - You can also :ref:`build Rasa Open Source from source <build_from_source>`.
 - For advanced installation options such as building from source and installation instructions for
   custom pipelines, head over :ref:`here <pipeline_dependencies>`.
+- Prefer following video instructions? Watch our installation series on `Youtube <https://www.youtube.com/playlist?list=PL75e0qA87dlEWUA5ToqLLR026wIkk2evk>`_.
 
 
 When you're done installing, you can head over to the tutorial!
@@ -113,7 +114,7 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
         .. code-block:: bash
 
-            $ python3 -m venv --system-site-packages ./venv
+            $ python3 -m venv ./venv
 
         Activate the virtual environment:
 
@@ -127,7 +128,7 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
         .. code-block:: bat
 
-            C:\> python3 -m venv --system-site-packages ./venv
+            C:\> python3 -m venv ./venv
 
         Activate the virtual environment:
 

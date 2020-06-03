@@ -67,12 +67,14 @@ To use these functions it is necessary to create a `Validator` object and initia
 
   validator.verify_all()
 
+.. _test-story-files-for-conflicts:
+
 Test Story Files for Conflicts
 ------------------------------
 
 In addition to the default tests described above, you can also do a more in-depth structural test of your stories.
 In particular, you can test if your stories are inconsistent, i.e. if different bot actions follow from the same dialogue history.
-If this is not the case, then Rasa cannot learn the correct behaviour.
+If this is not the case, then Rasa cannot learn the correct behavior.
 
 Take, for example, the following two stories:
 

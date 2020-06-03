@@ -7,7 +7,7 @@ Build contextual chatbots and AI assistants with Rasa
 =====================================================
 
 .. note::
-    These docs are for Rasa 1.0 and later. Docs for older versions are at http://legacy-docs.rasa.com.
+    These docs are for Rasa 1.0 and later. Docs for older versions are at https://legacy-docs.rasa.com.
 
     This is the documentation for version |release| of Rasa. Please make sure you are reading the documentation
     that matches the version you have installed.
@@ -29,6 +29,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    user-guide/architecture
    user-guide/messaging-and-voice-channels
    user-guide/testing-your-assistant
+   user-guide/setting-up-ci-cd
    user-guide/validate-files
    user-guide/configuring-http-api
    user-guide/how-to-deploy

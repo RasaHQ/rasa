@@ -1,7 +1,11 @@
 import json
+import logging
+from pathlib import Path
+
 from typing import Union, Text, List, Optional, Type
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -132,8 +136,8 @@ def test_file_broker_from_config():
     assert actual.path == "rasa_event.log"
 
 
-def test_file_broker_logs_to_file(tmpdir):
-    log_file_path = tmpdir.join("events.log").strpath
+def test_file_broker_logs_to_file(tmp_path: Path):
+    log_file_path = str(tmp_path / "events.log")
 
     actual = EventBroker.create(
         EndpointConfig(**{"type": "file", "path": log_file_path})
@@ -151,8 +155,8 @@ def test_file_broker_logs_to_file(tmpdir):
     assert recovered == TEST_EVENTS
 
 
-def test_file_broker_properly_logs_newlines(tmpdir):
-    log_file_path = tmpdir.join("events.log").strpath
+def test_file_broker_properly_logs_newlines(tmp_path):
+    log_file_path = str(tmp_path / "events.log")
 
     actual = EventBroker.create(
         EndpointConfig(**{"type": "file", "path": log_file_path})
@@ -199,3 +203,26 @@ def test_kafka_broker_from_config():
     assert actual.sasl_username == expected.sasl_username
     assert actual.sasl_password == expected.sasl_password
     assert actual.topic == expected.topic
+
+
+def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
+    from rasa.core.brokers import pika
+
+    with pytest.raises(Exception):
+        pika.initialise_pika_connection(
+            "localhost", "user", "password", connection_attempts=1
+        )
+
+    assert len(caplog.records) == 0
+
+
+def test_pika_logs_in_debug_mode(caplog: LogCaptureFixture, monkeypatch: MonkeyPatch):
+    from rasa.core.brokers import pika
+
+    with caplog.at_level(logging.DEBUG):
+        with pytest.raises(Exception):
+            pika.initialise_pika_connection(
+                "localhost", "user", "password", connection_attempts=1
+            )
+
+    assert len(caplog.records) > 0

@@ -4,45 +4,80 @@ import json
 import logging
 import os
 import pickle
-import typing
 from datetime import datetime, timezone
 
-# noinspection PyPep8Naming
 from time import sleep
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Text, Union
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Text,
+    Union,
+    TYPE_CHECKING,
+)
 
 from boto3.dynamodb.conditions import Key
 import rasa.core.utils as core_utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
+from rasa.core.constants import (
+    POSTGRESQL_SCHEMA,
+    POSTGRESQL_MAX_OVERFLOW,
+    POSTGRESQL_POOL_SIZE,
+)
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.events import SessionStarted
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
+import rasa.cli.utils as rasa_cli_utils
 from rasa.utils.common import class_from_module_path, raise_warning, arguments_of
 from rasa.utils.endpoints import EndpointConfig
-from sqlalchemy import Sequence
+import sqlalchemy as sa
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
+    import boto3.resources.factory.dynamodb.Table
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm import Session, Query
-    import boto3.resources.factory.dynamodb.Table
+    from sqlalchemy.orm.session import Session
+    from sqlalchemy import Sequence
+    from sqlalchemy.orm.query import Query
 
 logger = logging.getLogger(__name__)
 
-SQLITE_SCHEME = "sqlite"
+# default values of PostgreSQL pool size and max overflow
+POSTGRESQL_DEFAULT_MAX_OVERFLOW = 100
+POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
 
 class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
 
     def __init__(
-        self, domain: Optional[Domain], event_broker: Optional[EventBroker] = None
+        self,
+        domain: Optional[Domain],
+        event_broker: Optional[EventBroker] = None,
+        retrieve_events_from_previous_conversation_sessions: bool = False,
     ) -> None:
+        """Create a TrackerStore.
+
+        Args:
+            domain: The `Domain` to initialize the `DialogueStateTracker`.
+            event_broker: An event broker to publish any new events to another
+                destination.
+            retrieve_events_from_previous_conversation_sessions: If `True`, `retrieve`
+                will return all events (even if they are from a previous conversation
+                session). This setting only applies to `TrackerStore`s which usually
+                would only return events for the latest session.
+        """
         self.domain = domain
         self.event_broker = event_broker
         self.max_event_history = None
+        self.load_events_from_previous_conversation_sessions = (
+            retrieve_events_from_previous_conversation_sessions
+        )
 
     @staticmethod
     def create(
@@ -56,23 +91,6 @@ class TrackerStore:
             return obj
         else:
             return _create_from_endpoint_config(obj, domain, event_broker)
-
-    @staticmethod
-    def create_tracker_store(
-        domain: Domain,
-        store: Optional[EndpointConfig] = None,
-        event_broker: Optional[EventBroker] = None,
-    ) -> "TrackerStore":
-        """Returns the tracker_store type"""
-
-        raise_warning(
-            "The `create_tracker_store` function is deprecated, please use "
-            "`TrackerStore.create` instead. `create_tracker_store` will be "
-            "removed in future Rasa versions.",
-            DeprecationWarning,
-        )
-
-        return TrackerStore.create(store, domain, event_broker)
 
     def get_or_create_tracker(
         self,
@@ -470,8 +488,9 @@ class MongoTrackerStore(TrackerStore):
         """
 
         stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
+        all_events = self._events_from_serialized_tracker(stored)
         number_events_since_last_session = len(
-            self._events_since_last_session_start(stored)
+            self._events_since_last_session_start(all_events)
         )
 
         return itertools.islice(
@@ -479,11 +498,15 @@ class MongoTrackerStore(TrackerStore):
         )
 
     @staticmethod
-    def _events_since_last_session_start(serialised_tracker: Dict) -> List[Dict]:
+    def _events_from_serialized_tracker(serialised: Dict) -> List[Dict]:
+        return serialised.get("events", [])
+
+    @staticmethod
+    def _events_since_last_session_start(events: List[Dict]) -> List[Dict]:
         """Retrieve events since and including the latest `SessionStart` event.
 
         Args:
-            serialised_tracker: Serialised tracker to inspect.
+            events: All events for a conversation ID.
 
         Returns:
             List of serialised events since and including the latest `SessionStarted`
@@ -491,15 +514,15 @@ class MongoTrackerStore(TrackerStore):
 
         """
 
-        events = []
-        for event in reversed(serialised_tracker.get("events", [])):
-            events.append(event)
+        events_after_session_start = []
+        for event in reversed(events):
+            events_after_session_start.append(event)
             if event["event"] == SessionStarted.type_name:
                 break
 
-        return list(reversed(events))
+        return list(reversed(events_after_session_start))
 
-    def retrieve(self, sender_id):
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """
         Args:
             sender_id: the message owner ID
@@ -511,7 +534,7 @@ class MongoTrackerStore(TrackerStore):
 
         # look for conversations which have used an `int` sender_id in the past
         # and update them.
-        if stored is None and sender_id.isdigit():
+        if not stored and sender_id.isdigit():
             from pymongo import ReturnDocument
 
             stored = self.conversations.find_one_and_update(
@@ -520,18 +543,21 @@ class MongoTrackerStore(TrackerStore):
                 return_document=ReturnDocument.AFTER,
             )
 
-        if stored is not None:
-            events = self._events_since_last_session_start(stored)
-            return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
-        else:
-            return None
+        if not stored:
+            return
+
+        events = self._events_from_serialized_tracker(stored)
+        if not self.load_events_from_previous_conversation_sessions:
+            events = self._events_since_last_session_start(events)
+
+        return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store"""
         return [c["sender_id"] for c in self.conversations.find()]
 
 
-def _create_sequence(table_name: Text) -> Sequence:
+def _create_sequence(table_name: Text) -> "Sequence":
     """Creates a sequence object for a specific table name.
 
     If using Oracle you will need to create a sequence in your database,
@@ -546,7 +572,82 @@ def _create_sequence(table_name: Text) -> Sequence:
 
     sequence_name = f"{table_name}_seq"
     Base = declarative_base()
-    return Sequence(sequence_name, metadata=Base.metadata, optional=True)
+    return sa.Sequence(sequence_name, metadata=Base.metadata, optional=True)
+
+
+def is_postgresql_url(url: Union[Text, "URL"]) -> bool:
+    """Determine whether `url` configures a PostgreSQL connection.
+
+    Args:
+        url: SQL connection URL.
+
+    Returns:
+        `True` if `url` is a PostgreSQL connection URL.
+    """
+    if isinstance(url, str):
+        return "postgresql" in url
+
+    return url.drivername == "postgresql"
+
+
+def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Union[Text, int]]:
+    """Get `sqlalchemy.create_engine()` kwargs.
+
+    Args:
+        url: SQL connection URL.
+
+    Returns:
+        kwargs to be passed into `sqlalchemy.create_engine()`.
+    """
+    if not is_postgresql_url(url):
+        return {}
+
+    kwargs = {}
+
+    schema_name = os.environ.get(POSTGRESQL_SCHEMA)
+
+    if schema_name:
+        logger.debug(f"Using PostgreSQL schema '{schema_name}'.")
+        kwargs["connect_args"] = {"options": f"-csearch_path={schema_name}"}
+
+    # pool_size and max_overflow can be set to control the number of
+    # connections that are kept in the connection pool. Not available
+    # for SQLite, and only  tested for PostgreSQL. See
+    # https://docs.sqlalchemy.org/en/13/core/pooling.html#sqlalchemy.pool.QueuePool
+    kwargs["pool_size"] = int(
+        os.environ.get(POSTGRESQL_POOL_SIZE, POSTGRESQL_DEFAULT_POOL_SIZE)
+    )
+    kwargs["max_overflow"] = int(
+        os.environ.get(POSTGRESQL_MAX_OVERFLOW, POSTGRESQL_DEFAULT_MAX_OVERFLOW)
+    )
+
+    return kwargs
+
+
+def ensure_schema_exists(session: "Session") -> None:
+    """Ensure that the requested PostgreSQL schema exists in the database.
+
+    Args:
+        session: Session used to inspect the database.
+
+    Raises:
+        `ValueError` if the requested schema does not exist.
+    """
+    schema_name = os.environ.get(POSTGRESQL_SCHEMA)
+
+    if not schema_name:
+        return
+
+    engine = session.get_bind()
+
+    if is_postgresql_url(engine.url):
+        query = sa.exists(
+            sa.select([(sa.text("schema_name"))])
+            .select_from(sa.text("information_schema.schemata"))
+            .where(sa.text(f"schema_name = '{schema_name}'"))
+        )
+        if not session.query(query).scalar():
+            raise ValueError(schema_name)
 
 
 class SQLTrackerStore(TrackerStore):
@@ -559,19 +660,17 @@ class SQLTrackerStore(TrackerStore):
     class SQLEvent(Base):
         """Represents an event in the SQL Tracker Store"""
 
-        from sqlalchemy import Column, Integer, String, Float, Text
-
         __tablename__ = "events"
 
         # `create_sequence` is needed to create a sequence for databases that
         # don't autoincrement Integer primary keys (e.g. Oracle)
-        id = Column(Integer, _create_sequence(__tablename__), primary_key=True)
-        sender_id = Column(String(255), nullable=False, index=True)
-        type_name = Column(String(255), nullable=False)
-        timestamp = Column(Float)
-        intent_name = Column(String(255))
-        action_name = Column(String(255))
-        data = Column(Text)
+        id = sa.Column(sa.Integer, _create_sequence(__tablename__), primary_key=True)
+        sender_id = sa.Column(sa.String(255), nullable=False, index=True)
+        type_name = sa.Column(sa.String(255), nullable=False)
+        timestamp = sa.Column(sa.Float)
+        intent_name = sa.Column(sa.String(255))
+        action_name = sa.Column(sa.String(255))
+        data = sa.Column(sa.Text)
 
     def __init__(
         self,
@@ -586,31 +685,23 @@ class SQLTrackerStore(TrackerStore):
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
     ) -> None:
-        from sqlalchemy.orm import sessionmaker
-        from sqlalchemy import create_engine
         import sqlalchemy.exc
 
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db, query
         )
-        logger.debug(f"Attempting to connect to database via '{engine_url}'.")
+
+        self.engine = sa.engine.create_engine(
+            engine_url, **create_engine_kwargs(engine_url)
+        )
+
+        logger.debug(
+            f"Attempting to connect to database via '{repr(self.engine.url)}'."
+        )
 
         # Database might take a while to come up
         while True:
             try:
-                # pool_size and max_overflow can be set to control the number of
-                # connections that are kept in the connection pool. Not available
-                # for SQLite, and only  tested for postgresql. See
-                # https://docs.sqlalchemy.org/en/13/core/pooling.html#sqlalchemy.pool.QueuePool
-                if dialect == "postgresql":
-                    self.engine = create_engine(
-                        engine_url,
-                        pool_size=int(os.environ.get("SQL_POOL_SIZE", "50")),
-                        max_overflow=int(os.environ.get("SQL_MAX_OVERFLOW", "100")),
-                    )
-                else:
-                    self.engine = create_engine(engine_url)
-
                 # if `login_db` has been provided, use current channel with
                 # that database to create working database `db`
                 if login_db:
@@ -627,7 +718,7 @@ class SQLTrackerStore(TrackerStore):
                     # the first services finishes the table creation.
                     logger.error(f"Could not create tables: {e}")
 
-                self.sessionmaker = sessionmaker(bind=self.engine)
+                self.sessionmaker = sa.orm.session.sessionmaker(bind=self.engine)
                 break
             except (
                 sqlalchemy.exc.OperationalError,
@@ -652,7 +743,7 @@ class SQLTrackerStore(TrackerStore):
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
     ) -> Union[Text, "URL"]:
-        """Builds an SQLAlchemy `URL` object representing the parameters needed
+        """Build an SQLAlchemy `URL` object representing the parameters needed
         to connect to an SQL database.
 
         Args:
@@ -669,10 +760,8 @@ class SQLTrackerStore(TrackerStore):
 
         Returns:
             URL ready to be used with an SQLAlchemy `Engine` object.
-
         """
         from urllib import parse
-        from sqlalchemy.engine.url import URL
 
         # Users might specify a url in the host
         if host and "://" in host:
@@ -687,7 +776,7 @@ class SQLTrackerStore(TrackerStore):
             port = parsed.port or port
             host = parsed.hostname or host
 
-        return URL(
+        return sa.engine.url.URL(
             dialect,
             username,
             password,
@@ -732,7 +821,15 @@ class SQLTrackerStore(TrackerStore):
         """Provide a transactional scope around a series of operations."""
         session = self.sessionmaker()
         try:
+            ensure_schema_exists(session)
             yield session
+        except ValueError as e:
+            rasa_cli_utils.print_error_and_exit(
+                f"Requested PostgreSQL schema '{e}' was not found in the database. To "
+                f"continue, please create the schema by running 'CREATE DATABASE {e};' "
+                f"or unset the '{POSTGRESQL_SCHEMA}' environment variable in order to "
+                f"use the default schema. Exiting application."
+            )
         finally:
             session.close()
 
@@ -774,8 +871,6 @@ class SQLTrackerStore(TrackerStore):
         Returns:
             Query to get the conversation events.
         """
-        import sqlalchemy as sa
-
         # Subquery to find the timestamp of the latest `SessionStarted` event
         session_start_sub_query = (
             session.query(sa.func.max(self.SQLEvent.timestamp).label("session_start"))
@@ -786,19 +881,20 @@ class SQLTrackerStore(TrackerStore):
             .subquery()
         )
 
-        return (
-            session.query(self.SQLEvent)
-            .filter(
-                self.SQLEvent.sender_id == sender_id,
+        event_query = session.query(self.SQLEvent).filter(
+            self.SQLEvent.sender_id == sender_id
+        )
+        if not self.load_events_from_previous_conversation_sessions:
+            event_query = event_query.filter(
                 # Find events after the latest `SessionStarted` event or return all
                 # events
                 sa.or_(
                     self.SQLEvent.timestamp >= session_start_sub_query.c.session_start,
                     session_start_sub_query.c.session_start.is_(None),
-                ),
+                )
             )
-            .order_by(self.SQLEvent.timestamp)
-        )
+
+        return event_query.order_by(self.SQLEvent.timestamp)
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
@@ -986,13 +1082,12 @@ def _load_from_module_string(
         tracker_store_class = class_from_module_path(store.type)
         init_args = arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
-            raise_warning(
-                "The `url` initialization argument for custom tracker stores is "
-                "deprecated. Your custom tracker store should take a `host` "
-                "argument in its `__init__()` instead.",
-                DeprecationWarning,
+            # DEPRECATION EXCEPTION - remove in 2.1
+            raise Exception(
+                "The `url` initialization argument for custom tracker stores has "
+                "been removed. Your custom tracker store should take a `host` "
+                "argument in its `__init__()` instead."
             )
-            store.kwargs["url"] = store.url
         else:
             store.kwargs["host"] = store.url
 

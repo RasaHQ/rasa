@@ -155,9 +155,10 @@ For example:
 
 
 While it's good to test the bot interactively, we should also add end to end test cases that
-can later be included as part of our CI/CD system. `End to end stories <https://rasa.com/docs/rasa/user-guide/testing-your-assistant/#end-to-end-testing>`_
-include NLU data, so that both components of Rasa can be tested.  Create a file called
-``test_stories.md`` in the root directory with some test cases:
+can later be included as part of a :ref:`CI/CD system <setting-up-ci-cd>`. End-to-end :ref:`test conversations <end-to-end-testing>`
+include NLU data, so that both components of Rasa can be tested. The file
+``tests/conversation_tests.md`` contains example test conversations. Delete all the test conversations and replace
+them with some test conversations for your assistant so far:
 
 .. code-block:: md
 
@@ -185,7 +186,7 @@ To test our model against the test file, run the command:
 
 .. code-block:: bash
 
-   rasa test --e2e --stories test_stories.md
+   rasa test --stories tests/conversation_tests.md
 
 The test command will produce a directory named ``results``. It should contain a file
 called ``failed_stories.md``, where any test cases that failed will be printed. It will
@@ -378,7 +379,7 @@ A lot of conversational assistants have user goals that involve collecting a bun
 from the user before being able to do something for them. This is called slot filling. For
 example, in the banking industry you may have a user goal of transferring money, where you
 need to collect information about which account to transfer from, whom to transfer to and the
-amount to transfer. This type of behaviour can and should be handled in a rule based way, as it
+amount to transfer. This type of behavior can and should be handled in a rule based way, as it
 is clear how this information should be collected.
 
 For this type of use case, we can use Forms and our FormPolicy. The `FormPolicy <https://rasa.com/docs/rasa/core/policies/#form-policy>`_
@@ -480,7 +481,7 @@ which will do something with the information the user has provided once the form
        return []
 
 In this case, we only tell the user that we’ll be in touch with them, however
-usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L69>`_
+usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L149>`_
 for an example of how to store this information in a spreadsheet.
 
 We’ll need to add the form we just created to a new section in our ``domain.yml`` file:
@@ -596,7 +597,7 @@ As a final step, let’s add the FormPolicy to our config file:
 
    policies:
      - name: MemoizationPolicy
-     - name: KerasPolicy
+     - name: TEDPolicy
      - name: MappingPolicy
      - name: FormPolicy
 
@@ -635,8 +636,7 @@ use the ``from_text`` method to extract the users whole message:
 
 .. code-block:: python
 
-    def slot_mappings(self) -> Dict[Text: Union[Dict, List[Dict]]]:
-        # type: () -> Dict[Text: Union[Dict, List[Dict]]]
+    def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict[Text, Any]]]]:
         """A dictionary to map required slots to
         - an extracted entity
         - intent: value pairs
@@ -647,10 +647,10 @@ use the ``from_text`` method to extract the users whole message:
 Now our bot will extract the full user message when asking for the use case slot,
 and we don’t need to use the ``use_case`` entity defined before.
 
-All of the methods within a form can be customised to handle different branches in your
+All of the methods within a form can be customized to handle different branches in your
 business logic. Read more about this `here <https://rasa.com/docs/rasa/core/forms/#>`_.
 However, you should make sure not to handle any unhappy paths inside the form. These
-should be handled by writing regular stories, so your model can learn this behaviour.
+should be handled by writing regular stories, so your model can learn this behavior.
 
 
 .. note::
@@ -943,10 +943,11 @@ To try this out, retrain your model and send a message like "order me a pizza" t
    rasa shell
 
 There are also a bunch of ways in which you can customise this policy. In Sara, our demo bot,
-we’ve customised it to suggest intents to the user within a certain confidence range to make
+we’ve customized it to suggest intents to the user within a certain confidence range to make
 it easier for the user to give the bot the information it needs.
 
-This is done by customising the action ``ActionDefaultAskAffirmation`` as shown in the `Sara rasa-demo action server <https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L443>`_
+This is done by customizing the action ``ActionDefaultAskAffirmation`` as shown in the
+`Sara rasa-demo action server <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L443>`_
 We define some intent mappings to make it more intuitive to the user what an intent means.
 
 .. image:: /_static/images/intent_mappings.png
