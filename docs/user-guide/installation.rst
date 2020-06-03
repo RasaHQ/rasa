@@ -43,7 +43,6 @@ When you're done installing, you can head over to the tutorial!
 Step-by-step Installation Guide
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 1. Install the Python development environment
 ---------------------------------------------
 
