@@ -189,7 +189,7 @@ version = "~2.4"
 optional = true
 
 [tool.poetry.dependencies.jieba]
-version = "==0.39"
+version = ">=0.39, <0.43"
 optional = true
 
 [tool.poetry.dependencies.pymongo]

@@ -1064,11 +1064,11 @@ six = "*"
 
 [[package]]
 category = "main"
-description = "Chinese Words Segementation Utilities"
+description = "Chinese Words Segmentation Utilities"
 name = "jieba"
 optional = true
 python-versions = "*"
-version = "0.39"
+version = "0.42.1"
 
 [[package]]
 category = "dev"
@@ -2080,8 +2080,8 @@ category = "dev"
 description = "Python type inferencer"
 name = "pytype"
 optional = false
-python-versions = "*"
-version = "2020.2.6"
+python-versions = "<3.9,>=3.5"
+version = "2020.6.1"
 
 [package.dependencies]
 attrs = "*"
@@ -3292,6 +3292,7 @@ multidict = ">=4.0"
 [[package]]
 category = "main"
 description = "Backport of pathlib-compatible object wrapper for zip files"
+marker = "python_version < \"3.7\" and python_version != \"3.4\" or python_version < \"3.8\""
 name = "zipp"
 optional = false
 python-versions = ">=3.6"
@@ -3844,7 +3845,7 @@ isodate = [
     {file = "isodate-0.6.0.tar.gz", hash = "sha256:2e364a3d5759479cdb2d37cce6b9376ea504db2ff90252a2e5b7cc89cc9ff2d8"},
 ]
 jieba = [
-    {file = "jieba-0.39.zip", hash = "sha256:de385e48582a4862e55a9167334d0fbe91d479026e5dac40e59e22c08b8e883e"},
+    {file = "jieba-0.42.1.tar.gz", hash = "sha256:055ca12f62674fafed09427f176506079bc135638a14e23e25be909131928db2"},
 ]
 jinja2 = [
     {file = "Jinja2-2.11.2-py2.py3-none-any.whl", hash = "sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035"},
@@ -4419,7 +4420,7 @@ python-telegram-bot = [
     {file = "python_telegram_bot-12.7-py2.py3-none-any.whl", hash = "sha256:6878cc642114c8c116ceada41639a9df487f42d5478d9f34cae513cc5c260dee"},
 ]
 pytype = [
-    {file = "pytype-2020.2.6.tar.gz", hash = "sha256:53803f0f1fadf4923efc88a0bd0cfa4c242d2fa3f04421b6f8ab4d658ffd2b90"},
+    {file = "pytype-2020.6.1.tar.gz", hash = "sha256:08ddb9940764492b701a8985c30437239eb2c34003448cca760769264f5ff2f8"},
 ]
 pytz = [
     {file = "pytz-2020.1-py2.py3-none-any.whl", hash = "sha256:a494d53b6d39c3c6e44c3bec237336e14305e4f29bbf800b599253057fbb79ed"},
