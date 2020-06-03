@@ -39,7 +39,6 @@ class SlackBot(OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-        logger.debug(f"send_text_message, ts: {self.ts}, text: {text}")
         for message_part in text.strip().split("\n\n"):
             await self.client.chat_postMessage(
                 channel=recipient, 
@@ -54,7 +53,6 @@ class SlackBot(OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
         image_block = {"type": "image", "image_url": image, "alt_text": image}
-        logger.debug(f"send_image_url, image_url: {image}")
         await self.client.chat_postMessage(
             channel=recipient, 
             as_user=True, 
@@ -67,7 +65,7 @@ class SlackBot(OutputChannel):
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-        logger.debug(f"send_attachment")
+
         await self.client.chat_postMessage(
             channel=recipient, 
             as_user=True, 
@@ -103,7 +101,7 @@ class SlackBot(OutputChannel):
                     "value": button["payload"],
                 }
             )
-        logger.debug(f"slack button_block: {button_block}")
+
         await self.client.chat_postMessage(
             channel=recipient,
             as_user=True,
@@ -392,8 +390,6 @@ class SlackInput(InputChannel):
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request) -> HTTPResponse:
-            property_names=[p for p in dir(Request) if isinstance(getattr(Request,p),property)]
-            logger.debug(f"webhook request property_names: {property_names}")
             if request.form:
                 output = request.form
                 payload = json.loads(output["payload"][0])
@@ -403,11 +399,7 @@ class SlackInput(InputChannel):
                     sender_id = payload["user"]["id"]
                     text = self._get_interactive_response(payload["actions"][0])
                     logger.debug(f"form slack sender_id: {sender_id}, actions: {payload['actions']}")
-                    #if text is not None:
-                    #    metadata = self.get_metadata(request)
-                    #    return await self.process_message(
-                    #        request, on_new_message, text, sender_id, metadata
-                    #    )
+
                     if payload["actions"][0]["type"] == "button":
                         # link buttons don't have "value", don't send their clicks to bot
                         #return response.text("User clicked link button")
@@ -426,9 +418,8 @@ class SlackInput(InputChannel):
                 event = output.get("event", {})
                 user_message = event.get("text", "")
                 sender_id = event.get("user", "")
-                #logger.debug(f"slack request output: {output}, event: {event}")
+
                 logger.debug(f'slack request event.ts: {event.get("ts", "")}, event.thread_ts: {event.get("thread_ts", "")}')
-                #self.set_ts(event.get("ts", ""))
                 metadata = self.get_metadata(request)
 
                 if "challenge" in output:
@@ -437,7 +428,7 @@ class SlackInput(InputChannel):
                 elif self._is_user_message(output) and self._is_supported_channel(
                     output, metadata
                 ):
-                    logger.debug(f"calling process_message")
+
                     return await self.process_message(
                         request,
                         on_new_message,
@@ -457,7 +448,6 @@ class SlackInput(InputChannel):
         return slack_webhook
 
     def _is_supported_channel(self, slack_event: Dict, metadata: Dict) -> bool:
-        logger.debug(f"_is_supported_channel, self.slack_channel: {self.slack_channel}")
         return (
             self._is_direct_message(slack_event)
             or self._is_app_mention(slack_event)
