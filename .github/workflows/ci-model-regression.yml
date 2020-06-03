@@ -463,12 +463,3 @@ jobs:
 
       - name: Remove Github Runner
         run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30
-
-  remove_configuration_file:
-    name: The model regression configuration file doesn't exist
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - run: test ! -f .github/configs/mr-test.yaml
