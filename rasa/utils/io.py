@@ -100,6 +100,7 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
+# why had the return type "List[Any]"? To me it seems like it's not a list, just "Any"
 def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses yaml from a text.
 
@@ -107,12 +108,12 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
             content: A text containing yaml content.
     """
     content, _ = read_yaml_including_parser(content)
-    return content
+    return content or {}
 
 
 def read_yaml_including_parser(
     content: Text, typ: Text = "safe", add_version: bool = True,
-) -> Tuple[Union[List[Any], Dict[Text, Any]], YAML]:
+) -> Tuple[Any, YAML]:
     """Gets a yaml parser and parses yaml from a text.
 
     Args:
@@ -137,7 +138,7 @@ def read_yaml_including_parser(
             .decode("utf-16")
         )
 
-    loaded_content = yaml_parser.load(content) or {}
+    loaded_content = yaml_parser.load(content)
 
     return loaded_content, yaml_parser
 
