@@ -78,9 +78,6 @@ def fix_yaml_loader() -> None:
 
 def replace_environment_variables() -> None:
     """Enable yaml loader to process the environment variables in the yaml."""
-    import re
-    import os
-
     # eg. ${USER_NAME}, ${PASSWORD}
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
     yaml.add_implicit_resolver("!env_var", env_var_pattern)
@@ -158,7 +155,16 @@ def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) ->
         raise ValueError(f"File '{filename}' does not exist.")
 
 
-def comment_out_section(filename: Text, sections: List[Text]) -> None:
+def comment_out_section_in_file(filename: Text, sections: List[Text]) -> None:
+    """Comment out the content of specific sections in a file.
+
+    A section "section_name" begins after the line containing "section_name:" and ends
+    with the next empty line.
+
+    Args:
+        filename: Path to the file.
+        sections: The sections whose content should be commented out.
+    """
     try:
         with open(filename, "r+", encoding=DEFAULT_ENCODING) as f:
             lines = f.readlines()
@@ -169,14 +175,14 @@ def comment_out_section(filename: Text, sections: List[Text]) -> None:
             for key in sections:
                 key_pattern += "|" + key  # TODO: remove unnecessary double sections[0]
 
-            for l in lines:
-                if not l.strip():
+            for line in lines:
+                if not line.strip():
                     section_started = False
                 if section_started:
-                    l = "#" + l
-                if re.match(f"( *){key_pattern}:", l):
+                    line = "#" + line
+                if re.match(f"( *){key_pattern}:( *)", line):
                     section_started = True
-                f.write(l)
+                f.write(line)
     except FileNotFoundError:
         raise ValueError(f"File '{filename}' does not exist.")
 
@@ -457,7 +463,6 @@ def create_directory(directory_path: Text) -> None:
 
 def zip_folder(folder: Text) -> Text:
     """Create an archive from a folder."""
-    import tempfile
     import shutil
 
     zipped_path = tempfile.NamedTemporaryFile(delete=False)

@@ -117,7 +117,7 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
     yaml_parser.indent(mapping=2, sequence=4, offset=2)
     yaml_parser.dump(content, Path(config_file))
 
-    io_utils.comment_out_section(config_file, list(autoconfigured))
+    io_utils.comment_out_section_in_file(config_file, list(autoconfigured))
 
     if autoconfigured:
         cli_utils.print_info(
