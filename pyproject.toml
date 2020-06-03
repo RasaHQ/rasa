@@ -104,7 +104,7 @@ multidict = "^4.6"
 aiohttp = "~3.6"
 questionary = "~1.5.1"
 prompt-toolkit = "^2.0"
-python-socketio = ">=4.4,<4.6"
+python-socketio = ">=4.4,<4.7"
 python-engineio = ">=3.11,<3.14"
 pydot = "~1.4"
 async_generator = "~1.10"
@@ -139,7 +139,7 @@ fakeredis = "^1.4.0"
 mongomock = "^3.18.0"
 black = "^19.10b0"
 flake8 = "^3.7.9"
-pytype = "^2020.1.24"
+pytype = "^2020.6.1"
 google-cloud-storage = "^1.25.0"
 azure-storage-blob = "<12.4.0"
 coveralls = "^2.0.0"
@@ -188,7 +188,7 @@ version = "~2.4"
 optional = true
 
 [tool.poetry.dependencies.jieba]
-version = "==0.39"
+version = ">=0.39, <0.43"
 optional = true
 
 [tool.poetry.dependencies.pymongo]
