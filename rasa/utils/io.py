@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import pickle
+import re
 import tarfile
 import tempfile
 import typing
@@ -153,6 +154,29 @@ def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) ->
     try:
         with open(filename, encoding=encoding) as f:
             return f.read()
+    except FileNotFoundError:
+        raise ValueError(f"File '{filename}' does not exist.")
+
+
+def comment_out_section(filename: Text, sections: List[Text]) -> None:
+    try:
+        with open(filename, "r+", encoding=DEFAULT_ENCODING) as f:
+            lines = f.readlines()
+            f.seek(0)
+            section_started = False
+
+            key_pattern = sections[0]
+            for key in sections:
+                key_pattern += "|" + key  # TODO: remove unnecessary double sections[0]
+
+            for l in lines:
+                if not l.strip():
+                    section_started = False
+                if section_started:
+                    l = "#" + l
+                if re.match(f"( *){key_pattern}:", l):
+                    section_started = True
+                f.write(l)
     except FileNotFoundError:
         raise ValueError(f"File '{filename}' does not exist.")
 

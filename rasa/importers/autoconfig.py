@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 from pathlib import Path
@@ -26,7 +27,7 @@ def get_auto_configuration(config_file) -> Dict[Text, Any]:
         config = io_utils.read_config_file(config_file)
 
         missing_keys = [k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not config.get(k)]
-        create_config_for_keys(config, missing_keys)
+        config = create_config_for_keys(config, missing_keys)
 
         dump_config(config, config_file)
     else:
@@ -35,7 +36,9 @@ def get_auto_configuration(config_file) -> Dict[Text, Any]:
     return config
 
 
-def create_config_for_keys(config: Dict[Text, Any], keys: List[Text]) -> None:
+def create_config_for_keys(
+    config: Dict[Text, Any], keys: List[Text]
+) -> Dict[Text, Any]:
     """Complete a config by adding automatic configuration for the specified keys.
 
     Args:
@@ -56,9 +59,12 @@ def create_config_for_keys(config: Dict[Text, Any], keys: List[Text]) -> None:
 
     default_config = io_utils.read_config_file(default_config_file)
 
+    config = copy.deepcopy(config)
     for key in keys:
         config[key] = default_config[key]
         # maybe add a debug output to print the result of the autoconfiguration?
+
+    return config
 
 
 def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
@@ -102,11 +108,16 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
         if item and item[1] is None:
             content.ca.items[key][1] = []
 
-        comment = f"Configuration for {key} was provided by the auto configuration."
+        comment = (
+            f"Configuration for {key} was provided by the auto configuration.\n"
+            f"To configure this manually, uncomment the section's content."
+        )
         content.yaml_set_comment_before_after_key(key, before=comment)
 
     yaml_parser.indent(mapping=2, sequence=4, offset=2)
     yaml_parser.dump(content, Path(config_file))
+
+    io_utils.comment_out_section(config_file, list(autoconfigured))
 
     if autoconfigured:
         cli_utils.print_info(
