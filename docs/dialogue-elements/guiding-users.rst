@@ -115,7 +115,7 @@ Storing this feedback is a powerful way to figure out how you can improve your a
      -
        - ( Was that helpful?
        - no.
-       - ( Thanks. Why wasnt I able to help?
+       - ( Thanks. Why wasn't I able to help?
        - ^ you didn't understand me correctly
        - ^ you understood me, but your answers weren't very helpful.
 
