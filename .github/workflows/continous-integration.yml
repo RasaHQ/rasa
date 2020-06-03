@@ -76,7 +76,6 @@ jobs:
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
-        sudo apt-get -y install diff || true
         cp poetry.lock poetry.lock.old
         poetry update
         diff poetry.lock.old poetry.lock
@@ -150,6 +149,9 @@ jobs:
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
+        cp poetry.lock poetry.lock.old
+        poetry update
+        diff poetry.lock.old poetry.lock
         make install-full | tee .output
         if grep 'The lock file is not up to date' .output; then exit 1; fi
         make prepare-tests-ubuntu
