@@ -617,7 +617,7 @@ class Agent:
         tracker_limit: Optional[int] = None,
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
-        exclusion_percentage: int = None,
+        exclusion_percentage: Optional[int] = None,
     ) -> List[DialogueStateTracker]:
         """Load training data from a resource."""
 
