@@ -252,11 +252,7 @@ description = "An easy safelist-based HTML-sanitizing tool."
 name = "bleach"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-<<<<<<< HEAD
-version = "3.1.4"
-=======
 version = "3.1.5"
->>>>>>> master
 
 [package.dependencies]
 packaging = "*"
@@ -288,17 +284,10 @@ description = "The AWS SDK for Python"
 name = "boto3"
 optional = false
 python-versions = "*"
-<<<<<<< HEAD
-version = "1.12.34"
-
-[package.dependencies]
-botocore = ">=1.15.34,<1.16.0"
-=======
 version = "1.13.21"
 
 [package.dependencies]
 botocore = ">=1.16.21,<1.17.0"
->>>>>>> master
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
@@ -308,11 +297,7 @@ description = "Low-level, data-driven core of boto 3."
 name = "botocore"
 optional = false
 python-versions = "*"
-<<<<<<< HEAD
-version = "1.15.34"
-=======
 version = "1.16.21"
->>>>>>> master
 
 [package.dependencies]
 docutils = ">=0.10,<0.16"
@@ -356,11 +341,7 @@ description = "Checks CloudFormation templates for practices and behaviour that 
 name = "cfn-lint"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-<<<<<<< HEAD
-version = "0.29.3"
-=======
 version = "0.33.0"
->>>>>>> master
 
 [package.dependencies]
 aws-sam-translator = ">=1.24.0"
@@ -632,11 +613,7 @@ description = "Fake implementation of redis API for testing purposes."
 name = "fakeredis"
 optional = false
 python-versions = ">=3.5"
-<<<<<<< HEAD
-version = "1.3.1"
-=======
 version = "1.4.1"
->>>>>>> master
 
 [package.dependencies]
 redis = "<3.6.0"
@@ -757,11 +734,7 @@ description = "Google Authentication Library"
 name = "google-auth"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
-<<<<<<< HEAD
-version = "1.12.0"
-=======
 version = "1.16.0"
->>>>>>> master
 
 [package.dependencies]
 cachetools = ">=2.0.0,<5.0"
@@ -857,11 +830,7 @@ description = "HTTP/2-based RPC framework"
 name = "grpcio"
 optional = false
 python-versions = "*"
-<<<<<<< HEAD
-version = "1.28.0"
-=======
 version = "1.29.0"
->>>>>>> master
 
 [package.dependencies]
 six = ">=1.5.2"
@@ -912,11 +881,7 @@ description = "Chromium HSTS Preload list as a Python package and updated daily"
 name = "hstspreload"
 optional = false
 python-versions = ">=3.6"
-<<<<<<< HEAD
-version = "2020.3.31"
-=======
 version = "2020.6.2"
->>>>>>> master
 
 [[package]]
 category = "main"
@@ -1496,11 +1461,7 @@ description = "The Jupyter Notebook format"
 name = "nbformat"
 optional = false
 python-versions = ">=3.5"
-<<<<<<< HEAD
-version = "5.0.5"
-=======
 version = "5.0.6"
->>>>>>> master
 
 [package.dependencies]
 ipython-genutils = "*"
@@ -3347,7 +3308,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "6eb6fc5d66b158ec2d0812ba867078505d00695dd3e844e2726bb8bd66fd7a6a"
+content-hash = "a13a122ff9ec93eff34e217f3a0be28c3d573181e5a0e590bce9a1ba333e6d3c"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -3442,13 +3403,8 @@ black = [
     {file = "black-19.10b0.tar.gz", hash = "sha256:c2edb73a08e9e0e6f65a0e6af18b059b8b1cdd5bef997d7a0b181df93dc81539"},
 ]
 bleach = [
-<<<<<<< HEAD
-    {file = "bleach-3.1.4-py2.py3-none-any.whl", hash = "sha256:cc8da25076a1fe56c3ac63671e2194458e0c4d9c7becfd52ca251650d517903c"},
-    {file = "bleach-3.1.4.tar.gz", hash = "sha256:e78e426105ac07026ba098f04de8abe9b6e3e98b5befbf89b51a5ef0a4292b03"},
-=======
     {file = "bleach-3.1.5-py2.py3-none-any.whl", hash = "sha256:2bce3d8fab545a6528c8fa5d9f9ae8ebc85a56da365c7f85180bfe96a35ef22f"},
     {file = "bleach-3.1.5.tar.gz", hash = "sha256:3c4c520fdb9db59ef139915a5db79f8b51bc2a7257ea0389f30c846883430a4b"},
->>>>>>> master
 ]
 blis = [
     {file = "blis-0.2.4-cp27-cp27m-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:278d7b95e56cf82a6bef91cd8283eadc9401f2d3bdbbf2cdfdb605cf9081c36e"},
@@ -3470,21 +3426,12 @@ boto = [
     {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
 ]
 boto3 = [
-<<<<<<< HEAD
-    {file = "boto3-1.12.34-py2.py3-none-any.whl", hash = "sha256:52b8de35f6647e3b8ce81f6a745a67812623b5c4acc2d6bd5e814fddfa488321"},
-    {file = "boto3-1.12.34.tar.gz", hash = "sha256:5246caf509baa4716065e6bb78bdc516fdd6b0dfbd9098cc2a0f779fad789c6c"},
-]
-botocore = [
-    {file = "botocore-1.15.34-py2.py3-none-any.whl", hash = "sha256:db0fba3f4adfb9bf3976aae10efa9acb59e3efe52ce8feac71ecac0b7be2fc2e"},
-    {file = "botocore-1.15.34.tar.gz", hash = "sha256:c799623598d04c66b0be4cb990c01a24bd3c06023f0c7221adead38a7431c994"},
-=======
     {file = "boto3-1.13.21-py2.py3-none-any.whl", hash = "sha256:45e851db4b4ea6cedc9e138f6aa93fedaa5a8e0ae6d8a3f893b3e27c6aff60c8"},
     {file = "boto3-1.13.21.tar.gz", hash = "sha256:86de0882ba324ba4ced362b5c94491b8d126d378f2ee24d32486cb64b160a89f"},
 ]
 botocore = [
     {file = "botocore-1.16.21-py2.py3-none-any.whl", hash = "sha256:3837f15e9ec9fd395beb0fb840a5976655c8ebb83121a4612e26f21aad8da908"},
     {file = "botocore-1.16.21.tar.gz", hash = "sha256:7bd43e2fdf579875e3d3073e25699f5e524cc36a1748c4aee7c9c626e3760b2b"},
->>>>>>> master
 ]
 cachetools = [
     {file = "cachetools-4.1.0-py3-none-any.whl", hash = "sha256:de5d88f87781602201cde465d3afe837546663b168e8b39df67411b0bf10cefc"},
@@ -3525,13 +3472,8 @@ cffi = [
     {file = "cffi-1.14.0.tar.gz", hash = "sha256:2d384f4a127a15ba701207f7639d94106693b6cd64173d6c8988e2c25f3ac2b6"},
 ]
 cfn-lint = [
-<<<<<<< HEAD
-    {file = "cfn-lint-0.29.3.tar.gz", hash = "sha256:98d5b2187eff9d40e742dbd4289bd3053907d50d6e72a69e22d7066fa6972f83"},
-    {file = "cfn_lint-0.29.3-py3-none-any.whl", hash = "sha256:fdc2ca69889b8cf791d19e52cbeecd68799fa5286d3d8823f1220ab0c70d1de9"},
-=======
     {file = "cfn-lint-0.33.0.tar.gz", hash = "sha256:b74bb89a3d0da4a744179b07bc186b9fbc4800f929bf635bb6246e80fb91a953"},
     {file = "cfn_lint-0.33.0-py3-none-any.whl", hash = "sha256:62e42ee7c0a16b1fa1a784e99f1e79c711ebe3a8636fb4d6601d804becd7f819"},
->>>>>>> master
 ]
 chardet = [
     {file = "chardet-3.0.4-py2.py3-none-any.whl", hash = "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"},
@@ -3677,13 +3619,8 @@ execnet = [
     {file = "execnet-1.7.1.tar.gz", hash = "sha256:cacb9df31c9680ec5f95553976c4da484d407e85e41c83cb812aa014f0eddc50"},
 ]
 fakeredis = [
-<<<<<<< HEAD
-    {file = "fakeredis-1.3.1-py3-none-any.whl", hash = "sha256:5739a9f37c4776a83b2db4e1f117a3216e6f54f8975d5c56508ff0ee68be938a"},
-    {file = "fakeredis-1.3.1.tar.gz", hash = "sha256:e965c84ea197726d9e08300883a3a257ebb312d093986142f4c4ae85e9be68e7"},
-=======
     {file = "fakeredis-1.4.1-py3-none-any.whl", hash = "sha256:647b2593d349d9d4e566c8dadb2e4c71ba35be5bdc4f1f7ac2d565a12a965053"},
     {file = "fakeredis-1.4.1.tar.gz", hash = "sha256:4d170886865a91dbc8b7f8cbd4e5d488f4c5f2f25dfae127f001617bbe9e8f97"},
->>>>>>> master
 ]
 fbmessenger = [
     {file = "fbmessenger-6.0.0-py2.py3-none-any.whl", hash = "sha256:82cffd6e2fe02bfcf8ed083c59bdddcfdaa594dd0040f0c49eabbaf0e58d974c"},
@@ -3716,13 +3653,8 @@ google-api-core = [
     {file = "google_api_core-1.17.0-py2.py3-none-any.whl", hash = "sha256:c0e430658ed6be902d7ba7095fb0a9cac810270d71bf7ac4484e76c300407aae"},
 ]
 google-auth = [
-<<<<<<< HEAD
-    {file = "google-auth-1.12.0.tar.gz", hash = "sha256:016924388770b7e66c7e9ade1c4c3144ee88812d79697fd6c0dad9abdfcda2fd"},
-    {file = "google_auth-1.12.0-py2.py3-none-any.whl", hash = "sha256:01d686448f57d3bc027726474faa1aa650ba333bedb392e06938b0add8ec8d3a"},
-=======
     {file = "google-auth-1.16.0.tar.gz", hash = "sha256:1b3732b121917124adfe602de148ef5cba351792cf9527f99e6b61b84f74a7f5"},
     {file = "google_auth-1.16.0-py2.py3-none-any.whl", hash = "sha256:7a9119c4ed518e4ea596cc896e6c567b923b57db40be70e5aec990055aea85d3"},
->>>>>>> master
 ]
 google-auth-oauthlib = [
     {file = "google-auth-oauthlib-0.4.1.tar.gz", hash = "sha256:88d2cd115e3391eb85e1243ac6902e76e77c5fe438b7276b297fbe68015458dd"},
@@ -3749,39 +3681,6 @@ googleapis-common-protos = [
     {file = "googleapis-common-protos-1.51.0.tar.gz", hash = "sha256:013c91704279119150e44ef770086fdbba158c1f978a6402167d47d5409e226e"},
 ]
 grpcio = [
-<<<<<<< HEAD
-    {file = "grpcio-1.28.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:63b2c32656b33d9c95b270eaf8a7eb0740295db6faa3d8598e85aad1b0f35a9d"},
-    {file = "grpcio-1.28.0-cp27-cp27m-manylinux2010_i686.whl", hash = "sha256:8539e1419f83b91b916350d52fea8487f22e3da5b160efe8818dae577e6d7182"},
-    {file = "grpcio-1.28.0-cp27-cp27m-manylinux2010_x86_64.whl", hash = "sha256:854029eeeda420f7d16a8c1026bdb37a40988e63e35774952e2362da9179f910"},
-    {file = "grpcio-1.28.0-cp27-cp27m-win32.whl", hash = "sha256:d5dee4508ad2a0506ec762304e725478b8720418ae1be99e5a9dcf7e43f3bb83"},
-    {file = "grpcio-1.28.0-cp27-cp27m-win_amd64.whl", hash = "sha256:6fd0ae2ff9baad26007ffd1b8f66b6ae7c7e6d4ea85dbfa4ebe67d9bf1753d4c"},
-    {file = "grpcio-1.28.0-cp27-cp27mu-linux_armv7l.whl", hash = "sha256:9b6695756c4243f82471b418ee7a4d25fcd3b3ad284ed5afe3fb7554d28a644e"},
-    {file = "grpcio-1.28.0-cp27-cp27mu-manylinux2010_i686.whl", hash = "sha256:17064aa8da7744b557aa5970e60bce0f6c9bd66e7a67232ecadad25b868ebdfb"},
-    {file = "grpcio-1.28.0-cp27-cp27mu-manylinux2010_x86_64.whl", hash = "sha256:cc16a0aa6d93eb5285d999f7ec0c63d9117151351bb1a96f78d77fa9b14aaded"},
-    {file = "grpcio-1.28.0-cp35-cp35m-linux_armv7l.whl", hash = "sha256:53ff83eaf630ac4edb0794916cb3fbed253a940e27a923c8576152b7de1bf147"},
-    {file = "grpcio-1.28.0-cp35-cp35m-macosx_10_7_intel.whl", hash = "sha256:0a363b289d341359bfa7cdd1b4998be78932e349a0482643863ccb74282f3e47"},
-    {file = "grpcio-1.28.0-cp35-cp35m-manylinux2010_i686.whl", hash = "sha256:9439707258b100ab7bb7050c191aa6cbd230958858300ac3ed17a63f75eb2467"},
-    {file = "grpcio-1.28.0-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:e6303d1fdb11483acb5680641d8f2dd434a56c5cf55957decc4620df8247720f"},
-    {file = "grpcio-1.28.0-cp35-cp35m-win32.whl", hash = "sha256:719b94748e7b4a38db5a0c0db2edeeb7ac028766e6097cb6a7f6264e35630ae8"},
-    {file = "grpcio-1.28.0-cp35-cp35m-win_amd64.whl", hash = "sha256:bf910e4c20f9c06010d20b9f55dd00ddf6e63f50c919c8dbc30e94b735890b0e"},
-    {file = "grpcio-1.28.0-cp36-cp36m-linux_armv7l.whl", hash = "sha256:f91ff1acc988e54e7bcbbd4b67268d9966f519b9d47e5077dd6c1ab117c71fb3"},
-    {file = "grpcio-1.28.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:92f5c4ea22a645c82ec6b950ddfa06357d8c87bdcd915123a2401e9df5e593a0"},
-    {file = "grpcio-1.28.0-cp36-cp36m-manylinux2010_i686.whl", hash = "sha256:dff4bb172638330076f030b08ed28146b95b3e2200aa0677815c5379410f6893"},
-    {file = "grpcio-1.28.0-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:8dc06d30f7ba9ef8c058967693855edf377d2a923ade0f129676216638711b88"},
-    {file = "grpcio-1.28.0-cp36-cp36m-win32.whl", hash = "sha256:40117cc78dea2758bcd6379daa21d3c17e199d873c6f367121ab44899b9c62b4"},
-    {file = "grpcio-1.28.0-cp36-cp36m-win_amd64.whl", hash = "sha256:4a929658186e2cd637f70b97e261cf18811306fe6b673cdf65c7e75df3b30f4e"},
-    {file = "grpcio-1.28.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:396a7b9a340b06bb6cece16195737f1ac909d44fc78536133fa5e90af436e365"},
-    {file = "grpcio-1.28.0-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:ee0997d1c3cb1ec65870ebbd46ef2d6ea9f325cd9b49a27632caf403a123a39b"},
-    {file = "grpcio-1.28.0-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:c4cb5161cac5a85b6700a041379d38146ba848ce44666f9f98aa43cf950070a7"},
-    {file = "grpcio-1.28.0-cp37-cp37m-win32.whl", hash = "sha256:9a4e3cd0415cd73f3f0b7be0647b3ce6427ab40c32e0e9ff4b2f41b54e798a97"},
-    {file = "grpcio-1.28.0-cp37-cp37m-win_amd64.whl", hash = "sha256:62d2faec3918cc955d70a48f31347c234e7b558af30cb2f9bf6faef496b9da88"},
-    {file = "grpcio-1.28.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:87174ed6532929bb7adc89ea1f7ab5726fb11004131bd0ab53ccec035d6336a8"},
-    {file = "grpcio-1.28.0-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:ad134e1f863390de87d8999e626a3db699d91dac1835b91bb2b07868abe08e7e"},
-    {file = "grpcio-1.28.0-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:e57052adcc527fd0bb77c8b2611f5d9f1127aaccccde6ec4319b953e99228cff"},
-    {file = "grpcio-1.28.0-cp38-cp38-win32.whl", hash = "sha256:6b155fa9efb306e09889c6b971b09a02d485662fdf4217a7305af0c8f8b15dea"},
-    {file = "grpcio-1.28.0-cp38-cp38-win_amd64.whl", hash = "sha256:153add8fb232962bc786567ec9db90484ffd72d96b655580be55b8f39dc6d0d2"},
-    {file = "grpcio-1.28.0.tar.gz", hash = "sha256:c2c2407e4687f0b172f93762912b40ab23880ec8eca9c44428597c548560b19a"},
-=======
     {file = "grpcio-1.29.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:e90f3d11185c36593186e5ff1f581acc6ddfa4190f145b0366e579de1f52803b"},
     {file = "grpcio-1.29.0-cp27-cp27m-manylinux2010_i686.whl", hash = "sha256:5024b26e17a1bfc9390fb3b8077bf886eee02970af780fd23072970ef08cefe8"},
     {file = "grpcio-1.29.0-cp27-cp27m-manylinux2010_x86_64.whl", hash = "sha256:23bc395a32c2465564cb242e48bdd2fdbe5a4aebf307649a800da1b971ee7f29"},
@@ -3813,7 +3712,6 @@ grpcio = [
     {file = "grpcio-1.29.0-cp38-cp38-win32.whl", hash = "sha256:97fcbdf1f12e0079d26db73da11ee35a09adc870b1e72fbff0211f6a8003a4e8"},
     {file = "grpcio-1.29.0-cp38-cp38-win_amd64.whl", hash = "sha256:b85f355fc24b68a6c52f2750e7141110d1fcd07dfdc9b282de0000550fe0511b"},
     {file = "grpcio-1.29.0.tar.gz", hash = "sha256:a97ea91e31863c9a3879684b5fb3c6ab4b17c5431787548fc9f52b9483ea9c25"},
->>>>>>> master
 ]
 h11 = [
     {file = "h11-0.8.1-py2.py3-none-any.whl", hash = "sha256:f2b1ca39bfed357d1f19ac732913d5f9faa54a5062eca7d2ec3a916cfb7ae4c7"},
@@ -3859,13 +3757,8 @@ hpack = [
     {file = "hpack-3.0.0.tar.gz", hash = "sha256:8eec9c1f4bfae3408a3f30500261f7e6a65912dc138526ea054f9ad98892e9d2"},
 ]
 hstspreload = [
-<<<<<<< HEAD
-    {file = "hstspreload-2020.3.31-py3-none-any.whl", hash = "sha256:e6b87847b1250c30e67bf68925d5e78b987d4be3fb61f921cdcd8ccea7dd4342"},
-    {file = "hstspreload-2020.3.31.tar.gz", hash = "sha256:0aa4c2ebb768a11109f4d2008b3fce987adaef2de584b93a48756847ec84403c"},
-=======
     {file = "hstspreload-2020.6.2-py3-none-any.whl", hash = "sha256:ca6a3556ac40674e0663f7787a1c48acbef0ba3e262458ea8a149bebd32841f6"},
     {file = "hstspreload-2020.6.2.tar.gz", hash = "sha256:5f9782b70f884eaaf2297872e73b8ada122d538bb7bdc41382a9fdfb2d61eb61"},
->>>>>>> master
 ]
 httplib2 = [
     {file = "httplib2-0.18.1-py3-none-any.whl", hash = "sha256:ca2914b015b6247791c4866782fa6042f495b94401a0f0bd3e1d6e0ba2236782"},
@@ -4156,13 +4049,8 @@ nbconvert = [
     {file = "nbconvert-5.6.1.tar.gz", hash = "sha256:21fb48e700b43e82ba0e3142421a659d7739b65568cc832a13976a77be16b523"},
 ]
 nbformat = [
-<<<<<<< HEAD
-    {file = "nbformat-5.0.5-py3-none-any.whl", hash = "sha256:65a79936a128fd85aef392b7fea520166364037118b6fe3ed52de742d06c4558"},
-    {file = "nbformat-5.0.5.tar.gz", hash = "sha256:f0c47cf93c505cb943e2f131ef32b8ae869292b5f9f279db2bafb35867923f69"},
-=======
     {file = "nbformat-5.0.6-py3-none-any.whl", hash = "sha256:276343c78a9660ab2a63c28cc33da5f7c58c092b3f3a40b6017ae2ce6689320d"},
     {file = "nbformat-5.0.6.tar.gz", hash = "sha256:049af048ed76b95c3c44043620c17e56bc001329e07f83fec4f177f0e3d7b757"},
->>>>>>> master
 ]
 nbsphinx = [
     {file = "nbsphinx-0.6.1-py3-none-any.whl", hash = "sha256:b0ecd23861188525563c20feae7900a0a8b5119eb555a2cac58033f5832a995b"},

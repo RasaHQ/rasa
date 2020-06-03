@@ -45,6 +45,7 @@ DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 # from a separatedly installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
 
+
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
@@ -54,8 +55,9 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     yield loop
     loop.close()
 
+
 @pytest.fixture(scope="session")
-async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Tuple[Agent, str]:
+async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent(
