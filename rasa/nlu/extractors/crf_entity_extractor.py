@@ -301,7 +301,7 @@ class CRFEntityExtractor(EntityExtractor):
         cached_component: Optional["CRFEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "CRFEntityExtractor":
-        from sklearn.externals import joblib
+        import joblib
 
         file_names = meta.get("files")
         entity_taggers = {}
@@ -333,7 +333,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         Returns the metadata necessary to load the model again."""
 
-        from sklearn.externals import joblib
+        import joblib
 
         file_names = {}
 
