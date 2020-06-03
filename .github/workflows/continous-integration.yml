@@ -76,6 +76,10 @@ jobs:
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
+        sudo apt-get -y install diff || true
+        cp poetry.lock poetry.lock.old
+        poetry update
+        diff poetry.lock.old poetry.lock
         make install-full
 
     - name: Lint Code 🎎

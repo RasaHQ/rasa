@@ -3290,6 +3290,7 @@ multidict = ">=4.0"
 [[package]]
 category = "main"
 description = "Backport of pathlib-compatible object wrapper for zip files"
+marker = "python_version < \"3.7\" and python_version != \"3.4\" or python_version < \"3.8\""
 name = "zipp"
 optional = false
 python-versions = ">=3.6"
@@ -3307,7 +3308,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "a13a122ff9ec93eff34e217f3a0be28c3d573181e5a0e590bce9a1ba333e6d3c"
+content-hash = "856963461629a88117c29e3a37f8d8f600a84ef8065f84d897b3d005fc933b04"
 python-versions = "^3.6"
 
 [metadata.files]
