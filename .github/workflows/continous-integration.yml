@@ -66,13 +66,6 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Load Poetry Cached Libraries ⬇
-      uses: actions/cache@v1
-      with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-3.7
-
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
@@ -135,13 +128,6 @@ jobs:
       uses: Gr1N/setup-poetry@v1
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
-
-    - name: Load Poetry Cached Libraries ⬇
-      uses: actions/cache@v1
-      with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
     - name: Install Dependencies 📦
       run: |
