@@ -7,6 +7,7 @@ import re
 from typing import Tuple, List, Text, Set, Union, Optional, Iterable
 from rasa.nlu.training_data import loading
 from rasa.utils.io import DEFAULT_ENCODING
+from rasa.constants import DEFAULT_E2E_TESTS_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +161,34 @@ def is_story_file(file_path: Text) -> bool:
         logger.error(
             f"Tried to check if '{file_path}' is a story file, but failed to "
             f"read it. If this file contains story data, you should "
+            f"investigate this error, otherwise it is probably best to "
+            f"move the file to a different location. "
+            f"Error: {e}"
+        )
+        return False
+
+
+def is_conversation_test_file(file_path: Text) -> bool:
+    """Checks if a file is a Rasa conversation test file.
+
+    Args:
+        file_path: Path of the file which should be checked.
+
+    Returns:
+        `True` if it's a conversation test file, otherwise `False`.
+    """
+
+    if not file_path.endswith(".md"):
+        return False
+
+    try:
+        dirname = os.path.dirname(file_path)
+        return is_story_file(file_path) and DEFAULT_E2E_TESTS_PATH in dirname
+    except Exception as e:
+        # catch-all because we might be loading files we are not expecting to load
+        logger.error(
+            f"Tried to check if '{file_path}' is a conversation test file, but failed "
+            f"to read it. If this file contains conversation test data, you should "
             f"investigate this error, otherwise it is probably best to "
             f"move the file to a different location. "
             f"Error: {e}"
