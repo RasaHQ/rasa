@@ -72,7 +72,6 @@ jobs:
         edit-mode: 'replace'
         issue-number: ${{ github.event.number }}
         body: |
-          <!-- comment-modeltest-help -->
           ${{ steps.get_help_description.outputs.help_description }}
         reactions: 'eyes'
 
@@ -369,9 +368,11 @@ jobs:
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
 
-  add_comment_results:
+  add_comment_results_gpu:
     name: Add a comment with the results
     runs-on: ubuntu-latest
+    needs:
+      - model_regression_test_gpu
 
     steps:
       - name: Download the report
@@ -400,7 +401,44 @@ jobs:
           header: ${{ github.run_id }}
           append: true
           message: |-
-            Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/$${{ github.run_id }})
+            Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            ${{ steps.get_results.outputs.result }}
+
+  add_comment_results_cpu:
+    name: Add a comment with the results
+    runs-on: ubuntu-latest
+    needs:
+      - model_regression_test_cpu
+
+    steps:
+      - name: Download the report
+        uses: actions/download-artifact@v2
+        with:
+          name: report.json
+
+      - name: Download gomplate
+        run: |-
+          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          chmod 755 gomplate
+
+      - name: Render a comment to add
+        id: get_results
+        run: |
+          OUTPUT="$(./gomplate -d data=report.json -f .github/templates/model_regression_test_results.tmpl)"
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          echo "::set-output name=result::$OUTPUT"
+
+      - name: Publish results as a PR comment
+        uses: marocchino/sticky-pull-request-comment@v1
+        if: always()
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          header: ${{ github.run_id }}
+          append: true
+          message: |-
+            Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
             ${{ steps.get_results.outputs.result }}
 
