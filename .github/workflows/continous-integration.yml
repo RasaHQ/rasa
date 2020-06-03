@@ -76,8 +76,6 @@ jobs:
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
-        cp poetry.lock poetry.lock.old
-        poetry update
         diff poetry.lock.old poetry.lock
         make install-full
 
