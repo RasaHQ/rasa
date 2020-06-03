@@ -21,8 +21,8 @@
 #
 #include:
 #  - dataset: "Carbon Bot"
-#    config: "Sparse + EmbeddingIntent + ResponseSelector(bow)"
+#    config: ["Sparse + EmbeddingIntent + ResponseSelector(bow)"]
 
 include:
   - dataset: "Carbon Bot"
-    config: "Sparse + EmbeddingIntent + ResponseSelector(bow)"
+    config: ["Sparse + EmbeddingIntent + ResponseSelector(bow)"]

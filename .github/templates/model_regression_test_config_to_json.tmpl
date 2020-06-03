@@ -1,0 +1,10 @@
+{{- $config := ((datasource "github").body | regexp.Find "```(?s)(.*)```" | regexp.ReplaceLiteral "```.*|\r" "" | yaml | toJSON | json) -}}
+{"include":[
+{{- $inc := coll.Slice -}}
+{{- range $pair := $config.include -}}
+{{- range $index, $value := $pair.config -}}
+{{ $inc = (coll.Append (dict "dataset" $pair.dataset "config" $value | toJSON) $inc) -}}
+{{- end -}}
+{{- end -}}
+{{- join $inc "," -}}
+]}

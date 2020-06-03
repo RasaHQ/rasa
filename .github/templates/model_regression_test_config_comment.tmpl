@@ -1,0 +1,14 @@
+<!-- comment-modeltest-help -->
+Hey @{{ .Env.GITHUB_ACTOR }}! :wave: To run model regression tests comment with the modeltest command and a configuration.
+
+_Tips :bulb:: The model regression test will be run on push. You can re-run the tests by re-add `status:model-regression-tests` label or use a `Re-run jobs` button in Github Actions workflow._
+
+_Tips :bulb:: Every time when you want to change a configuration you should edit a comment with the previous configuration._
+
+You can copy this in your comment and customize:
+
+> /modeltest
+> ~~~yml
+>```yml
+{{range split (file.Read ".github/configs/mr-test-example.yaml") "\n"}}>{{.}}{{"\n"}}{{ end -}}
+>```

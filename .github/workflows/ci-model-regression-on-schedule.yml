@@ -1,4 +1,4 @@
-name: CI - Model Regression 
+name: CI - Model Regression
 
 on:
   schedule:
@@ -22,7 +22,7 @@ jobs:
         curl --location https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64 -o yq
         chmod +x yq
 
-    - run: test -f .github/configs/mr-test.yaml
+    - run: test -f .github/configs/mr-test-schedule.yaml
 
     - id: set-matrix
       shell: bash
@@ -47,7 +47,7 @@ jobs:
           ./gomplate -f .github/runner/deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      - uses: GoogleCloudPlatform/github-actions@0.1.2
         with:
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}
@@ -106,18 +106,18 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
           poetry run python -m spacy link --force de_core_news_md de
-          
+
       - name: Validate that GPUs are working
         run: |-
           poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
-          
+
       - name: Checkout dataset
         uses: actions/checkout@v2
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
-          
+
       - name: Run test
         id: run_test
         env:
@@ -129,19 +129,19 @@ jobs:
           # determine DATASET and CONFIG environment variables
           source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
           echo "::set-env name=DATASET::${DATASET}"
-          
+
           poetry run rasa --version
-          
+
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           poetry run rasa train nlu -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
           echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
-          
+
           export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           poetry run rasa test nlu -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
-          
+
           echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
-          
+
       - name: Get results
         id: get_results
         run: |
@@ -155,15 +155,16 @@ jobs:
           SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           CONFIG: ${{ matrix.config }}
-          RUNNER_TYPE: "GPU"
+          ACCELERATOR_TYPE: "GPU"
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           RESULT_DIR: "${{ github.workspace }}/results"
+          PR_URL: ""
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
-          
+
   remove_runner_gpu:
     name: Delete Github Runner - GPU
     needs:
@@ -173,7 +174,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      - uses: GoogleCloudPlatform/github-actions@0.1.2
         with:
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}

@@ -26,7 +26,7 @@ jobs:
 
   read_test_configuration:
     name: Reads tests configuration
-    if: "(github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -34,22 +34,71 @@ jobs:
     - name: Checkout master
       uses: actions/checkout@v2
 
-    - name: Download yq
+    - name: Download gomplate
+      run: |-
+        curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+        chmod 755 gomplate
+
+    - name: Find a comment with help description
+      uses: tczekajlo/find-comment@master
+      id: fc_help
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        issue-number: ${{ github.event.number }}
+        body-includes: "^<!.*comment-modeltest-help.*>"
+
+    - name: Find a comment with configuration
+      uses: tczekajlo/find-comment@master
+      id: fc_config
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        issue-number: ${{ github.event.number }}
+        body-includes: "^/modeltest"
+
+    - run: echo ${{ steps.fc_config.outputs.comment-id }}
+
+    - name: Render help description from template
+      id: get_help_description
       run: |
-        curl --location https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64 -o yq
-        chmod +x yq
+        OUTPUT=$(./gomplate -f .github/templates/model_regression_test_config_comment.tmpl)
+        OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+        OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+        echo "::set-output name=help_description::$OUTPUT"
 
-    - run: test -f .github/configs/mr-test.yaml
+    - name: Create a comment with help description
+      uses: peter-evans/create-or-update-comment@v1
+      if: steps.fc_help.outputs.comment-id == ''
+      with:
+        edit-mode: 'replace'
+        issue-number: ${{ github.event.number }}
+        body: |
+          <!-- comment-modeltest-help -->
+          ${{ steps.get_help_description.outputs.help_description }}
+        reactions: 'eyes'
 
-    - id: set-matrix
-      shell: bash
-      run: echo "::set-output name=matrix::$(./yq -j r .github/configs/mr-test.yaml)"
+    - if: steps.fc_config.outputs.comment-id == ''
+      run: exit 1
+      name: Fail if a configuration can't be found
+
+    - name: Read configuration from a PR comment
+      if: steps.fc_config.outputs.comment-id != ''
+      id: set-matrix
+      run: |-
+          echo "::set-output name=matrix::$(./gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)"
+
+    - name: Add reaction
+      uses: peter-evans/create-or-update-comment@v1
+      if: steps.fc_config.outputs.comment-id != ''
+      with:
+        edit-mode: 'replace'
+        comment-id: ${{ steps.fc_config.outputs.comment-id }}
+        reactions: heart, hooray, rocket
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
     needs: read_test_configuration
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && (github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
     steps:
       - name: Checkout
@@ -65,7 +114,7 @@ jobs:
           ./gomplate -f .github/runner/deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      - uses: GoogleCloudPlatform/github-actions@0.1.2
         with:
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}
@@ -86,12 +135,14 @@ jobs:
     - deploy_runner_gpu
     - read_test_configuration
     env:
+      # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+      ACCELERATOR_TYPE: "GPU"
     runs-on: [self-hosted, gpu]
     strategy:
       max-parallel: 1
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && (github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
     steps:
       - name: Checkout
@@ -125,18 +176,18 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
           poetry run python -m spacy link --force de_core_news_md de
-          
+
       - name: Validate that GPUs are working
         run: |-
           poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
-          
+
       - name: Checkout dataset
         uses: actions/checkout@v2
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
-          
+
       - name: Run test
         id: run_test
         env:
@@ -148,70 +199,74 @@ jobs:
           # determine DATASET and CONFIG environment variables
           source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
           echo "::set-env name=DATASET::${DATASET}"
-          
+
           poetry run rasa --version
-          
+
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           poetry run rasa train nlu -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
           echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
-          
+
           export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           poetry run rasa test nlu -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
-          
+
           echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
-          
-      - name: Get results
-        id: get_results
-        run: |
-          OUTPUT=$(gomplate -f .github/templates/model_regression_test_results.tmpl)
-          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
-          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
-          echo "::set-output name=result::$OUTPUT"
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        continue-on-error: true
+        with:
+          name: report.json
+
+      - name: Generate a JSON file with a report
+        env:
+          SUMMARY_FILE: "./report.json"
+          DATASET: ${{ matrix.dataset }}
+          RESULT_DIR: "${{ github.workspace }}/results"
+          CONFIG: ${{ matrix.config }}
+          TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
+          TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
+          TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+        run: |-
+          poetry run python .github/scripts/mr_generate_summary.py
+          cat $SUMMARY_FILE
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: report.json
+          path: ./report.json
 
       - name: Publish results to Segment
         env:
           SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           CONFIG: ${{ matrix.config }}
-          RUNNER_TYPE: "GPU"
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           RESULT_DIR: "${{ github.workspace }}/results"
         run: |-
+          export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
 
-
-      - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v1
-        if: always()
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          header: ${{ github.run_id }}
-          append: true
-          message: |-
-            Commit: ${{ github.sha }}, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
-            Execution time: test: `${{ steps.run_test.outputs.test_run_time }}`, train: `${{ steps.run_test.outputs.train_run_time }}`, total: `${{ steps.run_test.outputs.total_run_time }}`
-            
-            ${{ steps.get_results.outputs.result }}
-          
   model_regression_test_cpu:
     name: Model Regression Tests - CPU
     continue-on-error: true
     needs:
     - read_test_configuration
+    env:
+      ACCELERATOR_TYPE: "CPU"
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
-    if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && (github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
-    steps: 
+    steps:
       - name: Checkout
         uses: actions/checkout@v2
-          
+
       - name: Set up Python 3.7 🐍
         uses: actions/setup-python@v2
         with:
@@ -277,27 +332,65 @@ jobs:
           echo "::set-output name=test_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           echo "::set-output name=total_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
-      - name: Get results
-        id: get_results
-        run: |
-          OUTPUT=$(./gomplate -f .github/templates/model_regression_test_results.tmpl)
-          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
-          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
-          echo "::set-output name=result::$OUTPUT"
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        continue-on-error: true
+        with:
+          name: report.json
 
+      - name: Generate a JSON file with a report
+        env:
+          SUMMARY_FILE: "./report.json"
+          DATASET: ${{ matrix.dataset }}
+          RESULT_DIR: "${{ github.workspace }}/results"
+          CONFIG: ${{ matrix.config }}
+          TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
+          TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
+          TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+        run: |-
+          poetry run python .github/scripts/mr_generate_summary.py
+          cat $SUMMARY_FILE
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: report.json
+          path: ./report.json
       - name: Publish results to Segment
         env:
           SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           CONFIG: ${{ matrix.config }}
-          RUNNER_TYPE: "CPU"
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           RESULT_DIR: "${{ github.workspace }}/results"
         run: |-
+          export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
+
+  add_comment_results:
+    name: Add a comment with the results
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download the report
+        uses: actions/download-artifact@v2
+        with:
+          name: report.json
+
+      - name: Download gomplate
+        run: |-
+          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          chmod 755 gomplate
+
+      - name: Render a comment to add
+        id: get_results
+        run: |
+          OUTPUT="$(./gomplate -d data=report.json -f .github/templates/model_regression_test_results.tmpl)"
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          echo "::set-output name=result::$OUTPUT"
 
       - name: Publish results as a PR comment
         uses: marocchino/sticky-pull-request-comment@v1
@@ -307,8 +400,7 @@ jobs:
           header: ${{ github.run_id }}
           append: true
           message: |-
-            Commit: ${{ github.sha }}, dataset: `${{ matrix.dataset }}`, config: `${{ matrix.config }}`
-            Execution time: test: `${{ steps.run_test.outputs.test_run_time }}`, train: `${{ steps.run_test.outputs.train_run_time }}`, total: `${{ steps.run_test.outputs.total_run_time }}`
+            Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/$${{ github.run_id }})
 
             ${{ steps.get_results.outputs.result }}
 
@@ -322,7 +414,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      - uses: GoogleCloudPlatform/github-actions@0.1.2
         with:
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}

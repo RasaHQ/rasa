@@ -1,3 +1,4 @@
+# Send event to Segment with a summary of test
 import analytics
 import datetime
 import json
@@ -17,7 +18,8 @@ def send_to_segment(context):
         'dataset': os.environ['DATASET_NAME'],
         'workflow': os.environ['GITHUB_WORKFLOW'],
         'config': os.environ['CONFIG'],
-        'runner_type': os.environ['RUNNER_TYPE'],
+        'pr_url': os.environ['PR_URL'],
+        'accelerator_type': os.environ['ACCELERATOR_TYPE'],
         'test_run_time': os.environ['TEST_RUN_TIME'],
         'train_run_time': os.environ['TRAIN_RUN_TIME'],
         'total_run_time': os.environ['TOTAL_RUN_TIME'],
@@ -26,21 +28,11 @@ def send_to_segment(context):
     })
 
 def read_results(file):
-    result = {}
     with open(file) as json_file:
         data = json.load(json_file)
-        
-        if "accuracy" in data:
-            result["accuracy"] = data["accuracy"]
 
-        if "weighted avg" in data:
-            result["weighted_avg"] = data["weighted avg"]
-
-        if "macro avg" in data:
-            result["macro_avg"] = data["macro avg"]
-
-        if "micro avg" in data:
-            result["micro_avg"] = data["micro avg"]
+        keys = ["accuracy", "weighted avg", "macro avg", "micro avg"]
+        result = {key: data[key] for key in keys if key in data}
 
     return result
 
@@ -50,15 +42,15 @@ def push_results(file_name, file):
     send_to_segment(result)
 
 
-for dirpath, dirnames, files in os.walk(os.environ['RESULT_DIR']):
-    for f in files:
-        if f.endswith("intent_report.json"):
-            push_results(f, os.path.join(dirpath, f))
-        elif f.endswith("CRFEntityExtractor_report.json"):
-            push_results(f, os.path.join(dirpath, f))
-        elif f.endswith("DIETClassifier_report.json"):
-            push_results(f, os.path.join(dirpath, f))
-        elif f.endswith("esponse_selection_report.json"):
-            push_results(f, os.path.join(dirpath, f))
-
-analytics.flush()
+if __name__ == "__main__":
+    for dirpath, dirnames, files in os.walk(os.environ['RESULT_DIR']):
+        for f in files:
+            if f.endswith("intent_report.json"):
+                push_results(f, os.path.join(dirpath, f))
+            elif f.endswith("CRFEntityExtractor_report.json"):
+                push_results(f, os.path.join(dirpath, f))
+            elif f.endswith("DIETClassifier_report.json"):
+                push_results(f, os.path.join(dirpath, f))
+            elif f.endswith("response_selection_report.json"):
+                push_results(f, os.path.join(dirpath, f))
+    analytics.flush()
