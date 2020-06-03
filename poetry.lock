@@ -1238,7 +1238,7 @@ description = "Pure Python client for Apache Kafka"
 name = "kafka-python"
 optional = false
 python-versions = "*"
-version = "1.4.7"
+version = "2.0.1"
 
 [[package]]
 category = "main"
@@ -4002,8 +4002,8 @@ jwcrypto = [
     {file = "jwcrypto-0.7.tar.gz", hash = "sha256:adbe1f6266cde35d40d5de6d1419612b3bd4c869b9332c88c9d7a9163d305100"},
 ]
 kafka-python = [
-    {file = "kafka-python-1.4.7.tar.gz", hash = "sha256:2f29baad4b3efe05a2bb81ac268855aa01cbc68397f15bac77b494ffd7e2cada"},
-    {file = "kafka_python-1.4.7-py2.py3-none-any.whl", hash = "sha256:4fbebebfcb6fc94903fb720fe883d7bbec7298f4f1acb857c21dd3b4b114ba4b"},
+    {file = "kafka-python-2.0.1.tar.gz", hash = "sha256:e59ad42dec8c7d54e3fbba0c1f8b54c44d92a3392d88242962d0c29803f2f6f8"},
+    {file = "kafka_python-2.0.1-py2.py3-none-any.whl", hash = "sha256:513431184ecd08e706ca53421ff23e269fc052374084b45b49640419564dd704"},
 ]
 keras-applications = [
     {file = "Keras_Applications-1.0.8-py3-none-any.whl", hash = "sha256:df4323692b8c1174af821bf906f1e442e63fa7589bf0f1230a0b6bdc5a810c95"},
