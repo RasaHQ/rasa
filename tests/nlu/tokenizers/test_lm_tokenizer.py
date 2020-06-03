@@ -7,12 +7,14 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     LANGUAGE_MODEL_DOCS,
     TOKEN_IDS,
+    NUMBER_OF_SUB_TOKENS,
 )
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 
+
 # TODO: need to fix this failing test
-@pytest.mark.xfail(strict=False)
+@pytest.mark.skip(reason="Results in random crashing of github action workers")
 @pytest.mark.parametrize(
     "model_name, texts, expected_tokens, expected_indices, expected_num_token_ids",
     [
@@ -357,3 +359,25 @@ def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens):
     lm_tokenizer.train(td)
 
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
+
+
+@pytest.mark.parametrize(
+    "text, expected_number_of_sub_tokens",
+    [("sentence embeddings", [1, 4]), ("this is a test", [1, 1, 1, 1])],
+)
+def test_lm_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
+    transformers_config = {"model_name": "bert"}  # Test for one should be enough
+
+    transformers_nlp = HFTransformersNLP(transformers_config)
+    lm_tokenizer = LanguageModelTokenizer()
+
+    message = Message(text)
+
+    td = TrainingData([message])
+
+    transformers_nlp.train(td)
+    lm_tokenizer.train(td)
+
+    assert [
+        t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])[:-1]
+    ] == expected_number_of_sub_tokens

@@ -219,7 +219,7 @@ Every time the user responds with something *other* than the requested slot or
 any of the required slots,
 you will be asked whether you want the form action to try and extract a slot
 from the user's message when returning to the form. This is best explained with
-and example:
+an example:
 
 .. code-block:: text
 

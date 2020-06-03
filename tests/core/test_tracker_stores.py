@@ -1,6 +1,7 @@
 import logging
 import tempfile
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 import sqlalchemy
@@ -18,10 +19,7 @@ from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManage
 from unittest.mock import Mock
 
 import rasa.core.tracker_store
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.core.domain import Domain
@@ -192,10 +190,8 @@ def test_tracker_store_deprecated_url_argument_from_string(default_domain: Domai
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.URLExampleTrackerStore"
 
-    with pytest.warns(DeprecationWarning):
-        tracker_store = TrackerStore.create(store_config, default_domain)
-
-    assert isinstance(tracker_store, URLExampleTrackerStore)
+    with pytest.raises(Exception):
+        TrackerStore.create(store_config, default_domain)
 
 
 def test_tracker_store_with_host_argument_from_string(default_domain: Domain):
@@ -343,7 +339,25 @@ def test_get_db_url_with_query():
     )
 
 
-def test_db_url_with_query_from_endpoint_config():
+def test_sql_tracker_store_logs_do_not_show_password(caplog: LogCaptureFixture):
+    dialect = "postgresql"
+    host = "localhost"
+    port = 9901
+    db = "some-database"
+    username = "db-user"
+    password = "some-password"
+
+    with caplog.at_level(logging.DEBUG):
+        _ = SQLTrackerStore(None, dialect, host, port, db, username, password)
+
+    # the URL in the logs does not contain the password
+    assert password not in caplog.text
+
+    # instead the password is displayed as '***'
+    assert f"postgresql://{username}:***@{host}:{port}/{db}" in caplog.text
+
+
+def test_db_url_with_query_from_endpoint_config(tmp_path: Path):
     endpoint_config = """
     tracker_store:
       dialect: postgresql
@@ -356,11 +370,9 @@ def test_db_url_with_query_from_endpoint_config():
         driver: my-driver
         another: query
     """
-
-    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.yml") as f:
-        f.write(endpoint_config)
-        f.flush()
-        store_config = read_endpoint_config(f.name, "tracker_store")
+    f = tmp_path / "tmp_config_file.yml"
+    f.write_text(endpoint_config)
+    store_config = read_endpoint_config(str(f), "tracker_store")
 
     url = SQLTrackerStore.get_db_url(**store_config.kwargs)
 
@@ -612,6 +624,38 @@ def test_tracker_store_retrieve_without_session_started_events(
     assert all(event == tracker.events[i] for i, event in enumerate(events))
 
 
+@pytest.mark.parametrize(
+    "tracker_store_type,tracker_store_kwargs",
+    [
+        (MockedMongoTrackerStore, {}),
+        (SQLTrackerStore, {"host": "sqlite:///"}),
+        (InMemoryTrackerStore, {}),
+    ],
+)
+def test_tracker_store_retrieve_with_events_from_previous_sessions(
+    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict
+):
+    tracker_store = tracker_store_type(Domain.empty(), **tracker_store_kwargs)
+    tracker_store.load_events_from_previous_conversation_sessions = True
+
+    conversation_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+        ],
+    )
+    tracker_store.save(tracker)
+
+    actual = tracker_store.retrieve(conversation_id)
+
+    assert len(actual.events) == len(tracker.events)
+
+
 def test_session_scope_error(
     monkeypatch: MonkeyPatch, capsys: CaptureFixture, default_domain: Domain
 ):
@@ -623,7 +667,7 @@ def test_session_scope_error(
     # `ensure_schema_exists()` raises `ValueError`
     mocked_ensure_schema_exists = Mock(side_effect=ValueError(requested_schema))
     monkeypatch.setattr(
-        rasa.core.tracker_store, "ensure_schema_exists", mocked_ensure_schema_exists,
+        rasa.core.tracker_store, "ensure_schema_exists", mocked_ensure_schema_exists
     )
 
     # `SystemExit` is triggered by failing `ensure_schema_exists()`

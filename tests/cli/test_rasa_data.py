@@ -12,10 +12,8 @@ from rasa.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
 
 
-def test_data_split_nlu(
-    run_in_default_project_without_models: Callable[..., RunResult]
-):
-    run_in_default_project_without_models(
+def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
+    run_in_simple_project(
         "data", "split", "nlu", "-u", "data/nlu.md", "--training-fraction", "0.75"
     )
 
@@ -24,10 +22,8 @@ def test_data_split_nlu(
     assert os.path.exists(os.path.join("train_test_split", "training_data.md"))
 
 
-def test_data_convert_nlu(
-    run_in_default_project_without_models: Callable[..., RunResult]
-):
-    run_in_default_project_without_models(
+def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
+    run_in_simple_project(
         "data",
         "convert",
         "nlu",

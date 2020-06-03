@@ -53,6 +53,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         "analyzer": "word",  # use 'char' or 'char_wb' for character
         # regular expression for tokens
         # only used if analyzer == 'word'
+        # WARNING this pattern is used during training
+        # but not currently used during inference!
         "token_pattern": r"(?u)\b\w\w+\b",
         # remove accents during the preprocessing step
         "strip_accents": None,  # {'ascii', 'unicode', None}
@@ -662,4 +664,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 meta, vocabulary=vocabulary
             )
 
-        return cls(meta, vectorizers)
+        ftr = cls(meta, vectorizers)
+
+        # make sure the vocabulary has been loaded correctly
+        for attribute in vectorizers:
+            ftr.vectorizers[attribute]._validate_vocabulary()
+
+        return ftr

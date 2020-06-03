@@ -100,27 +100,13 @@ def add_test_nlu_argument_group(
         "--successes",
         action="store_true",
         default=False,
-        help="If set successful predictions (intent and entities) will be written "
-        "to a file.",
+        help="If set successful predictions will be written to a file.",
     )
     parser.add_argument(
         "--no-errors",
         action="store_true",
         default=False,
-        help="If set incorrect predictions (intent and entities) will NOT be written "
-        "to a file.",
-    )
-    parser.add_argument(
-        "--histogram",
-        required=False,
-        default="hist.png",
-        help="Output path for the confidence histogram.",
-    )
-    parser.add_argument(
-        "--confmat",
-        required=False,
-        default="confmat.png",
-        help="Output path for the confusion matrix plot.",
+        help="If set incorrect predictions will NOT be written to a file.",
     )
     parser.add_argument(
         "-c",
@@ -191,6 +177,6 @@ def add_no_plot_param(
         dest="disable_plotting",
         action="store_true",
         default=default,
-        help=f"Don't render evaluation plots",
+        help="Don't render evaluation plots.",
         required=required,
     )
