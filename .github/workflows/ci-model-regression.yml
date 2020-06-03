@@ -375,6 +375,9 @@ jobs:
       - model_regression_test_gpu
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
       - name: Download the report
         uses: actions/download-artifact@v2
         with:
@@ -412,6 +415,9 @@ jobs:
       - model_regression_test_cpu
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
       - name: Download the report
         uses: actions/download-artifact@v2
         with:
