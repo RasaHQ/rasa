@@ -24,9 +24,11 @@ def test_hangouts_channel():
     s = rasa.core.run.configure_app([input_channel], port=5004)
 
     routes_list = utils.list_routes(s)
-    print(routes_list)
-    assert routes_list.get("hangouts_webhook.health").startswith("/webhooks/hangouts")
-    assert routes_list.get("hangouts_webhook.receive").startswith(
+
+    assert routes_list.get("hangouts_webhook.health", "").startswith(
+        "/webhooks/hangouts"
+    )
+    assert routes_list.get("hangouts_webhook.receive", "").startswith(
         "/webhooks/hangouts/webhook"
     )
 
