@@ -210,6 +210,32 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
     assert not selector.is_imported(str(not_relevant_file2))
 
 
+def test_not_importing_conversation_tests_in_project(tmpdir_factory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config = {"imports": ["bots/Bot A"]}
+    config_path = str(root / "config.yml")
+    utils.dump_obj_as_yaml_to_file(config_path, config)
+
+    story_data_file = root / "bots" / "Bot A" / "data" / "stories.md"
+    story_data_file.write("""## story""", ensure=True)
+
+    conversation_tests_file = (
+        root / "bots" / "Bot A" / "tests" / "conversation_tests.md"
+    )
+    conversation_tests_file.write(
+        """## story test""", ensure=True,
+    )
+
+    selector = MultiProjectImporter(config_path)
+
+    # Conversation tests should not be included in story paths
+    expected = [str(story_data_file)]
+
+    actual = selector._story_paths
+
+    assert expected == actual
+
+
 def test_single_additional_file(tmpdir_factory):
     root = tmpdir_factory.mktemp("Parent Bot")
     config_path = str(root / "config.yml")

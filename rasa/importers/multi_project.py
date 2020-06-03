@@ -95,6 +95,10 @@ class MultiProjectImporter(TrainingDataImporter):
                     # Check next file
                     continue
 
+                if data.is_conversation_test_file(full_path):
+                    # skip conversation test files
+                    continue
+
                 if data.is_domain_file(full_path):
                     self._domain_paths.append(full_path)
                 elif data.is_nlu_file(full_path):
