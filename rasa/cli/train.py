@@ -168,6 +168,16 @@ def _get_valid_config(
     mandatory_keys: Dict[Text, bool],
     default_config: Text = DEFAULT_CONFIG_PATH,
 ) -> Text:
+    """ Gets a config from a config file and checks if it is valid.
+
+    Args:
+        config: Path to the config file.
+        mandatory_keys: A dictionary with
+                        key: the config key's name,
+                        value: `False` if the key only needs to be present
+                               `True` if the key needs to have content.
+        default_config: default config to use if the file at `config` doesn't exist
+    """
     config = get_validated_path(config, "config", default_config)
 
     if not os.path.exists(config):

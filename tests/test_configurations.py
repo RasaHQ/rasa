@@ -25,13 +25,13 @@ DEFAULT_CONFIG = "rasa/importers/default_config.yml"
         (DEFAULT_CONFIG, set()),
     ],
 )
-def test_get_autoconfiguration(
+def test_get_auto_configuration(
     config_path: Text, autoconfig_keys: Set, monkeypatch: MonkeyPatch
 ):
 
     monkeypatch.setattr(autoconfig, "dump_config", Mock())
 
-    actual = autoconfig.get_autoconfiguration(config_path)
+    actual = autoconfig.get_auto_configuration(config_path)
 
     expected = io_utils.read_config_file(DEFAULT_CONFIG)
 

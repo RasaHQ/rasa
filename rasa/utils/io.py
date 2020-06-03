@@ -13,9 +13,10 @@ import glob
 from asyncio import AbstractEventLoop
 from io import BytesIO as IOReader
 from pathlib import Path
-from typing import Text, Any, Dict, Union, List, Type, Callable
+from typing import Text, Any, Dict, Union, List, Type, Callable, Tuple
 
 import ruamel.yaml as yaml
+from ruamel.yaml import YAML
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
 
@@ -99,19 +100,25 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(
-    content: Text,
-    typ: Text = "safe",
-    add_version: bool = False,
-    return_parser: bool = False,
-) -> Any:
+def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses yaml from a text.
+
+        Args:
+            content: A text containing yaml content.
+    """
+    content, _ = read_yaml_including_parser(content)
+    return content
+
+
+def read_yaml_including_parser(
+    content: Text, typ: Text = "safe", add_version: bool = True,
+) -> Tuple[Union[List[Any], Dict[Text, Any]], YAML]:
+    """Gets a yaml parser and parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
-        typ: Argument `typ` for the YAML function.
+        typ: Argument `typ` for the YAML constructor.
         add_version: True if the yaml version should be added to the parser.
-        return_parser: True if the function should also return the yaml parser.
     """
     fix_yaml_loader()
 
@@ -132,12 +139,7 @@ def read_yaml(
 
     loaded_content = yaml_parser.load(content) or {}
 
-    if return_parser:
-        return_value = [loaded_content, yaml_parser]
-    else:
-        return_value = loaded_content
-
-    return return_value
+    return loaded_content, yaml_parser
 
 
 def _is_ascii(text: Text) -> bool:

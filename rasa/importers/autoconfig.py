@@ -4,8 +4,6 @@ from pathlib import Path
 
 from typing import Text, Dict, Any, List
 
-from ruamel import yaml
-
 from rasa.cli import utils as cli_utils
 from rasa.constants import CONFIG_AUTOCONFIGURABLE_KEYS
 from rasa.utils import io as io_utils
@@ -18,7 +16,7 @@ logger = logging.getLogger(__name__)
 # training_data: TrainingData
 # domain: Domain
 # stories: StoryGraph
-def get_autoconfiguration(config_file) -> Dict[Text, Any]:
+def get_auto_configuration(config_file) -> Dict[Text, Any]:
     """Determine configuration from a configuration file.
 
     Keys that are provided in the file are kept. Keys that are not provided are
@@ -65,55 +63,53 @@ def create_config_for_keys(config: Dict[Text, Any], keys: List[Text]) -> None:
 
 def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
     """Dump the automatically configured keys into the config file."""
-    set_language = False
+    import pkg_resources
 
     try:
         content = io_utils.read_file(config_file, io_utils.DEFAULT_ENCODING)
-        if not content:
-            cli_utils.print_warning(
-                f"Configuration file {config_file} does not have any content. "
-                f"Filling it with the current configuration."
-            )
-            set_language = True
     except ValueError:
-        cli_utils.print_warning(
-            f"Configuration file {config_file} does not exist. "
-            f"Creating it now and filling it with the current "
-            f"configuration."
-        )
-        content = {}
-        set_language = True
+        content = ""
 
-    [content, yaml_parser] = io_utils.read_yaml(
-        content, typ="rt", add_version=False, return_parser=True,
+    empty = False
+    if not content:
+        empty = True
+        cli_utils.print_warning(
+            f"Configuration file {config_file} does not exist or is empty. "
+            f"Creating it now and filling it with the current configuration."
+        )
+        empty_config_file = pkg_resources.resource_filename(
+            "rasa.cli.initial_project", "config.yml"
+        )
+        content = io_utils.read_file(empty_config_file, io_utils.DEFAULT_ENCODING)
+
+    content, yaml_parser = io_utils.read_yaml_including_parser(
+        content, typ="rt", add_version=False,
     )
 
-    if set_language:
+    if empty:
         content["language"] = config.get("language")
 
     autoconfigured = set()
     for key in CONFIG_AUTOCONFIGURABLE_KEYS:
-        if not content.get(key):
-            autoconfigured.add(key)
-            content[key] = config.get(key)
-            ct = yaml.tokens.CommentToken(
-                f"# Configuration for {key} was provided by "
-                f"the auto configuration.\n",
-                yaml.error.CommentMark(0),
-                None,
-            )
-            if hasattr(content, "ca"):
-                item = content.ca.items[key]
-                if item[1]:
-                    item[1].append(ct)
-                else:
-                    item[1] = [ct]
+        if content.get(key):
+            continue
+
+        autoconfigured.add(key)
+        content[key] = config.get(key)
+
+        # needed to "fix" the comment structure for content loaded from an empty config
+        item = content.ca.items.get(key)
+        if item and item[1] is None:
+            content.ca.items[key][1] = []
+
+        comment = f"Configuration for {key} was provided by the auto configuration."
+        content.yaml_set_comment_before_after_key(key, before=comment)
+
+    yaml_parser.indent(mapping=2, sequence=4, offset=2)
+    yaml_parser.dump(content, Path(config_file))
 
     if autoconfigured:
         cli_utils.print_info(
             f"Automatically configured {autoconfigured}. The configuration was written "
             f"into the config file at {config_file}"
         )
-
-    yaml_parser.indent(mapping=2, sequence=4, offset=2)
-    yaml_parser.dump(content, Path(config_file))

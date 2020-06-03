@@ -30,7 +30,7 @@ class RasaFileImporter(TrainingDataImporter):
             training_data_paths
         )
 
-        self.config = autoconfig.get_autoconfiguration(config_file)
+        self.config = autoconfig.get_auto_configuration(config_file)
         # # In future iterations, instead sth. like:
         # self.config = autoconfig.get_autoconfiguration(config_file, self)
         # # or
