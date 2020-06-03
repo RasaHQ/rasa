@@ -223,12 +223,13 @@ require generalization." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.1
+          viewing: 1.10.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.2/core/policies/">1.10.2</a>
               <a href="../.././1.10.1/core/policies/">1.10.1</a>
               <a href="../.././1.10.0/core/policies/">1.10.0</a>
               <a href="../.././1.9.7/core/policies/">1.9.7</a>
@@ -377,7 +378,7 @@ This is because if you have stories like:</p>
 <p>You actually want to teach your policy to <strong>ignore</strong> the dialogue history
 when it isn’t relevant and just respond with the same action no matter
 what happened before.</p>
-<p>You can alter this behaviour with the <code class="docutils literal notranslate"><span class="pre">--augmentation</span></code> flag.
+<p>You can alter this behavior with the <code class="docutils literal notranslate"><span class="pre">--augmentation</span></code> flag.
 Which allows you to set the <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code>.
 The <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code> determines how many augmented stories are
 subsampled during training. The augmented stories are subsampled before training
@@ -585,7 +586,7 @@ Every entry in the list corresponds to a feed forward layer.
 For example, if you set <code class="docutils literal notranslate"><span class="pre">dialogue:</span> <span class="pre">[256,</span> <span class="pre">128]</span></code>, we will add two feed forward layers in front of
 the transformer. The vectors of the input tokens (coming from the dialogue) will be passed on to those
 layers. The first layer will have an output dimension of 256 and the second layer will have an output
-dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
+dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
 added.
 Make sure to use only positive integer values. Usually, numbers of power of two are used.
 Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
@@ -731,7 +732,7 @@ be between <code class="docutils literal notranslate"><span class="pre">-1</span
 <p class="admonition-title">Note</p>
 <p>There is an option to use linearly increasing batch size. The idea comes from
 <a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>. In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g.
-<code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[8,</span> <span class="pre">32]</span></code> (default behaviour). If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[8,</span> <span class="pre">32]</span></code> (default behavior). If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>,
 e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">8</span></code>.</p>
 </div>
 <div class="admonition note">
