@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse
 from typing import Text, Union, Optional, Dict, Any
 
-from rasa.nlu.constants import ALIAS
+from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.components import Component
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
@@ -90,8 +90,8 @@ class Featurizer(Component):
             component_config = {}
 
         # makes sure the alias name is set
-        if ALIAS not in component_config:
-            component_config[ALIAS] = self.name
+        if FEATURIZER_CLASS_ALIAS not in component_config:
+            component_config[FEATURIZER_CLASS_ALIAS] = self.name
 
         super().__init__(component_config)
 

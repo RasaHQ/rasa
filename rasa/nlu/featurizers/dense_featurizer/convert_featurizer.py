@@ -11,7 +11,11 @@ from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT, DENSE_FEATURIZABLE_ATTRIBUTES, ALIAS
+from rasa.nlu.constants import (
+    TEXT,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    FEATURIZER_CLASS_ALIAS,
+)
 import numpy as np
 import tensorflow as tf
 
@@ -209,7 +213,9 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
                 for index, ex in enumerate(batch_examples):
                     features = Features(
-                        batch_features[index], attribute, self.component_config[ALIAS]
+                        batch_features[index],
+                        attribute,
+                        self.component_config[FEATURIZER_CLASS_ALIAS],
                     )
                     ex.add_features(features)
 
@@ -218,5 +224,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
     ) -> None:
         features = self._compute_features([message], tf_hub_module)[0]
 
-        final_features = Features(features[0], TEXT, self.component_config[ALIAS])
+        final_features = Features(
+            features[0], TEXT, self.component_config[FEATURIZER_CLASS_ALIAS]
+        )
         message.add_features(final_features)
