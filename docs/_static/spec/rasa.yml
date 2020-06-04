@@ -1254,7 +1254,7 @@ components:
           type: string
           description: >-
             Policy which predicted the most likely action
-          example: policy_2_KerasPolicy
+          example: policy_2_TEDPolicy
         tracker:
           $ref: '#/components/schemas/Tracker'
 
@@ -1461,7 +1461,7 @@ components:
 
         policies:
           - name: MemoizationPolicy
-          - name: KerasPolicy
+          - name: TEDPolicy
 
     TrainingResult:
       type: string

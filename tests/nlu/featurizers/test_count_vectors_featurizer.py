@@ -281,7 +281,7 @@ def test_count_vector_featurizer_char(sentence, expected):
     assert np.all(vec.toarray()[0] == expected)
 
 
-def test_count_vector_featurizer_persist_load(tmpdir):
+def test_count_vector_featurizer_persist_load(tmp_path):
 
     # set non default values to config
     config = {
@@ -307,7 +307,7 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     train_ftr.train(data)
 
     # persist featurizer
-    file_dict = train_ftr.persist("ftr", tmpdir.strpath)
+    file_dict = train_ftr.persist("ftr", str(tmp_path))
     train_vect_params = {
         attribute: vectorizer.get_params()
         for attribute, vectorizer in train_ftr.vectorizers.items()
@@ -323,13 +323,16 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     # load featurizer
     meta = train_ftr.component_config.copy()
     meta.update(file_dict)
-    test_ftr = CountVectorsFeaturizer.load(meta, tmpdir.strpath)
+    test_ftr = CountVectorsFeaturizer.load(meta, str(tmp_path))
     test_vect_params = {
         attribute: vectorizer.get_params()
         for attribute, vectorizer in test_ftr.vectorizers.items()
     }
 
     assert train_vect_params == test_vect_params
+
+    # check if vocaculary was loaded correctly
+    assert hasattr(test_ftr.vectorizers[TEXT], "vocabulary_")
 
     test_message1 = Message(sentence1)
     test_ftr.process(test_message1)

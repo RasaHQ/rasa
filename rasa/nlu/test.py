@@ -49,13 +49,9 @@ from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 
 logger = logging.getLogger(__name__)
 
-# Exclude 'EmbeddingIntentClassifier' and 'ResponseSelector' as their super class
+# Exclude 'EntitySynonymMapper' and 'ResponseSelector' as their super class
 # performs entity extraction but those two classifiers don't
-ENTITY_PROCESSORS = {
-    "EntitySynonymMapper",
-    "EmbeddingIntentClassifier",
-    "ResponseSelector",
-}
+ENTITY_PROCESSORS = {"EntitySynonymMapper", "ResponseSelector"}
 
 EXTRACTORS_WITH_CONFIDENCES = {"CRFEntityExtractor"}
 
@@ -202,7 +198,7 @@ def clean_labels(labels: Iterable[Text]) -> List[Text]:
 
     Returns: cleaned labels
     """
-    return [l if l is not None else "" for l in labels]
+    return [label if label is not None else "" for label in labels]
 
 
 def drop_intents_below_freq(

@@ -34,8 +34,6 @@ and send you a fun picture to cheer you up if you are sad.
 
 The first step is to create a new Rasa project. To do this, run:
 
-
-
 .. runnable::
 
    rasa init --no-prompt
@@ -187,7 +185,7 @@ So what do the different parts mean?
 +---------------+-------------------------------------------------------------+
 | ``actions``   | things your assistant can do and say                        |
 +---------------+-------------------------------------------------------------+
-| ``responses`` | responses for the things your assistant can say             |
+| ``responses`` | response strings for the things your assistant can say      |
 +---------------+-------------------------------------------------------------+
 
 
@@ -262,7 +260,7 @@ some more advanced Rasa features.
 - Learn how to implement business logic using :ref:`forms <forms>`
 - Learn how to integrate other APIs using :ref:`custom actions <actions>`
 - Learn how to connect your bot to different :ref:`messaging apps <messaging-and-voice-channels>`
-- Learn about customising the :ref:`components <components>` in your NLU pipeline
+- Learn about customizing the :ref:`components <components>` in your NLU pipeline
 - Read about custom and built-in :ref:`entities <entity-extraction>`
 
 You can also use Rasa X to collect more conversations
