@@ -405,10 +405,12 @@ class SlackInput(InputChannel):
                         #return response.text("User clicked link button")
                         metadata = self.get_metadata(request)
                         logger.debug(f"button request: {request}")
-                        text=payload["actions"][0]["value"]
-                        return await self.process_message(
-                            request, on_new_message, text, sender_id, metadata
-                        )
+
+                        if "value" in payload["actions"][0]:
+                            text=payload["actions"][0]["value"]
+                            return await self.process_message(
+                                request, on_new_message, text, sender_id, metadata
+                            )
                 return response.text(
                     "The input message could not be processed.", status=500
                 )
