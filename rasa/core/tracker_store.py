@@ -56,11 +56,28 @@ class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
 
     def __init__(
-        self, domain: Optional[Domain], event_broker: Optional[EventBroker] = None
+        self,
+        domain: Optional[Domain],
+        event_broker: Optional[EventBroker] = None,
+        retrieve_events_from_previous_conversation_sessions: bool = False,
     ) -> None:
+        """Create a TrackerStore.
+
+        Args:
+            domain: The `Domain` to initialize the `DialogueStateTracker`.
+            event_broker: An event broker to publish any new events to another
+                destination.
+            retrieve_events_from_previous_conversation_sessions: If `True`, `retrieve`
+                will return all events (even if they are from a previous conversation
+                session). This setting only applies to `TrackerStore`s which usually
+                would only return events for the latest session.
+        """
         self.domain = domain
         self.event_broker = event_broker
         self.max_event_history = None
+        self.load_events_from_previous_conversation_sessions = (
+            retrieve_events_from_previous_conversation_sessions
+        )
 
     @staticmethod
     def create(
@@ -74,23 +91,6 @@ class TrackerStore:
             return obj
         else:
             return _create_from_endpoint_config(obj, domain, event_broker)
-
-    @staticmethod
-    def create_tracker_store(
-        domain: Domain,
-        store: Optional[EndpointConfig] = None,
-        event_broker: Optional[EventBroker] = None,
-    ) -> "TrackerStore":
-        """Returns the tracker_store type"""
-
-        raise_warning(
-            "The `create_tracker_store` function is deprecated, please use "
-            "`TrackerStore.create` instead. `create_tracker_store` will be "
-            "removed in future Rasa versions.",
-            DeprecationWarning,
-        )
-
-        return TrackerStore.create(store, domain, event_broker)
 
     def get_or_create_tracker(
         self,
@@ -488,8 +488,9 @@ class MongoTrackerStore(TrackerStore):
         """
 
         stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
+        all_events = self._events_from_serialized_tracker(stored)
         number_events_since_last_session = len(
-            self._events_since_last_session_start(stored)
+            self._events_since_last_session_start(all_events)
         )
 
         return itertools.islice(
@@ -497,11 +498,15 @@ class MongoTrackerStore(TrackerStore):
         )
 
     @staticmethod
-    def _events_since_last_session_start(serialised_tracker: Dict) -> List[Dict]:
+    def _events_from_serialized_tracker(serialised: Dict) -> List[Dict]:
+        return serialised.get("events", [])
+
+    @staticmethod
+    def _events_since_last_session_start(events: List[Dict]) -> List[Dict]:
         """Retrieve events since and including the latest `SessionStart` event.
 
         Args:
-            serialised_tracker: Serialised tracker to inspect.
+            events: All events for a conversation ID.
 
         Returns:
             List of serialised events since and including the latest `SessionStarted`
@@ -509,15 +514,15 @@ class MongoTrackerStore(TrackerStore):
 
         """
 
-        events = []
-        for event in reversed(serialised_tracker.get("events", [])):
-            events.append(event)
+        events_after_session_start = []
+        for event in reversed(events):
+            events_after_session_start.append(event)
             if event["event"] == SessionStarted.type_name:
                 break
 
-        return list(reversed(events))
+        return list(reversed(events_after_session_start))
 
-    def retrieve(self, sender_id):
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """
         Args:
             sender_id: the message owner ID
@@ -529,7 +534,7 @@ class MongoTrackerStore(TrackerStore):
 
         # look for conversations which have used an `int` sender_id in the past
         # and update them.
-        if stored is None and sender_id.isdigit():
+        if not stored and sender_id.isdigit():
             from pymongo import ReturnDocument
 
             stored = self.conversations.find_one_and_update(
@@ -538,11 +543,14 @@ class MongoTrackerStore(TrackerStore):
                 return_document=ReturnDocument.AFTER,
             )
 
-        if stored is not None:
-            events = self._events_since_last_session_start(stored)
-            return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
-        else:
-            return None
+        if not stored:
+            return
+
+        events = self._events_from_serialized_tracker(stored)
+        if not self.load_events_from_previous_conversation_sessions:
+            events = self._events_since_last_session_start(events)
+
+        return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store"""
@@ -682,14 +690,18 @@ class SQLTrackerStore(TrackerStore):
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db, query
         )
-        logger.debug(f"Attempting to connect to database via '{engine_url}'.")
+
+        self.engine = sa.engine.create_engine(
+            engine_url, **create_engine_kwargs(engine_url)
+        )
+
+        logger.debug(
+            f"Attempting to connect to database via '{repr(self.engine.url)}'."
+        )
 
         # Database might take a while to come up
         while True:
             try:
-                self.engine = sa.engine.create_engine(
-                    engine_url, **create_engine_kwargs(engine_url),
-                )
                 # if `login_db` has been provided, use current channel with
                 # that database to create working database `db`
                 if login_db:
@@ -869,19 +881,20 @@ class SQLTrackerStore(TrackerStore):
             .subquery()
         )
 
-        return (
-            session.query(self.SQLEvent)
-            .filter(
-                self.SQLEvent.sender_id == sender_id,
+        event_query = session.query(self.SQLEvent).filter(
+            self.SQLEvent.sender_id == sender_id
+        )
+        if not self.load_events_from_previous_conversation_sessions:
+            event_query = event_query.filter(
                 # Find events after the latest `SessionStarted` event or return all
                 # events
                 sa.or_(
                     self.SQLEvent.timestamp >= session_start_sub_query.c.session_start,
                     session_start_sub_query.c.session_start.is_(None),
-                ),
+                )
             )
-            .order_by(self.SQLEvent.timestamp)
-        )
+
+        return event_query.order_by(self.SQLEvent.timestamp)
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
@@ -1069,13 +1082,12 @@ def _load_from_module_string(
         tracker_store_class = class_from_module_path(store.type)
         init_args = arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
-            raise_warning(
-                "The `url` initialization argument for custom tracker stores is "
-                "deprecated. Your custom tracker store should take a `host` "
-                "argument in its `__init__()` instead.",
-                DeprecationWarning,
+            # DEPRECATION EXCEPTION - remove in 2.1
+            raise Exception(
+                "The `url` initialization argument for custom tracker stores has "
+                "been removed. Your custom tracker store should take a `host` "
+                "argument in its `__init__()` instead."
             )
-            store.kwargs["url"] = store.url
         else:
             store.kwargs["host"] = store.url
 

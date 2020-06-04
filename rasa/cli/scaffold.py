@@ -63,7 +63,6 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
         print_success(
             "No problem 👍🏼. You can also train a model later by going "
             "to the project directory and running 'rasa train'."
-            "".format(path)
         )
 
 
@@ -103,7 +102,6 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
                 "If you want to speak to the assistant, "
                 "run 'rasa shell' at any time inside "
                 "the project directory."
-                "".format(path)
             )
         else:
             print_success(
@@ -111,7 +109,6 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
                 "If you want to speak to the assistant, "
                 "run 'rasa shell' at any time inside "
                 "the project directory."
-                "".format(path)
             )
 
 

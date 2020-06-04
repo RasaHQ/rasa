@@ -67,7 +67,7 @@ The initial project files should all be there, as well as a ``models`` directory
    If you run into permission errors, it may be because the ``rasa/rasa`` images
    run as user ``1001`` as a best practice, to avoid giving the container ``root`` permissions.
    Hence, all files created by these containers will be owned by user ``1001``. See the `Docker documentation
-   <https://docs.docker.com/v17.12/edge/engine/reference/commandline/run/>`_
+   <https://docs.docker.com/edge/engine/reference/commandline/run/>`_
    if you want to run the containers as a different user.
 
 Talking to Your Assistant
@@ -222,7 +222,7 @@ You can then run the actions with the following command:
 
     .. parsed-literal::
 
-      docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:\ |version|.0
+      docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:\ |rasa_sdk_version|
 
 
 Here's what's happening in that command:
@@ -232,7 +232,7 @@ Here's what's happening in that command:
     container so that the action server can run the code in the ``actions`` folder
   - ``net my-project``: Run the server on a specific network so that the rasa container can find it
   - ``--name action-server``: Gives the server a specific name for the rasa server to reference
-  - rasa/rasa-sdk:|version|.0 : Uses the Rasa SDK image with the tag |version|.0
+  - rasa/rasa-sdk:|rasa_sdk_version| : Uses the Rasa SDK image with the tag |rasa_sdk_version|
 
 
 Because the action server is running in detached mode, if you want to stop the container,

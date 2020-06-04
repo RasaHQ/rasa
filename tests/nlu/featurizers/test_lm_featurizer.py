@@ -8,13 +8,14 @@ from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, INTENT
 from rasa.nlu.training_data import Message
 
 
+@pytest.mark.skip(reason="Results in random crashing of github action workers")
 @pytest.mark.parametrize(
     "model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec",
     [
         (
             "bert",
             ["Good evening.", "here is the sentence I want embeddings for."],
-            [(3, 768), (12, 768)],
+            [(3, 768), (9, 768)],
             [
                 [0.5727445, -0.16078179],
                 [-0.5485125, 0.09632876, -0.4278888, 0.11438395, 0.18316492],
@@ -27,7 +28,7 @@ from rasa.nlu.training_data import Message
         (
             "gpt",
             ["Good evening.", "here is the sentence I want embeddings for."],
-            [(3, 768), (10, 768)],
+            [(3, 768), (9, 768)],
             [
                 [-0.0630323737859726, 0.4029877185821533],
                 [
@@ -58,16 +59,10 @@ from rasa.nlu.training_data import Message
         (
             "gpt2",
             ["Good evening.", "here is the sentence I want embeddings for."],
-            [(4, 768), (12, 768)],
+            [(3, 768), (9, 768)],
             [
-                [-0.033827826380729675, -0.10971662402153015, 0.002244209870696068],
-                [
-                    -0.18434514105319977,
-                    -0.5386468768119812,
-                    -0.11122681945562363,
-                    -1.368929147720337,
-                    -0.5397579669952393,
-                ],
+                [-0.03382749, -0.05373593],
+                [-0.18434484, -0.5386464, -0.11122551, -0.95434338, 0.28311089],
             ],
             [
                 [
@@ -89,7 +84,7 @@ from rasa.nlu.training_data import Message
         (
             "xlnet",
             ["Good evening.", "here is the sentence I want embeddings for."],
-            [(3, 768), (11, 768)],
+            [(3, 768), (9, 768)],
             [
                 [1.7612367868423462, 2.5819129943847656],
                 [
@@ -120,7 +115,7 @@ from rasa.nlu.training_data import Message
         (
             "distilbert",
             ["Good evening.", "here is the sentence I want embeddings for."],
-            [(3, 768), (12, 768)],
+            [(3, 768), (9, 768)],
             [
                 [0.22866562008857727, -0.0575055330991745],
                 [
@@ -151,16 +146,10 @@ from rasa.nlu.training_data import Message
         (
             "roberta",
             ["Good evening.", "here is the sentence I want embeddings for."],
-            [(4, 768), (12, 768)],
+            [(3, 768), (9, 768)],
             [
-                [-0.309267520904541, 0.12365783751010895, 0.06769893318414688],
-                [
-                    0.02152823843061924,
-                    -0.08026768267154694,
-                    -0.10808645188808441,
-                    0.20090824365615845,
-                    0.04756045714020729,
-                ],
+                [-0.3092685, 0.09567838],
+                [0.02152853, -0.08026707, -0.1080862, 0.12423468, -0.05378958],
             ],
             [
                 [
