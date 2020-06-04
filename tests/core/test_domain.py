@@ -163,7 +163,7 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10
-    assert len(domain.action_names) == 14
+    assert len(domain.action_names) == 15
 
 
 def test_avoid_action_repetition():

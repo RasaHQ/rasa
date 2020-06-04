@@ -77,4 +77,4 @@ responses:
   utter_revert_fallback_and_reapply_last_intent:
     - text: "utter_revert_fallback_and_reapply_last_intent"
   utter_default:
-    - text: "please rephrase"
+    - text: "I give up."
