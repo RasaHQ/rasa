@@ -168,8 +168,6 @@ def set_log_and_warnings_filters() -> None:
         handler.addFilter(RepeatedLogFilter())
 
     warnings.filterwarnings("once", category=UserWarning)
-    warnings.filterwarnings("once", category=DeprecationWarning)
-    warnings.filterwarnings("once", category=FutureWarning)
 
 
 def obtain_verbosity() -> int:
