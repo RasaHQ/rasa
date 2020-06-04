@@ -21,7 +21,7 @@ from rasa.nlu.constants import (
     INTENT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     RESPONSE,
-    ALIAS,
+    FEATURIZER_CLASS_ALIAS,
 )
 
 logger = logging.getLogger(__name__)
@@ -465,7 +465,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             # create bag for each example
             if attribute_features[i] is not None:
                 final_features = Features(
-                    attribute_features[i], attribute, self.component_config[ALIAS]
+                    attribute_features[i],
+                    attribute,
+                    self.component_config[FEATURIZER_CLASS_ALIAS],
                 )
                 message.add_features(final_features)
 
@@ -532,7 +534,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         if features[0] is not None:
             final_features = Features(
-                features[0], attribute, self.component_config[ALIAS]
+                features[0], attribute, self.component_config[FEATURIZER_CLASS_ALIAS]
             )
             message.add_features(final_features)
 
