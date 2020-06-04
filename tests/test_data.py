@@ -33,7 +33,9 @@ def test_default_conversation_tests_are_conversation_tests(tmpdir: Path):
     parent = tmpdir / DEFAULT_E2E_TESTS_PATH
     Path(parent).mkdir(parents=True)
     p = parent / "conversation_tests.md"
-    Path(p).touch
+    s = """## my story test"""
+
+    write_text_file(s, p)
     assert is_conversation_test_file(str(p))
 
 
