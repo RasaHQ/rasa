@@ -8,7 +8,11 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT, DENSE_FEATURIZABLE_ATTRIBUTES, ALIAS
+from rasa.nlu.constants import (
+    TEXT,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    FEATURIZER_CLASS_ALIAS,
+)
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 import rasa.utils.train_utils as train_utils
 
@@ -61,7 +65,9 @@ class MitieFeaturizer(DenseFeaturizer):
         if tokens is not None:
             features = self.features_for_tokens(tokens, mitie_feature_extractor)
 
-            final_features = Features(features, attribute, self.component_config[ALIAS])
+            final_features = Features(
+                features, attribute, self.component_config[FEATURIZER_CLASS_ALIAS]
+            )
             example.add_features(final_features)
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -69,7 +75,9 @@ class MitieFeaturizer(DenseFeaturizer):
         tokens = train_utils.tokens_without_cls(message)
         features = self.features_for_tokens(tokens, mitie_feature_extractor)
 
-        final_features = Features(features, TEXT, self.component_config[ALIAS])
+        final_features = Features(
+            features, TEXT, self.component_config[FEATURIZER_CLASS_ALIAS]
+        )
         message.add_features(final_features)
 
     def _mitie_feature_extractor(self, **kwargs) -> Any:

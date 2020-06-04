@@ -11,7 +11,13 @@ import rasa.utils.io
 import scipy.sparse
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import CLS_TOKEN, RESPONSE, TEXT, TOKENS_NAMES, ALIAS
+from rasa.nlu.constants import (
+    CLS_TOKEN,
+    RESPONSE,
+    TEXT,
+    TOKENS_NAMES,
+    FEATURIZER_CLASS_ALIAS,
+)
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
@@ -64,7 +70,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
             if features is not None:
                 final_features = Features(
-                    features, attribute, self.component_config[ALIAS]
+                    features, attribute, self.component_config[FEATURIZER_CLASS_ALIAS]
                 )
                 message.add_features(final_features)
 
