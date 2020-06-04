@@ -402,7 +402,6 @@ class SlackInput(InputChannel):
 
                     if payload["actions"][0]["type"] == "button":
                         # link buttons don't have "value", don't send their clicks to bot
-                        #return response.text("User clicked link button")
                         metadata = self.get_metadata(request)
                         logger.debug(f"button request: {request}")
 
