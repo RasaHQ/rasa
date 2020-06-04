@@ -69,6 +69,7 @@ jobs:
     - read_test_configuration
     env:
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+      ACCELERATOR_TYPE: "GPU"
     runs-on: [self-hosted, gpu]
     strategy:
       max-parallel: 1
@@ -142,13 +143,44 @@ jobs:
           echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
-      - name: Get results
-        id: get_results
-        run: |
-          OUTPUT=$(gomplate -f .github/templates/model_regression_test_results.tmpl)
-          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
-          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
-          echo "::set-output name=result::$OUTPUT"
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        continue-on-error: true
+        with:
+          name: report.json
+
+      - name: Generate a JSON file with a report
+        env:
+          SUMMARY_FILE: "./report.json"
+          DATASET: ${{ matrix.dataset }}
+          RESULT_DIR: "${{ github.workspace }}/results"
+          CONFIG: ${{ matrix.config }}
+          TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
+          TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
+          TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+        run: |-
+          poetry run python .github/scripts/mr_generate_summary.py
+          cat $SUMMARY_FILE
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: report.json
+          path: ./report.json
+
+      - name: Publish results to Segment
+        env:
+          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
+          DATASET_NAME: ${{ matrix.dataset }}
+          CONFIG: ${{ matrix.config }}
+          TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
+          TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
+          TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+          RESULT_DIR: "${{ github.workspace }}/results"
+        run: |-
+          export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
+          poetry run pip install analytics-python
+          poetry run python .github/scripts/mr_publish_results.py
+
 
       - name: Publish results to Segment
         env:
