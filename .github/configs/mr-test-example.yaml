@@ -15,7 +15,6 @@
 # - "ConveRT + DIET + ResponseSelector(T2T)"
 # - "BERT + DIET + ResponseSelector(T2T)"
 # - "Spacy + DIET + ResponseSelector(T2T)"
-# - "Sparse + EmbeddingIntent + ResponseSelector(bow)"
 # - "ConveRT + EmbeddingIntent + ResponseSelector(bow)"
 # - "BERT + EmbeddingIntent + ResponseSelector(bow)"
 # - "Spacy + EmbeddingIntent + ResponseSelector(bow)"
