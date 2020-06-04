@@ -615,6 +615,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         model_data.add_lengths(TEXT_SEQ_LENGTH, TEXT_FEATURES)
         model_data.add_lengths(LABEL_SEQ_LENGTH, LABEL_FEATURES)
+
         return model_data
 
     def _tag_ids_for_crf(self, example: Message, tag_spec: EntityTagSpec) -> np.ndarray:

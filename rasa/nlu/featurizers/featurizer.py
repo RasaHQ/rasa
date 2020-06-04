@@ -8,16 +8,14 @@ from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
 
 class Features:
-    """
-    Stores the features produces by any featurizer.
-    """
+    """Stores the features produces by any featurizer."""
 
     def __init__(
         self,
         features: Union[np.ndarray, scipy.sparse.spmatrix],
         message_attribute: Text,
         origin: Text,
-    ):
+    ) -> None:
         self.features = features
         self.type = type
         self.origin = origin
@@ -68,7 +66,7 @@ class Features:
         if features.ndim != additional_features.ndim:
             raise ValueError(
                 f"Cannot combine dense features as sequence dimensions do not "
-                f"match: {len(features)} != {len(additional_features)}."
+                f"match: {features.ndim} != {additional_features.ndim}."
             )
 
         return np.concatenate((features, additional_features), axis=-1)
