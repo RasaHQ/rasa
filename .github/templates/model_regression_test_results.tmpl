@@ -5,11 +5,11 @@ Dataset: `{{$dataset}}`
 |---------------|-----------------|-----------------|-------------------|
 {{ range $config_name, $config_data := $config -}}
 | `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}` |
-{{- $intent_class := index (index $config_data "Intent Classification") -}}
+{{- $intent_class := $config_data.intent_classification -}}
 {{- if (has $intent_class "accuracy") -}}{{ printf "%.4f" $intent_class.accuracy }}{{- else -}}`no data`{{- end -}} |
-{{- $entity_class := (index (index $config_data "Entity Prediction") "micro avg") -}}
+{{- $entity_class := (index $config_data.entity_prediction "micro avg") -}}
 {{- if (has $entity_class "f1-score") -}}{{- printf "%.4f" (index $entity_class "f1-score") -}}{{- else -}}`no data`{{- end -}} |
-{{- $response_class := (index $config_data "Response Selection") -}}
+{{- $response_class := $config_data.response_selection -}}
 {{- if (has $response_class "accuracy") -}}{{ printf "%.4f" $response_class.accuracy }}{{- else -}}`no data`{{- end -}} |
 {{end}}
 {{end}}
