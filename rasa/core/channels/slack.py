@@ -398,18 +398,14 @@ class SlackInput(InputChannel):
                 if self._is_interactive_message(payload):
                     sender_id = payload["user"]["id"]
                     text = self._get_interactive_response(payload["actions"][0])
-                    logger.debug(f"form slack sender_id: {sender_id}, actions: {payload['actions']}")
-
-                    if payload["actions"][0]["type"] == "button":
-                        # link buttons don't have "value", don't send their clicks to bot
+                    if text is not None:
                         metadata = self.get_metadata(request)
-                        logger.debug(f"button request: {request}")
-
-                        if "value" in payload["actions"][0]:
-                            text=payload["actions"][0]["value"]
-                            return await self.process_message(
-                                request, on_new_message, text, sender_id, metadata
-                            )
+                        return await self.process_message(
+                            request, on_new_message, text, sender_id, metadata
+                        )
+                    elif payload["actions"][0]["type"] == "button":
+                        # link buttons don't have "value", don't send their clicks to bot
+                        return response.text("User clicked link button")
                 return response.text(
                     "The input message could not be processed.", status=500
                 )
