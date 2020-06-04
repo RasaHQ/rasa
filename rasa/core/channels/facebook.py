@@ -296,7 +296,16 @@ class FacebookInput(InputChannel):
         self.fb_verify = fb_verify
         self.fb_secret = fb_secret
         self.fb_access_token = fb_access_token
-
+    
+    def get_metadata(self, request):
+        request_json=request.json
+        for entry in request_json["entry"]:
+            for message in entry["messaging"]:
+                if message.get("postback"):
+                    if message.get("referral"):
+                        return message.get("referral")
+                elif message.get("referral"):
+                    return message.get("referral")
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
