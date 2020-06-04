@@ -23,28 +23,32 @@ class Features:
         self.origin = origin
         self.message_attribute = message_attribute
 
-    def is_sparse(self):
-        """
-        Returns: True, if features are sparse, false otherwise.
+    def is_sparse(self) -> bool:
+        """Checks if features are sparse or not.
+
+        Returns:
+            True, if features are sparse, false otherwise.
         """
         return isinstance(self.features, scipy.sparse.spmatrix)
 
-    def is_dense(self):
-        """
-        Returns: True, if features are dense, false otherwise.
+    def is_dense(self) -> bool:
+        """Checks if features are dense or not.
+
+        Returns:
+            True, if features are dense, false otherwise.
         """
         return not self.is_sparse()
 
     def combine_with_features(
         self, additional_features: Optional[Union[np.ndarray, scipy.sparse.spmatrix]]
     ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
-        """
-        Combine the incoming features with this features.
+        """Combine the incoming features with this instance's features.
 
         Args:
             additional_features: additional features to add
 
-        Returns: combined features
+        Returns:
+            Combined features.
         """
         if additional_features is None:
             return self.features
@@ -55,7 +59,7 @@ class Features:
         if self.is_sparse() and isinstance(additional_features, scipy.sparse.spmatrix):
             return self._combine_sparse_features(self.features, additional_features)
 
-        raise ValueError("Cannot concatenate sparse and dense features.")
+        raise ValueError("Cannot combine sparse and dense features.")
 
     @staticmethod
     def _combine_dense_features(
@@ -63,7 +67,7 @@ class Features:
     ) -> np.ndarray:
         if features.ndim != additional_features.ndim:
             raise ValueError(
-                f"Cannot concatenate dense features as sequence dimension does not "
+                f"Cannot combine dense features as sequence dimensions do not "
                 f"match: {len(features)} != {len(additional_features)}."
             )
 
@@ -77,7 +81,7 @@ class Features:
 
         if features.shape[0] != additional_features.shape[0]:
             raise ValueError(
-                f"Cannot concatenate sparse features as sequence dimension does not "
+                f"Cannot combine sparse features as sequence dimensions do not "
                 f"match: {features.shape[0]} != {additional_features.shape[0]}."
             )
 
@@ -90,8 +94,7 @@ class Featurizer(Component):
             component_config = {}
 
         # makes sure the alias name is set
-        if FEATURIZER_CLASS_ALIAS not in component_config:
-            component_config[FEATURIZER_CLASS_ALIAS] = self.name
+        component_config.setdefault(FEATURIZER_CLASS_ALIAS, self.name)
 
         super().__init__(component_config)
 

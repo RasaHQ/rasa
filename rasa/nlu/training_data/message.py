@@ -126,8 +126,7 @@ class Message:
     def get_sparse_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Optional[scipy.sparse.spmatrix]:
-        """
-        Get all sparse features for the given attribute that are coming from the given
+        """Get all sparse features for the given attribute that are coming from the given
         list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
@@ -136,7 +135,8 @@ class Message:
             attribute: message attribute
             featurizers: names of featurizers to consider
 
-        Returns: A list of sparse features.
+        Returns:
+            Sparse features.
         """
         if featurizers is None:
             featurizers = []
@@ -148,8 +148,7 @@ class Message:
     def get_dense_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Optional[np.ndarray]:
-        """
-        Get all dense features for the given attribute that are coming from the given
+        """Get all dense features for the given attribute that are coming from the given
         list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
@@ -158,7 +157,8 @@ class Message:
             attribute: message attribute
             featurizers: names of featurizers to consider
 
-        Returns: A list of dense features.
+        Returns:
+            Dense features.
         """
         if featurizers is None:
             featurizers = []
@@ -170,8 +170,7 @@ class Message:
     def features_present(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> bool:
-        """
-        Check if there are any features present for the given attribute and featurizers.
+        """Check if there are any features present for the given attribute and featurizers.
 
         If no featurizers are provided, all available features will be considered.
 
@@ -179,7 +178,8 @@ class Message:
             attribute: message attribute
             featurizers: names of featurizers to consider
 
-        Returns: True, if features are present, false otherwise
+        Returns:
+            ``True``, if features are present, ``False`` otherwise
         """
         if featurizers is None:
             featurizers = []

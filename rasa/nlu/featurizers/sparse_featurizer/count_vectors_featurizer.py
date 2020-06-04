@@ -78,7 +78,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # handling Out-Of-Vocabulary (OOV) words
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
-        "OOV_words": [],  # string or list of strings,
+        "OOV_words": [],  # string or list of strings
     }
 
     @classmethod
