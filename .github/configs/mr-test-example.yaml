@@ -1,4 +1,14 @@
 ##########
+## Available datasets
+##########
+# - "Carbon Bot"
+# - "Sara"
+# - "Hermit"
+# - "Private 1"
+# - "Private 2"
+# - "Private 3"
+
+##########
 ## Available configurations
 ##########
 # - "Sparse + EmbeddingIntent + ResponseSelector(bow)"
@@ -16,8 +26,8 @@
 ## Example configuration
 #################### syntax #################
 ## include:
-##   - dataset: <dataset_name>
-##     config: <configuration_name>
+##   - dataset: "<dataset_name>"
+##     config: ["<configuration_name>"]
 #
 #include:
 #  - dataset: "Carbon Bot"

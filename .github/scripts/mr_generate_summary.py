@@ -6,10 +6,10 @@ summary_file = os.environ['SUMMARY_FILE']
 config = os.environ['CONFIG']
 dataset = os.environ['DATASET']
 task_mapping = {
-    "intent_report.json": "Intent Classification",
-    "CRFEntityExtractor_report.json": "Entity Prediction",
-    "DIETClassifier_report.json": "Entity Prediction",
-    "response_selection_report.json": "Response Selection"
+    "intent_report.json": "intent_classification",
+    "CRFEntityExtractor_report.json": "entity_prediction",
+    "DIETClassifier_report.json": "entity_prediction",
+    "response_selection_report.json": "response_selection"
 }
 data = {}
 
@@ -35,7 +35,6 @@ def generate_json(file, task):
     data[dataset][config][task] = {
         **read_results(file)
     }
-
 
 
 def read_results(file):

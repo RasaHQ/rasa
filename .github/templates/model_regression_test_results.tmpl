@@ -1,15 +1,15 @@
 {{ range $dataset, $config := (datasource "data")}}
 Dataset: `{{$dataset}}`
 
-| Configuration | Intent accuracy | Entity F1 Score | Response accuracy | Execution time |
-|---------------|-----------------|-----------------|-------------------|----------------|
+| Configuration | Intent accuracy | Entity F1 Score | Response accuracy |
+|---------------|-----------------|-----------------|-------------------|
 {{ range $config_name, $config_data := $config -}}
-| `{{ $config_name }}` |
+| `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}` |
 {{- $intent_class := index (index $config_data "Intent Classification") -}}
 {{- if (has $intent_class "accuracy") -}}{{ printf "%.4f" $intent_class.accuracy }}{{- else -}}`no data`{{- end -}} |
 {{- $entity_class := (index (index $config_data "Entity Prediction") "micro avg") -}}
 {{- if (has $entity_class "f1-score") -}}{{- printf "%.4f" (index $entity_class "f1-score") -}}{{- else -}}`no data`{{- end -}} |
 {{- $response_class := (index $config_data "Response Selection") -}}
-{{- if (has $response_class "accuracy") -}}{{ printf "%.4f" $response_class.accuracy }}{{- else -}}`no data`{{- end -}} | test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}` |
+{{- if (has $response_class "accuracy") -}}{{ printf "%.4f" $response_class.accuracy }}{{- else -}}`no data`{{- end -}} |
 {{end}}
 {{end}}
