@@ -113,7 +113,6 @@ class SlackBot(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        logger.debug(f"send_custom_json, json_message: {json_message}")
         json_message.setdefault("channel", self.slack_channel or recipient_id)
         json_message.setdefault("as_user", True)
         json_message.setdefault("thread_ts", self.ts if self.ts else None)
@@ -393,7 +392,6 @@ class SlackInput(InputChannel):
             if request.form:
                 output = request.form
                 payload = json.loads(output["payload"][0])
-                logger.debug(f"slack form payload: {payload}")
 
                 if self._is_interactive_message(payload):
                     sender_id = payload["user"]["id"]
@@ -416,7 +414,7 @@ class SlackInput(InputChannel):
                 user_message = event.get("text", "")
                 sender_id = event.get("user", "")
 
-                logger.debug(f'slack request event.ts: {event.get("ts", "")}, event.thread_ts: {event.get("thread_ts", "")}')
+
                 metadata = self.get_metadata(request)
 
                 if "challenge" in output:
@@ -425,7 +423,6 @@ class SlackInput(InputChannel):
                 elif self._is_user_message(output) and self._is_supported_channel(
                     output, metadata
                 ):
-
                     return await self.process_message(
                         request,
                         on_new_message,
