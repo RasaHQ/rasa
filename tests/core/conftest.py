@@ -4,9 +4,10 @@ import os
 import uuid
 from datetime import datetime
 
-from typing import Text
+from typing import Text, Iterator
 
 import pytest
+from sanic.request import Request
 
 import rasa.utils.io
 from rasa.core.agent import Agent
@@ -87,6 +88,13 @@ class MockedMongoTrackerStore(MongoTrackerStore):
         self.db = MongoClient().rasa
         self.collection = "conversations"
         super(MongoTrackerStore, self).__init__(_domain, None)
+
+
+@pytest.fixture(scope="session")
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")

@@ -1,9 +1,10 @@
-from typing import Text, List, Dict, Any
+from typing import Text, List, Dict, Any, Iterator
 
 import asyncio
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
+from sanic.request import Request
 
 import rasa.utils.io
 from rasa.nlu.constants import NO_ENTITY_TAG
@@ -53,6 +54,13 @@ from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
 from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
+
+
+@pytest.fixture(scope="session")
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")

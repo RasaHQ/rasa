@@ -2,13 +2,14 @@ import asyncio
 import random
 import uuid
 
+from sanic.request import Request
 from sanic.testing import SanicTestClient
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
 from sanic import Sanic
-from typing import Text, List, Optional, Dict, Any
+from typing import Text, List, Optional, Dict, Any, Iterator
 from unittest.mock import Mock
 
 import rasa
@@ -44,6 +45,13 @@ DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separatedly installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
+
+
+@pytest.fixture(scope="session")
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
