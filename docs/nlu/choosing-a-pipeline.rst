@@ -195,7 +195,8 @@ However, sometimes it makes sense to restrict the features that are used by a sp
 For example, :ref:`response-selector` is likely to perform better if no features from the
 :ref:`RegexFeaturizer` or :ref:`LexicalSyntacticFeaturizer` are used.
 To achieve that, you can do the following:
-Set an alias for every featurizer in your pipeline via the option ``alias`.
+Set an alias for every featurizer in your pipeline via the option ``alias``.
+By default the alias is set the the full featurizer class name, for example, ``RegexFeaturizer``.
 You can then specify, for example, on the :ref:`response-selector` via the option ``featurizers`` what features from
 which featurizers should be used.
 If you don't set the option ``featurizers`` all available features will be used.
