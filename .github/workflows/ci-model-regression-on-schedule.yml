@@ -50,11 +50,11 @@ jobs:
       - uses: GoogleCloudPlatform/github-actions@0.1.2
         with:
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
-          project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}
+          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
 
       # Get the GKE credentials so we can deploy to the cluster
       - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE"
+          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}"
 
       - name: Deploy Github Runner
         run: |-
@@ -177,11 +177,11 @@ jobs:
       - uses: GoogleCloudPlatform/github-actions@0.1.2
         with:
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
-          project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}
+          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
 
       # Get the GKE credentials so we can deploy to the cluster
       - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE"
+          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}"
 
       - name: Remove Github Runner
         run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30
