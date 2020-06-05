@@ -10,7 +10,7 @@ from rasa.constants import (
     RESULTS_FILE,
     NUMBER_OF_TRAINING_STORIES_FILE,
 )
-from rasa.cli.utils import print_error, print_warning
+import rasa.cli.utils as cli_utils
 import rasa.utils.common as utils
 from rasa.exceptions import ModelNotFound
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def test_core_models_in_directory(
     model_directory: Text, stories: Text, output: Text
 ) -> None:
-    from rasa.core.test import compare_models_in_dir, plot_core_results
+    from rasa.core.test import compare_models_in_dir
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
@@ -30,6 +30,21 @@ def test_core_models_in_directory(
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
     number_of_stories = io_utils.read_json_file(story_n_path)
     plot_core_results(output, number_of_stories)
+
+
+def plot_core_results(output: Text, number_of_examples: List[int]) -> None:
+    """Plot core model comparison graph"""
+    import rasa.utils.plotting as plotting_utils
+
+    graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
+
+    plotting_utils.plot_curve(
+        output,
+        number_of_examples,
+        x_label_text="Number of stories present during training",
+        y_label_text="Number of correct test stories",
+        graph_path=graph_path,
+    )
 
 
 def _get_sanitized_model_directory(model_directory: Text) -> Text:
@@ -52,7 +67,7 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     p = Path(model_directory)
     if p.is_file():
         if model_directory != rasa.model.get_latest_model():
-            print_warning(
+            cli_utils.print_warning(
                 "You passed a file as '--model'. Will use the directory containing "
                 "this file instead."
             )
@@ -107,7 +122,7 @@ def test_core(
     try:
         unpacked_model = rasa.model.get_model(model)
     except ModelNotFound:
-        print_error(
+        cli_utils.print_error(
             "Unable to test: could not find a model. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
@@ -116,7 +131,7 @@ def test_core(
     core_path, nlu_path = rasa.model.get_model_subdirectories(unpacked_model)
 
     if not core_path:
-        print_error(
+        cli_utils.print_error(
             "Unable to test: could not find a Core model. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
@@ -128,7 +143,7 @@ def test_core(
         if nlu_path:
             _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path)
         else:
-            print_warning(
+            cli_utils.print_warning(
                 "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
                 "evaluation."
             )
@@ -157,7 +172,7 @@ def test_nlu(
     try:
         unpacked_model = get_model(model)
     except ModelNotFound:
-        print_error(
+        cli_utils.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
@@ -173,7 +188,7 @@ def test_nlu(
         )
         run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
     else:
-        print_error(
+        cli_utils.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
@@ -193,7 +208,6 @@ def compare_nlu_models(
     from rasa.nlu.utils import write_json_to_file
     from rasa.utils.io import create_path
     from rasa.nlu.test import compare_nlu
-    from rasa.core.test import plot_nlu_results
 
     data = load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=5)
@@ -221,6 +235,21 @@ def compare_nlu_models(
     write_json_to_file(f1_path, f1_score_results)
 
     plot_nlu_results(output, training_examples_per_run)
+
+
+def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
+    """Plot NLU model comparison graph"""
+    import rasa.utils.plotting as plotting_utils
+
+    graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
+
+    plotting_utils.plot_curve(
+        output,
+        number_of_examples,
+        x_label_text="Number of intent examples present during training",
+        y_label_text="Label-weighted average F1 score on test set",
+        graph_path=graph_path,
+    )
 
 
 def perform_nlu_cross_validation(
