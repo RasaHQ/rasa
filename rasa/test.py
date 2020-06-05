@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import Text, Dict, Optional, List, Any
+from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
 import rasa.utils.io as io_utils
@@ -289,3 +289,73 @@ def perform_nlu_cross_validation(
         logger.info("Response Selection evaluation results")
         log_results(response_selection_results.train, "train")
         log_results(response_selection_results.test, "test")
+
+
+def get_evaluation_metrics(
+    targets: Iterable[Any],
+    predictions: Iterable[Any],
+    output_dict: bool = False,
+    exclude_label: Text = None,
+) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]:
+    """Compute the f1, precision, accuracy and summary report from sklearn.
+
+    Args:
+        targets: target labels
+        predictions: predicted labels
+        output_dict: if True sklearn returns a summary report as dict, if False the
+          report is in string format
+        exclude_label: labels to exclude from evaluation
+
+    Returns:
+        Report from sklearn, precision, f1, and accuracy values.
+    """
+    from sklearn import metrics
+
+    targets = clean_labels(targets)
+    predictions = clean_labels(predictions)
+
+    labels = get_unique_labels(targets, exclude_label)
+    if not labels:
+        logger.warning("No labels to evaluate. Skip evaluation.")
+        return {}, 0.0, 0.0, 0.0
+
+    report = metrics.classification_report(
+        targets, predictions, labels=labels, output_dict=output_dict
+    )
+    precision = metrics.precision_score(
+        targets, predictions, labels=labels, average="weighted"
+    )
+    f1 = metrics.f1_score(targets, predictions, labels=labels, average="weighted")
+    accuracy = metrics.accuracy_score(targets, predictions)
+
+    return report, precision, f1, accuracy
+
+
+def clean_labels(labels: Iterable[Text]) -> List[Text]:
+    """Remove `None` labels. sklearn metrics do not support them.
+
+    Args:
+        labels: list of labels
+
+    Returns:
+        Cleaned labels.
+    """
+    return [label if label is not None else "" for label in labels]
+
+
+def get_unique_labels(
+    targets: Iterable[Text], exclude_label: Optional[Text]
+) -> List[Text]:
+    """Get unique labels. Exclude 'exclude_label' if specified.
+
+    Args:
+        targets: labels
+        exclude_label: label to exclude
+
+    Returns:
+         Unique labels.
+    """
+    labels = set(targets)
+    if exclude_label and exclude_label in labels:
+        labels.remove(exclude_label)
+    return list(labels)

@@ -25,7 +25,7 @@ from tests.core.conftest import (
 
 async def test_evaluation_image_creation(tmpdir: Path, default_agent: Agent):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
-    img_path = str(tmpdir / "story_confmat.pdf")
+    img_path = str(tmpdir / "story_confusion_matrix.png")
 
     await test(
         stories=DEFAULT_STORIES_FILE,

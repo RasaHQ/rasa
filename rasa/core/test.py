@@ -6,7 +6,7 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import rasa.utils.io as io_utils
-from core.processor import MessageProcessor
+from rasa.core.processor import MessageProcessor
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
@@ -430,7 +430,7 @@ def collect_story_predictions(
     use_e2e: bool = False,
 ) -> Tuple[StoryEvaluation, int]:
     """Test the stories from a file, running them through the stored model."""
-    from rasa.nlu.test import get_evaluation_metrics
+    from rasa.test import get_evaluation_metrics
     from tqdm import tqdm
 
     story_eval_store = EvaluationStore()
@@ -522,7 +522,7 @@ async def test(
     errors: bool = True,
 ):
     """Run the evaluation of the stories, optionally plot the results."""
-    from rasa.nlu.test import get_evaluation_metrics
+    from rasa.test import get_evaluation_metrics
 
     completed_trackers = await _generate_trackers(stories, agent, max_stories, e2e)
 
