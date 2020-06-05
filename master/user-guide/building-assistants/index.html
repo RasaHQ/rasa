@@ -328,7 +328,7 @@ new Rasa project.</p>
 rasa init
 </pre></div>
 </div>
-<p>Let’s remove the default content from this bot, so that the <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code>, <code class="docutils literal notranslate"><span class="pre">stories.md</span></code>
+<p>Let’s remove the default content from this bot, so that the <code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>, <code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>
 and <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> files are empty.</p>
 <div class="section" id="memoization-policy">
 <span id="respond-with-memoization-policy"></span><h3><a class="toc-backref" href="#id9">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h3>
@@ -349,7 +349,7 @@ to pay attention to the last message the user sent, and therefore we’ll set th
 which allows you to clear the conversation history and start fresh.</p>
 </div>
 <p>Now that we’ve defined our policies, we can add some stories for the <code class="docutils literal notranslate"><span class="pre">goodbye</span></code>, <code class="docutils literal notranslate"><span class="pre">thank</span></code> and <code class="docutils literal notranslate"><span class="pre">greet</span></code>
-intents to the <code class="docutils literal notranslate"><span class="pre">stories.md</span></code> file:</p>
+intents to the <code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code> file:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> greet
 <span class="k">*</span> greet
   <span class="k">-</span> utter_greet
@@ -378,7 +378,7 @@ responses:
     <span class="k">-</span> text: Bye!
 </pre></div>
 </div>
-<p>Finally, we’ll copy over some NLU data from Sara into our <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code> file
+<p>Finally, we’ll copy over some NLU data from Sara into our <code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code> file
 (more can be found <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md">here</a>):</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:greet
 <span class="k">-</span> Hi
