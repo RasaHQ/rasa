@@ -4,14 +4,18 @@ from tensorflow_core.python.training.tracking.tracking import AutoTrackable
 from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
 from tqdm import tqdm
 
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer
-from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.nlu.constants import (
+    TEXT,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    FEATURIZER_CLASS_ALIAS,
+)
 import numpy as np
 import tensorflow as tf
 
@@ -143,7 +147,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         Add a whitespace between two tokens if the end value of the first tokens is
         not the same as the end value of the second token."""
-
         texts = []
         for tokens in list_of_tokens:
             text = ""
@@ -175,7 +178,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
         tf_hub_module: Any = None,
         **kwargs: Any,
     ) -> None:
-
         if config is not None and config.language != "en":
             common_utils.raise_warning(
                 f"Since ``ConveRT`` model is trained only on an english "
@@ -210,20 +212,19 @@ class ConveRTFeaturizer(DenseFeaturizer):
                 )
 
                 for index, ex in enumerate(batch_examples):
-                    ex.set(
-                        DENSE_FEATURE_NAMES[attribute],
-                        self._combine_with_existing_dense_features(
-                            ex, batch_features[index], DENSE_FEATURE_NAMES[attribute]
-                        ),
+                    features = Features(
+                        batch_features[index],
+                        attribute,
+                        self.component_config[FEATURIZER_CLASS_ALIAS],
                     )
+                    ex.add_features(features)
 
     def process(
         self, message: Message, *, tf_hub_module: Any = None, **kwargs: Any
     ) -> None:
         features = self._compute_features([message], tf_hub_module)[0]
-        message.set(
-            DENSE_FEATURE_NAMES[TEXT],
-            self._combine_with_existing_dense_features(
-                message, features, DENSE_FEATURE_NAMES[TEXT]
-            ),
+
+        final_features = Features(
+            features, TEXT, self.component_config[FEATURIZER_CLASS_ALIAS]
         )
+        message.add_features(final_features)

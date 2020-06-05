@@ -6,7 +6,7 @@ from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.constants import SPACY_DOCS, TEXT, DENSE_FEATURE_NAMES, RESPONSE, INTENT
+from rasa.nlu.constants import SPACY_DOCS, TEXT, RESPONSE, INTENT
 
 
 def test_spacy_featurizer_cls_vector(spacy_nlp):
@@ -18,7 +18,7 @@ def test_spacy_featurizer_cls_vector(spacy_nlp):
 
     featurizer._set_spacy_features(message)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
+    vecs = message.get_dense_features(TEXT, [])
 
     expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
     expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
@@ -103,7 +103,7 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
 
     ftr._set_spacy_features(message)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])[0][:5]
+    vecs = message.get_dense_features(TEXT, [])[0][:5]
 
     assert np.allclose(token_vectors[0][:5], vecs, atol=1e-4)
     assert np.allclose(vecs, expected, atol=1e-4)
@@ -150,19 +150,19 @@ def test_spacy_featurizer_train(spacy_nlp):
     expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
     expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
+    vecs = message.get_dense_features(TEXT, [])
 
     assert 6 == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[RESPONSE])
+    vecs = message.get_dense_features(RESPONSE, [])
 
     assert 6 == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[INTENT])
+    vecs = message.get_dense_features(INTENT, [])
 
     assert vecs is None
 
@@ -183,6 +183,6 @@ def test_spacy_featurizer_using_empty_model():
 
     ftr._set_spacy_features(message)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
+    vecs = message.get_dense_features(TEXT)
 
     assert vecs is None

@@ -40,15 +40,10 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.utils.common import class_from_module_path, raise_warning
-from rasa.utils.tensorflow.constants import (
-    INTENT_CLASSIFICATION,
-    ENTITY_RECOGNITION,
-    NUM_TRANSFORMER_LAYERS,
-)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
-    from rasa.nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
+    from rasa.nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 

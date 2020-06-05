@@ -181,7 +181,6 @@ You should only use featurizers from the category :ref:`sparse featurizers <text
 :ref:`CountVectorsFeaturizer`, :ref:`RegexFeaturizer` or :ref:`LexicalSyntacticFeaturizer`, if you don't want to use
 pre-trained word embeddings.
 
-
 Entity Recognition / Intent Classification / Response Selectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -191,6 +190,23 @@ We support several components for each of the tasks. All of them are listed in :
 We recommend using :ref:`diet-classifier` for intent classification and entity recognition
 and :ref:`response-selector` for response selection.
 
+By default all of these components consume all available features produced in the pipeline.
+However, sometimes it makes sense to restrict the features that are used by a specific component.
+For example, :ref:`response-selector` is likely to perform better if no features from the
+:ref:`RegexFeaturizer` or :ref:`LexicalSyntacticFeaturizer` are used.
+To achieve that, you can do the following:
+Set an alias for every featurizer in your pipeline via the option ``alias``.
+By default the alias is set the the full featurizer class name, for example, ``RegexFeaturizer``.
+You can then specify, for example, on the :ref:`response-selector` via the option ``featurizers`` what features from
+which featurizers should be used.
+If you don't set the option ``featurizers`` all available features will be used.
+To check which components have the option ``featurizers`` available, see :ref:`components`.
+
+Here is an example configuration file where the ``DIETClassifier`` is using all available features and the
+``ResponseSelector`` is just using the features from the ``ConveRTFeaturizer`` and the ``CountVectorsFeaturizer``.
+
+.. literalinclude:: ../../data/configs_for_docs/config_featurizers.yml
+    :language: yaml
 
 Multi-Intent Classification
 ***************************
