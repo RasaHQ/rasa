@@ -225,6 +225,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
         features = self._compute_features([message], tf_hub_module)[0]
 
         final_features = Features(
-            features[0], TEXT, self.component_config[FEATURIZER_CLASS_ALIAS]
+            features, TEXT, self.component_config[FEATURIZER_CLASS_ALIAS]
         )
         message.add_features(final_features)
