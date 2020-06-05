@@ -18,6 +18,8 @@ if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
 
 
+CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
+REPORT_STORIES_FILE = "story_report.json"
 FAILED_STORIES_FILE = "failed_stories.md"
 SUCCESSFUL_STORIES_FILE = "successful_stories.md"
 
@@ -544,7 +546,7 @@ async def test(
                 targets, predictions, output_dict=True
             )
 
-            report_filename = os.path.join(out_directory, "stories_report.json")
+            report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
             io_utils.dump_obj_as_json_to_file(report_filename, report)
             logger.info(f"Stories report saved to {report_filename}.")
         else:
@@ -618,7 +620,7 @@ def plot_story_evaluation(
     from sklearn.utils.multiclass import unique_labels
     from rasa.utils.plotting import plot_confusion_matrix
 
-    confusion_matrix_filename = "story_confusion_matrix.png"
+    confusion_matrix_filename = CONFUSION_MATRIX_STORIES_FILE
     if output_directory:
         confusion_matrix_filename = os.path.join(
             output_directory, confusion_matrix_filename

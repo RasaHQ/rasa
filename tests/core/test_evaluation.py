@@ -7,6 +7,9 @@ from rasa.core.test import (
     collect_story_predictions,
     test,
     FAILED_STORIES_FILE,
+    CONFUSION_MATRIX_STORIES_FILE,
+    REPORT_STORIES_FILE,
+    SUCCESSFUL_STORIES_FILE,
 )
 from rasa.core.policies.memoization import MemoizationPolicy
 
@@ -23,9 +26,11 @@ from tests.core.conftest import (
 )
 
 
-async def test_evaluation_image_creation(tmpdir: Path, default_agent: Agent):
-    stories_path = str(tmpdir / FAILED_STORIES_FILE)
-    img_path = str(tmpdir / "story_confusion_matrix.png")
+async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
+    failed_stories_path = str(tmpdir / FAILED_STORIES_FILE)
+    success_stories_path = str(tmpdir / SUCCESSFUL_STORIES_FILE)
+    report_path = str(tmpdir / REPORT_STORIES_FILE)
+    confusion_matrix_path = str(tmpdir / CONFUSION_MATRIX_STORIES_FILE)
 
     await test(
         stories=DEFAULT_STORIES_FILE,
@@ -33,10 +38,14 @@ async def test_evaluation_image_creation(tmpdir: Path, default_agent: Agent):
         out_directory=str(tmpdir),
         max_stories=None,
         e2e=False,
+        errors=True,
+        successes=True,
     )
 
-    assert os.path.isfile(img_path)
-    assert os.path.isfile(stories_path)
+    assert os.path.isfile(failed_stories_path)
+    assert os.path.isfile(success_stories_path)
+    assert os.path.isfile(report_path)
+    assert os.path.isfile(confusion_matrix_path)
 
 
 async def test_end_to_end_evaluation_script(default_agent: Agent):
