@@ -1,1 +1,1 @@
-Reduced duplicate logs and warnings when running ``rasa train``.
+Reduced duplicate logs and warnings when running ``rasa train`.
