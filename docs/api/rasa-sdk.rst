@@ -158,7 +158,7 @@ slots, but only a user's name and their phone number. To do that, you'd override
       ) -> List[EventType]:
 
           # the session should begin with a `session_started` event
-          events = [SessionStarted()]
+          _events = [SessionStarted(metadata=self.metadata)]
 
           # any slots that should be carried over should come after the
           # `session_started` event
