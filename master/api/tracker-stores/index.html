@@ -403,7 +403,7 @@ First download the Oracle Instant Client from <a class="reference external" href
 rename it to <code class="docutils literal notranslate"><span class="pre">oracle.rpm</span></code> and store it in the directory from where you’ll be building the docker image.
 Copy the following into a file called <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code>:</p>
 <blockquote>
-<div><pre class="literal-block">FROM rasa/rasa:1.11.0a1-full
+<div><pre class="literal-block">FROM rasa/rasa:1.11.0a2-full
 
 # Switch to root user to install packages
 USER root
@@ -424,7 +424,7 @@ USER 1001</pre>
 </div></blockquote>
 <p>Then build the docker image:</p>
 <blockquote>
-<div><pre class="literal-block">docker build . -t rasa-oracle:1.11.0a1-oracle-full</pre>
+<div><pre class="literal-block">docker build . -t rasa-oracle:1.11.0a2-oracle-full</pre>
 </div></blockquote>
 <p>Now you can configure the tracker store in the <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> as described above,
 and start the container. The <code class="docutils literal notranslate"><span class="pre">dialect</span></code> parameter with this setup will be <code class="docutils literal notranslate"><span class="pre">oracle+cx_oracle</span></code>.

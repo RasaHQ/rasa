@@ -527,6 +527,44 @@ Or you might want to combine multiple of those tasks.
 We support several components for each of the tasks. All of them are listed in <a class="reference internal" href="../components/#components"><span class="std std-ref">Components</span></a>.
 We recommend using <a class="reference internal" href="../components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> for intent classification and entity recognition
 and <a class="reference internal" href="../components/#response-selector"><span class="std std-ref">ResponseSelector</span></a> for response selection.</p>
+<p>By default all of these components consume all available features produced in the pipeline.
+However, sometimes it makes sense to restrict the features that are used by a specific component.
+For example, <a class="reference internal" href="../components/#response-selector"><span class="std std-ref">ResponseSelector</span></a> is likely to perform better if no features from the
+<a class="reference internal" href="../components/#regexfeaturizer"><span class="std std-ref">RegexFeaturizer</span></a> or <a class="reference internal" href="../components/#lexicalsyntacticfeaturizer"><span class="std std-ref">LexicalSyntacticFeaturizer</span></a> are used.
+To achieve that, you can do the following:
+Set an alias for every featurizer in your pipeline via the option <code class="docutils literal notranslate"><span class="pre">alias</span></code>.
+By default the alias is set the the full featurizer class name, for example, <code class="docutils literal notranslate"><span class="pre">RegexFeaturizer</span></code>.
+You can then specify, for example, on the <a class="reference internal" href="../components/#response-selector"><span class="std std-ref">ResponseSelector</span></a> via the option <code class="docutils literal notranslate"><span class="pre">featurizers</span></code> what features from
+which featurizers should be used.
+If you don’t set the option <code class="docutils literal notranslate"><span class="pre">featurizers</span></code> all available features will be used.
+To check which components have the option <code class="docutils literal notranslate"><span class="pre">featurizers</span></code> available, see <a class="reference internal" href="../components/#components"><span class="std std-ref">Components</span></a>.</p>
+<p>Here is an example configuration file where the <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> is using all available features and the
+<code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> is just using the features from the <code class="docutils literal notranslate"><span class="pre">ConveRTFeaturizer</span></code> and the <code class="docutils literal notranslate"><span class="pre">CountVectorsFeaturizer</span></code>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="nt">pipeline</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTTokenizer</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTFeaturizer</span>
+    <span class="nt">alias</span><span class="p">:</span> <span class="s">&quot;convert&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
+    <span class="nt">alias</span><span class="p">:</span> <span class="s">&quot;regex&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+    <span class="nt">alias</span><span class="p">:</span> <span class="s">&quot;lexical-syntactic&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+    <span class="nt">alias</span><span class="p">:</span> <span class="s">&quot;cvf-word&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+    <span class="nt">alias</span><span class="p">:</span> <span class="s">&quot;cvf-char&quot;</span>
+    <span class="nt">analyzer</span><span class="p">:</span> <span class="s">&quot;char_wb&quot;</span>
+    <span class="nt">min_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">max_ngram</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="nt">featurizers</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;convert&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;cvf-word&quot;</span><span class="p p-Indicator">]</span>
+    <span class="nt">epochs</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="multi-intent-classification">
