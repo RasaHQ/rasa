@@ -1,6 +1,5 @@
 import logging
 
-from tensorflow_core.python.training.tracking.tracking import AutoTrackable
 from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
 from tqdm import tqdm
 
