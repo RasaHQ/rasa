@@ -473,7 +473,7 @@ def collect_story_predictions(
 
     in_training_data_fraction = _in_training_data_fraction(action_list)
 
-    log_evaluation_table(
+    _log_evaluation_table(
         [1] * len(completed_trackers),
         "END-TO-END" if use_e2e else "CONVERSATION",
         report,
@@ -496,7 +496,7 @@ def collect_story_predictions(
     )
 
 
-def log_stories(stories: List, filename: Text, out_directory: Text) -> None:
+def _log_stories(stories: List, filename: Text, out_directory: Text) -> None:
     """Take stories as a list of dicts."""
     if not out_directory:
         return
@@ -554,7 +554,7 @@ async def test(
                 targets, predictions, output_dict=True
             )
 
-    log_evaluation_table(
+    _log_evaluation_table(
         evaluation_store.action_targets,
         "ACTION",
         report,
@@ -566,16 +566,18 @@ async def test(
     )
 
     if not disable_plotting:
-        plot_story_evaluation(
+        _plot_story_evaluation(
             evaluation_store.action_targets,
             evaluation_store.action_predictions,
             out_directory,
         )
 
     if errors:
-        log_stories(story_evaluation.failed_stories, FAILED_STORIES_FILE, out_directory)
+        _log_stories(
+            story_evaluation.failed_stories, FAILED_STORIES_FILE, out_directory
+        )
     if successes:
-        log_stories(
+        _log_stories(
             story_evaluation.successful_stories, SUCCESSFUL_STORIES_FILE, out_directory
         )
 
@@ -590,7 +592,7 @@ async def test(
     }
 
 
-def log_evaluation_table(
+def _log_evaluation_table(
     golds: List[Any],
     name: Text,
     report: Dict[Text, Any],
@@ -612,7 +614,7 @@ def log_evaluation_table(
         logger.info(f"\tClassification report: \n{report}")
 
 
-def plot_story_evaluation(
+def _plot_story_evaluation(
     targets: List[Text], predictions: List[Text], output_directory: Optional[Text]
 ) -> None:
     """Plot a confusion matrix of story evaluation."""
