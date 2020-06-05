@@ -425,7 +425,7 @@ def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
     return len(in_training_data) / len(action_list)
 
 
-def collect_story_predictions(
+def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
     fail_on_prediction_errors: bool = False,
@@ -522,13 +522,28 @@ async def test(
     disable_plotting: bool = False,
     successes: bool = False,
     errors: bool = True,
-):
-    """Run the evaluation of the stories, optionally plot the results."""
+) -> Dict[Text, Any]:
+    """Run the evaluation of the stories, optionally plot the results.
+
+    Args:
+        stories: the stories to evaulate on
+        agent: the agent
+        max_stories: maximum number of stories to consider
+        out_directory: path to directory to results to
+        fail_on_prediction_errors: boolean indicating whether to fail on prediction errors or not
+        e2e: boolean indicating whether to use end to end evaluation or not
+        disable_plotting: boolean indicating whether to disable plotting or not
+        successes: boolean indicating whether to write down successful predictions or not
+        errors: boolean indicating whether to write down incorrect predictions or not
+
+    Returns:
+        Evaluation summary.
+    """
     from rasa.test import get_evaluation_metrics
 
     completed_trackers = await _generate_trackers(stories, agent, max_stories, e2e)
 
-    story_evaluation, _ = collect_story_predictions(
+    story_evaluation, _ = _collect_story_predictions(
         completed_trackers, agent, fail_on_prediction_errors, e2e
     )
 
@@ -641,7 +656,13 @@ def _plot_story_evaluation(
 async def compare_models_in_dir(
     model_dir: Text, stories_file: Text, output: Text
 ) -> None:
-    """Evaluates multiple trained models in a directory on a test set."""
+    """Evaluate multiple trained models in a directory on a test set.
+
+    Args:
+        model_dir: path to directory that contains the models to evaluate
+        stories_file: path to the story file
+        output: output directory to store results to
+    """
     import rasa.utils.io as io_utils
 
     number_correct = defaultdict(list)
@@ -668,8 +689,13 @@ async def compare_models_in_dir(
 
 
 async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
-    """Evaluates provided trained models on a test set."""
+    """Evaluate provided trained models on a test set.
 
+    Args:
+        models: list of trained model paths
+        stories_file: path to the story file
+        output: output directory to store results to
+    """
     number_correct = defaultdict(list)
 
     for model in models:
@@ -688,7 +714,7 @@ async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
 
     agent = Agent.load(model)
     completed_trackers = await _generate_trackers(stories_file, agent)
-    story_eval_store, number_of_stories = collect_story_predictions(
+    story_eval_store, number_of_stories = _collect_story_predictions(
         completed_trackers, agent
     )
     failed_stories = story_eval_store.failed_stories
