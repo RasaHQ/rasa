@@ -105,6 +105,7 @@ class EntityExtractor(Component):
                     data=data,
                     output_properties=message.output_properties,
                     time=message.time,
+                    features=message.features,
                 )
             )
 

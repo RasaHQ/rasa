@@ -1,6 +1,6 @@
 import numpy as np
 
-from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT, RESPONSE, INTENT, TOKENS_NAMES
+from rasa.nlu.constants import TEXT, RESPONSE, INTENT, TOKENS_NAMES
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -49,18 +49,18 @@ def test_mitie_featurizer_train(mitie_feature_extractor):
     )
     expected_cls = np.array([0.0, -4.4551446, 0.26073121, -1.46632245, -1.84205751])
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
+    vecs = message.get_dense_features(TEXT, [])
 
     assert len(message.get(TOKENS_NAMES[TEXT])) == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[RESPONSE])
+    vecs = message.get_dense_features(RESPONSE, [])
 
     assert len(message.get(TOKENS_NAMES[RESPONSE])) == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[INTENT])
+    vecs = message.get_dense_features(INTENT, [])
 
     assert vecs is None
