@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py36", "py37", "py38"]
+target-version = [ "py36", "py37", "py38" ]
 exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
