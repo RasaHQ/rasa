@@ -6,7 +6,6 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import rasa.utils.io as io_utils
-from rasa.core.processor import MessageProcessor
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
@@ -16,6 +15,7 @@ from rasa.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
+    from rasa.core.processor import MessageProcessor
 
 
 CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
@@ -264,7 +264,7 @@ def _collect_user_uttered_predictions(
 
 
 def _emulate_form_rejection(
-    processor: MessageProcessor, partial_tracker: DialogueStateTracker
+    processor: "MessageProcessor", partial_tracker: DialogueStateTracker
 ) -> None:
     from rasa.core.policies.form_policy import FormPolicy
     from rasa.core.events import ActionExecutionRejected
@@ -284,7 +284,7 @@ def _emulate_form_rejection(
 
 
 def _collect_action_executed_predictions(
-    processor: MessageProcessor,
+    processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     event: ActionExecuted,
     fail_on_prediction_errors: bool,
