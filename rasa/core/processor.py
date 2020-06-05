@@ -641,17 +641,16 @@ class MessageProcessor:
         nlg,
         policy=None,
         confidence=None,
-        metadata: Optional[Dict] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> bool:
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
+            # Here we set optional metadata to the ActionSessionStart, which will then
+            # be passed to the SessionStart event. Otherwise the metadata will be lost.
             if action.name() == ACTION_SESSION_START_NAME:
-                events = await action.run(
-                    output_channel, nlg, tracker, self.domain, metadata=metadata
-                )
-            else:
-                events = await action.run(output_channel, nlg, tracker, self.domain)
+                action.metadata = metadata
+            events = await action.run(output_channel, nlg, tracker, self.domain)
         except ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])

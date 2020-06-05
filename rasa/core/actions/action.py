@@ -1,4 +1,4 @@
-import copy
+aimport copy
 import json
 import logging
 import typing
@@ -357,6 +357,9 @@ class ActionSessionStart(Action):
     session.
     """
 
+    # Optional arbitrary metadata that can be passed to the SessionStarted event.
+    metadata: Optional[Dict[Text, Any]] = None
+
     def name(self) -> Text:
         return ACTION_SESSION_START_NAME
 
@@ -384,7 +387,7 @@ class ActionSessionStart(Action):
     ) -> List[Event]:
         from rasa.core.events import SessionStarted
 
-        _events = [SessionStarted(metadata=metadata)]
+        _events = [SessionStarted(metadata=self.metadata)]
 
         if domain.session_config.carry_over_slots:
             _events.extend(self._slot_set_events_from_tracker(tracker))
