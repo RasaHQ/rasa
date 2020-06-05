@@ -23,7 +23,8 @@ from rasa.constants import (
     DOCS_BASE_URL,
     MINIMUM_COMPATIBLE_VERSION,
 )
-from rasa.core.agent import Agent, load_agent
+from rasa.core import agent
+from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
@@ -333,7 +334,7 @@ async def _load_agent(
             if not lock_store:
                 lock_store = LockStore.create(endpoints.lock_store)
 
-        loaded_agent = await load_agent(
+        loaded_agent = await agent.load_agent(
             model_path,
             model_server,
             remote_storage,

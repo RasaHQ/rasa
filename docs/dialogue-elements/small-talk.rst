@@ -57,7 +57,7 @@ And make sure the mapping policy is present in your ``config.yml``:
       - name: "MappingPolicy"
       ...
 
-If you want to implement less rigid behaviour, use regular stories
+If you want to implement less rigid behavior, use regular stories
 instead of the mapping policy. For example, if you want to send a special
 response if the user says goodbye immediately after saying hello, remove the
 ``triggers`` metadata from the domain file, and include relevant stories in your

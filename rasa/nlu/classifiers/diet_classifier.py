@@ -29,8 +29,6 @@ from rasa.nlu.constants import (
     TEXT,
     ENTITIES,
     NO_ENTITY_TAG,
-    SPARSE_FEATURE_NAMES,
-    DENSE_FEATURE_NAMES,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
@@ -84,17 +82,19 @@ from rasa.utils.tensorflow.constants import (
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_LEVEL,
+    FEATURIZERS,
 )
 
 
 logger = logging.getLogger(__name__)
 
+
 TEXT_FEATURES = f"{TEXT}_features"
 LABEL_FEATURES = f"{LABEL}_features"
-LABEL_IDS = f"{LABEL}_ids"
-TAG_IDS = "tag_ids"
 TEXT_SEQ_LENGTH = f"{TEXT}_lengths"
 LABEL_SEQ_LENGTH = f"{LABEL}_lengths"
+LABEL_IDS = f"{LABEL}_ids"
+TAG_IDS = "tag_ids"
 
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
@@ -234,6 +234,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
+        # Specify what features to use as sequence and sentence features
+        # By default all features in the pipeline are used.
+        FEATURIZERS: [],
     }
 
     # init helpers
@@ -411,22 +414,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Checks if all labels have features set."""
 
         return all(
-            label_example.get(SPARSE_FEATURE_NAMES[attribute]) is not None
-            or label_example.get(DENSE_FEATURE_NAMES[attribute]) is not None
+            label_example.features_present(attribute)
             for label_example in labels_example
         )
 
     def _extract_features(
         self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
-        sparse_features = None
-        dense_features = None
 
-        if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
-            sparse_features = message.get(SPARSE_FEATURE_NAMES[attribute])
-
-        if message.get(DENSE_FEATURE_NAMES[attribute]) is not None:
-            dense_features = message.get(DENSE_FEATURE_NAMES[attribute])
+        sparse_features = message.get_sparse_features(
+            attribute, self.component_config[FEATURIZERS]
+        )
+        dense_features = message.get_dense_features(
+            attribute, self.component_config[FEATURIZERS]
+        )
 
         if sparse_features is not None and dense_features is not None:
             if sparse_features.shape[0] != dense_features.shape[0]:
@@ -598,6 +599,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data = RasaModelData(label_key=self.label_key)
         model_data.add_features(TEXT_FEATURES, [X_sparse, X_dense])
         model_data.add_features(LABEL_FEATURES, [Y_sparse, Y_dense])
+
         if label_attribute and model_data.feature_not_exist(LABEL_FEATURES):
             # no label features are present, get default features from _label_data
             model_data.add_features(
@@ -868,7 +870,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         entity_tag_specs = (
-            [l._asdict() for l in self._entity_tag_specs]
+            [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
             if self._entity_tag_specs
             else []
         )
@@ -1350,7 +1352,6 @@ class DIET(RasaModel):
         inputs = self._combine_sparse_dense_features(
             features, mask, name, sparse_dropout, dense_dropout
         )
-
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 
         if masked_lm_loss:
@@ -1423,15 +1424,15 @@ class DIET(RasaModel):
         )
 
     def _calculate_label_loss(
-        self, a: tf.Tensor, b: tf.Tensor, label_ids: tf.Tensor
+        self, text_features: tf.Tensor, label_features: tf.Tensor, label_ids: tf.Tensor
     ) -> tf.Tensor:
         all_label_ids, all_labels_embed = self._create_all_labels()
 
-        a_embed = self._tf_layers[f"embed.{TEXT}"](a)
-        b_embed = self._tf_layers[f"embed.{LABEL}"](b)
+        text_embed = self._tf_layers[f"embed.{TEXT}"](text_features)
+        label_embed = self._tf_layers[f"embed.{LABEL}"](label_features)
 
         return self._tf_layers[f"loss.{LABEL}"](
-            a_embed, b_embed, label_ids, all_labels_embed, all_label_ids
+            text_embed, label_embed, label_ids, all_labels_embed, all_label_ids
         )
 
     def _calculate_entity_loss(

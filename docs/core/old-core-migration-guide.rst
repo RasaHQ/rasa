@@ -35,7 +35,7 @@ General
 
 Asynchronous First
 ~~~~~~~~~~~~~~~~~~
-- **No more flask.** The flask webserver has been replaced with an asyncronous
+- **No more flask.** The flask webserver has been replaced with an asynchronous
   webserver called Sanic. If you run the server in production using a wsgi
   runner, there are instructions here on how to recreate that with the
   sanic webserver:
@@ -126,7 +126,7 @@ Train script
   ``--fallback_action_name``), specify these in the policy config file instead,
   see :ref:`policy_file`
 
-Visualisation script
+Visualization script
 ~~~~~~~~~~~~~~~~~~~~
 
 - You **must** pass a policy config flag with ``-c/--config`` now,

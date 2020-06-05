@@ -74,23 +74,3 @@ class SQLEventBroker(EventBroker):
                 )
             )
             session.commit()
-
-
-class SQLProducer(SQLEventBroker):
-    def __init__(
-        self,
-        dialect: Text = "sqlite",
-        host: Optional[Text] = None,
-        port: Optional[int] = None,
-        db: Text = "events.db",
-        username: Optional[Text] = None,
-        password: Optional[Text] = None,
-    ):
-        raise_warning(
-            "The `SQLProducer` class is deprecated, please inherit "
-            "from `SQLEventBroker` instead. `SQLProducer` will be "
-            "removed in future Rasa versions.",
-            FutureWarning,
-            docs=DOCS_URL_EVENT_BROKERS,
-        )
-        super(SQLProducer, self).__init__(dialect, host, port, db, username, password)

@@ -22,7 +22,7 @@ also known as a message broker, to forward Rasa :ref:`events` from the Rasa serv
 Format
 ------
 
-All events are streamed to the broker as serialised dictionaries every time
+All events are streamed to the broker as serialized dictionaries every time
 the tracker updates its state. An example event emitted from the ``default``
 tracker looks like this:
 
@@ -160,7 +160,7 @@ The code below shows an example on how to instantiate a Kafka producer in you sc
     tracker_store = InMemoryTrackerStore(domain=domain, event_broker=kafka_broker)
 
 
-The host variable can be either a list of brokers adresses or a single one.
+The host variable can be either a list of brokers addresses or a single one.
 If only one broker address is available, the client will connect to it and
 request the cluster Metadata.
 Therefore, the remain brokers in the cluster can be discovered
@@ -199,7 +199,7 @@ previously configured in the broker server.
 
 
 If the clients or the brokers in the kafka cluster are located in different
-machines, it's important to use ssl protocal to assure encryption of data and client
+machines, it's important to use ssl protocol to assure encryption of data and client
 authentication. After generating valid certificates for the brokers and the
 clients, the path to the certificate and key generated for the producer must
 be provided as arguments, as well as the CA's root certificate.

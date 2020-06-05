@@ -1,0 +1,1 @@
+Update ``rasa init`` documentation to include ``tests/conversation_tests.md`` in the resulting directory tree.

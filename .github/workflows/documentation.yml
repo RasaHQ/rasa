@@ -17,6 +17,7 @@ jobs:
   docs:
     name: Build Docs
     runs-on: ubuntu-latest
+    if: github.repository == 'RasaHQ/rasa'  # don't run this for master branches of forks, would fail anyways
 
     steps:
     - name: Checkout git repository 🕝

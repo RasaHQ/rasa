@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional, Text, Union, Type
+from typing import Any, Dict, List, Optional, Text, Union, Type, Tuple
 
 import numpy as np
 
@@ -14,13 +14,13 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     CLS_TOKEN,
     RESPONSE,
-    SPARSE_FEATURE_NAMES,
     TEXT,
     TOKENS_NAMES,
+    FEATURIZER_CLASS_ALIAS,
 )
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.common as common_utils
 from rasa.nlu.model import Metadata
@@ -37,14 +37,14 @@ class RegexFeaturizer(SparseFeaturizer):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         known_patterns: Optional[List[Dict[Text, Text]]] = None,
-        lookup_tables: Optional[List[Dict[Text, Union[Text, List]]]] = None,
     ) -> None:
 
         super().__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
-        lookup_tables = lookup_tables or []
-        self._add_lookup_table_regexes(lookup_tables)
+
+    def add_lookup_tables(self, lookup_tables: List[Dict[Text, Union[Text, List]]]):
+        self.known_patterns.extend(self._lookup_table_regexes(lookup_tables))
 
     def train(
         self,
@@ -54,7 +54,8 @@ class RegexFeaturizer(SparseFeaturizer):
     ) -> None:
 
         self.known_patterns = training_data.regex_features
-        self._add_lookup_table_regexes(training_data.lookup_tables)
+
+        self.add_lookup_tables(training_data.lookup_tables)
 
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE]:
@@ -65,26 +66,30 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
-            extras = self._features_for_patterns(message, attribute)
-            features = self._combine_with_existing_sparse_features(
-                message, extras, feature_name=SPARSE_FEATURE_NAMES[attribute]
-            )
-            message.set(SPARSE_FEATURE_NAMES[attribute], features)
+            features = self._features_for_patterns(message, attribute)
 
-    def _add_lookup_table_regexes(
-        self, lookup_tables: List[Dict[Text, Union[Text, List]]]
-    ) -> None:
+            if features is not None:
+                final_features = Features(
+                    features, attribute, self.component_config[FEATURIZER_CLASS_ALIAS]
+                )
+                message.add_features(final_features)
+
+    def _lookup_table_regexes(
+        self, lookup_tables: List[Dict[Text, Any]]
+    ) -> List[Dict[Text, Text]]:
         """appends the regex features from the lookup tables to self.known_patterns"""
+
+        patterns = []
         for table in lookup_tables:
             regex_pattern = self._generate_lookup_regex(table)
             lookup_regex = {"name": table["name"], "pattern": regex_pattern}
-            self.known_patterns.append(lookup_regex)
+            patterns.append(lookup_regex)
+        return patterns
 
     def _features_for_patterns(
         self, message: Message, attribute: Text
     ) -> Optional[scipy.sparse.coo_matrix]:
         """Checks which known patterns match the message.
-
         Given a sentence, returns a vector of {1,0} values indicating which
         regexes did match. Furthermore, if the
         message is tokenized, the function will mark all tokens with a dict
@@ -98,7 +103,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
         if not tokens:
             # nothing to featurize
-            return
+            return None
 
         seq_length = len(tokens)
 
@@ -141,8 +146,8 @@ class RegexFeaturizer(SparseFeaturizer):
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
             common_utils.raise_warning(
-                f"Directly including lookup tables as a list is deprecated since Rasa "
-                f"1.6.",
+                "Directly including lookup tables as a list is deprecated since Rasa "
+                "1.6.",
                 FutureWarning,
                 docs=DOCS_URL_TRAINING_DATA_NLU + "#lookup-tables",
             )
@@ -192,7 +197,6 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
-
         Return the metadata necessary to load the model again."""
         file_name = file_name + ".pkl"
         regex_file = os.path.join(model_dir, file_name)

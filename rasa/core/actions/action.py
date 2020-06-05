@@ -228,11 +228,12 @@ class ActionRetrieveResponse(Action):
             return []
 
         logger.debug(f"Picking response from selector of type {query_key}")
+        selected = response_selector_properties[query_key]
         message = {
-            "text": response_selector_properties[query_key][
-                OPEN_UTTERANCE_PREDICTION_KEY
-            ]["name"]
+            "text": selected[OPEN_UTTERANCE_PREDICTION_KEY]["name"],
+            "template_name": selected["full_retrieval_intent"],
         }
+
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
@@ -266,10 +267,11 @@ class ActionUtterTemplate(Action):
         if message is None:
             if not self.silent_fail:
                 logger.error(
-                    "Couldn't create message for template '{}'."
+                    "Couldn't create message for response '{}'."
                     "".format(self.template_name)
                 )
             return []
+        message["template_name"] = self.template_name
 
         return [create_bot_utterance(message)]
 
@@ -297,7 +299,7 @@ class ActionBack(ActionUtterTemplate):
         domain: "Domain",
         metadata: Optional[Dict] = None,
     ) -> List[Event]:
-        # only utter the template if it is available
+        # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [UserUtteranceReverted(), UserUtteranceReverted()]
@@ -326,7 +328,7 @@ class ActionListen(Action):
 class ActionRestart(ActionUtterTemplate):
     """Resets the tracker to its initial state.
 
-    Utters the restart template if available."""
+    Utters the restart response if available."""
 
     def name(self) -> Text:
         return ACTION_RESTART_NAME
@@ -344,7 +346,7 @@ class ActionRestart(ActionUtterTemplate):
     ) -> List[Event]:
         from rasa.core.events import Restarted
 
-        # only utter the template if it is available
+        # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [Restarted()]
@@ -417,7 +419,7 @@ class ActionDefaultFallback(ActionUtterTemplate):
     ) -> List[Event]:
         from rasa.core.events import UserUtteranceReverted
 
-        # only utter the template if it is available
+        # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [UserUtteranceReverted()]
@@ -518,6 +520,7 @@ class RemoteAction(Action):
                 )
                 if not draft:
                     continue
+                draft["template_name"] = template
             else:
                 draft = {}
 
@@ -735,6 +738,7 @@ class ActionDefaultAskAffirmation(Action):
                 {"title": "Yes", "payload": f"/{intent_to_affirm}"},
                 {"title": "No", "payload": f"/{USER_INTENT_OUT_OF_SCOPE}"},
             ],
+            "template_name": self.name(),
         }
 
         return [create_bot_utterance(message)]
