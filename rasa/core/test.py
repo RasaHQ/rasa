@@ -348,7 +348,6 @@ def _predict_tracker_actions(
     fail_on_prediction_errors: bool = False,
     use_e2e: bool = False,
 ) -> Tuple[EvaluationStore, DialogueStateTracker, List[Dict[Text, Any]]]:
-    from rasa.core.trackers import DialogueStateTracker
 
     processor = agent.create_processor()
     tracker_eval_store = EvaluationStore()
@@ -530,10 +529,12 @@ async def test(
         agent: the agent
         max_stories: maximum number of stories to consider
         out_directory: path to directory to results to
-        fail_on_prediction_errors: boolean indicating whether to fail on prediction errors or not
+        fail_on_prediction_errors: boolean indicating whether to fail on prediction
+            errors or not
         e2e: boolean indicating whether to use end to end evaluation or not
         disable_plotting: boolean indicating whether to disable plotting or not
-        successes: boolean indicating whether to write down successful predictions or not
+        successes: boolean indicating whether to write down successful predictions or
+            not
         errors: boolean indicating whether to write down incorrect predictions or not
 
     Returns:
@@ -663,8 +664,6 @@ async def compare_models_in_dir(
         stories_file: path to the story file
         output: output directory to store results to
     """
-    import rasa.utils.io as io_utils
-
     number_correct = defaultdict(list)
 
     for run in io_utils.list_subdirectories(model_dir):
