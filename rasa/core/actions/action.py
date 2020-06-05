@@ -165,8 +165,7 @@ class Action:
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         """
         Execute the side effects of this action.
@@ -206,8 +205,7 @@ class ActionRetrieveResponse(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ):
         """Query the appropriate response and create a bot utterance with that."""
 
@@ -258,8 +256,7 @@ class ActionUtterTemplate(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         """Simple run implementation uttering a (hopefully defined) template."""
 
@@ -296,8 +293,7 @@ class ActionBack(ActionUtterTemplate):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
@@ -319,8 +315,7 @@ class ActionListen(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         return []
 
@@ -341,8 +336,7 @@ class ActionRestart(ActionUtterTemplate):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         from rasa.core.events import Restarted
 
@@ -384,8 +378,7 @@ class ActionSessionStart(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         from rasa.core.events import SessionStarted
 
@@ -414,8 +407,7 @@ class ActionDefaultFallback(ActionUtterTemplate):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         from rasa.core.events import UserUtteranceReverted
 
@@ -436,8 +428,7 @@ class ActionDeactivateForm(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         from rasa.core.events import Form, SlotSet
 
@@ -541,8 +532,7 @@ class RemoteAction(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         json_body = self._action_call_format(tracker, domain)
 
@@ -646,8 +636,7 @@ class ActionRevertFallbackEvents(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         from rasa.core.policies.two_stage_fallback import has_user_rephrased
 
@@ -726,8 +715,7 @@ class ActionDefaultAskAffirmation(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict] = None,
+        domain: "Domain"
     ) -> List[Event]:
         intent_to_affirm = tracker.latest_message.intent.get("name")
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
