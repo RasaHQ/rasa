@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
-from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, TOKENS_NAMES, RESPONSE, INTENT
+from rasa.nlu.constants import TEXT, TOKENS_NAMES, RESPONSE, INTENT
 from rasa.nlu.training_data import Message
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
@@ -27,7 +27,7 @@ def test_convert_featurizer_process(component_builder):
         [1.0251294, -0.04053932, -0.7018805, -0.82054937, -0.75054353]
     )
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
+    vecs = message.get_dense_features(TEXT, [])
 
     assert len(tokens) == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
@@ -55,19 +55,19 @@ def test_convert_featurizer_train(component_builder):
         [1.0251294, -0.04053932, -0.7018805, -0.82054937, -0.75054353]
     )
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
+    vecs = message.get_dense_features(TEXT, [])
 
     assert len(tokens) == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[RESPONSE])
+    vecs = message.get_dense_features(RESPONSE, [])
 
     assert len(tokens) == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[INTENT])
+    vecs = message.get_dense_features(INTENT, [])
 
     assert vecs is None
 
