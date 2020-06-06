@@ -56,6 +56,7 @@ RETRIEVAL_INTENT = "retrieval_intent"
 
 SOFTMAX = "softmax"
 MARGIN = "margin"
+SIGMOID = "sigmoid"
 AUTO = "auto"
 INNER = "inner"
 COSINE = "cosine"
