@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional, Text, Union, Type
+from typing import Any, Dict, List, Optional, Text, Union, Type, Tuple
 
 import numpy as np
 
@@ -14,13 +14,13 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     CLS_TOKEN,
     RESPONSE,
-    SPARSE_FEATURE_NAMES,
     TEXT,
     TOKENS_NAMES,
+    FEATURIZER_CLASS_ALIAS,
 )
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.common as common_utils
 from rasa.nlu.model import Metadata
@@ -66,11 +66,13 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
-            extras = self._features_for_patterns(message, attribute)
-            features = self._combine_with_existing_sparse_features(
-                message, extras, feature_name=SPARSE_FEATURE_NAMES[attribute]
-            )
-            message.set(SPARSE_FEATURE_NAMES[attribute], features)
+            features = self._features_for_patterns(message, attribute)
+
+            if features is not None:
+                final_features = Features(
+                    features, attribute, self.component_config[FEATURIZER_CLASS_ALIAS]
+                )
+                message.add_features(final_features)
 
     def _lookup_table_regexes(
         self, lookup_tables: List[Dict[Text, Any]]
@@ -101,7 +103,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
         if not tokens:
             # nothing to featurize
-            return
+            return None
 
         seq_length = len(tokens)
 
