@@ -6,7 +6,6 @@ import logging
 from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Callable, TYPE_CHECKING
 
-from tensorflow.python.ops.summary_ops_v2 import ResourceSummaryWriter
 from tqdm import tqdm
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
