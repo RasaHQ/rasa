@@ -79,6 +79,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Checkout dataset
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ secrets.DATASET_REPOSITORY }}
+          token: ${{ secrets.ML_TEST_SA_PAT }}
+          path: 'dataset'
+
+	    - name: Set DATASET and CONFIG variables
+        env:
+          DATASET_NAME: "${{ matrix.dataset }}"
+          CONFIG_NAME: "${{ matrix.config }}"
+        run: |-
+          # determine DATASET and CONFIG environment variables
+          source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
+          test -f dataset/configs/$CONFIG
+          test -d dataset/$DATASET
+          echo "::set-env name=DATASET::${DATASET}"
+          echo "::set-env name=CONFIG::${CONFIG}"
+
       - name: Set up Python 3.7 🐍
         uses: actions/setup-python@v2
         with:
@@ -112,25 +131,12 @@ jobs:
         run: |-
           poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
 
-      - name: Checkout dataset
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ secrets.DATASET_REPOSITORY }}
-          token: ${{ secrets.ML_TEST_SA_PAT }}
-          path: 'dataset'
-
       - name: Run test
         id: run_test
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
-          DATASET_NAME: "${{ matrix.dataset }}"
-          CONFIG_NAME: "${{ matrix.config }}"
         run: |-
-          # determine DATASET and CONFIG environment variables
-          source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
-          echo "::set-env name=DATASET::${DATASET}"
-
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
