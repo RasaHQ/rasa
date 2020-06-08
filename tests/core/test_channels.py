@@ -156,7 +156,7 @@ def test_facebook_channel():
         fb_secret="YOUR_FB_SECRET",  # your app secret
         fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN",
         # token for the page you subscribed to
-        fb_delay=0.04 # Float number to be multiply by message length to create realistic message delay
+        fb_delay=0.04  # Float number to be multiply by message length to create realistic message delay
     )
 
     s = rasa.core.run.configure_app([input_channel], port=5004)
