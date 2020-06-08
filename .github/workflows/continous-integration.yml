@@ -59,6 +59,13 @@ jobs:
         sudo apt-get -y install libpq-dev
         make install-full
 
+    - name: Build Changelog 🔨
+      env:
+        build_command: |
+          from scripts import release
+          release.generate_changelog('major.minor.patch')
+      run: poetry run python -c "${build_command}"
+
     - name: Test Docs 📃
       run: |
         make install-full
