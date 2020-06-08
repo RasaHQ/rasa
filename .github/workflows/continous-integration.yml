@@ -70,12 +70,5 @@ jobs:
     - name: Test Docs 📃
       run: |
         make install-full
-        poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
-        export SPHINXBUILD=$(poetry run which sphinx-build)
-        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html && make SPHINXBUILD=$SPHINXBUILD linkcheck
-
-    - name: Test Docs 📃
-      run: |
-        make install-full
         export SPHINXBUILD=$(poetry run which sphinx-build)
         cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
