@@ -294,7 +294,7 @@ def _collect_action_executed_predictions(
     event: ActionExecuted,
     fail_on_prediction_errors: bool,
     circuit_breaker_tripped: bool,
-) -> Tuple[EvaluationStore, "Policy", float]:
+) -> Tuple[EvaluationStore, Optional[Text], Optional[float]]:
     from rasa.core.policies.form_policy import FormPolicy
 
     action_executed_eval_store = EvaluationStore()
