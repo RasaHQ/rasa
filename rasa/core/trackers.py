@@ -576,6 +576,7 @@ class DialogueStateTracker:
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
+        # TODO: Rename to `active_loop` once the `RulePolicy` is finalized
         self.active_form = {}
 
     def _reset_slots(self) -> None:
