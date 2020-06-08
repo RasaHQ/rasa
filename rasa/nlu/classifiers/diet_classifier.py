@@ -1042,7 +1042,7 @@ class DIET(RasaModel):
         self._prepare_layers()
 
         # tf training
-        self._set_optimizer(tf.keras.optimizers.Adam(config[LEARNING_RATE]))
+        self.optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
         self._create_metrics()
         self._update_metrics_to_log()
 
