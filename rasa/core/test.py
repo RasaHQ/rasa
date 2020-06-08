@@ -28,8 +28,13 @@ logger = logging.getLogger(__name__)
 
 StoryEvaluation = namedtuple(
     "StoryEvaluation",
-    "evaluation_store failed_stories successful_stories action_list "
-    "in_training_data_fraction",
+    [
+        "evaluation_store",
+        "failed_stories",
+        "successful_stories",
+        "action_list",
+        "in_training_data_fraction",
+    ],
 )
 
 
@@ -289,7 +294,7 @@ def _collect_action_executed_predictions(
     event: ActionExecuted,
     fail_on_prediction_errors: bool,
     circuit_breaker_tripped: bool,
-):
+) -> Tuple[EvaluationStore, "Policy", float]:
     from rasa.core.policies.form_policy import FormPolicy
 
     action_executed_eval_store = EvaluationStore()
@@ -495,15 +500,17 @@ def _collect_story_predictions(
     )
 
 
-def _log_stories(stories: List, filename: Text, out_directory: Text) -> None:
-    """Take stories as a list of dicts."""
+def _log_stories(
+    stories: List[DialogueStateTracker], filename: Text, out_directory: Text
+) -> None:
+    """Write given stories to the given file."""
     if not out_directory:
         return
 
     with open(
         os.path.join(out_directory, filename), "w", encoding=DEFAULT_ENCODING
     ) as f:
-        if len(stories) == 0:
+        if not stories:
             f.write("<!-- No stories found. -->")
 
         for story in stories:
@@ -617,7 +624,7 @@ def _log_evaluation_table(
     accuracy: float,
     in_training_data_fraction: float,
     include_report: bool = True,
-):  # pragma: no cover
+) -> None:  # pragma: no cover
     """Log the sklearn evaluation metrics."""
     logger.info(f"Evaluation Results on {name} level:")
     logger.info(f"\tCorrect:          {int(len(golds) * accuracy)} / {len(golds)}")

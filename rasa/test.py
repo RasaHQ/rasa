@@ -32,14 +32,19 @@ def test_core_models_in_directory(
     plot_core_results(output, number_of_stories)
 
 
-def plot_core_results(output: Text, number_of_examples: List[int]) -> None:
-    """Plot core model comparison graph"""
+def plot_core_results(output_directory: Text, number_of_examples: List[int]) -> None:
+    """Plot core model comparison graph.
+
+    Args:
+        output_directory: path to the output directory
+        number_of_examples: number of examples per run
+    """
     import rasa.utils.plotting as plotting_utils
 
-    graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
+    graph_path = os.path.join(output_directory, "core_model_comparison_graph.pdf")
 
     plotting_utils.plot_curve(
-        output,
+        output_directory,
         number_of_examples,
         x_label_text="Number of stories present during training",
         y_label_text="Number of correct test stories",
@@ -237,14 +242,19 @@ def compare_nlu_models(
     plot_nlu_results(output, training_examples_per_run)
 
 
-def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
-    """Plot NLU model comparison graph"""
+def plot_nlu_results(output_directory: Text, number_of_examples: List[int]) -> None:
+    """Plot NLU model comparison graph.
+
+    Args:
+        output_directory: path to the output directory
+        number_of_examples: number of examples per run
+    """
     import rasa.utils.plotting as plotting_utils
 
-    graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
+    graph_path = os.path.join(output_directory, "nlu_model_comparison_graph.pdf")
 
     plotting_utils.plot_curve(
-        output,
+        output_directory,
         number_of_examples,
         x_label_text="Number of intent examples present during training",
         y_label_text="Label-weighted average F1 score on test set",
@@ -295,7 +305,7 @@ def get_evaluation_metrics(
     targets: Iterable[Any],
     predictions: Iterable[Any],
     output_dict: bool = False,
-    exclude_label: Text = None,
+    exclude_label: Optional[Text] = None,
 ) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]:
     """Compute the f1, precision, accuracy and summary report from sklearn.
 

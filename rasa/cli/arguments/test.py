@@ -178,7 +178,7 @@ def add_no_plot_param(
     )
 
 
-def add_errors_success_params(parser: argparse.ArgumentParser):
+def add_errors_success_params(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--successes",
         action="store_true",
