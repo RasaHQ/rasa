@@ -108,16 +108,24 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
         if item and item[1] is None:
             content.ca.items[key][1] = []
 
-        comment = (
-            f"Configuration for {key} was provided by the auto configuration.\n"
-            f"To configure this manually, uncomment the section's content."
-        )
-        content.yaml_set_comment_before_after_key(key, before=comment)
-
     yaml_parser.indent(mapping=2, sequence=4, offset=2)
     yaml_parser.dump(content, Path(config_file))
 
-    io_utils.comment_out_section_in_file(config_file, list(autoconfigured))
+    add_comments = []
+    for key in autoconfigured:
+        print(key)
+        comment = (
+            f"# Configuration for {key} was provided by the auto "
+            f"configuration.\n"
+            f"# To configure it manually, uncomment this section's "
+            f"content.\n"
+            f"# \n"
+        )
+        add_comments.append(comment)
+
+    io_utils.comment_out_section_in_file(
+        config_file, list(autoconfigured), add_comments
+    )
 
     if autoconfigured:
         cli_utils.print_info(

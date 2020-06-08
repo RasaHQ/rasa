@@ -155,36 +155,43 @@ def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) ->
         raise ValueError(f"File '{filename}' does not exist.")
 
 
-def comment_out_section_in_file(filename: Text, sections: List[Text]) -> None:
-    """Comment out the content of specific sections in a file.
+def comment_out_section_in_file(
+    filename: Text, sections: List[Text], add_comments: List[Text] = None
+) -> None:
+    """Comment out the content of specific sections in a file and add comments.
 
     A section "section_name" begins after the line containing "section_name:" and ends
     with the next empty line.
+    All existing comments are removed rather than commented out a second time.
+    Additional comments can be added in the beginning of each section.
 
     Args:
         filename: Path to the file.
         sections: The sections whose content should be commented out.
+        add_comments: Comments that should be added in the beginning of the sections.
     """
+    if not add_comments:
+        add_comments = [""] * len(sections)
+
     try:
         with open(filename, "r+", encoding=DEFAULT_ENCODING) as f:
             lines = f.readlines()
             f.seek(0)
             section_started = False
 
-            key_pattern = ""
-            for key in sections:
-                if key_pattern:
-                    key_pattern += "|"
-                key_pattern += key
-
             for line in lines:
                 if not line.strip():
                     section_started = False
                 if section_started:
+                    if re.match("( *)#", line):
+                        continue
                     line = "#" + line
-                if re.match(f"( *){key_pattern}:( *)", line):
-                    section_started = True
+                for i, section in enumerate(sections):
+                    if re.match(f"( *){section}:( *)", line):
+                        section_started = True
+                        line = line + add_comments[i]
                 f.write(line)
+            f.truncate()
     except FileNotFoundError:
         raise ValueError(f"File '{filename}' does not exist.")
 
