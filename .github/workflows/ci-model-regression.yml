@@ -416,6 +416,7 @@ jobs:
           header: ${{ github.run_id }}
           append: true
           message: |-
+
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
             ${{ steps.get_results.outputs.result }}
@@ -456,6 +457,7 @@ jobs:
           header: ${{ github.run_id }}
           append: true
           message: |-
+
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
             ${{ steps.get_results.outputs.result }}

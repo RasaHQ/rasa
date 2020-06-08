@@ -5,11 +5,11 @@ Dataset: `{{$dataset}}`
 |---------------|-----------------|-----------------|-------------------|
 {{ range $config_name, $config_data := $config -}}
 | `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}` |
-{{- $intent_class := $config_data.intent_classification -}}
-{{- if (has $intent_class "accuracy") -}}{{ printf "%.4f" $intent_class.accuracy }}{{- else -}}`no data`{{- end -}} |
-{{- $entity_class := (index $config_data.entity_prediction "micro avg") -}}
-{{- if (has $entity_class "f1-score") -}}{{- printf "%.4f" (index $entity_class "f1-score") -}}{{- else -}}`no data`{{- end -}} |
+{{- $intent_class := index $config_data.intent_classification -}}
+{{- if (has (index $intent_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $intent_class "micro avg") "f1-score") }}{{- else if (has $intent_class "accuracy") -}}{{ printf "%.4f" $intent_class.accuracy }}{{- else -}}`no data`{{- end -}} |
+{{- $entity_class := $config_data.entity_prediction -}}
+{{- if (has (index $entity_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $entity_class "micro avg") "f1-score") }}{{- else if (has $entity_class "accuracy") -}}{{ printf "%.4f" $entity_class.accuracy }}{{- else -}}`no data`{{- end -}} |
 {{- $response_class := $config_data.response_selection -}}
-{{- if (has $response_class "accuracy") -}}{{ printf "%.4f" $response_class.accuracy }}{{- else -}}`no data`{{- end -}} |
+{{- if (has (index $response_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $response_class "micro avg") "f1-score") }}{{- else if (has $response_class "accuracy") -}}{{ printf "%.4f" $response_class.accuracy }}{{- else -}}`no data`{{- end -}} |
 {{end}}
 {{end}}

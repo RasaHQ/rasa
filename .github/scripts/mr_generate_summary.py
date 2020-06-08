@@ -36,7 +36,6 @@ def generate_json(file, task):
         **read_results(file)
     }
 
-
 def read_results(file):
     with open(file) as json_file:
         data = json.load(json_file)

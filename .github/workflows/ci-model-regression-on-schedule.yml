@@ -86,7 +86,7 @@ jobs:
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
 
-	    - name: Set DATASET and CONFIG variables
+      - name: Set DATASET and CONFIG variables
         env:
           DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
