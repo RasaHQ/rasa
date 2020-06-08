@@ -154,9 +154,8 @@ class MessengerBot(OutputChannel):
             time.sleep(delay)
             typing_off = SenderAction(sender_action='typing_off')
             self.messenger_client.send_action(typing_off.to_dict(), recipient_id)
-            self.messenger_client.send(element.to_dict(), recipient_id, "RESPONSE")
-        else:
-            self.messenger_client.send(element.to_dict(), recipient_id, "RESPONSE")
+
+        self.messenger_client.send(element.to_dict(), recipient_id, "RESPONSE")
             
 
     async def send_text_message(
