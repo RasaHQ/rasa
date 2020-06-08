@@ -189,23 +189,23 @@ class RasaModel(tf.keras.models.Model):
             progress_bar.set_postfix(postfix_dict)
 
         # Checkpoint the model one last time after training
-        if self.best_model_file is not None:
-            epoch_batch_size = self.linearly_increasing_batch_size(
-                epochs, batch_size, epochs
-            )
+        if evaluate_on_num_examples > 0:
+            if self.best_model_file is not None:
+                epoch_batch_size = self.linearly_increasing_batch_size(
+                    epochs, batch_size, epochs
+                )
+                self._batch_loop(
+                    evaluation_dataset_function,
+                    tf_evaluation_on_batch_function,
+                    epoch_batch_size,
+                    False,
+                    training_steps,
+                    self.test_summary_writer,
+                )
 
-            self._batch_loop(
-                evaluation_dataset_function,
-                tf_evaluation_on_batch_function,
-                epoch_batch_size,
-                False,
-                training_steps,
-                self.test_summary_writer,
-            )
-
-            val_results = self._get_metric_results(prefix="val_")
-            if self._update_best_metrics_so_far(val_results):
-                self.save(self.best_model_file, overwrite=True)
+                val_results = self._get_metric_results(prefix="val_")
+                if self._update_best_metrics_so_far(val_results):
+                    self.save(self.best_model_file, overwrite=True)
 
         if self.model_summary_file is not None:
             self._write_model_summary()
