@@ -178,7 +178,8 @@ class Action:
                 ``tracker.get_slot(slot_name)`` and the most recent user
                 message is ``tracker.latest_message.text``.
             domain (Domain): the bot's domain
-
+            metadata: dictionary that can be sent to action server with custom
+            data.
         Returns:
             List[Event]: A list of :class:`rasa.core.events.Event` instances
         """
@@ -352,6 +353,9 @@ class ActionSessionStart(Action):
     session.
     """
 
+    # Optional arbitrary metadata that can be passed to the SessionStarted event.
+    metadata: Optional[Dict[Text, Any]] = None
+
     def name(self) -> Text:
         return ACTION_SESSION_START_NAME
 
@@ -378,7 +382,7 @@ class ActionSessionStart(Action):
     ) -> List[Event]:
         from rasa.core.events import SessionStarted
 
-        _events = [SessionStarted()]
+        _events = [SessionStarted(metadata=self.metadata)]
 
         if domain.session_config.carry_over_slots:
             _events.extend(self._slot_set_events_from_tracker(tracker))
