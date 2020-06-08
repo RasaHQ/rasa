@@ -42,8 +42,7 @@ def test_get_auto_configuration(
 def test_create_config_for_keys(keys: List[Text]):
     default_config = io_utils.read_config_file(DEFAULT_CONFIG)
 
-    config = {}
-    autoconfig.create_config_for_keys(config, keys)
+    config = autoconfig.create_config_for_keys({}, keys)
 
     for k in keys:
         assert config[k] == default_config[k]

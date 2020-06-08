@@ -171,9 +171,11 @@ def comment_out_section_in_file(filename: Text, sections: List[Text]) -> None:
             f.seek(0)
             section_started = False
 
-            key_pattern = sections[0]
+            key_pattern = ""
             for key in sections:
-                key_pattern += "|" + key  # TODO: remove unnecessary double sections[0]
+                if key_pattern:
+                    key_pattern += "|"
+                key_pattern += key
 
             for line in lines:
                 if not line.strip():
