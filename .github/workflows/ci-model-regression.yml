@@ -166,10 +166,10 @@ jobs:
           echo "::set-env name=DATASET::${DATASET}"
           echo "::set-env name=CONFIG::${CONFIG}"
 
-      - name: Set up Python 3.7 🐍
+      - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.8
 
       - name: Read Poetry Version 🔢
         run: |
@@ -296,10 +296,10 @@ jobs:
           echo "::set-env name=DATASET::${DATASET}"
           echo "::set-env name=CONFIG::${CONFIG}"
 
-      - name: Set up Python 3.7 🐍
+      - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.8
 
       - name: Read Poetry Version 🔢
         run: |
