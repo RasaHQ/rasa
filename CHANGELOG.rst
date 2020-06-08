@@ -20,6 +20,10 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 [1.9.6] - 2020-04-15
 ^^^^^^^^^^^^^^^^^^^^
 
+Features
+--------
+- `#5706 <https://github.com/RasaHQ/rasa/pull/5706>`_: Messenger Facebook Channel - Message typing in-off option + delay on message delivery.
+
 Bugfixes
 --------
 - `#5426 <https://github.com/rasahq/rasa/issues/5426>`_: Fix `rasa test nlu` plotting when using multiple runs.

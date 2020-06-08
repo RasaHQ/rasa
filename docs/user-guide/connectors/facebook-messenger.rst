@@ -64,6 +64,7 @@ you need to supply a ``credentials.yml`` with the following content:
     verify: "rasa-bot"
     secret: "3e34709d01ea89032asdebfe5a74518"
     page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
+    fb_delay: 0.04 # Float number to be multiply by message length to create realistic message delay
 
 The endpoint for receiving Facebook messenger messages is
 ``http://localhost:5005/webhooks/facebook/webhook``, replacing
