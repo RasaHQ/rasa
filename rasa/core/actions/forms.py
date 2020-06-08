@@ -2,7 +2,7 @@ from typing import Text, List, Optional, Union, Any, Dict, Tuple
 import logging
 
 from rasa.core.actions import action
-from rasa.core.actions.loop import LoopAction
+from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
 from rasa.core.domain import Domain
 

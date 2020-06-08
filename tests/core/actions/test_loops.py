@@ -1,6 +1,7 @@
 from typing import List, Any, Text
 
-from rasa.core.actions.loop import LoopAction
+import pytest
+from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain
 from rasa.core.events import (
