@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from typing import Dict, Text, List, Any
 
 import pytest
@@ -19,7 +21,7 @@ def pipeline_from_components(*components: Text) -> List[Dict[Text, Text]]:
 
 
 async def test_train_persist_load_with_composite_entities(
-    component_builder: ComponentBuilder, tmpdir: Any
+    component_builder: ComponentBuilder, tmp_path: Path
 ):
     pipeline = pipeline_from_components("WhitespaceTokenizer", "CRFEntityExtractor")
 
@@ -27,7 +29,7 @@ async def test_train_persist_load_with_composite_entities(
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data="data/test/demo-rasa-composite-entities.md",
         component_builder=component_builder,
     )
@@ -86,7 +88,7 @@ async def test_train_persist_load_with_composite_entities(
     ],
 )
 async def test_train_persist_with_different_configurations(
-    config_params: Dict[Text, Any], component_builder: ComponentBuilder, tmpdir: Any
+    config_params: Dict[Text, Any], component_builder: ComponentBuilder, tmp_path: Path
 ):
     pipeline = pipeline_from_components(
         "SpacyNLP", "SpacyTokenizer", "CRFEntityExtractor"
@@ -98,7 +100,7 @@ async def test_train_persist_with_different_configurations(
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data="data/examples/rasa",
         component_builder=component_builder,
     )
@@ -154,10 +156,12 @@ def test_crf_use_dense_features(spacy_nlp: Any):
     features = crf_extractor._crf_tokens_to_features(text_data)
 
     assert "0:text_dense_features" in features[0]
-    dense_sequence_features, _ = message.get_dense_features(TEXT, [], [])
-    for i in range(0, len(dense_sequence_features)):
-        assert np.all(
-            features[0]["0:text_dense_features"] == dense_sequence_features[i]
+    dense_features, _ = message.get_dense_features(TEXT, [])
+
+    for i in range(0, len(dense_features[0])):
+        assert (
+            features[0]["0:text_dense_features"]["text_dense_features"][str(i)]
+            == dense_features[0][i]
         )
 
 

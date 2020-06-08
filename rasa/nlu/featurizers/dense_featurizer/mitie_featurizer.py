@@ -11,9 +11,9 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    ALIAS,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    FEATURIZER_CLASS_ALIAS,
 )
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 import rasa.utils.train_utils as train_utils
@@ -30,8 +30,7 @@ class MitieFeaturizer(DenseFeaturizer):
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
         # the CLS token. Available options: 'mean' and 'max'
-        POOLING: MEAN_POOLING,
-        ALIAS: "mitie_featurizer",
+        POOLING: MEAN_POOLING
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
@@ -71,14 +70,17 @@ class MitieFeaturizer(DenseFeaturizer):
             )
 
             final_sequence_features = Features(
-                features, FEATURE_TYPE_SEQUENCE, attribute, self.component_config[ALIAS]
+                features,
+                FEATURE_TYPE_SEQUENCE,
+                attribute,
+                self.component_config[FEATURIZER_CLASS_ALIAS],
             )
             example.add_features(final_sequence_features)
             final_sentence_features = Features(
                 cls_features,
                 FEATURE_TYPE_SENTENCE,
                 attribute,
-                self.component_config[ALIAS],
+                self.component_config[FEATURIZER_CLASS_ALIAS],
             )
             example.add_features(final_sentence_features)
 
@@ -90,11 +92,17 @@ class MitieFeaturizer(DenseFeaturizer):
         )
 
         final_sequence_features = Features(
-            features, FEATURE_TYPE_SEQUENCE, TEXT, self.component_config[ALIAS]
+            features,
+            FEATURE_TYPE_SEQUENCE,
+            TEXT,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            cls_features, FEATURE_TYPE_SENTENCE, TEXT, self.component_config[ALIAS]
+            cls_features,
+            FEATURE_TYPE_SENTENCE,
+            TEXT,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sentence_features)
 

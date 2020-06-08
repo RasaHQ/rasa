@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-
+import scipy.sparse
 from unittest.mock import Mock
 
 from nlu.featurizers.featurizer import Features
@@ -13,6 +13,11 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
 )
+from rasa.nlu.featurizers.featurizer import Features
+from rasa.nlu import train
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.constants import TEXT, INTENT
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     RANDOM_SEED,
@@ -84,6 +89,17 @@ def test_compute_default_label_features():
             ],
             False,
         ),
+        (
+            [
+                Message(
+                    "test a",
+                    features=[
+                        Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, INTENT, "test")
+                    ],
+                )
+            ],
+            False,
+        ),
     ],
 )
 def test_check_labels_features_exist(messages, expected):
@@ -133,8 +149,6 @@ async def test_train_persist_load_with_different_settings(
 
 
 async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
-    from rasa.nlu import train
-
     _config = RasaNLUModelConfig(
         {
             "pipeline": [

@@ -6,18 +6,17 @@ import scipy.sparse
 
 from rasa.nlu.featurizers.featurizer import Features
 from rasa.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
+from rasa.nlu.constants import TEXT
 from rasa.nlu.training_data import Message
 
 
 @pytest.mark.parametrize(
-    "features, attribute, sequence_featurizers, sentence_featurizers, "
-    "expected_seq_features, expected_sen_features",
+    "features, attribute, featurizers, " "expected_seq_features, expected_sen_features",
     [
-        (None, TEXT, [], [], None, None),
+        (None, TEXT, [], None, None),
         (
             [Features(np.array([1, 1, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "test")],
             TEXT,
-            [],
             [],
             [1, 1, 0],
             None,
@@ -30,7 +29,6 @@ from rasa.nlu.training_data import Message
             ],
             TEXT,
             [],
-            [],
             [1, 2, 1, 1, 1, 0],
             [1, 2, 2],
         ),
@@ -42,7 +40,6 @@ from rasa.nlu.training_data import Message
             ],
             TEXT,
             ["c1"],
-            ["c1"],
             [1, 1, 0],
             None,
         ),
@@ -51,8 +48,7 @@ from rasa.nlu.training_data import Message
 def test_get_dense_features(
     features: Optional[List[Features]],
     attribute: Text,
-    sequence_featurizers: List[Text],
-    sentence_featurizers: List[Text],
+    featurizers: List[Text],
     expected_seq_features: Optional[List[Features]],
     expected_sen_features: Optional[List[Features]],
 ):
@@ -60,7 +56,7 @@ def test_get_dense_features(
     message = Message("This is a test sentence.", features=features)
 
     actual_seq_features, actual_sen_features = message.get_dense_features(
-        attribute, sequence_featurizers, sentence_featurizers
+        attribute, featurizers
     )
 
     assert np.all(actual_sen_features == expected_sen_features)
@@ -68,10 +64,9 @@ def test_get_dense_features(
 
 
 @pytest.mark.parametrize(
-    "features, attribute, sequence_featurizers, sentence_featurizers, "
-    "expected_seq_features, expected_sen_features",
+    "features, attribute, featurizers, " "expected_seq_features, expected_sen_features",
     [
-        (None, TEXT, [], [], None, None),
+        (None, TEXT, [], None, None),
         (
             [
                 Features(
@@ -82,7 +77,6 @@ def test_get_dense_features(
                 )
             ],
             TEXT,
-            [],
             [],
             [1, 1, 0],
             None,
@@ -110,7 +104,6 @@ def test_get_dense_features(
             ],
             TEXT,
             [],
-            [],
             [1, 2, 1, 1, 1, 0],
             [1, 2, 2],
         ),
@@ -137,7 +130,6 @@ def test_get_dense_features(
             ],
             TEXT,
             ["c1"],
-            ["c1"],
             [1, 1, 0],
             None,
         ),
@@ -146,16 +138,14 @@ def test_get_dense_features(
 def test_get_sparse_features(
     features: Optional[List[Features]],
     attribute: Text,
-    sequence_featurizers: List[Text],
-    sentence_featurizers: List[Text],
+    featurizers: List[Text],
     expected_seq_features: Optional[List[Features]],
     expected_sen_features: Optional[List[Features]],
 ):
-
     message = Message("This is a test sentence.", features=features)
 
     actual_seq_features, actual_sen_features = message.get_sparse_features(
-        attribute, sequence_featurizers, sentence_featurizers
+        attribute, featurizers
     )
 
     if expected_seq_features is None:
@@ -167,3 +157,77 @@ def test_get_sparse_features(
         assert actual_sen_features is None
     else:
         assert np.all(actual_seq_features.toarray() == expected_seq_features)
+
+
+@pytest.mark.parametrize(
+    "features, attribute, featurizers, expected",
+    [
+        (None, TEXT, [], False),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "test",
+                )
+            ],
+            TEXT,
+            [],
+            True,
+        ),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "c2",
+                ),
+                Features(np.ndarray([1, 2, 2]), FEATURE_TYPE_SEQUENCE, TEXT, "c1"),
+            ],
+            TEXT,
+            [],
+            True,
+        ),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "c2",
+                ),
+                Features(np.ndarray([1, 2, 2]), FEATURE_TYPE_SEQUENCE, TEXT, "c1"),
+            ],
+            TEXT,
+            ["c1"],
+            True,
+        ),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "c2",
+                ),
+                Features(np.ndarray([1, 2, 2]), FEATURE_TYPE_SEQUENCE, TEXT, "c1"),
+            ],
+            TEXT,
+            ["other"],
+            False,
+        ),
+    ],
+)
+def test_features_present(
+    features: Optional[List[Features]],
+    attribute: Text,
+    featurizers: List[Text],
+    expected: bool,
+):
+    message = Message("This is a test sentence.", features=features)
+
+    actual = message.features_present(attribute, featurizers)
+
+    assert actual == expected

@@ -295,6 +295,15 @@ def _find_bilou_end(start_idx: int, predicted_tags: List[Text]) -> int:
     start_tag = tag_without_prefix(predicted_tags[start_idx])
 
     while not finished:
+        if current_idx >= len(predicted_tags):
+            logger.debug(
+                "Inconsistent BILOU tagging found, B- tag not closed by L- tag, "
+                "i.e [B-a, I-a, O] instead of [B-a, L-a, O].\n"
+                "Assuming last tag is L- instead of I-."
+            )
+            current_idx -= 1
+            break
+
         current_label = predicted_tags[current_idx]
         prefix = bilou_prefix_from_tag(current_label)
         tag = tag_without_prefix(current_label)

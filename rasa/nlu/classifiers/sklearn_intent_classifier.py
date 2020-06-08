@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 
 import rasa.utils.io as io_utils
+import rasa.utils.train_utils as train_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
@@ -122,7 +123,7 @@ class SklearnIntentClassifier(IntentClassifier):
                 self.clf.fit(X, y)
 
     def _get_sentence_features(self, message: Message) -> np.ndarray:
-        _, sentence_features = message.get_dense_features(TEXT, [], [])
+        _, sentence_features = message.get_dense_features(TEXT, [])
         return sentence_features[0]
 
     def _num_cv_splits(self, y) -> int:
@@ -168,6 +169,7 @@ class SklearnIntentClassifier(IntentClassifier):
             intent_ranking = []
         else:
             X = self._get_sentence_features(message).reshape(1, -1)
+
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))
             # `predict` returns a matrix as it is supposed

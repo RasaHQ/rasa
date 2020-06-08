@@ -83,8 +83,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
-    SENTENCE_FEATURES,
-    SEQUENCE_FEATURES,
+    FEATURIZERS,
 )
 
 
@@ -246,8 +245,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
-        SEQUENCE_FEATURES: [],
-        SENTENCE_FEATURES: [],
+        FEATURIZERS: [],
     }
 
     # init helpers
@@ -425,22 +423,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Checks if all labels have features set."""
 
         return all(
-            len(
-                [
-                    f
-                    for f in label_example.features
-                    if f.is_sparse() and f.message_attribute == attribute
-                ]
-            )
-            > 0
-            or len(
-                [
-                    f
-                    for f in label_example.features
-                    if f.is_dense() and f.message_attribute == attribute
-                ]
-            )
-            > 0
+            label_example.features_present(attribute)
             for label_example in labels_example
         )
 
@@ -456,15 +439,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         (
             sparse_sequence_features,
             sparse_sentence_features,
-        ) = message.get_sparse_features(
-            attribute,
-            self.component_config[SEQUENCE_FEATURES],
-            self.component_config[SENTENCE_FEATURES],
-        )
+        ) = message.get_sparse_features(attribute, self.component_config[FEATURIZERS])
         dense_sequence_features, dense_sentence_features = message.get_dense_features(
-            attribute,
-            self.component_config[SEQUENCE_FEATURES],
-            self.component_config[SENTENCE_FEATURES],
+            attribute, self.component_config[FEATURIZERS]
         )
 
         if dense_sequence_features is not None and sparse_sequence_features is not None:
@@ -1003,7 +980,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         entity_tag_specs = (
-            [l._asdict() for l in self._entity_tag_specs]
+            [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
             if self._entity_tag_specs
             else []
         )
@@ -1175,7 +1152,7 @@ class DIET(RasaModel):
         self._prepare_layers()
 
         # tf training
-        self._set_optimizer(tf.keras.optimizers.Adam(config[LEARNING_RATE]))
+        self.optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
         self._create_metrics()
         self._update_metrics_to_log()
 

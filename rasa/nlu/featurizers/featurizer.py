@@ -1,13 +1,16 @@
 import numpy as np
 import scipy.sparse
-from typing import Text, Union, Optional
+from typing import Text, Union, Optional, Dict, Any
 
-from rasa.nlu.components import Component
+from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.constants import VALID_FEATURE_TYPES
+from rasa.nlu.components import Component
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
 
 class Features:
+    """Stores the features produces by any featurizer."""
+
     def __init__(
         self,
         features: Union[np.ndarray, scipy.sparse.spmatrix],
@@ -30,15 +33,33 @@ class Features:
                 f"{VALID_FEATURE_TYPES}."
             )
 
-    def is_sparse(self):
+    def is_sparse(self) -> bool:
+        """Checks if features are sparse or not.
+
+        Returns:
+            True, if features are sparse, false otherwise.
+        """
         return isinstance(self.features, scipy.sparse.spmatrix)
 
-    def is_dense(self):
+    def is_dense(self) -> bool:
+        """Checks if features are dense or not.
+
+        Returns:
+            True, if features are dense, false otherwise.
+        """
         return not self.is_sparse()
 
     def combine_with_features(
         self, additional_features: Optional[Union[np.ndarray, scipy.sparse.spmatrix]]
     ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
+        """Combine the incoming features with this instance's features.
+
+        Args:
+            additional_features: additional features to add
+
+        Returns:
+            Combined features.
+        """
         if additional_features is None:
             return self.features
 
@@ -48,16 +69,16 @@ class Features:
         if self.is_sparse() and isinstance(additional_features, scipy.sparse.spmatrix):
             return self._combine_sparse_features(self.features, additional_features)
 
-        raise ValueError(f"Cannot concatenate sparse and dense features.")
+        raise ValueError("Cannot combine sparse and dense features.")
 
     @staticmethod
     def _combine_dense_features(
         features: np.ndarray, additional_features: np.ndarray
     ) -> np.ndarray:
-        if len(features) != len(additional_features):
+        if features.ndim != additional_features.ndim:
             raise ValueError(
-                f"Cannot concatenate dense features as sequence dimension does not "
-                f"match: {len(features)} != {len(additional_features)}."
+                f"Cannot combine dense features as sequence dimensions do not "
+                f"match: {features.ndim} != {additional_features.ndim}."
             )
 
         return np.concatenate((features, additional_features), axis=-1)
@@ -78,7 +99,14 @@ class Features:
 
 
 class Featurizer(Component):
-    pass
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        if not component_config:
+            component_config = {}
+
+        # makes sure the alias name is set
+        component_config.setdefault(FEATURIZER_CLASS_ALIAS, self.name)
+
+        super().__init__(component_config)
 
 
 class DenseFeaturizer(Featurizer):
@@ -95,14 +123,15 @@ class DenseFeaturizer(Featurizer):
 
         if pooling_operation == MEAN_POOLING:
             return np.mean(non_zero_features, axis=0, keepdims=True)
-        elif pooling_operation == MAX_POOLING:
+
+        if pooling_operation == MAX_POOLING:
             return np.max(non_zero_features, axis=0, keepdims=True)
-        else:
-            raise ValueError(
-                f"Invalid pooling operation specified. Available operations are "
-                f"'{MEAN_POOLING}' or '{MAX_POOLING}', but provided value is "
-                f"'{pooling_operation}'."
-            )
+
+        raise ValueError(
+            f"Invalid pooling operation specified. Available operations are "
+            f"'{MEAN_POOLING}' or '{MAX_POOLING}', but provided value is "
+            f"'{pooling_operation}'."
+        )
 
 
 class SparseFeaturizer(Featurizer):

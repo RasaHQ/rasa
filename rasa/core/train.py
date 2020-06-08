@@ -27,7 +27,7 @@ async def train(
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: "AvailableEndpoints" = None,
     policy_config: Optional[Union[Text, Dict]] = None,
-    exclusion_percentage: int = None,
+    exclusion_percentage: Optional[int] = None,
     additional_arguments: Optional[Dict] = None,
 ):
     from rasa.core.agent import Agent

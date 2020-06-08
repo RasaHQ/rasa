@@ -16,10 +16,11 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     TEXT,
-    ALIAS,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    FEATURIZER_CLASS_ALIAS,
 )
+
 from rasa.nlu.model import Metadata
 import rasa.utils.io as io_utils
 import rasa.utils.train_utils as train_utils
@@ -51,8 +52,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             ["low", "title", "upper"],
             ["BOS", "EOS", "low", "upper", "title", "digit"],
             ["low", "title", "upper"],
-        ],
-        ALIAS: "lexical_syntactic_featurizer",
+        ]
     }
 
     function_dict = {
@@ -181,11 +181,17 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         sentence_features = scipy.sparse.coo_matrix(one_hot_cls_feature_vector)
 
         final_sequence_features = Features(
-            sequence_features, FEATURE_TYPE_SEQUENCE, TEXT, self.component_config[ALIAS]
+            sequence_features,
+            FEATURE_TYPE_SEQUENCE,
+            TEXT,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            sentence_features, FEATURE_TYPE_SENTENCE, TEXT, self.component_config[ALIAS]
+            sentence_features,
+            FEATURE_TYPE_SENTENCE,
+            TEXT,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sentence_features)
 

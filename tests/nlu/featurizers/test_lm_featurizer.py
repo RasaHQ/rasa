@@ -8,6 +8,7 @@ from rasa.nlu.constants import TEXT, INTENT
 from rasa.nlu.training_data import Message
 
 
+@pytest.mark.skip(reason="Results in random crashing of github action workers")
 @pytest.mark.parametrize(
     "model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec",
     [
@@ -189,7 +190,7 @@ def test_lm_featurizer_shape_values(
 
         computed_sequence_vec, computed_sentence_vec = messages[
             index
-        ].get_dense_features(TEXT, [], [])
+        ].get_dense_features(TEXT, [])
 
         assert computed_sequence_vec.shape[0] == expected_shape[index][0] - 1
         assert computed_sequence_vec.shape[1] == expected_shape[index][1]
@@ -209,7 +210,7 @@ def test_lm_featurizer_shape_values(
         )
 
         intent_sequence_vec, intent_sentence_vec = messages[index].get_dense_features(
-            INTENT, [], []
+            INTENT, []
         )
 
         assert intent_sequence_vec is None

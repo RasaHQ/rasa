@@ -11,7 +11,7 @@ The ``ReminderScheduled`` event and the
 `trigger_intent endpoint <../../api/http-api/#operation/triggerConversationIntent>`_ let your assistant remind you
 about things after a given period of time, or to respond to external events (other applications, sensors, etc.).
 You can find a full example assistant that implements these features
-`here <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_.
+`here <https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md>`_.
 
 .. contents::
    :local:
@@ -109,7 +109,7 @@ External Events
 ---------------
 
 Let's say you want to send a message from some other device to change the course of an ongoing conversation.
-For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favourite
+For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favorite
 plant needs watering, and your assistant should then relay this message to you.
 
 To do this, your Raspberry Pi needs to send a message to the `trigger_intent endpoint <../../api/http-api/#operation/triggerConversationIntent>`_ of your conversation.

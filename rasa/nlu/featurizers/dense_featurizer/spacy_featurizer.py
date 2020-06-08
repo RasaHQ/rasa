@@ -1,5 +1,6 @@
 import numpy as np
 import typing
+import logging
 from typing import Any, Optional, Text, Dict, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
@@ -12,14 +13,17 @@ from rasa.nlu.constants import (
     TEXT,
     SPACY_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    ALIAS,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    FEATURIZER_CLASS_ALIAS,
 )
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
+
+
+logger = logging.getLogger(__name__)
 
 
 class SpacyFeaturizer(DenseFeaturizer):
@@ -30,8 +34,7 @@ class SpacyFeaturizer(DenseFeaturizer):
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
         # the CLS token. Available options: 'mean' and 'max'
-        POOLING: MEAN_POOLING,
-        ALIAS: "spacy_featurizer",
+        POOLING: MEAN_POOLING
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
@@ -55,29 +58,37 @@ class SpacyFeaturizer(DenseFeaturizer):
                 self._set_spacy_features(example, attribute)
 
     def get_doc(self, message: Message, attribute: Text) -> Any:
-
         return message.get(SPACY_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
         self._set_spacy_features(message)
 
-    def _set_spacy_features(self, message: Message, attribute: Text = TEXT):
+    def _set_spacy_features(self, message: Message, attribute: Text = TEXT) -> None:
         """Adds the spacy word vectors to the messages features."""
-        message_attribute_doc = self.get_doc(message, attribute)
+        doc = self.get_doc(message, attribute)
 
-        if message_attribute_doc is not None:
-            features = self._features_for_doc(message_attribute_doc)
-            cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
+        if doc is None:
+            return
 
-            final_sequence_features = Features(
-                features, FEATURE_TYPE_SEQUENCE, attribute, self.component_config[ALIAS]
-            )
-            message.add_features(final_sequence_features)
-            final_sentence_features = Features(
-                cls_token_vec,
-                FEATURE_TYPE_SENTENCE,
-                attribute,
-                self.component_config[ALIAS],
-            )
-            message.add_features(final_sentence_features)
+        # in case an empty spaCy model was used, no vectors are present
+        if doc.vocab.vectors_length == 0:
+            logger.debug("No features present. You are using an empty spaCy model.")
+            return
+
+        features = self._features_for_doc(doc)
+        cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
+
+        final_sequence_features = Features(
+            features,
+            FEATURE_TYPE_SEQUENCE,
+            attribute,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
+        )
+        message.add_features(final_sequence_features)
+        final_sentence_features = Features(
+            cls_token_vec,
+            FEATURE_TYPE_SENTENCE,
+            attribute,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
+        )
+        message.add_features(final_sentence_features)

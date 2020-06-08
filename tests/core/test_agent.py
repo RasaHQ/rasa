@@ -1,5 +1,5 @@
 import asyncio
-from typing import Text
+from typing import Any, Dict, Text
 
 import pytest
 from sanic import Sanic, response
@@ -47,7 +47,7 @@ def model_server(loop, sanic_client, trained_moodbot_path: Text):
     return loop.run_until_complete(sanic_client(app))
 
 
-async def test_training_data_is_reproducible(tmpdir, default_domain):
+async def test_training_data_is_reproducible():
     training_data_file = "examples/moodbot/data/stories.md"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
@@ -110,7 +110,7 @@ async def test_agent_train(trained_moodbot_path: Text):
     ],
 )
 async def test_agent_parse_message_using_nlu_interpreter(
-    default_agent, text_message_data, expected
+    default_agent: Agent, text_message_data: Text, expected: Dict[Text, Any]
 ):
     result = await default_agent.parse_message_using_nlu_interpreter(text_message_data)
     assert result == expected
@@ -133,7 +133,7 @@ async def test_agent_handle_message(default_agent: Agent):
     ]
 
 
-def test_agent_wrong_use_of_load(tmpdir, default_domain):
+def test_agent_wrong_use_of_load():
     training_data_file = "examples/moodbot/data/stories.md"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]

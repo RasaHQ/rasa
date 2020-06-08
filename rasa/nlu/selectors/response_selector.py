@@ -72,8 +72,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
-    SEQUENCE_FEATURES,
-    SENTENCE_FEATURES,
+    FEATURIZERS,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -216,8 +215,7 @@ class ResponseSelector(DIETClassifier):
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
-        SEQUENCE_FEATURES: [],
-        SENTENCE_FEATURES: [],
+        FEATURIZERS: [],
     }
 
     def __init__(

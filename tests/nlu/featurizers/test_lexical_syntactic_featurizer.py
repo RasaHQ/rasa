@@ -56,7 +56,7 @@ def test_text_featurizer(sentence, expected_features):
 
     featurizer.process(test_message)
 
-    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [], [])
+    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
 
     assert isinstance(seq_vec, scipy.sparse.coo_matrix)
     assert isinstance(sen_vec, scipy.sparse.coo_matrix)
@@ -90,7 +90,7 @@ def test_text_featurizer_window_size(sentence, expected, expected_cls):
 
     featurizer.process(test_message)
 
-    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [], [])
+    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
 
     assert isinstance(seq_vec, scipy.sparse.coo_matrix)
     assert isinstance(sen_vec, scipy.sparse.coo_matrix)
@@ -130,7 +130,7 @@ def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
 
     featurizer.process(test_message)
 
-    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [], [])
+    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
 
     assert isinstance(seq_vec, scipy.sparse.coo_matrix)
     assert isinstance(sen_vec, scipy.sparse.coo_matrix)

@@ -128,7 +128,8 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
         },
         {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
     ]
-    ftr = RegexFeaturizer({}, lookup_tables=lookups)
+    ftr = RegexFeaturizer()
+    ftr.add_lookup_tables(lookups)
 
     # adds tokens to the message
     component_config = {"name": "SpacyTokenizer"}
@@ -201,21 +202,21 @@ def test_regex_featurizer_train():
     expected = np.array([0, 1, 0])
     expected_cls = np.array([1, 1, 1])
 
-    seq_vecs, sen_vec = message.get_sparse_features(TEXT, [], [])
+    seq_vecs, sen_vec = message.get_sparse_features(TEXT, [])
 
     assert (6, 3) == seq_vecs.shape
     assert (1, 3) == sen_vec.shape
     assert np.all(seq_vecs.toarray()[0] == expected)
     assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    seq_vecs, sen_vec = message.get_sparse_features(RESPONSE, [], [])
+    seq_vecs, sen_vec = message.get_sparse_features(RESPONSE, [])
 
     assert (6, 3) == seq_vecs.shape
     assert (1, 3) == sen_vec.shape
     assert np.all(seq_vecs.toarray()[0] == expected)
     assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    seq_vecs, sen_vec = message.get_sparse_features(INTENT, [], [])
+    seq_vecs, sen_vec = message.get_sparse_features(INTENT, [])
 
     assert seq_vecs is None
     assert sen_vec is None

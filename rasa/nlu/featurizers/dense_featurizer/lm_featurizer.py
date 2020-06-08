@@ -15,7 +15,7 @@ from rasa.nlu.constants import (
     SENTENCE_FEATURES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
-    ALIAS,
+    FEATURIZER_CLASS_ALIAS,
 )
 
 
@@ -25,8 +25,6 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     Uses the output of HFTransformersNLP component to set the sequence and sentence
     level representations for dense featurizable attributes of each message object.
     """
-
-    defaults = {ALIAS: "language_model_featurizer"}
 
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
@@ -70,13 +68,13 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             sequence_features,
             FEATURE_TYPE_SEQUENCE,
             attribute,
-            self.component_config[ALIAS],
+            self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
             sentence_features,
             FEATURE_TYPE_SENTENCE,
             attribute,
-            self.component_config[ALIAS],
+            self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sentence_features)

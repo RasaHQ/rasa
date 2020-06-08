@@ -94,8 +94,9 @@ class CRFEntityExtractor(EntityExtractor):
         "L1_c": 0.1,
         # weight of the L2 regularization
         "L2_c": 0.1,
-        # what dense featurizer should be used
-        "sequence_features": [],
+        # Name of dense featurizers to use.
+        # If list is empty all available dense features are used.
+        "featurizers": [],
     }
 
     function_dict: Dict[Text, Callable[[CRFToken], Any]] = {
@@ -302,7 +303,7 @@ class CRFEntityExtractor(EntityExtractor):
         cached_component: Optional["CRFEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "CRFEntityExtractor":
-        from sklearn.externals import joblib
+        import joblib
 
         file_names = meta.get("files")
         entity_taggers = {}
@@ -334,7 +335,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         Returns the metadata necessary to load the model again."""
 
-        from sklearn.externals import joblib
+        import joblib
 
         file_names = {}
 
@@ -466,7 +467,7 @@ class CRFEntityExtractor(EntityExtractor):
     def _get_dense_features(self, message: Message) -> Optional[List]:
         """Convert dense features to python-crfsuite feature format."""
         features, _ = message.get_dense_features(
-            TEXT, self.component_config["sequence_features"], []
+            TEXT, self.component_config["featurizers"], []
         )
 
         if features is None:
@@ -481,7 +482,17 @@ class CRFEntityExtractor(EntityExtractor):
             )
             return None
 
-        return features.tolist()
+        # convert to python-crfsuite feature format
+        features_out = []
+        for feature in features:
+            feature_dict = {
+                str(index): token_features
+                for index, token_features in enumerate(feature)
+            }
+            converted = {"text_dense_features": feature_dict}
+            features_out.append(converted)
+
+        return features_out
 
     def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:
         """Take a message and convert it to crfsuite format."""

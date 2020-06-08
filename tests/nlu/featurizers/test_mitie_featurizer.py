@@ -49,19 +49,19 @@ def test_mitie_featurizer_train(mitie_feature_extractor):
     )
     expected_cls = np.array([0.0, -4.4551446, 0.26073121, -1.46632245, -1.84205751])
 
-    seq_vec, sen_vec = message.get_dense_features(TEXT, [], [])
+    seq_vec, sen_vec = message.get_dense_features(TEXT, [])
 
     assert len(message.get(TOKENS_NAMES[TEXT])) == len(seq_vec) + len(sen_vec)
     assert np.allclose(seq_vec[0][:5], expected, atol=1e-5)
     assert np.allclose(sen_vec[-1][:5], expected_cls, atol=1e-5)
 
-    seq_vec, sen_vec = message.get_dense_features(RESPONSE, [], [])
+    seq_vec, sen_vec = message.get_dense_features(RESPONSE, [])
 
     assert len(message.get(TOKENS_NAMES[RESPONSE])) == len(seq_vec) + len(sen_vec)
     assert np.allclose(seq_vec[0][:5], expected, atol=1e-5)
     assert np.allclose(sen_vec[-1][:5], expected_cls, atol=1e-5)
 
-    seq_vec, sen_vec = message.get_dense_features(INTENT, [], [])
+    seq_vec, sen_vec = message.get_dense_features(INTENT, [])
 
     assert seq_vec is None
     assert sen_vec is None

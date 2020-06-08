@@ -35,7 +35,7 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
 
     ftr.process(test_message)
 
-    seq_vecs, sen_vecs = test_message.get_sparse_features(TEXT, [], [])
+    seq_vecs, sen_vecs = test_message.get_sparse_features(TEXT, [])
 
     assert isinstance(seq_vecs, scipy.sparse.coo_matrix)
     assert isinstance(sen_vecs, scipy.sparse.coo_matrix)
@@ -73,9 +73,9 @@ def test_count_vector_featurizer_response_attribute_featurization(
     tk.train(data)
     ftr.train(data)
 
-    intent_seq_vecs, intent_sen_vecs = train_message.get_sparse_features(INTENT, [], [])
+    intent_seq_vecs, intent_sen_vecs = train_message.get_sparse_features(INTENT, [])
     response_seq_vecs, response_sen_vecs = train_message.get_sparse_features(
-        RESPONSE, [], []
+        RESPONSE, []
     )
 
     if intent_features:
@@ -117,9 +117,9 @@ def test_count_vector_featurizer_attribute_featurization(
     tk.train(data)
     ftr.train(data)
 
-    intent_seq_vecs, intent_sen_vecs = train_message.get_sparse_features(INTENT, [], [])
+    intent_seq_vecs, intent_sen_vecs = train_message.get_sparse_features(INTENT, [])
     response_seq_vecs, response_sen_vecs = train_message.get_sparse_features(
-        RESPONSE, [], []
+        RESPONSE, []
     )
     if intent_features:
         assert intent_seq_vecs.toarray()[0] == intent_features
@@ -167,11 +167,11 @@ def test_count_vector_featurizer_shared_vocab(
     tk.train(data)
     ftr.train(data)
 
-    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [], [])
+    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
     assert np.all(seq_vec.toarray()[0] == text_features)
-    seq_vec, sen_vec = train_message.get_sparse_features(INTENT, [], [])
+    seq_vec, sen_vec = train_message.get_sparse_features(INTENT, [])
     assert np.all(seq_vec.toarray()[0] == intent_features)
-    seq_vec, sen_vec = train_message.get_sparse_features(RESPONSE, [], [])
+    seq_vec, sen_vec = train_message.get_sparse_features(RESPONSE, [])
     assert np.all(seq_vec.toarray()[0] == response_features)
 
 
@@ -197,7 +197,7 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [], [])
+    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
     assert np.all(seq_vec.toarray()[0] == expected)
 
 
@@ -228,7 +228,7 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [], [])
+    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
     assert np.all(seq_vec.toarray()[0] == expected)
 
 
@@ -266,7 +266,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
     ftr.process(test_message)
 
-    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [], [])
+    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
     assert np.all(seq_vec.toarray()[0] == expected)
 
 
@@ -291,11 +291,11 @@ def test_count_vector_featurizer_char(sentence, expected):
     WhitespaceTokenizer().process(test_message)
     ftr.process(test_message)
 
-    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [], [])
+    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
     assert np.all(seq_vec.toarray()[0] == expected)
 
 
-def test_count_vector_featurizer_persist_load(tmpdir):
+def test_count_vector_featurizer_persist_load(tmp_path):
 
     # set non default values to config
     config = {
@@ -321,7 +321,7 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     train_ftr.train(data)
 
     # persist featurizer
-    file_dict = train_ftr.persist("ftr", tmpdir.strpath)
+    file_dict = train_ftr.persist("ftr", str(tmp_path))
     train_vect_params = {
         attribute: vectorizer.get_params()
         for attribute, vectorizer in train_ftr.vectorizers.items()
@@ -337,7 +337,7 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     # load featurizer
     meta = train_ftr.component_config.copy()
     meta.update(file_dict)
-    test_ftr = CountVectorsFeaturizer.load(meta, tmpdir.strpath)
+    test_ftr = CountVectorsFeaturizer.load(meta, str(tmp_path))
     test_vect_params = {
         attribute: vectorizer.get_params()
         for attribute, vectorizer in test_ftr.vectorizers.items()
@@ -345,15 +345,18 @@ def test_count_vector_featurizer_persist_load(tmpdir):
 
     assert train_vect_params == test_vect_params
 
+    # check if vocaculary was loaded correctly
+    assert hasattr(test_ftr.vectorizers[TEXT], "vocabulary_")
+
     test_message1 = Message(sentence1)
     test_ftr.process(test_message1)
     test_message2 = Message(sentence2)
     test_ftr.process(test_message2)
 
-    test_seq_vec_1, test_sen_vec_1 = test_message1.get_sparse_features(TEXT, [], [])
-    train_seq_vec_1, train_sen_vec_1 = train_message1.get_sparse_features(TEXT, [], [])
-    test_seq_vec_2, test_sen_vec_2 = test_message2.get_sparse_features(TEXT, [], [])
-    train_seq_vec_2, train_sen_vec_2 = train_message2.get_sparse_features(TEXT, [], [])
+    test_seq_vec_1, test_sen_vec_1 = test_message1.get_sparse_features(TEXT, [])
+    train_seq_vec_1, train_sen_vec_1 = train_message1.get_sparse_features(TEXT, [])
+    test_seq_vec_2, test_sen_vec_2 = test_message2.get_sparse_features(TEXT, [])
+    train_seq_vec_2, train_sen_vec_2 = train_message2.get_sparse_features(TEXT, [])
 
     # check that train features and test features after loading are the same
     assert np.all(test_seq_vec_1.toarray() == train_seq_vec_1.toarray())
@@ -377,21 +380,21 @@ def test_count_vectors_featurizer_train():
     expected = np.array([0, 1, 0, 0, 0])
     expected_cls = np.array([1, 1, 1, 1, 1])
 
-    seq_vec, sen_vec = message.get_sparse_features(TEXT, [], [])
+    seq_vec, sen_vec = message.get_sparse_features(TEXT, [])
 
     assert (5, 5) == seq_vec.shape
     assert (1, 5) == sen_vec.shape
     assert np.all(seq_vec.toarray()[0] == expected)
     assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    seq_vec, sen_vec = message.get_sparse_features(RESPONSE, [], [])
+    seq_vec, sen_vec = message.get_sparse_features(RESPONSE, [])
 
     assert (5, 5) == seq_vec.shape
     assert (1, 5) == sen_vec.shape
     assert np.all(seq_vec.toarray()[0] == expected)
     assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    seq_vec, sen_vec = message.get_sparse_features(INTENT, [], [])
+    seq_vec, sen_vec = message.get_sparse_features(INTENT, [])
 
     assert sen_vec is None
     assert (1, 1) == seq_vec.shape
