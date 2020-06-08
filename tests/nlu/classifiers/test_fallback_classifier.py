@@ -2,11 +2,7 @@ import copy
 
 from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
-from rasa.nlu.classifiers.fallback_classifier import (
-    FallbackClassifier,
-    FALLBACK_INTENT_NAME_KEY,
-    THRESHOLD_KEY,
-)
+from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier, THRESHOLD_KEY
 from rasa.nlu.training_data import Message
 from rasa.nlu.constants import INTENT_RANKING_KEY, INTENT, INTENT_CONFIDENCE_KEY
 
@@ -70,8 +66,5 @@ def test_not_predict_fallback_intent():
 
 def test_default_threshold():
     classifier = FallbackClassifier({})
-    assert (
-        classifier.component_config[FALLBACK_INTENT_NAME_KEY]
-        == DEFAULT_NLU_FALLBACK_INTENT_NAME
-    )
+
     assert classifier.component_config[THRESHOLD_KEY] == DEFAULT_NLU_FALLBACK_THRESHOLD
