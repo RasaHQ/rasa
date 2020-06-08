@@ -21,7 +21,7 @@ from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CORE_SUBDIRECTORY_NAME
 
 
 def train(
-    domain: Text,
+    domain: Union[Domain, Text],
     config: Text,
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
