@@ -1,7 +1,2 @@
-Reduced duplicate logs and warnings when run
-ning ``rasa train`.
-    This paragraph has problems.  The
-lines are not left-aligned.  In addition
-  to potential misinterpretation, warning
-    and/or error messages will be generated
-  by the parser.
+Reduced duplicate logs and warnings when running ``rasa train``.
+```>ewkjge;le'qwe
