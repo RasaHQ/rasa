@@ -144,12 +144,12 @@ class MessengerBot(OutputChannel):
         # this is a bit hacky, but the client doesn't have a proper API to
         # send messages but instead expects the incoming sender to be present
         # which we don't have as it is stored in the input channel.
-        
+
         element_dict = element.to_dict()
-       
+
         if "text" in element_dict:
             message_length = len(element_dict['text'])
-            delay = message_length * fb_mesg_delay # Multiply message length by fb_mesg_delay to create a realistic behavior
+            delay = message_length * fb_mesg_delay  # Multiply message length by fb_mesg_delay to create a realistic behavior
             typing_on = SenderAction(sender_action='typing_on')
             self.messenger_client.send_action(typing_on.to_dict(), recipient_id)
             await asyncio.sleep(delay)
@@ -157,10 +157,10 @@ class MessengerBot(OutputChannel):
             self.messenger_client.send_action(typing_off.to_dict(), recipient_id)
 
         self.messenger_client.send(element.to_dict(), recipient_id, "RESPONSE")
-            
+
 
     async def send_text_message(
-        self, recipient_id: Text, text: Text, **kwargs: Any
+            self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         """Send a message through this channel."""
 
