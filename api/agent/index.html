@@ -233,8 +233,22 @@ action prediction." />
               <a href="../.././1.10.1/api/agent/">1.10.1</a>
               <a href="../.././1.10.0/api/agent/">1.10.0</a>
               <a href="../.././1.9.7/api/agent/">1.9.7</a>
+              <a href="../.././1.9.6/api/agent/">1.9.6</a>
+              <a href="../.././1.9.5/api/agent/">1.9.5</a>
+              <a href="../.././1.9.4/api/agent/">1.9.4</a>
+              <a href="../.././1.9.3/api/agent/">1.9.3</a>
+              <a href="../.././1.9.2/api/agent/">1.9.2</a>
+              <a href="../.././1.9.1/api/agent/">1.9.1</a>
+              <a href="../.././1.9.0/api/agent/">1.9.0</a>
               <a href="../.././1.8.3/api/agent/">1.8.3</a>
+              <a href="../.././1.8.2/api/agent/">1.8.2</a>
+              <a href="../.././1.8.1/api/agent/">1.8.1</a>
+              <a href="../.././1.8.0/api/agent/">1.8.0</a>
               <a href="../.././1.7.4/api/agent/">1.7.4</a>
+              <a href="../.././1.7.3/api/agent/">1.7.3</a>
+              <a href="../.././1.7.2/api/agent/">1.7.2</a>
+              <a href="../.././1.7.1/api/agent/">1.7.1</a>
+              <a href="../.././1.7.0/api/agent/">1.7.0</a>
               <a href="../.././1.6.2/api/agent/">1.6.2</a>
               <a href="../.././1.5.3/api/agent/">1.5.3</a>
               <a href="../.././1.4.6/api/agent/">1.4.6</a>
@@ -304,6 +318,17 @@ getting the next action, and handling a channel.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="rasa.core.agent.Agent.handle_channels">
+<code class="sig-name descname">handle_channels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">channels</span></em>, <em class="sig-param"><span class="n">http_port</span><span class="o">=</span><span class="default_value">5005</span></em>, <em class="sig-param"><span class="n">route</span><span class="o">=</span><span class="default_value">'/webhooks/'</span></em>, <em class="sig-param"><span class="n">cors</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.handle_channels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start a webserver attaching the input channels and handling msgs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Sanic</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="rasa.core.agent.Agent.handle_message">
 <em class="property">async </em><code class="sig-name descname">handle_message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="n">message_preprocessor</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.handle_message" title="Permalink to this definition">¶</a></dt>
 <dd><p>Handle a single message.</p>
@@ -329,7 +354,7 @@ the bot wants to respond.</p>
 <dt class="field-odd">Example</dt>
 <dd class="field-odd"><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">rasa.core.agent</span> <span class="kn">import</span> <span class="n">Agent</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">rasa.core.interpreter</span> <span class="kn">import</span> <span class="n">RasaNLUInterpreter</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;examples/moodbot/models&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;examples/restaurantbot/models/current&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">handle_text</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
 <span class="go">[u&#39;how can I help you?&#39;]</span>
 </pre></div>
@@ -451,7 +476,7 @@ the bot wants to respond.</p>
 the prediction of that policy. When set to <code class="docutils literal notranslate"><span class="pre">False</span></code> the Memoization
 policies present in the policy ensemble will not make any predictions.
 Hence, the prediction result from the ensemble always needs to come
-from a different policy (e.g. <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>). Useful to test
+from a different policy (e.g. <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code>). Useful to test
 prediction
 capabilities of an ensemble when ignoring memorized turns from the
 training data.</p>
