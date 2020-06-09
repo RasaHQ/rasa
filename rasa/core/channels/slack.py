@@ -12,6 +12,7 @@ from slack import WebClient
 
 logger = logging.getLogger(__name__)
 
+
 class SlackBot(OutputChannel):
     """A Slack communication channel"""
 
@@ -20,8 +21,8 @@ class SlackBot(OutputChannel):
         return "slack"
 
     def __init__(
-        self, 
-        token: Text, 
+        self,
+        token: Text,
         slack_channel: Optional[Text] = None,
         ts: Optional[Text] = None,
     ) -> None:
@@ -41,10 +42,10 @@ class SlackBot(OutputChannel):
         recipient = self.slack_channel or recipient_id
         for message_part in text.strip().split("\n\n"):
             await self.client.chat_postMessage(
-                channel=recipient, 
-                as_user=True, 
-                text=message_part, 
-                type="mrkdwn", 
+                channel=recipient,
+                as_user=True,
+                text=message_part,
+                type="mrkdwn",
                 thread_ts=self.ts if self.ts else None,
             )
 
@@ -54,10 +55,10 @@ class SlackBot(OutputChannel):
         recipient = self.slack_channel or recipient_id
         image_block = {"type": "image", "image_url": image, "alt_text": image}
         await self.client.chat_postMessage(
-            channel=recipient, 
-            as_user=True, 
-            text=image, 
-            blocks=[image_block], 
+            channel=recipient,
+            as_user=True,
+            text=image,
+            blocks=[image_block],
             thread_ts=self.ts if self.ts else None,
         )
 
@@ -67,10 +68,10 @@ class SlackBot(OutputChannel):
         recipient = self.slack_channel or recipient_id
 
         await self.client.chat_postMessage(
-            channel=recipient, 
-            as_user=True, 
+            channel=recipient,
+            as_user=True,
             attachments=[attachment],
-            thread_ts=self.ts if self.ts else None, 
+            thread_ts=self.ts if self.ts else None,
             **kwargs,
         )
 
@@ -83,7 +84,10 @@ class SlackBot(OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
 
-        text_block = {"type": "section", "text": {"type": "plain_text", "text": text}}
+        text_block = {
+            "type": "section",
+            "text": {"type": "plain_text", "text": text},
+        }
 
         if len(buttons) > 5:
             raise_warning(
@@ -127,7 +131,9 @@ class SlackInput(InputChannel):
         return "slack"
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
+    def from_credentials(
+        cls, credentials: Optional[Dict[Text, Any]]
+    ) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
@@ -135,7 +141,9 @@ class SlackInput(InputChannel):
         return cls(
             credentials.get("slack_token"),
             credentials.get("slack_channel"),
-            credentials.get("slack_retry_reason_header", "x-slack-retry-reason"),
+            credentials.get(
+                "slack_retry_reason_header", "x-slack-retry-reason"
+            ),
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
             credentials.get("errors_ignore_retry", None),
             credentials.get("use_threads", False),
@@ -230,7 +238,10 @@ class SlackInput(InputChannel):
             # but is a good first approximation
             for regex, replacement in [
                 (fr"<@{uid_to_remove}>\s", ""),
-                (fr"\s<@{uid_to_remove}>", ""),  # a bit arbitrary but probably OK
+                (
+                    fr"\s<@{uid_to_remove}>",
+                    "",
+                ),  # a bit arbitrary but probably OK
                 (fr"<@{uid_to_remove}>", " "),
             ]:
                 text = re.sub(regex, replacement, text)
@@ -317,7 +328,9 @@ class SlackInput(InputChannel):
                 f" due to {retry_reason}."
             )
 
-            return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})
+            return response.text(
+                None, status=201, headers={"X-Slack-No-Retry": 1}
+            )
 
         if metadata is not None:
             output_channel = metadata.get("out_channel")
@@ -395,7 +408,9 @@ class SlackInput(InputChannel):
 
                 if self._is_interactive_message(payload):
                     sender_id = payload["user"]["id"]
-                    text = self._get_interactive_response(payload["actions"][0])
+                    text = self._get_interactive_response(
+                        payload["actions"][0]
+                    )
                     if text is not None:
                         metadata = self.get_metadata(request)
                         return await self.process_message(
@@ -418,9 +433,9 @@ class SlackInput(InputChannel):
                 if "challenge" in output:
                     return response.json(output.get("challenge"))
 
-                elif self._is_user_message(output) and self._is_supported_channel(
-                    output, metadata
-                ):
+                elif self._is_user_message(
+                    output
+                ) and self._is_supported_channel(output, metadata):
                     return await self.process_message(
                         request,
                         on_new_message,
@@ -446,10 +461,11 @@ class SlackInput(InputChannel):
             or metadata["out_channel"] == self.slack_channel
         )
 
-    def get_output_channel(self, channel: Optional[Text] = None, ts: Optional[Text] = None) -> OutputChannel:
+    def get_output_channel(
+        self, channel: Optional[Text] = None, ts: Optional[Text] = None
+    ) -> OutputChannel:
         channel = channel or self.slack_channel
         return SlackBot(self.slack_token, channel, ts)
 
     def set_output_channel(self, channel: Text) -> None:
         self.slack_channel = channel
-
