@@ -203,7 +203,7 @@ class Trainer:
         persistor: Optional[Persistor] = None,
         fixed_model_name: Text = None,
         persist_nlu_training_data: bool = False,
-        best_model_file: Text = None
+        best_model_file: Text = None,
     ) -> Text:
         """Persist all components of the pipeline to the passed path.
 

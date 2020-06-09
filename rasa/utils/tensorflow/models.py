@@ -53,41 +53,46 @@ class RasaModel(tf.keras.models.Model):
 
         self.random_seed = random_seed
 
+        self.tensorboard_log_dir = tensorboard_log_dir
+        self.tensorboard_log_level = tensorboard_log_level
+
         self.train_summary_writer = None
         self.test_summary_writer = None
         self.model_summary_file = None
         self.tensorboard_log_on_epochs = True
 
         self.best_metrics_so_far = {}
-        self.best_model_file = os.path.join(model_checkpoint_dir, f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model") if \
-            model_checkpoint_dir is not None else None
+        self.best_model_file = (
+            os.path.join(model_checkpoint_dir, f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model")
+            if model_checkpoint_dir is not None
+            else None
+        )
 
         self._set_up_tensorboard_writer(tensorboard_log_level, tensorboard_log_dir)
 
-    def _set_up_tensorboard_writer(
-        self, tensorboard_log_level: Text, tensorboard_log_dir: Optional[Text] = None
-    ) -> None:
-        if tensorboard_log_dir is not None:
-            if tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
+    def _set_up_tensorboard_writer(self) -> None:
+        if self.tensorboard_log_dir is not None:
+            if self.tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
                 raise ValueError(
-                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{tensorboard_log_level}') "
+                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{self.tensorboard_log_level}') "
                     f"is invalid! Valid values are: {TENSORBOARD_LOG_LEVELS}"
                 )
-
-            self.tensorboard_log_on_epochs = tensorboard_log_level == "epoch"
+            self.tensorboard_log_on_epochs = self.tensorboard_log_level == "epoch"
 
             current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             class_name = self.__class__.__name__
 
-            train_log_dir = f"{tensorboard_log_dir}/{class_name}/{current_time}/train"
-            test_log_dir = f"{tensorboard_log_dir}/{class_name}/{current_time}/test"
+            train_log_dir = (
+                f"{self.tensorboard_log_dir}/{class_name}/{current_time}/train"
+            )
+            test_log_dir = (
+                f"{self.tensorboard_log_dir}/{class_name}/{current_time}/test"
+            )
 
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
-            self.model_summary_file = (
-                f"{tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
-            )
+            self.model_summary_file = f"{self.tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -108,9 +113,14 @@ class RasaModel(tf.keras.models.Model):
         evaluate_every_num_epochs: int,
         batch_strategy: Text,
         silent: bool = False,
+        loading: bool = False,
         eager: bool = False,
     ) -> None:
         """Fit model data"""
+
+        # don't setup tensorboard writers when training during loading
+        if not loading:
+            self._set_up_tensorboard_writer()
 
         tf.random.set_seed(self.random_seed)
         np.random.seed(self.random_seed)
@@ -277,16 +287,17 @@ class RasaModel(tf.keras.models.Model):
         ckp_dir, ckp_file = os.path.split(self.best_model_file)
         ckp_path = Path(ckp_dir)
 
-        for f in ckp_path.glob(f'{ckp_file}*'):
+        for f in ckp_path.glob(f"{ckp_file}*"):
             shutil.move(f, model_file_name + f.suffix)
 
         # Generate the tf2 checkpoint file
         dest_path, dest_file = os.path.split(model_file_name)
-        with open(os.path.join(ckp_dir, 'checkpoint')) as in_file, open(os.path.join(dest_path, 'checkpoint'), 'w') as out_file:
+        with open(os.path.join(ckp_dir, "checkpoint")) as in_file, open(
+            os.path.join(dest_path, "checkpoint"), "w"
+        ) as out_file:
             for line in in_file:
                 out_file.write(line.replace(ckp_file, dest_file))
-        ckp_path.joinpath('checkpoint').unlink()
-
+        ckp_path.joinpath("checkpoint").unlink()
 
     @classmethod
     def load(
@@ -304,6 +315,7 @@ class RasaModel(tf.keras.models.Model):
             evaluate_on_num_examples=0,
             batch_strategy=SEQUENCE,
             silent=True,  # don't confuse users with training output
+            loading=True,  # don't use tensorboard while loading
             eager=True,  # no need to build tf graph, eager is faster here
         )
         # load trained weights
@@ -430,16 +442,22 @@ class RasaModel(tf.keras.models.Model):
                     if metric.name in self.metrics_to_log:
                         tf.summary.scalar(metric.name, metric.result(), step=step)
 
-    def _update_best_metrics_so_far(
-            self, curr_results: Dict[Text, float]
-    ) -> bool:
-        if len(self.best_metrics_so_far) <= 0: # Init with actual result keys
-            keys = filter(lambda k: True if (k.endswith('_acc') or k.endswith('_f1')) else False, curr_results.keys())
+    def _update_best_metrics_so_far(self, curr_results: Dict[Text, float]) -> bool:
+        if len(self.best_metrics_so_far) <= 0:  # Init with actual result keys
+            keys = filter(
+                lambda k: True if (k.endswith("_acc") or k.endswith("_f1")) else False,
+                curr_results.keys(),
+            )
             for key in keys:
                 self.best_metrics_so_far[key] = curr_results[key]
             all_improved = True
         else:
-            all_improved = all([curr_results[key] > self.best_metrics_so_far[key] for key in self.best_metrics_so_far.keys()])
+            all_improved = all(
+                [
+                    curr_results[key] > self.best_metrics_so_far[key]
+                    for key in self.best_metrics_so_far.keys()
+                ]
+            )
             if all_improved:
                 for key in self.best_metrics_so_far.keys():
                     self.best_metrics_so_far[key] = curr_results[key]

@@ -109,8 +109,8 @@ class MarkdownReader(TrainingDataReader):
                 '[<entity-text>]{"entity": "<entity-type>", "value": '
                 '"<entity-synonym>"}.'
                 "\nYou can use the following command to update your training data file:"
-                "\nsed -i .deprecated -E 's/\\[(.+)\\]\\((.+):(.+)\\)/\\[\\1\\]\\{"
-                '"entity": "\\2", "value": "\\3"\\}/g\' nlu.md',
+                "\nsed -i -E 's/\\[([^)]+)\\]\\(([^)]+):([^)]+)\\)/[\\1]{"
+                '"entity": "\\2", "value": "\\3"}/g\' nlu.md',
                 category=FutureWarning,
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
@@ -169,7 +169,9 @@ class MarkdownReader(TrainingDataReader):
     def _add_item_to_lookup(self, item: Text) -> None:
         """Takes a list of lookup table dictionaries.  Finds the one associated
         with the current lookup, then adds the item to the list."""
-        matches = [l for l in self.lookup_tables if l["name"] == self.current_title]
+        matches = [
+            table for table in self.lookup_tables if table["name"] == self.current_title
+        ]
         if not matches:
             self.lookup_tables.append({"name": self.current_title, "elements": [item]})
         else:

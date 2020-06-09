@@ -5,10 +5,15 @@ from unittest.mock import Mock
 
 import pytest
 
+from rasa.core.actions.action import ACTION_SESSION_START_NAME
+from rasa.core.domain import Domain
+
 import rasa.utils.io as io_utils
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
+from rasa.core.events import SessionStarted, ActionExecuted
+from rasa.core.tracker_store import SQLTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.exceptions import (
     NoConversationsInTrackerStoreError,
@@ -23,9 +28,7 @@ def _write_endpoint_config_to_yaml(path: Path, data: Dict[Text, Any]) -> Path:
     endpoints_path = path / "endpoints.yml"
 
     # write endpoints config to file
-    io_utils.write_yaml_file(
-        data, endpoints_path,
-    )
+    io_utils.write_yaml_file(data, endpoints_path)
     return endpoints_path
 
 
@@ -83,10 +86,7 @@ def test_fetch_events_within_time_range():
     event_1 = random_user_uttered_event(3)
     event_2 = random_user_uttered_event(2)
     event_3 = random_user_uttered_event(1)
-    events = {
-        conversation_ids[0]: [event_1, event_2],
-        conversation_ids[1]: [event_3],
-    }
+    events = {conversation_ids[0]: [event_1, event_2], conversation_ids[1]: [event_3]}
 
     def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
         return DialogueStateTracker.from_events(
@@ -142,6 +142,30 @@ def test_fetch_events_within_time_range_tracker_contains_no_events():
     with pytest.raises(NoEventsInTimeRangeError):
         # noinspection PyProtectedMember
         exporter._fetch_events_within_time_range()
+
+
+def test_fetch_events_within_time_range_with_session_events():
+    conversation_id = "test_fetch_events_within_time_range_with_sessions"
+
+    tracker_store = SQLTrackerStore(
+        dialect="sqlite", db=f"{uuid.uuid4().hex}.db", domain=Domain.empty()
+    )
+
+    events = [
+        random_user_uttered_event(1),
+        SessionStarted(2),
+        ActionExecuted(timestamp=3, action_name=ACTION_SESSION_START_NAME),
+        random_user_uttered_event(4),
+    ]
+    tracker = DialogueStateTracker.from_events(conversation_id, evts=events)
+    tracker_store.save(tracker)
+
+    exporter = MockExporter(tracker_store=tracker_store)
+
+    # noinspection PyProtectedMember
+    fetched_events = exporter._fetch_events_within_time_range()
+
+    assert len(fetched_events) == len(events)
 
 
 # noinspection PyProtectedMember

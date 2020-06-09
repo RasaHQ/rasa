@@ -222,7 +222,7 @@ You can then run the actions with the following command:
 
     .. parsed-literal::
 
-      docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:\ |version|.0
+      docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:\ |rasa_sdk_version|
 
 
 Here's what's happening in that command:
@@ -232,7 +232,7 @@ Here's what's happening in that command:
     container so that the action server can run the code in the ``actions`` folder
   - ``net my-project``: Run the server on a specific network so that the rasa container can find it
   - ``--name action-server``: Gives the server a specific name for the rasa server to reference
-  - rasa/rasa-sdk:|version|.0 : Uses the Rasa SDK image with the tag |version|.0
+  - rasa/rasa-sdk:|rasa_sdk_version| : Uses the Rasa SDK image with the tag |rasa_sdk_version|
 
 
 Because the action server is running in detached mode, if you want to stop the container,

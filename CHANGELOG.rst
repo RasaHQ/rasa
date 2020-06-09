@@ -17,6 +17,39 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.2] - 2020-06-03
+^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5521 <https://github.com/rasahq/rasa/issues/5521>`_: Responses used in ResponseSelector now support new lines with explicitly adding ``\n`` between them.
+- `#5758 <https://github.com/rasahq/rasa/issues/5758>`_: Fixed a bug in `rasa export <https://rasa.com/docs/rasa-x/installation-and-setup/existing-deployment/#migrate-conversations>`_ (:ref:`section_export`) which caused Rasa Open Source to only migrate conversation events from the last :ref:`session_config`.
+
+
+[1.10.1] - 2020-05-15
+^^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#5794 <https://github.com/rasahq/rasa/issues/5794>`_: Creating a ``Domain`` using ``Domain.fromDict`` can no longer alter the input dictionary.
+  Previously, there could be problems when the input dictionary was re-used for other
+  things after creating the ``Domain`` from it.
+
+Bugfixes
+--------
+- `#5617 <https://github.com/rasahq/rasa/issues/5617>`_: Don't create TensorBoard log files during prediction.
+- `#5638 <https://github.com/rasahq/rasa/issues/5638>`_: Fix: DIET breaks with empty spaCy model
+- `#5755 <https://github.com/rasahq/rasa/issues/5755>`_: Remove ``clean_up_entities`` from extractors that extract pre-defined entities.
+  Just keep the clean up method for entity extractors that extract custom entities.
+- `#5792 <https://github.com/rasahq/rasa/issues/5792>`_: Fixed issue where the ``DucklingHTTPExtractor`` component would
+  not work if its `url` contained a trailing slash.
+- `#5825 <https://github.com/rasahq/rasa/issues/5825>`_: Fix list index out of range error in ``ensure_consistent_bilou_tagging``.
+
+Miscellaneous internal changes
+------------------------------
+- #5788
+
+
 [1.10.0] - 2020-04-28
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -39,7 +72,7 @@ Features
 
   .. note::
 
-      Composite entities are currently just supported by the :ref:``diet-classifier`` and :ref:``CRFEntityExtractor``.
+      Composite entities are currently just supported by the :ref:`diet-classifier` and :ref:`CRFEntityExtractor`.
 - `#5465 <https://github.com/rasahq/rasa/issues/5465>`_: Update training data format for NLU to support entities with a role or group label.
 
   You can now specify synonyms, roles, and groups of entities using the following data format:
@@ -66,7 +99,7 @@ Features
 
   The markdown format ``[LA](location:Los Angeles)`` is deprecated. To update your training data file just
   execute the following command on the terminal of your choice:
-  ``sed -i .deprecated -E 's/\[(.*)\]\((.*):(.*)\)/\[\1\]\{"entity": "\2", "value": "\3"\}/g' nlu.md``
+  ``sed -i -E 's/\[([^)]+)\]\(([^)]+):([^)]+)\)/[\1]{"entity": "\2", "value": "\3"}/g' nlu.md``
 
   For more information about the new data format see :ref:`training-data-format`.
 

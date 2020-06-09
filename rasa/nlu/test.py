@@ -246,7 +246,7 @@ def remove_empty_response_examples(
 
 def clean_labels(labels: Iterable[Any]) -> List[Text]:
     """Get rid of `None` intents. sklearn metrics do not support them."""
-    return [l if l is not None else "" for l in labels]
+    return [label if label is not None else "" for label in labels]
 
 
 def drop_intents_below_freq(td: TrainingData, cutoff: int = 5) -> TrainingData:

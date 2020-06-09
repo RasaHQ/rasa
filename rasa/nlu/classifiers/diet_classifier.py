@@ -712,8 +712,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._data_example = model_data.first_data_example()
 
         # add model_checkpoint_dir to the component config
-        if self.component_config.get('checkpoint_model', False):
-            self.component_config.update(model_checkpoint_dir=kwargs.pop('model_checkpoint_dir'))
+        if self.component_config.get("checkpoint_model", False):
+            self.component_config.update(
+                model_checkpoint_dir=kwargs.pop("model_checkpoint_dir")
+            )
 
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
@@ -880,7 +882,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         entity_tag_specs = (
-            [l._asdict() for l in self._entity_tag_specs]
+            [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
             if self._entity_tag_specs
             else []
         )
@@ -1027,7 +1029,7 @@ class DIET(RasaModel):
             random_seed=config[RANDOM_SEED],
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
             tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
-            model_checkpoint_dir=config[MODEL_CHECKPOINT_DIR]
+            model_checkpoint_dir=config[MODEL_CHECKPOINT_DIR],
         )
 
         self.config = config

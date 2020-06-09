@@ -162,8 +162,8 @@ class EmbeddingPolicy(TEDPolicy):
         super().__init__(featurizer, priority, max_history, model, **kwargs)
 
         common_utils.raise_warning(
-            f"'EmbeddingPolicy' is deprecated and will be removed in version 2.0. "
-            f"Use 'TEDPolicy' instead.",
+            "'EmbeddingPolicy' is deprecated and will be removed in version 2.0. "
+            "Use 'TEDPolicy' instead.",
             category=FutureWarning,
             docs=DOCS_URL_MIGRATION_GUIDE,
         )

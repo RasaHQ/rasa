@@ -11,7 +11,7 @@ This guide shows you how to migrate your application built with Google Dialogflo
 
 * **Faster**: Runs locally - no http requests and server round trips required
 * **Customizable**: Tune models and get higher accuracy with your data set
-* **Open source**: No risk of vendor lock-in - Rasa is under the Apache 2.0 licence and you can use it in commercial projects
+* **Open source**: No risk of vendor lock-in - Rasa is under the Apache 2.0 license and you can use it in commercial projects
 
 
 .. raw:: html
