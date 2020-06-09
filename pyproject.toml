@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py36", "py37", "py38" ]
+target-version = [ "py36", "py37" ]
 exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
@@ -113,11 +113,11 @@ sklearn-crfsuite = "~0.3"
 psycopg2-binary = "~2.8.2"
 PyJWT = "~1.7"
 python-dateutil = "~2.8"
-tensorflow = "~2.2"
+tensorflow = "~2.1"
 tensorflow_hub = "~0.8"
-tensorflow-addons = "~0.10"
+tensorflow-addons = "^0.7.1"
 tensorflow-estimator = "~2.2"
-tensorflow-probability = "~0.10"
+tensorflow-probability = ">=0.7,<0.10"
 setuptools = ">=41.0.0"
 kafka-python = ">=1.4,<3.0"
 ujson = ">=1.35,<4.0"
@@ -169,11 +169,11 @@ gh-release-notes = [ "pypandoc", "github3.py",]
 rasa = "rasa.__main__:main"
 
 [tool.poetry.dependencies.spacy]
-version = ">=2.1,<2.3"
+version = "==2.1.0rc0"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
-version = "~2.2"
+version = "~2.1"
 optional = true
 
 [tool.poetry.dependencies.pypandoc]
