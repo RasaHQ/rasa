@@ -33,8 +33,6 @@ from rasa.nlu.test import (
     evaluate_intents,
     evaluate_entities,
     evaluate_response_selections,
-    get_unique_labels,
-    get_evaluation_metrics,
     NO_ENTITY,
     collect_successful_entity_predictions,
     collect_incorrect_entity_predictions,
@@ -50,7 +48,6 @@ from rasa.nlu.tokenizers.tokenizer import Token
 import json
 import os
 from rasa.nlu import training_data
-from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
@@ -832,61 +829,6 @@ def test_label_replacement():
     original_labels = ["O", "location"]
     target_labels = ["no_entity", "location"]
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
-
-
-@pytest.mark.parametrize(
-    "targets,exclude_label,expected",
-    [
-        (
-            ["no_entity", "location", "location", "location", "person"],
-            NO_ENTITY,
-            ["location", "person"],
-        ),
-        (
-            ["no_entity", "location", "location", "location", "person"],
-            None,
-            ["no_entity", "location", "person"],
-        ),
-        (["no_entity"], NO_ENTITY, []),
-        (["location", "location", "location"], NO_ENTITY, ["location"]),
-        ([], None, []),
-    ],
-)
-def test_get_label_set(targets, exclude_label, expected):
-    actual = get_unique_labels(targets, exclude_label)
-    assert set(expected) == set(actual)
-
-
-@pytest.mark.parametrize(
-    "targets,predictions,expected_precision,expected_fscore,expected_accuracy",
-    [
-        (
-            ["no_entity", "location", "no_entity", "location", "no_entity"],
-            ["no_entity", "location", "no_entity", "no_entity", "person"],
-            1.0,
-            0.6666666666666666,
-            3 / 5,
-        ),
-        (
-            ["no_entity", "no_entity", "no_entity", "no_entity", "person"],
-            ["no_entity", "no_entity", "no_entity", "no_entity", "no_entity"],
-            0.0,
-            0.0,
-            4 / 5,
-        ),
-    ],
-)
-def test_get_evaluation_metrics(
-    targets, predictions, expected_precision, expected_fscore, expected_accuracy
-):
-    report, precision, f1, accuracy = get_evaluation_metrics(
-        targets, predictions, True, exclude_label=NO_ENTITY
-    )
-
-    assert f1 == expected_fscore
-    assert precision == expected_precision
-    assert accuracy == expected_accuracy
-    assert NO_ENTITY not in report
 
 
 def test_nlu_comparison(tmpdir, config_path, config_path_duplicate):
