@@ -84,9 +84,8 @@ class RegexFeaturizer(SparseFeaturizer):
                 )
                 message.add_features(final_sequence_features)
 
-            if (
-                sentence_features is not None
-                and self.component_config["produce_sentence_features"]
+            if sentence_features is not None and (
+                attribute != TEXT or self.component_config["produce_sentence_features"]
             ):
                 final_sentence_features = Features(
                     sentence_features,

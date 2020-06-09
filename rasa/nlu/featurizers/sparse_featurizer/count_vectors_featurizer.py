@@ -487,7 +487,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             if sentence_features[i] is not None:
                 if (
-                    self.component_config["analyzer"] == "word"
+                    attribute != TEXT
                     or self.component_config["produce_sentence_features"]
                 ):
                     final_sentence_features = Features(
