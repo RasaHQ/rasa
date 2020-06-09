@@ -467,7 +467,7 @@ class CRFEntityExtractor(EntityExtractor):
     def _get_dense_features(self, message: Message) -> Optional[List]:
         """Convert dense features to python-crfsuite feature format."""
         features, _ = message.get_dense_features(
-            TEXT, self.component_config["featurizers"], []
+            TEXT, self.component_config["featurizers"]
         )
 
         if features is None:

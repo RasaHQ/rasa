@@ -91,7 +91,7 @@ class Features:
 
         if features.shape[0] != additional_features.shape[0]:
             raise ValueError(
-                f"Cannot concatenate sparse features as sequence dimension does not "
+                f"Cannot combine sparse features as sequence dimensions do not "
                 f"match: {features.shape[0]} != {additional_features.shape[0]}."
             )
 
