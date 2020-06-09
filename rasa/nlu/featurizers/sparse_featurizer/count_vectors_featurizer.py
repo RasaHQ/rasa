@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text, Type
+from typing import Any, Dict, List, Optional, Text, Type, Tuple
 
 from rasa.constants import DOCS_URL_COMPONENTS
 import rasa.utils.common as common_utils
@@ -11,17 +11,17 @@ from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT,
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    SPARSE_FEATURE_NAMES,
     INTENT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     RESPONSE,
+    FEATURIZER_CLASS_ALIAS,
 )
 
 logger = logging.getLogger(__name__)
@@ -53,6 +53,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         "analyzer": "word",  # use 'char' or 'char_wb' for character
         # regular expression for tokens
         # only used if analyzer == 'word'
+        # WARNING this pattern is used during training
+        # but not currently used during inference!
         "token_pattern": r"(?u)\b\w\w+\b",
         # remove accents during the preprocessing step
         "strip_accents": None,  # {'ascii', 'unicode', None}
@@ -406,6 +408,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _create_sequence(
         self, attribute: Text, all_tokens: List[List[Text]]
     ) -> List[Optional[scipy.sparse.coo_matrix]]:
+
         X = []
 
         for i, tokens in enumerate(all_tokens):
@@ -458,14 +461,15 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self, attribute: Text, attribute_features: List, training_data: TrainingData
     ) -> None:
         """Set computed features of the attribute to corresponding message objects"""
-        for i, example in enumerate(training_data.training_examples):
+        for i, message in enumerate(training_data.training_examples):
             # create bag for each example
-            example.set(
-                SPARSE_FEATURE_NAMES[attribute],
-                self._combine_with_existing_sparse_features(
-                    example, attribute_features[i], SPARSE_FEATURE_NAMES[attribute]
-                ),
-            )
+            if attribute_features[i] is not None:
+                final_features = Features(
+                    attribute_features[i],
+                    attribute,
+                    self.component_config[FEATURIZER_CLASS_ALIAS],
+                )
+                message.add_features(final_features)
 
     def train(
         self,
@@ -528,14 +532,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # features shape (1, seq, dim)
         features = self._create_sequence(attribute, [message_tokens])
 
-        message.set(
-            SPARSE_FEATURE_NAMES[attribute],
-            self._combine_with_existing_sparse_features(
-                message,
-                features[0],  # 0 -> batch dimension
-                feature_name=SPARSE_FEATURE_NAMES[attribute],
-            ),
-        )
+        if features[0] is not None:
+            final_features = Features(
+                features[0], attribute, self.component_config[FEATURIZER_CLASS_ALIAS]
+            )
+            message.add_features(final_features)
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""
@@ -662,4 +663,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 meta, vocabulary=vocabulary
             )
 
-        return cls(meta, vectorizers)
+        ftr = cls(meta, vectorizers)
+
+        # make sure the vocabulary has been loaded correctly
+        for attribute in vectorizers:
+            ftr.vectorizers[attribute]._validate_vocabulary()
+
+        return ftr

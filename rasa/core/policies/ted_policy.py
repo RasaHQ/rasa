@@ -195,7 +195,7 @@ class TEDPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
-        **kwargs: Dict[Text, Any],
+        **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
 
@@ -477,7 +477,7 @@ class TED(RasaModel):
         }
 
         # optimizer
-        self._set_optimizer(tf.keras.optimizers.Adam())
+        self.optimizer = tf.keras.optimizers.Adam()
 
         self.all_labels_embed = None
 

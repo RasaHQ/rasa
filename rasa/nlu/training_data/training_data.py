@@ -103,16 +103,6 @@ class TrainingData:
             self.lookup_tables,
         )
 
-    def filter_by_intent(self, intent: Text) -> "TrainingData":
-        """Filter training examples."""
-        raise_warning(
-            "The `filter_by_intent` function is deprecated. "
-            "Please use `filter_training_examples` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.filter_training_examples(lambda ex: intent == ex.get(INTENT))
-
     def __hash__(self) -> int:
         from rasa.core import utils as core_utils
 
@@ -269,16 +259,6 @@ class TrainingData:
 
         return RasaWriter().dumps(self, **kwargs)
 
-    def as_json(self) -> Text:
-
-        raise_warning(
-            "Function 'as_json()' is deprecated and will be removed "
-            "in future versions. Use 'nlu_as_json()' instead.",
-            DeprecationWarning,
-        )
-
-        return self.nlu_as_json()
-
     def nlg_as_markdown(self) -> Text:
         """Generates the markdown representation of the response phrases(NLG) of
         TrainingData."""
@@ -296,17 +276,6 @@ class TrainingData:
         )
 
         return MarkdownWriter().dumps(self)
-
-    def as_markdown(self) -> Text:
-
-        raise_warning(
-            "Function 'as_markdown()' is deprecated and will be removed "
-            "in future versions. Use 'nlu_as_markdown()' and 'nlg_as_markdown()' "
-            "instead.",
-            DeprecationWarning,
-        )
-
-        return self.nlu_as_markdown()
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
 

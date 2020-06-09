@@ -190,7 +190,7 @@ Extracting Places, Dates, People, Organizations
 
 spaCy has excellent pre-trained named-entity recognizers for a few different languages.
 You can test them out in this
-`interactive demo <https://demos.explosion.ai/displacy-ent/>`_.
+`interactive demo <https://explosion.ai/demos/displacy-ent>`_.
 We don't recommend that you try to train your own NER using spaCy,
 unless you have a lot of data and know what you are doing.
 Note that some spaCy models are highly case-sensitive.

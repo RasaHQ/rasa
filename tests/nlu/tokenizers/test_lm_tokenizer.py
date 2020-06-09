@@ -14,7 +14,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 
 
 # TODO: need to fix this failing test
-@pytest.mark.xfail(strict=False)
+@pytest.mark.skip(reason="Results in random crashing of github action workers")
 @pytest.mark.parametrize(
     "model_name, texts, expected_tokens, expected_indices, expected_num_token_ids",
     [
