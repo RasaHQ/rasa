@@ -1,5 +1,7 @@
 import os
 from shutil import copyfile
+
+from rasa.core.test import CONFUSION_MATRIX_STORIES_FILE
 from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
 from rasa.utils.io import list_files, write_yaml_file
 from typing import Callable
@@ -15,7 +17,7 @@ def test_test_core(run_in_simple_project: Callable[..., RunResult]):
 def test_test_core_no_plot(run_in_simple_project: Callable[..., RunResult]):
     run_in_simple_project("test", "core", "--no-plot")
 
-    assert not os.path.exists("results/story_confmat.pdf")
+    assert not os.path.exists(f"results/{CONFUSION_MATRIX_STORIES_FILE}")
 
 
 def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
@@ -101,13 +103,11 @@ def test_test_core_comparison_after_train(
     run_in_simple_project: Callable[..., RunResult]
 ):
     write_yaml_file(
-        {"language": "en", "policies": [{"name": "MemoizationPolicy"}],},
-        "config_1.yml",
+        {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_1.yml"
     )
 
     write_yaml_file(
-        {"language": "en", "policies": [{"name": "MemoizationPolicy"}],},
-        "config_2.yml",
+        {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_2.yml"
     )
 
     run_in_simple_project(
@@ -155,10 +155,10 @@ def test_test_help(run: Callable[..., RunResult]):
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
                  [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
-                 [--evaluate-model-directory] [-u NLU] [--out OUT]
-                 [--successes] [--no-errors] [-c CONFIG [CONFIG ...]]
-                 [--cross-validation] [-f FOLDS] [-r RUNS]
-                 [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
+                 [--evaluate-model-directory] [-u NLU]
+                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
+                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
+                 [--successes] [--no-errors] [--out OUT]
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -171,9 +171,9 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [--successes] [--no-errors] [-c CONFIG [CONFIG ...]]
-                     [--cross-validation] [-f FOLDS] [-r RUNS]
-                     [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]"""
+                     [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
+                     [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
+                     [--successes] [--no-errors]"""
 
     lines = help_text.split("\n")
 
@@ -188,7 +188,8 @@ def test_test_core_help(run: Callable[..., RunResult]):
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
-                      [--evaluate-model-directory] [--no-plot]"""
+                      [--evaluate-model-directory] [--no-plot] [--successes]
+                      [--no-errors]"""
 
     lines = help_text.split("\n")
 
