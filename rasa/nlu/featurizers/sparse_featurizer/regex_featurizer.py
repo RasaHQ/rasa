@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 class RegexFeaturizer(SparseFeaturizer):
+
+    defaults = {"produce_sentence_features": True}
+
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
@@ -68,20 +71,25 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
-            seq_features, cls_features = self._features_for_patterns(message, attribute)
+            sequence_features, sentence_features = self._features_for_patterns(
+                message, attribute
+            )
 
-            if seq_features is not None:
+            if sequence_features is not None:
                 final_sequence_features = Features(
-                    seq_features,
+                    sequence_features,
                     FEATURE_TYPE_SEQUENCE,
                     attribute,
                     self.component_config[FEATURIZER_CLASS_ALIAS],
                 )
                 message.add_features(final_sequence_features)
 
-            if cls_features is not None:
+            if (
+                sentence_features is not None
+                and self.component_config["produce_sentence_features"]
+            ):
                 final_sentence_features = Features(
-                    cls_features,
+                    sentence_features,
                     FEATURE_TYPE_SENTENCE,
                     attribute,
                     self.component_config[FEATURIZER_CLASS_ALIAS],
@@ -119,10 +127,10 @@ class RegexFeaturizer(SparseFeaturizer):
             # nothing to featurize
             return None, None
 
-        seq_length = len(tokens)
+        sequence_length = len(tokens)
 
-        seq_vec = np.zeros([seq_length - 1, len(self.known_patterns)])
-        cls_vec = np.zeros([1, len(self.known_patterns)])
+        sequence_features = np.zeros([sequence_length - 1, len(self.known_patterns)])
+        sentence_features = np.zeros([1, len(self.known_patterns)])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
             matches = re.finditer(pattern["pattern"], message.text)
@@ -141,14 +149,17 @@ class RegexFeaturizer(SparseFeaturizer):
                 for match in matches:
                     if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
-                        seq_vec[token_index][pattern_index] = 1.0
+                        sequence_features[token_index][pattern_index] = 1.0
                         if attribute in [RESPONSE, TEXT]:
                             # CLS token vector should contain all patterns
-                            cls_vec[0][pattern_index] = 1.0
+                            sentence_features[0][pattern_index] = 1.0
 
                 t.set("pattern", patterns)
 
-        return scipy.sparse.coo_matrix(seq_vec), scipy.sparse.coo_matrix(cls_vec)
+        return (
+            scipy.sparse.coo_matrix(sequence_features),
+            scipy.sparse.coo_matrix(sentence_features),
+        )
 
     def _generate_lookup_regex(
         self, lookup_table: Dict[Text, Union[Text, List[Text]]]

@@ -25,6 +25,8 @@ import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
+TF_HUB_MODULE_URL = "http://models.poly-ai.com/convert/v1/model.tar.gz"
+
 
 class ConveRTFeaturizer(DenseFeaturizer):
     """Featurizer using ConveRT model.
@@ -46,54 +48,52 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         super(ConveRTFeaturizer, self).__init__(component_config)
 
-    def __get_signature(self, signature: Text, module: Any) -> NoReturn:
+        self.module = train_utils.load_tf_hub_model(TF_HUB_MODULE_URL)
+
+    def __get_signature(self, signature: Text) -> NoReturn:
         """Retrieve a signature from a (hopefully loaded) TF model."""
 
-        if not module:
+        if not self.module:
             raise Exception(
                 "ConveRTFeaturizer needs a proper loaded tensorflow module when used. "
                 "Make sure to pass a module when training and using the component."
             )
 
-        return module.signatures[signature]
+        return self.module.signatures[signature]
 
     def _compute_features(
-        self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
+        self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> Tuple[np.ndarray, np.ndarray]:
-        sentence_encodings = self._compute_sentence_encodings(
-            batch_examples, module, attribute
-        )
+        sentence_encodings = self._compute_sentence_encodings(batch_examples, attribute)
 
         (
             sequence_encodings,
             number_of_tokens_in_sentence,
-        ) = self._compute_sequence_encodings(batch_examples, module, attribute)
+        ) = self._compute_sequence_encodings(batch_examples, attribute)
 
         return self._combine_encodings(
             sentence_encodings, sequence_encodings, number_of_tokens_in_sentence
         )
 
     def _compute_sentence_encodings(
-        self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
+        self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> np.ndarray:
         # Get text for attribute of each example
         batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
-        sentence_encodings = self._sentence_encoding_of_text(
-            batch_attribute_text, module
-        )
+        sentence_encodings = self._sentence_encoding_of_text(batch_attribute_text)
 
         # convert them to a sequence of 1
         return np.reshape(sentence_encodings, (len(batch_examples), 1, -1))
 
-    def _tokenize(self, sentence: Text, module: Any) -> Any:
-        signature = self.__get_signature("tokenize", module)
+    def _tokenize(self, sentence: Text) -> Any:
+        signature = self.__get_signature("tokenize")
         return signature(tf.convert_to_tensor([sentence]))["default"].numpy()
 
-    def add_number_of_sub_tokens(self, tokens: List[Token], module: Any) -> List[Token]:
+    def add_number_of_sub_tokens(self, tokens: List[Token]) -> List[Token]:
         """Tokenize the text using the ConveRT model."""
         for token in tokens:
             # use ConveRT model to tokenize the text
-            split_token_strings = self._tokenize(token.text, module)[0]
+            split_token_strings = self._tokenize(token.text)[0]
 
             # clean tokens (remove special chars and empty tokens)
             split_token_strings = self._clean_tokens(split_token_strings)
@@ -109,14 +109,14 @@ class ConveRTFeaturizer(DenseFeaturizer):
         return [string for string in tokens if string]
 
     def _compute_sequence_encodings(
-        self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
+        self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
             train_utils.tokens_without_cls(example, attribute)
             for example in batch_examples
         ]
         list_of_tokens = [
-            self.add_number_of_sub_tokens(tokens, module) for tokens in list_of_tokens
+            self.add_number_of_sub_tokens(tokens) for tokens in list_of_tokens
         ]
 
         number_of_tokens_in_sentence = [
@@ -127,7 +127,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         # the returned embeddings from ConveRT matches the length of the tokens
         # (including sub-tokens)
         tokenized_texts = self._tokens_to_text(list_of_tokens)
-        token_features = self._sequence_encoding_of_text(tokenized_texts, module)
+        token_features = self._sequence_encoding_of_text(tokenized_texts)
 
         # ConveRT might split up tokens into sub-tokens
         # take the mean of the sub-token vectors and use that as the token vector
@@ -169,12 +169,12 @@ class ConveRTFeaturizer(DenseFeaturizer):
         not the same as the end value of the second token."""
         return [" ".join(t.text for t in tokens) for tokens in list_of_tokens]
 
-    def _sentence_encoding_of_text(self, batch: List[Text], module: Any) -> np.ndarray:
-        signature = self.__get_signature("default", module)
+    def _sentence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
+        signature = self.__get_signature("default")
         return signature(tf.convert_to_tensor(batch))["default"].numpy()
 
-    def _sequence_encoding_of_text(self, batch: List[Text], module: Any) -> np.ndarray:
-        signature = self.__get_signature("encode_sequence", module)
+    def _sequence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
+        signature = self.__get_signature("encode_sequence")
 
         return signature(tf.convert_to_tensor(batch))["sequence_encoding"].numpy()
 
@@ -182,8 +182,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
         self,
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
-        *,
-        tf_hub_module: Any = None,
         **kwargs: Any,
     ) -> None:
         if config is not None and config.language != "en":
@@ -236,12 +234,8 @@ class ConveRTFeaturizer(DenseFeaturizer):
                     )
                     ex.add_features(sentence_features)
 
-    def process(
-        self, message: Message, *, tf_hub_module: Any = None, **kwargs: Any
-    ) -> None:
-        sequence_features, sentence_features = self._compute_features(
-            [message], tf_hub_module
-        )
+    def process(self, message: Message, **kwargs: Any) -> None:
+        sequence_features, sentence_features = self._compute_features([message])
 
         final_sequence_features = Features(
             sequence_features[0],

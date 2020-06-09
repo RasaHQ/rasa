@@ -81,6 +81,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings,
+        "produce_sentence_features": True,
     }
 
     @classmethod
@@ -470,10 +471,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         attribute: Text,
         sequence_features: List,
         sentence_features: List,
-        training_data: TrainingData,
+        examples: List[Message],
     ) -> None:
         """Set computed features of the attribute to corresponding message objects"""
-        for i, message in enumerate(training_data.training_examples):
+        for i, message in enumerate(examples):
             # create bag for each example
             if sequence_features[i] is not None:
                 final_sequence_features = Features(
@@ -483,14 +484,19 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     self.component_config[FEATURIZER_CLASS_ALIAS],
                 )
                 message.add_features(final_sequence_features)
+
             if sentence_features[i] is not None:
-                final_sentence_features = Features(
-                    sentence_features[i],
-                    FEATURE_TYPE_SENTENCE,
-                    attribute,
-                    self.component_config[FEATURIZER_CLASS_ALIAS],
-                )
-                message.add_features(final_sentence_features)
+                if (
+                    self.component_config["analyzer"] == "word"
+                    or self.component_config["produce_sentence_features"]
+                ):
+                    final_sentence_features = Features(
+                        sentence_features[i],
+                        FEATURE_TYPE_SENTENCE,
+                        attribute,
+                        self.component_config[FEATURIZER_CLASS_ALIAS],
+                    )
+                    message.add_features(final_sentence_features)
 
     def train(
         self,
@@ -531,7 +537,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             if sequence_features and sentence_features:
                 self._set_attribute_features(
-                    attribute, sequence_features, sentence_features, training_data
+                    attribute,
+                    sequence_features,
+                    sentence_features,
+                    training_data.training_examples,
                 )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -551,24 +560,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         )
 
         # features shape (1, seq, dim)
-        seq_features, cls_features = self._create_sequence(attribute, [message_tokens])
+        sequence_features, sentence_features = self._create_sequence(
+            attribute, [message_tokens]
+        )
 
-        if seq_features[0] is not None:
-            final_sequence_features = Features(
-                seq_features[0],
-                FEATURE_TYPE_SEQUENCE,
-                attribute,
-                self.component_config[FEATURIZER_CLASS_ALIAS],
-            )
-            message.add_features(final_sequence_features)
-        if cls_features[0] is not None:
-            final_sentence_features = Features(
-                cls_features[0],
-                FEATURE_TYPE_SENTENCE,
-                attribute,
-                self.component_config[FEATURIZER_CLASS_ALIAS],
-            )
-            message.add_features(final_sentence_features)
+        self._set_attribute_features(
+            attribute, sequence_features, sentence_features, [message]
+        )
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""

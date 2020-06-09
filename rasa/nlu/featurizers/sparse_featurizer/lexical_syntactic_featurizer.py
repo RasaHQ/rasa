@@ -52,7 +52,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             ["low", "title", "upper"],
             ["BOS", "EOS", "low", "upper", "title", "digit"],
             ["low", "title", "upper"],
-        ]
+        ],
+        "produce_sentence_features": True,
     }
 
     function_dict = {
@@ -193,7 +194,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             TEXT,
             self.component_config[FEATURIZER_CLASS_ALIAS],
         )
-        message.add_features(final_sentence_features)
+        if self.component_config["produce_sentence_features"]:
+            message.add_features(final_sentence_features)
 
     def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
         """Convert words into discrete features."""
