@@ -1749,6 +1749,12 @@ DIETClassifier
          |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
          |                                 |                  | training step ('minibatch').                                 |
          +---------------------------------+------------------+--------------------------------------------------------------+
+         | checkpoint_model                | False            | Save the best performing model during training. Models are   |
+         |                                 |                  | stored to the location specified by `--out`. Only the one    |
+         |                                 |                  | best model will be saved.                                    |
+         |                                 |                  | Requires `evaluate_on_number_of_examples > 0` and            |
+         |                                 |                  | `evaluate_every_number_of_epochs > 0`                        |
+         +---------------------------------+------------------+--------------------------------------------------------------+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
                   be between ``-1`` and ``1``.
