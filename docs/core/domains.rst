@@ -217,7 +217,28 @@ output payloads that will only work in certain channels.
     - text: "Which game would you like to play?"
       channel: "slack"
       custom:
-        - # payload for Slack dropdown menu to choose a game
+        blocks:
+        - type: actions
+          elements:
+          - type: button
+            text:
+              type: plain_text
+              emoji: true
+              text: "Chess :crown:"
+            value: '/inform{"game": "chess"}'
+          - type: button
+            text:
+              type: plain_text
+              emoji: true
+              text: "Checkers :checkered_flag:"
+            value: '/inform{"game": "checkers"}'
+          - type: button
+            text:
+              type: plain_text
+              emoji: true
+              text: "Fortnite :european_castle:"
+            value: '/inform{"game": "fortnite"}'
+            style: danger
     - text: "Which game would you like to play?"
       buttons:
       - title: "Chess"
