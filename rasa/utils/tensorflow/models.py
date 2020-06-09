@@ -68,7 +68,7 @@ class RasaModel(tf.keras.models.Model):
             else None
         )
 
-        self._set_up_tensorboard_writer(tensorboard_log_level, tensorboard_log_dir)
+        self._set_up_tensorboard_writer()
 
     def _set_up_tensorboard_writer(self) -> None:
         if self.tensorboard_log_dir is not None:
@@ -287,7 +287,7 @@ class RasaModel(tf.keras.models.Model):
         ckp_path = Path(ckp_dir)
 
         for f in ckp_path.glob(f"{ckp_file}*"):
-            shutil.move(f, model_file_name + f.suffix)
+            shutil.move(str(f.absolute()), model_file_name + f.suffix)
 
         # Generate the tf2 checkpoint file
         dest_path, dest_file = os.path.split(model_file_name)
@@ -441,25 +441,25 @@ class RasaModel(tf.keras.models.Model):
                     if metric.name in self.metrics_to_log:
                         tf.summary.scalar(metric.name, metric.result(), step=step)
 
-    def _update_best_metrics_so_far(self, curr_results: Dict[Text, float]) -> bool:
+    def _update_best_metrics_so_far(self, curr_results: Dict[Text, Text]) -> bool:
         if len(self.best_metrics_so_far) <= 0:  # Init with actual result keys
             keys = filter(
                 lambda k: True if (k.endswith("_acc") or k.endswith("_f1")) else False,
                 curr_results.keys(),
             )
             for key in keys:
-                self.best_metrics_so_far[key] = curr_results[key]
+                self.best_metrics_so_far[key] = float(curr_results[key])
             all_improved = True
         else:
             all_improved = all(
                 [
-                    curr_results[key] > self.best_metrics_so_far[key]
+                    float(curr_results[key]) > self.best_metrics_so_far[key]
                     for key in self.best_metrics_so_far.keys()
                 ]
             )
             if all_improved:
                 for key in self.best_metrics_so_far.keys():
-                    self.best_metrics_so_far[key] = curr_results[key]
+                    self.best_metrics_so_far[key] = float(curr_results[key])
         return all_improved
 
     @staticmethod
