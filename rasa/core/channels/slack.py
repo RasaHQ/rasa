@@ -413,8 +413,6 @@ class SlackInput(InputChannel):
                 event = output.get("event", {})
                 user_message = event.get("text", "")
                 sender_id = event.get("user", "")
-
-
                 metadata = self.get_metadata(request)
 
                 if "challenge" in output:
