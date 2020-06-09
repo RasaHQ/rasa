@@ -149,7 +149,6 @@ class RasaModel(tf.keras.models.Model):
         ) = self._get_tf_evaluation_functions(eager, evaluation_model_data)
 
         val_results = {}  # validation is not performed every epoch
-        best_model_file = None
         progress_bar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         training_steps = 0
