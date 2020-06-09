@@ -416,14 +416,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 return ex
         return None
 
-    @staticmethod
     def _check_labels_features_exist(
-        labels_example: List[Message], attribute: Text
+        self, labels_example: List[Message], attribute: Text
     ) -> bool:
         """Checks if all labels have features set."""
 
         return all(
-            label_example.features_present(attribute)
+            label_example.features_present(
+                attribute, self.component_config[FEATURIZERS]
+            )
             for label_example in labels_example
         )
 

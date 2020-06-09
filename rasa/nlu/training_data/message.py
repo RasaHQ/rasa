@@ -205,8 +205,8 @@ class Message:
         )
 
         return (
-            len(sequence_sparse_features) > 0 and len(sentence_sparse_features) > 0
-        ) or (len(sequence_dense_features) > 0 and len(sentence_dense_features) > 0)
+            len(sequence_sparse_features) > 0 or len(sentence_sparse_features) > 0
+        ) or (len(sequence_dense_features) > 0 or len(sentence_dense_features) > 0)
 
     def _filter_dense_features(
         self, attribute: Text, featurizers: List[Text]
