@@ -40,7 +40,7 @@ def convert_duckling_format_to_rasa(
             "start": match["start"],
             "end": match["end"],
             "text": match.get("body", match.get("text", None)),
-            "value": value,
+            "value": str(value),
             "confidence": 1.0,
             "additional_info": match["value"],
             "entity": match["dim"],
