@@ -19,7 +19,6 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     TEXT,
-    DENSE_FEATURE_NAMES,
     ENTITIES,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
@@ -95,6 +94,9 @@ class CRFEntityExtractor(EntityExtractor):
         "L1_c": 0.1,
         # weight of the L2 regularization
         "L2_c": 0.1,
+        # Name of dense featurizers to use.
+        # If list is empty all available dense features are used.
+        "featurizers": [],
     }
 
     function_dict: Dict[Text, Callable[[CRFToken], Any]] = {
@@ -301,7 +303,7 @@ class CRFEntityExtractor(EntityExtractor):
         cached_component: Optional["CRFEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "CRFEntityExtractor":
-        from sklearn.externals import joblib
+        import joblib
 
         file_names = meta.get("files")
         entity_taggers = {}
@@ -333,7 +335,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         Returns the metadata necessary to load the model again."""
 
-        from sklearn.externals import joblib
+        import joblib
 
         file_names = {}
 
@@ -462,21 +464,20 @@ class CRFEntityExtractor(EntityExtractor):
             return message.get(TOKENS_NAMES[TEXT])[idx].get("pattern", {})
         return {}
 
-    @staticmethod
-    def _get_dense_features(message: Message) -> Optional[List[Any]]:
+    def _get_dense_features(self, message: Message) -> Optional[List]:
         """Convert dense features to python-crfsuite feature format."""
-
-        features = message.get(DENSE_FEATURE_NAMES[TEXT])
+        features = message.get_dense_features(
+            TEXT, self.component_config["featurizers"]
+        )
 
         if features is None:
             return None
 
-        tokens = message.get(TOKENS_NAMES[TEXT], [])
+        tokens = message.get(TOKENS_NAMES[TEXT])
         if len(tokens) != len(features):
             common_utils.raise_warning(
-                f"Number of features ({len(features)}) for attribute "
-                f"'{DENSE_FEATURE_NAMES[TEXT]}' "
-                f"does not match number of tokens ({len(tokens)}).",
+                f"Number of dense features ({len(features)}) for attribute "
+                f"'TEXT' does not match number of tokens ({len(tokens)}).",
                 docs=DOCS_URL_COMPONENTS + "#crfentityextractor",
             )
             return None
@@ -490,6 +491,7 @@ class CRFEntityExtractor(EntityExtractor):
             }
             converted = {"text_dense_features": feature_dict}
             features_out.append(converted)
+
         return features_out
 
     def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:

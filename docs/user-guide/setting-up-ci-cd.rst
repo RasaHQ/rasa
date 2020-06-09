@@ -28,7 +28,7 @@ to your assistant and efficiently test and deploy those changes.
 This guide will cover **what** should go in a CI/CD pipeline, specific to a
 Rasa project. **How** you implement that pipeline is up to you.
 There are many CI/CD tools out there, such as `GitHub Actions <https://github.com/features/actions>`_,
-`GitLab CI/CD <https://docs.gitlab.com/ee/ci/>`_, `Jenkins <https://jenkins.io/doc/>`_, and
+`GitLab CI/CD <https://docs.gitlab.com/ee/ci/>`_, `Jenkins <https://www.jenkins.io/doc/>`_, and
 `CircleCI <https://circleci.com/docs/2.0/>`_. We recommend choosing a tool that integrates with
 whatever Git repository you use.
 
@@ -208,7 +208,7 @@ Example CI/CD pipelines
 As examples, see the CI/CD pipelines for
 `Sara <https://github.com/RasaHQ/rasa-demo/blob/master/.github/workflows/build_and_deploy.yml>`_,
 the Rasa assistant that you can talk to in the Rasa Docs, and
-`Carbon Bot <https://github.com/RasaHQ/carbon-assistant/blob/master/.github/workflows/model_ci.yml>`_.
+`Carbon Bot <https://github.com/RasaHQ/carbon-bot/blob/master/.github/workflows/model_ci.yml>`_.
 Both use `Github Actions <https://github.com/features/actions>`_ as a CI/CD tool.
 
 These examples are just two of many possibilities. If you have a CI/CD setup you like, please

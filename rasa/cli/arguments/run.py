@@ -1,4 +1,5 @@
 import argparse
+from typing import Union
 
 from rasa.cli.arguments.default_arguments import add_model_param, add_endpoint_param
 from rasa.core import constants
@@ -15,6 +16,18 @@ def set_run_action_arguments(parser: argparse.ArgumentParser):
     import rasa_sdk.cli.arguments as sdk
 
     sdk.add_endpoint_arguments(parser)
+
+
+# noinspection PyProtectedMember
+def add_port_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]):
+    """Add an argument for port."""
+    parser.add_argument(
+        "-p",
+        "--port",
+        default=constants.DEFAULT_SERVER_PORT,
+        type=int,
+        help="Port to run the server at.",
+    )
 
 
 def add_server_arguments(parser: argparse.ArgumentParser):
@@ -34,13 +47,9 @@ def add_server_arguments(parser: argparse.ArgumentParser):
     )
 
     server_arguments = parser.add_argument_group("Server Settings")
-    server_arguments.add_argument(
-        "-p",
-        "--port",
-        default=constants.DEFAULT_SERVER_PORT,
-        type=int,
-        help="Port to run the server at.",
-    )
+
+    add_port_argument(server_arguments)
+
     server_arguments.add_argument(
         "-t",
         "--auth-token",

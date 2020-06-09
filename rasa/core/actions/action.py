@@ -178,7 +178,8 @@ class Action:
                 ``tracker.get_slot(slot_name)`` and the most recent user
                 message is ``tracker.latest_message.text``.
             domain (Domain): the bot's domain
-
+            metadata: dictionary that can be sent to action server with custom
+            data.
         Returns:
             List[Event]: A list of :class:`rasa.core.events.Event` instances
         """
@@ -225,11 +226,12 @@ class ActionRetrieveResponse(Action):
             return []
 
         logger.debug(f"Picking response from selector of type {query_key}")
+        selected = response_selector_properties[query_key]
         message = {
-            "text": response_selector_properties[query_key][
-                OPEN_UTTERANCE_PREDICTION_KEY
-            ]["name"]
+            "text": selected[OPEN_UTTERANCE_PREDICTION_KEY]["name"],
+            "template_name": selected["full_retrieval_intent"],
         }
+
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
@@ -262,10 +264,11 @@ class ActionUtterTemplate(Action):
         if message is None:
             if not self.silent_fail:
                 logger.error(
-                    "Couldn't create message for template '{}'."
+                    "Couldn't create message for response '{}'."
                     "".format(self.template_name)
                 )
             return []
+        message["template_name"] = self.template_name
 
         return [create_bot_utterance(message)]
 
@@ -292,7 +295,7 @@ class ActionBack(ActionUtterTemplate):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        # only utter the template if it is available
+        # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [UserUtteranceReverted(), UserUtteranceReverted()]
@@ -320,7 +323,7 @@ class ActionListen(Action):
 class ActionRestart(ActionUtterTemplate):
     """Resets the tracker to its initial state.
 
-    Utters the restart template if available."""
+    Utters the restart response if available."""
 
     def name(self) -> Text:
         return ACTION_RESTART_NAME
@@ -337,7 +340,7 @@ class ActionRestart(ActionUtterTemplate):
     ) -> List[Event]:
         from rasa.core.events import Restarted
 
-        # only utter the template if it is available
+        # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [Restarted()]
@@ -349,6 +352,9 @@ class ActionSessionStart(Action):
     Takes all `SlotSet` events from the previous session and applies them to the new
     session.
     """
+
+    # Optional arbitrary metadata that can be passed to the SessionStarted event.
+    metadata: Optional[Dict[Text, Any]] = None
 
     def name(self) -> Text:
         return ACTION_SESSION_START_NAME
@@ -376,7 +382,7 @@ class ActionSessionStart(Action):
     ) -> List[Event]:
         from rasa.core.events import SessionStarted
 
-        _events = [SessionStarted()]
+        _events = [SessionStarted(metadata=self.metadata)]
 
         if domain.session_config.carry_over_slots:
             _events.extend(self._slot_set_events_from_tracker(tracker))
@@ -405,7 +411,7 @@ class ActionDefaultFallback(ActionUtterTemplate):
     ) -> List[Event]:
         from rasa.core.events import UserUtteranceReverted
 
-        # only utter the template if it is available
+        # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [UserUtteranceReverted()]
@@ -505,6 +511,7 @@ class RemoteAction(Action):
                 )
                 if not draft:
                     continue
+                draft["template_name"] = template
             else:
                 draft = {}
 
@@ -719,6 +726,7 @@ class ActionDefaultAskAffirmation(Action):
                 {"title": "Yes", "payload": f"/{intent_to_affirm}"},
                 {"title": "No", "payload": f"/{USER_INTENT_OUT_OF_SCOPE}"},
             ],
+            "template_name": self.name(),
         }
 
         return [create_bot_utterance(message)]

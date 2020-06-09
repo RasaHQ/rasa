@@ -198,7 +198,7 @@ to the left of the plot.
     is that an entity cannot stop or start inside a token.
     For example, if you have an example for a ``name`` entity
     like ``[Brian](name)'s house``, this is only valid if your tokenizer splits ``Brian's`` into
-    multiple tokens. A whitespace tokenizer would not work in this case.
+    multiple tokens.
 
 
 Response Selection
@@ -313,11 +313,7 @@ This will evaluate each of the models on the provided stories
 (can be either training or test set) and plot some graphs
 to show you which policy performs best. By evaluating on the full set of stories, you
 can measure how well Rasa Core is predicting the held-out stories.
-
 To compare single policies create config files containing only one policy each.
-If you're not sure which policies to compare, we'd recommend trying out the
-``EmbeddingPolicy`` and the ``KerasPolicy`` to see which one works better for
-you.
 
 .. note::
     This training process can take a long time, so we'd suggest letting it run

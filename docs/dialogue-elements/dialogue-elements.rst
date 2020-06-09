@@ -16,7 +16,7 @@ issues and new features.
 
 - highest level: user goals
 - middle level: dialogue elements
-- lowest level: intents, entities, actions, slots, and templates.
+- lowest level: intents, entities, actions, slots, and responses.
 
 
 

@@ -61,7 +61,7 @@ With the ``pretrained_embeddings_spacy`` :ref:`pipeline <section_pretrained_embe
 `pre-trained language models <https://spacy.io/usage/models#languages>`_ or load fastText vectors, which are available
 for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md>`_. If you want
 to incorporate a custom model you've found into spaCy, check out their page on
-`adding languages <https://spacy.io/docs/usage/adding-languages>`_. As described in the documentation, you need to
+`adding languages <https://spacy.io/usage/adding-languages/>`_. As described in the documentation, you need to
 register your language model and link it to the language identifier, which will allow Rasa to load and use your new language
 by passing in your language identifier as the ``language`` option.
 

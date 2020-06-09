@@ -7,14 +7,16 @@ import os
 import shutil
 from collections import defaultdict
 from pathlib import Path
-from typing import List, Text, Dict, Tuple, Union, Optional, Callable
+from typing import List, Text, Dict, Tuple, Union, Optional, Callable, TYPE_CHECKING
 
-from tensorflow_core.python.ops.summary_ops_v2 import ResourceSummaryWriter
 from tqdm import tqdm
 from rasa.constants import NLU_CHECKPOINT_MODEL_NAME
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import SEQUENCE, TENSORBOARD_LOG_LEVEL
+
+if TYPE_CHECKING:
+    from tensorflow.python.ops.summary_ops_v2 import ResourceSummaryWriter
 
 logger = logging.getLogger(__name__)
 
@@ -342,10 +344,9 @@ class RasaModel(tf.keras.models.Model):
         batch_size: int,
         training: bool,
         offset: int,
-        writer: Optional[ResourceSummaryWriter] = None,
+        writer: Optional["ResourceSummaryWriter"] = None,
     ) -> int:
         """Run on batches"""
-
         self.reset_metrics()
 
         step = offset
@@ -433,7 +434,7 @@ class RasaModel(tf.keras.models.Model):
         }
 
     def _log_metrics_for_tensorboard(
-        self, step: int, writer: Optional[ResourceSummaryWriter] = None
+        self, step: int, writer: Optional["ResourceSummaryWriter"] = None
     ) -> None:
         if writer is not None:
             with writer.as_default():
