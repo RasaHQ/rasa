@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Text, Dict, Any, List
 
 from rasa.cli import utils as cli_utils
-from rasa.constants import CONFIG_AUTOCONFIGURABLE_KEYS
+from rasa.constants import CONFIG_AUTOCONFIGURABLE_KEYS, CONFIG_KEYS
 from rasa.utils import io as io_utils
 
 logger = logging.getLogger(__name__)
@@ -113,7 +113,6 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
 
     add_comments = []
     for key in autoconfigured:
-        print(key)
         comment = (
             f"# Configuration for {key} was provided by the auto "
             f"configuration.\n"
@@ -124,11 +123,11 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
         add_comments.append(comment)
 
     io_utils.comment_out_section_in_file(
-        config_file, list(autoconfigured), add_comments
+        config_file, list(autoconfigured), CONFIG_KEYS, add_comments
     )
 
     if autoconfigured:
         cli_utils.print_info(
-            f"Automatically configured {autoconfigured}. The configuration was written "
-            f"into the config file at {config_file}"
+            f"Configuration of {autoconfigured} was chosen automatically. It was "
+            f"written into the config file at {config_file}."
         )
