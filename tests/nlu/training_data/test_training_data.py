@@ -7,7 +7,7 @@ from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.loading import guess_format, UNK, load_data
+from rasa.nlu.training_data.loading import guess_format, UNK, load_data, RASA_YAML
 from rasa.nlu.training_data.util import get_file_format
 import rasa.utils.io as io_utils
 
@@ -494,6 +494,10 @@ def test_get_file_format():
     fformat = get_file_format("examples/moodbot/data/nlu.md")
 
     assert fformat == "md"
+
+    fformat = get_file_format("data/rasa_yaml_examples")
+
+    assert fformat == RASA_YAML
 
     with pytest.raises(AttributeError):
         get_file_format("path-does-not-exists")

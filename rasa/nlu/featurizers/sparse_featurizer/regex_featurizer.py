@@ -158,12 +158,12 @@ class RegexFeaturizer(SparseFeaturizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
-            common_utils.raise_warning(
-                "Directly including lookup tables as a list is deprecated since Rasa "
-                "1.6.",
-                FutureWarning,
-                docs=DOCS_URL_TRAINING_DATA_NLU + "#lookup-tables",
-            )
+            # common_utils.raise_warning(
+            #     "Directly including lookup tables as a list is deprecated since Rasa "
+            #     "1.6.",
+            #     FutureWarning,
+            #     docs=DOCS_URL_TRAINING_DATA_NLU + "#lookup-tables",
+            # )
 
         # otherwise it's a file path.
         else:

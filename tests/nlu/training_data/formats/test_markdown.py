@@ -131,22 +131,6 @@ def test_markdown_entity_regex(
     assert actual_example.text == expected_text
 
 
-def test_deprecation_warning_logged():
-    r = MarkdownReader()
-
-    md = """
-## intent:test-intent
-- I want to go to [LA](city:Los Angeles)
-    """
-
-    with pytest.warns(
-        FutureWarning,
-        match=r"You are using the deprecated training data format to declare "
-        r"synonyms.*",
-    ):
-        r.reads(md)
-
-
 def test_markdown_empty_section():
     data = load_data("data/test/markdown_single_sections/empty_section.md")
     assert data.regex_features == [{"name": "greet", "pattern": r"hey[^\s]*"}]
