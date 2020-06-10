@@ -405,8 +405,7 @@ class SlackInput(InputChannel):
                 "users": slack_event.get("authed_users"),
             }
 
-        else:
-            return {}
+        return {}
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
