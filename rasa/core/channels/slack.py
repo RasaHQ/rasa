@@ -384,7 +384,6 @@ class SlackInput(InputChannel):
         if request.json:
             slack_event = request.json
             event = slack_event.get("event", {})
-            logger.debug(f"get_metadata, event: {event}")
             ts = event.get("thread_ts", event.get("ts"))
 
             return {
@@ -392,11 +391,10 @@ class SlackInput(InputChannel):
                 "ts": ts,
                 "users": slack_event.get("authed_users"),
             }
-  
+
         if request.form:
             output = request.form
             payload = json.loads(output["payload"][0])
-            logger.debug(f"get_metadata, payload: {payload}")
             message = payload.get("message", {})
             ts = message.get("thread_ts", message.get("ts"))
             return {
