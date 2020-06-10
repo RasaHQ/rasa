@@ -31,3 +31,16 @@ def test_story_file_with_minimal_story_is_story_file(tmpdir: Path):
 def test_default_story_files_are_story_files():
     for fn in glob.glob(os.path.join("data", "test_stories", "*")):
         assert is_story_file(fn)
+
+
+def test_nlu_file_is_not_story_file(tmpdir: Path):
+    nlu_path = tmpdir / "nlu.md"
+    nlu_data = """
+## intent: greet
+- hello
+- hi
+- hallo
+    """
+    write_text_file(nlu_data, nlu_path)
+
+    assert not is_story_file(str(nlu_path))
