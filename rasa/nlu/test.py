@@ -450,7 +450,11 @@ def evaluate_response_selections(
             confusion_matrix_filename = os.path.join(
                 output_directory, confusion_matrix_filename
             )
-        _labels = [response_to_intent_target[label] for label in labels]
+        _labels = [
+            response_to_intent_target[label]
+            for label in labels
+            if label in response_to_intent_target
+        ]
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
             classes=_labels,
