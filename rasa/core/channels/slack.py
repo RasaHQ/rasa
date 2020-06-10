@@ -393,7 +393,7 @@ class SlackInput(InputChannel):
                 "ts": ts,
                 "users": payload.get("user", {}).get("id"),
             }
-        elif request.json:
+        if request.json:
             slack_event = request.json
             event = slack_event.get("event", {})
             logger.debug(f"get_metadata, event: {event}")
