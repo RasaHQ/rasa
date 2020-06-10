@@ -419,7 +419,7 @@ class SlackInput(InputChannel):
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request) -> HTTPResponse:
-            if request.form and "payload" in request.form:
+            if request.form:
                 output = request.form
                 payload = json.loads(output["payload"][0])
 
