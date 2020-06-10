@@ -9,11 +9,7 @@ exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-<<<<<<< HEAD
-version = "1.10.2"
-=======
 version = "1.11.0a2"
->>>>>>> 2725bdaaeda7bb3571358736d6d03326daf1c2e4
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -103,7 +99,7 @@ terminaltables = "~3.1.0"
 sanic = "^19.12.2"
 sanic-cors = "^0.10.0b1"
 sanic-jwt = ">=1.3.2,<1.5.0"
-cloudpickle = ">=1.2,<1.4"
+cloudpickle = ">=1.2,<1.5"
 multidict = "^4.6"
 aiohttp = "~3.6"
 questionary = "~1.5.1"
@@ -133,7 +129,7 @@ pytest-cov = "^2.8.1"
 pytest-localserver = "^0.5.0"
 pytest-sanic = "^1.6.1"
 pytest-asyncio = "^0.10.0"
-pytest-xdist = "^1.31.0"
+pytest-xdist = "^1.32.0"
 pytest = "^5.3.4"
 freezegun = "^0.3.14"
 responses = "^0.10.9"
@@ -146,11 +142,7 @@ black = "^19.10b0"
 flake8 = "^3.7.9"
 pytype = "^2020.6.1"
 google-cloud-storage = "^1.25.0"
-<<<<<<< HEAD
-azure-storage-blob = "^12.1.0"
-=======
 azure-storage-blob = "<12.4.0"
->>>>>>> 2725bdaaeda7bb3571358736d6d03326daf1c2e4
 coveralls = "^2.0.0"
 towncrier = "^19.2.0"
 toml = "^0.10.0"
