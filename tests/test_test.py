@@ -1,9 +1,12 @@
 from pathlib import Path
+
+import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 import rasa.cli.utils
+from rasa.nlu.test import NO_ENTITY
 
 
 def monkeypatch_get_latest_model(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
@@ -64,3 +67,62 @@ def test_get_sanitized_model_directory_when_passing_other_input(
     captured = capsys.readouterr()
     assert not captured.out
     assert new_modeldir == modeldir
+
+
+@pytest.mark.parametrize(
+    "targets,predictions,expected_precision,expected_fscore,expected_accuracy",
+    [
+        (
+            ["no_entity", "location", "no_entity", "location", "no_entity"],
+            ["no_entity", "location", "no_entity", "no_entity", "person"],
+            1.0,
+            0.6666666666666666,
+            3 / 5,
+        ),
+        (
+            ["no_entity", "no_entity", "no_entity", "no_entity", "person"],
+            ["no_entity", "no_entity", "no_entity", "no_entity", "no_entity"],
+            0.0,
+            0.0,
+            4 / 5,
+        ),
+    ],
+)
+def test_get_evaluation_metrics(
+    targets, predictions, expected_precision, expected_fscore, expected_accuracy
+):
+    from rasa.test import get_evaluation_metrics
+
+    report, precision, f1, accuracy = get_evaluation_metrics(
+        targets, predictions, True, exclude_label=NO_ENTITY
+    )
+
+    assert f1 == expected_fscore
+    assert precision == expected_precision
+    assert accuracy == expected_accuracy
+    assert NO_ENTITY not in report
+
+
+@pytest.mark.parametrize(
+    "targets,exclude_label,expected",
+    [
+        (
+            ["no_entity", "location", "location", "location", "person"],
+            NO_ENTITY,
+            ["location", "person"],
+        ),
+        (
+            ["no_entity", "location", "location", "location", "person"],
+            None,
+            ["no_entity", "location", "person"],
+        ),
+        (["no_entity"], NO_ENTITY, []),
+        (["location", "location", "location"], NO_ENTITY, ["location"]),
+        ([], None, []),
+    ],
+)
+def test_get_label_set(targets, exclude_label, expected):
+    from rasa.test import get_unique_labels
+
+    actual = get_unique_labels(targets, exclude_label)
+    assert set(expected) == set(actual)

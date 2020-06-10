@@ -14,9 +14,7 @@ from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 logger = logging.getLogger(__name__)
 
 CHANNEL_NAME = "hangouts"
-CERT_URI = (
-    "https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com",
-)
+CERT_URI = "https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com"
 
 
 class HangoutsOutput(OutputChannel):

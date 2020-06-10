@@ -7,15 +7,16 @@
 """
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 from subprocess import CalledProcessError, check_call, check_output
 from typing import Text, Set
 
 import questionary
-import semantic_version
 import toml
-from semantic_version import Version
+from pep440_version_utils import Version, is_valid_version
+
 
 VERSION_FILE_PATH = "rasa/version.py"
 
@@ -25,6 +26,10 @@ REPO_BASE_URL = "https://github.com/RasaHQ/rasa"
 
 RELEASE_BRANCH_PREFIX = "prepare-release-"
 
+PRERELEASE_FLAVORS = ("alpha", "rc")
+
+RELEASE_BRANCH_PATTERN = re.compile(r"^\d+\.\d+\.x$")
+
 
 def create_argument_parser() -> argparse.ArgumentParser:
     """Parse all the command line arguments for the release script."""
@@ -33,7 +38,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--next_version",
         type=str,
-        help="Either next version number or 'major', 'minor', 'patch'",
+        help="Either next version number or 'major', 'minor', 'micro', 'alpha', 'rc'",
     )
 
     return parser
@@ -54,7 +59,7 @@ def pyproject_file_path() -> Path:
     return project_root() / PYPROJECT_FILE_PATH
 
 
-def write_version_file(version: Text) -> None:
+def write_version_file(version: Version) -> None:
     """Dump a new version into the python version file."""
 
     with version_file_path().open("w") as f:
@@ -66,16 +71,13 @@ def write_version_file(version: Text) -> None:
     check_call(["git", "add", str(version_file_path().absolute())])
 
 
-def write_version_to_pyproject(version: Text) -> None:
+def write_version_to_pyproject(version: Version) -> None:
     """Dump a new version into the pyproject.toml."""
-
-    import toml
-
     pyproject_file = pyproject_file_path()
 
     try:
         data = toml.load(pyproject_file)
-        data["tool"]["poetry"]["version"] = version
+        data["tool"]["poetry"]["version"] = str(version)
         with pyproject_file.open("w", encoding="utf8") as f:
             toml.dump(data, f)
     except (FileNotFoundError, TypeError):
@@ -106,10 +108,10 @@ def get_current_version() -> Text:
     return _globals["__version__"]
 
 
-def confirm_version(version: Text) -> bool:
+def confirm_version(version: Version) -> bool:
     """Allow the user to confirm the version number."""
 
-    if version in git_existing_tags():
+    if str(version) in git_existing_tags():
         confirmed = questionary.confirm(
             f"Tag with version '{version}' already exists, overwrite?", default=False
         ).ask()
@@ -130,18 +132,36 @@ def ask_version() -> Text:
     """Allow the user to confirm the version number."""
 
     def is_valid_version_number(v: Text) -> bool:
-        # noinspection PyBroadException
-        try:
-            return v in {"major", "minor", "patch"} or Version.coerce(v) is not None
-        except Exception:
-            # "coerce" did fail, this is probably not a valid version number
-            return False
+        return v in {"major", "minor", "micro", "alpha", "rc"} or is_valid_version(v)
 
+    current_version = Version(get_current_version())
+    next_micro_version = str(current_version.next_micro())
+    next_alpha_version = str(current_version.next_alpha())
     version = questionary.text(
-        "What is the version number you want to release "
-        "('major', 'minor', 'patch' or valid version number)?",
+        f"What is the version number you want to release "
+        f"('major', 'minor', 'micro', 'alpha', 'rc' or valid version number "
+        f"e.g. '{next_micro_version}' or '{next_alpha_version}')?",
         validate=is_valid_version_number,
     ).ask()
+
+    if version in PRERELEASE_FLAVORS and not current_version.pre:
+        # at this stage it's hard to guess the kind of version bump the
+        # releaser wants, so we ask them
+        if version == "alpha":
+            choices = [
+                str(current_version.next_alpha("minor")),
+                str(current_version.next_alpha("micro")),
+                str(current_version.next_alpha("major")),
+            ]
+        else:
+            choices = [
+                str(current_version.next_release_candidate("minor")),
+                str(current_version.next_release_candidate("micro")),
+                str(current_version.next_release_candidate("major")),
+            ]
+        version = questionary.select(
+            f"Which {version} do you want to release?", choices=choices,
+        ).ask()
 
     if version:
         return version
@@ -163,12 +183,12 @@ def get_rasa_sdk_version() -> Text:
         raise Exception(f"Failed to find Rasa SDK version in {dependencies_filename}")
 
 
-def validate_code_is_release_ready(version: Text) -> None:
+def validate_code_is_release_ready(version: Version) -> None:
     """Make sure the code base is valid (e.g. Rasa SDK is up to date)."""
 
-    sdk = get_rasa_sdk_version()
-    sdk_version = (Version.coerce(sdk).major, Version.coerce(sdk).minor)
-    rasa_version = (Version.coerce(version).major, Version.coerce(version).minor)
+    sdk = Version(get_rasa_sdk_version())
+    sdk_version = (sdk.major, sdk.minor)
+    rasa_version = (version.major, version.minor)
 
     if sdk_version != rasa_version:
         print()
@@ -200,7 +220,19 @@ def git_current_branch() -> Text:
         return "master"
 
 
-def create_release_branch(version: Text) -> Text:
+def git_current_branch_is_master_or_release() -> bool:
+    """
+    Returns True if the current local git
+    branch is master or a release branch e.g. 1.10.x
+    """
+    current_branch = git_current_branch()
+    return (
+        current_branch == "master"
+        or RELEASE_BRANCH_PATTERN.match(current_branch) is not None
+    )
+
+
+def create_release_branch(version: Version) -> Text:
     """Create a new branch for this release. Returns the branch name."""
 
     branch = f"{RELEASE_BRANCH_PREFIX}{version}"
@@ -208,7 +240,7 @@ def create_release_branch(version: Text) -> Text:
     return branch
 
 
-def create_commit(version: Text) -> None:
+def create_commit(version: Version) -> None:
     """Creates a git commit with all stashed changes."""
     check_call(["git", "commit", "-m", f"prepared release of version {version}"])
 
@@ -228,31 +260,37 @@ def ensure_clean_git() -> None:
         sys.exit(1)
 
 
-def parse_next_version(version: Text) -> Text:
+def parse_next_version(version: Text) -> Version:
     """Find the next version as a proper semantic version string."""
     if version == "major":
-        return str(Version.coerce(get_current_version()).next_major())
+        return Version(get_current_version()).next_major()
     elif version == "minor":
-        return str(Version.coerce(get_current_version()).next_minor())
-    elif version == "patch":
-        return str(Version.coerce(get_current_version()).next_patch())
-    elif semantic_version.validate(version):
-        return version
+        return Version(get_current_version()).next_minor()
+    elif version == "micro":
+        return Version(get_current_version()).next_micro()
+    elif version == "alpha":
+        return Version(get_current_version()).next_alpha()
+    elif version == "rc":
+        return Version(get_current_version()).next_release_candidate()
+    elif is_valid_version(version):
+        return Version(version)
     else:
         raise Exception(f"Invalid version number '{cmdline_args.next_version}'.")
 
 
-def next_version(args: argparse.Namespace) -> Text:
+def next_version(args: argparse.Namespace) -> Version:
     """Take cmdline args or ask the user for the next version and return semver."""
     return parse_next_version(args.next_version or ask_version())
 
 
-def generate_changelog(version: Text) -> None:
+def generate_changelog(version: Version) -> None:
     """Call tonwcrier and create a changelog from all available changelog entries."""
-    check_call(["towncrier", "--yes", "--version", version], cwd=str(project_root()))
+    check_call(
+        ["towncrier", "--yes", "--version", str(version)], cwd=str(project_root())
+    )
 
 
-def print_done_message(branch: Text, base: Text, version: Text) -> None:
+def print_done_message(branch: Text, base: Text, version: Version) -> None:
     """Print final information for the user on what to do next."""
 
     pull_request_url = f"{REPO_BASE_URL}/compare/{base}...{branch}?expand=1"
@@ -261,6 +299,18 @@ def print_done_message(branch: Text, base: Text, version: Text) -> None:
     print(f"\033[94m All done - changes for version {version} are ready! \033[0m")
     print()
     print(f"Please open a PR on GitHub: {pull_request_url}")
+
+
+def print_done_message_same_branch(version: Version) -> None:
+    """
+    Print final information for the user in case changes
+    are directly committed on this branch.
+    """
+
+    print()
+    print(
+        f"\033[94m All done - changes for version {version} where committed on this branch \033[0m"
+    )
 
 
 def main(args: argparse.Namespace) -> None:
@@ -280,14 +330,24 @@ def main(args: argparse.Namespace) -> None:
     write_version_file(version)
     write_version_to_pyproject(version)
 
-    generate_changelog(version)
-    base = git_current_branch()
-    branch = create_release_branch(version)
+    if not version.pre:
+        # never update changelog on a prerelease version
+        generate_changelog(version)
 
-    create_commit(version)
-    push_changes()
+    # alpha workflow on feature branch when a version bump is required
+    if version.is_alpha and not git_current_branch_is_master_or_release():
+        create_commit(version)
+        push_changes()
 
-    print_done_message(branch, base, version)
+        print_done_message_same_branch(version)
+    else:
+        base = git_current_branch()
+        branch = create_release_branch(version)
+
+        create_commit(version)
+        push_changes()
+
+        print_done_message(branch, base, version)
 
 
 if __name__ == "__main__":

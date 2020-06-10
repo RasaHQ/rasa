@@ -27,7 +27,6 @@ from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.keras_policy import KerasPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
@@ -157,12 +156,6 @@ class PolicyTestCollection:
         scores = policy.predict_action_probabilities(tracker, domain)
         index = scores.index(max(scores))
         return domain.action_names[index]
-
-
-class TestKerasPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = KerasPolicy(featurizer, priority)
-        return p
 
 
 class TestSklearnPolicy(PolicyTestCollection):

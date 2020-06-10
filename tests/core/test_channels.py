@@ -1,16 +1,17 @@
 import json
 import logging
-import urllib.parse
 from typing import Dict
 from unittest.mock import patch, MagicMock, Mock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from aiohttp import ClientTimeout
 from aioresponses import aioresponses
 from sanic import Sanic
 
 import rasa.core.run
 from rasa.core import utils
-from rasa.core.channels import RasaChatInput
+from rasa.core.channels import RasaChatInput, console
 from rasa.core.channels.channel import UserMessage
 from rasa.core.channels.rasa_chat import (
     JWT_USERNAME_KEY,
@@ -20,12 +21,10 @@ from rasa.core.channels.rasa_chat import (
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
-from tests.core.conftest import MOODBOT_MODEL_PATH
 
 # this is needed so that the tests included as code examples look better
 from tests.utilities import json_of_latest_request, latest_request
 
-MODEL_PATH = MOODBOT_MODEL_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -548,7 +547,7 @@ def test_slack_metadata_missing_keys():
             "channel": channel,
             "event_ts": "1579802617.000800",
             "channel_type": "im",
-        },
+        }
     }
 
     input_channel = SlackInput(
@@ -1032,3 +1031,10 @@ def test_has_user_permission_to_send_messages_to_conversation_without_permission
     assert not RasaChatInput._has_user_permission_to_send_messages_to_conversation(
         jwt, message
     )
+
+
+def test_set_console_stream_reading_timeout(monkeypatch: MonkeyPatch):
+    expected = 100
+    monkeypatch.setenv(console.STREAM_READING_TIMEOUT_ENV, str(100))
+
+    assert console._get_stream_reading_timeout() == ClientTimeout(expected)

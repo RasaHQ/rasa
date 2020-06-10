@@ -116,10 +116,10 @@ Details of the ``dispatcher.utter_message()`` method:
 
 .. _custom_session_start:
 
-Customising the session start action
+Customizing the session start action
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The default behaviour of the session start action is to take all existing slots and to
+The default behavior of the session start action is to take all existing slots and to
 carry them over into the next session. Let's say you do not want to carry over all
 slots, but only a user's name and their phone number. To do that, you'd override the
 ``action_session_start`` with a custom action that might look like this:
@@ -158,7 +158,7 @@ slots, but only a user's name and their phone number. To do that, you'd override
       ) -> List[EventType]:
 
           # the session should begin with a `session_started` event
-          events = [SessionStarted()]
+          events = [SessionStarted(metadata=self.metadata)]
 
           # any slots that should be carried over should come after the
           # `session_started` event

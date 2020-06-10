@@ -1,0 +1,1 @@
+Fixed a bug in the ``CountVectorsFeaturizer`` which resulted in the very first message after loading a model to be processed incorrectly due to the vocabulary not being loaded yet.

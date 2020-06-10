@@ -1,2 +1,0 @@
-``DIETClassifier`` only counts as extractor in ``rasa test`` if it was actually trained for entity recognition.
-

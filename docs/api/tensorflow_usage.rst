@@ -39,7 +39,7 @@ directed path between them in the TensorFlow graph. In other words, the computat
 computation of the other operation. The default value for this variable is ``0`` which means TensorFlow would allocate one thread per CPU core.
 
 To understand more about how these two options differ from each other, refer to this
-`stackoverflow thread <https://stackoverflow.com/a/41233901/3001665>`_.
+`stackoverflow thread <https://stackoverflow.com/questions/41233635/meaning-of-inter-op-parallelism-threads-and-intra-op-parallelism-threads/41233901#41233901>`_.
 
 
 Optimizing GPU Performance

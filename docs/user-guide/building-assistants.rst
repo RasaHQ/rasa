@@ -44,7 +44,7 @@ new Rasa project.
     rasa init
 
 
-Let's remove the default content from this bot, so that the ``nlu.md``, ``stories.md``
+Let's remove the default content from this bot, so that the ``data/nlu.md``, ``data/stories.md``
 and ``domain.yml`` files are empty.
 
 .. _respond-with-memoization-policy:
@@ -71,7 +71,7 @@ You can do this by editing your ``config.yml`` file as follows (you can remove `
    which allows you to clear the conversation history and start fresh.
 
 Now that we’ve defined our policies, we can add some stories for the ``goodbye``, ``thank`` and ``greet``
-intents to the ``stories.md`` file:
+intents to the ``data/stories.md`` file:
 
 .. code-block:: md
 
@@ -104,7 +104,7 @@ We’ll also need to add the intents, actions and responses to our ``domain.yml`
      utter_bye:
        - text: Bye!
 
-Finally, we’ll copy over some NLU data from Sara into our ``nlu.md`` file
+Finally, we’ll copy over some NLU data from Sara into our ``data/nlu.md`` file
 (more can be found `here <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md>`__):
 
 .. code-block:: md
@@ -379,7 +379,7 @@ A lot of conversational assistants have user goals that involve collecting a bun
 from the user before being able to do something for them. This is called slot filling. For
 example, in the banking industry you may have a user goal of transferring money, where you
 need to collect information about which account to transfer from, whom to transfer to and the
-amount to transfer. This type of behaviour can and should be handled in a rule based way, as it
+amount to transfer. This type of behavior can and should be handled in a rule based way, as it
 is clear how this information should be collected.
 
 For this type of use case, we can use Forms and our FormPolicy. The `FormPolicy <https://rasa.com/docs/rasa/core/policies/#form-policy>`_
@@ -481,7 +481,7 @@ which will do something with the information the user has provided once the form
        return []
 
 In this case, we only tell the user that we’ll be in touch with them, however
-usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L69>`_
+usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L149>`_
 for an example of how to store this information in a spreadsheet.
 
 We’ll need to add the form we just created to a new section in our ``domain.yml`` file:
@@ -597,7 +597,7 @@ As a final step, let’s add the FormPolicy to our config file:
 
    policies:
      - name: MemoizationPolicy
-     - name: KerasPolicy
+     - name: TEDPolicy
      - name: MappingPolicy
      - name: FormPolicy
 
@@ -647,10 +647,10 @@ use the ``from_text`` method to extract the users whole message:
 Now our bot will extract the full user message when asking for the use case slot,
 and we don’t need to use the ``use_case`` entity defined before.
 
-All of the methods within a form can be customised to handle different branches in your
+All of the methods within a form can be customized to handle different branches in your
 business logic. Read more about this `here <https://rasa.com/docs/rasa/core/forms/#>`_.
 However, you should make sure not to handle any unhappy paths inside the form. These
-should be handled by writing regular stories, so your model can learn this behaviour.
+should be handled by writing regular stories, so your model can learn this behavior.
 
 
 .. note::
@@ -943,10 +943,11 @@ To try this out, retrain your model and send a message like "order me a pizza" t
    rasa shell
 
 There are also a bunch of ways in which you can customise this policy. In Sara, our demo bot,
-we’ve customised it to suggest intents to the user within a certain confidence range to make
+we’ve customized it to suggest intents to the user within a certain confidence range to make
 it easier for the user to give the bot the information it needs.
 
-This is done by customising the action ``ActionDefaultAskAffirmation`` as shown in the `Sara rasa-demo action server <https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L443>`_
+This is done by customizing the action ``ActionDefaultAskAffirmation`` as shown in the
+`Sara rasa-demo action server <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L443>`_
 We define some intent mappings to make it more intuitive to the user what an intent means.
 
 .. image:: /_static/images/intent_mappings.png
