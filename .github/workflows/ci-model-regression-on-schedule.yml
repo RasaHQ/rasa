@@ -1,7 +1,9 @@
+# The docs: https://www.notion.so/rasa/The-CI-for-model-regression-tests-92af7185e08e4fb2a0c764770a8e9095
 name: CI - Model Regression
 
 on:
   schedule:
+   # Run once a week
     - cron:  '1 23 * * */7'
 
 env:
@@ -22,9 +24,11 @@ jobs:
         curl --location https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64 -o yq
         chmod +x yq
 
-    - run: test -f .github/configs/mr-test-schedule.yaml
+    - name: Check if a configuration file exists
+      run: test -f .github/configs/mr-test-schedule.yaml
 
-    - id: set-matrix
+    - name: Set matrix values
+      id: set-matrix
       shell: bash
       run: echo "::set-output name=matrix::$(./yq -j r .github/configs/mr-test-schedule.yaml)"
 
@@ -44,7 +48,7 @@ jobs:
 
       - name: Render deployment template
         run: |-
-          ./gomplate -f .github/runner/deployment.yaml.tmpl -o runner_deployment.yaml
+          ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
       - uses: GoogleCloudPlatform/github-actions@0.1.2
@@ -68,6 +72,7 @@ jobs:
     - deploy_runner_gpu
     - read_test_configuration
     env:
+      # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
       ACCELERATOR_TYPE: "GPU"
     runs-on: [self-hosted, gpu]
@@ -149,62 +154,40 @@ jobs:
           echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
+      # Download the results of the previous runs
+      # The report file is extended with new results every next job run
       - name: Download artifact
         uses: actions/download-artifact@v2
         continue-on-error: true
         with:
           name: report.json
 
-      - name: Generate a JSON file with a report
+      - name: Generate a JSON file with a report / Publish results to Segment
         env:
           SUMMARY_FILE: "./report.json"
-          DATASET: ${{ matrix.dataset }}
-          RESULT_DIR: "${{ github.workspace }}/results"
-          CONFIG: ${{ matrix.config }}
-          TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
-          TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
-          TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
-        run: |-
-          poetry run python .github/scripts/mr_generate_summary.py
-          cat $SUMMARY_FILE
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: report.json
-          path: ./report.json
-
-      - name: Publish results to Segment
-        env:
           SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
+          RESULT_DIR: "${{ github.workspace }}/results"
           CONFIG: ${{ matrix.config }}
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
-          RESULT_DIR: "${{ github.workspace }}/results"
-        run: |-
-          export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
-          poetry run pip install analytics-python
-          poetry run python .github/scripts/mr_publish_results.py
-
-
-      - name: Publish results to Segment
-        env:
-          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
-          DATASET_NAME: ${{ matrix.dataset }}
-          CONFIG: ${{ matrix.config }}
-          ACCELERATOR_TYPE: "GPU"
-          TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
-          TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
-          TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
-          RESULT_DIR: "${{ github.workspace }}/results"
           PR_URL: ""
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
+          poetry run python .github/scripts/mr_generate_summary.py
+          cat $SUMMARY_FILE
+
+      - name: Upload an artifact with the report
+        uses: actions/upload-artifact@v2
+        with:
+          name: report.json
+          path: ./report.json
 
   remove_runner_gpu:
     name: Delete Github Runner - GPU
+    if: always()
     needs:
     - deploy_runner_gpu
     - model_regression_test_gpu

@@ -10,7 +10,7 @@ You have to have installed [gomplate](https://docs.gomplate.ca/installing/) tool
 
 ## Templates
 
-Below you can find a list of templates with description and command to render template.
+Below you can find a list of templates with their description and the commands to render them.
 
 
 ### `configuration_variables.tmpl`
@@ -37,10 +37,9 @@ The template uses the `GITHUB_ACTOR` environment variable, you have to export th
 
 ### `model_regression_test_config_to_json.tmpl`
 
+The template reads an issue/a PR comment and transforms a YAML code block into JSON.
 
 #### How to run locally
-
-The template reads an issue/a PR comment and transforms a YAML code block into JSON.
 
 ```
 gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl

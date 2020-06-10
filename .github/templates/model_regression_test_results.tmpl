@@ -1,3 +1,10 @@
+{{- /*
+
+The template reads a file with a report (the report file is available
+as an artifact in the model regression tests workflow) and returns
+markdown table with a summary of tests.
+
+*/ -}}
 {{ range $dataset, $config := (datasource "data")}}
 Dataset: `{{$dataset}}`
 

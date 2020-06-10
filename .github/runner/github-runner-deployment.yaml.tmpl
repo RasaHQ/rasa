@@ -1,3 +1,5 @@
+# GitHub Runner deployment - uses to deploy a github runner
+# which is used by the CI for model regression tests
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,18 +33,23 @@ spec:
             nvidia.com/gpu: 1
             memory: 10Gi
         env:
+        # RUNNER_LABELS - defines labels
+        # with which a github-runner will be registered
         - name: RUNNER_LABELS
           value: "self-hosted,gpu,kubernetes"
+        # GITHUB_OWNER - a name of the repository owner
         - name: GITHUB_OWNER
           valueFrom:
             secretKeyRef:
               name: github-rasa
               key: owner
+        # GITHUB_REPOSITORY - a name of the repository
         - name: GITHUB_REPOSITORY
           valueFrom:
             secretKeyRef:
               name: github-rasa
               key: repository
+        # GITHUB_PAT - Personal Access Token
         - name: GITHUB_PAT
           valueFrom:
             secretKeyRef:

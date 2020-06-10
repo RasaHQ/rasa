@@ -1,3 +1,8 @@
+{{- /*
+
+The template reads an issue/a PR comment and transforms a YAML code block into JSON.
+
+*/ -}}
 {{- $config := ((datasource "github").body | regexp.Find "```(?s)(.*)```" | regexp.ReplaceLiteral "```.*|\r" "" | yaml | toJSON | json) -}}
 {"include":[
 {{- $inc := coll.Slice -}}

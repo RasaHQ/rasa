@@ -1,3 +1,10 @@
+{{- /*
+
+The template returns a comment message which is used as a help description
+in a PR. The template reads the `.github/configs/mr-test-example.yaml` file
+and include it as example content.
+
+ */ -}}
 <!-- comment-modeltest-help -->
 Hey @{{ .Env.GITHUB_ACTOR }}! :wave: To run model regression tests, comment with the modeltest command and a configuration.
 
