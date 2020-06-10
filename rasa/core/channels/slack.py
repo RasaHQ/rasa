@@ -131,9 +131,7 @@ class SlackInput(InputChannel):
         return "slack"
 
     @classmethod
-    def from_credentials(
-        cls, credentials: Optional[Dict[Text, Any]]
-    ) -> InputChannel:
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
@@ -141,9 +139,7 @@ class SlackInput(InputChannel):
         return cls(
             credentials.get("slack_token"),
             credentials.get("slack_channel"),
-            credentials.get(
-                "slack_retry_reason_header", "x-slack-retry-reason"
-            ),
+            credentials.get("slack_retry_reason_header", "x-slack-retry-reason"),
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
             credentials.get("errors_ignore_retry", None),
             credentials.get("use_threads", False),
@@ -238,10 +234,7 @@ class SlackInput(InputChannel):
             # but is a good first approximation
             for regex, replacement in [
                 (fr"<@{uid_to_remove}>\s", ""),
-                (
-                    fr"\s<@{uid_to_remove}>",
-                    "",
-                ),  # a bit arbitrary but probably OK
+                (fr"\s<@{uid_to_remove}>", "",),  # a bit arbitrary but probably OK
                 (fr"<@{uid_to_remove}>", " "),
             ]:
                 text = re.sub(regex, replacement, text)
@@ -328,9 +321,7 @@ class SlackInput(InputChannel):
                 f" due to {retry_reason}."
             )
 
-            return response.text(
-                None, status=201, headers={"X-Slack-No-Retry": 1}
-            )
+            return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})
 
         if metadata is not None:
             output_channel = metadata.get("out_channel")
@@ -408,9 +399,7 @@ class SlackInput(InputChannel):
 
                 if self._is_interactive_message(payload):
                     sender_id = payload["user"]["id"]
-                    text = self._get_interactive_response(
-                        payload["actions"][0]
-                    )
+                    text = self._get_interactive_response(payload["actions"][0])
                     if text is not None:
                         metadata = self.get_metadata(request)
                         return await self.process_message(
@@ -433,9 +422,9 @@ class SlackInput(InputChannel):
                 if "challenge" in output:
                     return response.json(output.get("challenge"))
 
-                elif self._is_user_message(
-                    output
-                ) and self._is_supported_channel(output, metadata):
+                elif self._is_user_message(output) and self._is_supported_channel(
+                    output, metadata
+                ):
                     return await self.process_message(
                         request,
                         on_new_message,
