@@ -31,6 +31,7 @@ class MultiProjectImporter(TrainingDataImporter):
         else:
             self._domain_paths = []
         self._story_paths = []
+        self._e2e_story_paths = []
         self._nlu_paths = []
         self._imports = []
         self._additional_paths = training_data_paths or []
@@ -95,11 +96,9 @@ class MultiProjectImporter(TrainingDataImporter):
                     # Check next file
                     continue
 
-                if data.is_conversation_test_file(full_path):
-                    # skip conversation test files
-                    continue
-
-                if data.is_domain_file(full_path):
+                if data.is_end_to_end_conversation_test_file(full_path):
+                    self._e2e_story_paths.append(full_path)
+                elif data.is_domain_file(full_path):
                     self._domain_paths.append(full_path)
                 elif data.is_nlu_file(full_path):
                     self._nlu_paths.append(full_path)
@@ -180,8 +179,10 @@ class MultiProjectImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
+        story_paths = self._story_paths if not use_e2e else self._e2e_story_paths
+
         story_steps = await StoryFileReader.read_from_files(
-            self._story_paths,
+            story_paths,
             await self.get_domain(),
             interpreter,
             template_variables,
