@@ -22,6 +22,8 @@ NUMBER_OF_TRAINING_STORIES_FILE = "num_stories.json"
 PERCENTAGE_KEY = "__percentage__"
 
 PACKAGE_NAME = "rasa"
+NLU_MODEL_NAME_PREFIX = "nlu_"
+NLU_CHECKPOINT_MODEL_NAME = NLU_MODEL_NAME_PREFIX + "checkpoint"
 
 CONFIG_SCHEMA_FILE = "nlu/schemas/config.yml"
 DOMAIN_SCHEMA_FILE = "core/schemas/domain.yml"

@@ -65,3 +65,6 @@ OPEN_UTTERANCE_RANKING_KEY = "ranking"
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 FEATURIZER_CLASS_ALIAS = "alias"
+
+MODEL_CHECKPOINT_DIR = "model_checkpoint_dir"
+CHECKPOINT_MODEL = "checkpoint_model"

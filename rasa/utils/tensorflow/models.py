@@ -3,10 +3,14 @@ import datetime
 import tensorflow as tf
 import numpy as np
 import logging
+import os
+import shutil
 from collections import defaultdict
+from pathlib import Path
 from typing import List, Text, Dict, Tuple, Union, Optional, Callable, TYPE_CHECKING
 
 from tqdm import tqdm
+from rasa.constants import NLU_CHECKPOINT_MODEL_NAME
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import SEQUENCE, TENSORBOARD_LOG_LEVEL
@@ -32,6 +36,7 @@ class RasaModel(tf.keras.models.Model):
         random_seed: Optional[int] = None,
         tensorboard_log_dir: Optional[Text] = None,
         tensorboard_log_level: Optional[Text] = "epoch",
+        model_checkpoint_dir: Optional[Text] = None,
         **kwargs,
     ) -> None:
         """Initialize the RasaModel.
@@ -57,6 +62,15 @@ class RasaModel(tf.keras.models.Model):
         self.test_summary_writer = None
         self.model_summary_file = None
         self.tensorboard_log_on_epochs = True
+
+        self.best_metrics_so_far = {}
+        self.best_model_file = (
+            os.path.join(model_checkpoint_dir, f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model")
+            if model_checkpoint_dir is not None
+            else None
+        )
+
+        self._set_up_tensorboard_writer()
 
     def _set_up_tensorboard_writer(self) -> None:
         if self.tensorboard_log_dir is not None:
@@ -177,10 +191,32 @@ class RasaModel(tf.keras.models.Model):
                         )
 
                     val_results = self._get_metric_results(prefix="val_")
+                    improved = self._update_best_metrics_so_far(val_results)
+                    if improved and self.best_model_file is not None:
+                        self.save(self.best_model_file, overwrite=True)
 
                 postfix_dict.update(val_results)
 
             progress_bar.set_postfix(postfix_dict)
+
+        # Checkpoint the model one last time after training
+        if evaluate_on_num_examples > 0:
+            if self.best_model_file is not None:
+                epoch_batch_size = self.linearly_increasing_batch_size(
+                    epochs, batch_size, epochs
+                )
+                self._batch_loop(
+                    evaluation_dataset_function,
+                    tf_evaluation_on_batch_function,
+                    epoch_batch_size,
+                    False,
+                    training_steps,
+                    self.test_summary_writer,
+                )
+
+                val_results = self._get_metric_results(prefix="val_")
+                if self._update_best_metrics_so_far(val_results):
+                    self.save(self.best_model_file, overwrite=True)
 
         if self.model_summary_file is not None:
             self._write_model_summary()
@@ -245,8 +281,24 @@ class RasaModel(tf.keras.models.Model):
         self._training = False  # needed for eager mode
         return self._predict_function(batch_in)
 
-    def save(self, model_file_name: Text) -> None:
-        self.save_weights(model_file_name, save_format="tf")
+    def save(self, model_file_name: Text, overwrite: bool = True) -> None:
+        self.save_weights(model_file_name, overwrite=overwrite, save_format="tf")
+
+    def copy_best(self, model_file_name: Text) -> None:
+        ckp_dir, ckp_file = os.path.split(self.best_model_file)
+        ckp_path = Path(ckp_dir)
+
+        for f in ckp_path.glob(f"{ckp_file}*"):
+            shutil.move(str(f.absolute()), model_file_name + f.suffix)
+
+        # Generate the tf2 checkpoint file
+        dest_path, dest_file = os.path.split(model_file_name)
+        with open(os.path.join(ckp_dir, "checkpoint")) as in_file, open(
+            os.path.join(dest_path, "checkpoint"), "w"
+        ) as out_file:
+            for line in in_file:
+                out_file.write(line.replace(ckp_file, dest_file))
+        ckp_path.joinpath("checkpoint").unlink()
 
     @classmethod
     def load(
@@ -389,6 +441,27 @@ class RasaModel(tf.keras.models.Model):
                 for metric in self.metrics:
                     if metric.name in self.metrics_to_log:
                         tf.summary.scalar(metric.name, metric.result(), step=step)
+
+    def _update_best_metrics_so_far(self, curr_results: Dict[Text, Text]) -> bool:
+        if len(self.best_metrics_so_far) <= 0:  # Init with actual result keys
+            keys = filter(
+                lambda k: True if (k.endswith("_acc") or k.endswith("_f1")) else False,
+                curr_results.keys(),
+            )
+            for key in keys:
+                self.best_metrics_so_far[key] = float(curr_results[key])
+            all_improved = True
+        else:
+            all_improved = all(
+                [
+                    float(curr_results[key]) > self.best_metrics_so_far[key]
+                    for key in self.best_metrics_so_far.keys()
+                ]
+            )
+            if all_improved:
+                for key in self.best_metrics_so_far.keys():
+                    self.best_metrics_so_far[key] = float(curr_results[key])
+        return all_improved
 
     @staticmethod
     def _should_evaluate(
