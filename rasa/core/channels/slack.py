@@ -119,7 +119,9 @@ class SlackBot(OutputChannel):
     ) -> None:
         json_message.setdefault("channel", self.slack_channel or recipient_id)
         json_message.setdefault("as_user", True)
-        json_message.setdefault("thread_ts", self.ts if self.ts else None)
+        if self.ts:
+            json_message.setdefault("thread_ts")
+
         await self.client.chat_postMessage(**json_message)
 
 
@@ -381,6 +383,8 @@ class SlackInput(InputChannel):
                 "ts": ts,
                 "users": slack_event.get("authed_users"),
             }
+        else:
+            return {}
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
