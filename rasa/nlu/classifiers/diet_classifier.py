@@ -866,7 +866,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         io_utils.create_directory_for_file(tf_model_file)
 
-        # TODO: compare performance of last model to currently best model
         if self.model.best_model_file is not None:
             self.model.copy_best(str(tf_model_file))
         else:
