@@ -168,8 +168,8 @@ def is_story_file(file_path: Text) -> bool:
         return False
 
 
-def is_conversation_test_file(file_path: Text) -> bool:
-    """Checks if a file is a Rasa conversation test file.
+def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
+    """Checks if a file is an end-to-end conversation test file.
 
     Args:
         file_path: Path of the file which should be checked.
@@ -181,19 +181,8 @@ def is_conversation_test_file(file_path: Text) -> bool:
     if not file_path.endswith(".md"):
         return False
 
-    try:
-        dirname = os.path.dirname(file_path)
-        return is_story_file(file_path) and DEFAULT_E2E_TESTS_PATH in dirname
-    except Exception as e:
-        # catch-all because we might be loading files we are not expecting to load
-        logger.error(
-            f"Tried to check if '{file_path}' is a conversation test file, but failed "
-            f"to read it. If this file contains conversation test data, you should "
-            f"investigate this error, otherwise it is probably best to "
-            f"move the file to a different location. "
-            f"Error: {e}"
-        )
-        return False
+    dirname = os.path.dirname(file_path)
+    return DEFAULT_E2E_TESTS_PATH in dirname and is_story_file(file_path)
 
 
 def _contains_story_pattern(text: Text) -> bool:
