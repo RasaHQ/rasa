@@ -4,7 +4,11 @@ import pytest
 from _pytest.tmpdir import TempdirFactory
 import os
 
-from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
+from rasa.constants import (
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_E2E_TESTS_PATH,
+)
 from rasa.nlu.training_data.formats import RasaReader
 from rasa import model
 from rasa.core import utils
@@ -210,28 +214,36 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
     assert not selector.is_imported(str(not_relevant_file2))
 
 
-def test_not_importing_conversation_tests_in_project(tmpdir_factory):
+def test_not_importing_e2e_conversation_tests_in_project(
+    tmpdir_factory: TempdirFactory,
+):
     root = tmpdir_factory.mktemp("Parent Bot")
     config = {"imports": ["bots/Bot A"]}
     config_path = str(root / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    story_data_file = root / "bots" / "Bot A" / "data" / "stories.md"
-    story_data_file.write("""## story""", ensure=True)
+    story_file = root / "bots" / "Bot A" / "data" / "stories.md"
+    story_file.write("""## story""", ensure=True)
 
-    conversation_tests_file = (
-        root / "bots" / "Bot A" / "tests" / "conversation_tests.md"
+    e2e_story_test_file = (
+        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "conversation_tests.md"
     )
-    conversation_tests_file.write(
+    e2e_story_test_file.write(
         """## story test""", ensure=True,
     )
 
     selector = MultiProjectImporter(config_path)
 
     # Conversation tests should not be included in story paths
-    expected = [str(story_data_file)]
+    expected = {
+        "story_paths": [str(story_file)],
+        "e2e_story_paths": [str(e2e_story_test_file)],
+    }
 
-    actual = selector._story_paths
+    actual = {
+        "story_paths": selector._story_paths,
+        "e2e_story_paths": selector._e2e_story_paths,
+    }
 
     assert expected == actual
 
