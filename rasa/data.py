@@ -168,7 +168,7 @@ def is_story_file(file_path: Text) -> bool:
 
 
 def _contains_story_pattern(text: Text) -> bool:
-    story_pattern = r".*##.+"
+    story_pattern = r".*##(?!.*(?:intent|synonym|regex|lookup):).+"
 
     return re.match(story_pattern, text) is not None
 
