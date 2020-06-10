@@ -182,7 +182,11 @@ def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
         return False
 
     dirname = os.path.dirname(file_path)
-    return DEFAULT_E2E_TESTS_PATH in dirname and is_story_file(file_path)
+    return (
+        DEFAULT_E2E_TESTS_PATH in dirname
+        and is_story_file(file_path)
+        and not is_nlu_file(file_path)
+    )
 
 
 def _contains_story_pattern(text: Text) -> bool:
