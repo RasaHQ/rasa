@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from rasa.constants import DEFAULT_E2E_TESTS_PATH
-from rasa.data import is_conversation_test_file, is_story_file
+from rasa.data import is_end_to_end_conversation_test_file, is_story_file
 from rasa.utils.io import write_text_file
 
 
@@ -29,16 +29,42 @@ def test_story_file_with_minimal_story_is_story_file(tmpdir: Path):
     assert is_story_file(str(p))
 
 
-def test_default_conversation_tests_are_conversation_tests(tmpdir: Path):
-    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
-    Path(parent).mkdir(parents=True)
-    p = parent / "conversation_tests.md"
-    s = """## my story test"""
-
-    write_text_file(s, p)
-    assert is_conversation_test_file(str(p))
-
-
 def test_default_story_files_are_story_files():
     for fn in glob.glob(os.path.join("data", "test_stories", "*")):
         assert is_story_file(fn)
+
+
+def test_default_conversation_tests_are_conversation_tests(tmpdir: Path):
+    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
+    Path(parent).mkdir(parents=True)
+
+    e2e_path = parent / "conversation_tests.md"
+    e2e_story = """## my story test"""
+    write_text_file(e2e_story, e2e_path)
+
+    assert is_end_to_end_conversation_test_file(str(e2e_path))
+
+
+def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
+    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
+    Path(parent).mkdir(parents=True)
+
+    nlu_path = parent / "nlu.md"
+    nlu_data = """
+## intent: greet
+- hello
+- hi
+- hallo
+    """
+    write_text_file(nlu_data, nlu_path)
+
+    assert not is_end_to_end_conversation_test_file(str(nlu_path))
+
+
+def test_domain_files_are_not_conversation_tests(tmpdir: Path):
+    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
+    Path(parent).mkdir(parents=True)
+
+    domain_path = parent / "domain.yml"
+
+    assert not is_end_to_end_conversation_test_file(str(domain_path))
