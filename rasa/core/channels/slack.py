@@ -41,39 +41,53 @@ class SlackBot(OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
         for message_part in text.strip().split("\n\n"):
-            await self.client.chat_postMessage(
-                channel=recipient,
-                as_user=True,
-                text=message_part,
-                type="mrkdwn",
-                thread_ts=self.ts if self.ts else None,
-            )
+            if self.ts:
+                await self.client.chat_postMessage(
+                    channel=recipient,
+                    as_user=True,
+                    text=message_part,
+                    type="mrkdwn",
+                    thread_ts=self.ts,
+                )
+            else:
+                await self.client.chat_postMessage(
+                    channel=recipient, as_user=True, text=message_part, type="mrkdwn"
+                )
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
         image_block = {"type": "image", "image_url": image, "alt_text": image}
-        await self.client.chat_postMessage(
-            channel=recipient,
-            as_user=True,
-            text=image,
-            blocks=[image_block],
-            thread_ts=self.ts if self.ts else None,
-        )
+        if self.ts:
+            await self.client.chat_postMessage(
+                channel=recipient,
+                as_user=True,
+                text=image,
+                blocks=[image_block],
+                thread_ts=self.ts,
+            )
+        else:
+            await self.client.chat_postMessage(
+                channel=recipient, as_user=True, text=image, blocks=[image_block],
+            )
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-
-        await self.client.chat_postMessage(
-            channel=recipient,
-            as_user=True,
-            attachments=[attachment],
-            thread_ts=self.ts if self.ts else None,
-            **kwargs,
-        )
+        if self.ts:
+            await self.client.chat_postMessage(
+                channel=recipient,
+                as_user=True,
+                attachments=[attachment],
+                thread_ts=self.ts,
+                **kwargs,
+            )
+        else:
+            await self.client.chat_postMessage(
+                channel=recipient, as_user=True, attachments=[attachment], **kwargs,
+            )
 
     async def send_text_with_buttons(
         self,
@@ -105,14 +119,21 @@ class SlackBot(OutputChannel):
                     "value": button["payload"],
                 }
             )
-
-        await self.client.chat_postMessage(
-            channel=recipient,
-            as_user=True,
-            text=text,
-            blocks=[text_block, button_block],
-            thread_ts=self.ts if self.ts else None,
-        )
+        if self.ts:
+            await self.client.chat_postMessage(
+                channel=recipient,
+                as_user=True,
+                text=text,
+                blocks=[text_block, button_block],
+                thread_ts=self.ts,
+            )
+        else:
+            await self.client.chat_postMessage(
+                channel=recipient,
+                as_user=True,
+                text=text,
+                blocks=[text_block, button_block],
+            )
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
@@ -120,7 +141,7 @@ class SlackBot(OutputChannel):
         json_message.setdefault("channel", self.slack_channel or recipient_id)
         json_message.setdefault("as_user", True)
         if self.ts:
-            json_message.setdefault("thread_ts")
+            json_message.setdefault("thread_ts", self.ts)
 
         await self.client.chat_postMessage(**json_message)
 
@@ -361,7 +382,7 @@ class SlackInput(InputChannel):
             and users that have installed the bot.
         """
 
-        if request.form:
+        if request.form and "payload" in request.form:
             output = request.form
             payload = json.loads(output["payload"][0])
             logger.debug(f"get_metadata, payload: {payload}")
@@ -383,6 +404,7 @@ class SlackInput(InputChannel):
                 "ts": ts,
                 "users": slack_event.get("authed_users"),
             }
+
         else:
             return {}
 
@@ -397,7 +419,7 @@ class SlackInput(InputChannel):
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request) -> HTTPResponse:
-            if request.form:
+            if request.form and "payload" in request.form:
                 output = request.form
                 payload = json.loads(output["payload"][0])
 
