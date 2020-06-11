@@ -201,6 +201,7 @@ async def test_wait_time_between_pulls_without_interval(
 async def test_pull_model_with_invalid_domain(
     model_server: TestClient, monkeypatch: MonkeyPatch, caplog: LogCaptureFixture
 ):
+    # mock `Domain.load()` as if the domain contains invalid YAML
     error_message = "domain is invalid"
     mock_load = Mock(side_effect=InvalidDomain(error_message))
 
@@ -209,11 +210,10 @@ async def test_pull_model_with_invalid_domain(
         {"url": model_server.make_url("/model"), "wait_time_between_pulls": None}
     )
 
-    # with patch.object(Domain, "load", mock_validate):
     agent = Agent()
     await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
 
-    # Domain.load was called and raises
+    # `Domain.load()` was called
     mock_load.assert_called_once()
 
     # error was logged
