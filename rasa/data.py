@@ -5,12 +5,15 @@ import tempfile
 import uuid
 import re
 from typing import Tuple, List, Text, Set, Union, Optional, Iterable
-from rasa.nlu.training_data import loading
-from rasa.utils.io import DEFAULT_ENCODING
+
+from rasa.core.training.story_reader.yaml_story_reader import KEY_STORIES
+from rasa.nlu.training_data import loading as nlu_loading
+from rasa.utils.io import DEFAULT_ENCODING, read_yaml_file
 from rasa.constants import DEFAULT_E2E_TESTS_PATH
 
 logger = logging.getLogger(__name__)
 MARKDOWN_FILE_EXTENSION = ".md"
+YAML_FILE_EXTENSION = ".yml"
 JSON_FILE_EXTENSION = ".json"
 
 
@@ -123,8 +126,10 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
 
 def _is_valid_filetype(path: Text) -> bool:
     is_file = os.path.isfile(path)
-    is_datafile = path.endswith(JSON_FILE_EXTENSION) or path.endswith(
-        MARKDOWN_FILE_EXTENSION
+    is_datafile = (
+        path.endswith(JSON_FILE_EXTENSION)
+        or path.endswith(MARKDOWN_FILE_EXTENSION)
+        or path.endswith(YAML_FILE_EXTENSION)
     )
 
     return is_file and is_datafile
@@ -139,7 +144,7 @@ def is_nlu_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a nlu file, otherwise `False`.
     """
-    return loading.guess_format(file_path) != loading.UNK
+    return nlu_loading.guess_format(file_path) != nlu_loading.UNK
 
 
 def is_story_file(file_path: Text) -> bool:
@@ -151,6 +156,11 @@ def is_story_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file, otherwise `False`.
     """
+
+    if file_path.endswith(YAML_FILE_EXTENSION):
+        content = read_yaml_file(file_path)
+        if KEY_STORIES in content:
+            return True
 
     if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
         return False

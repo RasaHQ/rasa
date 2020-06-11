@@ -1,0 +1,8 @@
+stories:
+- story: story with entities
+  steps:
+  - user: /greet 
+    entities:
+    # slot with the same name was autofilled
+    - name: peter
+  - action: utter_greet

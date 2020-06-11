@@ -7,6 +7,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
     from rasa.core.training.structures import StoryGraph
     from rasa.importers.importer import TrainingDataImporter
+    from rasa.core.training import loading
 
 
 async def extract_story_graph(
@@ -17,12 +18,12 @@ async def extract_story_graph(
     exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
     from rasa.core.interpreter import RegexInterpreter
-    from rasa.core.training.dsl import StoryFileReader
     from rasa.core.training.structures import StoryGraph
+    from rasa.core.training import loading
 
     if not interpreter:
         interpreter = RegexInterpreter()
-    story_steps = await StoryFileReader.read_from_folder(
+    story_steps = await loading.load_data_from_folder(
         resource_name,
         domain,
         interpreter,
