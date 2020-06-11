@@ -37,7 +37,7 @@ custom action that inherits from ``ActionQueryKnowledgeBase``, a pre-written cus
 the logic to query a knowledge base for objects and their attributes.
 
 You can find a complete example in ``examples/knowledgebasebot``
-(`knowledge base bot <https://github.com/RasaHQ/rasa/blob/master/examples/knowledgebasebot/>`_), as well as instructions
+(`knowledge base bot <https://github.com/RasaHQ/rasa/tree/master/examples/knowledgebasebot/>`_), as well as instructions
 for implementing this custom action below.
 
 
@@ -134,7 +134,7 @@ Define the NLU Data
 In this section:
 
 - we will introduce a new intent, ``query_knowledge_base``
-- we will to annotate ``mention`` entities so that our model detects indirect mentions of objects like "the
+- we will annotate ``mention`` entities so that our model detects indirect mentions of objects like "the
   first one"
 - we will use :ref:`synonyms <entity_synonyms>` extensively
 
@@ -168,7 +168,7 @@ The above example just shows examples related to the restaurant domain.
 You should add examples for every object type that exists in your knowledge base to the same ``query_knowledge_base`` intent.
 
 In addition to adding a variety of training examples for each query type,
-you need to specify the and annotate the following entities in your training examples:
+you need to specify and annotate the following entities in your training examples:
 
 - ``object_type``: Whenever a training example references a specific object type from your knowledge base, the object type should
   be marked as an entity. Use :ref:`synonyms <entity_synonyms>` to map e.g. ``restaurants`` to ``restaurant``, the correct
@@ -401,7 +401,7 @@ The knowledge base action would detect that the user wants to obtain the value o
 If no mention or object was detected by the NER, the action assumes the user is referring to the most recently
 mentioned object, "PastaBar".
 
-You can disable this behaviour by setting ``use_last_object_mention`` to ``False`` when initializing the action.
+You can disable this behavior by setting ``use_last_object_mention`` to ``False`` when initializing the action.
 
 
 Customization

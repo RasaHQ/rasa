@@ -381,22 +381,9 @@ class SlackInput(InputChannel):
             Metadata extracted from the sent event payload. This includes the output channel for the response,
             and users that have installed the bot.
         """
-
-        if request.form and "payload" in request.form:
-            output = request.form
-            payload = json.loads(output["payload"][0])
-            logger.debug(f"get_metadata, payload: {payload}")
-            message = payload.get("message", {})
-            ts = message.get("thread_ts", message.get("ts"))
-            return {
-                "out_channel": payload.get("channel", {}).get("id"),
-                "ts": ts,
-                "users": payload.get("user", {}).get("id"),
-            }
-        elif request.json:
+        if request.json:
             slack_event = request.json
             event = slack_event.get("event", {})
-            logger.debug(f"get_metadata, event: {event}")
             ts = event.get("thread_ts", event.get("ts"))
 
             return {
@@ -405,8 +392,18 @@ class SlackInput(InputChannel):
                 "users": slack_event.get("authed_users"),
             }
 
-        else:
-            return {}
+        if request.form:
+            output = request.form
+            payload = json.loads(output["payload"][0])
+            message = payload.get("message", {})
+            ts = message.get("thread_ts", message.get("ts"))
+            return {
+                "out_channel": payload.get("channel", {}).get("id"),
+                "ts": ts,
+                "users": payload.get("user", {}).get("id"),
+            }
+
+        return {}
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]

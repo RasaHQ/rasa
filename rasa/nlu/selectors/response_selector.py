@@ -15,11 +15,12 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.classifiers.diet_classifier import (
     DIETClassifier,
     DIET,
-    TEXT_FEATURES,
-    LABEL_FEATURES,
     LABEL_IDS,
+    EntityTagSpec,
     TEXT_SEQ_LENGTH,
     LABEL_SEQ_LENGTH,
+    TEXT_FEATURES,
+    LABEL_FEATURES,
 )
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -66,6 +67,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    FEATURIZERS,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -204,13 +206,16 @@ class ResponseSelector(DIETClassifier):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
+        # Specify what features to use as sequence and sentence features
+        # By default all features in the pipeline are used.
+        FEATURIZERS: [],
     }
 
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
-        index_tag_id_mapping: Optional[Dict[int, Text]] = None,
+        entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
     ) -> None:
@@ -224,7 +229,7 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent_mapping = retrieval_intent_mapping or {}
 
         super().__init__(
-            component_config, index_label_id_mapping, index_tag_id_mapping, model
+            component_config, index_label_id_mapping, entity_tag_specs, model
         )
 
     @property

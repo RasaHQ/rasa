@@ -4,13 +4,15 @@ import tensorflow as tf
 import numpy as np
 import logging
 from collections import defaultdict
-from typing import List, Text, Dict, Tuple, Union, Optional, Callable
+from typing import List, Text, Dict, Tuple, Union, Optional, Callable, TYPE_CHECKING
 
-from tensorflow_core.python.ops.summary_ops_v2 import ResourceSummaryWriter
 from tqdm import tqdm
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import SEQUENCE, TENSORBOARD_LOG_LEVEL
+
+if TYPE_CHECKING:
+    from tensorflow.python.ops.summary_ops_v2 import ResourceSummaryWriter
 
 logger = logging.getLogger(__name__)
 
@@ -48,37 +50,37 @@ class RasaModel(tf.keras.models.Model):
 
         self.random_seed = random_seed
 
+        self.tensorboard_log_dir = tensorboard_log_dir
+        self.tensorboard_log_level = tensorboard_log_level
+
         self.train_summary_writer = None
         self.test_summary_writer = None
         self.model_summary_file = None
         self.tensorboard_log_on_epochs = True
 
-        self._set_up_tensorboard_writer(tensorboard_log_level, tensorboard_log_dir)
-
-    def _set_up_tensorboard_writer(
-        self, tensorboard_log_level: Text, tensorboard_log_dir: Optional[Text] = None
-    ) -> None:
-        if tensorboard_log_dir is not None:
-            if tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
+    def _set_up_tensorboard_writer(self) -> None:
+        if self.tensorboard_log_dir is not None:
+            if self.tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
                 raise ValueError(
-                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{tensorboard_log_level}') "
+                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{self.tensorboard_log_level}') "
                     f"is invalid! Valid values are: {TENSORBOARD_LOG_LEVELS}"
                 )
-
-            self.tensorboard_log_on_epochs = tensorboard_log_level == "epoch"
+            self.tensorboard_log_on_epochs = self.tensorboard_log_level == "epoch"
 
             current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             class_name = self.__class__.__name__
 
-            train_log_dir = f"{tensorboard_log_dir}/{class_name}/{current_time}/train"
-            test_log_dir = f"{tensorboard_log_dir}/{class_name}/{current_time}/test"
+            train_log_dir = (
+                f"{self.tensorboard_log_dir}/{class_name}/{current_time}/train"
+            )
+            test_log_dir = (
+                f"{self.tensorboard_log_dir}/{class_name}/{current_time}/test"
+            )
 
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
-            self.model_summary_file = (
-                f"{tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
-            )
+            self.model_summary_file = f"{self.tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -99,9 +101,14 @@ class RasaModel(tf.keras.models.Model):
         evaluate_every_num_epochs: int,
         batch_strategy: Text,
         silent: bool = False,
+        loading: bool = False,
         eager: bool = False,
     ) -> None:
         """Fit model data"""
+
+        # don't setup tensorboard writers when training during loading
+        if not loading:
+            self._set_up_tensorboard_writer()
 
         tf.random.set_seed(self.random_seed)
         np.random.seed(self.random_seed)
@@ -257,6 +264,7 @@ class RasaModel(tf.keras.models.Model):
             evaluate_on_num_examples=0,
             batch_strategy=SEQUENCE,
             silent=True,  # don't confuse users with training output
+            loading=True,  # don't use tensorboard while loading
             eager=True,  # no need to build tf graph, eager is faster here
         )
         # load trained weights
@@ -284,10 +292,9 @@ class RasaModel(tf.keras.models.Model):
         batch_size: int,
         training: bool,
         offset: int,
-        writer: Optional[ResourceSummaryWriter] = None,
+        writer: Optional["ResourceSummaryWriter"] = None,
     ) -> int:
         """Run on batches"""
-
         self.reset_metrics()
 
         step = offset
@@ -375,7 +382,7 @@ class RasaModel(tf.keras.models.Model):
         }
 
     def _log_metrics_for_tensorboard(
-        self, step: int, writer: Optional[ResourceSummaryWriter] = None
+        self, step: int, writer: Optional["ResourceSummaryWriter"] = None
     ) -> None:
         if writer is not None:
             with writer.as_default():

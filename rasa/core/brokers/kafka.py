@@ -78,39 +78,3 @@ class KafkaEventBroker(EventBroker):
 
     def _close(self) -> None:
         self.producer.close()
-
-
-class KafkaProducer(KafkaEventBroker):
-    def __init__(
-        self,
-        host,
-        sasl_username=None,
-        sasl_password=None,
-        ssl_cafile=None,
-        ssl_certfile=None,
-        ssl_keyfile=None,
-        ssl_check_hostname=False,
-        topic="rasa_core_events",
-        security_protocol="SASL_PLAINTEXT",
-        loglevel=logging.ERROR,
-    ) -> None:
-        raise_warning(
-            "The `KafkaProducer` class is deprecated, please inherit "
-            "from `KafkaEventBroker` instead. `KafkaProducer` will be "
-            "removed in future Rasa versions.",
-            FutureWarning,
-            docs=DOCS_URL_EVENT_BROKERS,
-        )
-
-        super(KafkaProducer, self).__init__(
-            host,
-            sasl_username,
-            sasl_password,
-            ssl_cafile,
-            ssl_certfile,
-            ssl_keyfile,
-            ssl_check_hostname,
-            topic,
-            security_protocol,
-            loglevel,
-        )

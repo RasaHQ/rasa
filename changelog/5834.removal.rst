@@ -1,0 +1,1 @@
+Removed ``restaurantbot`` example as it was confusing and not a great way to build a bot.

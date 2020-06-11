@@ -17,22 +17,27 @@ Getting Credentials
 
   1. To create the app go to https://api.slack.com/apps and click
      on **Create New App**.
+
   2. Activate the following features:
 
-    - `Interactive Components <https://api.slack.com/reference/block-kit/interactive-components>`_ (if your bot uses any, e.g. buttons)
-    - Event subscriptions
-    - Bot users
-    - Permissions (for basic functionality you should subscribe to the
-      following events: ``message.channel``, ``message.groups``,
-      ``message.im`` and ``message.mpim``)
+    - Interactivity & Shortcuts > Interactivity (if your bot uses any `interactive components <https://api.slack.com/reference/block-kit/interactive-components>`_ , e.g. buttons)
+    - Add your Rasa request URL ``http://<host>:<port>/webhooks/slack/webhook``, replacing
+      the host and port with the appropriate values that point to your Rasa X or Rasa Open Source deployment.
+    - Event subscriptions > Subscribe to bot events: ``message.channels``, ``message.groups``, ``message.im``, ``message.mpim``
+    - App Home > Always Show My Bot as Online
 
-  3. Get the ``Bot User OAuth Access Token`` from the OAuth & Permissions page. You will need
+  3. Get the ``Bot User OAuth Access Token`` from the OAuth & Permissions page. Click ``Install App to Workspace``
+     and allow access to your workspace. You will need
      to provide this value in your credentials later in these instructions. It should start
      with ``xoxb``.
 
+  4. In the "OAuth & Permissions > Redirect URLs" enter the endpoint for receiving Slack messages. This is 
+     the same URL you entered above for Interactivity & Shortcuts - ``http://<host>:<port>/webhooks/slack/webhook``.
+     
+  5. Go to the "Event Subscriptions" section, turn on the "Enable Events" and add the endpoint here also.
 
 For more detailed steps, visit the
-`Slack API docs <https://api.slack.com/incoming-webhooks>`_.
+`Slack API docs <https://api.slack.com/events-api>`_.
 
 Running on Slack
 ^^^^^^^^^^^^^^^^
@@ -54,8 +59,8 @@ e.g. using:
 You need to supply a ``credentials.yml`` with the following content:
 
 - The ``slack_channel`` can be a channel or an individual person that the bot should listen to for communications, in
-  addition to the default behavior of listening for direct messages and app mentions, i.e. "@app_name".
-
+  addition to the default behavior of listening for direct messages and app mentions, i.e. "@app_name". To get the channel
+  id, right click on the channel choose Copy Link and the id will be the last component in the URL.
 
 - Use the entry for ``Bot User OAuth Access Token`` in the
   "OAuth & Permissions" tab as your ``slack_token``. It should start
@@ -65,7 +70,7 @@ You need to supply a ``credentials.yml`` with the following content:
 
    slack:
      slack_token: "xoxb-286425452756-safjasdf7sl38KLls"
-     slack_channel: "#my_channel"
+     slack_channel: "C011GR5D33F"
      slack_retry_reason_header: "x-slack-retry-reason"  # Slack HTTP header name indicating reason that slack send retry request. This configuration is optional.
      slack_retry_number_header: "x-slack-retry-num"  # Slack HTTP header name indicating the attempt number. This configuration is optional.
      errors_ignore_retry: None  # Any error codes given by Slack included in this list will be ignored. Error codes are listed `here <https://api.slack.com/events-api#errors>`_.
