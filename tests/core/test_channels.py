@@ -561,6 +561,20 @@ def test_slack_metadata_missing_keys():
     assert metadata["users"] is None
     assert metadata["out_channel"] == channel
 
+def test_slack_no_metadata():
+    return
+
+def test_slack_form_metadata():
+    from rasa.core.channels.slack import SlackInput
+    from sanic.request import Request
+
+    user = "user1"
+    channel = "channel1"
+    return
+
+def test_slack_form_metadata_missing_keys():
+    return
+
 
 def test_slack_message_sanitization():
     from rasa.core.channels.slack import SlackInput
@@ -635,6 +649,14 @@ def test_slack_init_two_parameters():
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
 
+def test_slack_init_three_parameters():
+    from rasa.core.channels.slack import SlackInput
+
+    ch = SlackInput("xoxb-test", "test", use_threads=True)
+    assert ch.slack_token == "xoxb-test"
+    assert ch.slack_channel == "test"
+    assert ch.use_threads == True
+
 
 def test_is_slack_message_none():
     from rasa.core.channels.slack import SlackInput
@@ -690,6 +712,13 @@ def test_slackbot_init_two_parameter():
     assert bot.client.token == "DummyToken"
     assert bot.slack_channel == "General"
 
+def test_slackbot_init_three_parameter():
+    from rasa.core.channels.slack import SlackBot
+
+    bot = SlackBot("DummyToken", "General", "DummyThread")
+    assert bot.client.token == "DummyToken"
+    assert bot.slack_channel == "General"
+    assert bot.ts == "DummyThread"
 
 # Use monkeypatch for sending attachments, images and plain text.
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
