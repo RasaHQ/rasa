@@ -89,23 +89,23 @@ def _load_and_set_updated_model(
             agent.interpreter if agent.interpreter is not None else RegexInterpreter()
         )
 
-    domain = None
-    if core_path:
-        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
-        domain = Domain.load(domain_path)
-
     try:
         policy_ensemble = None
+        domain = None
+
         if core_path:
             policy_ensemble = PolicyEnsemble.load(core_path)
+            domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
+            domain = Domain.load(domain_path)
+
         agent.update_model(
             domain, policy_ensemble, fingerprint, interpreter, model_directory
         )
         logger.debug("Finished updating agent to new model.")
-    except Exception:
-        logger.exception(
-            "Failed to load policy and update agent. "
-            "The previous model will stay loaded instead."
+    except Exception as e:
+        logger.error(
+            f"Failed to load policy and update agent. "
+            f"The previous model will stay loaded instead. Error: {e}"
         )
 
 
