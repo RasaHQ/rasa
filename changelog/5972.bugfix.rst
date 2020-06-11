@@ -1,0 +1,2 @@
+Remove the ``clean_up_entities`` method from the ``DIETClassifier`` and ``CRFEntityExtractor`` as it let to incorrect
+entity predictions.
