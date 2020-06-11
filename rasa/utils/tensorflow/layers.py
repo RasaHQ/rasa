@@ -22,7 +22,7 @@ class SparseDropout(tf.keras.layers.Dropout):
 
     def call(
         self, inputs: tf.SparseTensor, training: Optional[Union[tf.Tensor, bool]] = None
-    ) -> tf.Tensor:
+    ) -> tf.SparseTensor:
         """Apply dropout to sparse inputs.
 
         Arguments:
@@ -36,13 +36,14 @@ class SparseDropout(tf.keras.layers.Dropout):
         Raises:
             A ValueError if inputs is not a sparse tensor
         """
+
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
 
         if training is None:
             training = K.learning_phase()
 
-        def dropped_inputs() -> tf.Tensor:
+        def dropped_inputs() -> tf.SparseTensor:
             to_retain_prob = tf.random.uniform(
                 tf.shape(inputs.values), 0, 1, inputs.values.dtype
             )
@@ -52,11 +53,10 @@ class SparseDropout(tf.keras.layers.Dropout):
         outputs = tf_utils.smart_cond(
             training, dropped_inputs, lambda: tf.identity(inputs)
         )
-        # need to explicitly set shape, because it becomes dynamic after `retain`
+        # need to explicitly recreate sparse tensor, because otherwise the shape
+        # information will be lost after `retain`
         # noinspection PyProtectedMember
-        outputs._dense_shape = inputs._dense_shape
-
-        return outputs
+        return tf.SparseTensor(outputs.indices, outputs.values, inputs._dense_shape)
 
 
 class DenseForSparse(tf.keras.layers.Dense):

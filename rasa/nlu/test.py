@@ -30,7 +30,11 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    RESPONSE,
     INTENT,
+    TEXT,
+    ENTITIES,
+    TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
@@ -83,62 +87,6 @@ def log_evaluation_table(
     logger.info(f"Classification report: \n{report}")
 
 
-def get_evaluation_metrics(
-    targets: Iterable[Any],
-    predictions: Iterable[Any],
-    output_dict: bool = False,
-    exclude_label: Text = None,
-) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]:
-    """Compute the f1, precision, accuracy and summary report from sklearn.
-
-    Args:
-        targets: target labels
-        predictions: predicted labels
-        output_dict: if True sklearn returns a summary report as dict, if False the
-          report is in string format
-        exclude_label: labels to exclude from evaluation
-
-    Returns: a report from sklearn, precision, f1, and accuracy values
-    """
-    from sklearn import metrics
-
-    targets = clean_labels(targets)
-    predictions = clean_labels(predictions)
-
-    labels = get_unique_labels(targets, exclude_label)
-    if not labels:
-        logger.warning("No labels to evaluate. Skip evaluation.")
-        return {}, 0.0, 0.0, 0.0
-
-    report = metrics.classification_report(
-        targets, predictions, labels=labels, output_dict=output_dict
-    )
-    precision = metrics.precision_score(
-        targets, predictions, labels=labels, average="weighted"
-    )
-    f1 = metrics.f1_score(targets, predictions, labels=labels, average="weighted")
-    accuracy = metrics.accuracy_score(targets, predictions)
-
-    return report, precision, f1, accuracy
-
-
-def get_unique_labels(
-    targets: Iterable[Text], exclude_label: Optional[Text]
-) -> List[Text]:
-    """Get unique labels. Exclude 'exclude_label' if specified.
-
-    Args:
-        targets: labels
-        exclude_label: label to exclude
-
-    Returns: unique list of labels
-    """
-    labels = set(targets)
-    if exclude_label and exclude_label in labels:
-        labels.remove(exclude_label)
-    return list(labels)
-
-
 def remove_empty_intent_examples(
     intent_results: List[IntentEvaluationResult],
 ) -> List[IntentEvaluationResult]:
@@ -184,17 +132,6 @@ def remove_empty_response_examples(
             filtered.append(r)
 
     return filtered
-
-
-def clean_labels(labels: Iterable[Text]) -> List[Text]:
-    """Remove `None` labels. sklearn metrics do not support them.
-
-    Args:
-        labels: list of labels
-
-    Returns: cleaned labels
-    """
-    return [label if label is not None else "" for label in labels]
 
 
 def drop_intents_below_freq(
@@ -445,6 +382,7 @@ def evaluate_response_selections(
     """
     import sklearn.metrics
     import sklearn.utils.multiclass
+    from rasa.test import get_evaluation_metrics
 
     # remove empty response targets
     num_examples = len(response_selection_results)
@@ -627,6 +565,7 @@ def evaluate_intents(
     """
     import sklearn.metrics
     import sklearn.utils.multiclass
+    from rasa.test import get_evaluation_metrics
 
     # remove empty intent targets
     num_examples = len(intent_results)
@@ -921,6 +860,7 @@ def evaluate_entities(
     """
     import sklearn.metrics
     import sklearn.utils.multiclass
+    from rasa.test import get_evaluation_metrics
 
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
     merged_targets = merge_labels(aligned_predictions)
@@ -1340,11 +1280,11 @@ def get_eval_data(
     intent_results, entity_results, response_selection_results = [], [], []
 
     response_labels = [
-        e.get("response")
+        e.get(RESPONSE)
         for e in test_data.intent_examples
-        if e.get("response") is not None
+        if e.get(RESPONSE) is not None
     ]
-    intent_labels = [e.get("intent") for e in test_data.intent_examples]
+    intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
     should_eval_intents = (
         is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
     )
@@ -1361,12 +1301,12 @@ def get_eval_data(
         result = interpreter.parse(example.text, only_output_properties=False)
 
         if should_eval_intents:
-            intent_prediction = result.get("intent", {}) or {}
+            intent_prediction = result.get(INTENT, {}) or {}
             intent_results.append(
                 IntentEvaluationResult(
-                    example.get("intent", ""),
+                    example.get(INTENT, ""),
                     intent_prediction.get("name"),
-                    result.get("text", {}),
+                    result.get(TEXT, {}),
                     intent_prediction.get("confidence"),
                 )
             )
@@ -1375,7 +1315,7 @@ def get_eval_data(
 
             # including all examples here. Empty response examples are filtered at the
             # time of metric calculation
-            intent_target = example.get("intent", "")
+            intent_target = example.get(INTENT, "")
             selector_properties = result.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
 
             if intent_target in available_response_selector_types:
@@ -1387,7 +1327,7 @@ def get_eval_data(
                 response_prediction_key, {}
             ).get(OPEN_UTTERANCE_PREDICTION_KEY, {})
 
-            response_target = example.get("response", "")
+            response_target = example.get(RESPONSE, "")
 
             complete_intent = example.get_combined_intent_response_key()
 
@@ -1396,7 +1336,7 @@ def get_eval_data(
                     complete_intent,
                     response_target,
                     response_prediction.get("name"),
-                    result.get("text", {}),
+                    result.get(TEXT, {}),
                     response_prediction.get("confidence"),
                 )
             )
@@ -1404,10 +1344,10 @@ def get_eval_data(
         if should_eval_entities:
             entity_results.append(
                 EntityEvaluationResult(
-                    example.get("entities", []),
-                    result.get("entities", []),
-                    result.get("tokens", []),
-                    result.get("text", ""),
+                    example.get(ENTITIES, []),
+                    result.get(ENTITIES, []),
+                    result.get(TOKENS_NAMES[TEXT], []),
+                    result.get(TEXT, ""),
                 )
             )
 
@@ -1967,6 +1907,8 @@ def _compute_metrics(
 
     Returns: metrics
     """
+    from rasa.test import get_evaluation_metrics
+
     # compute fold metrics
     targets, predictions = _targets_predictions_from(
         results, target_key, prediction_key
@@ -1987,6 +1929,8 @@ def _compute_entity_metrics(
 
     Returns: entity metrics
     """
+    from rasa.test import get_evaluation_metrics
+
     entity_metric_results: EntityMetrics = defaultdict(lambda: defaultdict(list))
     extractors = get_entity_extractors(interpreter)
 
