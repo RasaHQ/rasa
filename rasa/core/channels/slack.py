@@ -381,7 +381,8 @@ class SlackInput(InputChannel):
             Metadata extracted from the sent event payload. This includes the output channel for the response,
             and users that have installed the bot.
         """
-        if request.json:
+        content_type = request.headers.get('content-type')
+        if content_type == 'application/json':
             slack_event = request.json
             event = slack_event.get("event", {})
             ts = event.get("thread_ts", event.get("ts"))
@@ -392,7 +393,7 @@ class SlackInput(InputChannel):
                 "users": slack_event.get("authed_users"),
             }
 
-        if request.form:
+        if content_type == 'application/x-www-form-urlencoded':
             output = request.form
             payload = json.loads(output["payload"][0])
             message = payload.get("message", {})
@@ -416,26 +417,8 @@ class SlackInput(InputChannel):
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request) -> HTTPResponse:
-            if request.form:
-                output = request.form
-                payload = json.loads(output["payload"][0])
-
-                if self._is_interactive_message(payload):
-                    sender_id = payload["user"]["id"]
-                    text = self._get_interactive_response(payload["actions"][0])
-                    if text is not None:
-                        metadata = self.get_metadata(request)
-                        return await self.process_message(
-                            request, on_new_message, text, sender_id, metadata
-                        )
-                    elif payload["actions"][0]["type"] == "button":
-                        # link buttons don't have "value", don't send their clicks to bot
-                        return response.text("User clicked link button")
-                return response.text(
-                    "The input message could not be processed.", status=500
-                )
-
-            elif request.json:
+            content_type = request.headers.get('content-type')
+            if content_type == 'application/json':
                 output = request.json
                 event = output.get("event", {})
                 user_message = event.get("text", "")
@@ -461,6 +444,25 @@ class SlackInput(InputChannel):
                     logger.warning(
                         f"Received message on unsupported channel: {metadata['out_channel']}"
                     )
+
+            elif content_type == 'application/x-www-form-urlencoded':
+                output = request.form
+                payload = json.loads(output["payload"][0])
+
+                if self._is_interactive_message(payload):
+                    sender_id = payload["user"]["id"]
+                    text = self._get_interactive_response(payload["actions"][0])
+                    if text is not None:
+                        metadata = self.get_metadata(request)
+                        return await self.process_message(
+                            request, on_new_message, text, sender_id, metadata
+                        )
+                    elif payload["actions"][0]["type"] == "button":
+                        # link buttons don't have "value", don't send their clicks to bot
+                        return response.text("User clicked link button")
+                return response.text(
+                    "The input message could not be processed.", status=500
+                )
 
             return response.text("Bot message delivered.")
 
