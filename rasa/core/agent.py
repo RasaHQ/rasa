@@ -109,7 +109,6 @@ def _load_and_set_updated_model(
 
     try:
         interpreter = _load_interpreter(agent, nlu_path)
-
         domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
 
         agent.update_model(
@@ -119,7 +118,7 @@ def _load_and_set_updated_model(
         logger.debug("Finished updating agent to new model.")
     except Exception as e:
         logger.exception(
-            f"Failed to update agent. The previous model will stay loaded instead. "
+            f"Failed to update model. The previous model will stay loaded instead. "
             f"Error: {e}"
         )
 
