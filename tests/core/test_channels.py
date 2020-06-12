@@ -483,7 +483,7 @@ def test_slack_metadata():
     channel = "channel1"
     authed_users = ["XXXXXXX", "YYYYYYY", "ZZZZZZZ"]
     ts = "1579802617.000800"
-    header = {'content-type': 'application/json'}
+    header = {"content-type": "application/json"}
     direct_message_event = {
         "authed_users": authed_users,
         "event": {
@@ -523,6 +523,7 @@ def test_slack_metadata():
     assert metadata["users"] == authed_users
     assert metadata["ts"] == ts
 
+
 def test_slack_form_metadata():
     from rasa.core.channels.slack import SlackInput
     from sanic.request import Request
@@ -531,14 +532,10 @@ def test_slack_form_metadata():
     channel = "channel1"
     authed_user = "XXXXXXX"
     ts = "1579802617.000800"
-    header = {'content-type': 'application/x-www-form-urlencoded'}
+    header = {"content-type": "application/x-www-form-urlencoded"}
     payload = {
         "type": "block_actions",
-        "user": {
-            "id": authed_user,
-            "username": user,
-            "name": "name",
-        },
+        "user": {"id": authed_user, "username": user, "name": "name",},
         "channel": {"id": channel},
         "message": {
             "type": "message",
@@ -553,16 +550,13 @@ def test_slack_form_metadata():
                         {
                             "type": "button",
                             "action_id": "XXXXX",
-                            "text": {
-                                "type": "plain_text",
-                                "text": "text",
-                            },
+                            "text": {"type": "plain_text", "text": "text",},
                             "value": "value",
                         }
-                    ]
+                    ],
                 }
-            ]
-        }
+            ],
+        },
     }
     form_event = {"payload": [json.dumps(payload)]}
 
@@ -578,13 +572,14 @@ def test_slack_form_metadata():
     assert metadata["users"] == authed_user
     assert metadata["ts"] == ts
 
+
 def test_slack_metadata_missing_keys():
     from rasa.core.channels.slack import SlackInput
     from sanic.request import Request
 
     channel = "channel1"
     ts = "1579802617.000800"
-    header = {'content-type': 'application/json'}
+    header = {"content-type": "application/json"}
     direct_message_event = {
         "event": {
             "client_msg_id": "XXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
@@ -622,13 +617,14 @@ def test_slack_metadata_missing_keys():
     assert metadata["out_channel"] == channel
     assert metadata["ts"] == ts
 
+
 def test_slack_form_metadata_missing_keys():
     from rasa.core.channels.slack import SlackInput
     from sanic.request import Request
 
     channel = "channel1"
     ts = "1579802617.000800"
-    header = {'content-type': 'application/x-www-form-urlencoded'}
+    header = {"content-type": "application/x-www-form-urlencoded"}
     payload = {
         "type": "block_actions",
         "channel": {"id": channel},
@@ -644,16 +640,13 @@ def test_slack_form_metadata_missing_keys():
                         {
                             "type": "button",
                             "action_id": "XXXXX",
-                            "text": {
-                                "type": "plain_text",
-                                "text": "text",
-                            },
+                            "text": {"type": "plain_text", "text": "text",},
                             "value": "value",
                         }
-                    ]
+                    ],
                 }
-            ]
-        }
+            ],
+        },
     }
     form_event = {"payload": [json.dumps(payload)]}
 
@@ -669,6 +662,7 @@ def test_slack_form_metadata_missing_keys():
     assert metadata["out_channel"] == channel
     assert metadata["ts"] == ts
 
+
 def test_slack_no_metadata():
     from rasa.core.channels.slack import SlackInput
     from sanic.request import Request
@@ -680,6 +674,7 @@ def test_slack_no_metadata():
     r = Mock()
     metadata = input_channel.get_metadata(request=r)
     assert metadata == {}
+
 
 def test_slack_message_sanitization():
     from rasa.core.channels.slack import SlackInput
@@ -754,13 +749,15 @@ def test_slack_init_two_parameters():
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
 
+
 def test_slack_init_three_parameters():
     from rasa.core.channels.slack import SlackInput
 
     ch = SlackInput("xoxb-test", "test", use_threads=True)
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
-    assert ch.use_threads == True
+    assert ch.use_threads is True
+
 
 def test_is_slack_message_none():
     from rasa.core.channels.slack import SlackInput
@@ -816,6 +813,7 @@ def test_slackbot_init_two_parameter():
     assert bot.client.token == "DummyToken"
     assert bot.slack_channel == "General"
 
+
 def test_slackbot_init_three_parameter():
     from rasa.core.channels.slack import SlackBot
 
@@ -823,6 +821,7 @@ def test_slackbot_init_three_parameter():
     assert bot.client.token == "DummyToken"
     assert bot.slack_channel == "General"
     assert bot.ts == "DummyThread"
+
 
 # Use monkeypatch for sending attachments, images and plain text.
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
@@ -883,6 +882,7 @@ async def test_slackbot_send_attachment_only():
             "attachments": [attachment],
         }
 
+
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 @pytest.mark.asyncio
 async def test_slackbot_send_attachment_only_threaded():
@@ -942,6 +942,7 @@ async def test_slackbot_send_attachment_only_threaded():
             "thread_ts": "DummyThread",
         }
 
+
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 @pytest.mark.asyncio
 async def test_slackbot_send_attachment_with_text():
@@ -1000,6 +1001,7 @@ async def test_slackbot_send_attachment_with_text():
             "as_user": True,
             "attachments": [attachment],
         }
+
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 @pytest.mark.asyncio
@@ -1061,6 +1063,7 @@ async def test_slackbot_send_attachment_with_text_threaded():
             "thread_ts": "DummyThread",
         }
 
+
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 @pytest.mark.asyncio
 async def test_slackbot_send_image_url():
@@ -1088,6 +1091,7 @@ async def test_slackbot_send_image_url():
         assert request_params["blocks"][0].get("type") == "image"
         assert request_params["blocks"][0].get("alt_text") == "http://www.rasa.net"
         assert request_params["blocks"][0].get("image_url") == "http://www.rasa.net"
+
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 @pytest.mark.asyncio
@@ -1118,6 +1122,7 @@ async def test_slackbot_send_image_url_threaded():
         assert request_params["blocks"][0].get("alt_text") == "http://www.rasa.net"
         assert request_params["blocks"][0].get("image_url") == "http://www.rasa.net"
 
+
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 @pytest.mark.asyncio
 async def test_slackbot_send_text():
@@ -1144,6 +1149,7 @@ async def test_slackbot_send_text():
             "text": "my message",
             "type": "mrkdwn",
         }
+
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 @pytest.mark.asyncio
@@ -1172,6 +1178,7 @@ async def test_slackbot_send_text_threaded():
             "type": "mrkdwn",
             "thread_ts": "DummyThread",
         }
+
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 def test_channel_inheritance():

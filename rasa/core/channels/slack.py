@@ -381,8 +381,8 @@ class SlackInput(InputChannel):
             Metadata extracted from the sent event payload. This includes the output channel for the response,
             and users that have installed the bot.
         """
-        content_type = request.headers.get('content-type')
-        if content_type == 'application/json':
+        content_type = request.headers.get("content-type")
+        if content_type == "application/json":
             slack_event = request.json
             event = slack_event.get("event", {})
             ts = event.get("thread_ts", event.get("ts"))
@@ -393,7 +393,7 @@ class SlackInput(InputChannel):
                 "users": slack_event.get("authed_users"),
             }
 
-        if content_type == 'application/x-www-form-urlencoded':
+        if content_type == "application/x-www-form-urlencoded":
             output = request.form
             payload = json.loads(output["payload"][0])
             message = payload.get("message", {})
@@ -417,8 +417,8 @@ class SlackInput(InputChannel):
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request) -> HTTPResponse:
-            content_type = request.headers.get('content-type')
-            if content_type == 'application/json':
+            content_type = request.headers.get("content-type")
+            if content_type == "application/json":
                 output = request.json
                 event = output.get("event", {})
                 user_message = event.get("text", "")
@@ -445,7 +445,7 @@ class SlackInput(InputChannel):
                         f"Received message on unsupported channel: {metadata['out_channel']}"
                     )
 
-            elif content_type == 'application/x-www-form-urlencoded':
+            elif content_type == "application/x-www-form-urlencoded":
                 output = request.form
                 payload = json.loads(output["payload"][0])
 
