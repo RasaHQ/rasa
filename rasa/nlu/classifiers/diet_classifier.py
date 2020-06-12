@@ -33,7 +33,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    MODEL_CHECKPOINT_DIR,
     CHECKPOINT_MODEL,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
@@ -236,9 +235,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
-        # Directory to store model checkpoints
-        # Ends up with the best model during training
-        MODEL_CHECKPOINT_DIR: None,
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
         # Specify what features to use as sequence and sentence features
@@ -716,12 +712,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
-        # add model_checkpoint_dir to the component config
-        if self.component_config.get(CHECKPOINT_MODEL, False):
-            self.component_config.update(
-                model_checkpoint_dir=kwargs.pop(MODEL_CHECKPOINT_DIR)
-            )
-
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,
@@ -1033,7 +1023,8 @@ class DIET(RasaModel):
             random_seed=config[RANDOM_SEED],
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
             tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
-            model_checkpoint_dir=config[MODEL_CHECKPOINT_DIR],
+            checkpoint_model=config[CHECKPOINT_MODEL]
+            #model_checkpoint_dir=config[MODEL_CHECKPOINT_DIR],
         )
 
         self.config = config

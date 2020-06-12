@@ -6,7 +6,6 @@ import rasa.utils.common as common_utils
 from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import MODEL_CHECKPOINT_DIR
 from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.training_data import load_data
 from rasa.nlu.training_data.loading import load_data_from_endpoint
@@ -88,7 +87,6 @@ async def train(
     if training_data.entity_roles_groups_used():
         common_utils.mark_as_experimental_feature("Entity Roles and Groups feature")
 
-    kwargs[MODEL_CHECKPOINT_DIR] = path
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:

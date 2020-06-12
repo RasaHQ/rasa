@@ -5,6 +5,7 @@ import numpy as np
 import logging
 import os
 import shutil
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 from typing import List, Text, Dict, Tuple, Union, Optional, Callable, TYPE_CHECKING
@@ -36,7 +37,7 @@ class RasaModel(tf.keras.models.Model):
         random_seed: Optional[int] = None,
         tensorboard_log_dir: Optional[Text] = None,
         tensorboard_log_level: Optional[Text] = "epoch",
-        model_checkpoint_dir: Optional[Text] = None,
+        checkpoint_model: Optional[Text] = None,
         **kwargs,
     ) -> None:
         """Initialize the RasaModel.
@@ -65,8 +66,8 @@ class RasaModel(tf.keras.models.Model):
 
         self.best_metrics_so_far = {}
         self.best_model_file = (
-            os.path.join(model_checkpoint_dir, f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model")
-            if model_checkpoint_dir is not None
+            os.path.join(tempfile.mkdtemp(), f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model")
+            if checkpoint_model
             else None
         )
 
@@ -193,6 +194,7 @@ class RasaModel(tf.keras.models.Model):
                     val_results = self._get_metric_results(prefix="val_")
                     improved = self._update_best_metrics_so_far(val_results)
                     if improved and self.best_model_file is not None:
+                        logging.debug(f'Creating model checkpoint at epoch={epoch}...')
                         self.save(self.best_model_file, overwrite=True)
 
                 postfix_dict.update(val_results)
@@ -216,6 +218,7 @@ class RasaModel(tf.keras.models.Model):
 
                 val_results = self._get_metric_results(prefix="val_")
                 if self._update_best_metrics_so_far(val_results):
+                    logging.debug(f'Creating model checkpoint after training...')
                     self.save(self.best_model_file, overwrite=True)
 
         if self.model_summary_file is not None:
