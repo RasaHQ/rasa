@@ -1120,15 +1120,23 @@ class DIET(RasaModel):
         self.entity_role_f1 = tf.keras.metrics.Mean(name="role_f1")
 
     def _update_metrics_to_log(self) -> None:
+        debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
+
         if self.config[MASKED_LM]:
-            self.metrics_to_log += ["m_loss", "m_acc"]
+            self.metrics_to_log.append("m_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("m_loss")
         if self.config[INTENT_CLASSIFICATION]:
-            self.metrics_to_log += ["i_loss", "i_acc"]
+            self.metrics_to_log.append("i_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("i_loss")
         if self.config[ENTITY_RECOGNITION]:
             for tag_spec in self._entity_tag_specs:
                 if tag_spec.num_tags != 0:
-                    name = tag_spec.tag_name
-                    self.metrics_to_log += [f"{name}_loss", f"{name}_f1"]
+                    name = tag_spec.tag_name[0]  # just take the first letter
+                    self.metrics_to_log.append("f{name}_f1")
+                    if debug_log_level:
+                        self.metrics_to_log.append("f{name}_loss")
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
