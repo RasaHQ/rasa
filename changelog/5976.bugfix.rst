@@ -1,0 +1,3 @@
+Fix server crashes that occurred when Rasa Open Source pulls a model from a
+:ref:`model server <server_fetch_from_server>` and an exception was thrown during
+model loading (such as a domain with invalid YAML).

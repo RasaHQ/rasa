@@ -71,41 +71,76 @@ async def load_from_server(agent: "Agent", model_server: EndpointConfig) -> "Age
     return agent
 
 
+def _load_interpreter(
+    agent: "Agent", nlu_path: Optional[Text]
+) -> NaturalLanguageInterpreter:
+    """Load the NLU interpreter at `nlu_path`.
+
+    Args:
+        agent: Instance of `Agent` to inspect for an interpreter if `nlu_path` is
+            `None`.
+        nlu_path: NLU model path.
+
+    Returns:
+        The NLU interpreter.
+    """
+    if nlu_path:
+        from rasa.core.interpreter import RasaNLUInterpreter
+
+        return RasaNLUInterpreter(model_directory=nlu_path)
+
+    return agent.interpreter or RegexInterpreter()
+
+
+def _load_domain_and_policy_ensemble(
+    core_path: Optional[Text],
+) -> Tuple[Optional[Domain], Optional[PolicyEnsemble]]:
+    """Load the domain and policy ensemble from the model at `core_path`.
+
+    Args:
+        core_path: Core model path.
+
+    Returns:
+        An instance of `Domain` and `PolicyEnsemble` if `core_path` is not `None`.
+    """
+    policy_ensemble = None
+    domain = None
+
+    if core_path:
+        policy_ensemble = PolicyEnsemble.load(core_path)
+        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
+        domain = Domain.load(domain_path)
+
+    return domain, policy_ensemble
+
+
 def _load_and_set_updated_model(
     agent: "Agent", model_directory: Text, fingerprint: Text
-):
-    """Load the persisted model into memory and set the model on the agent."""
+) -> None:
+    """Load the persisted model into memory and set the model on the agent.
 
+    Args:
+        agent: Instance of `Agent` to update with the new model.
+        model_directory: Rasa model directory.
+        fingerprint: Fingerprint of the supplied model at `model_directory`.
+    """
     logger.debug(f"Found new model with fingerprint {fingerprint}. Loading...")
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
-    if nlu_path:
-        from rasa.core.interpreter import RasaNLUInterpreter
-
-        interpreter = RasaNLUInterpreter(model_directory=nlu_path)
-    else:
-        interpreter = (
-            agent.interpreter if agent.interpreter is not None else RegexInterpreter()
-        )
-
-    domain = None
-    if core_path:
-        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
-        domain = Domain.load(domain_path)
-
     try:
-        policy_ensemble = None
-        if core_path:
-            policy_ensemble = PolicyEnsemble.load(core_path)
+        interpreter = _load_interpreter(agent, nlu_path)
+        domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
+
         agent.update_model(
             domain, policy_ensemble, fingerprint, interpreter, model_directory
         )
+
         logger.debug("Finished updating agent to new model.")
-    except Exception:
+    except Exception as e:
         logger.exception(
-            "Failed to load policy and update agent. "
-            "The previous model will stay loaded instead."
+            f"Failed to update model. The previous model will stay loaded instead. "
+            f"Error: {e}"
         )
 
 
