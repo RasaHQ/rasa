@@ -155,6 +155,7 @@ class RasaModel(tf.keras.models.Model):
         progress_bar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         training_steps = 0
+        best_model_epoch = -1
 
         for epoch in progress_bar:
             epoch_batch_size = self.linearly_increasing_batch_size(
@@ -194,7 +195,8 @@ class RasaModel(tf.keras.models.Model):
                     val_results = self._get_metric_results(prefix="val_")
                     improved = self._update_best_metrics_so_far(val_results)
                     if improved and self.best_model_file is not None:
-                        logging.debug(f'Creating model checkpoint at epoch={epoch}...')
+                        logger.debug(f'Creating model checkpoint at epoch={epoch}...')
+                        best_model_epoch = epoch
                         self.save(self.best_model_file, overwrite=True)
 
                 postfix_dict.update(val_results)
@@ -218,9 +220,12 @@ class RasaModel(tf.keras.models.Model):
 
                 val_results = self._get_metric_results(prefix="val_")
                 if self._update_best_metrics_so_far(val_results):
-                    logging.debug(f'Creating model checkpoint after training...')
+                    logger.debug(f'Creating model checkpoint after training...')
+                    best_model_epoch = epoch
                     self.save(self.best_model_file, overwrite=True)
 
+        if best_model_epoch >= 0:
+            logger.info(f'The model of epoch {epoch} (out of {epochs} in total) will be stored!')
         if self.model_summary_file is not None:
             self._write_model_summary()
 
