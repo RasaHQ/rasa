@@ -2242,7 +2242,7 @@ description = "A utility library for mocking out the `requests` Python library."
 name = "responses"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "0.10.14"
+version = "0.10.15"
 
 [package.dependencies]
 requests = ">=2.0"
@@ -2547,7 +2547,7 @@ description = "Python documentation generator"
 name = "sphinx"
 optional = false
 python-versions = ">=3.5"
-version = "3.0.4"
+version = "3.1.0"
 
 [package.dependencies]
 Jinja2 = ">=2.3"
@@ -2570,7 +2570,7 @@ sphinxcontrib-serializinghtml = "*"
 
 [package.extras]
 docs = ["sphinxcontrib-websupport"]
-lint = ["flake8 (>=3.5.0)", "flake8-import-order", "mypy (>=0.770)", "docutils-stubs"]
+lint = ["flake8 (>=3.5.0)", "flake8-import-order", "mypy (>=0.780)", "docutils-stubs"]
 test = ["pytest", "pytest-cov", "html5lib", "typed-ast", "cython"]
 
 [[package]]
@@ -3342,7 +3342,6 @@ multidict = ">=4.0"
 [[package]]
 category = "main"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-marker = "python_version < \"3.7\" and python_version != \"3.4\" or python_version < \"3.8\""
 name = "zipp"
 optional = false
 python-versions = ">=3.6"
@@ -4125,13 +4124,9 @@ ninja = [
     {file = "ninja-1.10.0-py2-none-macosx_10_6_x86_64.whl", hash = "sha256:a4b57528c5f53f3014eb2c1328c08cfe2a4339e9c24799c58f24a3481a125ef3"},
     {file = "ninja-1.10.0-py2-none-manylinux1_i686.whl", hash = "sha256:75fbe376d655487d8016dae6742d995362095a3d992cefd2d1a33ca6ea21f3e0"},
     {file = "ninja-1.10.0-py2-none-manylinux1_x86_64.whl", hash = "sha256:9e8674e93d16c890abc41957b5d9cffca645f45d263dc095bb9c96652c848c96"},
-    {file = "ninja-1.10.0-py2-none-win32.whl", hash = "sha256:1a4aa6b2fd4574114ee9171051775400d621b0bbd30f18c5f70896517c84c658"},
-    {file = "ninja-1.10.0-py2-none-win_amd64.whl", hash = "sha256:6995df9c384f91cddfe0990f5518c953227fad83dc07205f374cd4060a376a80"},
     {file = "ninja-1.10.0-py3-none-macosx_10_6_x86_64.whl", hash = "sha256:6b87f02be70881de8a7325432c3c870ba36b84f9693cfe63abe37a959d8f63b5"},
     {file = "ninja-1.10.0-py3-none-manylinux1_i686.whl", hash = "sha256:ed3e245fd6c9785370422874f28753c3d79f60a69bfc10414fa5dc8e8c666fbb"},
     {file = "ninja-1.10.0-py3-none-manylinux1_x86_64.whl", hash = "sha256:d7a33ff0e1c7b88cbb64d88181ac90c66f69b5663396c21eb2548d935cc98250"},
-    {file = "ninja-1.10.0-py3-none-win32.whl", hash = "sha256:968f3cb84dcd2646a8661b18c5ff0f51b1ee9426b263d7bd5a565471507b69cd"},
-    {file = "ninja-1.10.0-py3-none-win_amd64.whl", hash = "sha256:83a9fb7b3501542d459011c00ee19bb43b0a267da0d311b56afb2e901df0e3a1"},
     {file = "ninja-1.10.0.tar.gz", hash = "sha256:654e739b3fe2595ee023134e3a148fb5c1c31a9894b4eb8ff7060b1a11dc7413"},
 ]
 numpy = [
@@ -4580,8 +4575,8 @@ requests-toolbelt = [
     {file = "requests_toolbelt-0.9.1-py2.py3-none-any.whl", hash = "sha256:380606e1d10dc85c3bd47bf5a6095f815ec007be7a8b69c878507068df059e6f"},
 ]
 responses = [
-    {file = "responses-0.10.14-py2.py3-none-any.whl", hash = "sha256:3d596d0be06151330cb230a2d630717ab20f7a81f205019481e206eb5db79915"},
-    {file = "responses-0.10.14.tar.gz", hash = "sha256:1a78bc010b20a5022a2c0cb76b8ee6dc1e34d887972615ebd725ab9a166a4960"},
+    {file = "responses-0.10.15-py2.py3-none-any.whl", hash = "sha256:af94d28cdfb48ded0ad82a5216616631543650f440334a693479b8991a6594a2"},
+    {file = "responses-0.10.15.tar.gz", hash = "sha256:7bb697a5fedeb41d81e8b87f152d453d5cab42dcd1691b6a7d6097e94d33f373"},
 ]
 rfc3986 = [
     {file = "rfc3986-1.4.0-py2.py3-none-any.whl", hash = "sha256:af9147e9aceda37c91a05f4deb128d4b4b49d6b199775fd2d2927768abdc8f50"},
@@ -4749,8 +4744,8 @@ spacy = [
     {file = "spacy-2.2.4.tar.gz", hash = "sha256:f0f3a67c5841e6e35d62c98f40ebb3d132587d3aba4f4dccac5056c4e90ff5b9"},
 ]
 sphinx = [
-    {file = "Sphinx-3.0.4-py3-none-any.whl", hash = "sha256:779a519adbd3a70fc7c468af08c5e74829868b0a5b34587b33340e010291856c"},
-    {file = "Sphinx-3.0.4.tar.gz", hash = "sha256:ea64df287958ee5aac46be7ac2b7277305b0381d213728c3a49d8bb9b8415807"},
+    {file = "Sphinx-3.1.0-py3-none-any.whl", hash = "sha256:7d3d5087e39ab5a031b75588e9859f011de70e213cd0080ccbc28079fb0786d1"},
+    {file = "Sphinx-3.1.0.tar.gz", hash = "sha256:1c445320a3310baa5ccb8d957267ef4a0fc930dc1234db5098b3d7af14fbb242"},
 ]
 sphinx-autobuild = [
     {file = "sphinx-autobuild-0.7.1.tar.gz", hash = "sha256:66388f81884666e3821edbe05dd53a0cfb68093873d17320d0610de8db28c74e"},
