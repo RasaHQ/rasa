@@ -452,22 +452,22 @@ class RasaModel(tf.keras.models.Model):
         if len(self.best_metrics_so_far) <= 0:  # Init with actual result keys
             keys = filter(
                 lambda k: True if (k.endswith("_acc") or k.endswith("_f1")) else False,
-                curr_results.keys(),
+                current_results.keys(),
             )
             for key in keys:
-                self.best_metrics_so_far[key] = float(curr_results[key])
+                self.best_metrics_so_far[key] = float(current_results[key])
             return True
 
         all_improved = all(
             [
-                float(curr_results[key]) > self.best_metrics_so_far[key]
+                float(current_results[key]) > self.best_metrics_so_far[key]
                 for key in self.best_metrics_so_far.keys()
             ]
         )
         if all_improved:
             for key in self.best_metrics_so_far.keys():
-                self.best_metrics_so_far[key] = float(curr_results[key])
-    return all_improved
+                self.best_metrics_so_far[key] = float(current_results[key])
+        return all_improved
 
     @staticmethod
     def _should_evaluate(
