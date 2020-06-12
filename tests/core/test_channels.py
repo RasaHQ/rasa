@@ -526,7 +526,6 @@ def test_slack_metadata():
 
 def test_slack_form_metadata():
     from rasa.core.channels.slack import SlackInput
-    from sanic.request import Request
 
     user = "user1"
     channel = "channel1"
@@ -620,7 +619,6 @@ def test_slack_metadata_missing_keys():
 
 def test_slack_form_metadata_missing_keys():
     from rasa.core.channels.slack import SlackInput
-    from sanic.request import Request
 
     channel = "channel1"
     ts = "1579802617.000800"
@@ -665,7 +663,6 @@ def test_slack_form_metadata_missing_keys():
 
 def test_slack_no_metadata():
     from rasa.core.channels.slack import SlackInput
-    from sanic.request import Request
 
     input_channel = SlackInput(
         slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
@@ -1177,6 +1174,150 @@ async def test_slackbot_send_text_threaded():
             "text": "my message",
             "type": "mrkdwn",
             "thread_ts": "DummyThread",
+        }
+
+
+@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
+async def test_slackbot_send_text_with_buttons():
+    from rasa.core.channels.slack import SlackBot
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://www.slack.com/api/chat.postMessage",
+            payload={"ok": True, "purpose": "Testing bots"},
+        )
+
+        bot = SlackBot("DummyToken", "General")
+        buttons = [{"title": "title", "payload": "payload"}]
+
+        await bot.send_text_with_buttons("ID", "my message", buttons)
+
+        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+
+        assert r
+
+        request_params = json_of_latest_request(r)
+
+        text_block = {
+            "type": "section",
+            "text": {"type": "plain_text", "text": "my message"},
+        }
+        button_block = {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "title"},
+                    "value": "payload",
+                }
+            ],
+        }
+        assert request_params == {
+            "as_user": True,
+            "channel": "General",
+            "text": "my message",
+            "blocks": [text_block, button_block],
+        }
+
+
+@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
+async def test_slackbot_send_text_with_buttons_threaded():
+    from rasa.core.channels.slack import SlackBot
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://www.slack.com/api/chat.postMessage",
+            payload={"ok": True, "purpose": "Testing bots"},
+        )
+
+        bot = SlackBot("DummyToken", "General", ts="DummyThread")
+        buttons = [{"title": "title", "payload": "payload"}]
+
+        await bot.send_text_with_buttons("ID", "my message", buttons)
+
+        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+
+        assert r
+
+        request_params = json_of_latest_request(r)
+
+        text_block = {
+            "type": "section",
+            "text": {"type": "plain_text", "text": "my message"},
+        }
+        button_block = {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "title"},
+                    "value": "payload",
+                }
+            ],
+        }
+        assert request_params == {
+            "as_user": True,
+            "channel": "General",
+            "text": "my message",
+            "blocks": [text_block, button_block],
+            "thread_ts": "DummyThread",
+        }
+
+
+@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
+async def test_slackbot_send_custom_json():
+    from rasa.core.channels.slack import SlackBot
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://www.slack.com/api/chat.postMessage",
+            payload={"ok": True, "purpose": "Testing bots"},
+        )
+
+        bot = SlackBot("DummyToken", "General")
+        await bot.send_custom_json("ID", {"test_key": "test_value"})
+
+        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+
+        assert r
+
+        request_params = json_of_latest_request(r)
+
+        assert request_params == {
+            "as_user": True,
+            "channel": "General",
+            "test_key": "test_value",
+        }
+
+
+@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
+async def test_slackbot_send_custom_json_threaded():
+    from rasa.core.channels.slack import SlackBot
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://www.slack.com/api/chat.postMessage",
+            payload={"ok": True, "purpose": "Testing bots"},
+        )
+
+        bot = SlackBot("DummyToken", "General", ts="DummyThread")
+        await bot.send_custom_json("ID", {"test_key": "test_value"})
+
+        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+
+        assert r
+
+        request_params = json_of_latest_request(r)
+
+        assert request_params == {
+            "as_user": True,
+            "channel": "General",
+            "thread_ts": "DummyThread",
+            "test_key": "test_value",
         }
 
 

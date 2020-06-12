@@ -98,10 +98,7 @@ class SlackBot(OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
 
-        text_block = {
-            "type": "section",
-            "text": {"type": "plain_text", "text": text},
-        }
+        text_block = {"type": "section", "text": {"type": "plain_text", "text": text}}
 
         if len(buttons) > 5:
             raise_warning(
@@ -457,7 +454,7 @@ class SlackInput(InputChannel):
                         return await self.process_message(
                             request, on_new_message, text, sender_id, metadata
                         )
-                    elif payload["actions"][0]["type"] == "button":
+                    if payload["actions"][0]["type"] == "button":
                         # link buttons don't have "value", don't send their clicks to bot
                         return response.text("User clicked link button")
                 return response.text(
