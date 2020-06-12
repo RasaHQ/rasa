@@ -5,7 +5,6 @@ import numpy as np
 import logging
 import os
 import shutil
-import tempfile
 from collections import defaultdict
 from pathlib import Path
 from typing import List, Text, Dict, Tuple, Union, Optional, Callable, TYPE_CHECKING
@@ -13,6 +12,7 @@ from typing import List, Text, Dict, Tuple, Union, Optional, Callable, TYPE_CHEC
 from tqdm import tqdm
 from rasa.constants import NLU_CHECKPOINT_MODEL_NAME
 from rasa.utils.common import is_logging_disabled
+from rasa.utils import io
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import SEQUENCE, TENSORBOARD_LOG_LEVEL
 
@@ -65,12 +65,11 @@ class RasaModel(tf.keras.models.Model):
         self.tensorboard_log_on_epochs = True
 
         self.best_metrics_so_far = {}
-        self.best_model_file = (
-            os.path.join(tempfile.mkdtemp(), f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model")
-            if checkpoint_model
-            else None
-        )
-
+        self.best_model_file = None
+        if checkpoint_model:
+            model_checkpoint_dir = io.create_temporary_directory()
+            self.best_model_file = os.path.join(model_checkpoint_dir, f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model")
+        
         self._set_up_tensorboard_writer()
 
     def _set_up_tensorboard_writer(self) -> None:
