@@ -456,7 +456,7 @@ class RasaModel(tf.keras.models.Model):
             )
             for key in keys:
                 self.best_metrics_so_far[key] = float(curr_results[key])
-            all_improved = True
+            return True
         else:
             all_improved = all(
                 [
