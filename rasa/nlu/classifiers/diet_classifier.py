@@ -1122,21 +1122,29 @@ class DIET(RasaModel):
     def _update_metrics_to_log(self) -> None:
         debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
 
+        logger.debug("Following metrics will be logged during training: ")
+        logger.debug("  - t_loss (total loss)")
         if self.config[MASKED_LM]:
             self.metrics_to_log.append("m_acc")
+            logger.debug("  - m_acc (mask accuracy)")
             if debug_log_level:
                 self.metrics_to_log.append("m_loss")
+                logger.debug("  - m_loss (mask loss)")
         if self.config[INTENT_CLASSIFICATION]:
             self.metrics_to_log.append("i_acc")
+            logger.debug("  - i_acc (intent accuracy)")
             if debug_log_level:
                 self.metrics_to_log.append("i_loss")
+                logger.debug("  - i_loss (intent loss)")
         if self.config[ENTITY_RECOGNITION]:
             for tag_spec in self._entity_tag_specs:
                 if tag_spec.num_tags != 0:
-                    name = tag_spec.tag_name[0]  # just take the first letter
-                    self.metrics_to_log.append(f"{name}_f1")
+                    name = tag_spec.tag_name
+                    self.metrics_to_log.append(f"{name[0]}_f1")
+                    logger.debug(f"  - {name[0]}_acc ({name} accuracy)")
                     if debug_log_level:
-                        self.metrics_to_log.append(f"{name}_loss")
+                        self.metrics_to_log.append(f"{name[0]}_loss")
+                        logger.debug(f"  - {name[0]}_loss ({name} loss)")
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT

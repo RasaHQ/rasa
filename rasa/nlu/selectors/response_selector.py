@@ -431,14 +431,20 @@ class DIET2DIET(DIET):
     def _update_metrics_to_log(self) -> None:
         debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
 
+        logger.debug("Following metrics will be logged during training: ")
+        logger.debug("  - t_loss (total loss)")
         if self.config[MASKED_LM]:
             self.metrics_to_log.append("m_acc")
+            logger.debug("  - m_acc (mask accuracy)")
             if debug_log_level:
                 self.metrics_to_log.append("m_loss")
+                logger.debug("  - m_loss (mask loss)")
 
         self.metrics_to_log.append("r_acc")
+        logger.debug("  - r_acc (response accuracy)")
         if debug_log_level:
             self.metrics_to_log.append("r_loss")
+            logger.debug("  - r_loss (response loss)")
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
