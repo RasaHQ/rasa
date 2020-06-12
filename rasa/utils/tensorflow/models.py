@@ -457,17 +457,17 @@ class RasaModel(tf.keras.models.Model):
             for key in keys:
                 self.best_metrics_so_far[key] = float(curr_results[key])
             return True
-        else:
-            all_improved = all(
-                [
-                    float(curr_results[key]) > self.best_metrics_so_far[key]
-                    for key in self.best_metrics_so_far.keys()
-                ]
-            )
-            if all_improved:
-                for key in self.best_metrics_so_far.keys():
-                    self.best_metrics_so_far[key] = float(curr_results[key])
-        return all_improved
+
+        all_improved = all(
+            [
+                float(curr_results[key]) > self.best_metrics_so_far[key]
+                for key in self.best_metrics_so_far.keys()
+            ]
+        )
+        if all_improved:
+            for key in self.best_metrics_so_far.keys():
+                self.best_metrics_so_far[key] = float(curr_results[key])
+    return all_improved
 
     @staticmethod
     def _should_evaluate(
