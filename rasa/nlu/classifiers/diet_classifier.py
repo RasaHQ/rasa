@@ -1109,15 +1109,15 @@ class DIET(RasaModel):
         # so create loss metrics first to output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
         self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
-        self.entity_loss = tf.keras.metrics.Mean(name="entity_loss")
-        self.entity_group_loss = tf.keras.metrics.Mean(name="group_loss")
-        self.entity_role_loss = tf.keras.metrics.Mean(name="role_loss")
+        self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
+        self.entity_group_loss = tf.keras.metrics.Mean(name="g_loss")
+        self.entity_role_loss = tf.keras.metrics.Mean(name="r_loss")
         # create accuracy metrics second to output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
         self.response_acc = tf.keras.metrics.Mean(name="i_acc")
-        self.entity_f1 = tf.keras.metrics.Mean(name="entity_f1")
-        self.entity_group_f1 = tf.keras.metrics.Mean(name="group_f1")
-        self.entity_role_f1 = tf.keras.metrics.Mean(name="role_f1")
+        self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
+        self.entity_group_f1 = tf.keras.metrics.Mean(name="g_f1")
+        self.entity_role_f1 = tf.keras.metrics.Mean(name="r_f1")
 
     def _update_metrics_to_log(self) -> None:
         debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
@@ -1134,9 +1134,9 @@ class DIET(RasaModel):
             for tag_spec in self._entity_tag_specs:
                 if tag_spec.num_tags != 0:
                     name = tag_spec.tag_name[0]  # just take the first letter
-                    self.metrics_to_log.append("f{name}_f1")
+                    self.metrics_to_log.append(f"{name}_f1")
                     if debug_log_level:
-                        self.metrics_to_log.append("f{name}_loss")
+                        self.metrics_to_log.append(f"{name}_loss")
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
