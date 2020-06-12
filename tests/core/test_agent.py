@@ -195,7 +195,6 @@ async def test_wait_time_between_pulls_without_interval(
     agent = Agent()
     # should not call schedule_model_pulling, if it does, this will raise
     await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
-    jobs.kill_scheduler()
 
 
 async def test_pull_model_with_invalid_domain(
@@ -218,8 +217,6 @@ async def test_pull_model_with_invalid_domain(
 
     # error was logged
     assert error_message in caplog.text
-
-    jobs.kill_scheduler()
 
 
 async def test_load_agent(trained_rasa_model: Text):

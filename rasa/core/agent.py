@@ -71,6 +71,33 @@ async def load_from_server(agent: "Agent", model_server: EndpointConfig) -> "Age
     return agent
 
 
+def _load_interpreter(
+    agent: "Agent", nlu_path: Optional[Text]
+) -> NaturalLanguageInterpreter:
+    """Load the NLU interpreter at `nlu_path`."""
+    if nlu_path:
+        from rasa.core.interpreter import RasaNLUInterpreter
+
+        return RasaNLUInterpreter(model_directory=nlu_path)
+
+    return agent.interpreter if agent.interpreter is not None else RegexInterpreter()
+
+
+def _load_domain_and_policy_ensemble(
+    core_path: Optional[Text],
+) -> Tuple[Optional[Domain], Optional[PolicyEnsemble]]:
+    """Load the domain and policy ensemble from the model at `core_path`."""
+    policy_ensemble = None
+    domain = None
+
+    if core_path:
+        policy_ensemble = PolicyEnsemble.load(core_path)
+        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
+        domain = Domain.load(domain_path)
+
+    return domain, policy_ensemble
+
+
 def _load_and_set_updated_model(
     agent: "Agent", model_directory: Text, fingerprint: Text
 ):
@@ -80,32 +107,20 @@ def _load_and_set_updated_model(
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
-    if nlu_path:
-        from rasa.core.interpreter import RasaNLUInterpreter
-
-        interpreter = RasaNLUInterpreter(model_directory=nlu_path)
-    else:
-        interpreter = (
-            agent.interpreter if agent.interpreter is not None else RegexInterpreter()
-        )
-
     try:
-        policy_ensemble = None
-        domain = None
+        interpreter = _load_interpreter(agent, nlu_path)
 
-        if core_path:
-            policy_ensemble = PolicyEnsemble.load(core_path)
-            domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
-            domain = Domain.load(domain_path)
+        domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
 
         agent.update_model(
             domain, policy_ensemble, fingerprint, interpreter, model_directory
         )
+
         logger.debug("Finished updating agent to new model.")
     except Exception as e:
-        logger.error(
-            f"Failed to load policy and update agent. "
-            f"The previous model will stay loaded instead. Error: {e}"
+        logger.exception(
+            f"Failed to update agent. The previous model will stay loaded instead. "
+            f"Error: {e}"
         )
 
 
