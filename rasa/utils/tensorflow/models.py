@@ -292,20 +292,20 @@ class RasaModel(tf.keras.models.Model):
         self.save_weights(model_file_name, overwrite=overwrite, save_format="tf")
 
     def copy_best(self, model_file_name: Text) -> None:
-        ckp_dir, ckp_file = os.path.split(self.best_model_file)
-        ckp_path = Path(ckp_dir)
+        checkpoint_directory, checkpoint_file = os.path.split(self.best_model_file)
+        checkpoint_path = Path(checkpoint_directory)
 
-        for f in ckp_path.glob(f"{ckp_file}*"):
+        for f in checkpoint_path.glob(f"{checkpoint_file}*"):
             shutil.move(str(f.absolute()), model_file_name + f.suffix)
 
         # Generate the tf2 checkpoint file
-        dest_path, dest_file = os.path.split(model_file_name)
-        with open(os.path.join(ckp_dir, "checkpoint")) as in_file, open(
-            os.path.join(dest_path, "checkpoint"), "w"
+        destination_path, destination_file = os.path.split(model_file_name)
+        with open(os.path.join(checkpoint_directory, "checkpoint")) as in_file, open(
+            os.path.join(destination_path, "checkpoint"), "w"
         ) as out_file:
             for line in in_file:
-                out_file.write(line.replace(ckp_file, dest_file))
-        ckp_path.joinpath("checkpoint").unlink()
+                out_file.write(line.replace(checkpoint_file, destination_file))
+        checkpoint_path.joinpath("checkpoint").unlink()
 
     @classmethod
     def load(
