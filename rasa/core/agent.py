@@ -74,19 +74,35 @@ async def load_from_server(agent: "Agent", model_server: EndpointConfig) -> "Age
 def _load_interpreter(
     agent: "Agent", nlu_path: Optional[Text]
 ) -> NaturalLanguageInterpreter:
-    """Load the NLU interpreter at `nlu_path`."""
+    """Load the NLU interpreter at `nlu_path`.
+
+    Args:
+        agent: Instance of `Agent` to inspect for an interpreter if `nlu_path` is
+            `None`.
+        nlu_path: NLU model path.
+
+    Returns:
+        The NLU interpreter.
+    """
     if nlu_path:
         from rasa.core.interpreter import RasaNLUInterpreter
 
         return RasaNLUInterpreter(model_directory=nlu_path)
 
-    return agent.interpreter if agent.interpreter is not None else RegexInterpreter()
+    return agent.interpreter or RegexInterpreter()
 
 
 def _load_domain_and_policy_ensemble(
     core_path: Optional[Text],
 ) -> Tuple[Optional[Domain], Optional[PolicyEnsemble]]:
-    """Load the domain and policy ensemble from the model at `core_path`."""
+    """Load the domain and policy ensemble from the model at `core_path`.
+
+    Args:
+        core_path: Core model path.
+
+    Returns:
+        An instance of `Domain` and `PolicyEnsemble` if `core_path` is not `None`.
+    """
     policy_ensemble = None
     domain = None
 
@@ -100,9 +116,14 @@ def _load_domain_and_policy_ensemble(
 
 def _load_and_set_updated_model(
     agent: "Agent", model_directory: Text, fingerprint: Text
-):
-    """Load the persisted model into memory and set the model on the agent."""
+) -> None:
+    """Load the persisted model into memory and set the model on the agent.
 
+    Args:
+        agent: Instance of `Agent` to update with the new model.
+        model_directory: Rasa model directory.
+        fingerprint: Fingerprint of the supplied model at `model_directory`.
+    """
     logger.debug(f"Found new model with fingerprint {fingerprint}. Loading...")
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
