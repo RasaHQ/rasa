@@ -17,6 +17,22 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.3] - 2020-06-12
+^^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#3900 <https://github.com/rasahq/rasa/issues/3900>`_: Reduced duplicate logs and warnings when running ``rasa train``.
+
+Bugfixes
+--------
+- `#5972 <https://github.com/rasahq/rasa/issues/5972>`_: Remove the ``clean_up_entities`` method from the ``DIETClassifier`` and ``CRFEntityExtractor`` as it let to incorrect
+  entity predictions.
+- `#5976 <https://github.com/rasahq/rasa/issues/5976>`_: Fix server crashes that occurred when Rasa Open Source pulls a model from a
+  :ref:`model server <server_fetch_from_server>` and an exception was thrown during
+  model loading (such as a domain with invalid YAML).
+
+
 [1.10.2] - 2020-06-03
 ^^^^^^^^^^^^^^^^^^^^^
 
