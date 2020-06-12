@@ -2547,7 +2547,7 @@ description = "Python documentation generator"
 name = "sphinx"
 optional = false
 python-versions = ">=3.5"
-version = "3.0.4"
+version = "3.1.0"
 
 [package.dependencies]
 Jinja2 = ">=2.3"
@@ -2570,7 +2570,7 @@ sphinxcontrib-serializinghtml = "*"
 
 [package.extras]
 docs = ["sphinxcontrib-websupport"]
-lint = ["flake8 (>=3.5.0)", "flake8-import-order", "mypy (>=0.770)", "docutils-stubs"]
+lint = ["flake8 (>=3.5.0)", "flake8-import-order", "mypy (>=0.780)", "docutils-stubs"]
 test = ["pytest", "pytest-cov", "html5lib", "typed-ast", "cython"]
 
 [[package]]
@@ -4744,8 +4744,8 @@ spacy = [
     {file = "spacy-2.2.4.tar.gz", hash = "sha256:f0f3a67c5841e6e35d62c98f40ebb3d132587d3aba4f4dccac5056c4e90ff5b9"},
 ]
 sphinx = [
-    {file = "Sphinx-3.0.4-py3-none-any.whl", hash = "sha256:779a519adbd3a70fc7c468af08c5e74829868b0a5b34587b33340e010291856c"},
-    {file = "Sphinx-3.0.4.tar.gz", hash = "sha256:ea64df287958ee5aac46be7ac2b7277305b0381d213728c3a49d8bb9b8415807"},
+    {file = "Sphinx-3.1.0-py3-none-any.whl", hash = "sha256:7d3d5087e39ab5a031b75588e9859f011de70e213cd0080ccbc28079fb0786d1"},
+    {file = "Sphinx-3.1.0.tar.gz", hash = "sha256:1c445320a3310baa5ccb8d957267ef4a0fc930dc1234db5098b3d7af14fbb242"},
 ]
 sphinx-autobuild = [
     {file = "sphinx-autobuild-0.7.1.tar.gz", hash = "sha256:66388f81884666e3821edbe05dd53a0cfb68093873d17320d0610de8db28c74e"},
