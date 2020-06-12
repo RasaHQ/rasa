@@ -203,8 +203,7 @@ class RasaModel(tf.keras.models.Model):
             progress_bar.set_postfix(postfix_dict)
 
         # Checkpoint the model one last time after training
-        if evaluate_on_num_examples > 0:
-            if self.best_model_file is not None:
+        if evaluate_on_num_examples > 0 and self.best_model_file is not None:
                 epoch_batch_size = self.linearly_increasing_batch_size(
                     epochs, batch_size, epochs
                 )
