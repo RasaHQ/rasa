@@ -1,0 +1,2 @@
+Shorten the information in tqdm during training ML algorithms based on the log level. If you train your model
+in debug mode, all available metrics will be shown during training, otherwise, the information is shorten.
