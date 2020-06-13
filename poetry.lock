@@ -3128,7 +3128,7 @@ description = "Twilio API client and TwiML generator"
 name = "twilio"
 optional = false
 python-versions = "*"
-version = "6.41.0"
+version = "6.42.0"
 
 [package.dependencies]
 PyJWT = ">=1.4.2"
@@ -4985,7 +4985,7 @@ transformers = [
     {file = "transformers-2.11.0.tar.gz", hash = "sha256:8de20f03a94ebf16d98610a7df0acc6ba68c80bd44605cf5ad4300c642a7b57a"},
 ]
 twilio = [
-    {file = "twilio-6.41.0.tar.gz", hash = "sha256:7c6329118583852bb06a2065dd2987a012310e5dfd834ef821d736b059bd1c74"},
+    {file = "twilio-6.42.0.tar.gz", hash = "sha256:9d423321d577cab175712e4cc3636b68534572c3ab1c6c5b191925d3abac0223"},
 ]
 typed-ast = [
     {file = "typed_ast-1.4.1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:73d785a950fc82dd2a25897d525d003f6378d1cb23ab305578394694202a58c3"},
