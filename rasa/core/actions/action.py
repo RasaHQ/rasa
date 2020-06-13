@@ -7,7 +7,7 @@ from typing import List, Text, Optional, Dict, Any
 import aiohttp
 
 import rasa.core
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import DOCS_BASE_URL, DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core import events
 from rasa.core.constants import (
     DEFAULT_REQUEST_TIMEOUT,
@@ -21,6 +21,7 @@ from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
     OPEN_UTTERANCE_PREDICTION_KEY,
     RESPONSE_SELECTOR_PROPERTY_NAME,
+    INTENT_RANKING_KEY,
 )
 
 from rasa.core.events import (
@@ -61,8 +62,10 @@ ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
 ACTION_BACK_NAME = "action_back"
 
 
-def default_actions() -> List["Action"]:
+def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
+    from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
+
     return [
         ActionListen(),
         ActionRestart(),
@@ -72,6 +75,7 @@ def default_actions() -> List["Action"]:
         ActionRevertFallbackEvents(),
         ActionDefaultAskAffirmation(),
         ActionDefaultAskRephrase(),
+        TwoStageFallbackAction(action_endpoint),
         ActionBack(),
     ]
 
@@ -109,7 +113,8 @@ def action_from_name(
 ) -> "Action":
     """Return an action instance for the name."""
 
-    defaults = {a.name(): a for a in default_actions()}
+    # TODO: Why do we need to create instances of everything if just need one thing?!
+    defaults = {a.name(): a for a in default_actions(action_endpoint)}
 
     if name in defaults and name not in user_actions:
         return defaults[name]
@@ -721,6 +726,15 @@ class ActionDefaultAskAffirmation(Action):
         domain: "Domain",
     ) -> List[Event]:
         intent_to_affirm = tracker.latest_message.intent.get("name")
+
+        # TODO: Simplify once the RulePolicy is out of prototype stage
+        intent_ranking = tracker.latest_message.intent.get(INTENT_RANKING_KEY, [])
+        if (
+            intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
+            and len(intent_ranking) > 1
+        ):
+            intent_to_affirm = intent_ranking[1]["name"]
+
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 
         message = {

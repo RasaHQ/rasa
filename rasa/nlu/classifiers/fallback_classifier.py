@@ -8,7 +8,6 @@ from rasa.nlu.training_data import Message
 from rasa.nlu.constants import INTENT_RANKING_KEY, INTENT, INTENT_CONFIDENCE_KEY
 
 THRESHOLD_KEY = "threshold"
-FALLBACK_INTENT_NAME_KEY = "fallback_intent_name"
 
 
 class FallbackClassifier(Component):
@@ -18,10 +17,7 @@ class FallbackClassifier(Component):
         # ## Architecture of the used neural network
         # If all intent confidence scores are beyond this threshold, set the current
         # intent to `FALLBACK_INTENT_NAME`
-        THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_THRESHOLD,
-        # The intent which is used to signal that the NLU confidence was below the
-        # threshold.
-        FALLBACK_INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
+        THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_THRESHOLD
     }
 
     @classmethod
@@ -59,7 +55,7 @@ class FallbackClassifier(Component):
 
     def _fallback_intent(self) -> Dict[Text, Union[Text, float]]:
         return {
-            "name": self.component_config[FALLBACK_INTENT_NAME_KEY],
+            "name": DEFAULT_NLU_FALLBACK_INTENT_NAME,
             # TODO: Re-consider how we represent the confidence here
             INTENT_CONFIDENCE_KEY: 1.0,
         }

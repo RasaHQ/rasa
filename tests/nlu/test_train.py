@@ -72,7 +72,7 @@ def pipelines_for_tests():
                 "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
             ),
         ),
-        ("fallback", as_pipeline("FallbackClassifier")),
+        ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
     ]
 
 

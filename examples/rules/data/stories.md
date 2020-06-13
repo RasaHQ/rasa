@@ -102,7 +102,8 @@
     - utter_greet
 
 
->> fallback story
+>> Implementation of the TwoStageFallbackPolicy
     - ...
-* nlu_fallback
-    - action_default_fallback
+* nlu_fallback  <!-- like request_restaurant -->
+    - two_stage_fallback  <!-- Activate and run form -->
+    - form{"name": "two_stage_fallback"}

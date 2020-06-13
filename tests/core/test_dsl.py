@@ -238,7 +238,7 @@ async def test_generate_training_data_with_cycles(default_domain):
     num_tens = len(training_trackers) - 1
     # if new default actions are added the keys of the actions will be changed
 
-    assert Counter(y) == {0: 6, 11: num_tens, 13: 1, 1: 2, 12: 3}
+    assert Counter(y) == {0: 6, 12: num_tens, 14: 1, 1: 2, 13: 3}
 
 
 async def test_generate_training_data_with_unused_checkpoints(tmpdir, default_domain):
