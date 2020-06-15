@@ -31,9 +31,6 @@ logger = logging.getLogger(__name__)
 
 
 class RegexFeaturizer(SparseFeaturizer):
-
-    defaults = {"produce_sentence_features": True}
-
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
@@ -84,9 +81,7 @@ class RegexFeaturizer(SparseFeaturizer):
                 )
                 message.add_features(final_sequence_features)
 
-            if sentence_features is not None and (
-                attribute != TEXT or self.component_config["produce_sentence_features"]
-            ):
+            if sentence_features is not None:
                 final_sentence_features = Features(
                     sentence_features,
                     FEATURE_TYPE_SENTENCE,
