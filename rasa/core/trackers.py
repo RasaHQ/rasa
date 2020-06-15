@@ -13,6 +13,7 @@ from typing import (
     List,
     Deque,
     Iterable,
+    Tuple,
 )
 
 from rasa.nlu.constants import (
@@ -35,6 +36,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     BotUttered,
     Form,
     SessionStarted,
+    ActionExecutionRejected,
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
@@ -398,7 +400,9 @@ class DialogueStateTracker:
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events."""
 
-        def undo_till_previous(event_type, done_events):
+        def undo_till_previous(
+            event_type: Type[Event], done_events: List[Event]
+        ) -> None:
             """Removes events from `done_events` until the first
                occurrence `event_type` is found which is also removed."""
             # list gets modified - hence we need to copy events!
@@ -407,8 +411,15 @@ class DialogueStateTracker:
                 if isinstance(e, event_type):
                     break
 
+        form_names = [
+            event.name
+            for event in self.events
+            if isinstance(event, Form) and event.name
+        ]
+
         applied_events = []
-        for event in self.events:
+
+        for idx, event in enumerate(self.events):
             if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
@@ -420,10 +431,60 @@ class DialogueStateTracker:
                 # the `action_listen` action right before it).
                 undo_till_previous(UserUttered, applied_events)
                 undo_till_previous(ActionExecuted, applied_events)
+            elif (
+                isinstance(event, ActionExecuted)
+                and event.action_name in form_names
+                and not self._first_loop_execution_or_previous_rejection(
+                    event.action_name, applied_events
+                )
+            ):
+                self.undo_till_previous_loop_execution(
+                    event.action_name, applied_events
+                )
             else:
                 applied_events.append(event)
 
         return applied_events
+
+    @staticmethod
+    def _first_loop_execution_or_previous_rejection(
+        loop_action_name: Text, applied_events: List[Event]
+    ) -> bool:
+        for event in reversed(applied_events):
+            # Form was rejected previously.
+            if (
+                isinstance(event, ActionExecutionRejected)
+                and event.action_name == loop_action_name
+            ):
+                return True
+
+            # Form might have run before but was deactivated and is now running again.
+            if isinstance(event, Form) and event.name is None:
+                return True
+
+            # Form ran before.
+            if (
+                isinstance(event, ActionExecuted)
+                and event.action_name == loop_action_name
+            ):
+                return False
+
+        return True
+
+    @staticmethod
+    def undo_till_previous_loop_execution(
+        loop_action_name: Text, done_events: List[Event]
+    ) -> None:
+        offset = 0
+        for e in reversed(done_events[:]):
+            if isinstance(e, ActionExecuted) and e.action_name == loop_action_name:
+                break
+
+            if isinstance(e, (ActionExecuted, UserUttered)):
+                del done_events[-1 - offset]
+            else:
+                # Remember events which aren't unfeaturized to get the index right
+                offset += 1
 
     def replay_events(self) -> None:
         """Update the tracker based on a list of events."""
