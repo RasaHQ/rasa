@@ -429,10 +429,26 @@ class DIET2DIET(DIET):
         self.response_acc = tf.keras.metrics.Mean(name="r_acc")
 
     def _update_metrics_to_log(self) -> None:
-        if self.config[MASKED_LM]:
-            self.metrics_to_log += ["m_loss", "m_acc"]
+        debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
 
-        self.metrics_to_log += ["r_loss", "r_acc"]
+        if self.config[MASKED_LM]:
+            self.metrics_to_log.append("m_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("m_loss")
+
+        self.metrics_to_log.append("r_acc")
+        if debug_log_level:
+            self.metrics_to_log.append("r_loss")
+
+        self._log_metric_info()
+
+    def _log_metric_info(self) -> None:
+        metric_name = {"t": "total", "m": "mask", "r": "response"}
+        logger.debug("Following metrics will be logged during training: ")
+        for metric in self.metrics_to_log:
+            parts = metric.split("_")
+            name = f"{metric_name[parts[0]]} {parts[1]}"
+            logger.debug(f"  {metric} ({name})")
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
