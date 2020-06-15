@@ -1226,26 +1226,51 @@ class DIET(RasaModel):
         # so create loss metrics first to output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
         self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
-        self.entity_loss = tf.keras.metrics.Mean(name="entity_loss")
-        self.entity_group_loss = tf.keras.metrics.Mean(name="group_loss")
-        self.entity_role_loss = tf.keras.metrics.Mean(name="role_loss")
+        self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
+        self.entity_group_loss = tf.keras.metrics.Mean(name="g_loss")
+        self.entity_role_loss = tf.keras.metrics.Mean(name="r_loss")
         # create accuracy metrics second to output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
         self.response_acc = tf.keras.metrics.Mean(name="i_acc")
-        self.entity_f1 = tf.keras.metrics.Mean(name="entity_f1")
-        self.entity_group_f1 = tf.keras.metrics.Mean(name="group_f1")
-        self.entity_role_f1 = tf.keras.metrics.Mean(name="role_f1")
+        self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
+        self.entity_group_f1 = tf.keras.metrics.Mean(name="g_f1")
+        self.entity_role_f1 = tf.keras.metrics.Mean(name="r_f1")
 
     def _update_metrics_to_log(self) -> None:
+        debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
+
         if self.config[MASKED_LM]:
-            self.metrics_to_log += ["m_loss", "m_acc"]
+            self.metrics_to_log.append("m_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("m_loss")
         if self.config[INTENT_CLASSIFICATION]:
-            self.metrics_to_log += ["i_loss", "i_acc"]
+            self.metrics_to_log.append("i_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("i_loss")
         if self.config[ENTITY_RECOGNITION]:
             for tag_spec in self._entity_tag_specs:
                 if tag_spec.num_tags != 0:
                     name = tag_spec.tag_name
-                    self.metrics_to_log += [f"{name}_loss", f"{name}_f1"]
+                    self.metrics_to_log.append(f"{name[0]}_f1")
+                    if debug_log_level:
+                        self.metrics_to_log.append(f"{name[0]}_loss")
+
+        self._log_metric_info()
+
+    def _log_metric_info(self) -> None:
+        metric_name = {
+            "t": "total",
+            "i": "intent",
+            "e": "entity",
+            "m": "mask",
+            "r": "role",
+            "g": "group",
+        }
+        logger.debug("Following metrics will be logged during training: ")
+        for metric in self.metrics_to_log:
+            parts = metric.split("_")
+            name = f"{metric_name[parts[0]]} {parts[1]}"
+            logger.debug(f"  {metric} ({name})")
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
