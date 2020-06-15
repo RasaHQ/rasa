@@ -218,6 +218,8 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         used_features = np.zeros(self.num_features, dtype=np.float)
         using_only_ints = True
         added_tokens = {}
+        # print('============')
+        # print(state)
         for state_name, prob in state.items():
             using_only_ints = using_only_ints and utils.is_int(prob)
             if state_name in self.user_labels:
@@ -250,7 +252,9 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                 logger.warning(
                     f"Feature '{state_name}' could not be found in feature map."
                 )
+        # print('Used indices during encode', np.where(used_features == 1)[0])
         # print('Added tokens during encode', added_tokens)
+        # print('============')
 
         if using_only_ints:
             # this is an optimization - saves us a bit of memory
@@ -277,6 +281,8 @@ class IntentTokenizerSingleStateFeaturizer(LabelTokenizerSingleStateFeaturizer):
         encoded_all_actions = np.zeros(
             (len(domain.intent_names), len(self.user_vocab)), dtype=np.int32
         )
+        d = {k: i for k, i in enumerate(domain.intent_names)}
+        print("action indices", d)
         for idx, name in enumerate(domain.intent_names):
             for t in name.split(self.split_symbol):
                 encoded_all_actions[idx, self.user_vocab[t]] = 1

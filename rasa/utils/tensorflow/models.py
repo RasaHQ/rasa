@@ -414,6 +414,8 @@ class RasaModel(tf.keras.models.Model):
 
         batch_data = defaultdict(list)
 
+        print(data_signature.items())
+
         idx = 0
         for k, signature in data_signature.items():
             for is_sparse, shape in signature:
@@ -435,6 +437,10 @@ class RasaModel(tf.keras.models.Model):
                         # convert to Tensor
                         batch_data[k].append(tf.constant(batch[idx], dtype=tf.float32))
                     idx += 1
+
+        if idx < len(batch):
+            batch_data["Neg Mask"].append(batch[idx])
+            # batch_data["Neg Label Mask"].append(batch[idx+1])
 
         return batch_data
 

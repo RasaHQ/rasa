@@ -20,7 +20,7 @@ from rasa.core.featurizers import (
     IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.core.policies.policy import Policy
-from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.ted_policy import TEDPolicy, TED
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
@@ -218,3 +218,220 @@ class IntentTEDPolicy(TEDPolicy):
             key: val for (key, val) in zip(intent_names, confidence.tolist())
         }
         return intent_confidence
+
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        **kwargs: Any,
+    ) -> None:
+        """Train the policy on given training trackers."""
+
+        # dealing with training data
+        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
+
+        self._label_data = self._create_label_data(domain)
+
+        # extract actual training data to feed to model
+        model_data = self._create_model_data(training_data.X, training_data.y)
+        if model_data.is_empty():
+            logger.error(
+                f"Can not train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the policy."
+            )
+            return
+
+        # keep one example for persisting and loading
+        self.data_example = model_data.first_data_example()
+
+        self.model = IntentTED(
+            model_data.get_signature(),
+            self.config,
+            isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
+            self._label_data,
+        )
+
+        self.model.fit(
+            model_data,
+            self.config[EPOCHS],
+            self.config[BATCH_SIZES],
+            self.config[EVAL_NUM_EXAMPLES],
+            self.config[EVAL_NUM_EPOCHS],
+            batch_strategy=self.config[BATCH_STRATEGY],
+        )
+
+    @classmethod
+    def load(cls, path: Text) -> "TEDPolicy":
+        """Loads a policy from the storage.
+
+        **Needs to load its featurizer**
+        """
+
+        if not os.path.exists(path):
+            raise Exception(
+                f"Failed to load TED policy model. Path "
+                f"'{os.path.abspath(path)}' doesn't exist."
+            )
+
+        model_path = Path(path)
+        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
+
+        featurizer = TrackerFeaturizer.load(path)
+
+        if not (model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl").is_file():
+            return cls(featurizer=featurizer)
+
+        loaded_data = io_utils.json_unpickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl"
+        )
+        label_data = io_utils.json_unpickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
+        )
+        meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
+        priority = io_utils.json_unpickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
+        )
+
+        model_data_example = RasaModelData(label_key=LABEL_IDS, data=loaded_data)
+        meta = train_utils.update_similarity_type(meta)
+
+        model = IntentTED.load(
+            str(tf_model_file),
+            model_data_example,
+            data_signature=model_data_example.get_signature(),
+            config=meta,
+            max_history_tracker_featurizer_used=isinstance(
+                featurizer, MaxHistoryTrackerFeaturizer
+            ),
+            label_data=label_data,
+        )
+
+        # build the graph for prediction
+        predict_data_example = RasaModelData(
+            label_key=LABEL_IDS,
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if DIALOGUE in feature_name
+            },
+        )
+        model.build_for_predict(predict_data_example)
+
+        return cls(featurizer=featurizer, priority=priority, model=model, **meta)
+
+
+class IntentTED(TED):
+    def _prepare_layers(self) -> None:
+        self._tf_layers[f"loss.{LABEL}"] = layers.DotProductLossCustom(
+            self.config[NUM_NEG],
+            self.config[LOSS_TYPE],
+            self.config[MAX_POS_SIM],
+            self.config[MAX_NEG_SIM],
+            self.config[USE_MAX_NEG_SIM],
+            self.config[NEGATIVE_MARGIN_SCALE],
+            self.config[SCALE_LOSS],
+            # set to 1 to get deterministic behaviour
+            parallel_iterations=1 if self.random_seed is not None else 1000,
+        )
+        self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
+            self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
+            self.config[DROP_RATE_DIALOGUE],
+            self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
+            layer_name_suffix=DIALOGUE,
+        )
+        self._tf_layers[f"ffnn.{LABEL}"] = layers.Ffnn(
+            self.config[HIDDEN_LAYERS_SIZES][LABEL],
+            self.config[DROP_RATE_LABEL],
+            self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
+            layer_name_suffix=LABEL,
+        )
+        self._tf_layers["transformer"] = TransformerEncoder(
+            self.config[NUM_TRANSFORMER_LAYERS],
+            self.config[TRANSFORMER_SIZE],
+            self.config[NUM_HEADS],
+            self.config[TRANSFORMER_SIZE] * 4,
+            self.config[REGULARIZATION_CONSTANT],
+            dropout_rate=self.config[DROP_RATE_DIALOGUE],
+            attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+            sparsity=self.config[WEIGHT_SPARSITY],
+            unidirectional=True,
+            use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+            use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+            max_relative_position=self.config[MAX_RELATIVE_POSITION],
+            name=DIALOGUE + "_encoder",
+        )
+        self._tf_layers[f"embed.{DIALOGUE}"] = layers.Embed(
+            self.config[EMBEDDING_DIMENSION],
+            self.config[REGULARIZATION_CONSTANT],
+            DIALOGUE,
+            self.config[SIMILARITY_TYPE],
+        )
+        self._tf_layers[f"embed.{LABEL}"] = layers.Embed(
+            self.config[EMBEDDING_DIMENSION],
+            self.config[REGULARIZATION_CONSTANT],
+            LABEL,
+            self.config[SIMILARITY_TYPE],
+        )
+
+    def batch_loss(
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> tf.Tensor:
+        batch = self.batch_to_model_data_format(batch_in, self.data_signature)
+
+        dialogue_in = batch[DIALOGUE_FEATURES][0]
+        label_in = batch[LABEL_FEATURES][0]
+        neg_mask = batch["Neg Mask"][0]
+        # neg_label_mask = batch["Neg Label Mask"][0]
+
+        if self.max_history_tracker_featurizer_used:
+            # add time dimension if max history featurizer is used
+            label_in = label_in[:, tf.newaxis, :]
+
+        all_labels, all_labels_embed = self._create_all_labels_embed()
+        # print('labels shape', all_labels.shape, all_labels_embed.shape)
+
+        dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
+        label_embed = self._embed_label(label_in)
+
+        loss, acc = self._tf_layers[f"loss.{LABEL}"](
+            dialogue_embed,
+            label_embed,
+            label_in,
+            all_labels_embed,
+            all_labels,
+            mask,
+            neg_mask,
+            # neg_label_mask
+        )
+
+        self.action_loss.update_state(loss)
+        self.action_acc.update_state(acc)
+
+        return loss
+
+    def batch_predict(
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> Dict[Text, tf.Tensor]:
+        batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
+
+        dialogue_in = batch[DIALOGUE_FEATURES][0]
+
+        if self.all_labels_embed is None:
+            _, self.all_labels_embed = self._create_all_labels_embed()
+
+        dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
+
+        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+            dialogue_embed[:, :, tf.newaxis, :],
+            self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
+            mask,
+        )
+
+        print("called inside intent")
+        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
+            sim_all, self.config[LOSS_TYPE]
+        )
+
+        return {"action_scores": scores}

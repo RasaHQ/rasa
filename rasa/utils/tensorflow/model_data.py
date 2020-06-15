@@ -240,13 +240,18 @@ class RasaModelData:
     ) -> Tuple[Optional[np.ndarray]]:
         """Slices model data into batch using given start and end value."""
 
+        # print('--------')
         if not data:
             data = self.data
 
         batch_data = []
 
+        batch_dialogue_data = None
+        batch_label_data = None
+
         for key, values in data.items():
             # add None for not present values during processing
+            # print('key', key)
             if not values:
                 if tuple_sizes:
                     batch_data += [None] * tuple_sizes[key]
@@ -254,7 +259,11 @@ class RasaModelData:
                     batch_data.append(None)
                 continue
 
+            # print(len(values))
+            # if key == "label_ids" or key=="dialogue_features":
+            #     # print(values[0].shape)
             for v in values:
+
                 if start is not None and end is not None:
                     _data = v[start:end]
                 elif start is not None:
@@ -264,10 +273,72 @@ class RasaModelData:
                 else:
                     _data = v[:]
 
+                if key == "dialogue_features":
+                    batch_dialogue_data = _data
+                if key == "label_ids":
+                    batch_label_data = _data
+
                 if isinstance(_data[0], scipy.sparse.spmatrix):
+                    # print('sparse')
                     batch_data.extend(self._scipy_matrix_to_values(_data))
                 else:
+                    # print(self._pad_dense_data(_data).shape)
                     batch_data.append(self._pad_dense_data(_data))
+
+        bad_neg_mask = []
+        bad_all_label_mask = []
+        # if len(list(data.keys())) == 3:
+        if batch_dialogue_data is not None and batch_label_data is not None:
+            # print(batch_dialogue_data.shape, batch_label_data.shape)
+
+            multi_labels = {}
+            for i in range(batch_dialogue_data.shape[0]):
+                dialogue, label = batch_dialogue_data[i], batch_label_data[i]
+                multi_labels[i] = []
+                bad_negs = []
+                for j in range(batch_dialogue_data.shape[0]):
+                    other_dialogue, other_label = (
+                        batch_dialogue_data[j],
+                        batch_label_data[j],
+                    )
+
+                    if np.array_equal(dialogue, other_dialogue):
+                        multi_labels[i].append(other_label[0])
+
+                for j in range(batch_dialogue_data.shape[0]):
+                    other_dialogue, other_label = (
+                        batch_dialogue_data[j],
+                        batch_label_data[j],
+                    )
+
+                    if other_label in multi_labels[i]:
+                        bad_negs.append(1)
+                    else:
+                        bad_negs.append(0)
+                bad_neg_mask.append(bad_negs)
+
+            # for i in range(batch_label_data.shape[0]):
+            #
+            #     label = batch_label_data[i]
+            #     bad_labels = []
+            #     for j in range(batch_label_data.shape[0]):
+            #         other_label = batch_label_data[j]
+            #
+            #         if np.array_equal(label, other_label):
+            #             bad_labels.append(1)
+            #         else:
+            #             bad_labels.append(0)
+            #     bad_all_label_mask.append(bad_labels)
+
+            # print(np.array(bad_neg_mask).shape)
+            batch_data.append(np.array(bad_neg_mask))
+            # batch_data.append(np.array(bad_all_label_mask))
+
+            # print(batch_label_data)
+            # print(multi_labels)
+            # print(np.array(bad_neg_mask))
+
+        # print('--------')
 
         # len of batch_data is equal to the number of keys in model data
         return tuple(batch_data)
@@ -305,6 +376,18 @@ class RasaModelData:
                 append_shape(v)
                 append_type(v)
 
+        # For bad neg mask
+        if len(self.data.keys()) == 3:
+
+            # For il mask
+            shapes.append((None, None))
+            types.append(tf.int32)
+
+            # For ll mask
+            # shapes.append((None, None))
+            # types.append(tf.int32)
+
+        # print('Types and shapes', types, shapes)
         return tuple(shapes), tuple(types)
 
     def _shuffled_data(self, data: Data) -> Data:
