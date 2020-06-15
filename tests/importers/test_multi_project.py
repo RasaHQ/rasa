@@ -214,6 +214,46 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
     assert not selector.is_imported(str(not_relevant_file2))
 
 
+async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
+    tmpdir_factory: TempdirFactory,
+):
+    from rasa.core.training.dsl import StoryFileReader
+    from rasa.core.interpreter import RegexInterpreter
+    from rasa.core.training.structures import StoryGraph
+
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config = {"imports": ["bots/Bot A"]}
+    config_path = str(root / "config.yml")
+    utils.dump_obj_as_yaml_to_file(config_path, config)
+
+    story_file = root / "bots" / "Bot A" / "data" / "stories.md"
+    story_file.write("""## story""", ensure=True)
+
+    e2e_story_test_file = (
+        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "conversation_tests.md"
+    )
+    e2e_story_test_file.write(
+        """## story test""", ensure=True,
+    )
+
+    selector = MultiProjectImporter(config_path)
+
+    expected_file_read = await StoryFileReader.read_from_files(
+        files=[e2e_story_test_file],
+        domain=Domain.empty(),
+        interpreter=RegexInterpreter(),
+        template_variables=None,
+        use_e2e=True,
+        exclusion_percentage=None,
+    )
+
+    expected = StoryGraph(expected_file_read)
+
+    actual = await selector.get_stories(use_e2e=True)
+
+    assert expected.story_steps == actual.story_steps
+
+
 def test_not_importing_e2e_conversation_tests_in_project(
     tmpdir_factory: TempdirFactory,
 ):
