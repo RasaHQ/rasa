@@ -430,30 +430,30 @@ class MessageProcessor:
         Args:
             parse_data: NLUInterpreter parse data to check against the domain.
         """
-        if self.domain and not self.domain.is_empty():
-            intent = parse_data["intent"]["name"]
-            if intent:
-                intent_is_recognized = (
-                    intent in self.domain.intents
-                ) or intent in DEFAULT_INTENTS
-                if not intent_is_recognized:
-                    raise_warning(
-                        f"Interpreter parsed an intent '{intent}' "
-                        f"which is not defined in the domain. "
-                        f"Please make sure all intents are listed in the domain.",
-                        docs=DOCS_URL_DOMAINS,
-                    )
+        if not self.domain or self.domain.is_empty():
+            return
 
-            entities = parse_data["entities"] or []
-            for element in entities:
-                entity = element["entity"]
-                if entity and entity not in self.domain.entities:
-                    raise_warning(
-                        f"Interpreter parsed an entity '{entity}' "
-                        f"which is not defined in the domain. "
-                        f"Please make sure all entities are listed in the domain.",
-                        docs=DOCS_URL_DOMAINS,
-                    )
+        intent = parse_data["intent"]["name"]
+        if intent:
+            known_intents = self.domain.intents + DEFAULT_INTENTS
+            if intent not in known_intents:
+                raise_warning(
+                    f"Interpreter parsed an intent '{intent}' "
+                    f"which is not defined in the domain. "
+                    f"Please make sure all intents are listed in the domain.",
+                    docs=DOCS_URL_DOMAINS,
+                )
+
+        entities = parse_data["entities"] or []
+        for element in entities:
+            entity = element["entity"]
+            if entity and entity not in self.domain.entities:
+                raise_warning(
+                    f"Interpreter parsed an entity '{entity}' "
+                    f"which is not defined in the domain. "
+                    f"Please make sure all entities are listed in the domain.",
+                    docs=DOCS_URL_DOMAINS,
+                )
 
     def _get_action(self, action_name) -> Optional[Action]:
         return self.domain.action_for_name(action_name, self.action_endpoint)
