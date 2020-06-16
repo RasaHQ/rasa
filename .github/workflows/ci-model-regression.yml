@@ -219,11 +219,11 @@ jobs:
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-          poetry run rasa train nlu -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
+          poetry run rasa train nlu -v -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
           echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
           export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-          poetry run rasa test nlu -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
+          poetry run rasa test nlu -v -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
 
           echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
@@ -338,11 +338,11 @@ jobs:
           poetry run rasa --version
 
           export NOW_TRAIN=$(./gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-          poetry run rasa train nlu -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
+          poetry run rasa train nlu -v -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
           echo "::set-output name=train_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
           export NOW_TEST=$(./gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-          poetry run rasa test nlu -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
+          poetry run rasa test nlu -v -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
 
           echo "::set-output name=test_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           echo "::set-output name=total_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"

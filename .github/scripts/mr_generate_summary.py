@@ -5,7 +5,7 @@ import os
 
 summary_file = os.environ["SUMMARY_FILE"]
 config = os.environ["CONFIG"]
-dataset = os.environ["DATASET"]
+dataset = os.environ["DATASET_NAME"]
 task_mapping = {
     "intent_report.json": "intent_classification",
     "CRFEntityExtractor_report.json": "entity_prediction",
