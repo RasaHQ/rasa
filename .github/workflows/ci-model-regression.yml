@@ -96,7 +96,7 @@ jobs:
 
     - name: Add a comment that the tests are in progress
       uses: peter-evans/create-or-update-comment@v1
-      if: steps.fc_help.outputs.comment-id == ''
+      if: steps.fc_config.outputs.comment-id != ''
       with:
         issue-number: ${{ github.event.number }}
         body: |
