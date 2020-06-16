@@ -798,10 +798,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if predict_out is None:
             return []
 
-        predicted_tags = self._entity_label_to_tags(predict_out)
+        predicted_tags, confidence_values = self._entity_label_to_tags(predict_out)
 
         entities = self.convert_predictions_into_entities(
-            message.text, message.get(TOKENS_NAMES[TEXT], []), predicted_tags
+            message.text,
+            message.get(TOKENS_NAMES[TEXT], []),
+            predicted_tags,
+            confidence_values,
         )
 
         entities = self.add_extractor_name(entities)
@@ -811,11 +814,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _entity_label_to_tags(
         self, predict_out: Dict[Text, Any]
-    ) -> Dict[Text, List[Text]]:
+    ) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]:
         predicted_tags = {}
+        confidence_values = {}
 
         for tag_spec in self._entity_tag_specs:
             predictions = predict_out[f"e_{tag_spec.tag_name}_ids"].numpy()
+            confidences = predict_out[f"e_{tag_spec.tag_name}_scores"].numpy()
+            confidences = [float(c) for c in confidences[0]]
             tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
 
             if self.component_config[BILOU_FLAG]:
@@ -823,8 +829,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 tags = bilou_utils.remove_bilou_prefixes(tags)
 
             predicted_tags[tag_spec.tag_name] = tags
+            confidence_values[tag_spec.tag_name] = confidences
 
-        return predicted_tags
+        return predicted_tags, confidence_values
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
@@ -1479,7 +1486,7 @@ class DIET(RasaModel):
         logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
 
         # should call first to build weights
-        pred_ids = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
+        pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
         # pytype cannot infer that 'self._tf_layers["crf"]' has the method '.loss'
         # pytype: disable=attribute-error
         loss = self._tf_layers[f"crf.{tag_name}"].loss(
@@ -1671,9 +1678,12 @@ class DIET(RasaModel):
                 _input = tf.concat([_input, _tags], axis=-1)
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
-            pred_ids = self._tf_layers[f"crf.{name}"](_logits, sequence_lengths - 1)
+            pred_ids, confidences = self._tf_layers[f"crf.{name}"](
+                _logits, sequence_lengths - 1
+            )
 
             predictions[f"e_{name}_ids"] = pred_ids
+            predictions[f"e_{name}_scores"] = confidences
 
             if name == ENTITY_ATTRIBUTE_TYPE:
                 # use the entity tags as additional input for the role
