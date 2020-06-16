@@ -124,7 +124,7 @@ class FormPolicy(MemoizationPolicy):
 
         state_is_unhappy = (
             memorized_form is not None
-            and memorized_form == tracker.active_form.get("name")
+            and memorized_form == tracker.active_loop.get("name")
         )
 
         if state_is_unhappy:
@@ -142,22 +142,22 @@ class FormPolicy(MemoizationPolicy):
         """Predicts the corresponding form action if there is an active form"""
         result = self._default_predictions(domain)
 
-        if tracker.active_form.get("name"):
+        if tracker.active_loop.get("name"):
             logger.debug(
-                "There is an active form '{}'".format(tracker.active_form["name"])
+                "There is an active form '{}'".format(tracker.active_loop["name"])
             )
             if tracker.latest_action_name == ACTION_LISTEN_NAME:
                 # predict form action after user utterance
 
-                if tracker.active_form.get("rejected"):
+                if tracker.active_loop.get("rejected"):
                     if self.state_is_unhappy(tracker, domain):
                         tracker.update(FormValidation(False))
                         return result
 
-                idx = domain.index_for_action(tracker.active_form["name"])
+                idx = domain.index_for_action(tracker.active_loop["name"])
                 result[idx] = 1.0
 
-            elif tracker.latest_action_name == tracker.active_form.get("name"):
+            elif tracker.latest_action_name == tracker.active_loop.get("name"):
                 # predict action_listen after form action
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
                 result[idx] = 1.0

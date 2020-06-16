@@ -157,7 +157,7 @@ class DialogueStateTracker:
         self.latest_message = None
         self.latest_bot_utterance = None
         self._reset()
-        self.active_form = {}
+        self.active_loop = {}
 
     ###
     # Public tracker interface
@@ -189,7 +189,8 @@ class DialogueStateTracker:
             "paused": self.is_paused(),
             "events": evts,
             "latest_input_channel": self.get_latest_input_channel(),
-            "active_form": self.active_form,
+            # TODO: Should we add a `active_loop` key and provide both keys for a while?
+            "active_form": self.active_loop,
             "latest_action_name": self.latest_action_name,
         }
 
@@ -202,35 +203,35 @@ class DialogueStateTracker:
     def change_form_to(self, form_name: Text) -> None:
         """Activate or deactivate a form"""
         if form_name is not None:
-            self.active_form = {
+            self.active_loop = {
                 "name": form_name,
                 "validate": True,
                 "rejected": False,
                 "trigger_message": self.latest_message.parse_data,
             }
         else:
-            self.active_form = {}
+            self.active_loop = {}
 
     def set_form_validation(self, validate: bool) -> None:
         """Toggle form validation"""
-        self.active_form["validate"] = validate
+        self.active_loop["validate"] = validate
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active form that it was rejected"""
-        if action_name == self.active_form.get("name"):
-            self.active_form["rejected"] = True
+        if action_name == self.active_loop.get("name"):
+            self.active_loop["rejected"] = True
 
     def set_latest_action_name(self, action_name: Text) -> None:
         """Set latest action name
             and reset form validation and rejection parameters
         """
         self.latest_action_name = action_name
-        if self.active_form.get("name"):
+        if self.active_loop.get("name"):
             # reset form validation if some form is active
-            self.active_form["validate"] = True
-        if action_name == self.active_form.get("name"):
+            self.active_loop["validate"] = True
+        if action_name == self.active_loop.get("name"):
             # reset form rejection if it was predicted again
-            self.active_form["rejected"] = False
+            self.active_loop["rejected"] = False
 
     def current_slot_values(self) -> Dict[Text, Any]:
         """Return the currently set values of the slots"""
@@ -337,7 +338,7 @@ class DialogueStateTracker:
 
         for i, event in enumerate(self.applied_events()):
             if isinstance(event, UserUttered):
-                if tracker.active_form.get("name") is None:
+                if tracker.active_loop.get("name") is None:
                     # store latest user message before the form
                     latest_message = event
 
@@ -348,17 +349,17 @@ class DialogueStateTracker:
 
             elif isinstance(event, ActionExecuted):
                 # yields the intermediate state
-                if tracker.active_form.get("name") is None:
+                if tracker.active_loop.get("name") is None:
                     # no form is active, just yield as is
                     yield tracker
 
-                elif tracker.active_form.get("rejected"):
+                elif tracker.active_loop.get("rejected"):
                     yield from ignored_trackers
                     ignored_trackers = []
 
-                    if not tracker.active_form.get(
+                    if not tracker.active_loop.get(
                         "validate"
-                    ) or event.action_name != tracker.active_form.get("name"):
+                    ) or event.action_name != tracker.active_loop.get("name"):
                         # persist latest user message
                         # that was rejected by the form
                         latest_message = tracker.latest_message
@@ -369,7 +370,7 @@ class DialogueStateTracker:
 
                     yield tracker
 
-                elif event.action_name != tracker.active_form.get("name"):
+                elif event.action_name != tracker.active_loop.get("name"):
                     # it is not known whether the form will be
                     # successfully executed, so store this tracker for later
                     tr = tracker.copy()
@@ -378,7 +379,7 @@ class DialogueStateTracker:
                     tr.latest_message = latest_message
                     ignored_trackers.append(tr)
 
-                if event.action_name == tracker.active_form.get("name"):
+                if event.action_name == tracker.active_loop.get("name"):
                     # the form was successfully executed, so
                     # remove all stored trackers
                     ignored_trackers = []
@@ -386,11 +387,11 @@ class DialogueStateTracker:
             tracker.update(event)
 
         # yields the final state
-        if tracker.active_form.get("name") is None:
+        if tracker.active_loop.get("name") is None:
             # no form is active, just yield as is
             yield tracker
         elif (
-            tracker.active_form.get("rejected")
+            tracker.active_loop.get("rejected")
             or tracker.latest_action_name == ACTION_LISTEN_NAME
         ):
             # either a form was rejected or user uttered smth yield trackers
@@ -636,8 +637,7 @@ class DialogueStateTracker:
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
-        # TODO: Rename to `active_loop` once the `RulePolicy` is finalized
-        self.active_form = {}
+        self.active_loop = {}
 
     def _reset_slots(self) -> None:
         """Set all the slots to their initial value."""
@@ -704,7 +704,7 @@ class DialogueStateTracker:
 
         Returns: `None` if no active form or the name of the currenly active form.
         """
-        if not self.active_form:
+        if not self.active_loop:
             return None
 
-        return self.active_form.get("name")
+        return self.active_loop.get("name")

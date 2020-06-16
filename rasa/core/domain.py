@@ -713,7 +713,7 @@ class Domain:
     @staticmethod
     def get_active_form(tracker: "DialogueStateTracker") -> Dict[Text, float]:
         """Turn tracker's active form into a state name."""
-        form = tracker.active_form.get("name")
+        form = tracker.active_loop.get("name")
         if form is not None:
             return {ACTIVE_FORM_PREFIX + form: 1.0}
         else:

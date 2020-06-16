@@ -688,7 +688,7 @@ class MessageProcessor:
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)
                 if s and s.has_features():
-                    if e.key == "requested_slot" and tracker.active_form:
+                    if e.key == "requested_slot" and tracker.active_loop:
                         pass
                     else:
                         raise_warning(
