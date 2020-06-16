@@ -27,5 +27,5 @@ At Rasa, we hear a few different reasons why developers switch from cloud-based 
 
 
 .. button::
-     :link: ../rasa-tutorial/
+     :link: ../../user-guide/rasa-tutorial.html
      :text: Learn more about Rasa
