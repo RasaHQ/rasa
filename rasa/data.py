@@ -123,7 +123,9 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
 
 def _is_valid_filetype(path: Text) -> bool:
     is_file = os.path.isfile(path)
-    is_datafile = path.endswith(JSON_FILE_EXT) or path.endswith(MARKDOWN_FILE_EXT)
+    is_datafile = path.endswith(JSON_FILE_EXTENSION) or path.endswith(
+        MARKDOWN_FILE_EXTENSION
+    )
 
     return is_file and is_datafile
 
@@ -150,7 +152,7 @@ def is_story_file(file_path: Text) -> bool:
         `True` if it's a story file, otherwise `False`.
     """
 
-    if not file_path.endswith(MARKDOWN_FILE_EXT):
+    if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
         return False
 
     try:
@@ -180,7 +182,7 @@ def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
         `True` if it's a conversation test file, otherwise `False`.
     """
 
-    if not file_path.endswith(MARKDOWN_FILE_EXT):
+    if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
         return False
 
     dirname = os.path.dirname(file_path)
