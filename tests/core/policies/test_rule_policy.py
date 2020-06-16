@@ -135,6 +135,7 @@ async def test_predict_form_action_if_in_form():
         "in a form",
         evts=[
             # We are in an activate form
+            ActionExecuted(form_name),
             Form(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -177,6 +178,7 @@ async def test_predict_form_action_if_multiple_turns():
         "in a form",
         evts=[
             # We are in an active form
+            ActionExecuted(form_name),
             Form(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             # User responds to slot request
@@ -197,6 +199,50 @@ async def test_predict_form_action_if_multiple_turns():
         form_conversation, domain
     )
     assert_predicted_action(action_probabilities, domain, form_name)
+
+
+async def test_predict_action_listen_after_form():
+    form_name = "some_form"
+
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - some-action
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+        - {form_name}
+    """
+    )
+
+    policy = RulePolicy()
+    policy.train([GREET_RULE], domain)
+
+    form_conversation = DialogueStateTracker.from_events(
+        "in a form",
+        evts=[
+            # We are in an activate form
+            ActionExecuted(form_name),
+            Form(form_name),
+            SlotSet(REQUESTED_SLOT, "some value"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # User sends message as response to a requested slot
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            # Form is running again
+            ActionExecuted(form_name),
+        ],
+        slots=domain.slots,
+    )
+
+    # RulePolicy predicts action listen
+    action_probabilities = policy.predict_action_probabilities(
+        form_conversation, domain
+    )
+    assert_predicted_action(action_probabilities, domain, ACTION_LISTEN_NAME)
 
 
 async def test_dont_predict_form_if_already_finished():
@@ -224,6 +270,7 @@ async def test_dont_predict_form_if_already_finished():
         "in a form",
         evts=[
             # We are in an activate form
+            ActionExecuted(form_name),
             Form(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -273,13 +320,13 @@ async def test_form_unhappy_path():
         "in a form",
         evts=[
             # We are in an active form
+            ActionExecuted(form_name),
             Form(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             # User responds to slot request
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered("haha", {"name": GREET_INTENT_NAME}),
             # Form isn't happy with the answer and rejects execution
-            Form(form_name),
             ActionExecutionRejected(form_name),
         ],
         slots=domain.slots,
@@ -338,11 +385,11 @@ async def test_form_unhappy_path_triggering_form_again():
 
     # Check that RulePolicy predicts action to handle unhappy path
     conversation_events = [
+        ActionExecuted(form_name),
         Form(form_name),
         SlotSet(REQUESTED_SLOT, "some value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": GREET_INTENT_NAME}),
-        Form(form_name),
         ActionExecutionRejected(form_name),
     ]
 
@@ -388,6 +435,7 @@ async def test_form_unhappy_path_without_rule():
     policy.train([GREET_RULE], domain)
 
     conversation_events = [
+        ActionExecuted(form_name),
         Form(form_name),
         SlotSet(REQUESTED_SLOT, "some value"),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -514,6 +562,7 @@ def test_form_submit_rule():
             # Form was activated
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(form_name),
             Form(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             ActionExecuted(ACTION_LISTEN_NAME),
