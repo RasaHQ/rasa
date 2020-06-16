@@ -462,17 +462,24 @@ class FormAction(LoopAction):
         # no more required slots to fill
         return [SlotSet(REQUESTED_SLOT, None)]
 
-    @staticmethod
+    def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Text:
+        full_name = f"utter_ask_{self._form_name}_{slot_name}"
+        if full_name in domain.action_names:
+            return full_name
+        else:
+            return f"utter_ask_{slot_name}"
+
     async def _ask_for_slot(
+        self,
         domain: Domain,
         nlg: NaturalLanguageGenerator,
         output_channel: OutputChannel,
         slot_name: Text,
         tracker: DialogueStateTracker,
     ) -> List[Event]:
-        name_of_utterance = f"utter_ask_{slot_name}"
+
         action_to_ask_for_next_slot = action.action_from_name(
-            name_of_utterance, None, domain.user_actions
+            self._name_of_utterance(domain, slot_name), None, domain.user_actions
         )
         events_to_ask_for_next_slot = await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain
