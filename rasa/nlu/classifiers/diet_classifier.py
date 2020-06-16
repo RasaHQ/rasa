@@ -546,6 +546,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> List[np.ndarray]:
         """Computes one-hot representation for the labels."""
 
+        logger.debug("No label features found. Computing default label features.")
+
         eye_matrix = np.eye(len(labels_example), dtype=np.float32)
         # add sequence dimension to one-hot labels
         return [np.array([np.expand_dims(a, 0) for a in eye_matrix])]
@@ -590,9 +592,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data.add_features(LABEL_SEQUENCE_FEATURES, sequence_features)
         label_data.add_features(LABEL_SENTENCE_FEATURES, sentence_features)
 
-        # TODO: In case there are label features, but the user has a spelling mistake
-        #   in this config. But what if he intentionally does not want to use
-        #   those features?
         if label_data.feature_not_exist(
             LABEL_SENTENCE_FEATURES
         ) and label_data.feature_not_exist(LABEL_SEQUENCE_FEATURES):
@@ -1755,7 +1754,7 @@ class DIET(RasaModel):
             sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
             dense_dropout=self.config[DENSE_INPUT_DROPOUT],
             masked_lm_loss=self.config[MASKED_LM],
-            sequence_ids=False,
+            sequence_ids=True,
         )
 
         losses = []
@@ -1781,7 +1780,9 @@ class DIET(RasaModel):
 
         return tf.math.add_n(losses)
 
-    def _get_mask_for(self, tf_batch_data, name: Text):
+    def _get_mask_for(
+        self, tf_batch_data: Dict[Text, List[tf.Tensor]], name: Text
+    ) -> Optional[tf.Tensor]:
         if name not in tf_batch_data:
             return None
 
