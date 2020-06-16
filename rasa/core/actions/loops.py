@@ -39,7 +39,7 @@ class LoopAction(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> bool:
-        return tracker.active_form.get("name") == self.name()
+        return tracker.active_loop.get("name") == self.name()
 
     # default implementation checks if form active
     def _default_activation_events(self) -> List[Event]:
