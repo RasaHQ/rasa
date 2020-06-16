@@ -1,0 +1,31 @@
+language: en
+
+pipeline:
+  - name: ConveRTTokenizer
+  - name: ConveRTFeaturizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: "char_wb"
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+    epochs: 100
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+    epochs: 100
+
+policies:
+  - name: "KerasPolicy"
+    featurizer:
+    - name: MaxHistoryTrackerFeaturizer
+      max_history: 5
+      state_featurizer:
+        - name: BinarySingleStateFeaturizer
+  - name: "MemoizationPolicy"
+    max_history: 5
+  - name: "FallbackPolicy"
+    nlu_threshold: 0.4
+    core_threshold: 0.3
+    fallback_action_name: "my_fallback_action"

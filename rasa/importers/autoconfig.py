@@ -27,7 +27,7 @@ def get_auto_configuration(config_file) -> Dict[Text, Any]:
         config = io_utils.read_config_file(config_file)
 
         missing_keys = [k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not config.get(k)]
-        config = create_config_for_keys(config, missing_keys)
+        config = _create_config_for_keys(config, missing_keys)
 
         dump_config(config, config_file)
     else:
@@ -36,7 +36,7 @@ def get_auto_configuration(config_file) -> Dict[Text, Any]:
     return config
 
 
-def create_config_for_keys(
+def _create_config_for_keys(
     config: Dict[Text, Any], keys: List[Text]
 ) -> Dict[Text, Any]:
     """Complete a config by adding automatic configuration for the specified keys.
@@ -118,7 +118,7 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
             f"configuration.\n"
             f"# To configure it manually, uncomment this section's "
             f"content.\n"
-            f"# \n"
+            f"#\n"
         )
         add_comments.append(comment)
 
