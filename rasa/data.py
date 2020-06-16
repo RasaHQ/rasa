@@ -10,8 +10,8 @@ from rasa.utils.io import DEFAULT_ENCODING
 from rasa.constants import DEFAULT_E2E_TESTS_PATH
 
 logger = logging.getLogger(__name__)
-MARKDOWN_FILE_EXT = ".md"
-JSON_FILE_EXT = ".json"
+MARKDOWN_FILE_EXTENSION = ".md"
+JSON_FILE_EXTENSION = ".json"
 
 
 def get_core_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
