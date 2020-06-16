@@ -51,8 +51,7 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
         new_state = inputs + tf.reduce_max(transition_scores, [1])
         backpointers = tf.argmax(transition_scores, 1)
         backpointers = tf.cast(backpointers, tf.float32)
-        scores = tf.reduce_max(transition_scores, [1])
-        return tf.concat([backpointers, scores], axis=1), new_state
+        return tf.concat([backpointers, new_state], axis=1), new_state
 
 
 def crf_decode_forward(

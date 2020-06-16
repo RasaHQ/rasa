@@ -485,7 +485,7 @@ class CRF(tf.keras.layers.Layer):
             sequence_lengths, maxlen=tf.shape(pred_ids)[1], dtype=pred_ids.dtype
         )
 
-        confidence_values = tf.nn.softmax(scores * tf.cast(mask, tf.float32))
+        confidence_values = tf.nn.sigmoid(scores * tf.cast(mask, tf.float32))
 
         return pred_ids * mask, confidence_values
 
