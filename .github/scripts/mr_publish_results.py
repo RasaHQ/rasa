@@ -62,12 +62,6 @@ def push_results(file_name, file):
 if __name__ == "__main__":
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
-            if f.endswith("intent_report.json"):
-                push_results(f, os.path.join(dirpath, f))
-            elif f.endswith("CRFEntityExtractor_report.json"):
-                push_results(f, os.path.join(dirpath, f))
-            elif f.endswith("DIETClassifier_report.json"):
-                push_results(f, os.path.join(dirpath, f))
-            elif f.endswith("response_selection_report.json"):
+            if any(f.endswith(valid_name) for valid_name in task_mapping.keys()):
                 push_results(f, os.path.join(dirpath, f))
     analytics.flush()

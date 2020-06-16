@@ -27,6 +27,8 @@ gomplate -d mapping=<path_to_json_file_with_mapping> -f .github/templates/config
 
 The template returns a comment message which is used as a help description in a PR. The template reads the `.github/configs/mr-test-example.yaml` file and include it as example content.
 
+The help message is triggered by adding `status:model-regression-tests` label.
+Comment with a help message is added if a PR doesn't contain a comment with a configuration for the model regression tests.
 #### How to run locally
 
 ```
