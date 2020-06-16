@@ -95,14 +95,15 @@ jobs:
         reactions: heart, hooray, rocket
 
     - name: Add a comment that the tests are in progress
-      uses: peter-evans/create-or-update-comment@v1
+      uses: RasaHQ/create-comment@v1
       if: steps.fc_config.outputs.comment-id != ''
       with:
-        issue-number: ${{ github.event.number }}
+        mode: 'delete-previous'
+        id: comment_tests_in_progress
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           The model regression tests have started. It might take a while, please be patient.
           As soon as results are ready you'll see a new comment with the results.
-        reactions: rocket
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
