@@ -153,6 +153,26 @@ class RulePolicy(MemoizationPolicy):
         last_action_was_rejection = active_form_name and tracker.events[
             -1
         ] == ActionExecutionRejected(active_form_name)
+        should_predict_form = (
+            active_form_name
+            and not last_action_was_rejection
+            and tracker.latest_action_name != active_form_name
+        )
+        should_predict_listen = (
+            active_form_name
+            and not last_action_was_rejection
+            and tracker.latest_action_name == active_form_name
+        )
+
+        # If we are in a form, and the form didn't run previously or rejected, we can
+        # simply force predict the form.
+        if should_predict_form:
+            result[domain.index_for_action(active_form_name)] = 1
+            return result
+        # predict action_listen if form action was run successfully
+        elif should_predict_listen:
+            result[domain.index_for_action(ACTION_LISTEN_NAME)] = 1
+            return result
 
         possible_keys = set(self.lookup.keys())
 
@@ -220,22 +240,6 @@ class RulePolicy(MemoizationPolicy):
                 result[recalled] = score
             else:
                 logger.debug("There is no memorised next action")
-
-        elif active_form_name and not last_action_was_rejection:
-            # if there is no rule, predict loop
-            should_predict_form = tracker.latest_action_name != active_form_name
-            should_predict_listen = tracker.latest_action_name == active_form_name
-
-            # If we are in a form, and the form didn't run previously or rejected, we can
-            # simply force predict the form.
-            if should_predict_form:
-                logger.debug(f"Predicted '{active_form_name}'")
-                result[domain.index_for_action(active_form_name)] = 1
-
-            # predict action_listen if form action was run successfully
-            elif should_predict_listen:
-                logger.debug(f"Predicted 'action_listen' after '{active_form_name}'")
-                result[domain.index_for_action(ACTION_LISTEN_NAME)] = 1
 
         return result
 
