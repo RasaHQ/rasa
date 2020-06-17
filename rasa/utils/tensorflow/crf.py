@@ -211,9 +211,7 @@ def crf_decode(
         # the appropriate code path
         if potentials.shape[1] == 1:
             return _single_seq_fn()
-        else:
-            return _multi_seq_fn()
-    else:
-        return tf.cond(
-            tf.equal(tf.shape(potentials)[1], 1), _single_seq_fn, _multi_seq_fn
-        )
+
+        return _multi_seq_fn()
+
+    return tf.cond(tf.equal(tf.shape(potentials)[1], 1), _single_seq_fn, _multi_seq_fn)
