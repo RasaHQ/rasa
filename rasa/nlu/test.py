@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 # performs entity extraction but those two classifiers don't
 ENTITY_PROCESSORS = {"EntitySynonymMapper", "ResponseSelector"}
 
-EXTRACTORS_WITH_CONFIDENCES = {"CRFEntityExtractor"}
+EXTRACTORS_WITH_CONFIDENCES = {"CRFEntityExtractor", "DIETClassifier"}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
