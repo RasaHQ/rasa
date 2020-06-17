@@ -320,14 +320,15 @@ As those feature vectors would normally take up a lot of memory, we store them a
 Sparse features only store the values that are non zero and their positions in the vector.
 Thus, we save a lot of memory and are able to train on larger datasets.
 
-By default all featurizers will return a matrix of length ``(number-of-tokens x feature-dimension)``.
-So, the returned matrix will have a feature vector for every token.
+By default all featurizers set two kind of features: one for the sequence and one for the sentence.
+The sequence features are a matrix of size ``(number-of-tokens - 1 x feature-dimension)``.
+The matrix contains feature vector for every token in the sequence except the ``__CLS__`` token,
+hence the ``number-of-tokens - 1``.
 This allows us to train sequence models.
-However, the additional token at the end (e.g. ``__CLS__``) contains features for the complete utterance.
-This feature vector can be used in any bag-of-words model.
+The sentence features are represented by a matrix of size ``(1 x feature-dimension)``.
+The matrix contains the feature vector for the complete utterance, e.g. the ``__CLS__`` token.
+The sentence features can be used in any bag-of-words model.
 The corresponding classifier can therefore decide what kind of features to use.
-
-
 
 .. _MitieFeaturizer:
 
@@ -1268,6 +1269,9 @@ ResponseSelector
          | dense_dimension                 | text: 512         | Dense dimension for sparse features to use if no dense       |
          |                                 | label: 512        | features are present.                                        |
          +---------------------------------+-------------------+--------------------------------------------------------------+
+         | concat_dimension                | text: 512         | Concat dimension for sequence and sentence features.         |
+         |                                 | label: 512        |                                                              |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
          | number_of_negative_examples     | 20                | The number of incorrect labels. The algorithm will minimize  |
          |                                 |                   | their similarity to the user input during training.          |
          +---------------------------------+-------------------+--------------------------------------------------------------+
@@ -1502,6 +1506,9 @@ DIETClassifier
          +---------------------------------+------------------+--------------------------------------------------------------+
          | dense_dimension                 | text: 512        | Dense dimension for sparse features to use if no dense       |
          |                                 | label: 20        | features are present.                                        |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | concat_dimension                | text: 512        | Concat dimension for sequence and sentence features.         |
+         |                                 | label: 20        |                                                              |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
          |                                 |                  | their similarity to the user input during training.          |
