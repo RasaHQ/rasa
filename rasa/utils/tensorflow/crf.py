@@ -5,6 +5,11 @@ from typeguard import typechecked
 from typing import Tuple
 
 
+# original code taken from
+# https://github.com/tensorflow/addons/blob/master/tensorflow_addons/text/crf.py
+# (modified to our neeeds)
+
+
 class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
     """Computes the forward decoding in a linear-chain CRF."""
 
