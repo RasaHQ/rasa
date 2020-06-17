@@ -325,6 +325,8 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         training_examples += [Message(action) for action in domain.action_names]
         training_data = TrainingData(training_examples=training_examples)
 
+        self.all_slots = domain.slots
+
         training_examples = [action for tr in trackers_as_actions for action in tr]
         training_data.training_examples += training_examples
         return training_data
@@ -360,6 +362,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
                                 name = state[key].as_dict()["text"]
                                 example = find_same(name, TEXT, training_data)
                                 state[key] = example
+        self.slot_states = domain.slot_states
         self.trainer.persist(output_path, fixed_model_name="nlu")
 
 
