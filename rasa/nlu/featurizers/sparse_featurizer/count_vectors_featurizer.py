@@ -81,7 +81,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings,
-        "produce_sentence_features": True,
     }
 
     @classmethod
@@ -408,7 +407,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     f"training data. Skipping training a CountVectorizer for it."
                 )
 
-    def _create_sequence(
+    def _create_features(
         self, attribute: Text, all_tokens: List[List[Text]]
     ) -> Tuple[
         List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
@@ -462,7 +461,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         if self._check_attribute_vocabulary(attribute):
             # count vectorizer was trained
-            return self._create_sequence(attribute, all_tokens)
+            return self._create_features(attribute, all_tokens)
         else:
             return [], []
 
@@ -486,17 +485,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 message.add_features(final_sequence_features)
 
             if sentence_features[i] is not None:
-                if (
-                    attribute != TEXT
-                    or self.component_config["produce_sentence_features"]
-                ):
-                    final_sentence_features = Features(
-                        sentence_features[i],
-                        FEATURE_TYPE_SENTENCE,
-                        attribute,
-                        self.component_config[FEATURIZER_CLASS_ALIAS],
-                    )
-                    message.add_features(final_sentence_features)
+                final_sentence_features = Features(
+                    sentence_features[i],
+                    FEATURE_TYPE_SENTENCE,
+                    attribute,
+                    self.component_config[FEATURIZER_CLASS_ALIAS],
+                )
+                message.add_features(final_sentence_features)
 
     def train(
         self,
@@ -560,7 +555,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         )
 
         # features shape (1, seq, dim)
-        sequence_features, sentence_features = self._create_sequence(
+        sequence_features, sentence_features = self._create_features(
             attribute, [message_tokens]
         )
 

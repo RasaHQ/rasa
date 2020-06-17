@@ -30,6 +30,7 @@ from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFea
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.selectors.response_selector import ResponseSelector
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
@@ -58,6 +59,7 @@ component_classes = [
     MitieTokenizer,
     SpacyTokenizer,
     WhitespaceTokenizer,
+    ConveRTTokenizer,
     JiebaTokenizer,
     LanguageModelTokenizer,
     # extractors

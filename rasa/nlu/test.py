@@ -1333,6 +1333,7 @@ def get_eval_data(
             ).get(OPEN_UTTERANCE_PREDICTION_KEY, {})
 
             response_target = example.get(RESPONSE, "")
+
             complete_intent = example.get_combined_intent_response_key()
 
             response_selection_results.append(

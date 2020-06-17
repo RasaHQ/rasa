@@ -122,8 +122,9 @@ class SklearnIntentClassifier(IntentClassifier):
                 warnings.simplefilter("ignore")
                 self.clf.fit(X, y)
 
-    def _get_sentence_features(self, message: Message) -> np.ndarray:
-        _, sentence_features = message.get_dense_features(TEXT, [])
+    @staticmethod
+    def _get_sentence_features(message: Message) -> np.ndarray:
+        _, sentence_features = message.get_dense_features(TEXT)
         return sentence_features[0]
 
     def _num_cv_splits(self, y) -> int:

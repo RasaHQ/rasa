@@ -197,16 +197,20 @@ class Message:
         if featurizers is None:
             featurizers = []
 
-        sequence_sparse_features, sentence_sparse_features = self._filter_sparse_features(
-            attribute, featurizers
-        )
+        (
+            sequence_sparse_features,
+            sentence_sparse_features,
+        ) = self._filter_sparse_features(attribute, featurizers)
         sequence_dense_features, sentence_dense_features = self._filter_dense_features(
             attribute, featurizers
         )
 
         return (
-            len(sequence_sparse_features) > 0 or len(sentence_sparse_features) > 0
-        ) or (len(sequence_dense_features) > 0 or len(sentence_dense_features) > 0)
+            len(sequence_sparse_features) > 0
+            or len(sentence_sparse_features) > 0
+            or len(sequence_dense_features) > 0
+            or len(sentence_dense_features) > 0
+        )
 
     def _filter_dense_features(
         self, attribute: Text, featurizers: List[Text]

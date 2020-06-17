@@ -70,7 +70,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
             number_of_tokens_in_sentence,
         ) = self._compute_sequence_encodings(batch_examples, module, attribute)
 
-        return self._obtain_encodings(
+        return self._get_features(
             sentence_encodings, sequence_encodings, number_of_tokens_in_sentence
         )
 
@@ -112,13 +112,13 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         return token_features, number_of_tokens_in_sentence
 
-    def _obtain_encodings(
-        self,
+    @staticmethod
+    def _get_features(
         sentence_encodings: np.ndarray,
         sequence_encodings: np.ndarray,
         number_of_tokens_in_sentence: List[int],
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Obtain the sequence encodings with the sentence encodings."""
+        """Get the sequence and sentence features."""
 
         sentence_embeddings = []
         sequence_embeddings = []
