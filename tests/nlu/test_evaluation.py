@@ -262,10 +262,10 @@ def test_determine_token_labels_with_extractors():
                     "value": "pizza",
                     "entity": "food",
                     "confidence_entity": 0.87,
-                    "extractor": "DIETClassfifier",
+                    "extractor": "DIETClassifier",
                 }
             ],
-            ["DIETClassfifier"],
+            ["DIETClassifier"],
             0.87,
         ),
     ],
