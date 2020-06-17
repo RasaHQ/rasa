@@ -369,9 +369,9 @@ exactly. Instead it will return the trained synonym.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">confidence</span></code> will be set by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component. The
+<p>The <code class="docutils literal notranslate"><span class="pre">confidence</span></code> will be set by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> and the <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> component. The
 <code class="docutils literal notranslate"><span class="pre">DucklingHTTPExtractor</span></code> will always return <code class="docutils literal notranslate"><span class="pre">1</span></code>. The <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> extractor
-and <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> do not provide this information and return <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
+does not provide this information and returns <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
 </div>
 <p>Some extractors, like <code class="docutils literal notranslate"><span class="pre">duckling</span></code>, may include additional information. For example:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
