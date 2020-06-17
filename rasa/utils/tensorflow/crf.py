@@ -154,9 +154,7 @@ def crf_decode(
     # argmax tag and the max activation.
     def _single_seq_fn():
         decode_tags = tf.cast(tf.argmax(potentials, axis=2), dtype=tf.int32)
-        decode_scores = tf.reshape(
-            tf.reduce_max(tf.nn.softmax(potentials, axis=2), axis=2), shape=[-1]
-        )
+        decode_scores = tf.reduce_max(tf.nn.softmax(potentials, axis=2), axis=2)
         best_score = tf.reshape(tf.reduce_max(potentials, axis=2), shape=[-1])
         return decode_tags, decode_scores, best_score
 
