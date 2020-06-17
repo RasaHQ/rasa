@@ -1,0 +1,3 @@
+Ignore conversation test directory ``tests/`` when importing a project using ``MultiProjectImporter``
+and ``use_e2e`` is ``False``.
+Previously, any story data found in a project subdirectory would be imported as training data.
