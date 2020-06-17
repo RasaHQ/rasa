@@ -477,7 +477,7 @@ class CRF(tf.keras.layers.Layer):
             A [batch_size, max_seq_len] matrix, with dtype `tf.float32`.
             Contains the confidence values of the highest scoring tag indices.
         """
-        predicted_ids, scores = rasa.utils.tensorflow.crf.crf_decode(
+        predicted_ids, scores, _ = rasa.utils.tensorflow.crf.crf_decode(
             logits, self.transition_params, sequence_lengths
         )
         # set prediction index for padding to `0`
