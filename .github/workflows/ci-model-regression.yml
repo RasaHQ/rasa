@@ -425,6 +425,22 @@ jobs:
 
             ${{ steps.get_results.outputs.result }}
 
+      - name: Remove 'status:model-regression-tests' label
+        continue-on-error: true
+        uses: buildsville/add-remove-label@v1
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          label: 'status:model-regression-tests'
+          type: remove
+
+      - name: Remove 'runner:gpu' label
+        continue-on-error: true
+        uses: buildsville/add-remove-label@v1
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          label: 'runner:gpu'
+          type: remove
+
   add_comment_results_cpu:
     name: Add a comment with the results
     runs-on: ubuntu-latest
@@ -465,6 +481,22 @@ jobs:
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
             ${{ steps.get_results.outputs.result }}
+
+      - name: Remove 'status:model-regression-tests' label
+        continue-on-error: true
+        uses: buildsville/add-remove-label@v1
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          label: 'status:model-regression-tests'
+          type: remove
+
+      - name: Remove 'runner:gpu' label
+        continue-on-error: true
+        uses: buildsville/add-remove-label@v1
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          label: 'runner:gpu'
+          type: remove
 
   remove_runner_gpu:
     name: Delete Github Runner - GPU
