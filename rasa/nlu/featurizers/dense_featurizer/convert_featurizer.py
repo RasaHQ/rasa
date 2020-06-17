@@ -216,7 +216,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
     ) -> None:
         sequence_features, sentence_features = self._compute_features(
             [message], tf_hub_module
-        )[0]
+        )
 
         self._set_features([message], sequence_features, sentence_features, TEXT)
 

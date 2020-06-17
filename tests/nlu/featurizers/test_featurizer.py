@@ -92,7 +92,7 @@ def test_combine_with_existing_sparse_features_shape_mismatch():
     ],
 )
 def test_calculate_cls_vector(pooling, features, expected):
-    actual = DenseFeaturizer._calculate_cls_vector(features, pooling)
+    actual = DenseFeaturizer._calculate_sentence_features(features, pooling)
 
     assert np.all(actual == expected)
 

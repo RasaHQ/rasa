@@ -75,18 +75,20 @@ class SpacyFeaturizer(DenseFeaturizer):
             logger.debug("No features present. You are using an empty spaCy model.")
             return
 
-        features = self._features_for_doc(doc)
-        cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
+        sequence_features = self._features_for_doc(doc)
+        sentence_features = self._calculate_sentence_features(
+            sequence_features, self.pooling_operation
+        )
 
         final_sequence_features = Features(
-            features,
+            sequence_features,
             FEATURE_TYPE_SEQUENCE,
             attribute,
             self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
-            cls_token_vec,
+            sentence_features,
             FEATURE_TYPE_SENTENCE,
             attribute,
             self.component_config[FEATURIZER_CLASS_ALIAS],

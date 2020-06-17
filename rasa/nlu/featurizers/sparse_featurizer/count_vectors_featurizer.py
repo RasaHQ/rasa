@@ -413,14 +413,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     ) -> Tuple[
         List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
     ]:
-        seq_features = []
-        cls_features = []
+        sequence_features = []
+        sentence_features = []
 
         for i, tokens in enumerate(all_tokens):
             if not tokens:
                 # nothing to featurize
-                seq_features.append(None)
-                cls_features.append(None)
+                sequence_features.append(None)
+                sentence_features.append(None)
                 continue
 
             # vectorizer.transform returns a sparse matrix of size
@@ -433,25 +433,25 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             if not tokens_without_cls:
                 # attribute is not set (e.g. response not present)
-                seq_features.append(None)
-                cls_features.append(None)
+                sequence_features.append(None)
+                sentence_features.append(None)
                 continue
 
             seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
             seq_vec.sort_indices()
 
-            seq_features.append(seq_vec.tocoo())
+            sequence_features.append(seq_vec.tocoo())
 
             if attribute in [TEXT, RESPONSE]:
                 tokens_text = [" ".join(tokens_without_cls)]
                 cls_vec = self.vectorizers[attribute].transform(tokens_text)
                 cls_vec.sort_indices()
 
-                cls_features.append(cls_vec.tocoo())
+                sentence_features.append(cls_vec.tocoo())
             else:
-                cls_features.append(None)
+                sentence_features.append(None)
 
-        return seq_features, cls_features
+        return sequence_features, sentence_features
 
     def _get_featurized_attribute(
         self, attribute: Text, all_tokens: List[List[Text]]
@@ -469,8 +469,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _set_attribute_features(
         self,
         attribute: Text,
-        sequence_features: List,
-        sentence_features: List,
+        sequence_features: List[scipy.sparse.spmatrix],
+        sentence_features: List[scipy.sparse.spmatrix],
         examples: List[Message],
     ) -> None:
         """Set computed features of the attribute to corresponding message objects"""

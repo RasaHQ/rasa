@@ -111,7 +111,7 @@ class Featurizer(Component):
 
 class DenseFeaturizer(Featurizer):
     @staticmethod
-    def _calculate_cls_vector(
+    def _calculate_sentence_features(
         features: np.ndarray, pooling_operation: Text
     ) -> np.ndarray:
         # take only non zeros feature vectors into account

@@ -1581,7 +1581,6 @@ class DIET(RasaModel):
         sequence_ids: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
         if sequence_ids:
-            # TODO: What should go in?
             seq_ids = self._features_as_seq_ids(sentence_features, f"{name}_{SENTENCE}")
         else:
             seq_ids = None
