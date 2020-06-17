@@ -266,17 +266,17 @@ In custom code, you can retrieve a response by using:
 
       def run(self, dispatcher, tracker, domain):
          # send utter default response to user
-         dispatcher.utter_message(template="utter_default")
+         dispatcher.utter_message(template="utter_greet")
          # ... other code
          return []
 
-If the response contains variables denoted with ``{my_variable}``
+If the response contains variables denoted with ``{name}``
 you can supply values for the fields by passing them as keyword
-arguments to ``utter_message``:
+arguments to ``utter_greet``:
 
 .. code-block:: python
 
-  dispatcher.utter_message(template="utter_greet", my_variable="my text")
+  dispatcher.utter_message(template="utter_greet", name="John")
 
 .. _variations:
 
