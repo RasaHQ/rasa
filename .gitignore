@@ -51,7 +51,6 @@ docs/nlu/key
 docs/nlu/key.pub
 secrets.tar
 .pytest_cache
-src
 test_download.zip
 bower_components/
 build/lib/
@@ -90,4 +89,3 @@ env
 .dir-locals.el
 .history
 newdocs/.docusaurus
-!newdocs/src
