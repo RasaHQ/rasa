@@ -20,6 +20,7 @@ linkcheck_timeout = 5
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "sphinx_markdown_builder",
     "sphinx.ext.autodoc",
     "sphinx_autodoc_typehints",
     "sphinx.ext.napoleon",
@@ -100,6 +101,7 @@ language = None
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = [
+    "build/*",
     "_build",
     "Thumbs.db",
     ".DS_Store",
