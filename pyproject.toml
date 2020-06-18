@@ -155,7 +155,6 @@ sphinxcontrib-websupport = "^1.1.0"
 sphinxcontrib-trio = "==1.1.2"
 sphinx-tabs = "~1.1.13"
 sphinx-autodoc-typehints = "==1.10.3"
-rasabaster = "^0.7.23"
 pep440-version-utils = "^0.3.0"
 
 [tool.poetry.extras]
@@ -201,3 +200,7 @@ git = "https://github.com/RasaHQ/sphinxcontrib-versioning.git"
 
 [tool.poetry.dev-dependencies.sphinx_rtd_theme]
 git = "https://github.com/RasaHQ/sphinx_rtd_theme.git"
+
+[tool.poetry.dev-dependencies.rasabaster]
+git = "https://github.com/RasaHQ/rasabaster.git"
+branch = "prototyper"
