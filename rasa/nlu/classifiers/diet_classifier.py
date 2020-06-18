@@ -1470,14 +1470,20 @@ class DIET(RasaModel):
         # if there are dense features - we can use them
         for f in features:
             if not isinstance(f, tf.SparseTensor):
-                return tf.stop_gradient(f)
+                seq_ids = tf.stop_gradient(f)
+                # add a zero to the seq dimension for the CLS token
+                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
+                return seq_ids
 
         # use additional sparse to dense layer
         for f in features:
             if isinstance(f, tf.SparseTensor):
-                return tf.stop_gradient(
+                seq_ids = tf.stop_gradient(
                     self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
                 )
+                # add a zero to the seq dimension for the CLS token
+                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
+                return seq_ids
 
         return None
 
@@ -1581,7 +1587,7 @@ class DIET(RasaModel):
         sequence_ids: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
         if sequence_ids:
-            seq_ids = self._features_as_seq_ids(sentence_features, f"{name}_{SENTENCE}")
+            seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
         else:
             seq_ids = None
 
