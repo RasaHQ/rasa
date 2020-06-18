@@ -1,4 +1,8 @@
-# Build contextual chatbots and AI assistants with Rasa
+---
+id: index
+title: Build contextual chatbots and AI assistants with Rasa
+sidebar_label: Start
+---
 
 **NOTE**: These docs are for Rasa 1.0 and later. Docs for older versions are at [https://legacy-docs.rasa.com](https://legacy-docs.rasa.com).
 
