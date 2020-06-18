@@ -17,8 +17,8 @@ class Features:
         type: Text,
         message_attribute: Text,
         origin: Text,
-    ):
-        self.validate_type(type)
+    ) -> None:
+        self._validate_type(type)
 
         self.features = features
         self.type = type
@@ -26,7 +26,7 @@ class Features:
         self.message_attribute = message_attribute
 
     @staticmethod
-    def validate_type(type: Text):
+    def _validate_type(type: Text) -> None:
         if type not in VALID_FEATURE_TYPES:
             raise ValueError(
                 f"Invalid feature type '{type}' used. Valid feature types are: "
