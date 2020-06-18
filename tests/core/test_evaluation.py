@@ -1,5 +1,8 @@
 import os
 from pathlib import Path
+from typing import Any, Text, Dict
+
+import pytest
 
 import rasa.utils.io
 from rasa.core.test import (
@@ -7,6 +10,7 @@ from rasa.core.test import (
     collect_story_predictions,
     test,
     FAILED_STORIES_FILE,
+    _clean_entity_results,
 )
 from rasa.core.policies.memoization import MemoizationPolicy
 
@@ -156,3 +160,70 @@ async def test_end_to_evaluation_trips_circuit_breaker():
         story_evaluation.evaluation_store.action_predictions == circuit_trip_predicted
     )
     assert num_stories == 1
+
+
+@pytest.mark.parametrize(
+    "text, entity, expected_entity",
+    [
+        (
+            "The first one please.",
+            {
+                "extractor": "DucklingHTTPExtractor",
+                "entity": "ordinal",
+                "confidence": 0.87,
+                "start": 4,
+                "end": 9,
+                "value": 1,
+            },
+            {
+                "text": "The first one please.",
+                "entity": "ordinal",
+                "start": 4,
+                "end": 9,
+                "value": "1",
+            },
+        ),
+        (
+            "The first one please.",
+            {
+                "extractor": "CRFEntityExtractor",
+                "entity": "ordinal",
+                "confidence": 0.87,
+                "start": 4,
+                "end": 9,
+                "value": "1",
+            },
+            {
+                "text": "The first one please.",
+                "entity": "ordinal",
+                "start": 4,
+                "end": 9,
+                "value": "1",
+            },
+        ),
+        (
+            "Italian food",
+            {
+                "extractor": "DIETClassifier",
+                "entity": "cuisine",
+                "confidence": 0.99,
+                "start": 0,
+                "end": 7,
+                "value": "Italian",
+            },
+            {
+                "text": "Italian food",
+                "entity": "cuisine",
+                "start": 0,
+                "end": 7,
+                "value": "Italian",
+            },
+        ),
+    ],
+)
+def test_event_has_proper_implementation(
+    text: Text, entity: Dict[Text, Any], expected_entity: Dict[Text, Any]
+):
+    actual_entities = _clean_entity_results(text, [entity])
+
+    assert actual_entities[0] == expected_entity
