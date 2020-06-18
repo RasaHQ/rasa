@@ -90,3 +90,4 @@ env
 .dir-locals.el
 .history
 newdocs/.docusaurus
+!newdocs/src
