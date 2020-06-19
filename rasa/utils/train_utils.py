@@ -87,8 +87,8 @@ def align_token_features(
 ) -> np.ndarray:
     """Align token features to match tokens.
 
-    ConveRT might split up tokens into sub-tokens. We need to take the mean of
-    the sub-token vectors and take that as token vector.
+    ConveRTTokenizer, LanguageModelTokenizers might split up tokens into sub-tokens.
+    We need to take the mean of the sub-token vectors and take that as token vector.
 
     Args:
         list_of_tokens: tokens for examples
@@ -125,22 +125,6 @@ def align_token_features(
                 ][token_idx + offset]
 
     return out_token_features
-
-
-def sequence_to_sentence_features(
-    features: Union[np.ndarray, scipy.sparse.spmatrix]
-) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
-    """Extract the CLS token vector as sentence features.
-    Features is a sequence. The last token is the CLS token. The feature vector of
-    this token contains the sentence features."""
-
-    if features is None:
-        return None
-
-    if isinstance(features, scipy.sparse.spmatrix):
-        return scipy.sparse.coo_matrix(features.tocsr()[-1])
-
-    return np.expand_dims(features[-1], axis=0)
 
 
 def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:

@@ -1636,7 +1636,7 @@ class DIET(RasaModel):
             self.tf_label_data[LABEL_SENTENCE_FEATURES],
             mask_sequence_label,
             mask_sentence_label,
-            mask_sequence_label,  # todo
+            mask_sequence_label,
             self.label_name,
         )
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
@@ -1748,7 +1748,7 @@ class DIET(RasaModel):
         else:
             sequence_lengths = self._get_sequence_lengths(
                 tf_batch_data[TEXT_SENTENCE_LENGTH][0]
-            )  # todo
+            )
         mask_text = self._compute_mask(sequence_lengths)
 
         (
