@@ -3,10 +3,15 @@ import pytest
 import scipy.sparse
 
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
-from rasa.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE
+from rasa.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
 
-
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.diet_classifier import (
+    DIETClassifier,
+    TEXT_SENTENCE_FEATURES,
+    TEXT_SEQUENCE_FEATURES,
+    LABEL_SEQUENCE_FEATURES,
+    LABEL_SENTENCE_FEATURES,
+)
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
@@ -122,23 +127,41 @@ def test_flexible_nlu_pipeline():
     featurizer = LexicalSyntacticFeaturizer({})
     featurizer.train(training_data)
 
-    assert len(message.features) == 4
+    assert len(message.features) == 6
     assert message.features[0].origin == "cvf_word"
-    # cvf word is also extracted for the intent
+    assert message.features[0].type == FEATURE_TYPE_SEQUENCE
     assert message.features[1].origin == "cvf_word"
-    assert message.features[2].origin == "cvf_char"
-    assert message.features[3].origin == "LexicalSyntacticFeaturizer"
+    assert message.features[1].type == FEATURE_TYPE_SENTENCE
+    # cvf word is also extracted for the intent
+    assert message.features[2].origin == "cvf_word"
+    assert message.features[2].type == FEATURE_TYPE_SEQUENCE
+    assert message.features[3].origin == "cvf_char"
+    assert message.features[3].type == FEATURE_TYPE_SEQUENCE
+    assert message.features[4].origin == "cvf_char"
+    assert message.features[4].type == FEATURE_TYPE_SENTENCE
+    assert message.features[5].origin == "LexicalSyntacticFeaturizer"
+    assert message.features[5].type == FEATURE_TYPE_SEQUENCE
 
-    feature_dim = (
-        message.features[0].features.shape[1] + message.features[3].features.shape[1]
+    sequence_feature_dim = (
+        message.features[0].features.shape[1] + message.features[5].features.shape[1]
     )
+    sentence_feature_dim = message.features[0].features.shape[1]
 
     classifier = DIETClassifier(
         component_config={FEATURIZERS: ["cvf_word", "LexicalSyntacticFeaturizer"]}
     )
     model_data = classifier.preprocess_train_data(training_data)
 
-    assert len(model_data.get("text_features")) == 1
-    assert len(model_data.get("label_features")) == 1
-    assert model_data.get("text_features")[0][0].shape == (6, feature_dim)
-    assert model_data.get("label_features")[0][0].shape == (1, 1)
+    assert len(model_data.get(TEXT_SENTENCE_FEATURES)) == 1
+    assert len(model_data.get(TEXT_SEQUENCE_FEATURES)) == 1
+    assert len(model_data.get(LABEL_SEQUENCE_FEATURES)) == 1
+    assert len(model_data.get(LABEL_SENTENCE_FEATURES)) == 0
+    assert model_data.get(TEXT_SEQUENCE_FEATURES)[0][0].shape == (
+        5,
+        sequence_feature_dim,
+    )
+    assert model_data.get(TEXT_SENTENCE_FEATURES)[0][0].shape == (
+        1,
+        sentence_feature_dim,
+    )
+    assert model_data.get(LABEL_SEQUENCE_FEATURES)[0][0].shape == (1, 1)

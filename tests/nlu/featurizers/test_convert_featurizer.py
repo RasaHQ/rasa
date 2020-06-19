@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.constants import TEXT, TOKENS_NAMES, RESPONSE, INTENT
@@ -11,15 +11,16 @@ from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeat
 
 
 def test_convert_featurizer_process(component_builder):
+    tokenizer = component_builder.create_component_from_class(ConveRTTokenizer)
     featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
 
     sentence = "Hey how are you today ?"
     message = Message(sentence)
-    tokens = WhitespaceTokenizer().tokenize(message, attribute=TEXT)
-    tokens = Tokenizer.add_cls_token(tokens, attribute=TEXT)
+    tokens = tokenizer.tokenize(message, attribute=TEXT)
+    tokens = tokenizer.add_cls_token(tokens, attribute=TEXT)
     message.set(TOKENS_NAMES[TEXT], tokens)
 
-    featurizer.process(message, tf_hub_module=featurizer.module)
+    featurizer.process(message, tf_hub_module=tokenizer.module)
 
     expected = np.array([2.2636216, -0.26475656, -1.1358104, -0.49751878, -1.3946456])
     expected_cls = np.array(
@@ -34,20 +35,21 @@ def test_convert_featurizer_process(component_builder):
 
 
 def test_convert_featurizer_train(component_builder):
+    tokenizer = component_builder.create_component_from_class(ConveRTTokenizer)
     featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
 
     sentence = "Hey how are you today ?"
     message = Message(sentence)
     message.set(RESPONSE, sentence)
 
-    tokens = WhitespaceTokenizer().tokenize(message, attribute=TEXT)
-    tokens = Tokenizer.add_cls_token(tokens, attribute=TEXT)
+    tokens = tokenizer.tokenize(message, attribute=TEXT)
+    tokens = tokenizer.add_cls_token(tokens, attribute=TEXT)
 
     message.set(TOKENS_NAMES[TEXT], tokens)
     message.set(TOKENS_NAMES[RESPONSE], tokens)
 
     featurizer.train(
-        TrainingData([message]), RasaNLUModelConfig(), tf_hub_module=featurizer.module
+        TrainingData([message]), RasaNLUModelConfig(), tf_hub_module=tokenizer.module
     )
 
     expected = np.array([2.2636216, -0.26475656, -1.1358104, -0.49751878, -1.3946456])
@@ -83,8 +85,9 @@ def test_convert_featurizer_train(component_builder):
         ("ńöñàśçií", "ńöñàśçií"),
     ],
 )
-def test_convert_featurizer_tokens_to_text(sentence, expected_text):
-    tokens = WhitespaceTokenizer().tokenize(Message(sentence), attribute=TEXT)
+def test_convert_featurizer_tokens_to_text(component_builder, sentence, expected_text):
+    tokenizer = component_builder.create_component_from_class(ConveRTTokenizer)
+    tokens = tokenizer.tokenize(Message(sentence), attribute=TEXT)
 
     actual_text = ConveRTFeaturizer._tokens_to_text([tokens])[0]
 

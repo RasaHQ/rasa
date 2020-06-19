@@ -59,9 +59,8 @@ def test_text_featurizer(sentence, expected_features):
     seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
 
     assert isinstance(seq_vec, scipy.sparse.coo_matrix)
-    assert isinstance(sen_vec, scipy.sparse.coo_matrix)
+    assert sen_vec is None
 
-    assert np.all(sen_vec.toarray() == expected_features[-1])
     assert np.all(seq_vec.toarray() == expected_features[:-1])
 
 
