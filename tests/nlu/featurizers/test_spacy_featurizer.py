@@ -109,6 +109,7 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
 
     assert np.allclose(token_vectors[0][:5], vecs, atol=1e-4)
     assert np.allclose(vecs, expected, atol=1e-4)
+    assert sen_vecs is not None
 
 
 def test_spacy_featurizer_casing(spacy_nlp):

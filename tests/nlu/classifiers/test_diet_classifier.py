@@ -94,7 +94,8 @@ def test_compute_default_label_features():
 )
 def test_check_labels_features_exist(messages, expected):
     attribute = TEXT
-    assert DIETClassifier._check_labels_features_exist(messages, attribute) == expected
+    classifier = DIETClassifier()
+    assert classifier._check_labels_features_exist(messages, attribute) == expected
 
 
 @pytest.mark.parametrize(

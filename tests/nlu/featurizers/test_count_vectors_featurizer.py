@@ -169,10 +169,13 @@ def test_count_vector_featurizer_shared_vocab(
 
     seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
     assert np.all(seq_vec.toarray()[0] == text_features)
+    assert sen_vec is not None
     seq_vec, sen_vec = train_message.get_sparse_features(INTENT, [])
     assert np.all(seq_vec.toarray()[0] == intent_features)
+    assert sen_vec is not None
     seq_vec, sen_vec = train_message.get_sparse_features(RESPONSE, [])
     assert np.all(seq_vec.toarray()[0] == response_features)
+    assert sen_vec is not None
 
 
 @pytest.mark.parametrize(
@@ -199,6 +202,7 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
 
     seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
     assert np.all(seq_vec.toarray()[0] == expected)
+    assert sen_vec is not None
 
 
 @pytest.mark.parametrize(
@@ -230,6 +234,7 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
 
     seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
     assert np.all(seq_vec.toarray()[0] == expected)
+    assert sen_vec is not None
 
 
 @pytest.mark.parametrize(
@@ -268,6 +273,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
     seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
     assert np.all(seq_vec.toarray()[0] == expected)
+    assert sen_vec is not None
 
 
 @pytest.mark.parametrize(
@@ -293,6 +299,7 @@ def test_count_vector_featurizer_char(sentence, expected):
 
     seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
     assert np.all(seq_vec.toarray()[0] == expected)
+    assert sen_vec is not None
 
 
 def test_count_vector_featurizer_persist_load(tmp_path):

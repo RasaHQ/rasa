@@ -1326,23 +1326,23 @@ class DIET(RasaModel):
             self.config[WEIGHT_SPARSITY],
             name,
         )
-        for type in [SENTENCE, SEQUENCE]:
-            if f"{name}_{type}_features" not in self.data_signature:
+        for feature_type in [SENTENCE, SEQUENCE]:
+            if f"{name}_{feature_type}_features" not in self.data_signature:
                 continue
 
             self._tf_layers[
-                f"sparse_input_dropout.{name}_{type}"
+                f"sparse_input_dropout.{name}_{feature_type}"
             ] = layers.SparseDropout(rate=self.config[DROP_RATE])
             self._tf_layers[
-                f"dense_input_dropout.{name}_{type}"
+                f"dense_input_dropout.{name}_{feature_type}"
             ] = tf.keras.layers.Dropout(rate=self.config[DROP_RATE])
             self._prepare_sparse_dense_layers(
-                self.data_signature[f"{name}_{type}_features"],
-                f"{name}_{type}",
+                self.data_signature[f"{name}_{feature_type}_features"],
+                f"{name}_{feature_type}",
                 self.config[REGULARIZATION_CONSTANT],
                 self.config[DENSE_DIMENSION][name],
             )
-            self._tf_layers[f"ffnn.{name}_{type}"] = layers.Ffnn(
+            self._tf_layers[f"ffnn.{name}_{feature_type}"] = layers.Ffnn(
                 [self.config[CONCAT_DIMENSION][name]],
                 self.config[DROP_RATE],
                 self.config[REGULARIZATION_CONSTANT],

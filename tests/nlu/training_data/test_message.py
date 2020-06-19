@@ -6,7 +6,6 @@ import scipy.sparse
 
 from rasa.nlu.featurizers.featurizer import Features
 from rasa.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
-from rasa.nlu.constants import TEXT
 from rasa.nlu.training_data import Message
 
 

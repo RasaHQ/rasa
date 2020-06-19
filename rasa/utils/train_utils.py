@@ -1,6 +1,5 @@
 import numpy as np
 import logging
-import scipy.sparse
 from typing import Optional, Text, Dict, Any, Union, List, Tuple
 
 from rasa.nlu.training_data import Message

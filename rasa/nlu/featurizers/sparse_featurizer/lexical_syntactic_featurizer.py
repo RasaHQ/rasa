@@ -3,7 +3,7 @@ from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import numpy as np
-from typing import Any, Dict, Optional, Text, List, Type, Union, Tuple
+from typing import Any, Dict, Optional, Text, List, Type, Union
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.constants import DOCS_URL_COMPONENTS
@@ -16,7 +16,6 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     TEXT,
-    FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
 )

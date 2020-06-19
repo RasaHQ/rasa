@@ -1,4 +1,3 @@
-import numpy as np
 from typing import Any, Optional, Text, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
