@@ -164,6 +164,9 @@ class RulePolicy(MemoizationPolicy):
             and tracker.latest_action_name == active_form_name
         )
 
+        # TODO: This means that a Form will have priority over any FAQ rule.
+        # Discuss if we should do this or if FAQ rules should have precedence over
+        # forms.
         # If we are in a form, and the form didn't run previously or rejected, we can
         # simply force predict the form.
         if should_predict_form:
