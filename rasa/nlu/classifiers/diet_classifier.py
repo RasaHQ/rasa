@@ -29,8 +29,6 @@ from rasa.nlu.constants import (
     TEXT,
     ENTITIES,
     NO_ENTITY_TAG,
-    SPARSE_FEATURE_NAMES,
-    DENSE_FEATURE_NAMES,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
@@ -84,17 +82,19 @@ from rasa.utils.tensorflow.constants import (
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_LEVEL,
+    FEATURIZERS,
 )
 
 
 logger = logging.getLogger(__name__)
 
+
 TEXT_FEATURES = f"{TEXT}_features"
 LABEL_FEATURES = f"{LABEL}_features"
-LABEL_IDS = f"{LABEL}_ids"
-TAG_IDS = "tag_ids"
 TEXT_SEQ_LENGTH = f"{TEXT}_lengths"
 LABEL_SEQ_LENGTH = f"{LABEL}_lengths"
+LABEL_IDS = f"{LABEL}_ids"
+TAG_IDS = "tag_ids"
 
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
@@ -234,6 +234,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
+        # Specify what features to use as sequence and sentence features
+        # By default all features in the pipeline are used.
+        FEATURIZERS: [],
     }
 
     # init helpers
@@ -411,22 +414,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Checks if all labels have features set."""
 
         return all(
-            label_example.get(SPARSE_FEATURE_NAMES[attribute]) is not None
-            or label_example.get(DENSE_FEATURE_NAMES[attribute]) is not None
+            label_example.features_present(attribute)
             for label_example in labels_example
         )
 
     def _extract_features(
         self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
-        sparse_features = None
-        dense_features = None
 
-        if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
-            sparse_features = message.get(SPARSE_FEATURE_NAMES[attribute])
-
-        if message.get(DENSE_FEATURE_NAMES[attribute]) is not None:
-            dense_features = message.get(DENSE_FEATURE_NAMES[attribute])
+        sparse_features = message.get_sparse_features(
+            attribute, self.component_config[FEATURIZERS]
+        )
+        dense_features = message.get_dense_features(
+            attribute, self.component_config[FEATURIZERS]
+        )
 
         if sparse_features is not None and dense_features is not None:
             if sparse_features.shape[0] != dense_features.shape[0]:
@@ -598,6 +599,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data = RasaModelData(label_key=self.label_key)
         model_data.add_features(TEXT_FEATURES, [X_sparse, X_dense])
         model_data.add_features(LABEL_FEATURES, [Y_sparse, Y_dense])
+
         if label_attribute and model_data.feature_not_exist(LABEL_FEATURES):
             # no label features are present, get default features from _label_data
             model_data.add_features(
@@ -796,10 +798,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if predict_out is None:
             return []
 
-        predicted_tags = self._entity_label_to_tags(predict_out)
+        predicted_tags, confidence_values = self._entity_label_to_tags(predict_out)
 
         entities = self.convert_predictions_into_entities(
-            message.text, message.get(TOKENS_NAMES[TEXT], []), predicted_tags
+            message.text,
+            message.get(TOKENS_NAMES[TEXT], []),
+            predicted_tags,
+            confidence_values,
         )
 
         entities = self.add_extractor_name(entities)
@@ -809,11 +814,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _entity_label_to_tags(
         self, predict_out: Dict[Text, Any]
-    ) -> Dict[Text, List[Text]]:
+    ) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]:
         predicted_tags = {}
+        confidence_values = {}
 
         for tag_spec in self._entity_tag_specs:
             predictions = predict_out[f"e_{tag_spec.tag_name}_ids"].numpy()
+            confidences = predict_out[f"e_{tag_spec.tag_name}_scores"].numpy()
+            confidences = [float(c) for c in confidences[0]]
             tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
 
             if self.component_config[BILOU_FLAG]:
@@ -821,8 +829,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 tags = bilou_utils.remove_bilou_prefixes(tags)
 
             predicted_tags[tag_spec.tag_name] = tags
+            confidence_values[tag_spec.tag_name] = confidences
 
-        return predicted_tags
+        return predicted_tags, confidence_values
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
@@ -1040,7 +1049,7 @@ class DIET(RasaModel):
         self._prepare_layers()
 
         # tf training
-        self._set_optimizer(tf.keras.optimizers.Adam(config[LEARNING_RATE]))
+        self.optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
         self._create_metrics()
         self._update_metrics_to_log()
 
@@ -1107,26 +1116,51 @@ class DIET(RasaModel):
         # so create loss metrics first to output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
         self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
-        self.entity_loss = tf.keras.metrics.Mean(name="entity_loss")
-        self.entity_group_loss = tf.keras.metrics.Mean(name="group_loss")
-        self.entity_role_loss = tf.keras.metrics.Mean(name="role_loss")
+        self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
+        self.entity_group_loss = tf.keras.metrics.Mean(name="g_loss")
+        self.entity_role_loss = tf.keras.metrics.Mean(name="r_loss")
         # create accuracy metrics second to output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
         self.response_acc = tf.keras.metrics.Mean(name="i_acc")
-        self.entity_f1 = tf.keras.metrics.Mean(name="entity_f1")
-        self.entity_group_f1 = tf.keras.metrics.Mean(name="group_f1")
-        self.entity_role_f1 = tf.keras.metrics.Mean(name="role_f1")
+        self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
+        self.entity_group_f1 = tf.keras.metrics.Mean(name="g_f1")
+        self.entity_role_f1 = tf.keras.metrics.Mean(name="r_f1")
 
     def _update_metrics_to_log(self) -> None:
+        debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
+
         if self.config[MASKED_LM]:
-            self.metrics_to_log += ["m_loss", "m_acc"]
+            self.metrics_to_log.append("m_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("m_loss")
         if self.config[INTENT_CLASSIFICATION]:
-            self.metrics_to_log += ["i_loss", "i_acc"]
+            self.metrics_to_log.append("i_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("i_loss")
         if self.config[ENTITY_RECOGNITION]:
             for tag_spec in self._entity_tag_specs:
                 if tag_spec.num_tags != 0:
                     name = tag_spec.tag_name
-                    self.metrics_to_log += [f"{name}_loss", f"{name}_f1"]
+                    self.metrics_to_log.append(f"{name[0]}_f1")
+                    if debug_log_level:
+                        self.metrics_to_log.append(f"{name[0]}_loss")
+
+        self._log_metric_info()
+
+    def _log_metric_info(self) -> None:
+        metric_name = {
+            "t": "total",
+            "i": "intent",
+            "e": "entity",
+            "m": "mask",
+            "r": "role",
+            "g": "group",
+        }
+        logger.debug("Following metrics will be logged during training: ")
+        for metric in self.metrics_to_log:
+            parts = metric.split("_")
+            name = f"{metric_name[parts[0]]} {parts[1]}"
+            logger.debug(f"  {metric} ({name})")
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
@@ -1350,7 +1384,6 @@ class DIET(RasaModel):
         inputs = self._combine_sparse_dense_features(
             features, mask, name, sparse_dropout, dense_dropout
         )
-
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 
         if masked_lm_loss:
@@ -1423,15 +1456,15 @@ class DIET(RasaModel):
         )
 
     def _calculate_label_loss(
-        self, a: tf.Tensor, b: tf.Tensor, label_ids: tf.Tensor
+        self, text_features: tf.Tensor, label_features: tf.Tensor, label_ids: tf.Tensor
     ) -> tf.Tensor:
         all_label_ids, all_labels_embed = self._create_all_labels()
 
-        a_embed = self._tf_layers[f"embed.{TEXT}"](a)
-        b_embed = self._tf_layers[f"embed.{LABEL}"](b)
+        text_embed = self._tf_layers[f"embed.{TEXT}"](text_features)
+        label_embed = self._tf_layers[f"embed.{LABEL}"](label_features)
 
         return self._tf_layers[f"loss.{LABEL}"](
-            a_embed, b_embed, label_ids, all_labels_embed, all_label_ids
+            text_embed, label_embed, label_ids, all_labels_embed, all_label_ids
         )
 
     def _calculate_entity_loss(
@@ -1453,7 +1486,7 @@ class DIET(RasaModel):
         logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
 
         # should call first to build weights
-        pred_ids = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
+        pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
         # pytype cannot infer that 'self._tf_layers["crf"]' has the method '.loss'
         # pytype: disable=attribute-error
         loss = self._tf_layers[f"crf.{tag_name}"].loss(
@@ -1645,9 +1678,12 @@ class DIET(RasaModel):
                 _input = tf.concat([_input, _tags], axis=-1)
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
-            pred_ids = self._tf_layers[f"crf.{name}"](_logits, sequence_lengths - 1)
+            pred_ids, confidences = self._tf_layers[f"crf.{name}"](
+                _logits, sequence_lengths - 1
+            )
 
             predictions[f"e_{name}_ids"] = pred_ids
+            predictions[f"e_{name}_scores"] = confidences
 
             if name == ENTITY_ATTRIBUTE_TYPE:
                 # use the entity tags as additional input for the role

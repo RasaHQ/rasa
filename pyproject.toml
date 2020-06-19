@@ -4,19 +4,19 @@ build-backend = "poetry.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py36", "py37",]
+target-version = [ "py36", "py37", "py38" ]
 exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "1.11.0a1"
+version = "1.11.0a2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
 homepage = "https://rasa.com"
 repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
-classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Programming Language :: Python", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7", "Topic :: Software Development :: Libraries",]
+classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Programming Language :: Python", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7", "Programming Language :: Python :: 3.8", "Topic :: Software Development :: Libraries",]
 keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
 include = [ "LICENSE.txt", "README.md", "rasa/core/schemas/*", "rasa/core/training/visualization.html", "rasa/nlu/schemas/*", "rasa/cli/default_config.yml",]
 readme = "README.md"
@@ -64,7 +64,7 @@ name = "Miscellaneous internal changes"
 showcontent = false
 
 [tool.poetry.dependencies]
-python = ">=3.6,<3.8"
+python = ">=3.6,<3.9"
 boto3 = "^1.12"
 requests = "^2.23"
 matplotlib = ">=3.1,<3.3"
@@ -84,7 +84,7 @@ coloredlogs = ">=10,<15"
 scikit-learn = ">=0.22,<0.24"
 slackclient = "^2.0.0"
 python-telegram-bot = ">=11.1,<13.0"
-twilio = ">=6.26,<6.42"
+twilio = ">=6.26,<6.43"
 webexteamssdk = ">=1.1.1,<1.4.0"
 mattermostwrapper = "~2.2"
 rocketchat_API = ">=0.6.31,<1.5.0"
@@ -113,11 +113,11 @@ sklearn-crfsuite = "~0.3"
 psycopg2-binary = "~2.8.2"
 PyJWT = "~1.7"
 python-dateutil = "~2.8"
-tensorflow = "~2.1"
-tensorflow_hub = ">=0.7,<0.9"
-tensorflow-addons = "^0.7.1"
-tensorflow-estimator = "2.1.0"
-tensorflow-probability = ">=0.7,<0.10"
+tensorflow = "~2.2"
+tensorflow_hub = "~0.8"
+tensorflow-addons = "~0.10"
+tensorflow-estimator = "~2.2"
+tensorflow-probability = "~0.10"
 setuptools = ">=41.0.0"
 kafka-python = ">=1.4,<3.0"
 ujson = ">=1.35,<4.0"
@@ -132,21 +132,21 @@ pytest-asyncio = "^0.10.0"
 pytest-xdist = "^1.32.0"
 pytest = "^5.3.4"
 freezegun = "^0.3.14"
-responses = "^0.10.9"
+responses = "^0.10.15"
 nbsphinx = "~0.7"
 aioresponses = "^0.6.2"
 moto = "==1.3.14"
 fakeredis = "^1.4.0"
 mongomock = "^3.18.0"
 black = "^19.10b0"
-flake8 = "^3.7.9"
+flake8 = "^3.8.3"
 pytype = "^2020.6.1"
-google-cloud-storage = "^1.25.0"
+google-cloud-storage = "^1.29.0"
 azure-storage-blob = "<12.4.0"
 coveralls = "^2.0.0"
 towncrier = "^19.2.0"
 toml = "^0.10.0"
-sphinx = "^3.0.0"
+sphinx = "^3.1.0"
 sphinx-autobuild = "~0.7.1"
 sphinxcontrib-programoutput = "==0.16"
 pygments = "^2.6.1"
@@ -173,7 +173,7 @@ version = ">=2.1,<2.3"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
-version = ">=2.1.0rc0,<2.3"
+version = "~2.2"
 optional = true
 
 [tool.poetry.dependencies.pypandoc]

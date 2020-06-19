@@ -60,9 +60,9 @@ exactly. Instead it will return the trained synonym.
 
 .. note::
 
-    The ``confidence`` will be set by the ``CRFEntityExtractor`` component. The
+    The ``confidence`` will be set by the ``CRFEntityExtractor`` and the ``DIETClassifier`` component. The
     ``DucklingHTTPExtractor`` will always return ``1``. The ``SpacyEntityExtractor`` extractor
-    and ``DIETClassifier`` do not provide this information and return ``null``.
+    does not provide this information and returns ``null``.
 
 
 Some extractors, like ``duckling``, may include additional information. For example:

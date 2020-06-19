@@ -4,7 +4,7 @@ import pytest
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, INTENT
+from rasa.nlu.constants import TEXT, INTENT
 from rasa.nlu.training_data import Message
 
 
@@ -188,7 +188,7 @@ def test_lm_featurizer_shape_values(
 
     for index in range(len(texts)):
 
-        computed_feature_vec = messages[index].get(DENSE_FEATURE_NAMES[TEXT])
+        computed_feature_vec = messages[index].get_dense_features(TEXT, [])
         computed_sequence_vec, computed_sentence_vec = (
             computed_feature_vec[:-1],
             computed_feature_vec[-1],
@@ -208,6 +208,6 @@ def test_lm_featurizer_shape_values(
             computed_sentence_vec[:5], expected_cls_vec[index], atol=1e-5
         )
 
-        intent_vec = messages[index].get(DENSE_FEATURE_NAMES[INTENT])
+        intent_vec = messages[index].get_dense_features(INTENT, [])
 
         assert intent_vec is None
