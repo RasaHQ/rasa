@@ -419,8 +419,8 @@ class MessageProcessor:
         if slot_values.strip():
             logger.debug(f"Current slot values: \n{slot_values}")
 
-    def _log_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
-        """Logs unrecognized features from the NLU parse data.
+    def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
+        """Warns the user if the NLU parse data contains unrecognized features.
 
         Checks intents and entities picked up by the NLU interpreter
         against the domain and warns the user of those that don't match.
@@ -478,7 +478,7 @@ class MessageProcessor:
             )
         )
 
-        self._log_unseen_features(parse_data)
+        self._check_for_unseen_features(parse_data)
 
         return parse_data
 
