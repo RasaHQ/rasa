@@ -77,8 +77,9 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, TEXT)
-    assert np.allclose(result.toarray(), expected, atol=1e-10)
+    sequence_features, sentence_features = ftr._features_for_patterns(message, TEXT)
+    assert np.allclose(sequence_features.toarray(), expected[:-1], atol=1e-10)
+    assert np.allclose(sentence_features.toarray(), expected[-1], atol=1e-10)
 
     # the tokenizer should have added tokens
     assert len(message.get(TOKENS_NAMES[TEXT], [])) > 0
@@ -138,8 +139,9 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     message.set("text_spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, TEXT)
-    assert np.allclose(result.toarray(), expected, atol=1e-10)
+    sequence_features, sentence_features = ftr._features_for_patterns(message, TEXT)
+    assert np.allclose(sequence_features.toarray(), expected[:-1], atol=1e-10)
+    assert np.allclose(sentence_features.toarray(), expected[-1], atol=1e-10)
 
     # the tokenizer should have added tokens
     assert len(message.get(TOKENS_NAMES[TEXT], [])) > 0
@@ -174,9 +176,9 @@ def test_regex_featurizer_no_sequence(sentence, expected, expected_cls, spacy_nl
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, TEXT)
-    assert np.allclose(result.toarray()[0], expected, atol=1e-10)
-    assert np.allclose(result.toarray()[-1], expected_cls, atol=1e-10)
+    sequence_featrures, sentence_features = ftr._features_for_patterns(message, TEXT)
+    assert np.allclose(sequence_featrures.toarray()[0], expected, atol=1e-10)
+    assert np.allclose(sentence_features.toarray()[-1], expected_cls, atol=1e-10)
 
 
 def test_regex_featurizer_train():

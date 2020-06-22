@@ -69,7 +69,7 @@ class MitieFeaturizer(DenseFeaturizer):
                 tokens, mitie_feature_extractor
             )
 
-            self._set_features(example, sequence_features, sentence_features)
+            self._set_features(example, sequence_features, sentence_features, attribute)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
@@ -78,18 +78,19 @@ class MitieFeaturizer(DenseFeaturizer):
             tokens, mitie_feature_extractor
         )
 
-        self._set_features(message, sequence_features, sentence_features)
+        self._set_features(message, sequence_features, sentence_features, TEXT)
 
     def _set_features(
         self,
         message: Message,
         sequence_features: np.ndarray,
         sentence_features: np.ndarray,
+        attribute: Text,
     ):
         final_sequence_features = Features(
             sequence_features,
             FEATURE_TYPE_SEQUENCE,
-            TEXT,
+            attribute,
             self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sequence_features)
@@ -97,7 +98,7 @@ class MitieFeaturizer(DenseFeaturizer):
         final_sentence_features = Features(
             sentence_features,
             FEATURE_TYPE_SENTENCE,
-            TEXT,
+            attribute,
             self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sentence_features)

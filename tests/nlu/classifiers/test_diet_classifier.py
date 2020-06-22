@@ -103,7 +103,7 @@ def test_check_labels_features_exist(messages, expected):
     [
         [
             {
-                "name": "WhitespaceTokenizer",
+                "name": "ConveRTTokenizer",
                 "intent_tokenization_flag": True,
                 "intent_split_symbol": "+",
             },

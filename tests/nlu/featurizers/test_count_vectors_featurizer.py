@@ -172,7 +172,7 @@ def test_count_vector_featurizer_shared_vocab(
     assert sen_vec is not None
     seq_vec, sen_vec = train_message.get_sparse_features(INTENT, [])
     assert np.all(seq_vec.toarray()[0] == intent_features)
-    assert sen_vec is not None
+    assert sen_vec is None
     seq_vec, sen_vec = train_message.get_sparse_features(RESPONSE, [])
     assert np.all(seq_vec.toarray()[0] == response_features)
     assert sen_vec is not None

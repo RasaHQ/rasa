@@ -63,7 +63,7 @@ def test_get_dense_features(
 
 
 @pytest.mark.parametrize(
-    "features, attribute, featurizers, " "expected_seq_features, expected_sen_features",
+    "features, attribute, featurizers, expected_seq_features, expected_sen_features",
     [
         (None, TEXT, [], None, None),
         (
@@ -150,12 +150,14 @@ def test_get_sparse_features(
     if expected_seq_features is None:
         assert actual_seq_features is None
     else:
-        assert np.all(actual_sen_features.toarray() == expected_sen_features)
+        assert actual_seq_features is not None
+        assert np.all(actual_seq_features.toarray() == expected_seq_features)
 
     if expected_sen_features is None:
         assert actual_sen_features is None
     else:
-        assert np.all(actual_seq_features.toarray() == expected_seq_features)
+        assert actual_sen_features is not None
+        assert np.all(actual_sen_features.toarray() == expected_sen_features)
 
 
 @pytest.mark.parametrize(
