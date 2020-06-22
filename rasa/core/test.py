@@ -234,12 +234,8 @@ def _clean_entity_results(
             ENTITY_ATTRIBUTE_VALUE,
         ):
             if k in set(r):
-                if (
-                    k == ENTITY_ATTRIBUTE_VALUE
-                    and EXTRACTOR in set(r)
-                    and r[EXTRACTOR] == "DucklingHTTPExtractor"
-                ):
-                    # convert values from duckling to strings for evaluation as
+                if k == ENTITY_ATTRIBUTE_VALUE and EXTRACTOR in set(r):
+                    # convert values to strings for evaluation as
                     # target values are all of type string
                     r[k] = str(r[k])
                 cleaned_entity[k] = r[k]
