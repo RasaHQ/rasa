@@ -72,11 +72,11 @@ async def test_parsing(default_processor: MessageProcessor):
     assert parsed["entities"][0]["entity"] == "name"
 
 
-async def test_log_unseen_feature(default_processor: MessageProcessor):
+async def test_check_for_unseen_feature(default_processor: MessageProcessor):
     message = UserMessage('/dislike{"test_entity": "RASA"}')
     parsed = await default_processor._parse_message(message)
     with pytest.warns(UserWarning) as record:
-        default_processor._log_unseen_features(parsed)
+        default_processor._check_for_unseen_features(parsed)
     assert len(record) == 2
 
     assert (
@@ -96,7 +96,7 @@ async def test_default_intent_recognized(
     message = UserMessage(default_intent)
     parsed = await default_processor._parse_message(message)
     with pytest.warns(None) as record:
-        default_processor._log_unseen_features(parsed)
+        default_processor._check_for_unseen_features(parsed)
     assert len(record) == 0
 
 

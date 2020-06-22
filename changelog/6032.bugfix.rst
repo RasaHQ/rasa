@@ -1,0 +1,2 @@
+Fix ``Interpreter parsed an intent ...`` warning when using the ``/model/parse`` 
+endpoint with an NLU-only model.
