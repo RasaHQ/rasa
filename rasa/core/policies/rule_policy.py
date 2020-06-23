@@ -150,49 +150,46 @@ class RulePolicy(MemoizationPolicy):
             return result
 
         active_form_name = tracker.active_form_name()
-        last_action_was_rejection = active_form_name and tracker.events[
-            -1
-        ] == ActionExecutionRejected(active_form_name)
+        first_loop_execution_or_previous_rejection = tracker.first_loop_execution_or_previous_rejection(
+            active_form_name, tracker.applied_events()
+        )
+        should_predict_form = (
+            active_form_name
+            and not first_loop_execution_or_previous_rejection
+            and tracker.latest_action_name != active_form_name
+        )
+        should_predict_listen = (
+            active_form_name
+            and not first_loop_execution_or_previous_rejection
+            and tracker.latest_action_name == active_form_name
+        )
+
+        # TODO: This means that a Form will have priority over any FAQ rule.
+        # Discuss if we should do this or if FAQ rules should have precedence over
+        # forms.
+        # If we are in a form, and the form didn't run previously or rejected, we can
+        # simply force predict the form.
+        if should_predict_form:
+            logger.debug(f"Predicted '{active_form_name}'")
+            result[domain.index_for_action(active_form_name)] = 1
+            return result
+        # predict action_listen if form action was run successfully
+        elif should_predict_listen:
+            logger.debug(f"Predicted 'action_listen' after '{active_form_name}'")
+            result[domain.index_for_action(ACTION_LISTEN_NAME)] = 1
+            return result
 
         possible_keys = set(self.lookup.keys())
 
         # If an active form just rejected its execution, then we need to try to predict
         # something else.
-        if last_action_was_rejection:
+        if active_form_name and first_loop_execution_or_previous_rejection:
             possible_keys = self._remove_keys_which_trigger_action(
                 possible_keys, domain, active_form_name
             )
 
-        states = [
-            domain.get_active_states(tr)
-            for tr in tracker.generate_all_prior_trackers_for_rules()
-        ]
-        states = deque(frozenset(s.items()) for s in states)
-        bin_states = []
-        for state in states:
-            # copy state dict to preserve internal order of keys
-            bin_state = dict(state)
-            best_intent = None
-            best_intent_prob = -1.0
-            for state_name, prob in state:
-                if state_name.startswith("intent_"):
-                    if prob > best_intent_prob:
-                        # finding the maximum confidence intent
-                        if best_intent is not None:
-                            # delete previous best intent
-                            del bin_state[best_intent]
-                        best_intent = state_name
-                        best_intent_prob = prob
-                    else:
-                        # delete other intents
-                        del bin_state[state_name]
-
-            if best_intent is not None:
-                # set the confidence of best intent to 1.0
-                bin_state[best_intent] = 1.0
-
-            bin_states.append(bin_state)
-        states = bin_states
+        tracker_as_states = self.featurizer.prediction_states([tracker], domain)
+        states = tracker_as_states[0]
 
         logger.debug(f"Current tracker state {states}")
 
@@ -202,10 +199,23 @@ class RulePolicy(MemoizationPolicy):
             )
 
         if possible_keys:
+            # TODO rethink that
             key = max(possible_keys, key=len)
 
             recalled = self.lookup.get(key)
+
+            if active_form_name:
+                predicted_listen_from_general_rule = recalled is None or (
+                    domain.action_names[recalled] == ACTION_LISTEN_NAME
+                    and f"active_form_{active_form_name}" not in key
+                )
+                if predicted_listen_from_general_rule:
+                    logger.debug(f"Predicted '{active_form_name}'")
+                    result[domain.index_for_action(active_form_name)] = 1
+                    return result
+
             if recalled is not None:
+
                 logger.debug(
                     f"There is a memorised next action '{domain.action_names[recalled]}'"
                 )
