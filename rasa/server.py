@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
-CONVERSATION_ID = "<conversation_id:[A-z0-9\\\/\=\+\_\-]*?>"
+CONVERSATION_ID = r"<conversation_id:[A-z0-9\\\/\=\+\_\-]*?>"
 
 
 class ErrorResponse(Exception):
