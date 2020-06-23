@@ -233,23 +233,3 @@ class RulePolicy(MemoizationPolicy):
                 logger.debug("There is no memorised next action")
 
         return result
-
-    def _remove_keys_which_trigger_action(
-        self, possible_keys: typing.Set[Text], domain: Domain, action_name: Text
-    ) -> typing.Set[Text]:
-        """Remove any matching rules which would predict `action_name`.
-
-        This is e.g. used when the Form rejected its execution and we are entering an
-        unhappy path.
-
-        Args:
-            possible_keys: Possible rule keys which match the current state.
-            domain: The current domain.
-            action_name: The action which is not allowed to be predicted.
-
-        Returns:
-            Possible keys without keys which predict the `FormAction`.
-        """
-        form_action_idx = domain.index_for_action(action_name)
-
-        return {key for key in possible_keys if self.lookup[key] != form_action_idx}
