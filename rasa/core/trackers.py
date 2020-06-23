@@ -311,7 +311,12 @@ class DialogueStateTracker:
             UserMessage.DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
         )
 
-    def generate_all_prior_trackers_for_rules(self):
+    def generate_all_prior_trackers(
+        self,
+    ) -> Generator["DialogueStateTracker", None, None]:
+        """Returns a generator of the previous trackers of this tracker.
+
+        The resulting array is representing the trackers before each action."""
 
         tracker = self.init_copy()
 
@@ -323,80 +328,6 @@ class DialogueStateTracker:
             tracker.update(event)
 
         yield tracker
-
-    def generate_all_prior_trackers(
-        self,
-    ) -> Generator["DialogueStateTracker", None, None]:
-        """Returns a generator of the previous trackers of this tracker.
-
-        The resulting array is representing the trackers before each action."""
-
-        tracker = self.init_copy()
-
-        ignored_trackers = []
-        latest_message = tracker.latest_message
-
-        for i, event in enumerate(self.applied_events()):
-            if isinstance(event, UserUttered):
-                if tracker.active_loop.get("name") is None:
-                    # store latest user message before the form
-                    latest_message = event
-
-            elif isinstance(event, Form):
-                # form got either activated or deactivated, so override
-                # tracker's latest message
-                tracker.latest_message = latest_message
-
-            elif isinstance(event, ActionExecuted):
-                # yields the intermediate state
-                if tracker.active_loop.get("name") is None:
-                    # no form is active, just yield as is
-                    yield tracker
-
-                elif tracker.active_loop.get("rejected"):
-                    yield from ignored_trackers
-                    ignored_trackers = []
-
-                    if not tracker.active_loop.get(
-                        "validate"
-                    ) or event.action_name != tracker.active_loop.get("name"):
-                        # persist latest user message
-                        # that was rejected by the form
-                        latest_message = tracker.latest_message
-                    else:
-                        # form was called with validation, so
-                        # override tracker's latest message
-                        tracker.latest_message = latest_message
-
-                    yield tracker
-
-                elif event.action_name != tracker.active_loop.get("name"):
-                    # it is not known whether the form will be
-                    # successfully executed, so store this tracker for later
-                    tr = tracker.copy()
-                    # form was called with validation, so
-                    # override tracker's latest message
-                    tr.latest_message = latest_message
-                    ignored_trackers.append(tr)
-
-                if event.action_name == tracker.active_loop.get("name"):
-                    # the form was successfully executed, so
-                    # remove all stored trackers
-                    ignored_trackers = []
-
-            tracker.update(event)
-
-        # yields the final state
-        if tracker.active_loop.get("name") is None:
-            # no form is active, just yield as is
-            yield tracker
-        elif (
-            tracker.active_loop.get("rejected")
-            or tracker.latest_action_name == ACTION_LISTEN_NAME
-        ):
-            # either a form was rejected or user uttered smth yield trackers
-            yield from ignored_trackers
-            yield tracker
 
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events."""
@@ -435,7 +366,7 @@ class DialogueStateTracker:
             elif (
                 isinstance(event, ActionExecuted)
                 and event.action_name in form_names
-                and not self._first_loop_execution_or_previous_rejection(
+                and not self.first_loop_execution_or_previous_rejection(
                     event.action_name, applied_events
                 )
             ):
@@ -448,7 +379,7 @@ class DialogueStateTracker:
         return applied_events
 
     @staticmethod
-    def _first_loop_execution_or_previous_rejection(
+    def first_loop_execution_or_previous_rejection(
         loop_action_name: Text, applied_events: List[Event]
     ) -> bool:
         for event in reversed(applied_events):
