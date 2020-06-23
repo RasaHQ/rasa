@@ -10,7 +10,7 @@ from rasa.nlu.training_data import Message
 
 
 @pytest.mark.parametrize(
-    "features, attribute, featurizers, " "expected_seq_features, expected_sen_features",
+    "features, attribute, featurizers, expected_seq_features, expected_sen_features",
     [
         (None, TEXT, [], None, None),
         (
