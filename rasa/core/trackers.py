@@ -167,14 +167,7 @@ class DialogueStateTracker:
     ) -> Dict[Text, Any]:
         """Return the current tracker state as an object."""
 
-        if event_verbosity == EventVerbosity.ALL:
-            evts = [e.as_dict() for e in self.events]
-        elif event_verbosity == EventVerbosity.AFTER_RESTART:
-            evts = [e.as_dict() for e in self.events_after_latest_restart()]
-        elif event_verbosity == EventVerbosity.APPLIED:
-            evts = [e.as_dict() for e in self.applied_events()]
-        else:
-            evts = None
+        evts = [e.as_dict() for e in self._events_for_verbosity(event_verbosity)]
 
         latest_event_time = None
         if len(self.events) > 0:
@@ -193,6 +186,16 @@ class DialogueStateTracker:
             "active_form": self.active_loop,
             "latest_action_name": self.latest_action_name,
         }
+
+    def _events_for_verbosity(self, event_verbosity: EventVerbosity) -> List[Event]:
+        if event_verbosity == EventVerbosity.ALL:
+            return list(self.events)
+        if event_verbosity == EventVerbosity.AFTER_RESTART:
+            return self.events_after_latest_restart()
+        if event_verbosity == EventVerbosity.APPLIED:
+            return self.applied_events()
+        else:
+            return []
 
     def past_states(self, domain) -> deque:
         """Generate the past states of this tracker based on the history."""
@@ -332,17 +335,6 @@ class DialogueStateTracker:
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events."""
 
-        def undo_till_previous(
-            event_type: Type[Event], done_events: List[Event]
-        ) -> None:
-            """Removes events from `done_events` until the first
-               occurrence `event_type` is found which is also removed."""
-            # list gets modified - hence we need to copy events!
-            for e in reversed(done_events[:]):
-                del done_events[-1]
-                if isinstance(e, event_type):
-                    break
-
         form_names = [
             event.name
             for event in self.events
@@ -355,14 +347,14 @@ class DialogueStateTracker:
             if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
-                undo_till_previous(ActionExecuted, applied_events)
+                self._undo_till_previous(ActionExecuted, applied_events)
             elif isinstance(event, UserUtteranceReverted):
                 # Seeing a user uttered event automatically implies there was
                 # a listen event right before it, so we'll first rewind the
                 # user utterance, then get the action right before it (also removes
                 # the `action_listen` action right before it).
-                undo_till_previous(UserUttered, applied_events)
-                undo_till_previous(ActionExecuted, applied_events)
+                self._undo_till_previous(UserUttered, applied_events)
+                self._undo_till_previous(ActionExecuted, applied_events)
             elif (
                 isinstance(event, ActionExecuted)
                 and event.action_name in form_names
@@ -370,13 +362,23 @@ class DialogueStateTracker:
                     event.action_name, applied_events
                 )
             ):
-                self.undo_till_previous_loop_execution(
+                self._undo_till_previous_loop_execution(
                     event.action_name, applied_events
                 )
             else:
                 applied_events.append(event)
 
         return applied_events
+
+    @staticmethod
+    def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:
+        """Removes events from `done_events` until the first
+           occurrence `event_type` is found which is also removed."""
+        # list gets modified - hence we need to copy events!
+        for e in reversed(done_events[:]):
+            del done_events[-1]
+            if isinstance(e, event_type):
+                break
 
     @staticmethod
     def first_loop_execution_or_previous_rejection(
@@ -404,7 +406,7 @@ class DialogueStateTracker:
         return True
 
     @staticmethod
-    def undo_till_previous_loop_execution(
+    def _undo_till_previous_loop_execution(
         loop_action_name: Text, done_events: List[Event]
     ) -> None:
         offset = 0
@@ -511,6 +513,7 @@ class DialogueStateTracker:
         event_type: Type[Event],
         action_names_to_exclude: List[Text] = None,
         skip: int = 0,
+        event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
     ) -> Optional[Event]:
         """Gets the last event of a given type which was actually applied.
 
@@ -520,6 +523,7 @@ class DialogueStateTracker:
                 should be excluded from the results. Can be used to skip
                 `action_listen` events.
             skip: Skips n possible results before return an event.
+            event_verbosity: Which `EventVerbosity` should be used to search for events.
 
         Returns:
             event which matched the query or `None` if no event matched.
@@ -532,14 +536,16 @@ class DialogueStateTracker:
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
             return has_instance and not excluded
 
-        filtered = filter(filter_function, reversed(self.applied_events()))
+        filtered = filter(
+            filter_function, reversed(self._events_for_verbosity(event_verbosity))
+        )
 
         for i in range(skip):
             next(filtered, None)
 
         return next(filtered, None)
 
-    def last_executed_action_has(self, name: Text, skip=0) -> bool:
+    def last_executed_action_has(self, name: Text, skip: int = 0) -> bool:
         """Returns whether last `ActionExecuted` event had a specific name.
 
         Args:
