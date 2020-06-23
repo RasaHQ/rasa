@@ -22,7 +22,7 @@ from rasa.core.events import (
     Form,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker
+from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.endpoints import EndpointConfig
 
 ACTION_TWO_STAGE_FALLBACK_NAME = "two_stage_fallback"
@@ -165,7 +165,9 @@ def _last_n_intent_names(
 ) -> List[Text]:
     intent_names = []
     for i in range(number_of_last_intent_names):
-        message = tracker.get_last_event_for(UserUttered, skip=i)
+        message = tracker.get_last_event_for(
+            UserUttered, skip=i, event_verbosity=EventVerbosity.AFTER_RESTART
+        )
         if isinstance(message, UserUttered):
             intent_names.append(message.intent.get("name"))
 

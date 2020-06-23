@@ -167,15 +167,9 @@ class DialogueStateTracker:
     ) -> Dict[Text, Any]:
         """Return the current tracker state as an object."""
 
-        if event_verbosity == EventVerbosity.ALL:
-            evts = [e.as_dict() for e in self.events]
-        elif event_verbosity == EventVerbosity.AFTER_RESTART:
-            evts = [e.as_dict() for e in self.events_after_latest_restart()]
-        elif event_verbosity == EventVerbosity.APPLIED:
-            evts = [e.as_dict() for e in self.applied_events()]
-        else:
-            evts = None
-
+        evts = self._events_for_verbosity(event_verbosity)
+        if evts:
+            evts = [e.as_dict() for e in evts]
         latest_event_time = None
         if len(self.events) > 0:
             latest_event_time = self.events[-1].timestamp
@@ -193,6 +187,18 @@ class DialogueStateTracker:
             "active_form": self.active_loop,
             "latest_action_name": self.latest_action_name,
         }
+
+    def _events_for_verbosity(
+        self, event_verbosity: EventVerbosity
+    ) -> Optional[List[Event]]:
+        if event_verbosity == EventVerbosity.ALL:
+            return list(self.events)
+        if event_verbosity == EventVerbosity.AFTER_RESTART:
+            return self.events_after_latest_restart()
+        if event_verbosity == EventVerbosity.APPLIED:
+            return self.applied_events()
+
+        return None
 
     def past_states(self, domain) -> deque:
         """Generate the past states of this tracker based on the history."""
@@ -579,6 +585,7 @@ class DialogueStateTracker:
         event_type: Type[Event],
         action_names_to_exclude: List[Text] = None,
         skip: int = 0,
+        event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
     ) -> Optional[Event]:
         """Gets the last event of a given type which was actually applied.
 
@@ -588,6 +595,7 @@ class DialogueStateTracker:
                 should be excluded from the results. Can be used to skip
                 `action_listen` events.
             skip: Skips n possible results before return an event.
+            event_verbosity: Which `EventVerbosity` should be used to search for events.
 
         Returns:
             event which matched the query or `None` if no event matched.
@@ -600,14 +608,16 @@ class DialogueStateTracker:
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
             return has_instance and not excluded
 
-        filtered = filter(filter_function, reversed(self.applied_events()))
+        filtered = filter(
+            filter_function, reversed(self._events_for_verbosity(event_verbosity) or [])
+        )
 
         for i in range(skip):
             next(filtered, None)
 
         return next(filtered, None)
 
-    def last_executed_action_has(self, name: Text, skip=0) -> bool:
+    def last_executed_action_has(self, name: Text, skip: int = 0) -> bool:
         """Returns whether last `ActionExecuted` event had a specific name.
 
         Args:
