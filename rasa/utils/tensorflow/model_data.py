@@ -25,7 +25,7 @@ class FeatureSignature(NamedTuple):
     """Stores the shape and the type (sparse vs dense) of features."""
 
     is_sparse: bool
-    feature_dimension: int
+    feature_dimension: Optional[int]
 
 
 class RasaModelData:
