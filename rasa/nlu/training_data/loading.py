@@ -18,6 +18,7 @@ from rasa.nlu.training_data.formats.dialogflow import (
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io as io_utils
 import re
+import ruamel.yaml
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -184,7 +185,8 @@ def guess_format(filename: Text) -> Text:
             content = io_utils.read_yaml_file(filename)
             if KEY_NLU in content:
                 guess = RASA_YAML
-        except ValueError:
+        # YAML lib isn't exposing all necessary Errors/Warnings
+        except Exception:
             pass
 
     logger.debug(f"Training data format of '{filename}' is '{guess}'.")
