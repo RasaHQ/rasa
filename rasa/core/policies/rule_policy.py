@@ -5,7 +5,7 @@ from typing import List, Dict, Text, Optional, Any
 import re
 from collections import defaultdict, deque
 
-from rasa.core.events import ActionExecutionRejected
+from rasa.core.events import FormValidation
 from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
@@ -150,12 +150,7 @@ class RulePolicy(MemoizationPolicy):
             return result
 
         active_form_name = tracker.active_form_name()
-        active_form_rejected = (
-            active_form_name
-            and tracker.first_loop_execution_or_previous_rejection(
-                active_form_name, tracker.applied_events()
-            )
-        )
+        active_form_rejected = tracker.active_loop.get("rejected")
         should_predict_form = (
             active_form_name
             and not active_form_rejected
@@ -184,13 +179,6 @@ class RulePolicy(MemoizationPolicy):
 
         possible_keys = set(self.lookup.keys())
 
-        # If an active form just rejected its execution, then we need to try to predict
-        # something else.
-        if active_form_rejected:
-            possible_keys = self._remove_keys_which_trigger_action(
-                possible_keys, domain, active_form_name
-            )
-
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
 
@@ -217,10 +205,20 @@ class RulePolicy(MemoizationPolicy):
                     result[domain.index_for_action(active_form_name)] = 1
                     return result
 
+                predicted_form_from_form_rule = (
+                    domain.action_names[recalled] == active_form_name
+                    and f"active_form_{active_form_name}" in key
+                )
+
+                if predicted_form_from_form_rule:
+                    logger.debug("Added `FormValidation(False)` event.")
+                    tracker.update(FormValidation(False))
+
             if recalled is not None:
 
                 logger.debug(
-                    f"There is a memorised next action '{domain.action_names[recalled]}'"
+                    f"There is a memorised next action "
+                    f"'{domain.action_names[recalled]}'"
                 )
 
                 if self.USE_NLU_CONFIDENCE_AS_SCORE:
