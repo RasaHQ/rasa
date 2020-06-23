@@ -32,8 +32,9 @@ You need to set up a Twilio account.
   4. Configure your webhook URL by navigating to 
      [Phone Numbers](https://www.twilio.com/console/phone-numbers/incoming) in the Twilio 
      dashboard and selecting your phone number. Find the ``Messaging`` section and add 
-     your webhook URL (e.g. ``https://yyyyyy.ngrok.io/webhooks/twilio/webhook``) to the 
-     ``A MESSAGE COMES IN`` setting.
+     your webhook URL (e.g. ``https://<host>:<port>/webhooks/twilio/webhook``, 
+     replacing the host and port with your running Rasa X or Rasa Open Source server) 
+     to the ``A MESSAGE COMES IN`` setting.
 
 For more information, see the `Twilio REST API <https://www.twilio.com/docs/iam/api>`_.
 
