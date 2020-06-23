@@ -167,7 +167,9 @@ class DialogueStateTracker:
     ) -> Dict[Text, Any]:
         """Return the current tracker state as an object."""
 
-        evts = [e.as_dict() for e in self._events_for_verbosity(event_verbosity)]
+        evts = self._events_for_verbosity(event_verbosity)
+        if evts:
+            evts = [e.as_dict() for e in evts]
 
         latest_event_time = None
         if len(self.events) > 0:
@@ -187,15 +189,16 @@ class DialogueStateTracker:
             "latest_action_name": self.latest_action_name,
         }
 
-    def _events_for_verbosity(self, event_verbosity: EventVerbosity) -> List[Event]:
+    def _events_for_verbosity(
+        self, event_verbosity: EventVerbosity
+    ) -> Optional[List[Event]]:
         if event_verbosity == EventVerbosity.ALL:
             return list(self.events)
         if event_verbosity == EventVerbosity.AFTER_RESTART:
             return self.events_after_latest_restart()
         if event_verbosity == EventVerbosity.APPLIED:
             return self.applied_events()
-        else:
-            return []
+        return None
 
     def past_states(self, domain) -> deque:
         """Generate the past states of this tracker based on the history."""
@@ -358,7 +361,7 @@ class DialogueStateTracker:
             elif (
                 isinstance(event, ActionExecuted)
                 and event.action_name in form_names
-                and not self.first_loop_execution_or_previous_rejection(
+                and not self._first_loop_execution_or_previous_rejection(
                     event.action_name, applied_events
                 )
             ):
@@ -381,7 +384,7 @@ class DialogueStateTracker:
                 break
 
     @staticmethod
-    def first_loop_execution_or_previous_rejection(
+    def _first_loop_execution_or_previous_rejection(
         loop_action_name: Text, applied_events: List[Event]
     ) -> bool:
         for event in reversed(applied_events):
@@ -537,7 +540,7 @@ class DialogueStateTracker:
             return has_instance and not excluded
 
         filtered = filter(
-            filter_function, reversed(self._events_for_verbosity(event_verbosity))
+            filter_function, reversed(self._events_for_verbosity(event_verbosity) or [])
         )
 
         for i in range(skip):
