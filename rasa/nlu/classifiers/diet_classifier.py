@@ -1183,14 +1183,14 @@ class DIET(RasaModel):
     ) -> None:
         sparse = False
         dense = False
-        for is_sparse, shape in feature_signatures:
+        for is_sparse, feature_dimension in feature_signatures:
             if is_sparse:
                 sparse = True
             else:
                 dense = True
                 # if dense features are present
                 # use the feature dimension of the dense features
-                dense_dim = shape[-1]
+                dense_dim = feature_dimension
 
         if sparse:
             self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
