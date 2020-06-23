@@ -150,17 +150,20 @@ class RulePolicy(MemoizationPolicy):
             return result
 
         active_form_name = tracker.active_form_name()
-        first_loop_execution_or_previous_rejection = tracker.first_loop_execution_or_previous_rejection(
-            active_form_name, tracker.applied_events()
+        active_form_rejected = (
+            active_form_name
+            and tracker.first_loop_execution_or_previous_rejection(
+                active_form_name, tracker.applied_events()
+            )
         )
         should_predict_form = (
             active_form_name
-            and not first_loop_execution_or_previous_rejection
+            and not active_form_rejected
             and tracker.latest_action_name != active_form_name
         )
         should_predict_listen = (
             active_form_name
-            and not first_loop_execution_or_previous_rejection
+            and not active_form_rejected
             and tracker.latest_action_name == active_form_name
         )
 
@@ -183,7 +186,7 @@ class RulePolicy(MemoizationPolicy):
 
         # If an active form just rejected its execution, then we need to try to predict
         # something else.
-        if active_form_name and first_loop_execution_or_previous_rejection:
+        if active_form_rejected:
             possible_keys = self._remove_keys_which_trigger_action(
                 possible_keys, domain, active_form_name
             )
