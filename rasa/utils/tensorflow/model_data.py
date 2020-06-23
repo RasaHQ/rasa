@@ -357,8 +357,8 @@ class RasaModelData:
                 if num_data_cycles[index] > 0 and not skipped[index]:
                     skipped[index] = True
                     continue
-                else:
-                    skipped[index] = False
+
+                skipped[index] = False
 
                 index_batch_size = (
                     int(counts_label_ids[index] / self.num_examples * batch_size) + 1
