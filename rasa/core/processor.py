@@ -29,6 +29,7 @@ from rasa.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_SESSION_START,
     UTTER_PREFIX,
+    REQUESTED_SLOT,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -688,7 +689,7 @@ class MessageProcessor:
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)
                 if s and s.has_features():
-                    if e.key == "requested_slot" and tracker.active_form:
+                    if e.key == REQUESTED_SLOT and tracker.active_loop:
                         pass
                     else:
                         raise_warning(

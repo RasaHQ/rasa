@@ -4,6 +4,7 @@ import logging
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
+from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.domain import Domain
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
@@ -13,10 +14,6 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
-# this slot is used to store information needed
-# to do the form handling
-REQUESTED_SLOT = "requested_slot"
 
 # TODO: Temporary implementation as part of the RulePolicy prototype
 # - add more tests
@@ -293,7 +290,7 @@ class FormAction(LoopAction):
                     # check whether the slot should be
                     # filled from trigger intent mapping
                     should_fill_trigger_slot = (
-                        tracker.active_form.get("name") != self.name()
+                        tracker.active_loop.get("name") != self.name()
                         and other_slot_mapping["type"] == "from_trigger_intent"
                         and self.intent_is_desired(other_slot_mapping, tracker)
                     )
@@ -520,12 +517,12 @@ class FormAction(LoopAction):
         as any `SlotSet` events from validation of pre-filled slots.
         """
 
-        if tracker.active_form.get("name") is not None:
-            logger.debug(f"The form '{tracker.active_form}' is active")
+        if tracker.active_loop.get("name") is not None:
+            logger.debug(f"The form '{tracker.active_loop}' is active")
         else:
             logger.debug("There is no active form")
 
-        if tracker.active_form.get("name") == self.name():
+        if tracker.active_loop.get("name") == self.name():
             return []
         else:
             logger.debug(f"Activated the form '{self.name()}'")
@@ -563,7 +560,7 @@ class FormAction(LoopAction):
             - the form is called after `action_listen`
             - form validation was not cancelled
         """
-        if tracker.latest_action_name == "action_listen" and tracker.active_form.get(
+        if tracker.latest_action_name == "action_listen" and tracker.active_loop.get(
             "validate", True
         ):
             logger.debug(f"Validating user input '{tracker.latest_message}'")

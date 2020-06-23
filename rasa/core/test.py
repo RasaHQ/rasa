@@ -275,18 +275,18 @@ def _emulate_form_rejection(processor, partial_tracker):
     from rasa.core.policies.form_policy import FormPolicy
     from rasa.core.events import ActionExecutionRejected
 
-    if partial_tracker.active_form.get("name"):
+    if partial_tracker.active_loop.get("name"):
         for p in processor.policy_ensemble.policies:
             if isinstance(p, FormPolicy):
                 # emulate form rejection
                 partial_tracker.update(
-                    ActionExecutionRejected(partial_tracker.active_form["name"])
+                    ActionExecutionRejected(partial_tracker.active_loop["name"])
                 )
                 # check if unhappy path is covered by the train stories
                 if not p.state_is_unhappy(partial_tracker, processor.domain):
                     # this state is not covered by the stories
                     del partial_tracker.events[-1]
-                    partial_tracker.active_form["rejected"] = False
+                    partial_tracker.active_loop["rejected"] = False
 
 
 def _collect_action_executed_predictions(
