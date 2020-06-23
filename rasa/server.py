@@ -55,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
+CONVERSATION_ID = "<conversation_id:[A-z0-9\\\/\=\+\_\-]*?>"
 
 
 class ErrorResponse(Exception):
@@ -450,7 +451,7 @@ def create_app(
             }
         )
 
-    @app.get("/conversations/<conversation_id>/tracker")
+    @app.get("/conversations/" + CONVERSATION_ID + "/tracker")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
@@ -473,7 +474,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-    @app.post("/conversations/<conversation_id>/tracker/events")
+    @app.post("/conversations/" + CONVERSATION_ID + "/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def append_events(request: Request, conversation_id: Text):
@@ -528,7 +529,7 @@ def create_app(
 
         return events
 
-    @app.put("/conversations/<conversation_id>/tracker/events")
+    @app.put("/conversations/" + CONVERSATION_ID + "/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def replace_events(request: Request, conversation_id: Text):
@@ -557,7 +558,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-    @app.get("/conversations/<conversation_id>/story")
+    @app.get("/conversations/" + CONVERSATION_ID + "/story")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
@@ -581,7 +582,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-    @app.post("/conversations/<conversation_id>/execute")
+    @app.post("/conversations/" + CONVERSATION_ID + "/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def execute_action(request: Request, conversation_id: Text):
@@ -631,7 +632,7 @@ def create_app(
 
         return response.json(response_body)
 
-    @app.post("/conversations/<conversation_id>/trigger_intent")
+    @app.post("/conversations/" + CONVERSATION_ID + "/trigger_intent")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def trigger_intent(request: Request, conversation_id: Text) -> HTTPResponse:
@@ -685,7 +686,7 @@ def create_app(
 
         return response.json(response_body)
 
-    @app.post("/conversations/<conversation_id>/predict")
+    @app.post("/conversations/" + CONVERSATION_ID + "/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def predict(request: Request, conversation_id: Text):
@@ -702,7 +703,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-    @app.post("/conversations/<conversation_id>/messages")
+    @app.post("/conversations/" + CONVERSATION_ID + "/messages")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def add_message(request: Request, conversation_id: Text):
