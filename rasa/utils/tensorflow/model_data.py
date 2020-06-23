@@ -25,7 +25,7 @@ class FeatureSignature(NamedTuple):
     """Stores the shape and the type (sparse vs dense) of features."""
 
     is_sparse: bool
-    shape: List[int]
+    feature_dimension: Optional[int]
 
 
 class RasaModelData:
@@ -216,7 +216,7 @@ class RasaModelData:
             key: [
                 FeatureSignature(
                     True if isinstance(v[0], scipy.sparse.spmatrix) else False,
-                    v[0].shape,
+                    v[0].shape[-1] if v[0].shape else None,
                 )
                 for v in values
             ]
