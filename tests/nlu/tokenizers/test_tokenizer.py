@@ -22,13 +22,7 @@ def test_tokens_comparison():
 
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
-    [
-        (
-            "Forecast for lunch",
-            ["Forecast", "for", "lunch"],
-            [(0, 8), (9, 12), (13, 18), (19, 26)],
-        )
-    ],
+    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
 def test_train_tokenizer(text, expected_tokens, expected_indices):
     tk = WhitespaceTokenizer()
@@ -57,13 +51,7 @@ def test_train_tokenizer(text, expected_tokens, expected_indices):
 
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
-    [
-        (
-            "Forecast for lunch",
-            ["Forecast", "for", "lunch"],
-            [(0, 8), (9, 12), (13, 18), (19, 26)],
-        )
-    ],
+    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
 def test_process_tokenizer(text, expected_tokens, expected_indices):
     tk = WhitespaceTokenizer()
