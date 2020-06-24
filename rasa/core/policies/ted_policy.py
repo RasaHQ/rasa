@@ -279,7 +279,6 @@ class TEDPolicy(Policy):
         state_featurizer = self.featurizer.state_featurizer
         all_labels = state_featurizer.create_encoded_all_actions(domain)
         all_labels = all_labels.astype(np.float32)
-        print("all_labels", all_labels)
 
         label_data = RasaModelData()
         label_data.add_features(LABEL_FEATURES, [all_labels])

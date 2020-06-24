@@ -1067,7 +1067,8 @@ class DotProductLossCustom(DotProductLoss):
         labels: tf.Tensor,
         all_labels_embed: tf.Tensor,
         all_labels: tf.Tensor,
-        bad_negs: tf.Tensor,
+        all_gt_labels: tf.Tensor,
+        label_ids: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Sample negative examples."""
 
@@ -1082,15 +1083,22 @@ class DotProductLossCustom(DotProductLoss):
         )
 
         # sample negative labels
-        print("Neg ids", neg_ids.shape)
+        # print("Neg ids", neg_ids.shape)
         neg_labels_embed = self._get_negs(labels_embed, labels, labels, neg_ids)
+        neg_labels = self._get_negs(label_ids, labels, labels, neg_ids)
+
+        # print('Neg labels', neg_labels.shape, 'all_gt_labels', all_gt_labels.shape)
 
         # sample pos neg labels
-        pos_neg_labels = tf.gather(bad_negs, neg_ids, batch_dims=1)
+        pos_neg_labels = tf.gather(
+            all_gt_labels,
+            tf.cast(tf.squeeze(neg_labels, axis=-1), tf.int32),
+            batch_dims=1,
+        )
         pos_neg_labels = tf.cast(pos_neg_labels, tf.float32)
-        print("Pos neg labels shape", pos_neg_labels.shape)
+        # print("Pos neg labels shape", pos_neg_labels.shape)
 
-        return (pos_inputs_embed, pos_labels_embed, neg_labels_embed, pos_neg_labels)
+        return pos_inputs_embed, pos_labels_embed, neg_labels_embed, pos_neg_labels
 
     def _get_neg_indices(self, target_size, total_candidates):
 
@@ -1118,12 +1126,17 @@ class DotProductLossCustom(DotProductLoss):
             # tensors were flattened for sampling, reshape back
             # add sequence dimension if it was present in the inputs
             target_shape = tf.shape(target_labels)
-            print("target labels shape", target_labels.shape)
             neg_embeds = tf.reshape(
                 neg_embeds, (target_shape[0], target_shape[1], -1, embeds.shape[-1])
             )
 
         return neg_embeds
+
+    def _get_bad_mask(self, pos_d: tf.Tensor, neg_d: tf.Tensor):
+
+        bad_mask = tf.cast(tf.reduce_all(tf.equal(pos_d, neg_d), axis=-1), pos_d.dtype)
+
+        return bad_mask
 
     def _train_sim(
         self,
@@ -1137,7 +1150,7 @@ class DotProductLossCustom(DotProductLoss):
 
         # calculate similarity with several
         # embedded actions for the loss
-        neg_inf = tf.constant(-1e9)
+        # neg_inf = tf.constant(-1e9)
 
         sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
         sim_neg_il = self.sim(pos_inputs_embed, neg_labels_embed, mask)
@@ -1156,8 +1169,8 @@ class DotProductLossCustom(DotProductLoss):
         all_labels_embed: tf.Tensor,
         all_labels: tf.Tensor,
         mask: Optional[tf.Tensor] = None,
-        bad_negs: Optional[tf.Tensor] = None,
-        # bad_label_negs: Optional[tf.Tensor] = None,
+        all_gt_labels: Optional[tf.Tensor] = None,
+        label_ids: Optional[tf.Tensor] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Calculate loss and accuracy.
 
@@ -1180,15 +1193,21 @@ class DotProductLossCustom(DotProductLoss):
             neg_labels_embed,
             pos_neg_labels,
         ) = self._sample_negatives(
-            inputs_embed, labels_embed, labels, all_labels_embed, all_labels, bad_negs
+            inputs_embed,
+            labels_embed,
+            labels,
+            all_labels_embed,
+            all_labels,
+            all_gt_labels,
+            label_ids,
         )
 
-        print(
-            pos_inputs_embed.shape,
-            pos_labels_embed.shape,
-            neg_labels_embed.shape,
-            pos_neg_labels.shape,
-        )
+        # print(
+        #     pos_inputs_embed.shape,
+        #     pos_labels_embed.shape,
+        #     neg_labels_embed.shape,
+        #     pos_neg_labels.shape,
+        # )
 
         # calculate similarities
         sim_pos, sim_neg_il = self._train_sim(
@@ -1199,7 +1218,7 @@ class DotProductLossCustom(DotProductLoss):
             mask,
         )
 
-        accuracy = self._calc_accuracy(sim_pos, sim_neg_il)
+        accuracy = self._calc_accuracy(sim_pos, sim_neg_il, pos_neg_labels)
 
         loss = self._loss_sigmoid(
             sim_pos,
@@ -1213,12 +1232,21 @@ class DotProductLossCustom(DotProductLoss):
         return loss, accuracy
 
     @staticmethod
-    def _calc_accuracy(sim_pos: tf.Tensor, sim_neg: tf.Tensor) -> tf.Tensor:
+    def _calc_accuracy(
+        sim_pos: tf.Tensor, sim_neg: tf.Tensor, pos_neg_labels: tf.Tensor
+    ) -> tf.Tensor:
         """Calculate accuracy."""
 
-        max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], axis=-1), axis=-1)
-        return tf.reduce_mean(
-            tf.cast(
-                tf.math.equal(max_all_sim, tf.squeeze(sim_pos, axis=-1)), tf.float32
-            )
+        all_preds = tf.concat([sim_pos, sim_neg], axis=-1)
+        all_preds_sigmoid = tf.nn.sigmoid(all_preds)
+        all_pred_labels = tf.math.round(all_preds_sigmoid)
+
+        complete_gt = tf.concat(
+            [tf.squeeze(tf.ones_like(sim_pos), axis=-1), pos_neg_labels], axis=-1
         )
+
+        acc = tf.reduce_mean(
+            tf.cast(tf.math.equal(all_pred_labels, complete_gt), tf.float32)
+        )
+
+        return acc

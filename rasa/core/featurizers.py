@@ -13,7 +13,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.data import DialogueTrainingData
+from rasa.core.training.data import DialogueTrainingData, MultiLabelDialogueTrainingData
 from rasa.utils.common import is_logging_disabled
 
 logger = logging.getLogger(__name__)
@@ -330,8 +330,6 @@ class TrackerFeaturizer:
         pick the most probable intent out of all provided ones and
         set its probability to 1.0, while all the others to 0.0.
         """
-
-        # print('events in tracker before creating states', tracker.events)
 
         states = tracker.past_states(domain)
 
@@ -819,3 +817,26 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         # print('sliced states for prediction', trackers_as_states)
 
         return trackers_as_states
+
+    def featurize_trackers(
+        self, trackers: List[DialogueStateTracker], domain: Domain
+    ) -> DialogueTrainingData:
+        """Create training data."""
+
+        if self.state_featurizer is None:
+            raise ValueError(
+                "Variable 'state_featurizer' is not set. Provide "
+                "'SingleStateFeaturizer' class to featurize trackers."
+            )
+
+        self.state_featurizer.prepare_from_domain(domain)
+
+        (trackers_as_states, trackers_as_actions) = self.training_states_and_actions(
+            trackers, domain
+        )
+
+        # noinspection PyPep8Naming
+        X, true_lengths = self._featurize_states(trackers_as_states)
+        y = self._featurize_labels(trackers_as_actions, domain)
+
+        return MultiLabelDialogueTrainingData(X, y, true_lengths)

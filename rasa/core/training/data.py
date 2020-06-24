@@ -37,3 +37,31 @@ class DialogueTrainingData:
         shuffled_X = self.X[idx]
         shuffled_y = self.y[idx]
         return shuffled_X, shuffled_y
+
+
+class MultiLabelDialogueTrainingData(DialogueTrainingData):
+    def __init__(
+        self, X: np.ndarray, y: np.ndarray, true_length: Optional[List[int]] = None
+    ):
+        super(MultiLabelDialogueTrainingData, self).__init__(X, y, true_length)
+        self.compute_multiple_labels()
+
+    def compute_multiple_labels(self):
+
+        multi_labels = []
+        count = 0
+        for i in range(self.X.shape[0]):
+            dialogue, label = self.X[i], self.y[i]
+            for j in range(self.X.shape[0]):
+                other_dialogue, other_label = (self.X[j], self.y[j])
+                if np.array_equal(dialogue, other_dialogue):
+                    # print(label, other_label, np.argmax(label), np.argmax(other_label), len(label), label | other_label)
+                    label = np.array(label | other_label)
+
+            if np.sum(label) > 1:
+                count += 1
+            multi_labels.append(np.array(label))
+
+        self.multi_labels = np.array(multi_labels)
+
+        # print('Count of multiple labels', count, '/', self.X.shape[0])

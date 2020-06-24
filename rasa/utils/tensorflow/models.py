@@ -438,10 +438,6 @@ class RasaModel(tf.keras.models.Model):
                         batch_data[k].append(tf.constant(batch[idx], dtype=tf.float32))
                     idx += 1
 
-        if idx < len(batch):
-            batch_data["Neg Mask"].append(batch[idx])
-            # batch_data["Neg Label Mask"].append(batch[idx+1])
-
         return batch_data
 
     @staticmethod

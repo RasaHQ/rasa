@@ -219,6 +219,53 @@ class IntentTEDPolicy(TEDPolicy):
         }
         return intent_confidence
 
+    def _label_features_for_Y(self, label_ids: np.ndarray) -> np.ndarray:
+        """Prepare Y data for training: features for label_ids."""
+
+        all_label_features = self._label_data.get(LABEL_FEATURES)[0]
+
+        is_full_dialogue_featurizer_used = len(label_ids.shape) == 2
+        if is_full_dialogue_featurizer_used:
+            return np.stack(
+                [
+                    np.stack(
+                        [all_label_features[label_idx] for label_idx in seq_label_ids]
+                    )
+                    for seq_label_ids in label_ids
+                ]
+            )
+
+        # max history featurizer is used
+        return np.stack([all_label_features[label_idx] for label_idx in label_ids])
+
+    def _create_model_data(
+        self,
+        data_X: np.ndarray,
+        data_Y: Optional[np.ndarray] = None,
+        all_y: Optional[List[List]] = None,
+    ) -> RasaModelData:
+        """Combine all model related data into RasaModelData."""
+
+        label_ids = np.array([])
+        Y = np.array([])
+        multiple_labels = []
+
+        if data_Y is not None and all_y is not None:
+            label_ids = self._label_ids_for_Y(data_Y)
+            Y = self._label_features_for_Y(label_ids)
+            # explicitly add last dimension to label_ids
+            # to track correctly dynamic sequences
+            label_ids = np.expand_dims(label_ids, -1)
+            multiple_labels = all_y
+
+        model_data = RasaModelData(label_key=LABEL_IDS)
+        model_data.add_features(DIALOGUE_FEATURES, [data_X])
+        model_data.add_features(LABEL_FEATURES, [Y])
+        model_data.add_features(LABEL_IDS, [label_ids])
+        model_data.add_features("all_gt_labels", [np.array(multiple_labels)])
+
+        return model_data
+
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
@@ -233,7 +280,9 @@ class IntentTEDPolicy(TEDPolicy):
         self._label_data = self._create_label_data(domain)
 
         # extract actual training data to feed to model
-        model_data = self._create_model_data(training_data.X, training_data.y)
+        model_data = self._create_model_data(
+            training_data.X, training_data.y, training_data.multi_labels
+        )
         if model_data.is_empty():
             logger.error(
                 f"Can not train '{self.__class__.__name__}'. No data was provided. "
@@ -382,8 +431,11 @@ class IntentTED(TED):
 
         dialogue_in = batch[DIALOGUE_FEATURES][0]
         label_in = batch[LABEL_FEATURES][0]
-        neg_mask = batch["Neg Mask"][0]
+        label_ids = batch[LABEL_IDS][0]
+        all_gt_labels = batch["all_gt_labels"][0]
         # neg_label_mask = batch["Neg Label Mask"][0]
+
+        print("label ids", label_ids.shape)
 
         if self.max_history_tracker_featurizer_used:
             # add time dimension if max history featurizer is used
@@ -402,8 +454,8 @@ class IntentTED(TED):
             all_labels_embed,
             all_labels,
             mask,
-            neg_mask,
-            # neg_label_mask
+            all_gt_labels,
+            label_ids,
         )
 
         self.action_loss.update_state(loss)
@@ -429,9 +481,8 @@ class IntentTED(TED):
             mask,
         )
 
-        print("called inside intent")
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[LOSS_TYPE]
         )
 
-        return {"action_scores": scores}
+        return {"action_scores": scores, "sim_all": sim_all}
