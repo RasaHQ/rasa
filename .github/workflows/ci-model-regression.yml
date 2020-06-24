@@ -35,18 +35,17 @@ jobs:
     - name: Checkout master
       uses: actions/checkout@v2
 
+    - name: Checkout dataset
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ secrets.DATASET_REPOSITORY }}
+        token: ${{ secrets.ML_TEST_SA_PAT }}
+        path: 'dataset'
+
     - name: Download gomplate
       run: |-
-        curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
-        chmod 755 gomplate
-
-    - name: Find a comment with help description
-      uses: tczekajlo/find-comment@master
-      id: fc_help
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        issue-number: ${{ github.event.number }}
-        body-includes: "^<!.*comment-modeltest-help.*>"
+        sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+        sudo chmod +x /usr/local/bin/gomplate
 
     - name: Find a comment with configuration
       uses: tczekajlo/find-comment@master
@@ -61,30 +60,29 @@ jobs:
     - name: Render help description from template
       id: get_help_description
       run: |
-        OUTPUT=$(./gomplate -f .github/templates/model_regression_test_config_comment.tmpl)
+        OUTPUT=$(gomplate -f .github/templates/model_regression_test_config_comment.tmpl)
         OUTPUT="${OUTPUT//$'\n'/'%0A'}"
         OUTPUT="${OUTPUT//$'\r'/'%0D'}"
         echo "::set-output name=help_description::$OUTPUT"
 
     - name: Create a comment with help description
-      uses: peter-evans/create-or-update-comment@v1
-      if: steps.fc_help.outputs.comment-id == ''
+      uses: RasaHQ/create-comment@v1
       with:
-        edit-mode: 'replace'
-        issue-number: ${{ github.event.number }}
+        mode: 'delete-previous'
+        id: comment_help_description
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           ${{ steps.get_help_description.outputs.help_description }}
-        reactions: 'eyes'
 
     - if: steps.fc_config.outputs.comment-id == ''
-      run: exit 1
+      run: (echo "::error::Cannot find a comment with the configuration" && exit 1)
       name: Fail if a configuration can't be found
 
     - name: Read configuration from a PR comment
       if: steps.fc_config.outputs.comment-id != ''
       id: set-matrix
       run: |-
-          echo "::set-output name=matrix::$(./gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)"
+          echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)"
 
     - name: Add reaction
       uses: peter-evans/create-or-update-comment@v1

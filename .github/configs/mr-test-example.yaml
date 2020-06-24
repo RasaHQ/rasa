@@ -27,13 +27,34 @@
 ## Example configuration
 #################### syntax #################
 ## include:
-##   - dataset: "<dataset_name>"
+##   - dataset: ["<dataset_name>"]
 ##     config: ["<configuration_name>"]
 #
 #include:
-#  - dataset: "Carbon Bot"
+#  - dataset: ["Carbon Bot"]
 #    config: ["Sparse + EmbeddingIntent + ResponseSelector(bow)"]
+####
+## You can use "all" shortcut to define configurations or datasets
+####
+## Example: Use the "Sparse + EmbeddingIntent + ResponseSelector(bow)" configuration
+## for all available datasets
+#
+#include:
+# - dataset: ["all"]
+#   config: ["Sparse + EmbeddingIntent + ResponseSelector(bow)"]
 
+####
+## Example: Use all available configurations for the "Carbon Bot" and "Sarah" datasets
+## and for the "Hermit" dataset use the "Sparse + DIET + ResponseSelector(T2T)" and
+## "Sparse + ConveRT + DIET + ResponseSelector(T2T)" configurations
+#
+#include:
+# - dataset: ["Carbon Bot", "Sarah"]
+#   config: ["all"]
+# - dataset: ["Hermit"]
+#   config:
+#   - "Sparse + DIET + ResponseSelector(T2T)"
+#   - "Sparse + ConveRT + DIET + ResponseSelector(T2T)"
 include:
-  - dataset: "Carbon Bot"
+  - dataset: ["Carbon Bot"]
     config: ["Sparse + EmbeddingIntent + ResponseSelector(bow)"]

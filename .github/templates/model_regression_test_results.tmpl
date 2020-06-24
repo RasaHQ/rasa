@@ -8,7 +8,7 @@ a markdown table with a summary of the tests.
 {{ range $dataset, $config := (datasource "data")}}
 Dataset: `{{$dataset}}`
 
-| Configuration | Intent accuracy | Entity F1 Score | Response accuracy |
+| Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 |
 |---------------|-----------------|-----------------|-------------------|
 {{ range $config_name, $config_data := $config -}}
 | `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}` |

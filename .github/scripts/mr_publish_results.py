@@ -36,7 +36,7 @@ def send_to_segment(context):
             "total_run_time": os.environ["TOTAL_RUN_TIME"],
             "github_run_id": os.environ["GITHUB_RUN_ID"],
             "github_sha": os.environ["GITHUB_SHA"],
-            "event": os.environ["GITHUB_EVENT_NAME"],
+            "github_event": os.environ["GITHUB_EVENT_NAME"],
             **context,
         },
     )
