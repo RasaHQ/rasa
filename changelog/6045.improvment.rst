@@ -8,3 +8,5 @@ not bring any performance gain just quite a lot of additional values to store.
 
 We also modified the DIET architecture to process the sequence and sentence features independently at first.
 The features are concatenated just before the transformer.
+
+We also removed the ``__CLS__`` token again. Our Tokenizers will not add this token anymore.
