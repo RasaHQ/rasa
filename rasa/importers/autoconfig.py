@@ -9,7 +9,11 @@ import tempfile
 from typing import Text, Dict, Any, List, Set
 
 from rasa.cli import utils as cli_utils
-from rasa.constants import CONFIG_AUTOCONFIGURABLE_KEYS
+from rasa.constants import (
+    CONFIG_AUTOCONFIGURABLE_KEYS,
+    DOCS_URL_PIPELINE,
+    DOCS_URL_POLICIES,
+)
 from rasa.utils import io as io_utils
 
 logger = logging.getLogger(__name__)
@@ -126,14 +130,7 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
 
                     for key in autoconfigured:
                         if re.match(f"( *){key}:( *)", line):  # start of next section
-                            comment = (
-                                f"# Configuration for {key} was provided by the auto "
-                                f"configuration.\n"
-                                f"# To configure it manually, uncomment this section's "
-                                f"content.\n"
-                                f"#\n"
-                            )
-                            line = line + comment
+                            line = line + _config_comment(key)
                             insert_section = key
                             removing_old_config = True
                     f.write(line)
@@ -146,7 +143,7 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
                         with open(section_file) as section_f:
                             section_lines = section_f.readlines()
                             for section_line in section_lines:
-                                f.write("#" + section_line)
+                                f.write("# " + section_line)
                     except FileNotFoundError:
                         raise ValueError(f"File {section_file} does not exist.")
 
@@ -154,7 +151,26 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
             raise ValueError(f"File '{config_file}' does not exist.")
 
     if autoconfigured:
+        autoconfigured_keys = cli_utils.english_sentence_from_collection(autoconfigured)
         cli_utils.print_info(
-            f"Configuration of {autoconfigured} was chosen automatically. It was "
-            f"written into the config file at {config_file}."
+            f"The configuration for {autoconfigured_keys} was chosen automatically. It "
+            f"was written into the config file at `{config_file}`."
         )
+
+
+def _config_comment(key: Text) -> Text:
+    if key == "pipeline":
+        comment = (
+            f"# # No configuration for the NLU pipeline was provided. The following "
+            f"default pipeline was used to train your model.\n"
+            f"# # To customise it, uncomment and adjust the pipeline. See "
+            f"{DOCS_URL_PIPELINE} for more information.\n"
+        )
+    else:
+        comment = (
+            f"# # No configuration for policies was provided. The following default "
+            f"policies were used to train your model.\n"
+            f"# # To customise them, uncomment and adjust the policies. See "
+            f"{DOCS_URL_POLICIES} for more information.\n"
+        )
+    return comment

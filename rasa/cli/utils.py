@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Collection
 
 if TYPE_CHECKING:
     from questionary import Question
@@ -201,6 +201,17 @@ def payload_from_button_question(button_question: "Question") -> Text:
         # Extract intent slash command if it's a button
         response = response[response.find("(") + 1 : response.find(")")]
     return response
+
+
+def english_sentence_from_collection(collection: Collection) -> Text:
+    sentence = ""
+    for i, key in enumerate(collection):
+        if len(collection) > 1 and i == len(collection) - 1:
+            sentence += " and "
+        elif i > 0:
+            sentence += ", "
+        sentence += key
+    return sentence
 
 
 class bcolors:
