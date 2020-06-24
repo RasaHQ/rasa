@@ -176,6 +176,32 @@ async def test_validate_slots():
         ]
 
 
+def test_name_of_utterance():
+    form_name = "another_form"
+    slot_name = "num_people"
+    full_utterance_name = f"utter_ask_{form_name}_{slot_name}"
+
+    domain = f"""
+    forms:
+    - {form_name}:
+        {slot_name}:
+        - type: from_text
+    responses:
+        {full_utterance_name}:
+        - text: "How many people?"
+    """
+    domain = Domain.from_yaml(domain)
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        action_server = EndpointConfig(action_server_url)
+        action = FormAction(form_name, action_server)
+
+        assert action._name_of_utterance(domain, slot_name) == full_utterance_name
+        assert action._name_of_utterance(domain, "another_slot") == "utter_ask_another_slot"
+
+
 def test_temporary_tracker():
     extra_slot = "some_slot"
     sender_id = "test"
