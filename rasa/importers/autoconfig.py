@@ -116,14 +116,13 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
                 for line in lines:
                     insert_section = None
 
-                    if empty and re.match("language:", line):
+                    if empty and config.get("language") and re.match("language:", line):
                         line = f"language: {config['language']}\n"
 
                     if removing_old_config:
-                        if re.match(f"#", line):  # old auto config to be removed
+                        if re.match("#", line):  # old auto config to be removed
                             continue
-                        else:
-                            removing_old_config = False
+                        removing_old_config = False
 
                     for key in autoconfigured:
                         if re.match(f"( *){key}:( *)", line):  # start of next section
@@ -143,10 +142,9 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
                         continue
 
                     section_file = tmp_dir + f"/temp_{insert_section}.yml"
-                    print(Path(section_file).is_file())
                     try:
-                        with open(section_file) as sub_f:
-                            section_lines = sub_f.readlines()
+                        with open(section_file) as section_f:
+                            section_lines = section_f.readlines()
                             for section_line in section_lines:
                                 f.write("#" + section_line)
                     except FileNotFoundError:
