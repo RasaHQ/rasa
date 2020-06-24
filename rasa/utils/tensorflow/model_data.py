@@ -25,7 +25,7 @@ class FeatureSignature(NamedTuple):
     """Stores the shape and the type (sparse vs dense) of features."""
 
     is_sparse: bool
-    shape: List[int]
+    feature_dimension: Optional[int]
 
 
 class RasaModelData:
@@ -210,7 +210,7 @@ class RasaModelData:
             key: [
                 FeatureSignature(
                     True if isinstance(v[0], scipy.sparse.spmatrix) else False,
-                    v[0].shape,
+                    v[0].shape[-1] if v[0].shape else None,
                 )
                 for v in values
             ]
@@ -357,8 +357,8 @@ class RasaModelData:
                 if num_data_cycles[index] > 0 and not skipped[index]:
                     skipped[index] = True
                     continue
-                else:
-                    skipped[index] = False
+
+                skipped[index] = False
 
                 index_batch_size = (
                     int(counts_label_ids[index] / self.num_examples * batch_size) + 1
