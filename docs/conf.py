@@ -420,6 +420,6 @@ def setup(sphinx):
         sys.path.insert(0, utils_path)
         from StoryLexer import StoryLexer
 
-        sphinx.add_lexer("story", StoryLexer())
+        sphinx.add_lexer("story", StoryLexer)
     except ImportError:
         print("No Story Lexer :( Sad times!")
