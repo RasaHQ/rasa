@@ -1,9 +1,12 @@
 from typing import Text
+from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.domain import Domain
-from rasa.core.interpreter import RegexInterpreter
+from rasa.core.interpreter import RegexInterpreter, RasaNLUInterpreter
 from rasa.core.train import train
 from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy
@@ -168,3 +171,31 @@ async def test_random_seed(tmpdir, config_file):
     probs_1 = await processor_1.predict_next("1")
     probs_2 = await processor_2.predict_next("2")
     assert probs_1["confidence"] == probs_2["confidence"]
+
+
+async def test_trained_interpreter_passed_to_policies(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+):
+    from rasa.core.policies.ted_policy import TEDPolicy
+
+    policies_config = {"policies": [{"name": TEDPolicy.__name__}]}
+
+    policy_train = Mock()
+    monkeypatch.setattr(TEDPolicy, "train", policy_train)
+
+    interpreter = Mock(spec=RasaNLUInterpreter)
+
+    await train(
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+        DEFAULT_STORIES_FILE,
+        str(tmp_path),
+        interpreter=interpreter,
+        policy_config=policies_config,
+        additional_arguments={},
+    )
+
+    policy_train.assert_called_once()
+
+    assert policy_train.call_count == 1
+    _, _, kwargs = policy_train.mock_calls[0]
+    assert kwargs["interpreter"] == interpreter

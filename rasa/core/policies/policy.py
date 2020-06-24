@@ -9,6 +9,7 @@ from rasa.core.featurizers import (
     BinarySingleStateFeaturizer,
 )
 from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
@@ -99,6 +100,7 @@ class Policy:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers.
@@ -107,6 +109,7 @@ class Policy:
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.core.domain.Domain`
+            interpreter: Interpreter which can be used by the polices for featurization.
         """
 
         raise NotImplementedError("Policy must have the capacity to train.")

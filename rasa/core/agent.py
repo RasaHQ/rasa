@@ -466,7 +466,7 @@ class Agent:
             # DEPRECATION EXCEPTION - remove in 2.1
             raise Exception(
                 "Passing a text to `agent.handle_message(...)` is "
-                "not supported anymore. Rather use `agent.handle_text(...)`.",
+                "not supported anymore. Rather use `agent.handle_text(...)`."
             )
 
         def noop(_):
@@ -528,7 +528,7 @@ class Agent:
 
         processor = self.create_processor()
         await processor.trigger_external_user_uttered(
-            intent_name, entities, tracker, output_channel,
+            intent_name, entities, tracker, output_channel
         )
 
     async def handle_text(
@@ -700,7 +700,9 @@ class Agent:
 
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
-        self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
+        self.policy_ensemble.train(
+            training_trackers, self.domain, interpreter=self.interpreter, **kwargs
+        )
         self._set_fingerprint()
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:

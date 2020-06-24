@@ -4,10 +4,12 @@ import tempfile
 from contextlib import ExitStack
 from typing import Text, Optional, List, Union, Dict
 
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.importers.importer import TrainingDataImporter
 from rasa import model
 from rasa.model import FingerprintComparisonResult
 from rasa.core.domain import Domain
+from rasa.nlu.model import Interpreter
 from rasa.utils.common import TempDirectoryPath
 
 from rasa.cli.utils import (
@@ -17,7 +19,11 @@ from rasa.cli.utils import (
     bcolors,
     print_color,
 )
-from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CORE_SUBDIRECTORY_NAME
+from rasa.constants import (
+    DEFAULT_MODELS_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+    DEFAULT_NLU_SUBDIRECTORY_NAME,
+)
 
 
 def train(
@@ -197,6 +203,7 @@ async def _train_async_internal(
             persist_nlu_training_data=persist_nlu_training_data,
             core_additional_arguments=core_additional_arguments,
             nlu_additional_arguments=nlu_additional_arguments,
+            old_model_zip_path=old_model,
         )
 
         return model.package_model(
@@ -222,9 +229,27 @@ async def _do_training(
     persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
+    old_model_zip_path: Optional[Text] = None,
 ):
     if not fingerprint_comparison_result:
         fingerprint_comparison_result = FingerprintComparisonResult()
+
+    interpreter_path = None
+    if fingerprint_comparison_result.should_retrain_nlu():
+        model_path = await _train_nlu_with_validated_data(
+            file_importer,
+            output=output_path,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            persist_nlu_training_data=persist_nlu_training_data,
+            additional_arguments=nlu_additional_arguments,
+        )
+        interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
+    else:
+        print_color(
+            "NLU data/configuration did not change. No need to retrain NLU model.",
+            color=bcolors.OKBLUE,
+        )
 
     if fingerprint_comparison_result.should_retrain_core():
         await _train_core_with_validated_data(
@@ -233,6 +258,8 @@ async def _do_training(
             train_path=train_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
+            interpreter=_load_interpreter(interpreter_path)
+            or _interpreter_from_previous_model(old_model_zip_path),
         )
     elif fingerprint_comparison_result.should_retrain_nlg():
         print_color(
@@ -248,20 +275,23 @@ async def _do_training(
             color=bcolors.OKBLUE,
         )
 
-    if fingerprint_comparison_result.should_retrain_nlu():
-        await _train_nlu_with_validated_data(
-            file_importer,
-            output=output_path,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-            persist_nlu_training_data=persist_nlu_training_data,
-            additional_arguments=nlu_additional_arguments,
-        )
-    else:
-        print_color(
-            "NLU data/configuration did not change. No need to retrain NLU model.",
-            color=bcolors.OKBLUE,
-        )
+
+def _load_interpreter(
+    interpreter_path: Optional[Text],
+) -> Optional[NaturalLanguageInterpreter]:
+    if interpreter_path:
+        return NaturalLanguageInterpreter.create(interpreter_path)
+
+
+def _interpreter_from_previous_model(
+    old_model_zip_path: Optional[Text],
+) -> Optional[NaturalLanguageInterpreter]:
+    if not old_model_zip_path:
+        return
+
+    with model.unpack_model(old_model_zip_path) as unpacked:
+        _, old_nlu = model.get_model_subdirectories(unpacked)
+        return NaturalLanguageInterpreter.create(old_nlu)
 
 
 def train_core(
@@ -348,6 +378,7 @@ async def _train_core_with_validated_data(
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
+    interpreter: Optional[Interpreter] = None,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
 
@@ -372,6 +403,7 @@ async def _train_core_with_validated_data(
             output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
             policy_config=config,
             additional_arguments=additional_arguments,
+            interpreter=interpreter,
         )
         print_color("Core model training completed.", color=bcolors.OKBLUE)
 

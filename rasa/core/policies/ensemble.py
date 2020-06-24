@@ -22,6 +22,7 @@ from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
@@ -117,11 +118,14 @@ class PolicyEnsemble:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         if training_trackers:
             for policy in self.policies:
-                policy.train(training_trackers, domain, **kwargs)
+                policy.train(
+                    training_trackers, domain, interpreter=interpreter, **kwargs
+                )
 
             training_events = self._training_events_from_trackers(training_trackers)
             self.action_fingerprints = self._create_action_fingerprints(training_events)
@@ -449,7 +453,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         predictions = {
             f"policy_{i}_{type(p).__name__}": Prediction(
-                p.predict_action_probabilities(tracker, domain), p.priority,
+                p.predict_action_probabilities(tracker, domain), p.priority
             )
             for i, p in enumerate(self.policies)
         }

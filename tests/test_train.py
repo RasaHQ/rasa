@@ -1,14 +1,29 @@
+import asyncio
+import sys
 import tempfile
 import os
+from pathlib import Path
 from typing import Text
+from unittest.mock import Mock
 
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
+import rasa.core
+from rasa import model
+from rasa.constants import DEFAULT_NLU_SUBDIRECTORY_NAME
+from rasa.core.interpreter import RasaNLUInterpreter
+from rasa.nlu.model import Interpreter
 
 from rasa.train import train_core, train_nlu, train
+from tests.conftest import DEFAULT_CONFIG_PATH
+from tests.core.conftest import (
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_STORIES_FILE,
+    DEFAULT_NLU_DATA,
+)
 from tests.core.test_model import _fingerprint
 
 
@@ -159,9 +174,80 @@ def test_train_nlu_no_nlu_file_error_message(
 ):
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
-    train_nlu(
-        default_stack_config, "", output="test_train_nlu_temp_files_models",
-    )
+    train_nlu(default_stack_config, "", output="test_train_nlu_temp_files_models")
 
     captured = capsys.readouterr()
     assert "No NLU data given" in captured.out
+
+
+def test_trained_interpreter_passed_to_core_training(
+    monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_moodbot_path: Text
+):
+    # Skip actual NLU training and return trained interpreter path from fixture
+    _train_nlu_with_validated_data = Mock(return_value=unpacked_trained_moodbot_path)
+
+    # Patching is bit more complicated as we have a module `train` and function
+    # with the same name 😬
+    monkeypatch.setattr(
+        sys.modules["rasa.train"],
+        "_train_nlu_with_validated_data",
+        asyncio.coroutine(_train_nlu_with_validated_data),
+    )
+
+    # Mock the actual Core training
+    _train_core = Mock()
+    monkeypatch.setattr(rasa.core, "train", asyncio.coroutine(_train_core))
+
+    train(
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+        DEFAULT_CONFIG_PATH,
+        [DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA],
+        str(tmp_path),
+    )
+
+    _train_core.assert_called_once()
+    _, _, kwargs = _train_core.mock_calls[0]
+    assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
+
+
+def test_interpreter_of_old_model_passed_to_core_training(
+    monkeypatch: MonkeyPatch, tmp_path: Path, trained_moodbot_path: Text
+):
+    # NLU isn't retrained
+    monkeypatch.setattr(
+        model.FingerprintComparisonResult,
+        model.FingerprintComparisonResult.should_retrain_nlu.__name__,
+        lambda _: False,
+    )
+
+    # An old model with an interpreter exists
+    monkeypatch.setattr(
+        model, model.get_latest_model.__name__, lambda _: trained_moodbot_path
+    )
+
+    # Mock the actual Core training
+    _train_core = Mock()
+    monkeypatch.setattr(rasa.core, "train", asyncio.coroutine(_train_core))
+
+    train(
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+        DEFAULT_CONFIG_PATH,
+        [DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA],
+        str(tmp_path),
+    )
+
+    _train_core.assert_called_once()
+    _, _, kwargs = _train_core.mock_calls[0]
+    assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
+
+
+def test_load_interpreter_returns_none_for_none():
+    from rasa.train import _load_interpreter
+
+    assert _load_interpreter(None) is None
+
+
+def test_interpreter_from_previous_model_returns_none_for_none():
+    from rasa.train import _interpreter_from_previous_model
+
+    assert _interpreter_from_previous_model(None) is None
