@@ -103,6 +103,8 @@ jobs:
           The model regression tests have started. It might take a while, please be patient.
           As soon as results are ready you'll see a new comment with the results.
 
+          Used configuration can be found in [the comment.](https://github.com/${{ github.repository }}/pull/${{ github.event.number}}#issuecomment-${{ steps.fc_config.outputs.comment-id }})
+
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
     needs: read_test_configuration
@@ -115,12 +117,12 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
-          chmod 755 gomplate
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo chmod +x /usr/local/bin/gomplate
 
       - name: Render deployment template
         run: |-
-          ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
+          gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
       - uses: GoogleCloudPlatform/github-actions@0.1.2
@@ -289,8 +291,8 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
-          chmod 755 gomplate
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo chmod +x /usr/local/bin/gomplate
 
       - name: Set DATASET and CONFIG variables
         env:
@@ -298,7 +300,7 @@ jobs:
           CONFIG_NAME: "${{ matrix.config }}"
         run: |-
           # determine DATASET and CONFIG environment variables
-          source <(./gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
+          source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
           test -f dataset/configs/$CONFIG
           test -d dataset/$DATASET
           echo "::set-env name=DATASET::${DATASET}"
@@ -341,15 +343,15 @@ jobs:
         run: |-
           poetry run rasa --version
 
-          export NOW_TRAIN=$(./gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           poetry run rasa train nlu --quiet -u dataset/$DATASET/train -c dataset/configs/$CONFIG --out models/$DATASET/$CONFIG
-          echo "::set-output name=train_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
-          export NOW_TEST=$(./gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           poetry run rasa test nlu --quiet -u dataset/$DATASET/test -m models/$DATASET/$CONFIG --out results/$DATASET/$CONFIG
 
-          echo "::set-output name=test_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
-          echo "::set-output name=total_run_time::$(./gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
       # Download the results of the previous runs
       # The report file is extended with new results every next job run
@@ -399,13 +401,13 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
-          chmod 755 gomplate
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo chmod +x /usr/local/bin/gomplate
 
       - name: Render a comment to add
         id: get_results
         run: |
-          OUTPUT="$(./gomplate -d data=report.json -f .github/templates/model_regression_test_results.tmpl)"
+          OUTPUT="$(gomplate -d data=report.json -f .github/templates/model_regression_test_results.tmpl)"
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
@@ -456,13 +458,13 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
-          chmod 755 gomplate
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo chmod +x /usr/local/bin/gomplate
 
       - name: Render a comment to add
         id: get_results
         run: |
-          OUTPUT="$(./gomplate -d data=report.json -f .github/templates/model_regression_test_results.tmpl)"
+          OUTPUT="$(gomplate -d data=report.json -f .github/templates/model_regression_test_results.tmpl)"
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
