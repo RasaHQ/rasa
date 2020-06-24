@@ -1,0 +1,1 @@
+``DIETClassifier`` now also assigns a confidence value to entity predictions.

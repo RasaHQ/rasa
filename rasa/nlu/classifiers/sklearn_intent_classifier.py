@@ -7,14 +7,14 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 
 import rasa.utils.io as io_utils
+import rasa.utils.train_utils as train_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT
-from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
+from rasa.nlu.constants import TEXT
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.common as common_utils
@@ -106,8 +106,8 @@ class SklearnIntentClassifier(IntentClassifier):
             y = self.transform_labels_str2num(labels)
             X = np.stack(
                 [
-                    sequence_to_sentence_features(
-                        example.get(DENSE_FEATURE_NAMES[TEXT])
+                    train_utils.sequence_to_sentence_features(
+                        example.get_dense_features(TEXT)
                     )
                     for example in training_data.intent_examples
                 ]
@@ -166,8 +166,8 @@ class SklearnIntentClassifier(IntentClassifier):
             intent = None
             intent_ranking = []
         else:
-            X = sequence_to_sentence_features(
-                message.get(DENSE_FEATURE_NAMES[TEXT])
+            X = train_utils.sequence_to_sentence_features(
+                message.get_dense_features(TEXT)
             ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))

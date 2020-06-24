@@ -1,0 +1,158 @@
+# This is a sample .typo-ci.yml file, it's used to configure how Typo CI will behave.
+# Add it to the root of your project and push it to github.
+---
+
+# What language dictionaries should it use? Currently Typo CI supports:
+# de
+# en
+# en_GB
+# es
+# fr
+# it
+# pt
+# pt_BR
+dictionaries:
+  - en
+
+# # Any files/folders we should ignore?
+excluded_files:
+  - "*.py"
+  - "*.css"
+  - "*.yml"
+  - "*.yaml"
+  - "*.html"
+  - "*.json"
+  - "*.md"
+  - "CHANGELOG.rst"
+  - "CODE_OF_CONDUCT.md"
+  - "CONTRIBUTING.md"
+  - "Dockerfile"
+  - "LICENSE.txt"
+  - "Makefile"
+  - "NOTICE"
+  - "README.md"
+  - "cloudbuild.yaml"
+  - "poetry.lock"
+  - "pyproject.toml"
+  - "secrets.tar.enc"
+  - "setup.cfg"
+  - ".codeclimate.yml"
+  - ".coveragerc"
+  - ".deepsource.toml"
+  - ".dockerignore"
+  - ".env"
+  - ".git"
+  - ".gitattributes"
+  - ".gitignore"
+  - ".pre-commit-config.yaml"
+  - ".typo-ci.yml"
+  - ".github/**/*"
+  - "binder/**/*"
+  - "data/**/*"
+  - "docker/**/*"
+  - "examples/**/*"
+  - "rasa/**/*"
+  - "scripts/**/*"
+  - "tests/**/*"
+
+# # Any typos we should ignore?
+excluded_words:
+  - analytics
+  - asyncio
+  - bot
+  - bot's
+  - cmdline
+  - conveRT
+  - ConveRTFeaturizer
+  - ConveRTTokenizer
+  - crfsuite
+  - custom-nlg-service
+  - daksh
+  - db's
+  - deque
+  - non-latin
+  - deduplicate
+  - deduplication
+  - donath
+  - matplotlib
+  - extractor
+  - fbmessenger
+  - featurization
+  - featurized
+  - featurizer
+  - featurizers
+  - featurizes
+  - featurizing
+  - forni
+  - instaclient
+  - jwt
+  - jwt's
+  - jupyter
+  - jupyterhub
+  - karpathy
+  - keras
+  - knowledgebase
+  - knowledgebasebot
+  - linenos
+  - luis
+  - matmul
+  - mattermost
+  - memoization
+  - miniconda
+  - mitie
+  - mitie's
+  - dataset
+  - mongod
+  - mrkdown
+  - mrkdwn
+  - mymodelname
+  - myuser
+  - numpy
+  - networkx
+  - nlu
+  - nlu's
+  - perceptron
+  - pika
+  - pika's
+  - jieba
+  - pretrained
+  - pycodestyle
+  - pykwalify
+  - pymessenger
+  - pyobject
+  - python-engineio
+  - pre
+  - customizable
+  - quickstart
+  - rasa
+  - rasa's
+  - readthedocs
+  - repo
+  - rst
+  - sanic
+  - sanitization
+  - scipy
+  - sklearn
+  - spacy
+  - ish
+  - spaCy
+  - spaCy's
+  - README
+  - crf
+  - backends
+  - whitespaced
+  - ngram
+  - subsampled
+  - testagent
+  - tokenize
+  - tokenized
+  - tokenization
+  - tokenizer
+  - tokenizers
+  - typoci
+  - unfeaturized
+  - unschedule
+  - wsgi
+  - ruamel
+
+spellcheck_filenames: false

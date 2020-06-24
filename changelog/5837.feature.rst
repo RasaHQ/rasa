@@ -1,0 +1,2 @@
+Added ``--port`` commandline argument to the interactive learning mode to allow
+changing the port for the Rasa server running in the background.

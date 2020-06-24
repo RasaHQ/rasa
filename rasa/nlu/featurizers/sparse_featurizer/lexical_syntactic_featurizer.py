@@ -3,19 +3,20 @@ from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import numpy as np
-from typing import Any, Dict, Optional, Text, List, Type, Union
+from typing import Any, Dict, Optional, Text, List, Type, Union, Tuple
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TOKENS_NAMES, TEXT, SPARSE_FEATURE_NAMES
+from rasa.nlu.constants import TOKENS_NAMES, TEXT, FEATURIZER_CLASS_ALIAS
 from rasa.nlu.model import Metadata
 import rasa.utils.io as io_utils
+import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -112,8 +113,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         # get all possible feature values
         all_features = []
         for example in training_data.training_examples:
-            # [:-1] to remove CLS token
-            tokens_without_cls = example.get(TOKENS_NAMES[TEXT])[:-1]
+            tokens_without_cls = train_utils.tokens_without_cls(example)
             all_features.append(self._tokens_to_features(tokens_without_cls))
 
         # build vocabulary of features
@@ -169,10 +169,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
         sparse_features = scipy.sparse.coo_matrix(one_hot_feature_vector)
 
-        sparse_features = self._combine_with_existing_sparse_features(
-            message, sparse_features, feature_name=SPARSE_FEATURE_NAMES[TEXT]
+        final_features = Features(
+            sparse_features, TEXT, self.component_config[FEATURIZER_CLASS_ALIAS]
         )
-        message.set(SPARSE_FEATURE_NAMES[TEXT], sparse_features)
+        message.add_features(final_features)
 
     def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
         """Convert words into discrete features."""

@@ -505,12 +505,15 @@ async def test_update_tracker_session_with_metadata(
     # the save is not called in _update_tracker_session()
     default_processor._save_tracker(tracker)
 
-    # inspect tracker events and make sure SessionStarted event is present and has metadata.
+    # inspect tracker events and make sure SessionStarted event is present
+    # and has metadata.
     tracker = default_processor.tracker_store.retrieve(sender_id)
-    session_event_idx = tracker.events.index(SessionStarted())
-    session_event_metadata = tracker.events[session_event_idx].metadata
+    assert tracker.events.count(SessionStarted()) == 1
 
-    assert session_event_metadata == metadata
+    session_started_event_idx = tracker.events.index(SessionStarted())
+    session_started_event_metadata = tracker.events[session_started_event_idx].metadata
+
+    assert session_started_event_metadata == metadata
 
 
 # noinspection PyProtectedMember
@@ -618,7 +621,7 @@ async def test_handle_message_with_session_start(
         ),
         SlotSet(entity, slot_1[entity]),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there Core!"),
+        BotUttered("hey there Core!", metadata={"template_name": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),

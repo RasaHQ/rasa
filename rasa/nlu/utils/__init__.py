@@ -8,6 +8,14 @@ import rasa.utils.io as io_utils
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.utils.io import read_json_file
+from rasa.nlu.constants import (
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_VALUE,
+)
 
 
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
@@ -19,8 +27,8 @@ def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
         return None
 
 
-def list_to_str(l: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
-    return delim.join([quote + e + quote for e in l])
+def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
+    return delim.join([quote + e + quote for e in lst])
 
 
 def ordered(obj: Any) -> Any:
@@ -56,13 +64,42 @@ def write_to_file(filename: Text, text: Any) -> None:
 
 
 def build_entity(
-    start: int, end: int, value: Text, entity_type: Text, **kwargs: Dict[Text, Any]
+    start: int,
+    end: int,
+    value: Text,
+    entity_type: Text,
+    role: Optional[Text] = None,
+    group: Optional[Text] = None,
+    **kwargs: Any,
 ) -> Dict[Text, Any]:
     """Builds a standard entity dictionary.
 
-    Adds additional keyword parameters."""
+    Adds additional keyword parameters.
 
-    entity = {"start": start, "end": end, "value": value, "entity": entity_type}
+    Args:
+        start: start position of entity
+        end: end position of entity
+        value: text value of the entity
+        entity_type: name of the entity type
+        role: role of the entity
+        group: group of the entity
+        **kwargs: additional parameters
+
+    Returns:
+        an entity dictionary
+    """
+
+    entity = {
+        ENTITY_ATTRIBUTE_START: start,
+        ENTITY_ATTRIBUTE_END: end,
+        ENTITY_ATTRIBUTE_VALUE: value,
+        ENTITY_ATTRIBUTE_TYPE: entity_type,
+    }
+
+    if role:
+        entity[ENTITY_ATTRIBUTE_ROLE] = role
+    if group:
+        entity[ENTITY_ATTRIBUTE_GROUP] = group
 
     entity.update(kwargs)
     return entity

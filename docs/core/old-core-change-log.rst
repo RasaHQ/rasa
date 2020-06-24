@@ -273,7 +273,7 @@ Fixed
 - fixed interactive learning to properly submit executed actions to the action
   server
 - allow the specification of the policy configuration while using the
-  visualisation script
+  visualization script
 - use default configuration if no policy configuration is passed
 - fixed html delivery from interactive server script (package compatible)
 - ``SlackBot`` when created in ``SlackInputChannel`` inherits the
@@ -440,7 +440,7 @@ Added
 Fixed
 -----
 - don't fail if rasa and rest input channels are used together
-- wrong paramter name in rocketchat channel methods
+- wrong parameter name in rocketchat channel methods
 - Software 2.0 link on interactive learning documentation page went to
   Tesla's homepage, now it links to Karpathy blogpost
 
@@ -514,7 +514,7 @@ Changed
 
 Changed
 -------
-- improved documentation for events (e.g. including json serialisation)
+- improved documentation for events (e.g. including json serialization)
 
 Removed
 -------
@@ -553,7 +553,7 @@ Added
   model metadata
 - more emoji support for PY2
 - intent confidence support in RegexInterpreter
-- added paramter to train script to pull training data from an url instead
+- added parameter to train script to pull training data from an url instead
   of a stories file
 - added new policy: :ref:`embedding_policy` implemented in tensorflow
 
@@ -797,7 +797,7 @@ Changed
 
 Fixed
 -----
-- fixed datetime serialisation of reminder event
+- fixed datetime serialization of reminder event
 
 [0.8.1] - 2018-02-01
 ^^^^^^^^^^^^^^^^^^^^
@@ -806,7 +806,7 @@ Fixed
 -----
 - removed deque to support python 3.5
 - Documentation improvements to tutorials
-- serialisation of date time value for ``ReminderScheduled`` event
+- serialization of date time value for ``ReminderScheduled`` event
 
 .. _corev0-8-0:
 
@@ -847,7 +847,7 @@ Changed
 Fixed
 -----
 - proper evaluation of stories with checkpoints
-- proper visualisation of stories with checkpoints
+- proper visualization of stories with checkpoints
 - fixed float slot min max value handling
 - fixed non integer feature decoding, e.g. used for memoization policy
 - properly log to specified file when starting Rasa Core server
@@ -861,7 +861,7 @@ Fixed
 
 Fixed
 -----
-- visualisation using Networkx version 2.x
+- visualization using Networkx version 2.x
 - add output about line of failing intent when parsing story files
 
 [0.7.8] - 2017-11-27
