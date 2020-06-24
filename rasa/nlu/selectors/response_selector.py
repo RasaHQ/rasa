@@ -510,15 +510,15 @@ class DIET2DIET(DIET):
         sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
         sentence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
 
-        if TEXT_SEQUENCE_LENGTH not in self.tf_label_data:
-            sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
-            )
-        else:
+        if TEXT_SEQUENCE_LENGTH in tf_batch_data:
             sequence_lengths_text = self._get_sequence_lengths(
                 tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
             )
             sequence_lengths_text += 1  # add cls token
+        else:
+            sequence_lengths_text = self._get_sequence_lengths(
+                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
+            )
 
         mask_text = self._compute_mask(sequence_lengths_text)
 
@@ -547,15 +547,15 @@ class DIET2DIET(DIET):
             tf_batch_data, LABEL_SENTENCE_LENGTH
         )
 
-        if LABEL_SEQUENCE_LENGTH not in tf_batch_data:
-            sequence_lengths_label = self._get_sequence_lengths(
-                tf_batch_data[LABEL_SENTENCE_LENGTH][0]
-            )
-        else:
+        if LABEL_SEQUENCE_LENGTH in tf_batch_data:
             sequence_lengths_label = self._get_sequence_lengths(
                 tf_batch_data[LABEL_SEQUENCE_LENGTH][0]
             )
             sequence_lengths_label += 1  # add cls token
+        else:
+            sequence_lengths_label = self._get_sequence_lengths(
+                tf_batch_data[LABEL_SENTENCE_LENGTH][0]
+            )
 
         mask_label = self._compute_mask(sequence_lengths_label)
 
