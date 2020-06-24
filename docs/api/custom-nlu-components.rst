@@ -38,13 +38,12 @@ methods that you should implement:
 .. note::
     If you create a custom tokenizer you should implement the methods of ``rasa.nlu.tokenizers.tokenizer.Tokenizer``.
     The ``train`` and ``process`` methods are already implemented and you simply need to overwrite the ``tokenize``
-    method. ``train`` and ``process`` will automatically add a special token ``__CLS__`` to the end of list of tokens,
-    which is needed further down the pipeline.
+    method.
 
 .. note::
     If you create a custom featurizer you can return two different kind of features: sequence features and sentence
-    features. The sequence features are a matrix of size ``(number-of-tokens - 1 x feature-dimension)``, e.g.
-    the matrix contains a feature vector for every token in the sequence except the ``__CLS__`` token.
+    features. The sequence features are a matrix of size ``(number-of-tokens x feature-dimension)``, e.g.
+    the matrix contains a feature vector for every token in the sequence.
     The sentence features are represented by a matrix of size ``(1 x feature-dimension)``.
 
 Component

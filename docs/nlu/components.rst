@@ -157,8 +157,6 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 - ``intent_split_symbol`` sets the delimiter string to split the intent labels, default is underscore
   (``_``).
 
-    .. note:: All tokenizers add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
-              text and responses.
 
 .. _WhitespaceTokenizer:
 
@@ -321,12 +319,11 @@ Sparse features only store the values that are non zero and their positions in t
 Thus, we save a lot of memory and are able to train on larger datasets.
 
 By default all featurizers return two different kind of features: sequence features and sentence features.
-The sequence features are a matrix of size ``(number-of-tokens - 1 x feature-dimension)``.
-The matrix contains a feature vector for every token in the sequence except the ``__CLS__`` token,
-hence the ``number-of-tokens - 1``.
+The sequence features are a matrix of size ``(number-of-tokens x feature-dimension)``.
+The matrix contains a feature vector for every token in the sequence.
 This allows us to train sequence models.
 The sentence features are represented by a matrix of size ``(1 x feature-dimension)``.
-The matrix contains the feature vector for the complete utterance, e.g. the ``__CLS__`` token.
+The matrix contains the feature vector for the complete utterance.
 The sentence features can be used in any bag-of-words model.
 The corresponding classifier can therefore decide what kind of features to use.
 Notice: The ``feature-dimension`` for sequence and sentence features does not have to be the same.
@@ -351,7 +348,7 @@ MitieFeaturizer
         that makes use of ``dense_features``.
 
 :Configuration:
-    The sentence vector, i.e. the vector of the ``__CLS__`` token, can be calculated in two different ways, either via
+    The sentence vector, i.e. the vector of the complete utterance, can be calculated in two different ways, either via
     mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
     The default pooling method is set to ``mean``.
 
@@ -360,7 +357,7 @@ MitieFeaturizer
         pipeline:
         - name: "MitieFeaturizer"
           # Specify what pooling operation should be used to calculate the vector of
-          # the __CLS__ token. Available options: 'mean' and 'max'.
+          # the complete utterance. Available options: 'mean' and 'max'.
           "pooling": "mean"
 
 
@@ -378,7 +375,7 @@ SpacyFeaturizer
     Creates features for entity extraction, intent classification, and response classification using the spaCy
     featurizer.
 :Configuration:
-    The sentence vector, i.e. the vector of the ``__CLS__`` token, can be calculated in two different ways, either via
+    The sentence vector, i.e. the vector of the complete utterance, can be calculated in two different ways, either via
     mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
     The default pooling method is set to ``mean``.
 
@@ -387,7 +384,7 @@ SpacyFeaturizer
         pipeline:
         - name: "SpacyFeaturizer"
           # Specify what pooling operation should be used to calculate the vector of
-          # the __CLS__ token. Available options: 'mean' and 'max'.
+          # the complete utterance. Available options: 'mean' and 'max'.
           "pooling": "mean"
 
 
@@ -1197,7 +1194,7 @@ ResponseSelector
         - ``embedding_dimension``:
           This parameter defines the output dimension of the embedding layers used inside the model (default: ``20``).
           We are using multiple embeddings layers inside the model architecture.
-          For example, the vector of the ``__CLS__`` token and the intent is passed on to an embedding layer before
+          For example, the vector of the complete utterance and the intent is passed on to an embedding layer before
           they are compared and the loss is calculated.
         - ``number_of_transformer_layers``:
           This parameter sets the number of transformer layers to use (default: ``0``).
@@ -1398,7 +1395,7 @@ DIETClassifier
     recognition. The architecture is based on a transformer which is shared for both tasks.
     A sequence of entity labels is predicted through a Conditional Random Field (CRF) tagging layer on top of the
     transformer output sequence corresponding to the input sequence of tokens.
-    For the intent labels the transformer output for the ``__CLS__`` token and intent labels are embedded into a
+    For the intent labels the transformer output for the complete utterance and intent labels are embedded into a
     single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
     minimize similarities with negative samples.
 
@@ -1443,7 +1440,7 @@ DIETClassifier
         - ``embedding_dimension``:
           This parameter defines the output dimension of the embedding layers used inside the model (default: ``20``).
           We are using multiple embeddings layers inside the model architecture.
-          For example, the vector of the ``__CLS__`` token and the intent is passed on to an embedding layer before
+          For example, the vector of the complete utterance and the intent is passed on to an embedding layer before
           they are compared and the loss is calculated.
         - ``number_of_transformer_layers``:
           This parameter sets the number of transformer layers to use (default: ``2``).
