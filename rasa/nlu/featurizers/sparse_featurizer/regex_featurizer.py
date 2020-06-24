@@ -12,7 +12,6 @@ import scipy.sparse
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
-    CLS_TOKEN,
     RESPONSE,
     TEXT,
     TOKENS_NAMES,
@@ -123,7 +122,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
         sequence_length = len(tokens)
 
-        sequence_features = np.zeros([sequence_length - 1, len(self.known_patterns)])
+        sequence_features = np.zeros([sequence_length, len(self.known_patterns)])
         sentence_features = np.zeros([1, len(self.known_patterns)])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
@@ -133,12 +132,6 @@ class RegexFeaturizer(SparseFeaturizer):
             for token_index, t in enumerate(tokens):
                 patterns = t.get("pattern", default={})
                 patterns[pattern["name"]] = False
-
-                if t.text == CLS_TOKEN:
-                    # make sure to set all patterns for the CLS token to False
-                    # the attribute patterns is needed later on and in the tests
-                    t.set("pattern", patterns)
-                    continue
 
                 for match in matches:
                     if t.start < match.end() and t.end > match.start():

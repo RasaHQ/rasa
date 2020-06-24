@@ -119,8 +119,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         # get all possible feature values
         all_features = []
         for example in training_data.training_examples:
-            tokens_without_cls = train_utils.tokens_without_cls(example)
-            all_features.append(self._tokens_to_features(tokens_without_cls))
+            tokens = example.get(TOKENS_NAMES[TEXT])
+            all_features.append(self._tokens_to_features(tokens))
 
         # build vocabulary of features
         feature_vocabulary = self._build_feature_vocabulary(all_features)

@@ -4,7 +4,7 @@ import scipy.sparse
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.constants import CLS_TOKEN, TOKENS_NAMES, TEXT, INTENT, RESPONSE
+from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT, RESPONSE
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
@@ -240,13 +240,13 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
 @pytest.mark.parametrize(
     "tokens, expected",
     [
-        (["hello", "hello", "hello", "hello", "hello", CLS_TOKEN], [[1]]),
-        (["你好", "你好", "你好", "你好", "你好", CLS_TOKEN], [[1]]),  # test for unicode chars
-        (["hello", "goodbye", "hello", CLS_TOKEN], [[0, 1]]),
+        (["hello", "hello", "hello", "hello", "hello"], [[1]]),
+        (["你好", "你好", "你好", "你好", "你好"], [[1]]),  # test for unicode chars
+        (["hello", "goodbye", "hello"], [[0, 1]]),
         # Note: order has changed in Chinese version of "hello" & "goodbye"
-        (["你好", "再见", "你好", CLS_TOKEN], [[1, 0]]),  # test for unicode chars
-        (["a", "b", "c", "d", "e", "f", CLS_TOKEN], [[1, 0, 0, 0, 0, 0]]),
-        (["a", "1", "2", CLS_TOKEN], [[0, 1]]),
+        (["你好", "再见", "你好"], [[1, 0]]),  # test for unicode chars
+        (["a", "b", "c", "d", "e", "f"], [[1, 0, 0, 0, 0, 0]]),
+        (["a", "1", "2"], [[0, 1]]),
     ],
 )
 def test_count_vector_featurizer_using_tokens(tokens, expected):

@@ -426,27 +426,23 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             # [n_samples, n_features]
             # set input to list of tokens if sequence should be returned
             # otherwise join all tokens to a single string and pass that as a list
-            tokens_without_cls = tokens
-            if attribute in [TEXT, RESPONSE]:
-                tokens_without_cls = tokens[:-1]
-
-            if not tokens_without_cls:
+            if not tokens:
                 # attribute is not set (e.g. response not present)
                 sequence_features.append(None)
                 sentence_features.append(None)
                 continue
 
-            seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
+            seq_vec = self.vectorizers[attribute].transform(tokens)
             seq_vec.sort_indices()
 
             sequence_features.append(seq_vec.tocoo())
 
             if attribute in [TEXT, RESPONSE]:
-                tokens_text = [" ".join(tokens_without_cls)]
-                cls_vec = self.vectorizers[attribute].transform(tokens_text)
-                cls_vec.sort_indices()
+                tokens_text = [" ".join(tokens)]
+                sentence_vec = self.vectorizers[attribute].transform(tokens_text)
+                sentence_vec.sort_indices()
 
-                sentence_features.append(cls_vec.tocoo())
+                sentence_features.append(sentence_vec.tocoo())
             else:
                 sentence_features.append(None)
 

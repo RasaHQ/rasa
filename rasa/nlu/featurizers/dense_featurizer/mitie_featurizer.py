@@ -14,6 +14,7 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
+    TOKENS_NAMES,
 )
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 import rasa.utils.train_utils as train_utils
@@ -62,7 +63,7 @@ class MitieFeaturizer(DenseFeaturizer):
     def process_training_example(
         self, example: Message, attribute: Text, mitie_feature_extractor: Any
     ):
-        tokens = train_utils.tokens_without_cls(example, attribute)
+        tokens = example.get(TOKENS_NAMES[attribute])
 
         if tokens is not None:
             sequence_features, sentence_features = self.features_for_tokens(
@@ -73,7 +74,7 @@ class MitieFeaturizer(DenseFeaturizer):
 
     def process(self, message: Message, **kwargs: Any) -> None:
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        tokens = train_utils.tokens_without_cls(message)
+        tokens = message.get(TOKENS_NAMES[TEXT])
         sequence_features, sentence_features = self.features_for_tokens(
             tokens, mitie_feature_extractor
         )

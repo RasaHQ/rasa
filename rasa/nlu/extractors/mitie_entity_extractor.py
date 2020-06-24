@@ -3,7 +3,7 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.nlu.constants import ENTITIES
+from rasa.nlu.constants import ENTITIES, TOKENS_NAMES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
@@ -99,7 +99,7 @@ class MitieEntityExtractor(EntityExtractor):
         import mitie
 
         text = training_example.text
-        tokens = train_utils.tokens_without_cls(training_example)
+        tokens = training_example.get(TOKENS_NAMES[TEXT])
         sample = mitie.ner_training_instance([t.text for t in tokens])
         for ent in training_example.get(ENTITIES, []):
             try:
@@ -136,9 +136,7 @@ class MitieEntityExtractor(EntityExtractor):
             )
 
         ents = self.extract_entities(
-            message.text,
-            train_utils.tokens_without_cls(message),
-            mitie_feature_extractor,
+            message.text, message.get(TOKENS_NAMES[TEXT]), mitie_feature_extractor
         )
         extracted = self.add_extractor_name(ents)
         message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)

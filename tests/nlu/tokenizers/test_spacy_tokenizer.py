@@ -2,14 +2,7 @@ import pytest
 
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import (
-    CLS_TOKEN,
-    TEXT,
-    SPACY_DOCS,
-    INTENT,
-    RESPONSE,
-    TOKENS_NAMES,
-)
+from rasa.nlu.constants import TEXT, SPACY_DOCS, INTENT, RESPONSE, TOKENS_NAMES
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 
 
@@ -64,7 +57,7 @@ def test_spacy_pos_tags(text, expected_pos_tags, spacy_nlp):
     [
         (
             "Forecast for lunch",
-            ["Forecast", "for", "lunch", CLS_TOKEN],
+            ["Forecast", "for", "lunch"],
             [(0, 8), (9, 12), (13, 18), (19, 26)],
         )
     ],

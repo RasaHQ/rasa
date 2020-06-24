@@ -16,6 +16,7 @@ from rasa.nlu.constants import (
     FEATURIZER_CLASS_ALIAS,
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
+    TOKENS_NAMES,
 )
 import numpy as np
 import tensorflow as tf
@@ -90,8 +91,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
     ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
-            train_utils.tokens_without_cls(example, attribute)
-            for example in batch_examples
+            example.get(TOKENS_NAMES[attribute]) for example in batch_examples
         ]
 
         number_of_tokens_in_sentence = [

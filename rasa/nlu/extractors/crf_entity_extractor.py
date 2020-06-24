@@ -205,7 +205,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.entity_taggers is None:
             return []
 
-        tokens = train_utils.tokens_without_cls(message)
+        tokens = message.get(TOKENS_NAMES[TEXT])
         crf_tokens = self._convert_to_crf_tokens(message)
 
         predictions = {}
@@ -473,7 +473,7 @@ class CRFEntityExtractor(EntityExtractor):
         if features is None:
             return None
 
-        tokens = train_utils.tokens_without_cls(message, TEXT)
+        tokens = message.get(TOKENS_NAMES[TEXT])
         if len(tokens) != len(features):
             common_utils.raise_warning(
                 f"Number of dense features ({len(features)}) for attribute "
@@ -498,7 +498,7 @@ class CRFEntityExtractor(EntityExtractor):
         """Take a message and convert it to crfsuite format."""
 
         crf_format = []
-        tokens = train_utils.tokens_without_cls(message)
+        tokens = message.get(TOKENS_NAMES[TEXT])
 
         text_dense_features = self._get_dense_features(message)
         tags = self._get_tags(message)
@@ -529,7 +529,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _get_tags(self, message: Message) -> Dict[Text, List[Text]]:
         """Get assigned entity tags of message."""
-        tokens = train_utils.tokens_without_cls(message)
+        tokens = message.get(TOKENS_NAMES[TEXT])
         tags = {}
 
         for tag_name in self.crf_order:
