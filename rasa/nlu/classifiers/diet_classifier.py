@@ -1210,6 +1210,8 @@ class DIET(RasaModel):
                 self.config[SHARE_HIDDEN_LAYERS]
                 and self.data_signature[TEXT_SENTENCE_FEATURES]
                 != self.data_signature[LABEL_SENTENCE_FEATURES]
+                and self.data_signature[TEXT_SEQUENCE_FEATURES]
+                != self.data_signature[LABEL_SEQUENCE_FEATURES]
             ):
                 raise ValueError(
                     "If hidden layer weights are shared, data signatures "
