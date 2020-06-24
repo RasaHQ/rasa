@@ -83,12 +83,17 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
             "config_with_comments.yml",
             "config_with_comments_after_dumping.yml",
             ["policies"],
-        ),
+        ),  # comments in various positions
         (
             "config_empty.yml",
             "config_empty_after_dumping.yml",
             ["policies", "pipeline"],
-        ),  # no empty lines!
+        ),  # no empty lines
+        (
+            "config_with_comments_after_dumping.yml",
+            "config_with_comments_after_dumping.yml",
+            ["policies"],
+        ),  # with previous auto config that needs to be overwritten
     ],
 )
 def test_dump_config(

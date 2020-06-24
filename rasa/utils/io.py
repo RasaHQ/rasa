@@ -155,65 +155,6 @@ def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) ->
         raise ValueError(f"File '{filename}' does not exist.")
 
 
-def comment_out_section_in_file(
-    filename: Text,
-    sections_to_comment_out: List[Text],
-    other_sections: List[Text] = None,
-    add_comments: List[Text] = None,
-) -> None:
-    """Comment out the content of specific sections in a file and add comments.
-
-    A section "section_name" begins after the line containing "section_name:" and ends
-    with the next empty line or the start of the next section.
-    All existing comments are removed rather than commented out a second time.
-    Additional comments can be added in the beginning of each section.
-
-    Args:
-        filename: Path to the file.
-        sections_to_comment_out: The sections whose content should be commented out.
-        other_sections: Other sections in the file.
-        add_comments: Comments that should be added in the beginning of the sections.
-    """
-    if other_sections is None:
-        other_sections = []
-    if not add_comments:
-        add_comments = [""] * len(sections_to_comment_out)
-
-    sections = set(other_sections) | set(sections_to_comment_out)
-
-    try:
-        with open(filename, "r+", encoding=DEFAULT_ENCODING) as f:
-            lines = f.readlines()
-            f.seek(0)
-            section_started = False
-
-            for line in lines:
-                comment_out = False  # should the current line be commented out
-                if not line.strip():  # empty line ends the section
-                    section_started = False
-                if section_started:
-                    if re.match("( *)#", line):  # remove old comments
-                        continue
-                    comment_out = True  # comment out content of the section
-                for section in sections:
-                    if re.match(f"( *){section}:( *)", line):  # start of next section
-                        comment_out = False
-                        if section in sections_to_comment_out:
-                            section_started = True
-                            line = (
-                                line
-                                + add_comments[sections_to_comment_out.index(section)]
-                            )
-                        else:
-                            section_started = False
-                if comment_out:
-                    line = "#" + line
-                f.write(line)
-            f.truncate()
-    except FileNotFoundError:
-        raise ValueError(f"File '{filename}' does not exist.")
-
-
 def read_json_file(filename: Union[Text, Path]) -> Any:
     """Read json from a file."""
     content = read_file(filename)
