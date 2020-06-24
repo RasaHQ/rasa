@@ -1513,40 +1513,53 @@ class DIET(RasaModel):
             dense_dropout,
         )
 
-        if sequence_x is not None and sentence_x is not None:
-            if sequence_x.shape[-1] != sentence_x.shape[-1]:
-                sequence_x = self._tf_layers[f"ffnn.{name}_{SEQUENCE}"](
-                    sequence_x, self._training
-                )
-                sentence_x = self._tf_layers[f"ffnn.{name}_{SENTENCE}"](
-                    sentence_x, self._training
-                )
-
-            # we need to concatenate the sequence features with the sentence features
-            # we cannot use tf.concat as the sequence features are padded
-
-            # (1) get position of cls token in mask
-            last = mask_text * tf.math.cumprod(
-                1 - mask_text, axis=1, exclusive=True, reverse=True
-            )
-            # (2) multiply by sentence features so that we get a matrix of
-            #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
-            #     for the sentence features
-            sentence_x = last * sentence_x
-
-            # (3) add a zero to the end of sequence matrix to match the final shape
-            sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
-
-            # (4) sum up sequence features and sentence features
-            return sequence_x + sentence_x
-
         if sequence_x is not None and sentence_x is None:
             return sequence_x
 
         if sequence_x is None and sentence_x is not None:
             return sentence_x
 
-        raise ValueError("No features present!")
+        if sequence_x is not None and sentence_x is not None:
+            return self._concat_sequence_sentence_features(
+                sequence_x, sentence_x, name, mask_text
+            )
+
+        raise ValueError(
+            "No features are present. Please check your configuration file."
+        )
+
+    def _concat_sequence_sentence_features(
+        self,
+        sequence_x: tf.Tensor,
+        sentence_x: tf.Tensor,
+        name: Text,
+        mask_text: tf.Tensor,
+    ):
+        if sequence_x.shape[-1] != sentence_x.shape[-1]:
+            sequence_x = self._tf_layers[f"ffnn.{name}_{SEQUENCE}"](
+                sequence_x, self._training
+            )
+            sentence_x = self._tf_layers[f"ffnn.{name}_{SENTENCE}"](
+                sentence_x, self._training
+            )
+
+        # we need to concatenate the sequence features with the sentence features
+        # we cannot use tf.concat as the sequence features are padded
+
+        # (1) get position of cls token in mask
+        last = mask_text * tf.math.cumprod(
+            1 - mask_text, axis=1, exclusive=True, reverse=True
+        )
+        # (2) multiply by sentence features so that we get a matrix of
+        #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
+        #     for the sentence features
+        sentence_x = last * sentence_x
+
+        # (3) add a zero to the end of sequence matrix to match the final shape
+        sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
+
+        # (4) sum up sequence features and sentence features
+        return sequence_x + sentence_x
 
     def _create_bow(
         self,
