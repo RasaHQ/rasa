@@ -223,7 +223,6 @@ class RulePolicy(MemoizationPolicy):
                     tracker.update(FormValidation(False))
 
             if recalled is not None:
-
                 logger.debug(
                     f"There is a rule for next action "
                     f"'{domain.action_names[recalled]}'."
