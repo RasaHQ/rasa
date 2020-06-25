@@ -1731,9 +1731,28 @@ class DIET(RasaModel):
         # to track correctly dynamic sequences
         return tf.expand_dims(mask, -1)
 
+    def _get_mask_for(
+        self, tf_batch_data: Dict[Text, List[tf.Tensor]], name: Text
+    ) -> Optional[tf.Tensor]:
+        if name not in tf_batch_data:
+            return None
+
+        sequence_lengths = tf.cast(tf_batch_data[name][0], dtype=tf.int32)
+        return self._compute_mask(sequence_lengths)
+
     @staticmethod
-    def _get_sequence_lengths(sequence_lengths: tf.Tensor) -> tf.Tensor:
-        return tf.cast(sequence_lengths, dtype=tf.int32)
+    def _get_sequence_lengths(
+        tf_batch_data: Dict[Text, List[tf.Tensor]],
+        sequence_name: Text,
+        sentence_name: Text,
+    ) -> tf.Tensor:
+        if sequence_name in tf_batch_data:
+            sequence_lengths = tf.cast(tf_batch_data[sequence_name][0], dtype=tf.int32)
+            sequence_lengths += 1  # add sentence features
+        else:
+            sequence_lengths = tf.cast(tf_batch_data[sentence_name][0], dtype=tf.int32)
+
+        return sequence_lengths
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -1741,17 +1760,9 @@ class DIET(RasaModel):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-        mask_sentence_text = self._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
-
-        if TEXT_SEQUENCE_LENGTH in tf_batch_data:
-            sequence_lengths = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
-            )
-            sequence_lengths += 1  # add sentence features
-        else:
-            sequence_lengths = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
-            )
+        sequence_lengths = self._get_sequence_lengths(
+            tf_batch_data, TEXT_SEQUENCE_LENGTH, TEXT_SENTENCE_LENGTH
+        )
         mask_text = self._compute_mask(sequence_lengths)
 
         (
@@ -1793,15 +1804,6 @@ class DIET(RasaModel):
             )
 
         return tf.math.add_n(losses)
-
-    def _get_mask_for(
-        self, tf_batch_data: Dict[Text, List[tf.Tensor]], name: Text
-    ) -> Optional[tf.Tensor]:
-        if name not in tf_batch_data:
-            return None
-
-        sequence_lengths = self._get_sequence_lengths(tf_batch_data[name][0])
-        return self._compute_mask(sequence_lengths)
 
     def _batch_loss_intent(
         self,
@@ -1894,16 +1896,9 @@ class DIET(RasaModel):
         )
 
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-
-        if TEXT_SEQUENCE_LENGTH in tf_batch_data:
-            sequence_lengths = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
-            )
-            sequence_lengths += 1  # add sentence features
-        else:
-            sequence_lengths = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
-            )
+        sequence_lengths = self._get_sequence_lengths(
+            tf_batch_data, TEXT_SEQUENCE_LENGTH, TEXT_SENTENCE_LENGTH
+        )
         mask = self._compute_mask(sequence_lengths)
 
         text_transformed, _, _, _ = self._create_sequence(

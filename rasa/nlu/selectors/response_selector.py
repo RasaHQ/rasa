@@ -473,16 +473,9 @@ class DIET2DIET(DIET):
         sequence_mask_label = super()._get_mask_for(
             self.tf_label_data, LABEL_SEQUENCE_LENGTH
         )
-
-        if LABEL_SEQUENCE_LENGTH in self.tf_label_data:
-            sequence_lengths_label = self._get_sequence_lengths(
-                self.tf_label_data[LABEL_SEQUENCE_LENGTH][0]
-            )
-            sequence_lengths_label += 1  # add sentence features
-        else:
-            sequence_lengths_label = self._get_sequence_lengths(
-                self.tf_label_data[LABEL_SENTENCE_LENGTH][0]
-            )
+        sequence_lengths_label = self._get_sequence_lengths(
+            self.tf_label_data, LABEL_SEQUENCE_LENGTH, LABEL_SENTENCE_LENGTH
+        )
         mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
@@ -504,16 +497,9 @@ class DIET2DIET(DIET):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-
-        if TEXT_SEQUENCE_LENGTH in tf_batch_data:
-            sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
-            )
-            sequence_lengths_text += 1  # add sentence features
-        else:
-            sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
-            )
+        sequence_lengths_text = self._get_sequence_lengths(
+            tf_batch_data, TEXT_SEQUENCE_LENGTH, TEXT_SENTENCE_LENGTH
+        )
 
         mask_text = self._compute_mask(sequence_lengths_text)
 
@@ -537,17 +523,9 @@ class DIET2DIET(DIET):
         sequence_mask_label = super()._get_mask_for(
             tf_batch_data, LABEL_SEQUENCE_LENGTH
         )
-
-        if LABEL_SEQUENCE_LENGTH in tf_batch_data:
-            sequence_lengths_label = self._get_sequence_lengths(
-                tf_batch_data[LABEL_SEQUENCE_LENGTH][0]
-            )
-            sequence_lengths_label += 1  # add sentence features
-        else:
-            sequence_lengths_label = self._get_sequence_lengths(
-                tf_batch_data[LABEL_SENTENCE_LENGTH][0]
-            )
-
+        sequence_lengths_label = self._get_sequence_lengths(
+            tf_batch_data, LABEL_SEQUENCE_LENGTH, LABEL_SENTENCE_LENGTH
+        )
         mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
@@ -597,16 +575,9 @@ class DIET2DIET(DIET):
         )
 
         sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-
-        if TEXT_SEQUENCE_LENGTH in tf_batch_data:
-            sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
-            )
-            sequence_lengths_text += 1  # add sentence features
-        else:
-            sequence_lengths_text = self._get_sequence_lengths(
-                tf_batch_data[TEXT_SENTENCE_LENGTH][0]
-            )
+        sequence_lengths_text = self._get_sequence_lengths(
+            tf_batch_data, TEXT_SEQUENCE_LENGTH, TEXT_SENTENCE_LENGTH
+        )
         mask_text = self._compute_mask(sequence_lengths_text)
 
         text_transformed, _, _, _ = self._create_sequence(
