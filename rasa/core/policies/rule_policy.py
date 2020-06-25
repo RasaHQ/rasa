@@ -204,7 +204,7 @@ class RulePolicy(MemoizationPolicy):
                     and f"active_form_{active_form_name}" not in key
                 )
                 if predicted_listen_from_general_rule:
-                    logger.debug(f"Predicted '{active_form_name}'")
+                    logger.debug(f"Predicted form '{active_form_name}'.")
                     result[domain.index_for_action(active_form_name)] = 1
                     return result
 
