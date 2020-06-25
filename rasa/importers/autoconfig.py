@@ -13,6 +13,7 @@ from rasa.constants import (
     CONFIG_AUTOCONFIGURABLE_KEYS,
     DOCS_URL_PIPELINE,
     DOCS_URL_POLICIES,
+    CONFIG_KEYS,
 )
 from rasa.utils import io as io_utils
 
@@ -99,6 +100,12 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
         content, typ="rt", add_version=False
     )
     yaml_parser.indent(mapping=2, sequence=4, offset=2)
+
+    missing_keys = [k for k in CONFIG_KEYS if k not in content.keys()]
+    if missing_keys:
+        with open(config_file, "a", encoding=io_utils.DEFAULT_ENCODING) as f:
+            for key in missing_keys:
+                f.write(f"{key}:\n")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
 

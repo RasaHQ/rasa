@@ -165,7 +165,7 @@ def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
 
 def _get_valid_config(
     config: Optional[Text],
-    mandatory_keys: Dict[Text, bool],
+    mandatory_keys: List,
     default_config: Text = DEFAULT_CONFIG_PATH,
 ) -> Text:
     """ Gets a config from a config file and checks if it is valid.
