@@ -361,7 +361,6 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
     - utter_goodbye
     forms:
     - {form_name}
-    
     intents:
     - greet
     """

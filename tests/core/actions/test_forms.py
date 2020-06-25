@@ -194,7 +194,7 @@ def test_name_of_utterance():
 
     action_server_url = "http:/my-action-server:5055/webhook"
 
-    with aioresponses() as mocked:
+    with aioresponses():
         action_server = EndpointConfig(action_server_url)
         action = FormAction(form_name, action_server)
 
