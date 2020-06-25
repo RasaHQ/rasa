@@ -470,9 +470,6 @@ class DIET2DIET(DIET):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        sentence_mask_label = super()._get_mask_for(
-            self.tf_label_data, LABEL_SENTENCE_LENGTH
-        )
         sequence_mask_label = super()._get_mask_for(
             self.tf_label_data, LABEL_SEQUENCE_LENGTH
         )
@@ -492,7 +489,6 @@ class DIET2DIET(DIET):
             self.tf_label_data[LABEL_SEQUENCE_FEATURES],
             self.tf_label_data[LABEL_SENTENCE_FEATURES],
             sequence_mask_label,
-            sentence_mask_label,
             mask_label,
             self.label_name,
         )
@@ -508,7 +504,6 @@ class DIET2DIET(DIET):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-        sentence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
 
         if TEXT_SEQUENCE_LENGTH in tf_batch_data:
             sequence_lengths_text = self._get_sequence_lengths(
@@ -531,7 +526,6 @@ class DIET2DIET(DIET):
             tf_batch_data[TEXT_SEQUENCE_FEATURES],
             tf_batch_data[TEXT_SENTENCE_FEATURES],
             sequence_mask_text,
-            sentence_mask_text,
             mask_text,
             self.text_name,
             sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
@@ -542,9 +536,6 @@ class DIET2DIET(DIET):
 
         sequence_mask_label = super()._get_mask_for(
             tf_batch_data, LABEL_SEQUENCE_LENGTH
-        )
-        sentence_mask_label = super()._get_mask_for(
-            tf_batch_data, LABEL_SENTENCE_LENGTH
         )
 
         if LABEL_SEQUENCE_LENGTH in tf_batch_data:
@@ -563,7 +554,6 @@ class DIET2DIET(DIET):
             tf_batch_data[LABEL_SEQUENCE_FEATURES],
             tf_batch_data[LABEL_SENTENCE_FEATURES],
             sequence_mask_label,
-            sentence_mask_label,
             mask_label,
             self.label_name,
         )
@@ -603,7 +593,6 @@ class DIET2DIET(DIET):
         )
 
         sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-        sentence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
 
         if TEXT_SEQUENCE_LENGTH in tf_batch_data:
             sequence_lengths_text = self._get_sequence_lengths(
@@ -620,7 +609,6 @@ class DIET2DIET(DIET):
             tf_batch_data[TEXT_SEQUENCE_FEATURES],
             tf_batch_data[TEXT_SENTENCE_FEATURES],
             sequence_mask_text,
-            sentence_mask_text,
             mask_text,
             self.text_name,
         )

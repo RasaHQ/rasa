@@ -1429,8 +1429,8 @@ class DIET(RasaModel):
     def _combine_sparse_dense_features(
         self,
         features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]],
-        mask: tf.Tensor,
         name: Text,
+        mask: Optional[tf.Tensor],
         sparse_dropout: bool = False,
         dense_dropout: bool = False,
     ) -> Optional[tf.Tensor]:
@@ -1459,6 +1459,9 @@ class DIET(RasaModel):
                 dense_features.append(dense_f)
             else:
                 dense_features.append(f)
+
+        if mask is None:
+            return tf.concat(dense_features, axis=-1)
 
         return tf.concat(dense_features, axis=-1) * mask
 
@@ -1492,7 +1495,6 @@ class DIET(RasaModel):
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         mask_sequence: tf.Tensor,
-        mask_sentence: tf.Tensor,
         mask_text: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
@@ -1500,17 +1502,13 @@ class DIET(RasaModel):
     ) -> tf.Tensor:
         sequence_x = self._combine_sparse_dense_features(
             sequence_features,
-            mask_sequence,
             f"{name}_{SEQUENCE}",
+            mask_sequence,
             sparse_dropout,
             dense_dropout,
         )
         sentence_x = self._combine_sparse_dense_features(
-            sentence_features,
-            mask_sentence,
-            f"{name}_{SENTENCE}",
-            sparse_dropout,
-            dense_dropout,
+            sentence_features, f"{name}_{SENTENCE}", None, sparse_dropout, dense_dropout
         )
 
         if sequence_x is not None and sentence_x is None:
@@ -1566,7 +1564,6 @@ class DIET(RasaModel):
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         sequence_mask: tf.Tensor,
-        sentence_mask: tf.Tensor,
         text_mask: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
@@ -1577,7 +1574,6 @@ class DIET(RasaModel):
             sequence_features,
             sentence_features,
             sequence_mask,
-            sentence_mask,
             text_mask,
             name,
             sparse_dropout,
@@ -1591,7 +1587,6 @@ class DIET(RasaModel):
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         mask_sequence: tf.Tensor,
-        mask_sentence: tf.Tensor,
         mask: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
@@ -1608,7 +1603,6 @@ class DIET(RasaModel):
             sequence_features,
             sentence_features,
             mask_sequence,
-            mask_sentence,
             mask,
             name,
             sparse_dropout,
@@ -1637,9 +1631,6 @@ class DIET(RasaModel):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        mask_sentence_label = self._get_mask_for(
-            self.tf_label_data, LABEL_SENTENCE_LENGTH
-        )
         mask_sequence_label = self._get_mask_for(
             self.tf_label_data, LABEL_SEQUENCE_LENGTH
         )
@@ -1648,7 +1639,6 @@ class DIET(RasaModel):
             self.tf_label_data[LABEL_SEQUENCE_FEATURES],
             self.tf_label_data[LABEL_SENTENCE_FEATURES],
             mask_sequence_label,
-            mask_sentence_label,
             mask_sequence_label,
             self.label_name,
         )
@@ -1773,7 +1763,6 @@ class DIET(RasaModel):
             tf_batch_data[TEXT_SEQUENCE_FEATURES],
             tf_batch_data[TEXT_SENTENCE_FEATURES],
             mask_sequence_text,
-            mask_sentence_text,
             mask_text,
             self.text_name,
             sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
@@ -1825,14 +1814,12 @@ class DIET(RasaModel):
         cls = self._last_token(text_transformed, sequence_lengths)
 
         mask_sequence_label = self._get_mask_for(tf_batch_data, LABEL_SEQUENCE_LENGTH)
-        mask_sentence_label = self._get_mask_for(tf_batch_data, LABEL_SENTENCE_LENGTH)
 
         label_ids = tf_batch_data[LABEL_IDS][0]
         label = self._create_bow(
             tf_batch_data[LABEL_SEQUENCE_FEATURES],
             tf_batch_data[LABEL_SENTENCE_FEATURES],
             mask_sequence_label,
-            mask_sentence_label,
             mask_text,
             self.label_name,
         )
@@ -1906,7 +1893,6 @@ class DIET(RasaModel):
         )
 
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-        mask_sentence_text = self._get_mask_for(tf_batch_data, TEXT_SENTENCE_LENGTH)
 
         if TEXT_SEQUENCE_LENGTH in tf_batch_data:
             sequence_lengths = self._get_sequence_lengths(
@@ -1923,7 +1909,6 @@ class DIET(RasaModel):
             tf_batch_data[TEXT_SEQUENCE_FEATURES],
             tf_batch_data[TEXT_SENTENCE_FEATURES],
             mask_sequence_text,
-            mask_sentence_text,
             mask,
             self.text_name,
         )
