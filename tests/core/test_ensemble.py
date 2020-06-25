@@ -1,8 +1,10 @@
-from typing import List
+from pathlib import Path
+from typing import List, Any
 
 import pytest
 import copy
 
+from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import Policy
@@ -45,12 +47,12 @@ class WorkingPolicy(Policy):
         return isinstance(other, WorkingPolicy)
 
 
-def test_policy_loading_simple(tmpdir):
+def test_policy_loading_simple(tmp_path: Path):
     original_policy_ensemble = PolicyEnsemble([WorkingPolicy()])
-    original_policy_ensemble.train([], None)
-    original_policy_ensemble.persist(str(tmpdir))
+    original_policy_ensemble.train([], None, RegexInterpreter())
+    original_policy_ensemble.persist(str(tmp_path))
 
-    loaded_policy_ensemble = PolicyEnsemble.load(str(tmpdir))
+    loaded_policy_ensemble = PolicyEnsemble.load(str(tmp_path))
     assert original_policy_ensemble.policies == loaded_policy_ensemble.policies
 
 
@@ -69,7 +71,13 @@ class ConstantPolicy(Policy):
     def train(self, training_trackers, domain, **kwargs):
         pass
 
-    def predict_action_probabilities(self, tracker, domain):
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
+    ) -> List[float]:
         result = [0.0] * domain.num_actions
         result[self.predict_index] = 1.0
         return result
@@ -89,14 +97,14 @@ def test_policy_priority():
 
     i = 1  # index of priority_2 in ensemble_0
     result, best_policy = policy_ensemble_0.probabilities_using_best_policy(
-        tracker, domain
+        tracker, domain, RegexInterpreter()
     )
     assert best_policy == "policy_{}_{}".format(i, type(priority_2).__name__)
     assert result == priority_2_result
 
     i = 0  # index of priority_2 in ensemble_1
     result, best_policy = policy_ensemble_1.probabilities_using_best_policy(
-        tracker, domain
+        tracker, domain, RegexInterpreter()
     )
     assert best_policy == "policy_{}_{}".format(i, type(priority_2).__name__)
     assert result == priority_2_result
@@ -120,7 +128,7 @@ def test_fallback_mapping_restart():
     )
 
     result, best_policy = mapping_fallback_ensemble.probabilities_using_best_policy(
-        tracker, domain
+        tracker, domain, RegexInterpreter()
     )
     max_confidence_index = result.index(max(result))
     index_of_mapping_policy = 1
@@ -160,8 +168,9 @@ def test_mapping_wins_over_form(events: List[Event]):
             FallbackPolicy(),
         ]
     )
-
-    result, best_policy = ensemble.probabilities_using_best_policy(tracker, domain)
+    result, best_policy = ensemble.probabilities_using_best_policy(
+        tracker, domain, RegexInterpreter()
+    )
 
     max_confidence_index = result.index(max(result))
     next_action = domain.action_for_index(max_confidence_index, None)
@@ -198,7 +207,9 @@ def test_form_wins_over_everything_else(ensemble: SimplePolicyEnsemble):
         utilities.user_uttered("test", 1),
     ]
     tracker = DialogueStateTracker.from_events("test", events, [])
-    result, best_policy = ensemble.probabilities_using_best_policy(tracker, domain)
+    result, best_policy = ensemble.probabilities_using_best_policy(
+        tracker, domain, RegexInterpreter()
+    )
 
     max_confidence_index = result.index(max(result))
     next_action = domain.action_for_index(max_confidence_index, None)
@@ -219,7 +230,9 @@ def test_fallback_wins_over_mapping():
 
     ensemble = SimplePolicyEnsemble([FallbackPolicy(), MappingPolicy()])
 
-    result, best_policy = ensemble.probabilities_using_best_policy(tracker, domain)
+    result, best_policy = ensemble.probabilities_using_best_policy(
+        tracker, domain, RegexInterpreter()
+    )
     max_confidence_index = result.index(max(result))
     index_of_fallback_policy = 0
     next_action = domain.action_for_index(max_confidence_index, None)
@@ -243,13 +256,13 @@ class LoadReturnsNonePolicy(Policy):
         pass
 
 
-def test_policy_loading_load_returns_none(tmpdir):
+def test_policy_loading_load_returns_none(tmp_path: Path):
     original_policy_ensemble = PolicyEnsemble([LoadReturnsNonePolicy()])
-    original_policy_ensemble.train([], None)
-    original_policy_ensemble.persist(str(tmpdir))
+    original_policy_ensemble.train([], None, RegexInterpreter())
+    original_policy_ensemble.persist(str(tmp_path))
 
     with pytest.raises(Exception):
-        PolicyEnsemble.load(str(tmpdir))
+        PolicyEnsemble.load(str(tmp_path))
 
 
 class LoadReturnsWrongTypePolicy(Policy):
@@ -263,17 +276,23 @@ class LoadReturnsWrongTypePolicy(Policy):
     def train(self, training_trackers, domain, **kwargs):
         pass
 
-    def predict_action_probabilities(self, tracker, domain):
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
+    ) -> List[float]:
         pass
 
 
-def test_policy_loading_load_returns_wrong_type(tmpdir):
+def test_policy_loading_load_returns_wrong_type(tmp_path: Path):
     original_policy_ensemble = PolicyEnsemble([LoadReturnsWrongTypePolicy()])
-    original_policy_ensemble.train([], None)
-    original_policy_ensemble.persist(str(tmpdir))
+    original_policy_ensemble.train([], None, RegexInterpreter())
+    original_policy_ensemble.persist(str(tmp_path))
 
     with pytest.raises(Exception):
-        PolicyEnsemble.load(str(tmpdir))
+        PolicyEnsemble.load(str(tmp_path))
 
 
 @pytest.mark.parametrize(

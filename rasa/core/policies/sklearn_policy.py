@@ -10,6 +10,7 @@ import rasa.utils.io
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.domain import Domain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer, TrackerFeaturizer
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
@@ -158,7 +159,11 @@ class SklearnPolicy(Policy):
         return y_filled
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         X = self.featurizer.create_X([tracker], domain)
         Xt = self._preprocess_data(X)

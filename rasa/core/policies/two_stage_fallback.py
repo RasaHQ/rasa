@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import typing
-from typing import List, Text, Optional
+from typing import List, Text, Optional, Any
 
 import rasa.utils.io
 from rasa.core.actions.action import (
@@ -17,6 +17,7 @@ from rasa.core.events import UserUttered, ActionExecuted
 
 from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker
@@ -111,7 +112,11 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                     )
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts the next action if NLU confidence is low.
         """

@@ -7,15 +7,15 @@ import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from typing import Optional, Text, List
-from unittest.mock import patch
+from typing import Optional, Text, List, Callable
+from unittest.mock import patch, Mock
 
 from rasa.core import jobs
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
-from rasa.core.domain import SessionConfig
+from rasa.core.domain import SessionConfig, Domain
 from rasa.core.events import (
     ActionExecuted,
     BotUttered,
@@ -27,9 +27,12 @@ from rasa.core.events import (
     Event,
     SlotSet,
 )
-from rasa.core.interpreter import RasaNLUHttpInterpreter
+from rasa.core.interpreter import RasaNLUHttpInterpreter, NaturalLanguageInterpreter
+from rasa.core.policies import SimplePolicyEnsemble
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor, DEFAULT_INTENTS
 from rasa.core.slots import Slot
+from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request
@@ -663,3 +666,60 @@ async def test_should_predict_another_action(
         default_processor.should_predict_another_action(action_name)
         == should_predict_another_action
     )
+
+
+def test_get_next_action_probabilities_passes_interpreter_to_policies(
+    monkeypatch: MonkeyPatch,
+):
+    policy = TEDPolicy()
+    test_interpreter = Mock()
+
+    def predict_action_probabilities(
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs,
+    ) -> List[float]:
+        assert interpreter == test_interpreter
+        return [1, 0]
+
+    policy.predict_action_probabilities = predict_action_probabilities
+    ensemble = SimplePolicyEnsemble(policies=[policy])
+
+    domain = Domain.empty()
+
+    processor = MessageProcessor(
+        test_interpreter, ensemble, domain, InMemoryTrackerStore(domain), Mock()
+    )
+
+    # This should not raise
+    processor._get_next_action_probabilities(
+        DialogueStateTracker.from_events("lala", [ActionExecuted(ACTION_LISTEN_NAME)])
+    )
+
+
+@pytest.mark.parametrize(
+    "predict_function",
+    [lambda tracker, domain: [1, 0], lambda tracker, domain, some_bool=True: [1, 0]],
+)
+def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
+    predict_function: Callable,
+):
+    policy = TEDPolicy()
+
+    policy.predict_action_probabilities = predict_function
+
+    ensemble = SimplePolicyEnsemble(policies=[policy])
+    interpreter = Mock()
+    domain = Domain.empty()
+
+    processor = MessageProcessor(
+        interpreter, ensemble, domain, InMemoryTrackerStore(domain), Mock()
+    )
+
+    with pytest.warns(DeprecationWarning):
+        processor._get_next_action_probabilities(
+            DialogueStateTracker.from_events(
+                "lala", [ActionExecuted(ACTION_LISTEN_NAME)]
+            )
+        )

@@ -9,6 +9,7 @@ import rasa.utils.io
 
 from rasa.core import utils
 from rasa.core.domain import Domain
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
@@ -134,7 +135,11 @@ class FallbackPolicy(Policy):
         return result
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts a fallback action.
 

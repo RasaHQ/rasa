@@ -13,9 +13,7 @@ from _pytest.monkeypatch import MonkeyPatch
 import rasa.model
 import rasa.core
 from rasa import model
-from rasa.constants import DEFAULT_NLU_SUBDIRECTORY_NAME
 from rasa.core.interpreter import RasaNLUInterpreter
-from rasa.nlu.model import Interpreter
 
 from rasa.train import train_core, train_nlu, train
 from tests.conftest import DEFAULT_CONFIG_PATH

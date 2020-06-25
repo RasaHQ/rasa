@@ -954,7 +954,7 @@ def create_app(
         try:
             policy_ensemble = app.agent.policy_ensemble
             probabilities, policy = policy_ensemble.probabilities_using_best_policy(
-                tracker, app.agent.domain
+                tracker, app.agent.domain, app.agent.interpreter
             )
 
             scores = [
