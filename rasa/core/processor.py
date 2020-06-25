@@ -36,7 +36,6 @@ from rasa.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
-    SessionStarted,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
