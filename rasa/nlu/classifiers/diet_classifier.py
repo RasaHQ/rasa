@@ -460,7 +460,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # If we don't use the transformer and we don't want to do entity recognition,
         # to speed up training take only the sentence features as feature vector.
-        # It corresponds to the feature vector for the last token - CLS token.
         # We would not make use of the sequence anyway in this setup. Carrying over
         # those features to the actual training process takes quite some time.
         if (
@@ -1863,6 +1862,8 @@ class DIET(RasaModel):
                 continue
 
             tag_ids = tf_batch_data[f"{tag_spec.tag_name}_{TAG_IDS}"][0]
+            # add a zero (no entity) for the cls token to match the shape of inputs
+            tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
 
             loss, f1, _logits = self._calculate_entity_loss(
                 text_transformed,
