@@ -22,7 +22,6 @@ from rasa.nlu.constants import (
 
 from rasa.nlu.model import Metadata
 import rasa.utils.io as io_utils
-import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 

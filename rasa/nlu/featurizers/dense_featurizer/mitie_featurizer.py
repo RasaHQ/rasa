@@ -17,7 +17,6 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
 )
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
-import rasa.utils.train_utils as train_utils
 
 if typing.TYPE_CHECKING:
     import mitie

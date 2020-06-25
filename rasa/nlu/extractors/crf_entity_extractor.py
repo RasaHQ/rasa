@@ -27,7 +27,6 @@ from rasa.nlu.constants import (
 )
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
-import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +165,7 @@ class CRFEntityExtractor(EntityExtractor):
         self.check_correct_entity_annotations(training_data)
 
         if self.component_config[BILOU_FLAG]:
-            bilou_utils.apply_bilou_schema(training_data, include_cls_token=False)
+            bilou_utils.apply_bilou_schema(training_data)
 
         # only keep the CRFs for tags we actually have training data for
         self._update_crf_order(training_data)

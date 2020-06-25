@@ -18,7 +18,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
-import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
