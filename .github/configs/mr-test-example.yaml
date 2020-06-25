@@ -1,29 +1,3 @@
-##########
-## Available datasets
-##########
-# - "Carbon Bot"
-# - "Sara"
-# - "Hermit"
-# - "Private 1"
-# - "Private 2"
-# - "Private 3"
-
-##########
-## Available configurations
-##########
-# - "Sparse + DIET + ResponseSelector(T2T)"
-# - "ConveRT + DIET + ResponseSelector(T2T)"
-# - "BERT + DIET + ResponseSelector(T2T)"
-# - "Spacy + DIET + ResponseSelector(T2T)"
-# - "Sparse + EmbeddingIntent + ResponseSelector(bow)"
-# - "ConveRT + EmbeddingIntent + ResponseSelector(bow)"
-# - "BERT + EmbeddingIntent + ResponseSelector(bow)"
-# - "Spacy + EmbeddingIntent + ResponseSelector(bow)"
-# - "Sparse + ConveRT + DIET + ResponseSelector(T2T)"
-# - "Sparse + Spacy + DIET + ResponseSelector(T2T)"
-# - "Sparse + ConveRT + EmbeddingIntent + ResponseSelector(bow)"
-# - "Sparse + Spacy + EmbeddingIntent + ResponseSelector(bow)"
-
 ## Example configuration
 #################### syntax #################
 ## include:

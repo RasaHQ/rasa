@@ -20,5 +20,15 @@ You can copy this in your comment and customize:
 > /modeltest
 > ~~~yml
 >```yml
+>##########
+>## Available datasets
+>##########
+{{range (coll.Keys (datasource "mapping").datasets)}}># - "{{.}}"{{"\n"}}{{ end -}}
+>
+>##########
+>## Available configurations
+>##########
+{{range (coll.Keys (datasource "mapping").configurations)}}># - "{{.}}"{{"\n"}}{{ end -}}
+>
 {{range split (file.Read ".github/configs/mr-test-example.yaml") "\n"}}>{{.}}{{"\n"}}{{ end -}}
 >```
