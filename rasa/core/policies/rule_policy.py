@@ -167,7 +167,7 @@ class RulePolicy(MemoizationPolicy):
         # If we are in a form, and the form didn't run previously or rejected, we can
         # simply force predict the form.
         if should_predict_form:
-            logger.debug(f"Predicted '{active_form_name}'")
+            logger.debug(f"Predicted form '{active_form_name}'.")
             result[domain.index_for_action(active_form_name)] = 1
             return result
         # predict action_listen if form action was run successfully
