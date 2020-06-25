@@ -53,7 +53,6 @@
     - action_deactivate_form
     - form{"name": null}
 
-
 ## Generated Story 3490283781720101690 (example from interactive learning, "form: " will be excluded from training)
 * greet
     - utter_greet
