@@ -17,7 +17,6 @@ def test_convert_featurizer_process(component_builder):
     sentence = "Hey how are you today ?"
     message = Message(sentence)
     tokens = tokenizer.tokenize(message, attribute=TEXT)
-    tokens = tokenizer.add_cls_token(tokens, attribute=TEXT)
     message.set(TOKENS_NAMES[TEXT], tokens)
 
     featurizer.process(message, tf_hub_module=tokenizer.module)
@@ -43,7 +42,6 @@ def test_convert_featurizer_train(component_builder):
     message.set(RESPONSE, sentence)
 
     tokens = tokenizer.tokenize(message, attribute=TEXT)
-    tokens = tokenizer.add_cls_token(tokens, attribute=TEXT)
 
     message.set(TOKENS_NAMES[TEXT], tokens)
     message.set(TOKENS_NAMES[RESPONSE], tokens)
