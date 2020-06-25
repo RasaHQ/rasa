@@ -5,7 +5,7 @@ from typing import List, Dict, Text, Optional, Any
 import re
 from collections import defaultdict, deque
 
-from rasa.core.events import FormValidation
+from rasa.core.events import ActionExecutionRejected
 from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
@@ -150,40 +150,51 @@ class RulePolicy(MemoizationPolicy):
             return result
 
         active_form_name = tracker.active_form_name()
-        active_form_rejected = tracker.active_loop.get("rejected")
-        should_predict_form = (
-            active_form_name
-            and not active_form_rejected
-            and tracker.latest_action_name != active_form_name
-        )
-        should_predict_listen = (
-            active_form_name
-            and not active_form_rejected
-            and tracker.latest_action_name == active_form_name
-        )
-
-        # A form has priority over any other rule.
-        # The rules or any other prediction will be applied only if a form was rejected.
-        # If we are in a form, and the form didn't run previously or rejected, we can
-        # simply force predict the form.
-        if should_predict_form:
-            logger.debug(f"Predicted form '{active_form_name}'.")
-            result[domain.index_for_action(active_form_name)] = 1
-            return result
-        # predict `action_listen` if form action was run successfully
-        elif should_predict_listen:
-            logger.debug(
-                f"Predicted '{ACTION_LISTEN_NAME}' after form '{active_form_name}'."
-            )
-            result[domain.index_for_action(ACTION_LISTEN_NAME)] = 1
-            return result
+        last_action_was_rejection = active_form_name and tracker.events[
+            -1
+        ] == ActionExecutionRejected(active_form_name)
 
         possible_keys = set(self.lookup.keys())
 
-        tracker_as_states = self.featurizer.prediction_states([tracker], domain)
-        states = tracker_as_states[0]
+        # If an active form just rejected its execution, then we need to try to predict
+        # something else.
+        if last_action_was_rejection:
+            possible_keys = self._remove_keys_which_trigger_action(
+                possible_keys, domain, active_form_name
+            )
 
-        logger.debug(f"Current tracker state: {states}")
+        states = [
+            domain.get_active_states(tr)
+            for tr in tracker.generate_all_prior_trackers_for_rules()
+        ]
+        states = deque(frozenset(s.items()) for s in states)
+        bin_states = []
+        for state in states:
+            # copy state dict to preserve internal order of keys
+            bin_state = dict(state)
+            best_intent = None
+            best_intent_prob = -1.0
+            for state_name, prob in state:
+                if state_name.startswith("intent_"):
+                    if prob > best_intent_prob:
+                        # finding the maximum confidence intent
+                        if best_intent is not None:
+                            # delete previous best intent
+                            del bin_state[best_intent]
+                        best_intent = state_name
+                        best_intent_prob = prob
+                    else:
+                        # delete other intents
+                        del bin_state[state_name]
+
+            if best_intent is not None:
+                # set the confidence of best intent to 1.0
+                bin_state[best_intent] = 1.0
+
+            bin_states.append(bin_state)
+        states = bin_states
+
+        logger.debug(f"Current tracker state {states}")
 
         for i, state in enumerate(reversed(states)):
             possible_keys = set(
@@ -191,45 +202,59 @@ class RulePolicy(MemoizationPolicy):
             )
 
         if possible_keys:
-            # TODO rethink that
             key = max(possible_keys, key=len)
 
             recalled = self.lookup.get(key)
-
-            if active_form_name:
-                # Check if a rule that predicted action_listen
-                # was applied inside the form.
-                # Rules might not explicitly switch back to the `Form`.
-                # Hence, we have to take care of that.
-                predicted_listen_from_general_rule = recalled is None or (
-                    domain.action_names[recalled] == ACTION_LISTEN_NAME
-                    and f"active_form_{active_form_name}" not in key
-                )
-                if predicted_listen_from_general_rule:
-                    logger.debug(f"Predicted form '{active_form_name}'.")
-                    result[domain.index_for_action(active_form_name)] = 1
-                    return result
-
-                # Since rule snippets inside the form contain only unhappy paths,
-                # notify the form that
-                # it was predicted after an answer to a different question and
-                # therefore it should not validate user input for requested slot
-                predicted_form_from_form_rule = (
-                    domain.action_names[recalled] == active_form_name
-                    and f"active_form_{active_form_name}" in key
-                )
-                if predicted_form_from_form_rule:
-                    logger.debug("Added `FormValidation(False)` event.")
-                    tracker.update(FormValidation(False))
-
             if recalled is not None:
                 logger.debug(
-                    f"There is a rule for next action "
-                    f"'{domain.action_names[recalled]}'."
+                    f"There is a memorised next action '{domain.action_names[recalled]}'"
                 )
 
-                result[recalled] = 1
+                if self.USE_NLU_CONFIDENCE_AS_SCORE:
+                    # the memoization will use the confidence of NLU on the latest
+                    # user message to set the confidence of the action
+                    score = tracker.latest_message.intent.get("confidence", 1.0)
+                else:
+                    score = 1.0
+
+                result[recalled] = score
             else:
-                logger.debug("There is no applicable rule.")
+                logger.debug("There is no memorised next action")
+
+        elif active_form_name and not last_action_was_rejection:
+            # if there is no rule, predict loop
+            should_predict_form = tracker.latest_action_name != active_form_name
+            should_predict_listen = tracker.latest_action_name == active_form_name
+
+            # If we are in a form, and the form didn't run previously or rejected, we can
+            # simply force predict the form.
+            if should_predict_form:
+                logger.debug(f"Predicted '{active_form_name}'")
+                result[domain.index_for_action(active_form_name)] = 1
+
+            # predict action_listen if form action was run successfully
+            elif should_predict_listen:
+                logger.debug(f"Predicted 'action_listen' after '{active_form_name}'")
+                result[domain.index_for_action(ACTION_LISTEN_NAME)] = 1
 
         return result
+
+    def _remove_keys_which_trigger_action(
+        self, possible_keys: typing.Set[Text], domain: Domain, action_name: Text
+    ) -> typing.Set[Text]:
+        """Remove any matching rules which would predict `action_name`.
+
+        This is e.g. used when the Form rejected its execution and we are entering an
+        unhappy path.
+
+        Args:
+            possible_keys: Possible rule keys which match the current state.
+            domain: The current domain.
+            action_name: The action which is not allowed to be predicted.
+
+        Returns:
+            Possible keys without keys which predict the `FormAction`.
+        """
+        form_action_idx = domain.index_for_action(action_name)
+
+        return {key for key in possible_keys if self.lookup[key] != form_action_idx}

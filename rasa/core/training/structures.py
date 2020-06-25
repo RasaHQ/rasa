@@ -45,6 +45,30 @@ FORM_PREFIX = "form: "
 STEP_COUNT = 1
 
 
+class StoryStringHelper:
+    """A helper class to mark story steps that are inside a form with `form: `
+    """
+
+    def __init__(
+        self,
+        active_form=None,
+        form_validation=True,
+        form_rejected=False,
+        form_prefix_string="",
+        no_form_prefix_string="",
+    ) -> None:
+        # track active form
+        self.active_form = active_form
+        # track whether a from should be validated
+        self.form_validation = form_validation
+        # track whether a from was rejected
+        self.form_rejected = form_rejected
+        # save story strings with form prefix for later
+        self.form_prefix_string = form_prefix_string
+        # save story strings without form prefix for later
+        self.no_form_prefix_string = no_form_prefix_string
+
+
 class Checkpoint:
     def __init__(
         self, name: Optional[Text], conditions: Optional[Dict[Text, Any]] = None
@@ -104,6 +128,8 @@ class StoryStep:
         self.id = "{}_{}".format(STEP_COUNT, uuid.uuid4().hex)
         STEP_COUNT += 1
 
+        self.story_string_helper = StoryStringHelper()
+
     def create_copy(self, use_new_id: bool) -> "StoryStep":
         copied = StoryStep(
             self.block_name,
@@ -124,20 +150,50 @@ class StoryStep:
         self.events.append(event)
 
     @staticmethod
-    def _checkpoint_string(story_step_element: Checkpoint) -> Text:
-        return f"> {story_step_element.as_story_string()}\n"
+    def _checkpoint_string(story_step_element: UserUttered) -> Text:
+        return "> {}\n".format(story_step_element.as_story_string())
 
     @staticmethod
-    def _user_string(story_step_element: UserUttered, e2e: bool) -> Text:
-        return f"* {story_step_element.as_story_string(e2e)}\n"
+    def _user_string(
+        story_step_element: UserUttered, e2e: bool, prefix: Text = ""
+    ) -> Text:
+        return "* {}{}\n".format(prefix, story_step_element.as_story_string(e2e))
+
+    def _store_user_strings(
+        self, story_step_element: UserUttered, e2e: bool, prefix: Text = ""
+    ) -> None:
+        self.story_string_helper.no_form_prefix_string += self._user_string(
+            story_step_element, e2e
+        )
+        self.story_string_helper.form_prefix_string += self._user_string(
+            story_step_element, e2e, prefix
+        )
 
     @staticmethod
-    def _bot_string(story_step_element: Event) -> Text:
-        return f"    - {story_step_element.as_story_string()}\n"
+    def _bot_string(story_step_element: Event, prefix: Text = "") -> Text:
+        return "    - {}{}\n".format(prefix, story_step_element.as_story_string())
+
+    def _store_bot_strings(self, story_step_element: Event, prefix: Text = "") -> None:
+        self.story_string_helper.no_form_prefix_string += self._bot_string(
+            story_step_element
+        )
+        self.story_string_helper.form_prefix_string += self._bot_string(
+            story_step_element, prefix
+        )
+
+    def _reset_stored_strings(self) -> None:
+        self.story_string_helper.form_prefix_string = ""
+        self.story_string_helper.no_form_prefix_string = ""
 
     def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
+
+        for s in self.start_checkpoints:
+            if s.name == STORY_START:
+                # first story step in the story, so reset helper
+                self.story_string_helper = StoryStringHelper()
+
         if flat:
             result = ""
         else:
@@ -147,20 +203,123 @@ class StoryStep:
                     result += self._checkpoint_string(s)
 
         for s in self.events:
-            if self._is_action_listen(s):
-                pass
-            elif isinstance(s, UserUttered):
-                result += self._user_string(s, e2e)
+            if isinstance(s, UserUttered):
+                if self.story_string_helper.active_form is None:
+                    result += self._user_string(s, e2e)
+                else:
+                    # form is active
+                    # it is not known whether the form will be
+                    # successfully executed, so store this
+                    # story string for later
+                    self._store_user_strings(s, e2e, FORM_PREFIX)
+
+            elif isinstance(s, Form):
+                # form got either activated or deactivated
+                self.story_string_helper.active_form = s.name
+
+                if self.story_string_helper.active_form is None:
+                    # form deactivated, so form succeeded,
+                    # so add story string with form prefix
+                    result += self.story_string_helper.form_prefix_string
+                    # remove all stored story strings
+                    self._reset_stored_strings()
+
+                result += self._bot_string(s)
+
+            elif isinstance(s, SessionStarted):
+                # `SessionStarted` events are not dumped in stories
+                continue
+
+            elif isinstance(s, FormValidation):
+                self.story_string_helper.form_validation = s.validate
+
+            elif isinstance(s, ActionExecutionRejected):
+                if s.action_name == self.story_string_helper.active_form:
+                    # form rejected
+                    self.story_string_helper.form_rejected = True
+
+            elif isinstance(s, ActionExecuted):
+                if self._is_action_listen(s):
+                    pass
+                elif self._is_action_session_start(s):
+                    pass
+                elif self.story_string_helper.active_form is None:
+                    result += self._bot_string(s)
+                else:
+                    # form is active
+                    if self.story_string_helper.form_rejected:
+                        if (
+                            self.story_string_helper.form_prefix_string
+                            and self.story_string_helper.form_validation
+                            and s.action_name == self.story_string_helper.active_form
+                        ):
+                            # if there is something in `form_prefix_string`,
+                            # add action_listen before it,
+                            # because this form user input will be ignored by core
+                            # and therefore action_listen will not be automatically
+                            # added during reading the stories
+                            result += self._bot_string(
+                                ActionExecuted(ACTION_LISTEN_NAME)
+                            )
+                            result += self.story_string_helper.form_prefix_string
+                        elif self.story_string_helper.no_form_prefix_string:
+                            result += self.story_string_helper.no_form_prefix_string
+                        # form rejected, add story string without form prefix
+                        result += self._bot_string(s)
+                    else:
+                        # form succeeded, so add story string with form prefix
+                        result += self.story_string_helper.form_prefix_string
+                        result += self._bot_string(s, FORM_PREFIX)
+
+                    # remove all stored story strings
+                    self._reset_stored_strings()
+
+                    if s.action_name == self.story_string_helper.active_form:
+                        # form was successfully executed
+                        self.story_string_helper.form_rejected = False
+
+                self.story_string_helper.form_validation = True
+
+            elif isinstance(s, SlotSet):
+                if self.story_string_helper.active_form is None:
+                    result += self._bot_string(s)
+                else:
+                    # form is active
+                    # it is not known whether the form will be
+                    # successfully executed, so store this
+                    # story string for later
+                    # slots should be always printed without prefix
+                    self._store_bot_strings(s)
+
             elif isinstance(s, Event):
                 converted = s.as_story_string()
                 if converted:
-                    result += self._bot_string(s)
+                    if self.story_string_helper.active_form is None:
+                        result += self._bot_string(s)
+                    else:
+                        # form is active
+                        # it is not known whether the form will be
+                        # successfully executed, so store this
+                        # story string for later
+                        self._store_bot_strings(s, FORM_PREFIX)
+
             else:
                 raise Exception(f"Unexpected element in story step: {s}")
 
+        if (
+            not self.end_checkpoints
+            and self.story_string_helper.active_form is not None
+        ):
+            # there are no end checkpoints
+            # form is active
+            # add story string with form prefix
+            result += self.story_string_helper.form_prefix_string
+            # remove all stored story strings
+            self._reset_stored_strings()
+
         if not flat:
-            for s in self.end_checkpoints:
-                result += self._checkpoint_string(s)
+            for e in self.end_checkpoints:
+                result += "> {}\n".format(e.as_story_string())
         return result
 
     @staticmethod
@@ -258,8 +417,17 @@ class Story:
 
     def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         story_content = ""
+
+        # initialize helper for first story step
+        story_string_helper = StoryStringHelper()
+
         for step in self.story_steps:
+            # use helper from previous story step
+            step.story_string_helper = story_string_helper
+            # create string for current story step
             story_content += step.as_story_string(flat, e2e)
+            # override helper for next story step
+            story_string_helper = step.story_string_helper
 
         if flat:
             if self.story_name:
