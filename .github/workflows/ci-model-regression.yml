@@ -84,6 +84,31 @@ jobs:
       run: |-
           echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)"
 
+    - name: Update the comment with the configuration
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        comment-id: ${{ steps.fc_config.outputs.comment-id }}
+        body: |
+          <!-- comment-id:comment_configuration -->
+        reactions: eyes
+
+    - name: Re-create the comment with the configuration
+      uses: RasaHQ/create-comment@v1
+      if: steps.fc_config.outputs.comment-id != '' && steps.fc_config.outputs.comment-body != ''
+      with:
+        mode: 'delete-previous'
+        id: comment_configuration
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        body: ${{ steps.fc_config.outputs.comment-body }}
+
+    - name: Find a comment with configuration - update
+      uses: tczekajlo/find-comment@master
+      id: fc_config_update
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        issue-number: ${{ github.event.number }}
+        body-includes: "^/modeltest"
+
     - name: Add reaction
       uses: peter-evans/create-or-update-comment@v1
       if: steps.fc_config.outputs.comment-id != ''
@@ -103,7 +128,7 @@ jobs:
           The model regression tests have started. It might take a while, please be patient.
           As soon as results are ready you'll see a new comment with the results.
 
-          Used configuration can be found in [the comment.](https://github.com/${{ github.repository }}/pull/${{ github.event.number}}#issuecomment-${{ steps.fc_config.outputs.comment-id }})
+          Used configuration can be found in [the comment.](https://github.com/${{ github.repository }}/pull/${{ github.event.number}}#issuecomment-${{ steps.fc_config_update.outputs.comment-id }})
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
