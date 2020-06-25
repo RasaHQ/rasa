@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 # performs entity extraction but those two classifiers don't
 ENTITY_PROCESSORS = {"EntitySynonymMapper", "ResponseSelector"}
 
-EXTRACTORS_WITH_CONFIDENCES = {"CRFEntityExtractor"}
+EXTRACTORS_WITH_CONFIDENCES = {"CRFEntityExtractor", "DIETClassifier"}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
@@ -450,7 +450,12 @@ def evaluate_response_selections(
             confusion_matrix_filename = os.path.join(
                 output_directory, confusion_matrix_filename
             )
-        _labels = [response_to_intent_target[label] for label in labels]
+        _labels = [
+            response_to_intent_target[label]
+            if label in response_to_intent_target
+            else f"'{label[:20]}...' (response not present in test data)"
+            for label in labels
+        ]
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
             classes=_labels,

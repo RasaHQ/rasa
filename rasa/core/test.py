@@ -6,6 +6,14 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import rasa.utils.io as io_utils
+from rasa.nlu.constants import (
+    EXTRACTOR,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_TEXT,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_TYPE,
+)
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
@@ -215,9 +223,18 @@ def _clean_entity_results(
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity = {"text": text}
-        for k in ("start", "end", "entity", "value"):
+        cleaned_entity = {ENTITY_ATTRIBUTE_TEXT: text}
+        for k in (
+            ENTITY_ATTRIBUTE_START,
+            ENTITY_ATTRIBUTE_END,
+            ENTITY_ATTRIBUTE_TYPE,
+            ENTITY_ATTRIBUTE_VALUE,
+        ):
             if k in set(r):
+                if k == ENTITY_ATTRIBUTE_VALUE and EXTRACTOR in set(r):
+                    # convert values to strings for evaluation as
+                    # target values are all of type string
+                    r[k] = str(r[k])
                 cleaned_entity[k] = r[k]
         cleaned_entities.append(cleaned_entity)
 

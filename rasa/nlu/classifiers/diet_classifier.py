@@ -798,10 +798,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if predict_out is None:
             return []
 
-        predicted_tags = self._entity_label_to_tags(predict_out)
+        predicted_tags, confidence_values = self._entity_label_to_tags(predict_out)
 
         entities = self.convert_predictions_into_entities(
-            message.text, message.get(TOKENS_NAMES[TEXT], []), predicted_tags
+            message.text,
+            message.get(TOKENS_NAMES[TEXT], []),
+            predicted_tags,
+            confidence_values,
         )
 
         entities = self.add_extractor_name(entities)
@@ -811,11 +814,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _entity_label_to_tags(
         self, predict_out: Dict[Text, Any]
-    ) -> Dict[Text, List[Text]]:
+    ) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]:
         predicted_tags = {}
+        confidence_values = {}
 
         for tag_spec in self._entity_tag_specs:
             predictions = predict_out[f"e_{tag_spec.tag_name}_ids"].numpy()
+            confidences = predict_out[f"e_{tag_spec.tag_name}_scores"].numpy()
+            confidences = [float(c) for c in confidences[0]]
             tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
 
             if self.component_config[BILOU_FLAG]:
@@ -823,8 +829,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 tags = bilou_utils.remove_bilou_prefixes(tags)
 
             predicted_tags[tag_spec.tag_name] = tags
+            confidence_values[tag_spec.tag_name] = confidences
 
-        return predicted_tags
+        return predicted_tags, confidence_values
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
@@ -1109,26 +1116,51 @@ class DIET(RasaModel):
         # so create loss metrics first to output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
         self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
-        self.entity_loss = tf.keras.metrics.Mean(name="entity_loss")
-        self.entity_group_loss = tf.keras.metrics.Mean(name="group_loss")
-        self.entity_role_loss = tf.keras.metrics.Mean(name="role_loss")
+        self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
+        self.entity_group_loss = tf.keras.metrics.Mean(name="g_loss")
+        self.entity_role_loss = tf.keras.metrics.Mean(name="r_loss")
         # create accuracy metrics second to output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
         self.response_acc = tf.keras.metrics.Mean(name="i_acc")
-        self.entity_f1 = tf.keras.metrics.Mean(name="entity_f1")
-        self.entity_group_f1 = tf.keras.metrics.Mean(name="group_f1")
-        self.entity_role_f1 = tf.keras.metrics.Mean(name="role_f1")
+        self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
+        self.entity_group_f1 = tf.keras.metrics.Mean(name="g_f1")
+        self.entity_role_f1 = tf.keras.metrics.Mean(name="r_f1")
 
     def _update_metrics_to_log(self) -> None:
+        debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
+
         if self.config[MASKED_LM]:
-            self.metrics_to_log += ["m_loss", "m_acc"]
+            self.metrics_to_log.append("m_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("m_loss")
         if self.config[INTENT_CLASSIFICATION]:
-            self.metrics_to_log += ["i_loss", "i_acc"]
+            self.metrics_to_log.append("i_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("i_loss")
         if self.config[ENTITY_RECOGNITION]:
             for tag_spec in self._entity_tag_specs:
                 if tag_spec.num_tags != 0:
                     name = tag_spec.tag_name
-                    self.metrics_to_log += [f"{name}_loss", f"{name}_f1"]
+                    self.metrics_to_log.append(f"{name[0]}_f1")
+                    if debug_log_level:
+                        self.metrics_to_log.append(f"{name[0]}_loss")
+
+        self._log_metric_info()
+
+    def _log_metric_info(self) -> None:
+        metric_name = {
+            "t": "total",
+            "i": "intent",
+            "e": "entity",
+            "m": "mask",
+            "r": "role",
+            "g": "group",
+        }
+        logger.debug("Following metrics will be logged during training: ")
+        for metric in self.metrics_to_log:
+            parts = metric.split("_")
+            name = f"{metric_name[parts[0]]} {parts[1]}"
+            logger.debug(f"  {metric} ({name})")
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
@@ -1151,14 +1183,14 @@ class DIET(RasaModel):
     ) -> None:
         sparse = False
         dense = False
-        for is_sparse, shape in feature_signatures:
+        for is_sparse, feature_dimension in feature_signatures:
             if is_sparse:
                 sparse = True
             else:
                 dense = True
                 # if dense features are present
                 # use the feature dimension of the dense features
-                dense_dim = shape[-1]
+                dense_dim = feature_dimension
 
         if sparse:
             self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
@@ -1454,7 +1486,7 @@ class DIET(RasaModel):
         logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
 
         # should call first to build weights
-        pred_ids = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
+        pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
         # pytype cannot infer that 'self._tf_layers["crf"]' has the method '.loss'
         # pytype: disable=attribute-error
         loss = self._tf_layers[f"crf.{tag_name}"].loss(
@@ -1646,9 +1678,12 @@ class DIET(RasaModel):
                 _input = tf.concat([_input, _tags], axis=-1)
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
-            pred_ids = self._tf_layers[f"crf.{name}"](_logits, sequence_lengths - 1)
+            pred_ids, confidences = self._tf_layers[f"crf.{name}"](
+                _logits, sequence_lengths - 1
+            )
 
             predictions[f"e_{name}_ids"] = pred_ids
+            predictions[f"e_{name}_scores"] = confidences
 
             if name == ENTITY_ATTRIBUTE_TYPE:
                 # use the entity tags as additional input for the role
