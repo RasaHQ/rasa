@@ -162,9 +162,8 @@ class RulePolicy(MemoizationPolicy):
             and tracker.latest_action_name == active_form_name
         )
 
-        # TODO: This means that a Form will have priority over any FAQ rule.
-        # Discuss if we should do this or if FAQ rules should have precedence over
-        # forms.
+        # A form has priority over any other rule.
+        # The rules or any other prediction will be applied only if a form was rejected.
         # If we are in a form, and the form didn't run previously or rejected, we can
         # simply force predict the form.
         if should_predict_form:
@@ -196,6 +195,10 @@ class RulePolicy(MemoizationPolicy):
             recalled = self.lookup.get(key)
 
             if active_form_name:
+                # Check if a rule that predicted action_listen
+                # was applied inside the form.
+                # Rules might not explicitly switch back to the `Form`.
+                # Hence, we have to take care of that.
                 predicted_listen_from_general_rule = recalled is None or (
                     domain.action_names[recalled] == ACTION_LISTEN_NAME
                     and f"active_form_{active_form_name}" not in key
@@ -205,11 +208,14 @@ class RulePolicy(MemoizationPolicy):
                     result[domain.index_for_action(active_form_name)] = 1
                     return result
 
+                # Since rule snippets inside the form contain only unhappy paths,
+                # notify the form that
+                # it was predicted after an answer to a different question and
+                # therefore it should not validate user input for requested slot
                 predicted_form_from_form_rule = (
                     domain.action_names[recalled] == active_form_name
                     and f"active_form_{active_form_name}" in key
                 )
-
                 if predicted_form_from_form_rule:
                     logger.debug("Added `FormValidation(False)` event.")
                     tracker.update(FormValidation(False))
@@ -217,35 +223,12 @@ class RulePolicy(MemoizationPolicy):
             if recalled is not None:
 
                 logger.debug(
-                    f"There is a memorised next action "
-                    f"'{domain.action_names[recalled]}'"
+                    f"There is a rule for next action "
+                    f"'{domain.action_names[recalled]}'."
                 )
 
-                if self.USE_NLU_CONFIDENCE_AS_SCORE:
-                    # the memoization will use the confidence of NLU on the latest
-                    # user message to set the confidence of the action
-                    score = tracker.latest_message.intent.get("confidence", 1.0)
-                else:
-                    score = 1.0
-
-                result[recalled] = score
+                result[recalled] = 1
             else:
-                logger.debug("There is no memorised next action")
-
-        elif active_form_name and not last_action_was_rejection:
-            # if there is no rule, predict loop
-            should_predict_form = tracker.latest_action_name != active_form_name
-            should_predict_listen = tracker.latest_action_name == active_form_name
-
-            # If we are in a form, and the form didn't run previously or rejected, we can
-            # simply force predict the form.
-            if should_predict_form:
-                logger.debug(f"Predicted '{active_form_name}'")
-                result[domain.index_for_action(active_form_name)] = 1
-
-            # predict action_listen if form action was run successfully
-            elif should_predict_listen:
-                logger.debug(f"Predicted 'action_listen' after '{active_form_name}'")
-                result[domain.index_for_action(ACTION_LISTEN_NAME)] = 1
+                logger.debug("There is no applicable rule.")
 
         return result

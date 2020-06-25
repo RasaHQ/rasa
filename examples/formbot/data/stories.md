@@ -53,7 +53,7 @@
     - action_deactivate_form
     - form{"name": null}
 
-## Generated Story 3490283781720101690 (example from interactive learning, "form: " will be excluded from training)
+## OLD Generated Story 3490283781720101690 (example from interactive learning, "form: " will be excluded from training)
 * greet
     - utter_greet
 * request_restaurant
@@ -100,11 +100,7 @@
 * thankyou
     - utter_noworries
 
-## bot challenge
-* bot_challenge
-  - utter_iamabot
-
-## interactive_story_1
+## NEW Generated story interactive_story_1 (no "form: " prefix)
 * greet
     - utter_greet
 * request_restaurant

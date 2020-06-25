@@ -199,7 +199,10 @@ def test_name_of_utterance():
         action = FormAction(form_name, action_server)
 
         assert action._name_of_utterance(domain, slot_name) == full_utterance_name
-        assert action._name_of_utterance(domain, "another_slot") == "utter_ask_another_slot"
+        assert (
+            action._name_of_utterance(domain, "another_slot")
+            == "utter_ask_another_slot"
+        )
 
 
 def test_temporary_tracker():
