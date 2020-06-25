@@ -172,7 +172,9 @@ class RulePolicy(MemoizationPolicy):
             return result
         # predict action_listen if form action was run successfully
         elif should_predict_listen:
-            logger.debug(f"Predicted '{ACTION_LISTEN_NAME}' after form '{active_form_name}'.")
+            logger.debug(
+                f"Predicted '{ACTION_LISTEN_NAME}' after form '{active_form_name}'."
+            )
             result[domain.index_for_action(ACTION_LISTEN_NAME)] = 1
             return result
 
