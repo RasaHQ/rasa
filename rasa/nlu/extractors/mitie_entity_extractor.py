@@ -12,7 +12,6 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
-import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 

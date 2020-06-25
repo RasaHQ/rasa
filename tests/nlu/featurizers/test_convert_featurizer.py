@@ -29,7 +29,7 @@ def test_convert_featurizer_process(component_builder):
 
     seq_vecs, sent_vecs = message.get_dense_features(TEXT, [])
 
-    assert len(tokens) == len(seq_vecs) + len(sent_vecs)
+    assert len(tokens) == len(seq_vecs)
     assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
@@ -59,13 +59,13 @@ def test_convert_featurizer_train(component_builder):
 
     seq_vecs, sent_vecs = message.get_dense_features(TEXT, [])
 
-    assert len(tokens) == len(seq_vecs) + len(sent_vecs)
+    assert len(tokens) == len(seq_vecs)
     assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
     seq_vecs, sent_vecs = message.get_dense_features(RESPONSE, [])
 
-    assert len(tokens) == len(seq_vecs) + len(sent_vecs)
+    assert len(tokens) == len(seq_vecs)
     assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 

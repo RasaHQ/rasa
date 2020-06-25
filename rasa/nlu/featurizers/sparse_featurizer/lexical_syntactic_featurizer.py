@@ -166,8 +166,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         features."""
         import scipy.sparse
 
-        # [:-1] to remove CLS token
-        tokens = message.get(TOKENS_NAMES[TEXT])[:-1]
+        tokens = message.get(TOKENS_NAMES[TEXT])
 
         sentence_features = self._tokens_to_features(tokens)
         one_hot_seq_feature_vector = self._features_to_one_hot(sentence_features)

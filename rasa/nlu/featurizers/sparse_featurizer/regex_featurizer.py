@@ -138,7 +138,7 @@ class RegexFeaturizer(SparseFeaturizer):
                         patterns[pattern["name"]] = True
                         sequence_features[token_index][pattern_index] = 1.0
                         if attribute in [RESPONSE, TEXT]:
-                            # CLS token vector should contain all patterns
+                            # sentence vector should contain all patterns
                             sentence_features[0][pattern_index] = 1.0
 
                 t.set("pattern", patterns)

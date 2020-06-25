@@ -14,7 +14,7 @@ def test_mitie_featurizer(mitie_feature_extractor):
     sentence = "Hey how are you today"
     message = Message(sentence)
     MitieTokenizer().process(message)
-    tokens = message.get(TOKENS_NAMES[TEXT])[:-1]  # remove CLS token
+    tokens = message.get(TOKENS_NAMES[TEXT])
 
     seq_vec, sen_vec = featurizer.features_for_tokens(tokens, mitie_feature_extractor)
 
@@ -51,13 +51,13 @@ def test_mitie_featurizer_train(mitie_feature_extractor):
 
     seq_vec, sen_vec = message.get_dense_features(TEXT, [])
 
-    assert len(message.get(TOKENS_NAMES[TEXT])) == len(seq_vec) + len(sen_vec)
+    assert len(message.get(TOKENS_NAMES[TEXT])) == len(seq_vec)
     assert np.allclose(seq_vec[0][:5], expected, atol=1e-5)
     assert np.allclose(sen_vec[-1][:5], expected_cls, atol=1e-5)
 
     seq_vec, sen_vec = message.get_dense_features(RESPONSE, [])
 
-    assert len(message.get(TOKENS_NAMES[RESPONSE])) == len(seq_vec) + len(sen_vec)
+    assert len(message.get(TOKENS_NAMES[RESPONSE])) == len(seq_vec)
     assert np.allclose(seq_vec[0][:5], expected, atol=1e-5)
     assert np.allclose(sen_vec[-1][:5], expected_cls, atol=1e-5)
 

@@ -33,7 +33,7 @@ class SpacyFeaturizer(DenseFeaturizer):
 
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
-        # the CLS token. Available options: 'mean' and 'max'
+        # the complete utterance. Available options: 'mean' and 'max'
         POOLING: MEAN_POOLING
     }
 

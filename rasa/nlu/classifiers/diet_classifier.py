@@ -796,7 +796,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
-
         model_data = self.preprocess_train_data(training_data)
         if model_data.is_empty():
             logger.debug(

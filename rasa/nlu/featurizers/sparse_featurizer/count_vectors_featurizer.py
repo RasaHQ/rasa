@@ -332,9 +332,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         for attribute in attribute_tokens.keys():
             list_of_tokens = attribute_tokens[attribute]
-            if attribute in [RESPONSE, TEXT]:
-                # vocabulary should not contain CLS token
-                list_of_tokens = [tokens[:-1] for tokens in list_of_tokens]
             attribute_texts[attribute] = [" ".join(tokens) for tokens in list_of_tokens]
 
         return attribute_texts
