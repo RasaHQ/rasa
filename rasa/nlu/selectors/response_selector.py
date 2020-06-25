@@ -478,7 +478,7 @@ class DIET2DIET(DIET):
             sequence_lengths_label = self._get_sequence_lengths(
                 self.tf_label_data[LABEL_SEQUENCE_LENGTH][0]
             )
-            sequence_lengths_label += 1  # add cls token
+            sequence_lengths_label += 1  # add sentence features
         else:
             sequence_lengths_label = self._get_sequence_lengths(
                 self.tf_label_data[LABEL_SENTENCE_LENGTH][0]
@@ -492,9 +492,9 @@ class DIET2DIET(DIET):
             mask_label,
             self.label_name,
         )
-        cls_label = self._last_token(label_transformed, sequence_lengths_label)
+        sentence_label = self._last_token(label_transformed, sequence_lengths_label)
 
-        all_labels_embed = self._tf_layers[f"embed.{LABEL}"](cls_label)
+        all_labels_embed = self._tf_layers[f"embed.{LABEL}"](sentence_label)
 
         return all_label_ids, all_labels_embed
 
@@ -509,7 +509,7 @@ class DIET2DIET(DIET):
             sequence_lengths_text = self._get_sequence_lengths(
                 tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
             )
-            sequence_lengths_text += 1  # add cls token
+            sequence_lengths_text += 1  # add sentence features
         else:
             sequence_lengths_text = self._get_sequence_lengths(
                 tf_batch_data[TEXT_SENTENCE_LENGTH][0]
@@ -542,7 +542,7 @@ class DIET2DIET(DIET):
             sequence_lengths_label = self._get_sequence_lengths(
                 tf_batch_data[LABEL_SEQUENCE_LENGTH][0]
             )
-            sequence_lengths_label += 1  # add cls token
+            sequence_lengths_label += 1  # add sentence features
         else:
             sequence_lengths_label = self._get_sequence_lengths(
                 tf_batch_data[LABEL_SENTENCE_LENGTH][0]
@@ -573,12 +573,16 @@ class DIET2DIET(DIET):
             self.mask_acc.update_state(acc)
             losses.append(loss)
 
-        # get _cls_ vector for label classification
-        cls_text = self._last_token(text_transformed, sequence_lengths_text)
-        cls_label = self._last_token(label_transformed, sequence_lengths_label)
+        # get sentence feature vector for label classification
+        sentence_vector_text = self._last_token(text_transformed, sequence_lengths_text)
+        sentence_vector_label = self._last_token(
+            label_transformed, sequence_lengths_label
+        )
         label_ids = tf_batch_data[LABEL_IDS][0]
 
-        loss, acc = self._calculate_label_loss(cls_text, cls_label, label_ids)
+        loss, acc = self._calculate_label_loss(
+            sentence_vector_text, sentence_vector_label, label_ids
+        )
         self.response_loss.update_state(loss)
         self.response_acc.update_state(acc)
         losses.append(loss)
@@ -598,7 +602,7 @@ class DIET2DIET(DIET):
             sequence_lengths_text = self._get_sequence_lengths(
                 tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
             )
-            sequence_lengths_text += 1  # add cls token
+            sequence_lengths_text += 1  # add sentence features
         else:
             sequence_lengths_text = self._get_sequence_lengths(
                 tf_batch_data[TEXT_SENTENCE_LENGTH][0]
@@ -618,12 +622,13 @@ class DIET2DIET(DIET):
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels()
 
-        # get _cls_ vector for intent classification
-        cls = self._last_token(text_transformed, sequence_lengths_text)
-        cls_embed = self._tf_layers[f"embed.{TEXT}"](cls)
+        # get sentence feature vector for intent classification
+        sentence_vector = self._last_token(text_transformed, sequence_lengths_text)
+        sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
-            cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
+            sentence_vector_embed[:, tf.newaxis, :],
+            self.all_labels_embed[tf.newaxis, :, :],
         )
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]

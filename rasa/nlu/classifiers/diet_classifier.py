@@ -1474,7 +1474,7 @@ class DIET(RasaModel):
         for f in features:
             if not isinstance(f, tf.SparseTensor):
                 seq_ids = tf.stop_gradient(f)
-                # add a zero to the seq dimension for the CLS token
+                # add a zero to the seq dimension for the sentence features
                 seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
                 return seq_ids
 
@@ -1484,7 +1484,7 @@ class DIET(RasaModel):
                 seq_ids = tf.stop_gradient(
                     self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
                 )
-                # add a zero to the seq dimension for the CLS token
+                # add a zero to the seq dimension for the sentence features
                 seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
                 return seq_ids
 
@@ -1544,7 +1544,7 @@ class DIET(RasaModel):
         # we need to concatenate the sequence features with the sentence features
         # we cannot use tf.concat as the sequence features are padded
 
-        # (1) get position of cls token in mask
+        # (1) get position of sentence features in mask
         last = mask_text * tf.math.cumprod(
             1 - mask_text, axis=1, exclusive=True, reverse=True
         )
@@ -1747,7 +1747,7 @@ class DIET(RasaModel):
             sequence_lengths = self._get_sequence_lengths(
                 tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
             )
-            sequence_lengths += 1  # add cls token
+            sequence_lengths += 1  # add sentence features
         else:
             sequence_lengths = self._get_sequence_lengths(
                 tf_batch_data[TEXT_SENTENCE_LENGTH][0]
@@ -1810,8 +1810,8 @@ class DIET(RasaModel):
         text_transformed: tf.Tensor,
         tf_batch_data: Dict[Text, List[tf.Tensor]],
     ) -> tf.Tensor:
-        # get _cls_ vector for intent classification
-        cls = self._last_token(text_transformed, sequence_lengths)
+        # get sentence features vector for intent classification
+        sentence_vector = self._last_token(text_transformed, sequence_lengths)
 
         mask_sequence_label = self._get_mask_for(tf_batch_data, LABEL_SEQUENCE_LENGTH)
 
@@ -1824,7 +1824,7 @@ class DIET(RasaModel):
             self.label_name,
         )
 
-        loss, acc = self._calculate_label_loss(cls, label, label_ids)
+        loss, acc = self._calculate_label_loss(sentence_vector, label, label_ids)
 
         self.intent_loss.update_state(loss)
         self.response_acc.update_state(acc)
@@ -1840,7 +1840,7 @@ class DIET(RasaModel):
     ) -> List[tf.Tensor]:
         losses = []
 
-        sequence_lengths -= 1  # remove cls token
+        sequence_lengths -= 1  # remove sentence features
 
         entity_tags = None
 
@@ -1849,7 +1849,8 @@ class DIET(RasaModel):
                 continue
 
             tag_ids = tf_batch_data[f"{tag_spec.tag_name}_{TAG_IDS}"][0]
-            # add a zero (no entity) for the cls token to match the shape of inputs
+            # add a zero (no entity) for the sentence features to match the shape of
+            # inputs
             tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
 
             loss, f1, _logits = self._calculate_entity_loss(
@@ -1898,7 +1899,7 @@ class DIET(RasaModel):
             sequence_lengths = self._get_sequence_lengths(
                 tf_batch_data[TEXT_SEQUENCE_LENGTH][0]
             )
-            sequence_lengths += 1  # add cls token
+            sequence_lengths += 1  # add sentence features
         else:
             sequence_lengths = self._get_sequence_lengths(
                 tf_batch_data[TEXT_SENTENCE_LENGTH][0]
@@ -1970,15 +1971,16 @@ class DIET(RasaModel):
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels()
 
-        # get _cls_ vector for intent classification
-        cls = self._last_token(text_transformed, sequence_lengths)
-        cls_embed = self._tf_layers[f"embed.{TEXT}"](cls)
+        # get sentence feature vector for intent classification
+        sentence_vector = self._last_token(text_transformed, sequence_lengths)
+        sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
         # pytype cannot infer that 'self._tf_layers[f"loss.{LABEL}"]' has methods
         # like '.sim' or '.confidence_from_sim'
         # pytype: disable=attribute-error
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
-            cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
+            sentence_vector_embed[:, tf.newaxis, :],
+            self.all_labels_embed[tf.newaxis, :, :],
         )
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]
