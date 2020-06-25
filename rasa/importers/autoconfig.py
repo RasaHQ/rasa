@@ -96,66 +96,48 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
         content = io_utils.read_file(empty_config_file, io_utils.DEFAULT_ENCODING)
         shutil.copy(empty_config_file, config_file)
 
-    content, yaml_parser = io_utils.read_yaml_including_parser(
-        content, typ="rt", add_version=False
-    )
-    yaml_parser.indent(mapping=2, sequence=4, offset=2)
+    content = io_utils.read_yaml(content)
 
     missing_keys = [k for k in CONFIG_KEYS if k not in content.keys()]
-    if missing_keys:
-        with open(config_file, "a", encoding=io_utils.DEFAULT_ENCODING) as f:
-            for key in missing_keys:
-                f.write(f"{key}:\n")
+    autoconfigured = [k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not content.get(k)]
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    _add_missing_config_keys(missing_keys, config_file)
 
-        autoconfigured = set()
-        for key in CONFIG_AUTOCONFIGURABLE_KEYS:
-            if content.get(key):
-                continue
-            autoconfigured.add(key)
-            file = Path(tmp_dir + f"/temp_{key}.yml")
-            file.touch()
-            yaml_parser.dump(config.get(key), file)
+    lines_to_insert = _get_lines_to_insert(config, autoconfigured)
 
-        try:
-            with open(config_file, "r+", encoding=io_utils.DEFAULT_ENCODING) as f:
-                lines = f.readlines()
-                f.seek(0)
+    try:
+        with open(config_file, "r+", encoding=io_utils.DEFAULT_ENCODING) as f:
+            lines = f.readlines()
+            f.seek(0)
 
-                removing_old_config = False
-                for line in lines:
-                    insert_section = None
+            removing_old_config = False
+            for line in lines:
+                insert_section = None
 
-                    if empty and config.get("language") and re.match("language:", line):
-                        line = f"language: {config['language']}\n"
+                if empty and config.get("language") and re.match("language:", line):
+                    line = f"language: {config['language']}\n"
 
-                    if removing_old_config:
-                        if re.match("#", line):  # old auto config to be removed
-                            continue
-                        removing_old_config = False
-
-                    for key in autoconfigured:
-                        if re.match(f"( *){key}:( *)", line):  # start of next section
-                            line = line + _config_comment(key)
-                            insert_section = key
-                            removing_old_config = True
-                    f.write(line)
-
-                    if not insert_section:
+                if removing_old_config:
+                    if re.match("#", line):  # old auto config to be removed
                         continue
+                    removing_old_config = False
 
-                    section_file = tmp_dir + f"/temp_{insert_section}.yml"
-                    try:
-                        with open(section_file) as section_f:
-                            section_lines = section_f.readlines()
-                            for section_line in section_lines:
-                                f.write("# " + section_line)
-                    except FileNotFoundError:
-                        raise ValueError(f"File {section_file} does not exist.")
+                for key in autoconfigured:
+                    if re.match(f"( *){key}:( *)", line):  # start of next auto-section
+                        line = line + _config_comment(key)
+                        insert_section = key
+                        removing_old_config = True
+                f.write(line)
 
-        except FileNotFoundError:
-            raise ValueError(f"File '{config_file}' does not exist.")
+                if not insert_section:
+                    continue
+
+                # add the configuration (commented out)
+                for line_to_insert in lines_to_insert[insert_section]:
+                    f.write(line_to_insert)
+
+    except FileNotFoundError:
+        raise ValueError(f"File '{config_file}' does not exist.")
 
     if autoconfigured:
         autoconfigured_keys = cli_utils.english_sentence_from_collection(autoconfigured)
@@ -163,6 +145,40 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
             f"The configuration for {autoconfigured_keys} was chosen automatically. It "
             f"was written into the config file at `{config_file}`."
         )
+
+
+def _add_missing_config_keys(missing_keys: List, config_file: Text) -> None:
+    if missing_keys:
+        with open(config_file, "a", encoding=io_utils.DEFAULT_ENCODING) as f:
+            for key in missing_keys:
+                f.write(f"{key}:\n")
+
+
+def _get_lines_to_insert(
+    config: Dict[Text, Any], autoconfigured: List
+) -> Dict[Text, List[Text]]:
+    import ruamel.yaml as yaml
+
+    yaml_parser = yaml.YAML()
+    yaml_parser.indent(mapping=2, sequence=4, offset=2)
+
+    lines_to_insert = {}
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        for key in autoconfigured:
+            file = Path(tmp_dir + f"/temp_{key}.yml")
+            file.touch()
+            yaml_parser.dump(config.get(key), file)
+
+            try:
+                with open(file) as f:
+                    lines = f.readlines()
+                    for i, line in enumerate(lines):
+                        lines[i] = "# " + line
+                    lines_to_insert[key] = lines
+            except FileNotFoundError:
+                raise ValueError(f"File {file} does not exist.")
+    return lines_to_insert
 
 
 def _config_comment(key: Text) -> Text:
