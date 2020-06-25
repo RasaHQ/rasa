@@ -181,7 +181,7 @@ class RulePolicy(MemoizationPolicy):
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
 
-        logger.debug(f"Current tracker state {states}")
+        logger.debug(f"Current tracker state: {states}")
 
         for i, state in enumerate(reversed(states)):
             possible_keys = set(
