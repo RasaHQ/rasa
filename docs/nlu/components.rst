@@ -318,15 +318,15 @@ As those feature vectors would normally take up a lot of memory, we store them a
 Sparse features only store the values that are non zero and their positions in the vector.
 Thus, we save a lot of memory and are able to train on larger datasets.
 
-By default all featurizers return two different kind of features: sequence features and sentence features.
+All featurizers can return two different kind of features: sequence features and sentence features.
 The sequence features are a matrix of size ``(number-of-tokens x feature-dimension)``.
 The matrix contains a feature vector for every token in the sequence.
 This allows us to train sequence models.
 The sentence features are represented by a matrix of size ``(1 x feature-dimension)``.
-The matrix contains the feature vector for the complete utterance.
+It contains the feature vector for the complete utterance.
 The sentence features can be used in any bag-of-words model.
 The corresponding classifier can therefore decide what kind of features to use.
-Notice: The ``feature-dimension`` for sequence and sentence features does not have to be the same.
+Note: The ``feature-dimension`` for sequence and sentence features does not have to be the same.
 
 .. _MitieFeaturizer:
 
