@@ -129,7 +129,7 @@ def test_apply_token_pattern(
     component_config = {"token_pattern": token_pattern}
 
     tokenizer = WhitespaceTokenizer(component_config)
-    actual_tokens = tokenizer.apply_token_pattern(tokens)
+    actual_tokens = tokenizer._apply_token_pattern(tokens)
 
     assert len(actual_tokens) == len(expected_tokens)
     for actual_token, expected_token in zip(actual_tokens, expected_tokens):
