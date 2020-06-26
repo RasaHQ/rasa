@@ -595,7 +595,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Create vectorizers for all attributes with shared vocabulary"""
 
         shared_vectorizer = CountVectorizer(
-            tokenizer="",
+            token_pattern="",
             strip_accents=parameters["strip_accents"],
             lowercase=parameters["lowercase"],
             stop_words=parameters["stop_words"],
