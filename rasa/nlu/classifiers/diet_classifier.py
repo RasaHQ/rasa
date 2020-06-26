@@ -587,8 +587,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 sentence_features,
             ) = self._extract_labels_precomputed_features(labels_example, attribute)
         else:
-            sequence_features = self._compute_default_label_features(labels_example)
-            sentence_features = None
+            sequence_features = None
+            sentence_features = self._compute_default_label_features(labels_example)
 
         label_data = RasaModelData()
         label_data.add_features(LABEL_SEQUENCE_FEATURES, sequence_features)
@@ -611,7 +611,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
-        all_label_features = self._label_data.get(LABEL_SEQUENCE_FEATURES)[0]
+        all_label_features = self._label_data.get(LABEL_SENTENCE_FEATURES)[0]
         return [np.array([all_label_features[label_id] for label_id in label_ids])]
 
     def _create_model_data(
