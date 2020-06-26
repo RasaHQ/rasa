@@ -493,8 +493,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             )
 
             if (
-                num_text_sentence_features != num_label_sentence_features
-                or num_text_sequence_features != num_label_sequence_features
+                num_text_sentence_features > 0
+                and num_label_sentence_features > 0
+                and num_text_sentence_features != num_label_sentence_features
+            ) or (
+                num_text_sequence_features > 0
+                and num_label_sequence_features > 0
+                and num_text_sequence_features != num_label_sequence_features
             ):
                 raise ValueError(
                     "If embeddings are shared text features and label features "
@@ -1200,17 +1205,32 @@ class DIET(RasaModel):
                     f"No label features specified. "
                     f"Cannot train '{self.__class__.__name__}' model."
                 )
-            if (
-                self.config[SHARE_HIDDEN_LAYERS]
-                and self.data_signature[TEXT_SENTENCE_FEATURES]
-                != self.data_signature[LABEL_SENTENCE_FEATURES]
-                and self.data_signature[TEXT_SEQUENCE_FEATURES]
-                != self.data_signature[LABEL_SEQUENCE_FEATURES]
-            ):
-                raise ValueError(
-                    "If hidden layer weights are shared, data signatures "
-                    "for text_features and label_features must coincide."
-                )
+
+            if self.config[SHARE_HIDDEN_LAYERS]:
+                different_sentence_signatures = False
+                different_sequence_signatures = False
+                if (
+                    TEXT_SENTENCE_FEATURES in self.data_signature
+                    and LABEL_SENTENCE_FEATURES in self.data_signature
+                ):
+                    different_sentence_signatures = (
+                        self.data_signature[TEXT_SENTENCE_FEATURES]
+                        != self.data_signature[LABEL_SENTENCE_FEATURES]
+                    )
+                if (
+                    TEXT_SEQUENCE_FEATURES in self.data_signature
+                    and LABEL_SEQUENCE_FEATURES in self.data_signature
+                ):
+                    different_sequence_signatures = (
+                        self.data_signature[TEXT_SEQUENCE_FEATURES]
+                        != self.data_signature[LABEL_SEQUENCE_FEATURES]
+                    )
+
+                if different_sentence_signatures or different_sequence_signatures:
+                    raise ValueError(
+                        "If hidden layer weights are shared, data signatures "
+                        "for text_features and label_features must coincide."
+                    )
 
         if (
             self.config[ENTITY_RECOGNITION]
