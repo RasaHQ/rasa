@@ -218,7 +218,7 @@ class UserUttered(Event):
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
-    ):
+    ) -> None:
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
@@ -616,7 +616,7 @@ class ReminderScheduled(Event):
         kill_on_user_message: bool = True,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
-    ):
+    ) -> None:
         """Creates the reminder
 
         Args:
@@ -718,7 +718,7 @@ class ReminderCancelled(Event):
         entities: Optional[List[Dict]] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
-    ):
+    ) -> None:
         """Creates a ReminderCancelled event.
 
         If all arguments are `None`, this will cancel all reminders.
@@ -846,7 +846,7 @@ class StoryExported(Event):
         path: Optional[Text] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
-    ):
+    ) -> None:
         self.path = path
         super().__init__(timestamp, metadata)
 
@@ -995,7 +995,7 @@ class ActionExecuted(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
         message: Optional[Message] = None,
-    ):
+    ) -> None:
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
@@ -1048,7 +1048,6 @@ class ActionExecuted(Event):
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-
         tracker.set_latest_action_name(self.action_name)
         tracker.clear_followup_action()
 
