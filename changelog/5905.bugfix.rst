@@ -1,0 +1,4 @@
+Remove option ``token_pattern`` from ``CountVectorsFeaturizer``.
+Instead all tokenizers now have the option ``token_pattern``.
+If a regular expression is set, all detected tokens of the tokenizer are further split into tokens according to the
+regular expression.
