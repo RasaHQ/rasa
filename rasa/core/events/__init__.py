@@ -984,7 +984,8 @@ class ActionExecuted(Event):
     """An operation describes an action taken + its result.
 
     It comprises an action and a list of events. operations will be appended
-    to the latest ``Turn`` in the ``Tracker.turns``."""
+    to the latest ``Turn`` in the ``Tracker.turns``.
+    """
 
     type_name = "action"
 
@@ -997,7 +998,7 @@ class ActionExecuted(Event):
         metadata: Optional[Dict] = None,
         # TODO: Throw out message attribute
         message: Optional[Message] = None,
-        e2e_text: Optional[Text] = None,
+        e2e_text: Text = "",
     ) -> None:
         self.action_name = action_name
         self.policy = policy
