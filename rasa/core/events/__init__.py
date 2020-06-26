@@ -260,9 +260,11 @@ class UserUttered(Event):
         )
 
     def __hash__(self) -> int:
-        return hash(
-            (self.text, self.intent.get("name"), jsonpickle.encode(self.entities))
-        )
+        return hash((self.text, self.intent_name, jsonpickle.encode(self.entities)))
+
+    @property
+    def intent_name(self) -> Optional[Text]:
+        return self.intent.get("name")
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, UserUttered):
@@ -270,11 +272,11 @@ class UserUttered(Event):
         else:
             return (
                 self.text,
-                self.intent.get("name"),
+                self.intent_name,
                 [jsonpickle.encode(ent) for ent in self.entities],
             ) == (
                 other.text,
-                other.intent.get("name"),
+                other.intent_name,
                 [jsonpickle.encode(ent) for ent in other.entities],
             )
 
