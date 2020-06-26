@@ -41,6 +41,7 @@ extensions = [
     "rasabaster.runnable",
     "rasabaster.conversations",
     "rasabaster.ace",
+    "train",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
