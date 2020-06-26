@@ -1,28 +1,12 @@
-import asyncio
-import json
 import logging
-import os
 import re
-from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
+from typing import Optional, Text, TYPE_CHECKING
 
-import rasa.utils.io as io_utils
-from rasa.constants import DOCS_BASE_URL, DOCS_URL_STORIES, DOCS_URL_DOMAINS
-from rasa.core import utils
+from rasa.constants import DOCS_BASE_URL
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.events import ActionExecuted, UserUttered, Event, SlotSet
-from rasa.core.exceptions import StoryParseError
-from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa.core.training.structures import (
-    Checkpoint,
-    STORY_START,
-    StoryStep,
-    GENERATED_CHECKPOINT_PREFIX,
-    GENERATED_HASH_LENGTH,
-    FORM_PREFIX,
-)
+from rasa.core.interpreter import RegexInterpreter
+from rasa.core.training.structures import FORM_PREFIX
 from rasa.nlu.training_data.formats import MarkdownReader
-from rasa.core.domain import Domain
-from rasa.utils.common import raise_warning
 
 if TYPE_CHECKING:
     from rasa.nlu.training_data import Message

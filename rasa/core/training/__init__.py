@@ -4,10 +4,9 @@ from typing import Text, List, Optional, Union
 if typing.TYPE_CHECKING:
     from rasa.core.domain import Domain
     from rasa.core.interpreter import NaturalLanguageInterpreter
+    from rasa.importers.importer import TrainingDataImporter
     from rasa.core.trackers import DialogueStateTracker
     from rasa.core.training.structures import StoryGraph
-    from rasa.importers.importer import TrainingDataImporter
-    from rasa.core.training import loading
 
 
 async def extract_story_graph(
@@ -19,11 +18,11 @@ async def extract_story_graph(
 ) -> "StoryGraph":
     from rasa.core.interpreter import RegexInterpreter
     from rasa.core.training.structures import StoryGraph
-    from rasa.core.training import loading
+    import rasa.core.training.loading as core_loading
 
     if not interpreter:
         interpreter = RegexInterpreter()
-    story_steps = await loading.load_data_from_folder(
+    story_steps = await core_loading.load_data_from_resource(
         resource_name,
         domain,
         interpreter,

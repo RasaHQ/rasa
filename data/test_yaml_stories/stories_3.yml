@@ -1,8 +1,10 @@
 stories:
-- story: story with entities
+- story: story with or and entities
   steps:
-  - user: /greet 
-    entities:
-    # slot with the same name was autofilled
-    - name: peter
+  - or:
+    - user: /greet
+    - user: /greet
+      entities:
+      # slot with the same name was autofilled
+      - name: peter
   - action: utter_greet

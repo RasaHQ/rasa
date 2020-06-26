@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class StoryStepBuilder:
-    def __init__(self, name: Text, source_name: Text):
+    def __init__(self, name: Text, source_name: Text) -> None:
         self.name = name
         self.source_name = source_name
         self.story_steps = []

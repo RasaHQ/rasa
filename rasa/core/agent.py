@@ -772,7 +772,7 @@ class Agent:
         # largest value from any policy
         max_history = max_history or self._max_history()
 
-        story_steps = await loading.load_data_from_folder(resource_name, self.domain)
+        story_steps = await loading.load_data_from_resource(resource_name, self.domain)
         await visualize_stories(
             story_steps,
             self.domain,

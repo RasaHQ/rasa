@@ -3,17 +3,14 @@ import os
 import shutil
 import tempfile
 import uuid
-import re
 from typing import Tuple, List, Text, Set, Union, Optional, Iterable
 
-from rasa.core.training.story_reader.yaml_story_reader import KEY_STORIES
-from rasa.nlu.training_data import loading as nlu_loading
-from rasa.utils.io import DEFAULT_ENCODING, read_yaml_file
 from rasa.constants import DEFAULT_E2E_TESTS_PATH
+from rasa.nlu.training_data import loading as nlu_loading
 
 logger = logging.getLogger(__name__)
 MARKDOWN_FILE_EXTENSION = ".md"
-YAML_FILE_EXTENSION = ".yml"
+YAML_FILE_EXTENSIONS = ["yml", "yaml"]
 JSON_FILE_EXTENSION = ".json"
 
 
@@ -129,7 +126,7 @@ def _is_valid_filetype(path: Text) -> bool:
     is_datafile = (
         path.endswith(JSON_FILE_EXTENSION)
         or path.endswith(MARKDOWN_FILE_EXTENSION)
-        or path.endswith(YAML_FILE_EXTENSION)
+        or path.split(".")[-1] in YAML_FILE_EXTENSIONS
     )
 
     return is_file and is_datafile
@@ -148,6 +145,11 @@ def is_nlu_file(file_path: Text) -> bool:
 
 
 def is_story_file(file_path: Text) -> bool:
+    from rasa.core.training.story_reader.markdown_story_reader import (
+        MarkdownStoryReader,
+    )
+    from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
+
     """Checks if a file is a Rasa story file.
 
     Args:
@@ -156,30 +158,9 @@ def is_story_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file, otherwise `False`.
     """
-
-    if file_path.endswith(YAML_FILE_EXTENSION):
-        content = read_yaml_file(file_path)
-        if KEY_STORIES in content:
-            return True
-
-    if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
-        return False
-
-    try:
-        with open(
-            file_path, encoding=DEFAULT_ENCODING, errors="surrogateescape"
-        ) as lines:
-            return any(_contains_story_pattern(line) for line in lines)
-    except Exception as e:
-        # catch-all because we might be loading files we are not expecting to load
-        logger.error(
-            f"Tried to check if '{file_path}' is a story file, but failed to "
-            f"read it. If this file contains story data, you should "
-            f"investigate this error, otherwise it is probably best to "
-            f"move the file to a different location. "
-            f"Error: {e}"
-        )
-        return False
+    return YAMLStoryReader.is_yaml_story_file(
+        file_path
+    ) or MarkdownStoryReader.is_markdown_story_file(file_path)
 
 
 def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
@@ -201,12 +182,6 @@ def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
         and is_story_file(file_path)
         and not is_nlu_file(file_path)
     )
-
-
-def _contains_story_pattern(text: Text) -> bool:
-    story_pattern = r".*##.+"
-
-    return re.match(story_pattern, text) is not None
 
 
 def is_domain_file(file_path: Text) -> bool:

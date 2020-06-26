@@ -3,37 +3,30 @@ import json
 import logging
 import os
 import re
-from typing import Optional, Dict, Text, List, Any
+from typing import Dict, Text, List, Any
 
+import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_STORIES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.domain import Domain
 from rasa.core.events import UserUttered
 from rasa.core.exceptions import StoryParseError
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.dsl import EndToEndReader
 from rasa.core.training.story_reader.story_reader import StoryReader
-import rasa.utils.io as io_utils
-
 from rasa.core.training.structures import (
     StoryStep,
     FORM_PREFIX,
 )
+from rasa.data import MARKDOWN_FILE_EXTENSION
 from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
 
 class MarkdownStoryReader(StoryReader):
-    def __init__(
-        self,
-        interpreter: NaturalLanguageInterpreter,
-        domain: Optional[Domain] = None,
-        template_vars: Optional[Dict] = None,
-        use_e2e: bool = False,
-        source_name: Text = None,
-    ):
-        super().__init__(interpreter, domain, template_vars, use_e2e, source_name)
+    """Class that reads the core training data in a Markdown format
+
+    """
 
     async def read_from_file(self, filename: Text,) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
@@ -77,7 +70,7 @@ class MarkdownStoryReader(StoryReader):
                 elif line.startswith(">"):
                     # reached a checkpoint
                     name, conditions = self._parse_event_line(line[1:].strip())
-                    self.add_checkpoint(name, conditions)
+                    self._add_checkpoint(name, conditions)
                 elif re.match(fr"^[*\-]\s+{FORM_PREFIX}", line):
                     logger.debug(
                         "Skipping line {}, "
@@ -157,17 +150,6 @@ class MarkdownStoryReader(StoryReader):
 
         return re.sub(r"<!--.*?-->", "", line).strip()
 
-    def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:
-
-        # Ensure story part already has a name
-        if not self.current_step_builder:
-            raise StoryParseError(
-                "Checkpoint '{}' is at an invalid location. "
-                "Expected a story start.".format(name)
-            )
-
-        self.current_step_builder.add_checkpoint(name, conditions)
-
     @staticmethod
     def _parse_event_line(line):
         """Tries to parse a single line as an event with arguments."""
@@ -235,3 +217,31 @@ class MarkdownStoryReader(StoryReader):
                 docs=DOCS_URL_DOMAINS,
             )
         return utterance
+
+    @staticmethod
+    def is_markdown_story_file(file_path: Text) -> bool:
+        if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
+            return False
+        try:
+            with open(
+                file_path, encoding=io_utils.DEFAULT_ENCODING, errors="surrogateescape"
+            ) as lines:
+                return any(
+                    MarkdownStoryReader._contains_story_pattern(line) for line in lines
+                )
+        except Exception as e:
+            # catch-all because we might be loading files we are not expecting to load
+            logger.error(
+                f"Tried to check if '{file_path}' is a story file, but failed to "
+                f"read it. If this file contains story data, you should "
+                f"investigate this error, otherwise it is probably best to "
+                f"move the file to a different location. "
+                f"Error: {e}"
+            )
+            return False
+
+    @staticmethod
+    def _contains_story_pattern(text: Text) -> bool:
+        story_pattern = r".*##.+"
+
+        return re.match(story_pattern, text) is not None

@@ -7,7 +7,6 @@ from rasa import data
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa.core.training.dsl import StoryFileReader
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
 from rasa.nlu.training_data import TrainingData
@@ -181,7 +180,7 @@ class MultiProjectImporter(TrainingDataImporter):
     ) -> StoryGraph:
         story_paths = self._story_paths if not use_e2e else self._e2e_story_paths
 
-        story_steps = await StoryFileReader.read_from_files(
+        return await utils.story_graph_from_paths(
             story_paths,
             await self.get_domain(),
             interpreter,
@@ -189,7 +188,6 @@ class MultiProjectImporter(TrainingDataImporter):
             use_e2e,
             exclusion_percentage,
         )
-        return StoryGraph(story_steps)
 
     async def get_config(self) -> Dict:
         return self.config
