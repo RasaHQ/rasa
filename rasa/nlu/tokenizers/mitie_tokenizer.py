@@ -14,7 +14,7 @@ class MitieTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # Pattern to further split identified tokens
+        # Regular expression to detect tokens
         "token_pattern": None,
     }
 

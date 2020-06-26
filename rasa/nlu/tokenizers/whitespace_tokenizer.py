@@ -12,7 +12,7 @@ class WhitespaceTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # Pattern to further split identified tokens
+        # Regular expression to detect tokens
         "token_pattern": None,
         # Text will be tokenized with case sensitive as default
         "case_sensitive": True,
