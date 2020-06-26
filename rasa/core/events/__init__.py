@@ -213,6 +213,7 @@ class UserUttered(Event):
         intent: Optional[Dict] = None,
         entities: Optional[List[Dict]] = None,
         parse_data: Optional[Dict[Text, Any]] = None,
+        # TODO: Throw out message attribute
         message: Optional[Message] = None,
         timestamp: Optional[float] = None,
         input_channel: Optional[Text] = None,
@@ -994,13 +995,16 @@ class ActionExecuted(Event):
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
+        # TODO: Throw out message attribute
         message: Optional[Message] = None,
+        e2e_text: Optional[Text] = None,
     ) -> None:
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
         self.unpredictable = False
         self.message = message if message else None
+        self.e2e_text = e2e_text
 
         super().__init__(timestamp, metadata)
 
@@ -1037,7 +1041,7 @@ class ActionExecuted(Event):
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        policy = None  # for backwards compatibility (persisted evemts)
+        policy = None  # for backwards compatibility (persisted events)
         if hasattr(self, "policy"):
             policy = self.policy
         confidence = None
