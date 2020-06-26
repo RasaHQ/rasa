@@ -1335,7 +1335,7 @@ class DIET(RasaModel):
                 )
 
     def _prepare_input_layers(self, name: Text) -> None:
-        self._tf_layers[f"dense_layer.{name}"] = layers.Ffnn(
+        self._tf_layers[f"ffnn.{name}"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][name],
             self.config[DROP_RATE],
             self.config[REGULARIZATION_CONSTANT],
@@ -1596,7 +1596,7 @@ class DIET(RasaModel):
             dense_dropout,
         )
         x = tf.reduce_sum(x, axis=1)  # convert to bag-of-words
-        return self._tf_layers[f"dense_layer.{name}"](x, self._training)
+        return self._tf_layers[f"ffnn.{name}"](x, self._training)
 
     def _create_sequence(
         self,
@@ -1624,7 +1624,7 @@ class DIET(RasaModel):
             sparse_dropout,
             dense_dropout,
         )
-        inputs = self._tf_layers[f"dense_layer.{name}"](inputs, self._training)
+        inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 
         if masked_lm_loss:
             transformer_inputs, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
