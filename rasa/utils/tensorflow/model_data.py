@@ -113,6 +113,9 @@ class RasaModelData:
     def feature_dimension(self, key: Text) -> int:
         """Get the feature dimension of the given key."""
 
+        if key not in self.data:
+            return 0
+
         number_of_features = 0
         for data in self.data[key]:
             if data.size > 0:
