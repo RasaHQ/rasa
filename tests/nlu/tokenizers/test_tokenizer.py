@@ -116,6 +116,11 @@ def test_split_intent(text, expected_tokens):
             [Token("role-based", 0), Token("access-control", 11)],
             [Token("role-based", 0), Token("access-control", 11)],
         ),
+        (
+            r"(test)",
+            [Token("role-based", 0), Token("access-control", 11)],
+            [Token("role-based", 0), Token("access-control", 11)],
+        ),
     ],
 )
 def test_apply_token_pattern(

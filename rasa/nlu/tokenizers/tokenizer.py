@@ -128,6 +128,10 @@ class Tokenizer(Component):
         for token in tokens:
             new_tokens = token_pattern.findall(token.text)
             new_tokens = [t for t in new_tokens if t]
+
+            if not new_tokens:
+                final_tokens.append(token)
+
             running_offset = 0
             for new_token in new_tokens:
                 word_offset = token.text.index(new_token, running_offset)
