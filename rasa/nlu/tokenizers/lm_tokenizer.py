@@ -5,10 +5,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.training_data import Message
 
-from rasa.nlu.constants import (
-    LANGUAGE_MODEL_DOCS,
-    TOKENS,
-)
+from rasa.nlu.constants import LANGUAGE_MODEL_DOCS, TOKENS
 
 
 class LanguageModelTokenizer(Tokenizer):
@@ -27,6 +24,8 @@ class LanguageModelTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Pattern to further split identified tokens
+        "token_pattern": None,
     }
 
     def get_doc(self, message: Message, attribute: Text) -> Dict[Text, Any]:

@@ -25,6 +25,8 @@ class SpacyTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Pattern to further split identified tokens
+        "token_pattern": None,
     }
 
     def get_doc(self, message: Message, attribute: Text) -> "Doc":

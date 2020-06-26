@@ -1,5 +1,8 @@
+from typing import List, Text
+
 import pytest
 
+from nlu.tokenizers.tokenizer import Token
 from rasa.nlu.constants import TEXT, INTENT, RESPONSE, TOKENS_NAMES
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -83,3 +86,53 @@ def test_split_intent(text, expected_tokens):
     message.set(INTENT, text)
 
     assert [t.text for t in tk._split_intent(message)] == expected_tokens
+
+
+@pytest.mark.parametrize(
+    "token_pattern, tokens, expected_tokens",
+    [
+        (
+            None,
+            [Token("hello", 0), Token("there", 6)],
+            [Token("hello", 0), Token("there", 6)],
+        ),
+        (
+            "",
+            [Token("hello", 0), Token("there", 6)],
+            [Token("hello", 0), Token("there", 6)],
+        ),
+        (
+            r"(?u)\b\w\w+\b",
+            [Token("role-based", 0), Token("access-control", 11)],
+            [
+                Token("role", 0),
+                Token("based", 5),
+                Token("access", 11),
+                Token("control", 18),
+            ],
+        ),
+        (
+            r".*",
+            [Token("role-based", 0), Token("access-control", 11)],
+            [Token("role-based", 0), Token("access-control", 11)],
+        ),
+    ],
+)
+def test_apply_token_pattern(
+    token_pattern: Text, tokens: List[Token], expected_tokens: List[Token]
+):
+    component_config = {"token_pattern": token_pattern}
+
+    tokenizer = WhitespaceTokenizer(component_config)
+    actual_tokens = tokenizer.apply_token_pattern(tokens)
+
+    for t in actual_tokens:
+        print(t.text, t.start)
+    for t in expected_tokens:
+        print(t.text, t.start)
+
+    assert len(actual_tokens) == len(expected_tokens)
+    for actual_token, expected_token in zip(actual_tokens, expected_tokens):
+        assert actual_token.text == expected_token.text
+        assert actual_token.start == expected_token.start
+        assert actual_token.end == expected_token.end

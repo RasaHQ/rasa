@@ -1,4 +1,5 @@
 import logging
+import re
 
 from typing import Text, List, Optional, Dict, Any
 
@@ -65,6 +66,8 @@ class Tokenizer(Component):
         )
         # split symbol for intents
         self.intent_split_symbol = self.component_config.get("intent_split_symbol", "_")
+        # token pattern to further split tokens
+        self.token_pattern = self.component_config.get("token_pattern", None)
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenizes the text of the provided attribute of the incoming message."""
@@ -86,12 +89,14 @@ class Tokenizer(Component):
                         tokens = self._split_intent(example)
                     else:
                         tokens = self.tokenize(example, attribute)
+                        tokens = self.apply_token_pattern(tokens)
                     example.set(TOKENS_NAMES[attribute], tokens)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Tokenize the incoming message."""
 
         tokens = self.tokenize(message, TEXT)
+        tokens = self.apply_token_pattern(tokens)
         message.set(TOKENS_NAMES[TEXT], tokens)
 
     def _split_intent(self, message: Message):
@@ -104,6 +109,33 @@ class Tokenizer(Component):
         )
 
         return self._convert_words_to_tokens(words, text)
+
+    def apply_token_pattern(self, tokens: List[Token]) -> List[Token]:
+        """Apply the token pattern to the given tokens.
+
+        Args:
+            tokens: list of tokens to split
+
+        Returns:
+            List of tokens.
+        """
+        if not self.token_pattern:
+            return tokens
+
+        token_pattern = re.compile(self.token_pattern)
+
+        final_tokens = []
+        for token in tokens:
+            new_tokens = token_pattern.findall(token.text)
+            new_tokens = [t for t in new_tokens if t]
+            running_offset = 0
+            for new_token in new_tokens:
+                word_offset = token.text.index(new_token, running_offset)
+                word_len = len(new_token)
+                running_offset = word_offset + word_len
+                final_tokens.append(Token(new_token, token.start + word_offset))
+
+        return final_tokens
 
     @staticmethod
     def _convert_words_to_tokens(words: List[Text], text: Text) -> List[Token]:

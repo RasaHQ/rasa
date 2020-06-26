@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Text
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
 
 
 class WhitespaceTokenizer(Tokenizer):
@@ -13,6 +12,8 @@ class WhitespaceTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Pattern to further split identified tokens
+        "token_pattern": None,
         # Text will be tokenized with case sensitive as default
         "case_sensitive": True,
     }

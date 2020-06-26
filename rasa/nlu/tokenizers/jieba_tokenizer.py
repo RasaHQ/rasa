@@ -28,6 +28,8 @@ class JiebaTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Pattern to further split identified tokens
+        "token_pattern": None,
     }  # default don't load custom dictionary
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
