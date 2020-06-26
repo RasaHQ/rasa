@@ -233,6 +233,9 @@ The following is an example payload for a JWT token:
       }
 
 
+To create and encode the token, you can use tools such as the `JWT Debugger <https://jwt.io/>`_, or a Python module such as `PyJWT <https://pyjwt.readthedocs.io/en/latest/>`_.
+
+
 Endpoint Configuration
 ----------------------
 
