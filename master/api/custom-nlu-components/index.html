@@ -474,14 +474,14 @@ methods that you should implement:</p>
 <p class="admonition-title">Note</p>
 <p>If you create a custom tokenizer you should implement the methods of <code class="docutils literal notranslate"><span class="pre">rasa.nlu.tokenizers.tokenizer.Tokenizer</span></code>.
 The <code class="docutils literal notranslate"><span class="pre">train</span></code> and <code class="docutils literal notranslate"><span class="pre">process</span></code> methods are already implemented and you simply need to overwrite the <code class="docutils literal notranslate"><span class="pre">tokenize</span></code>
-method. <code class="docutils literal notranslate"><span class="pre">train</span></code> and <code class="docutils literal notranslate"><span class="pre">process</span></code> will automatically add a special token <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> to the end of list of tokens,
-which is needed further down the pipeline.</p>
+method.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If you create a custom featurizer you should return a sequence of features.
-E.g. your featurizer should return a matrix of size (number-of-tokens x feature-dimension).
-The feature vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token should contain features for the complete message.</p>
+<p>If you create a custom featurizer you can return two different kind of features: sequence features and sentence
+features. The sequence features are a matrix of size <code class="docutils literal notranslate"><span class="pre">(number-of-tokens</span> <span class="pre">x</span> <span class="pre">feature-dimension)</span></code>, e.g.
+the matrix contains a feature vector for every token in the sequence.
+The sentence features are represented by a matrix of size <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">x</span> <span class="pre">feature-dimension)</span></code>.</p>
 </div>
 <div class="section" id="component">
 <h2>Component<a class="headerlink" href="#component" title="Permalink to this headline">¶</a></h2>

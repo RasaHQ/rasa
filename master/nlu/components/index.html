@@ -485,19 +485,11 @@ If left empty, it uses the default model architecture that original Transformers
 <p>Tokenizers split text into tokens.
 If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
 modeling hierarchical intent structure, use the following flags with any tokenizer:</p>
-<ul>
+<ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">intent_tokenization_flag</span></code> indicates whether to tokenize intent labels or not. Set it to <code class="docutils literal notranslate"><span class="pre">True</span></code>, so that intent
 labels are tokenized.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code> sets the delimiter string to split the intent labels, default is underscore
-(<code class="docutils literal notranslate"><span class="pre">_</span></code>).</p>
-<blockquote>
-<div><div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>All tokenizers add an additional token <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> to the end of the list of tokens when tokenizing
-text and responses.</p>
-</div>
-</div></blockquote>
-</li>
+(<code class="docutils literal notranslate"><span class="pre">_</span></code>).</p></li>
 </ul>
 <div class="section" id="whitespacetokenizer">
 <span id="id6"></span><h3><a class="toc-backref" href="#id29">WhitespaceTokenizer</a><a class="headerlink" href="#whitespacetokenizer" title="Permalink to this headline">¶</a></h3>
@@ -695,12 +687,15 @@ Sparse featurizers are featurizers that return feature vectors with a lot of mis
 As those feature vectors would normally take up a lot of memory, we store them as sparse features.
 Sparse features only store the values that are non zero and their positions in the vector.
 Thus, we save a lot of memory and are able to train on larger datasets.</p>
-<p>By default all featurizers will return a matrix of length <code class="docutils literal notranslate"><span class="pre">(number-of-tokens</span> <span class="pre">x</span> <span class="pre">feature-dimension)</span></code>.
-So, the returned matrix will have a feature vector for every token.
+<p>All featurizers can return two different kind of features: sequence features and sentence features.
+The sequence features are a matrix of size <code class="docutils literal notranslate"><span class="pre">(number-of-tokens</span> <span class="pre">x</span> <span class="pre">feature-dimension)</span></code>.
+The matrix contains a feature vector for every token in the sequence.
 This allows us to train sequence models.
-However, the additional token at the end (e.g. <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code>) contains features for the complete utterance.
-This feature vector can be used in any bag-of-words model.
-The corresponding classifier can therefore decide what kind of features to use.</p>
+The sentence features are represented by a matrix of size <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">x</span> <span class="pre">feature-dimension)</span></code>.
+It contains the feature vector for the complete utterance.
+The sentence features can be used in any bag-of-words model.
+The corresponding classifier can therefore decide what kind of features to use.
+Note: The <code class="docutils literal notranslate"><span class="pre">feature-dimension</span></code> for sequence and sentence features does not have to be the same.</p>
 <div class="section" id="mitiefeaturizer">
 <span id="id10"></span><h3><a class="toc-backref" href="#id36">MitieFeaturizer</a><a class="headerlink" href="#mitiefeaturizer" title="Permalink to this headline">¶</a></h3>
 <dl class="field-list">
@@ -726,13 +721,13 @@ that makes use of <code class="docutils literal notranslate"><span class="pre">d
 </div>
 </dd>
 <dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>The sentence vector, i.e. the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token, can be calculated in two different ways, either via
+<dd class="field-even"><p>The sentence vector, i.e. the vector of the complete utterance, can be calculated in two different ways, either via
 mean or via max pooling. You can specify the pooling method in your configuration file with the option <code class="docutils literal notranslate"><span class="pre">pooling</span></code>.
 The default pooling method is set to <code class="docutils literal notranslate"><span class="pre">mean</span></code>.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;MitieFeaturizer&quot;</span>
   <span class="c1"># Specify what pooling operation should be used to calculate the vector of</span>
-  <span class="c1"># the __CLS__ token. Available options: &#39;mean&#39; and &#39;max&#39;.</span>
+  <span class="c1"># the complete utterance. Available options: &#39;mean&#39; and &#39;max&#39;.</span>
   <span class="s">&quot;pooling&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;mean&quot;</span>
 </pre></div>
 </div>
@@ -759,13 +754,13 @@ The default pooling method is set to <code class="docutils literal notranslate">
 featurizer.</p>
 </dd>
 <dt class="field-even">Configuration</dt>
-<dd class="field-even"><p>The sentence vector, i.e. the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token, can be calculated in two different ways, either via
+<dd class="field-even"><p>The sentence vector, i.e. the vector of the complete utterance, can be calculated in two different ways, either via
 mean or via max pooling. You can specify the pooling method in your configuration file with the option <code class="docutils literal notranslate"><span class="pre">pooling</span></code>.
 The default pooling method is set to <code class="docutils literal notranslate"><span class="pre">mean</span></code>.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
   <span class="c1"># Specify what pooling operation should be used to calculate the vector of</span>
-  <span class="c1"># the __CLS__ token. Available options: &#39;mean&#39; and &#39;max&#39;.</span>
+  <span class="c1"># the complete utterance. Available options: &#39;mean&#39; and &#39;max&#39;.</span>
   <span class="s">&quot;pooling&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;mean&quot;</span>
 </pre></div>
 </div>
@@ -1660,7 +1655,7 @@ value before.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">embedding_dimension</span></code>:
 This parameter defines the output dimension of the embedding layers used inside the model (default: <code class="docutils literal notranslate"><span class="pre">20</span></code>).
 We are using multiple embeddings layers inside the model architecture.
-For example, the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token and the intent is passed on to an embedding layer before
+For example, the vector of the complete utterance and the intent is passed on to an embedding layer before
 they are compared and the loss is calculated.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">number_of_transformer_layers</span></code>:
 This parameter sets the number of transformer layers to use (default: <code class="docutils literal notranslate"><span class="pre">0</span></code>).
@@ -1730,6 +1725,9 @@ However, additional parameters exist that can be adapted.</p>
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | dense_dimension                 | text: 512         | Dense dimension for sparse features to use if no dense       |
 |                                 | label: 512        | features are present.                                        |
++---------------------------------+-------------------+--------------------------------------------------------------+
+| concat_dimension                | text: 512         | Concat dimension for sequence and sentence features.         |
+|                                 | label: 512        |                                                              |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | number_of_negative_examples     | 20                | The number of incorrect labels. The algorithm will minimize  |
 |                                 |                   | their similarity to the user input during training.          |
@@ -1869,7 +1867,7 @@ See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starsp
 recognition. The architecture is based on a transformer which is shared for both tasks.
 A sequence of entity labels is predicted through a Conditional Random Field (CRF) tagging layer on top of the
 transformer output sequence corresponding to the input sequence of tokens.
-For the intent labels the transformer output for the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token and intent labels are embedded into a
+For the intent labels the transformer output for the complete utterance and intent labels are embedded into a
 single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
 minimize similarities with negative samples.</p>
 <p>If you want to learn more about the model, please take a look at our
@@ -1914,7 +1912,7 @@ value before.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">embedding_dimension</span></code>:
 This parameter defines the output dimension of the embedding layers used inside the model (default: <code class="docutils literal notranslate"><span class="pre">20</span></code>).
 We are using multiple embeddings layers inside the model architecture.
-For example, the vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token and the intent is passed on to an embedding layer before
+For example, the vector of the complete utterance and the intent is passed on to an embedding layer before
 they are compared and the loss is calculated.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">number_of_transformer_layers</span></code>:
 This parameter sets the number of transformer layers to use (default: <code class="docutils literal notranslate"><span class="pre">2</span></code>).
@@ -1975,6 +1973,9 @@ However, additional parameters exist that can be adapted.</p>
 +---------------------------------+------------------+--------------------------------------------------------------+
 | dense_dimension                 | text: 512        | Dense dimension for sparse features to use if no dense       |
 |                                 | label: 20        | features are present.                                        |
++---------------------------------+------------------+--------------------------------------------------------------+
+| concat_dimension                | text: 512        | Concat dimension for sequence and sentence features.         |
+|                                 | label: 20        |                                                              |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
 |                                 |                  | their similarity to the user input during training.          |
