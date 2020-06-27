@@ -1,8 +1,8 @@
-from typing import Text, Optional, List, Dict, Any
+from typing import Text, List, Dict, Any
 
 import pytest
 
-from rasa.nlu.training_data.entities_parser import EntitiesParser
+import rasa.nlu.training_data.entities_parser as entities_parser
 
 
 @pytest.mark.parametrize(
@@ -105,13 +105,11 @@ from rasa.nlu.training_data.entities_parser import EntitiesParser
     ],
 )
 def test_markdown_entity_regex(
-    example: Text,
-    expected_entities: Optional[List[Dict[Text, Any]]],
-    expected_text: Text,
+    example: Text, expected_entities: List[Dict[Text, Any]], expected_text: Text,
 ):
 
-    result = EntitiesParser.find_entities_in_training_example(example)
+    result = entities_parser.find_entities_in_training_example(example)
     assert result == expected_entities
 
-    replaced_text = EntitiesParser.replace_entities(example)
+    replaced_text = entities_parser.replace_entities(example)
     assert replaced_text == expected_text

@@ -1,12 +1,12 @@
 import json
 import logging
 import os
-
+import re
 import typing
 from typing import Optional, Text
 
+import rasa.utils.io as io_utils
 from rasa.nlu import utils
-from rasa.nlu.training_data.formats import markdown
 from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
@@ -16,9 +16,6 @@ from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_PACKAGE,
 )
 from rasa.utils.endpoints import EndpointConfig
-import rasa.utils.io as io_utils
-import re
-import ruamel.yaml
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -34,9 +31,9 @@ MARKDOWN = "md"
 RASA_YAML = "rasa_yml"
 UNK = "unk"
 MARKDOWN_NLG = "nlg.md"
+JSON = "json"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
-_markdown_section_markers = [f"## {s}:" for s in markdown.available_sections]
 _json_format_heuristics = {
     WIT: lambda js, fn: "data" in js and isinstance(js.get("data"), list),
     LUIS: lambda js, fn: "luis_schema_version" in js,
@@ -161,6 +158,8 @@ def guess_format(filename: Text) -> Text:
     Returns:
         Guessed file format.
     """
+    from rasa.nlu.training_data.formats import RasaYAMLReader, markdown
+
     guess = UNK
 
     content = ""
@@ -168,26 +167,17 @@ def guess_format(filename: Text) -> Text:
         content = io_utils.read_file(filename)
         js = json.loads(content)
     except ValueError:
-        if any([marker in content for marker in _markdown_section_markers]):
+        if any(marker in content for marker in markdown.MARKDOWN_SECTION_MARKERS):
             guess = MARKDOWN
         elif _is_nlg_story_format(content):
             guess = MARKDOWN_NLG
+        elif RasaYAMLReader.is_yaml_nlu_file(filename):
+            guess = RASA_YAML
     else:
         for fformat, format_heuristic in _json_format_heuristics.items():
             if format_heuristic(js, filename):
                 guess = fformat
                 break
-
-    if guess == UNK:
-        try:
-            from rasa.nlu.training_data.formats.rasa_yaml import KEY_NLU
-
-            content = io_utils.read_yaml_file(filename)
-            if KEY_NLU in content:
-                guess = RASA_YAML
-        # YAML lib isn't exposing all necessary Errors/Warnings
-        except Exception:
-            pass
 
     logger.debug(f"Training data format of '{filename}' is '{guess}'.")
 

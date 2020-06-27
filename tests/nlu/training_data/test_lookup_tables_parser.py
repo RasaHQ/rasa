@@ -1,4 +1,4 @@
-from rasa.nlu.training_data.lookup_tables_parser import LookupTablesParser
+import rasa.nlu.training_data.lookup_tables_parser as lookup_tables_parser
 
 
 def test_add_item_to_lookup_tables():
@@ -8,6 +8,8 @@ def test_add_item_to_lookup_tables():
     result = []
 
     for example in lookup_examples:
-        LookupTablesParser.add_item_to_lookup_tables(lookup_item_title, example, result)
+        lookup_tables_parser.add_item_to_lookup_tables(
+            lookup_item_title, example, result
+        )
 
     assert result == [{"name": lookup_item_title, "elements": lookup_examples}]

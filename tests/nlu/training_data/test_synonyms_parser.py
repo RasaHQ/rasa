@@ -1,4 +1,4 @@
-from rasa.nlu.training_data.synonyms_parser import SynonymsParser
+import rasa.nlu.training_data.synonyms_parser as synonyms_parser
 
 
 def test_add_synonym():
@@ -10,7 +10,7 @@ def test_add_synonym():
     result = {}
 
     for example in synonym_examples:
-        SynonymsParser.add_synonym(example, synonym_name, result)
+        synonyms_parser.add_synonym(example, synonym_name, result)
 
     assert result == expected_result
 
@@ -32,6 +32,6 @@ def test_add_synonyms_from_entities():
 
     result = {}
 
-    SynonymsParser.add_synonyms_from_entities(training_example, entities, result)
+    synonyms_parser.add_synonyms_from_entities(training_example, entities, result)
 
     assert result == {"LA": "Los Angeles"}

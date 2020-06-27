@@ -1,6 +1,7 @@
 from typing import Text
 
 import pytest
+from ruamel.yaml import YAMLError
 
 from rasa.nlu.constants import INTENT
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader
@@ -16,6 +17,7 @@ nlu:
 INTENT_EXAMPLES_WITH_METADATA = """
 nlu:
 - intent: intent_name
+  metadata:
   examples:
   - text: |
       how much CO2 will that use?
@@ -28,16 +30,14 @@ nlu:
 
 def test_wrong_format_raises():
 
-    md_nlu_content = """
-    ## intent:greet
-    - hey
-    - hello
+    wrong_yaml_nlu_content = """
+    !!
     """
 
     parser = RasaYAMLReader()
 
-    with pytest.raises(Exception):
-        parser.reads(md_nlu_content)
+    with pytest.raises(YAMLError):
+        parser.reads(wrong_yaml_nlu_content)
 
 
 @pytest.mark.parametrize(
@@ -45,7 +45,11 @@ def test_wrong_format_raises():
 )
 def test_multiline_intent_is_parsed(example: Text):
     parser = RasaYAMLReader()
-    training_data = parser.reads(example)
+
+    with pytest.warns(None) as record:
+        training_data = parser.reads(example)
+
+    assert not len(record)
 
     assert len(training_data.training_examples) == 2
     assert training_data.training_examples[0].get(
@@ -101,7 +105,7 @@ nlu:
     assert len(result.training_examples) == 1
     actual_example = result.training_examples[0]
     assert actual_example.data["intent"] == intent_name
-    assert len(actual_example.data.get("entities")) == expected_num_entities
+    assert len(actual_example.data.get("entities", [])) == expected_num_entities
 
 
 def test_synonyms_are_parsed():
@@ -117,6 +121,8 @@ def test_synonyms_are_parsed():
     training_data = parser.reads(synonym_example)
 
     assert len(training_data.entity_synonyms) == 2
+    assert training_data.entity_synonyms["pink pig"] == "savings"
+    assert training_data.entity_synonyms["savings account"] == "savings"
 
 
 def test_lookup_is_parsed():

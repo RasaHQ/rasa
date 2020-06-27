@@ -1,15 +1,22 @@
-import pytest
-import tempfile
+from typing import Text
 
-from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
+import pytest
+
+import rasa.utils.io as io_utils
 from rasa.nlu import training_data
+from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.loading import guess_format, UNK, load_data, RASA_YAML
+from rasa.nlu.training_data.loading import (
+    guess_format,
+    UNK,
+    RASA_YAML,
+    JSON,
+    MARKDOWN,
+)
 from rasa.nlu.training_data.util import get_file_format
-import rasa.utils.io as io_utils
 
 
 def test_luis_data():
@@ -482,37 +489,28 @@ def test_training_data_conversion(
     #     f.write(td.as_json(indent=2))
 
 
-def test_get_file_format():
-    fformat = get_file_format("data/examples/luis/demo-restaurants_v5.json")
+@pytest.mark.parametrize(
+    "data_file,expected_format",
+    [
+        ("data/examples/luis/demo-restaurants_v5.json", JSON),
+        ("data/examples", JSON),
+        ("examples/moodbot/data/nlu.md", MARKDOWN),
+        ("data/rasa_yaml_examples", RASA_YAML),
+    ],
+)
+def test_get_supported_file_format(data_file: Text, expected_format: Text):
+    fformat = get_file_format(data_file)
+    assert fformat == expected_format
 
-    assert fformat == "json"
 
-    fformat = get_file_format("data/examples")
-
-    assert fformat == "json"
-
-    fformat = get_file_format("examples/moodbot/data/nlu.md")
-
-    assert fformat == "md"
-
-    fformat = get_file_format("data/rasa_yaml_examples")
-
-    assert fformat == RASA_YAML
-
+@pytest.mark.parametrize("data_file", ["path-does-not-exists", None])
+def test_get_non_existing_file_format_raises(data_file: Text):
     with pytest.raises(AttributeError):
-        get_file_format("path-does-not-exists")
-
-    with pytest.raises(AttributeError):
-        get_file_format(None)
+        get_file_format(data_file)
 
 
 def test_guess_format_from_non_existing_file_path():
     assert guess_format("not existing path") == UNK
-
-
-def test_load_data_from_non_existing_file():
-    with pytest.raises(ValueError):
-        load_data("some path")
 
 
 def test_is_empty():

@@ -1,19 +1,14 @@
-# regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict})`
 import re
 from json import JSONDecodeError
-from typing import Text, List, Dict, Match, Optional, NamedTuple
-
-from rasa.nlu.utils import build_entity
+from typing import Text, List, Dict, Match, Optional, NamedTuple, Any
 
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-
 from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_VALUE,
 )
-
 from rasa.utils.common import raise_warning
 
 GROUP_ENTITY_VALUE = "value"
@@ -29,7 +24,7 @@ ENTITY_REGEX = re.compile(
 
 
 class EntityAttributes(NamedTuple):
-    """Attributes of an entity defined in the markdown data."""
+    """Attributes of an entity defined in markdown data."""
 
     type: Text
     value: Text
@@ -38,112 +33,135 @@ class EntityAttributes(NamedTuple):
     role: Optional[Text]
 
 
-class EntitiesParser:
-    @staticmethod
-    def find_entities_in_training_example(example: Text) -> List[Dict]:
-        """Extracts entities from an intent example.
+def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
+    """Extracts entities from an intent example.
 
-        Args:
-            example: intent example
+    Args:
+        example: Intent example.
 
-        Returns: list of extracted entities
-        """
-        entities = []
-        offset = 0
+    Returns:
+        Extracted entities.
+    """
+    import rasa.nlu.utils as rasa_nlu_utils
 
-        for match in re.finditer(ENTITY_REGEX, example):
-            entity_attributes = EntitiesParser._extract_entity_attributes(match)
+    entities = []
+    offset = 0
 
-            start_index = match.start() - offset
-            end_index = start_index + len(entity_attributes.text)
-            offset += len(match.group(0)) - len(entity_attributes.text)
+    for match in re.finditer(ENTITY_REGEX, example):
+        entity_attributes = extract_entity_attributes(match)
 
-            entity = build_entity(
-                start_index,
-                end_index,
-                entity_attributes.value,
-                entity_attributes.type,
-                entity_attributes.role,
-                entity_attributes.group,
-            )
-            entities.append(entity)
+        start_index = match.start() - offset
+        end_index = start_index + len(entity_attributes.text)
+        offset += len(match.group(0)) - len(entity_attributes.text)
 
-        return entities
-
-    @staticmethod
-    def _extract_entity_attributes(match: Match) -> EntityAttributes:
-        """Extract the entity attributes, i.e. type, value, etc., from the
-        regex match."""
-        entity_text = match.groupdict()[GROUP_ENTITY_TEXT]
-
-        if match.groupdict()[GROUP_ENTITY_DICT]:
-            return EntitiesParser._extract_entity_attributes_from_dict(
-                entity_text, match
-            )
-
-        entity_type = match.groupdict()[GROUP_ENTITY_TYPE]
-
-        if match.groupdict()[GROUP_ENTITY_VALUE]:
-            entity_value = match.groupdict()[GROUP_ENTITY_VALUE]
-        else:
-            entity_value = entity_text
-
-        return EntityAttributes(entity_type, entity_value, entity_text, None, None)
-
-    @staticmethod
-    def _extract_entity_attributes_from_dict(
-        entity_text: Text, match: Match
-    ) -> EntityAttributes:
-        """Extract the entity attributes from the dict format."""
-        entity_dict_str = match.groupdict()[GROUP_ENTITY_DICT]
-        entity_dict = EntitiesParser._get_validated_dict(entity_dict_str)
-        return EntityAttributes(
-            entity_dict.get(ENTITY_ATTRIBUTE_TYPE),
-            entity_dict.get(ENTITY_ATTRIBUTE_VALUE, entity_text),
-            entity_text,
-            entity_dict.get(ENTITY_ATTRIBUTE_GROUP),
-            entity_dict.get(ENTITY_ATTRIBUTE_ROLE),
+        entity = rasa_nlu_utils.build_entity(
+            start_index,
+            end_index,
+            entity_attributes.value,
+            entity_attributes.type,
+            entity_attributes.role,
+            entity_attributes.group,
         )
+        entities.append(entity)
 
-    @staticmethod
-    def _get_validated_dict(json_str: Text) -> Dict[Text, Text]:
-        """Converts the provided json_str to a valid dict containing the entity
-        attributes.
+    return entities
 
-        Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
-        [LA]{"entity": "city", "role": "to", "value": "Los Angeles"}
 
-        Args:
-            json_str: the entity dict as string without "{}"
+def extract_entity_attributes(match: Match) -> EntityAttributes:
+    """Extract the entity attributes, i.e. type, value, etc., from the
+    regex match.
 
-        Raises:
-            ValidationError if validation of entity dict fails.
-            JSONDecodeError if provided entity dict is not valid json.
+    Args:
+        match: Regex match to extract the entity attributes from.
 
-        Returns:
-            a proper python dict
-        """
-        import json
-        import rasa.utils.validation as validation_utils
-        import rasa.nlu.schemas.data_schema as schema
+    Returns:
+        EntityAttributes object.
+    """
+    entity_text = match.groupdict()[GROUP_ENTITY_TEXT]
 
-        # add {} as they are not part of the regex
-        try:
-            data = json.loads(f"{{{json_str}}}")
-        except JSONDecodeError as e:
-            raise_warning(
-                f"Incorrect training data format ('{{{json_str}}}'), make sure your "
-                f"data is valid. For more information about the format visit "
-                f"{DOCS_URL_TRAINING_DATA_NLU}."
-            )
-            raise e
+    if match.groupdict()[GROUP_ENTITY_DICT]:
+        return extract_entity_attributes_from_dict(entity_text, match)
 
-        validation_utils.validate_training_data(data, schema.entity_dict_schema())
+    entity_type = match.groupdict()[GROUP_ENTITY_TYPE]
 
-        return data
+    if match.groupdict()[GROUP_ENTITY_VALUE]:
+        entity_value = match.groupdict()[GROUP_ENTITY_VALUE]
+    else:
+        entity_value = entity_text
 
-    @staticmethod
-    def replace_entities(training_example: Text) -> Text:
-        return re.sub(
-            ENTITY_REGEX, lambda m: m.groupdict()[GROUP_ENTITY_TEXT], training_example
+    return EntityAttributes(entity_type, entity_value, entity_text, None, None)
+
+
+def extract_entity_attributes_from_dict(
+    entity_text: Text, match: Match
+) -> EntityAttributes:
+    """Extract entity attributes from dict format.
+
+    Args:
+        entity_text: Original entity text.
+        match: Regex match.
+
+    Returns:
+        Extracted entity attributes.
+    """
+    entity_dict_str = match.groupdict()[GROUP_ENTITY_DICT]
+    entity_dict = get_validated_dict(entity_dict_str)
+    return EntityAttributes(
+        entity_dict.get(ENTITY_ATTRIBUTE_TYPE),
+        entity_dict.get(ENTITY_ATTRIBUTE_VALUE, entity_text),
+        entity_text,
+        entity_dict.get(ENTITY_ATTRIBUTE_GROUP),
+        entity_dict.get(ENTITY_ATTRIBUTE_ROLE),
+    )
+
+
+def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
+    """Converts the provided `json_str` to a valid dict containing the entity
+    attributes.
+
+    Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
+    [LA]{"entity": "city", "role": "to", "value": "Los Angeles"}.
+
+    Args:
+        json_str: The entity dict as string without "{}".
+
+    Raises:
+        ValidationError if validation of entity dict fails.
+        JSONDecodeError if provided entity dict is not valid json.
+
+    Returns:
+        Deserialized and validated `json_str`.
+    """
+    import json
+    import rasa.utils.validation as validation_utils
+    import rasa.nlu.schemas.data_schema as schema
+
+    # add {} as they are not part of the regex
+    try:
+        data = json.loads(f"{{{json_str}}}")
+    except JSONDecodeError as e:
+        raise_warning(
+            f"Incorrect training data format ('{{{json_str}}}'). Make sure your "
+            f"data is valid.",
+            docs=DOCS_URL_TRAINING_DATA_NLU,
         )
+        raise e
+
+    validation_utils.validate_training_data(data, schema.entity_dict_schema())
+
+    return data
+
+
+def replace_entities(training_example: Text) -> Text:
+    """Replace special symbols related to the entities in the provided
+       training example.
+
+    Args:
+        training_example: Original training example with special symbols.
+
+    Returns:
+        String with removed special symbols.
+    """
+    return re.sub(
+        ENTITY_REGEX, lambda m: m.groupdict()[GROUP_ENTITY_TEXT], training_example
+    )

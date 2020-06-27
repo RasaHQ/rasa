@@ -10,8 +10,8 @@ if typing.TYPE_CHECKING:
 
 
 class TrainingDataReader:
-
-    filename = ""
+    def __init__(self):
+        self.filename: Text = ""
 
     def read(self, filename: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData from a file."""
