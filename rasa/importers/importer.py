@@ -4,10 +4,11 @@ from typing import Text, Optional, List, Dict
 import logging
 
 from rasa.core.domain import Domain
+from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
 from rasa.nlu.constants import MESSAGE_ACTION_NAME, MESSAGE_INTENT_NAME
-from rasa.nlu.training_data import TrainingData
+from rasa.nlu.training_data import TrainingData, Message
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
 
@@ -140,7 +141,7 @@ class TrainingDataImporter:
                 RasaFileImporter(config_path, domain_path, training_data_paths)
             ]
 
-        return CombinedDataImporter(importers)
+        return E2EImporter(CombinedDataImporter(importers))
 
     @staticmethod
     def _importer_from_dict(
@@ -275,6 +276,11 @@ class CombinedDataImporter(TrainingDataImporter):
 
 
 class E2EImporter(TrainingDataImporter):
+    """Importer which
+    - enhances the NLU training data with actions / user messages from the stories.
+    - adds potential end-to-end bot messages from stories as actions to the domain
+    """
+
     def __init__(self, importer: TrainingDataImporter) -> None:
         self._importer = importer
 
@@ -327,30 +333,32 @@ class E2EImporter(TrainingDataImporter):
         )
 
     async def _additional_training_data_from_stories(self) -> TrainingData:
-        from rasa.core.events import UserUttered, ActionExecuted
-        from rasa.nlu.training_data import Message
-
         stories = await self.get_stories()
 
         additional_messages_from_stories = []
         for story_step in stories.story_steps:
             for event in story_step.events:
                 if isinstance(event, UserUttered):
-                    user_message = event.text
                     additional_messages_from_stories.append(
-                        Message(
-                            user_message, data={MESSAGE_INTENT_NAME: event.intent_name}
-                        )
+                        self._messages_from_user_utterance(event)
                     )
                 elif isinstance(event, ActionExecuted):
                     additional_messages_from_stories.append(
-                        Message(
-                            event.e2e_text,
-                            data={MESSAGE_ACTION_NAME: event.action_name},
-                        )
+                        self._messages_from_action(event)
                     )
-
+        logger.debug(
+            f"Added {len(additional_messages_from_stories)} training data examples "
+            f"from the story training data."
+        )
         return TrainingData(additional_messages_from_stories)
+
+    @staticmethod
+    def _messages_from_user_utterance(event: UserUttered) -> Message:
+        return Message(event.text, data={MESSAGE_INTENT_NAME: event.intent_name})
+
+    @staticmethod
+    def _messages_from_action(event: ActionExecuted) -> Message:
+        return Message(event.e2e_text, data={MESSAGE_ACTION_NAME: event.action_name})
 
     @staticmethod
     def _additional_training_data_from_default_actions() -> TrainingData:

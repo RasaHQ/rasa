@@ -5,7 +5,6 @@ from typing import Text, Dict, Type, List
 
 import pytest
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
-from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, UserUttered, ActionExecuted
 from rasa.core.training.structures import StoryStep, StoryGraph
 from rasa.importers.importer import (
@@ -100,9 +99,10 @@ def test_load_from_dict(
         config, config_path, domain_path, [default_data_path]
     )
 
-    assert isinstance(actual, CombinedDataImporter)
+    assert isinstance(actual, E2EImporter)
+    assert isinstance(actual._importer, CombinedDataImporter)
 
-    actual_importers = [i.__class__ for i in actual._importers]
+    actual_importers = [i.__class__ for i in actual._importer._importers]
     assert actual_importers == expected
 
 
@@ -116,8 +116,9 @@ def test_load_from_config(tmpdir: Path):
     )
 
     importer = TrainingDataImporter.load_from_config(config_path)
-    assert isinstance(importer, CombinedDataImporter)
-    assert isinstance(importer._importers[0], MultiProjectImporter)
+    assert isinstance(importer, E2EImporter)
+    assert isinstance(importer._importer, CombinedDataImporter)
+    assert isinstance(importer._importer._importers[0], MultiProjectImporter)
 
 
 async def test_nlu_only(project: Text):
@@ -169,9 +170,12 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-    existing = TrainingDataImporter.load_from_dict(
+    importer = TrainingDataImporter.load_from_dict(
         {}, config_path, domain_path, [default_data_path]
     )
+
+    assert isinstance(importer, E2EImporter)
+    importer_without_e2e = importer._importer
 
     stories = StoryGraph(
         [
@@ -192,21 +196,19 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
     )
 
     # Patch to return our test stories
-    existing.get_stories = asyncio.coroutine(lambda *args: stories)
-
-    importer = E2EImporter(existing)
+    importer_without_e2e.get_stories = asyncio.coroutine(lambda *args: stories)
 
     # The wrapping `E2EImporter` simply forwards these
-    assert (await existing.get_stories()).as_story_string() == (
+    assert (await importer_without_e2e.get_stories()).as_story_string() == (
         await importer.get_stories()
     ).as_story_string()
-    assert (await existing.get_config()) == (await importer.get_config())
+    assert (await importer_without_e2e.get_config()) == (await importer.get_config())
 
     # Check additional NLU training data from stories was added
     nlu_data = await importer.get_nlu_data()
 
     assert len(nlu_data.training_examples) > len(
-        (await existing.get_nlu_data()).training_examples
+        (await importer_without_e2e.get_nlu_data()).training_examples
     )
 
     expected_additional_messages = [
@@ -223,17 +225,18 @@ async def test_import_nlu_training_data_with_default_actions(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-    existing = TrainingDataImporter.load_from_dict(
+    importer = TrainingDataImporter.load_from_dict(
         {}, config_path, domain_path, [default_data_path]
     )
 
-    importer = E2EImporter(existing)
+    assert isinstance(importer, E2EImporter)
+    importer_without_e2e = importer._importer
 
     # Check additional NLU training data from domain was added
     nlu_data = await importer.get_nlu_data()
 
     assert len(nlu_data.training_examples) > len(
-        (await existing.get_nlu_data()).training_examples
+        (await importer_without_e2e.get_nlu_data()).training_examples
     )
 
     from rasa.core.actions import action
@@ -281,7 +284,6 @@ async def test_adding_e2e_actions_to_domain(project: Text):
     existing.get_stories = asyncio.coroutine(lambda *args: stories)
 
     importer = E2EImporter(existing)
-
     domain = await importer.get_domain()
 
     assert all(action_name in domain.action_names for action_name in additional_actions)
