@@ -1037,6 +1037,7 @@ class ActionExecuted(Event):
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
                 message=parameters.get("message"),
+                e2e_text=parameters.get("e2e_text"),
             )
         ]
 
