@@ -279,7 +279,27 @@ class E2EImporter(TrainingDataImporter):
         self._importer = importer
 
     async def get_domain(self) -> Domain:
-        return await self._importer.get_domain()
+        original, e2e_domain = await asyncio.gather(
+            self._importer.get_domain(), self._get_domain_with_e2e_actions()
+        )
+        return original.merge(e2e_domain)
+
+    async def _get_domain_with_e2e_actions(self) -> Domain:
+        from rasa.core.events import ActionExecuted
+
+        stories = await self.get_stories()
+
+        additional_e2e_action_names = []
+        for story_step in stories.story_steps:
+            additional_e2e_action_names += [
+                event.action_name
+                for event in story_step.events
+                if isinstance(event, ActionExecuted) and event.e2e_text
+            ]
+
+        return Domain(
+            [], [], [], {}, action_names=additional_e2e_action_names, form_names=[]
+        )
 
     async def get_stories(
         self,
