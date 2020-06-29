@@ -477,7 +477,7 @@ class TED(RasaModel):
         }
 
         # optimizer
-        self._set_optimizer(tf.keras.optimizers.Adam())
+        self.optimizer = tf.keras.optimizers.Adam()
 
         self.all_labels_embed = None
 

@@ -1,10 +1,8 @@
 TEXT = "text"
+INTENT = "intent"
+RESPONSE = "response"
 
 RESPONSE_KEY_ATTRIBUTE = "response_key"
-
-INTENT = "intent"
-
-RESPONSE = "response"
 
 ENTITIES = "entities"
 BILOU_ENTITIES = "bilou_entities"
@@ -35,40 +33,28 @@ EXTRACTOR = "extractor"
 PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
 TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 
-CLS_TOKEN = "__CLS__"
-POSITION_OF_CLS_TOKEN = -1
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
 MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE]
-
-TOKENS_NAMES = {TEXT: "tokens", INTENT: "intent_tokens", RESPONSE: "response_tokens"}
-
-SPARSE_FEATURE_NAMES = {
-    TEXT: "text_sparse_features",
-    INTENT: "intent_sparse_features",
-    RESPONSE: "response_sparse_features",
-}
-
-DENSE_FEATURE_NAMES = {
-    TEXT: "text_dense_features",
-    INTENT: "intent_dense_features",
-    RESPONSE: "response_dense_features",
-}
+DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE]
 
 LANGUAGE_MODEL_DOCS = {
     TEXT: "text_language_model_doc",
     RESPONSE: "response_language_model_doc",
 }
-
-TOKEN_IDS = "token_ids"
-TOKENS = "tokens"
-SEQUENCE_FEATURES = "sequence_features"
-SENTENCE_FEATURES = "sentence_features"
-
 SPACY_DOCS = {TEXT: "text_spacy_doc", RESPONSE: "response_spacy_doc"}
 
+TOKENS_NAMES = {
+    TEXT: "text_tokens",
+    INTENT: "intent_tokens",
+    RESPONSE: "response_tokens",
+}
 
-DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE]
+TOKENS = "tokens"
+TOKEN_IDS = "token_ids"
+
+SEQUENCE_FEATURES = "sequence_features"
+SENTENCE_FEATURES = "sentence_features"
 
 RESPONSE_SELECTOR_PROPERTY_NAME = "response_selector"
 DEFAULT_OPEN_UTTERANCE_TYPE = "default"
@@ -78,3 +64,9 @@ RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 INTENT_RANKING_KEY = "intent_ranking"
 INTENT_CONFIDENCE_KEY = "confidence"
+
+FEATURE_TYPE_SENTENCE = "sentence"
+FEATURE_TYPE_SEQUENCE = "sequence"
+VALID_FEATURE_TYPES = [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]
+
+FEATURIZER_CLASS_ALIAS = "alias"

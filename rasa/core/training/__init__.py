@@ -37,7 +37,7 @@ async def extract_story_graph(
     domain: "Domain",
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     use_e2e: bool = False,
-    exclusion_percentage: int = None,
+    exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
     from rasa.core.interpreter import RegexInterpreter
     from rasa.core.training.dsl import StoryFileReader
@@ -64,7 +64,7 @@ async def load_data(
     tracker_limit: Optional[int] = None,
     use_story_concatenation: bool = True,
     debug_plots=False,
-    exclusion_percentage: int = None,
+    exclusion_percentage: Optional[int] = None,
 ) -> List["DialogueStateTracker"]:
     from rasa.core.training.generator import TrainingDataGenerator
     from rasa.importers.importer import TrainingDataImporter

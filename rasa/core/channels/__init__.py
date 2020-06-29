@@ -1,4 +1,4 @@
-from typing import Text, Dict, List
+from typing import Text, Dict, List, Type
 
 from rasa.core.channels.channel import (
     InputChannel,
@@ -27,7 +27,7 @@ from rasa.core.channels.twilio import TwilioInput  # nopep8
 from rasa.core.channels.webexteams import WebexTeamsInput  # nopep8
 from rasa.core.channels.hangouts import HangoutsInput  # nopep8
 
-input_channel_classes = [
+input_channel_classes: List[Type[InputChannel]] = [
     CmdlineInput,
     FacebookInput,
     SlackInput,
@@ -42,9 +42,9 @@ input_channel_classes = [
     SocketIOInput,
     WebexTeamsInput,
     HangoutsInput,
-]  # type: List[InputChannel]
+]
 
 # Mapping from a input channel name to its class to allow name based lookup.
-BUILTIN_CHANNELS = {
+BUILTIN_CHANNELS: Dict[Text, Type[InputChannel]] = {
     c.name(): c for c in input_channel_classes
-}  # type: Dict[Text, InputChannel]
+}

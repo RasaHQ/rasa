@@ -134,7 +134,7 @@ Define the NLU Data
 In this section:
 
 - we will introduce a new intent, ``query_knowledge_base``
-- we will to annotate ``mention`` entities so that our model detects indirect mentions of objects like "the
+- we will annotate ``mention`` entities so that our model detects indirect mentions of objects like "the
   first one"
 - we will use :ref:`synonyms <entity_synonyms>` extensively
 
@@ -168,7 +168,7 @@ The above example just shows examples related to the restaurant domain.
 You should add examples for every object type that exists in your knowledge base to the same ``query_knowledge_base`` intent.
 
 In addition to adding a variety of training examples for each query type,
-you need to specify the and annotate the following entities in your training examples:
+you need to specify and annotate the following entities in your training examples:
 
 - ``object_type``: Whenever a training example references a specific object type from your knowledge base, the object type should
   be marked as an entity. Use :ref:`synonyms <entity_synonyms>` to map e.g. ``restaurants`` to ``restaurant``, the correct

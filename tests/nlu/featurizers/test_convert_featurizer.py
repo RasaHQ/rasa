@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
-from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, TOKENS_NAMES, RESPONSE, INTENT
+from rasa.nlu.constants import TEXT, TOKENS_NAMES, RESPONSE, INTENT
 from rasa.nlu.training_data import Message
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
@@ -17,7 +17,6 @@ def test_convert_featurizer_process(component_builder):
     sentence = "Hey how are you today ?"
     message = Message(sentence)
     tokens = tokenizer.tokenize(message, attribute=TEXT)
-    tokens = tokenizer.add_cls_token(tokens, attribute=TEXT)
     message.set(TOKENS_NAMES[TEXT], tokens)
 
     featurizer.process(message, tf_hub_module=tokenizer.module)
@@ -27,11 +26,11 @@ def test_convert_featurizer_process(component_builder):
         [1.0251294, -0.04053932, -0.7018805, -0.82054937, -0.75054353]
     )
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
+    seq_vecs, sent_vecs = message.get_dense_features(TEXT, [])
 
-    assert len(tokens) == len(vecs)
-    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
+    assert len(tokens) == len(seq_vecs)
+    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
 
 def test_convert_featurizer_train(component_builder):
@@ -41,8 +40,9 @@ def test_convert_featurizer_train(component_builder):
     sentence = "Hey how are you today ?"
     message = Message(sentence)
     message.set(RESPONSE, sentence)
+
     tokens = tokenizer.tokenize(message, attribute=TEXT)
-    tokens = tokenizer.add_cls_token(tokens, attribute=TEXT)
+
     message.set(TOKENS_NAMES[TEXT], tokens)
     message.set(TOKENS_NAMES[RESPONSE], tokens)
 
@@ -55,21 +55,22 @@ def test_convert_featurizer_train(component_builder):
         [1.0251294, -0.04053932, -0.7018805, -0.82054937, -0.75054353]
     )
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
+    seq_vecs, sent_vecs = message.get_dense_features(TEXT, [])
 
-    assert len(tokens) == len(vecs)
-    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
+    assert len(tokens) == len(seq_vecs)
+    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[RESPONSE])
+    seq_vecs, sent_vecs = message.get_dense_features(RESPONSE, [])
 
-    assert len(tokens) == len(vecs)
-    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
+    assert len(tokens) == len(seq_vecs)
+    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[INTENT])
+    seq_vecs, sent_vecs = message.get_dense_features(INTENT, [])
 
-    assert vecs is None
+    assert seq_vecs is None
+    assert sent_vecs is None
 
 
 @pytest.mark.parametrize(

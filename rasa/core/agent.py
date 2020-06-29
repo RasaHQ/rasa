@@ -466,7 +466,7 @@ class Agent:
             # DEPRECATION EXCEPTION - remove in 2.1
             raise Exception(
                 "Passing a text to `agent.handle_message(...)` is "
-                "not supported anymore. Rather use `agent.handle_text(...)`.",
+                "not supported anymore. Rather use `agent.handle_text(...)`."
             )
 
         def noop(_):
@@ -528,7 +528,7 @@ class Agent:
 
         processor = self.create_processor()
         await processor.trigger_external_user_uttered(
-            intent_name, entities, tracker, output_channel,
+            intent_name, entities, tracker, output_channel
         )
 
     async def handle_text(
@@ -623,7 +623,7 @@ class Agent:
         tracker_limit: Optional[int] = None,
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
-        exclusion_percentage: int = None,
+        exclusion_percentage: Optional[int] = None,
     ) -> List[DialogueStateTracker]:
         """Load training data from a resource."""
 

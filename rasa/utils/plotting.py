@@ -1,10 +1,29 @@
 import logging
 import itertools
+import os
+
 import numpy as np
 from typing import List, Text, Optional, Union, Any
+import matplotlib
 
+from rasa.constants import RESULTS_FILE
+import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
+
+
+# At first, matplotlib will be initialized with default OS-specific available backend
+# if that didn't happen, we'll try to set it up manually
+if matplotlib.get_backend() is not None:
+    pass
+else:  # pragma: no cover
+    try:
+        # If the `tkinter` package is available, we can use the `TkAgg` backend
+        import tkinter
+
+        matplotlib.use("TkAgg")
+    except ImportError:
+        matplotlib.use("agg")
 
 
 def plot_confusion_matrix(
@@ -112,3 +131,51 @@ def plot_histogram(
         fig = plt.gcf()
         fig.set_size_inches(10, 10)
         fig.savefig(output_file, bbox_inches="tight")
+
+
+def plot_curve(
+    output_directory: Text,
+    number_of_examples: List[int],
+    x_label_text: Text,
+    y_label_text: Text,
+    graph_path: Text,
+) -> None:
+    """Plot the results from a model comparison.
+
+    Args:
+        output_directory: Output directory to save resulting plots to
+        number_of_examples: Number of examples per run
+        x_label_text: text for the x axis
+        y_label_text: text for the y axis
+        graph_path: output path of the plot
+    """
+    import matplotlib.pyplot as plt
+
+    ax = plt.gca()
+
+    # load results from file
+    data = io_utils.read_json_file(os.path.join(output_directory, RESULTS_FILE))
+    x = number_of_examples
+
+    # compute mean of all the runs for different configs
+    for label in data.keys():
+        if len(data[label]) == 0:
+            continue
+        mean = np.mean(data[label], axis=0)
+        std = np.std(data[label], axis=0)
+        ax.plot(x, mean, label=label, marker=".")
+        ax.fill_between(
+            x,
+            [m - s for m, s in zip(mean, std)],
+            [m + s for m, s in zip(mean, std)],
+            color="#6b2def",
+            alpha=0.2,
+        )
+    ax.legend(loc=4)
+
+    ax.set_xlabel(x_label_text)
+    ax.set_ylabel(y_label_text)
+
+    plt.savefig(graph_path, format="pdf")
+
+    logger.info(f"Comparison graph saved to '{graph_path}'.")

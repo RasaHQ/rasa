@@ -7,8 +7,11 @@ import re
 from typing import Tuple, List, Text, Set, Union, Optional, Iterable
 from rasa.nlu.training_data import loading
 from rasa.utils.io import DEFAULT_ENCODING
+from rasa.constants import DEFAULT_E2E_TESTS_PATH
 
 logger = logging.getLogger(__name__)
+MARKDOWN_FILE_EXTENSION = ".md"
+JSON_FILE_EXTENSION = ".json"
 
 
 def get_core_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
@@ -120,7 +123,9 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
 
 def _is_valid_filetype(path: Text) -> bool:
     is_file = os.path.isfile(path)
-    is_datafile = path.endswith(".json") or path.endswith(".md")
+    is_datafile = path.endswith(JSON_FILE_EXTENSION) or path.endswith(
+        MARKDOWN_FILE_EXTENSION
+    )
 
     return is_file and is_datafile
 
@@ -147,7 +152,7 @@ def is_story_file(file_path: Text) -> bool:
         `True` if it's a story file, otherwise `False`.
     """
 
-    if not file_path.endswith(".md"):
+    if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
         return False
 
     try:
@@ -168,6 +173,27 @@ def is_story_file(file_path: Text) -> bool:
             f"Error: {e}"
         )
         return False
+
+
+def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
+    """Checks if a file is an end-to-end conversation test file.
+
+    Args:
+        file_path: Path of the file which should be checked.
+
+    Returns:
+        `True` if it's a conversation test file, otherwise `False`.
+    """
+
+    if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
+        return False
+
+    dirname = os.path.dirname(file_path)
+    return (
+        DEFAULT_E2E_TESTS_PATH in dirname
+        and is_story_file(file_path)
+        and not is_nlu_file(file_path)
+    )
 
 
 def _contains_story_pattern(text: Text) -> bool:

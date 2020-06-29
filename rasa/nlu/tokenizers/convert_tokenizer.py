@@ -16,7 +16,6 @@ TF_HUB_MODULE_URL = "http://models.poly-ai.com/convert/v1/model.tar.gz"
 
 class ConveRTTokenizer(WhitespaceTokenizer):
     """Tokenizer using ConveRT model.
-
     Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
     model from TFHub and computes sub-word tokens for dense
     featurizable attributes of each message object.
@@ -58,7 +57,6 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenize the text using the ConveRT model.
-
         ConveRT adds a special char in front of (some) words and splits words into
         sub-words. To ensure the entity start and end values matches the token values,
         tokenize the text first using the whitespace tokenizer. If individual tokens

@@ -59,8 +59,10 @@ This creates the following files:
    │   └── stories.md
    ├── domain.yml
    ├── endpoints.yml
-   └── models
-       └── <timestamp>.tar.gz
+   ├── models
+   │   └── <timestamp>.tar.gz
+   └── tests
+      └── conversation_tests.md
 
 The ``rasa init`` command will ask you if you want to train an initial model using this data.
 If you answer no, the ``models`` directory will be empty.
