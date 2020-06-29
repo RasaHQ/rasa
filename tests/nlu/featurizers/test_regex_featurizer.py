@@ -77,8 +77,9 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, TEXT)
-    assert np.allclose(result.toarray(), expected, atol=1e-10)
+    sequence_features, sentence_features = ftr._features_for_patterns(message, TEXT)
+    assert np.allclose(sequence_features.toarray(), expected[:-1], atol=1e-10)
+    assert np.allclose(sentence_features.toarray(), expected[-1], atol=1e-10)
 
     # the tokenizer should have added tokens
     assert len(message.get(TOKENS_NAMES[TEXT], [])) > 0
@@ -138,8 +139,9 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     message.set("text_spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, TEXT)
-    assert np.allclose(result.toarray(), expected, atol=1e-10)
+    sequence_features, sentence_features = ftr._features_for_patterns(message, TEXT)
+    assert np.allclose(sequence_features.toarray(), expected[:-1], atol=1e-10)
+    assert np.allclose(sentence_features.toarray(), expected[-1], atol=1e-10)
 
     # the tokenizer should have added tokens
     assert len(message.get(TOKENS_NAMES[TEXT], [])) > 0
@@ -174,9 +176,9 @@ def test_regex_featurizer_no_sequence(sentence, expected, expected_cls, spacy_nl
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, TEXT)
-    assert np.allclose(result.toarray()[0], expected, atol=1e-10)
-    assert np.allclose(result.toarray()[-1], expected_cls, atol=1e-10)
+    sequence_featrures, sentence_features = ftr._features_for_patterns(message, TEXT)
+    assert np.allclose(sequence_featrures.toarray()[0], expected, atol=1e-10)
+    assert np.allclose(sentence_features.toarray()[-1], expected_cls, atol=1e-10)
 
 
 def test_regex_featurizer_train():
@@ -202,18 +204,21 @@ def test_regex_featurizer_train():
     expected = np.array([0, 1, 0])
     expected_cls = np.array([1, 1, 1])
 
-    vecs = message.get_sparse_features(TEXT, [])
+    seq_vecs, sen_vec = message.get_sparse_features(TEXT, [])
 
-    assert (7, 3) == vecs.shape
-    assert np.all(vecs.toarray()[0] == expected)
-    assert np.all(vecs.toarray()[-1] == expected_cls)
+    assert (6, 3) == seq_vecs.shape
+    assert (1, 3) == sen_vec.shape
+    assert np.all(seq_vecs.toarray()[0] == expected)
+    assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    vecs = message.get_sparse_features(RESPONSE, [])
+    seq_vecs, sen_vec = message.get_sparse_features(RESPONSE, [])
 
-    assert (7, 3) == vecs.shape
-    assert np.all(vecs.toarray()[0] == expected)
-    assert np.all(vecs.toarray()[-1] == expected_cls)
+    assert (6, 3) == seq_vecs.shape
+    assert (1, 3) == sen_vec.shape
+    assert np.all(seq_vecs.toarray()[0] == expected)
+    assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    vecs = message.get_sparse_features(INTENT, [])
+    seq_vecs, sen_vec = message.get_sparse_features(INTENT, [])
 
-    assert vecs is None
+    assert seq_vecs is None
+    assert sen_vec is None

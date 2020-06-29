@@ -1,9 +1,9 @@
-import re
 from typing import Any, Dict, List, Text
+
+import regex
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
 
 
 class WhitespaceTokenizer(Tokenizer):
@@ -30,8 +30,11 @@ class WhitespaceTokenizer(Tokenizer):
         if not self.case_sensitive:
             text = text.lower()
 
+        # we need to use regex instead of re, because of
+        # https://stackoverflow.com/questions/12746458/python-unicode-regular-expression-matching-failing-with-some-unicode-characters
+
         # remove 'not a word character' if
-        words = re.sub(
+        words = regex.sub(
             # there is a space or an end of a string after it
             r"[^\w#@&]+(?=\s|$)|"
             # there is a space or beginning of a string before it
