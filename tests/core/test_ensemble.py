@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Any
+from typing import List, Any, Text
 
 import pytest
 import copy
@@ -31,19 +31,31 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 
 class WorkingPolicy(Policy):
     @classmethod
-    def load(cls, path):
+    def load(cls, _) -> Policy:
         return WorkingPolicy()
 
-    def persist(self, path):
+    def persist(self, _) -> None:
         pass
 
-    def train(self, training_trackers, domain, **kwargs):
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> None:
         pass
 
-    def predict_action_probabilities(self, tracker, domain):
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
+    ) -> List[float]:
         pass
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, WorkingPolicy)
 
 
@@ -62,13 +74,19 @@ class ConstantPolicy(Policy):
         self.predict_index = predict_index
 
     @classmethod
-    def load(cls, path):
+    def load(cls, _) -> Policy:
         pass
 
-    def persist(self, path):
+    def persist(self, _) -> None:
         pass
 
-    def train(self, training_trackers, domain, **kwargs):
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> None:
         pass
 
     def predict_action_probabilities(
@@ -243,16 +261,28 @@ def test_fallback_wins_over_mapping():
 
 class LoadReturnsNonePolicy(Policy):
     @classmethod
-    def load(cls, path):
+    def load(cls, _) -> None:
         return None
 
-    def persist(self, path):
+    def persist(self, _) -> None:
         pass
 
-    def train(self, training_trackers, domain, **kwargs):
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> None:
         pass
 
-    def predict_action_probabilities(self, tracker, domain):
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
+    ) -> List[float]:
         pass
 
 
@@ -267,13 +297,19 @@ def test_policy_loading_load_returns_none(tmp_path: Path):
 
 class LoadReturnsWrongTypePolicy(Policy):
     @classmethod
-    def load(cls, path):
+    def load(cls, _) -> Text:
         return ""
 
-    def persist(self, path):
+    def persist(self, _) -> None:
         pass
 
-    def train(self, training_trackers, domain, **kwargs):
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> None:
         pass
 
     def predict_action_probabilities(
