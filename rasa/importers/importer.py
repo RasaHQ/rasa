@@ -283,6 +283,7 @@ class E2EImporter(TrainingDataImporter):
 
     def __init__(self, importer: TrainingDataImporter) -> None:
         self._importer = importer
+        self._cached_stories: Optional[StoryGraph] = None
 
     async def get_domain(self) -> Domain:
         original, e2e_domain = await asyncio.gather(
@@ -314,9 +315,12 @@ class E2EImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        return await self._importer.get_stories(
-            interpreter, template_variables, use_e2e, exclusion_percentage
-        )
+        if not self._cached_stories:
+            # Simple cache to avoid loading all of this multiple times
+            self._cached_stories = await self._importer.get_stories(
+                interpreter, template_variables, use_e2e, exclusion_percentage
+            )
+        return self._cached_stories
 
     async def get_config(self) -> Dict:
         return await self._importer.get_config()
