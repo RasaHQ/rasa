@@ -19,11 +19,7 @@ from rasa.core.training.data import DialogueTrainingData
 import scipy.sparse
 
 from rasa.core.interpreter import RasaE2EInterpreter
-from rasa.nlu.constants import (
-    # SPARSE_FEATURE_NAMES,
-    # DENSE_FEATURE_NAMES,
-    TEXT,
-)
+from rasa.nlu.constants import TEXT
 from rasa.nlu.training_data import Message
 from rasa.utils.common import is_logging_disabled
 from rasa.utils import train_utils
@@ -114,9 +110,6 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                     f"Sequence dimensions for sparse and dense features "
                     f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
-
-        # sparse_features = train_utils.sequence_to_sentence_features(sparse_features)
-        # dense_features = train_utils.sequence_to_sentence_features(dense_features)
 
         return sparse_features, dense_features
 
