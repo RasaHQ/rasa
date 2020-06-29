@@ -2,7 +2,7 @@ from typing import List, Text
 
 import pytest
 
-from nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.constants import TEXT, INTENT, RESPONSE, TOKENS_NAMES
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
