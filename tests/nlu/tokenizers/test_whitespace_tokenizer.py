@@ -2,7 +2,6 @@ import pytest
 
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT
 from rasa.nlu.training_data import TrainingData, Message
-from tests.nlu import utilities
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
@@ -18,6 +17,37 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             "hey ńöñàśçií how're you?",
             ["hey", "ńöñàśçií", "how", "re", "you"],
             [(0, 3), (4, 12), (13, 16), (17, 19), (20, 23)],
+        ),
+        (
+            "50 क्या आपके पास डेरी मिल्क 10 वाले बॉक्स मिल सकते है",
+            [
+                "50",
+                "क्या",
+                "आपके",
+                "पास",
+                "डेरी",
+                "मिल्क",
+                "10",
+                "वाले",
+                "बॉक्स",
+                "मिल",
+                "सकते",
+                "है",
+            ],
+            [
+                (0, 2),
+                (3, 7),
+                (8, 12),
+                (13, 16),
+                (17, 21),
+                (22, 27),
+                (28, 30),
+                (31, 35),
+                (36, 41),
+                (42, 45),
+                (46, 50),
+                (51, 53),
+            ],
         ),
         (
             "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
