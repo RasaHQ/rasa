@@ -9,8 +9,6 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 def test_tokens_comparison():
-    from rasa.nlu.tokenizers.tokenizer import Token
-
     x = Token("hello", 0)
     y = Token("Hello", 0)
 
