@@ -79,7 +79,7 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
     import pkg_resources
 
     try:
-        content = io_utils.read_file(config_file, io_utils.DEFAULT_ENCODING)
+        content = io_utils.read_config_file(config_file)
     except ValueError:
         content = ""
 
@@ -87,16 +87,14 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
     if not content:
         empty = True
         cli_utils.print_warning(
-            f"Configuration file {config_file} does not exist or is empty. "
-            f"Creating it now and filling it with the current configuration."
+            f"Configuration file {config_file} does not exist or is empty or invalid. "
+            f"Creating a new one now and filling it with the current configuration."
         )
         empty_config_file = pkg_resources.resource_filename(
             "rasa.cli.initial_project", "config.yml"
         )
-        content = io_utils.read_file(empty_config_file, io_utils.DEFAULT_ENCODING)
+        content = io_utils.read_config_file(empty_config_file)
         shutil.copy(empty_config_file, config_file)
-
-    content = io_utils.read_yaml(content)
 
     missing_keys = [k for k in CONFIG_KEYS if k not in content.keys()]
     autoconfigured = [k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not content.get(k)]

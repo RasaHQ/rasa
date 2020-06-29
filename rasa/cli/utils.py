@@ -200,6 +200,7 @@ def payload_from_button_question(button_question: "Question") -> Text:
 
 
 def english_sentence_from_collection(collection: Collection) -> Text:
+    """Takes e.g. a list like [A, B, C] and transforms into a sentence 'A, B and C'."""
     sentence = ""
     for i, key in enumerate(collection):
         if len(collection) > 1 and i == len(collection) - 1:
