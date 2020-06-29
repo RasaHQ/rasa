@@ -20,8 +20,8 @@ import scipy.sparse
 
 from rasa.core.interpreter import RasaE2EInterpreter
 from rasa.nlu.constants import (
-    SPARSE_FEATURE_NAMES,
-    DENSE_FEATURE_NAMES,
+    # SPARSE_FEATURE_NAMES,
+    # DENSE_FEATURE_NAMES,
     TEXT,
 )
 from rasa.nlu.training_data import Message
@@ -102,11 +102,11 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         if isinstance(message, Dict) and not 'intent' in message.keys():
             return self.featurize_slots(message)
 
-        if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
-            sparse_features = message.get(SPARSE_FEATURE_NAMES[attribute])
+        if message.get_sparse_features(attribute)[1] is not None:
+            sparse_features = message.get_sparse_features(attribute)[1]
 
-        if message.get(DENSE_FEATURE_NAMES[attribute]) is not None:
-            dense_features = message.get(DENSE_FEATURE_NAMES[attribute])
+        if message.get_dense_features(attribute)[1] is not None:
+            dense_features = message.get_dense_features(attribute)[1]
 
         if sparse_features is not None and dense_features is not None:
             if sparse_features.shape[0] != dense_features.shape[0]:
@@ -115,8 +115,8 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                     f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
 
-        sparse_features = train_utils.sequence_to_sentence_features(sparse_features)
-        dense_features = train_utils.sequence_to_sentence_features(dense_features)
+        # sparse_features = train_utils.sequence_to_sentence_features(sparse_features)
+        # dense_features = train_utils.sequence_to_sentence_features(dense_features)
 
         return sparse_features, dense_features
 
@@ -156,8 +156,8 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             }
             if not "user" in state_extracted_features.keys():
                 state_extracted_features["user"] = self._extract_features(
-                    self.interpreter.interpreter.parse(
-                        " ", only_output_properties=False
+                    self.interpreter.parse(
+                        " "
                     ),
                     TEXT,
                 )
@@ -719,7 +719,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         curr_state[key] = self.state_featurizer.interpreter.parse(
                             value.text
                         )
-                        curr_state[key]["entities"] = value.get("entities")
+                        curr_state[key].set("entities", value.get("entities"))
                     else:
                         curr_state[key] = value
                 curr_tracker.append(curr_state)

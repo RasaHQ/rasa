@@ -641,7 +641,7 @@ class TED(RasaModel):
 
         for is_sparse, shape in self.data_signature["label_features"]:
             if is_sparse:
-                sparse_dim_label_features = shape[-1]
+                sparse_dim_label_features = shape
             else:
                 sparse_dim_label_features = 100
 

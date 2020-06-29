@@ -16,7 +16,9 @@ from rasa.utils.common import raise_warning, class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData, Metadata, Message
 from rasa.nlu import utils
-from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT
+# from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT
+from rasa.nlu.constants import TEXT
+from rasa.utils.tensorflow.constants import FEATURIZERS
 
 
 logger = logging.getLogger(__name__)
@@ -292,7 +294,7 @@ def find_same(action_name, attribute, training_data):
     for ex in training_data.training_examples:
         if (
             ex.as_dict()["text"] == action_name
-            and ex.get(SPARSE_FEATURE_NAMES[attribute]) is not None
+            and (ex.get_sparse_features(attribute)[1] is not None or ex.get_dense_features(attribute)[1] is not None)
         ):
             example = ex
             break
@@ -304,8 +306,10 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         self._load_interpreter()
 
     def parse(self, text: Text):
-        result = self.interpreter.parse(text, only_output_properties=False)
-        return result
+        message = Message(text, self.interpreter.default_output_attributes(), time=None)
+        for component in self.interpreter.pipeline:
+            component.process(message, **self.interpreter.context)
+        return message
 
     def _load_interpreter(self) -> None:
         from rasa.nlu import config
@@ -347,6 +351,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         kwargs = {"no_copy": True}
         self.interpreter = self.trainer.train(training_data, **kwargs)
         self.entities = domain.entities
+        self.slot_states = domain.slot_states
 
         ## Not so clever fix for now;
         ## TODO: properly encode everything in place;
@@ -356,13 +361,13 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
                     for key in state.keys():
                         if isinstance(state[key], Message):
                             if (
-                                state[key].get(SPARSE_FEATURE_NAMES[TEXT]) is None
-                                and state[key].get(DENSE_FEATURE_NAMES[TEXT]) is None
+                                state[key].get_sparse_features(TEXT)[1] is None
+                                and state[key].get_dense_features(TEXT)[1] is None
                             ):
                                 name = state[key].as_dict()["text"]
                                 example = find_same(name, TEXT, training_data)
-                                state[key] = example
-        self.slot_states = domain.slot_states
+                                state[key].features +=example.features
+        
         self.trainer.persist(output_path, fixed_model_name="nlu")
 
 
