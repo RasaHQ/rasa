@@ -48,7 +48,7 @@ class StoryStepBuilder:
                     t.end_checkpoints = [Checkpoint(name)]
             self.current_steps.extend(additional_steps)
 
-    def _prev_end_checkpoints(self):
+    def _prev_end_checkpoints(self) -> List[Checkpoint]:
         if not self.current_steps:
             return self.start_checkpoints
         else:
@@ -56,7 +56,7 @@ class StoryStepBuilder:
             end_names = {e.name for s in self.current_steps for e in s.end_checkpoints}
             return [Checkpoint(name) for name in end_names]
 
-    def add_user_messages(self, messages: List[UserUttered]):
+    def add_user_messages(self, messages: List[UserUttered]) -> None:
         self.ensure_current_steps()
 
         if len(messages) == 1:
@@ -79,12 +79,12 @@ class StoryStepBuilder:
                     updated_steps.append(copied)
             self.current_steps = updated_steps
 
-    def add_event(self, event):
+    def add_event(self, event) -> None:
         self.ensure_current_steps()
         for t in self.current_steps:
             t.add_event(event)
 
-    def ensure_current_steps(self):
+    def ensure_current_steps(self) -> None:
         completed = [step for step in self.current_steps if step.end_checkpoints]
         unfinished = [step for step in self.current_steps if not step.end_checkpoints]
         self.story_steps.extend(completed)
@@ -93,12 +93,12 @@ class StoryStepBuilder:
         else:
             self.current_steps = self._next_story_steps()
 
-    def flush(self):
+    def flush(self) -> None:
         if self.current_steps:
             self.story_steps.extend(self.current_steps)
             self.current_steps = []
 
-    def _next_story_steps(self):
+    def _next_story_steps(self) -> List[StoryStep]:
         start_checkpoints = self._prev_end_checkpoints()
         if not start_checkpoints:
             start_checkpoints = [Checkpoint(STORY_START)]

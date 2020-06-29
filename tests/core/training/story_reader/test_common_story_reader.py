@@ -69,7 +69,6 @@ async def test_can_read_test_story_with_checkpoint_after_or(
         tracker_limit=1000,
         remove_duplicates=False,
     )
-    # there should be only 2 trackers
     assert len(trackers) == 2
 
 

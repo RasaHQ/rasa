@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+from pathlib import PurePath
 from typing import Dict, Text, List, Any
 
 import rasa.utils.io as io_utils
@@ -220,7 +221,10 @@ class MarkdownStoryReader(StoryReader):
 
     @staticmethod
     def is_markdown_story_file(file_path: Text) -> bool:
-        if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
+
+        suffix = PurePath(file_path).suffix
+
+        if suffix and suffix != MARKDOWN_FILE_EXTENSION:
             return False
         try:
             with open(

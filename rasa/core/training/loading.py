@@ -1,14 +1,17 @@
 import logging
 import os
-from pathlib import Path
-from typing import Text, Optional, Dict, List, Union
+from pathlib import Path, PurePath
+from typing import Text, Optional, Dict, List, Union, TYPE_CHECKING
 
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.training.story_reader.story_reader import StoryReader
-from rasa.core.training.structures import StoryStep
 from rasa.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSION
+
+from rasa.core.training.structures import StoryStep
+from rasa.core.training.story_reader.story_reader import StoryReader
+from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
+from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 
 logger = logging.getLogger(__name__)
 
@@ -20,22 +23,49 @@ def _get_reader(
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,
 ) -> StoryReader:
-    from rasa.core.training.story_reader import YAMLStoryReader
-    from rasa.core.training.story_reader import MarkdownStoryReader
+
+    reader = None
 
     if filename.endswith(MARKDOWN_FILE_EXTENSION):
-        return MarkdownStoryReader(
+        reader = MarkdownStoryReader(
             interpreter, domain, template_variables, use_e2e, filename
         )
-    elif filename.split(".")[-1] in YAML_FILE_EXTENSIONS:
+    elif PurePath(filename).suffix in YAML_FILE_EXTENSIONS:
+        reader = YAMLStoryReader(
+            interpreter, domain, template_variables, use_e2e, filename
+        )
+    else:
+        # This is a use case for uploading the story over REST API.
+        # The source file has a random name.
+        reader = _guess_reader(
+            filename, domain, interpreter, template_variables, use_e2e
+        )
+
+    if not reader:
+        raise ValueError(
+            f"Failed to find a reader class for the story file `{filename}`. "
+            f"Supported formats are {MARKDOWN_FILE_EXTENSION}, {YAML_FILE_EXTENSIONS}."
+        )
+
+    return reader
+
+
+def _guess_reader(
+    filename: Text,
+    domain: Domain,
+    interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+    template_variables: Optional[Dict] = None,
+    use_e2e: bool = False,
+) -> Optional[StoryReader]:
+    if YAMLStoryReader.is_yaml_story_file(filename):
         return YAMLStoryReader(
             interpreter, domain, template_variables, use_e2e, filename
         )
-
-    raise Exception(
-        f"Failed to find a reader class for the story file `{filename}`. "
-        f"Supported formats are {MARKDOWN_FILE_EXTENSION}, {YAML_FILE_EXTENSIONS}."
-    )
+    elif MarkdownStoryReader.is_markdown_story_file(filename):
+        return MarkdownStoryReader(
+            interpreter, domain, template_variables, use_e2e, filename
+        )
+    return None
 
 
 async def load_data_from_resource(
@@ -45,20 +75,20 @@ async def load_data_from_resource(
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
-) -> List[StoryStep]:
-    """Loads core training data from the specified folder
+) -> List["StoryStep"]:
+    """Loads core training data from the specified folder.
 
     Args:
-        resource: Folder/File with core training data files
-        domain: Domain object
-        interpreter: Interpreter to be used for parsing user's utterances
-        template_variables: Variables that have to be replaced in the training data
-        use_e2e: Identifies if the e2e model should be used
+        resource: Folder/File with core training data files.
+        domain: Domain object.
+        interpreter: Interpreter to be used for parsing user's utterances.
+        template_variables: Variables that have to be replaced in the training data.
+        use_e2e: Identifies if the e2e reader should be used.
         exclusion_percentage: Identifies the percentage of training data that
-                              should be excluded from the training
+                              should be excluded from the training.
 
     Returns:
-        List of story steps from the training data
+        Story steps from the training data.
     """
     if not os.path.exists(resource):
         raise ValueError(f"Resource '{resource}' does not exist.")
@@ -80,20 +110,20 @@ async def load_data_from_files(
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
-) -> List[StoryStep]:
-    """
+) -> List["StoryStep"]:
+    """Loads core training data from the specified files.
 
     Args:
-        story_files: List of files with training data in it
-        domain: Domain object
-        interpreter: Interpreter to be used for parsing user's utterances
-        template_variables: Variables that have to be replaced in the training data
-        use_e2e: Identifies whether the e2e model should be used
+        story_files: List of files with training data in it.
+        domain: Domain object.
+        interpreter: Interpreter to be used for parsing user's utterances.
+        template_variables: Variables that have to be replaced in the training data.
+        use_e2e: Identifies whether the e2e reader should be used.
         exclusion_percentage: Identifies the percentage of training data that
-                              should be excluded from the training
+                              should be excluded from the training.
 
     Returns:
-        List of story steps from the training data
+        Story steps from the training data.
     """
     story_steps = []
 

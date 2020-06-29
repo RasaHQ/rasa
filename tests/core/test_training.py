@@ -1,17 +1,25 @@
+from typing import Text
+
 import pytest
 
+from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.train import train
 from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy
 
-from rasa.core.training.dsl import StoryFileReader
 from rasa.core.training.visualization import visualize_stories
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
-async def test_story_visualization(default_domain, tmpdir):
-    story_steps = await StoryFileReader.read_from_file(
+@pytest.mark.parametrize(
+    "stories_file",
+    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml",],
+)
+async def test_story_visualization(stories_file: Text, default_domain: Domain, tmpdir):
+    import rasa.core.training.loading as core_loading
+
+    story_steps = await core_loading.load_data_from_resource(
         "data/test_stories/stories.md", default_domain, interpreter=RegexInterpreter()
     )
     out_file = tmpdir.join("graph.html").strpath
@@ -28,9 +36,17 @@ async def test_story_visualization(default_domain, tmpdir):
     assert len(generated_graph.edges()) == 56
 
 
-async def test_story_visualization_with_merging(default_domain):
-    story_steps = await StoryFileReader.read_from_file(
-        "data/test_stories/stories.md", default_domain, interpreter=RegexInterpreter()
+@pytest.mark.parametrize(
+    "stories_file",
+    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml",],
+)
+async def test_story_visualization_with_merging(
+    stories_file: Text, default_domain: Domain,
+):
+    import rasa.core.training.loading as core_loading
+
+    story_steps = await core_loading.load_data_from_resource(
+        stories_file, default_domain, interpreter=RegexInterpreter()
     )
     generated_graph = await visualize_stories(
         story_steps,
@@ -96,10 +112,17 @@ async def test_training_script_with_max_history_set(tmpdir):
                 assert policy.featurizer.max_history == 5
 
 
-async def test_training_script_with_restart_stories(tmpdir):
+@pytest.mark.parametrize(
+    "stories_file",
+    [
+        "data/test_stories/stories_restart.md",
+        "data/test_yaml_stories/stories_restart.yml",
+    ],
+)
+async def test_training_script_with_restart_stories(stories_file: Text, tmpdir):
     await train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-        "data/test_stories/stories_restart.md",
+        stories_file,
         tmpdir.strpath,
         interpreter=RegexInterpreter(),
         policy_config="data/test_config/max_hist_config.yml",

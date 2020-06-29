@@ -14,7 +14,7 @@ from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryR
 from rasa.core.training.structures import Story
 
 
-async def test_persist_and_read_test_story_graph(tmpdir, default_domain):
+async def test_persist_and_read_test_story_graph(tmpdir, default_domain: Domain):
     graph = await training.extract_story_graph(
         "data/test_stories/stories.md", default_domain
     )
@@ -43,7 +43,7 @@ async def test_persist_and_read_test_story_graph(tmpdir, default_domain):
         existing_stories.discard(story_str)
 
 
-async def test_persist_and_read_test_story(tmpdir, default_domain):
+async def test_persist_and_read_test_story(tmpdir, default_domain: Domain):
     graph = await training.extract_story_graph(
         "data/test_stories/stories.md", default_domain
     )
@@ -145,7 +145,7 @@ async def test_persist_form_story(tmpdir):
     assert story in tracker.export_stories()
 
 
-async def test_read_stories_with_multiline_comments(tmpdir, default_domain):
+async def test_read_stories_with_multiline_comments(tmpdir, default_domain: Domain):
     reader = MarkdownStoryReader(RegexInterpreter(), default_domain)
 
     story_steps = await reader.read_from_file(

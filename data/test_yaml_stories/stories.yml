@@ -45,6 +45,3 @@ stories:
   - checkpoint: check_intermediate # allows intermediate checkpoints
   - user: /change_bank_details
   - action: utter_default  # allows to end without checkpoints
-
-
-

@@ -3,6 +3,7 @@ import os
 import shutil
 import tempfile
 import uuid
+from pathlib import PurePath
 from typing import Tuple, List, Text, Set, Union, Optional, Iterable
 
 from rasa.constants import DEFAULT_E2E_TESTS_PATH
@@ -10,7 +11,7 @@ from rasa.nlu.training_data import loading as nlu_loading
 
 logger = logging.getLogger(__name__)
 MARKDOWN_FILE_EXTENSION = ".md"
-YAML_FILE_EXTENSIONS = ["yml", "yaml"]
+YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
 JSON_FILE_EXTENSION = ".json"
 
 
@@ -126,7 +127,7 @@ def _is_valid_filetype(path: Text) -> bool:
     is_datafile = (
         path.endswith(JSON_FILE_EXTENSION)
         or path.endswith(MARKDOWN_FILE_EXTENSION)
-        or path.split(".")[-1] in YAML_FILE_EXTENSIONS
+        or PurePath(path).suffix in YAML_FILE_EXTENSIONS
     )
 
     return is_file and is_datafile
