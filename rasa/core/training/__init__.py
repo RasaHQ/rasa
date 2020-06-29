@@ -4,9 +4,9 @@ from typing import Text, List, Optional, Union
 if typing.TYPE_CHECKING:
     from rasa.core.domain import Domain
     from rasa.core.interpreter import NaturalLanguageInterpreter
-    from rasa.importers.importer import TrainingDataImporter
     from rasa.core.trackers import DialogueStateTracker
     from rasa.core.training.structures import StoryGraph
+    from rasa.importers.importer import TrainingDataImporter
 
 
 async def extract_story_graph(
