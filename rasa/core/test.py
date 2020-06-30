@@ -289,7 +289,8 @@ def _collect_user_uttered_predictions(
 def _emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
     from rasa.core.events import ActionExecutionRejected
 
-    partial_tracker.update(ActionExecutionRejected(partial_tracker.active_loop["name"]))
+    rejected_action_name: Text = partial_tracker.active_loop["name"]
+    partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
 def _undo_emulating_form_rejection(tracker: DialogueStateTracker) -> None:
