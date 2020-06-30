@@ -7,7 +7,7 @@ from docutils.parsers.rst import Directive
 
 BUTTON_TEMPLATE = jinja2.Template(
     u"""
-    <button 
+    <button
         class="button train-button" 
         data-endpoint="{{endpoint}}" 
         data-method="{{method}}" 
@@ -46,7 +46,7 @@ class TrainButtonDirective(Directive):
 
 
 # build phase visitor emits HTML to append to output
-def html_visit_button_node(self, node):
+def html_train_button_node(self, node):
     html = BUTTON_TEMPLATE.render(
         endpoint=node["endpoint"],
         method=node["method"]
@@ -59,5 +59,5 @@ def html_visit_button_node(self, node):
 
 
 def setup(app):
-    app.add_node(train_button_node, html=(html_visit_button_node, None))
+    app.add_node(train_button_node, html=(html_train_button_node, None))
     app.add_directive("train-button", TrainButtonDirective)
