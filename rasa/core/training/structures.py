@@ -147,8 +147,12 @@ class StoryStep:
                     result += self._checkpoint_string(s)
 
         for s in self.events:
-            if self._is_action_listen(s):
-                pass
+            if (
+                self._is_action_listen(s)
+                or self._is_action_session_start(s)
+                or isinstance(s, SessionStarted)
+            ):
+                continue
             elif isinstance(s, UserUttered):
                 result += self._user_string(s, e2e)
             elif isinstance(s, Event):
