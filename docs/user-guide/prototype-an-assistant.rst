@@ -161,3 +161,12 @@ the button below:
 .. train-button::
     :endpoint: https://trainer-service.prototyping.rasa.com/trainings
     :method: POST
+
+7. What's next?
+~~~~~~~~~~~~~~~
+
+You can download this project and build on it to create a more advanced assistant.
+In your downloaded project, you’ll notice several files that were configured for you that you didn’t edit on this page.
+To learn more about configs, domains and actions, refer to the advanced tutorials.
+
+.. download-button::
