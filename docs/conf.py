@@ -2,7 +2,6 @@
 # -- General configuration ------------------------------------------------
 import re
 import sys
-import os
 
 nitpicky = True
 linkcheck_anchors_ignore = [".*"]
