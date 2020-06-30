@@ -637,7 +637,7 @@ class Agent:
     def _are_all_featurizers_using_a_max_history(self) -> bool:
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
-        def has_max_history_featurizer(policy):
+        def has_max_history_featurizer(policy: Policy) -> bool:
             return (
                 policy.featurizer
                 and hasattr(policy.featurizer, "max_history")
