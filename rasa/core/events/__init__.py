@@ -139,7 +139,7 @@ class Event:
         if event_name is None:
             return None
 
-        event_class: Type[Event] = Event.resolve_by_type(event_name, default)
+        event_class: Optional[Type[Event]] = Event.resolve_by_type(event_name, default)
         if not event_class:
             return None
 
