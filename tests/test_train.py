@@ -3,7 +3,7 @@ import sys
 import tempfile
 import os
 from pathlib import Path
-from typing import Text
+from typing import Text, Dict
 from unittest.mock import Mock
 
 import pytest
@@ -32,7 +32,7 @@ from tests.core.test_model import _fingerprint
         {"model_name": None, "prefix": None},
     ],
 )
-def test_package_model(trained_rasa_model, parameters):
+def test_package_model(trained_rasa_model: Text, parameters: Dict):
     output_path = tempfile.mkdtemp()
     train_path = rasa.model.unpack_model(trained_rasa_model)
 
