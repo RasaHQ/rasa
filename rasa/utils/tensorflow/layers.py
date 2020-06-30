@@ -6,6 +6,7 @@ import rasa.utils.tensorflow.crf
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 from rasa.utils.tensorflow.constants import SOFTMAX, MARGIN, COSINE, INNER
+from tensorflow.python.ops.linalg.sparse import sparse_csr_matrix_ops as csr
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,10 @@ class SparseDropout(tf.keras.layers.Dropout):
     """
 
     def call(
-        self, inputs: tf.SparseTensor, training: Optional[Union[tf.Tensor, bool]] = None
-    ) -> tf.SparseTensor:
+        self,
+        inputs: csr.CSRSparseMatrix,
+        training: Optional[Union[tf.Tensor, bool]] = None,
+    ) -> csr.CSRSparseMatrix:
         """Apply dropout to sparse inputs.
 
         Arguments:
@@ -38,26 +41,29 @@ class SparseDropout(tf.keras.layers.Dropout):
             A ValueError if inputs is not a sparse tensor
         """
 
-        if not isinstance(inputs, tf.SparseTensor):
+        if not isinstance(inputs, csr.CSRSparseMatrix):
             raise ValueError("Input tensor should be sparse.")
 
         if training is None:
             training = K.learning_phase()
 
-        def dropped_inputs() -> tf.SparseTensor:
-            to_retain_prob = tf.random.uniform(
-                tf.shape(inputs.values), 0, 1, inputs.values.dtype
-            )
-            to_retain = tf.greater_equal(to_retain_prob, self.rate)
-            return tf.sparse.retain(inputs, to_retain)
+        # TODO
+        # def dropped_inputs() -> csr.CSRSparseMatrix:
+        #     to_retain_prob = tf.random.uniform(
+        #         tf.shape(inputs.values), 0, 1, inputs.values.dtype
+        #     )
+        #     to_retain = tf.greater_equal(to_retain_prob, self.rate)
+        #     return tf.sparse.retain(inputs, to_retain)
+        #
+        # outputs = tf_utils.smart_cond(
+        #     training, dropped_inputs, lambda: tf.identity(inputs)
+        # )
+        # # need to explicitly recreate sparse tensor, because otherwise the shape
+        # # information will be lost after `retain`
+        # # noinspection PyProtectedMember
+        # return csr.sparse_tensor_to_csr_sparse_matrix(outputs.indices, outputs.values, inputs._dense_shape)
 
-        outputs = tf_utils.smart_cond(
-            training, dropped_inputs, lambda: tf.identity(inputs)
-        )
-        # need to explicitly recreate sparse tensor, because otherwise the shape
-        # information will be lost after `retain`
-        # noinspection PyProtectedMember
-        return tf.SparseTensor(outputs.indices, outputs.values, inputs._dense_shape)
+        return inputs
 
 
 class DenseForSparse(tf.keras.layers.Dense):
@@ -110,7 +116,7 @@ class DenseForSparse(tf.keras.layers.Dense):
 
         super().__init__(kernel_regularizer=regularizer, **kwargs)
 
-    def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
+    def call(self, inputs: csr.CSRSparseMatrix) -> tf.Tensor:
         """Apply dense layer to sparse inputs.
 
         Arguments:
@@ -122,19 +128,11 @@ class DenseForSparse(tf.keras.layers.Dense):
         Raises:
             A ValueError if inputs is not a sparse tensor
         """
-        if not isinstance(inputs, tf.SparseTensor):
+        if not isinstance(inputs, csr.CSRSparseMatrix):
             raise ValueError("Input tensor should be sparse.")
 
         # outputs will be 2D
-        outputs = tf.sparse.sparse_dense_matmul(
-            tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), self.kernel
-        )
-
-        if len(inputs.shape) == 3:
-            # reshape back
-            outputs = tf.reshape(
-                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1)
-            )
+        outputs = csr.sparse_matrix_mat_mul(inputs, self.kernel)
 
         if self.use_bias:
             outputs = tf.nn.bias_add(outputs, self.bias)

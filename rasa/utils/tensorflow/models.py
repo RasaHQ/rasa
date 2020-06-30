@@ -412,6 +412,7 @@ class RasaModel(tf.keras.models.Model):
         data, shape before, this methods converts them into sparse tensors. Dense data
         is kept.
         """
+        from tensorflow.python.ops.linalg.sparse import sparse_csr_matrix_ops as csr
 
         batch_data = defaultdict(list)
 
@@ -422,7 +423,7 @@ class RasaModel(tf.keras.models.Model):
                     # explicitly substitute last dimension in shape with known
                     # static value
                     batch_data[k].append(
-                        tf.SparseTensor(
+                        csr.sparse_tensor_to_csr_sparse_matrix(
                             batch[idx],
                             batch[idx + 1],
                             [batch[idx + 2][0], batch[idx + 2][1], feature_dimension],

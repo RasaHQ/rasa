@@ -7,6 +7,7 @@ import os
 import scipy.sparse
 import tensorflow as tf
 import tensorflow_addons as tfa
+from tensorflow.python.ops.linalg.sparse import sparse_csr_matrix_ops as csr
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTuple
 
@@ -1444,7 +1445,7 @@ class DIET(RasaModel):
 
     def _combine_sparse_dense_features(
         self,
-        features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]],
+        features: List[Union[np.ndarray, tf.Tensor, csr.CSRSparseMatrix]],
         name: Text,
         mask: Optional[tf.Tensor] = None,
         sparse_dropout: bool = False,
@@ -1457,7 +1458,7 @@ class DIET(RasaModel):
         dense_features = []
 
         for f in features:
-            if isinstance(f, tf.SparseTensor):
+            if isinstance(f, csr.CSRSparseMatrix):
                 if sparse_dropout:
                     _f = self._tf_layers[f"sparse_input_dropout.{name}"](
                         f, self._training
@@ -1482,13 +1483,15 @@ class DIET(RasaModel):
         return tf.concat(dense_features, axis=-1) * mask
 
     def _features_as_seq_ids(
-        self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
+        self,
+        features: List[Union[np.ndarray, tf.Tensor, csr.CSRSparseMatrix]],
+        name: Text,
     ) -> Optional[tf.Tensor]:
         """Creates dense labels for negative sampling."""
 
         # if there are dense features - we can use them
         for f in features:
-            if not isinstance(f, tf.SparseTensor):
+            if not isinstance(f, csr.CSRSparseMatrix):
                 seq_ids = tf.stop_gradient(f)
                 # add a zero to the seq dimension for the sentence features
                 seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
@@ -1496,7 +1499,7 @@ class DIET(RasaModel):
 
         # use additional sparse to dense layer
         for f in features:
-            if isinstance(f, tf.SparseTensor):
+            if isinstance(f, csr.CSRSparseMatrix):
                 seq_ids = tf.stop_gradient(
                     self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
                 )
@@ -1508,8 +1511,8 @@ class DIET(RasaModel):
 
     def _combine_sequence_sentence_features(
         self,
-        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        sequence_features: List[Union[tf.Tensor, csr.CSRSparseMatrix]],
+        sentence_features: List[Union[tf.Tensor, csr.CSRSparseMatrix]],
         mask_sequence: tf.Tensor,
         mask_text: tf.Tensor,
         name: Text,
@@ -1577,8 +1580,8 @@ class DIET(RasaModel):
 
     def _create_bow(
         self,
-        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        sequence_features: List[Union[tf.Tensor, csr.CSRSparseMatrix]],
+        sentence_features: List[Union[tf.Tensor, csr.CSRSparseMatrix]],
         sequence_mask: tf.Tensor,
         text_mask: tf.Tensor,
         name: Text,
@@ -1600,8 +1603,8 @@ class DIET(RasaModel):
 
     def _create_sequence(
         self,
-        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        sequence_features: List[Union[tf.Tensor, csr.CSRSparseMatrix]],
+        sentence_features: List[Union[tf.Tensor, csr.CSRSparseMatrix]],
         mask_sequence: tf.Tensor,
         mask: tf.Tensor,
         name: Text,
@@ -1771,10 +1774,15 @@ class DIET(RasaModel):
 
     @staticmethod
     def _get_batch_dim(tf_batch_data: Dict[Text, List[tf.Tensor]]) -> int:
-        if TEXT_SEQUENCE_FEATURES in tf_batch_data:
-            return tf.shape(tf_batch_data[TEXT_SEQUENCE_FEATURES][0])[0]
+        for key in tf_batch_data:
+            for feature in tf_batch_data[key]:
+                if isinstance(feature, csr.CSRSparseMatrix):
+                    shape_and_type = csr.dense_shape_and_type(feature)
+                    return shape_and_type.shape[0]
+                if isinstance(feature, tf.Tensor):
+                    return tf.shape(feature)[0]
 
-        return tf.shape(tf_batch_data[TEXT_SENTENCE_FEATURES][0])[0]
+        return None
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
