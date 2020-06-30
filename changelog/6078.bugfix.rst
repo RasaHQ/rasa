@@ -1,0 +1,1 @@
+bot will respond through `webex` channel to any user(room) communicating to it. Earlier bot responds only to fixed `roomId` set in credentials.yml config file correctly.
