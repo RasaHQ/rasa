@@ -14,6 +14,7 @@ from typing import (
     Deque,
     Iterable,
     Tuple,
+    Union,
 )
 
 from rasa.nlu.constants import (
@@ -157,7 +158,7 @@ class DialogueStateTracker:
         self.latest_message = None
         self.latest_bot_utterance = None
         self._reset()
-        self.active_loop = {}
+        self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
 
     ###
     # Public tracker interface
