@@ -21,8 +21,6 @@ linkcheck_timeout = 5
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 
-sys.path.append(os.path.abspath("./_ext"))
-
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx_autodoc_typehints",
@@ -41,8 +39,8 @@ extensions = [
     "rasabaster.runnable",
     "rasabaster.conversations",
     "rasabaster.ace",
-    "train_button",
-    "download_button",
+    "rasabaster.train_button",
+    "rasabaster.download_button",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
