@@ -12,7 +12,6 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 import rasa.core
-from rasa import model
 from rasa.core.interpreter import RasaNLUInterpreter
 
 from rasa.train import train_core, train_nlu, train
@@ -213,14 +212,14 @@ def test_interpreter_of_old_model_passed_to_core_training(
 ):
     # NLU isn't retrained
     monkeypatch.setattr(
-        model.FingerprintComparisonResult,
-        model.FingerprintComparisonResult.should_retrain_nlu.__name__,
+        rasa.model.FingerprintComparisonResult,
+        rasa.model.FingerprintComparisonResult.should_retrain_nlu.__name__,
         lambda _: False,
     )
 
     # An old model with an interpreter exists
     monkeypatch.setattr(
-        model, model.get_latest_model.__name__, lambda _: trained_moodbot_path
+        rasa.model, rasa.model.get_latest_model.__name__, lambda _: trained_moodbot_path
     )
 
     # Mock the actual Core training

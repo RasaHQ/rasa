@@ -1,4 +1,3 @@
-from typing import Text
 from pathlib import Path
 from typing import List, Text
 from unittest.mock import Mock
@@ -18,9 +17,11 @@ from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_
 
 @pytest.mark.parametrize(
     "stories_file",
-    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml",],
+    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
 )
-async def test_story_visualization(stories_file: Text, default_domain: Domain, tmp_path: Path):
+async def test_story_visualization(
+    stories_file: Text, default_domain: Domain, tmp_path: Path
+):
     import rasa.core.training.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
@@ -42,10 +43,10 @@ async def test_story_visualization(stories_file: Text, default_domain: Domain, t
 
 @pytest.mark.parametrize(
     "stories_file",
-    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml",],
+    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
 )
 async def test_story_visualization_with_merging(
-    stories_file: Text, default_domain: Domain,
+    stories_file: Text, default_domain: Domain
 ):
     import rasa.core.training.loading as core_loading
 

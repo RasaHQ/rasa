@@ -57,8 +57,6 @@ async def test_message_processor(
 
 
 async def test_message_id_logging(default_processor: MessageProcessor):
-    from rasa.core.trackers import DialogueStateTracker
-
     message = UserMessage("If Meg was an egg would she still have a leg?")
     tracker = DialogueStateTracker("1", [])
     await default_processor._handle_message_with_tracker(message, tracker)

@@ -100,16 +100,16 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             return
 
         for p in ensemble.policies:
-            if isinstance(p, cls):
-                fallback_intent = getattr(p, "deny_suggestion_intent_name")
-                if domain is None or fallback_intent not in domain.intents:
-                    raise InvalidDomain(
-                        "The intent '{0}' must be present in the "
-                        "domain file to use TwoStageFallbackPolicy. "
-                        "Either include the intent '{0}' in your domain "
-                        "or exclude the TwoStageFallbackPolicy from your "
-                        "policy configuration".format(fallback_intent)
-                    )
+            if not isinstance(p, TwoStageFallbackPolicy):
+                continue
+            if domain is None or p.deny_suggestion_intent_name not in domain.intents:
+                raise InvalidDomain(
+                    "The intent '{0}' must be present in the "
+                    "domain file to use TwoStageFallbackPolicy. "
+                    "Either include the intent '{0}' in your domain "
+                    "or exclude the TwoStageFallbackPolicy from your "
+                    "policy configuration".format(p.deny_suggestion_intent_name)
+                )
 
     def predict_action_probabilities(
         self,
@@ -118,8 +118,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> List[float]:
-        """Predicts the next action if NLU confidence is low.
-        """
+        """Predicts the next action if NLU confidence is low."""
 
         nlu_data = tracker.latest_message.parse_data
         last_intent_name = nlu_data["intent"].get("name", None)

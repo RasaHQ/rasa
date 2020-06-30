@@ -282,12 +282,14 @@ def _load_interpreter(
     if interpreter_path:
         return NaturalLanguageInterpreter.create(interpreter_path)
 
+    return None
+
 
 def _interpreter_from_previous_model(
     old_model_zip_path: Optional[Text],
 ) -> Optional[NaturalLanguageInterpreter]:
     if not old_model_zip_path:
-        return
+        return None
 
     with model.unpack_model(old_model_zip_path) as unpacked:
         _, old_nlu = model.get_model_subdirectories(unpacked)
