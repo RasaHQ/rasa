@@ -123,6 +123,7 @@ setuptools = ">=41.0.0"
 kafka-python = "^1.4"
 ujson = ">=1.35,<3.0"
 oauth2client = "4.1.3"
+regex = "~2020.6"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.8.1"
