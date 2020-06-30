@@ -39,6 +39,11 @@ GREET_RULE = DialogueStateTracker.from_events(
 GREET_RULE.is_rule_tracker = True
 
 
+def test_rule_policy_has_max_history_none():
+    policy = RulePolicy()
+    assert policy.featurizer.max_history is None
+
+
 def _form_submit_rule(
     domain: Domain, submit_action_name: Text, form_name: Text
 ) -> DialogueStateTracker:

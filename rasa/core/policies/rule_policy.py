@@ -37,11 +37,12 @@ class RulePolicy(MemoizationPolicy):
         priority: int = FORM_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
     ) -> None:
+        if not featurizer:
+            # max history is set to `None` in order to capture lengths of rule stories
+            featurizer = self._standard_featurizer()
+            featurizer.max_history = None
 
-        # max history is set to None in order to capture lengths of rule stories
-        super().__init__(
-            featurizer=featurizer, priority=priority, max_history=None, lookup=lookup
-        )
+        super().__init__(featurizer=featurizer, priority=priority, lookup=lookup)
 
     def _create_feature_key(self, states: List[Dict]):
 

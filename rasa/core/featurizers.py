@@ -563,7 +563,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     ) -> None:
 
         super().__init__(state_featurizer, use_intent_probabilities)
-        self.max_history = max_history
+        self.max_history = max_history or self.MAX_HISTORY_DEFAULT
         self.remove_duplicates = remove_duplicates
 
     @staticmethod
