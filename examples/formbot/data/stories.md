@@ -28,6 +28,7 @@
     - ...
     - restaurant_form
     - form{"name": null}
+    - utter_submit
     - utter_slots_values
 
 >> stop form
@@ -95,6 +96,7 @@
     - slot{"feedback": "great"}
     - form{"name": null}
     - slot{"requested_slot": null}
+    - utter_submit
     - utter_slots_values
 * thankyou
     - utter_noworries
@@ -125,6 +127,7 @@
     - slot{"preferences": "no additional preferences"}
     - slot{"requested_slot": null}
     - form{"name": null}
+    - utter_submit
     - utter_slots_values
 * thankyou
     - utter_noworries

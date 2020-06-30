@@ -8,9 +8,18 @@ from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ActionDefaultFallback,
+    ACTION_RESTART_NAME,
+    ACTION_BACK_NAME,
+    ACTION_SESSION_START_NAME,
 )
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.constants import REQUESTED_SLOT, RULE_SNIPPET_ACTION_NAME
+from rasa.core.constants import (
+    REQUESTED_SLOT,
+    RULE_SNIPPET_ACTION_NAME,
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    USER_INTENT_SESSION_START,
+)
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
@@ -765,3 +774,36 @@ async def test_one_stage_fallback_rule():
 
     action_probabilities = policy.predict_action_probabilities(tracker, domain)
     assert_predicted_action(action_probabilities, domain, UTTER_GREET_ACTION)
+
+
+@pytest.mark.parametrize(
+    "intent_name, expected_action_name",
+    [
+        (USER_INTENT_RESTART, ACTION_RESTART_NAME),
+        (USER_INTENT_BACK, ACTION_BACK_NAME),
+        (USER_INTENT_SESSION_START, ACTION_SESSION_START_NAME),
+    ],
+)
+def test_default_actions(intent_name: Text, expected_action_name: Text):
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+    """
+    )
+    policy = RulePolicy()
+    policy.train([GREET_RULE], domain)
+    new_conversation = DialogueStateTracker.from_events(
+        "bla2",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": intent_name}),
+        ],
+    )
+    action_probabilities = policy.predict_action_probabilities(new_conversation, domain)
+
+    assert_predicted_action(action_probabilities, domain, expected_action_name)
