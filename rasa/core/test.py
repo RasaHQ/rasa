@@ -6,6 +6,7 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import rasa.utils.io as io_utils
+from rasa.core.domain import Domain
 from rasa.nlu.constants import (
     EXTRACTOR,
     ENTITY_ATTRIBUTE_VALUE,
@@ -285,24 +286,15 @@ def _collect_user_uttered_predictions(
     return user_uttered_eval_store
 
 
-def _emulate_form_rejection(
-    processor: "MessageProcessor", partial_tracker: DialogueStateTracker
-) -> None:
-    from rasa.core.policies.form_policy import FormPolicy
+def _emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
     from rasa.core.events import ActionExecutionRejected
 
-    if partial_tracker.active_loop.get("name"):
-        for p in processor.policy_ensemble.policies:
-            if isinstance(p, FormPolicy):
-                # emulate form rejection
-                partial_tracker.update(
-                    ActionExecutionRejected(partial_tracker.active_loop["name"])
-                )
-                # check if unhappy path is covered by the train stories
-                if not p.state_is_unhappy(partial_tracker, processor.domain):
-                    # this state is not covered by the stories
-                    del partial_tracker.events[-1]
-                    partial_tracker.active_loop["rejected"] = False
+    partial_tracker.update(ActionExecutionRejected(partial_tracker.active_loop["name"]))
+
+
+def _undo_emulating_form_rejection(tracker: DialogueStateTracker) -> None:
+    del tracker.events[-1]
+    tracker.active_loop["rejected"] = False
 
 
 def _collect_action_executed_predictions(
@@ -313,6 +305,7 @@ def _collect_action_executed_predictions(
     circuit_breaker_tripped: bool,
 ) -> Tuple[EvaluationStore, Optional[Text], Optional[float]]:
     from rasa.core.policies.form_policy import FormPolicy
+    from rasa.core.policies.rule_policy import RulePolicy
 
     action_executed_eval_store = EvaluationStore()
 
@@ -326,13 +319,23 @@ def _collect_action_executed_predictions(
         action, policy, confidence = processor.predict_next_action(partial_tracker)
         predicted = action.name()
 
-        if policy and predicted != gold and FormPolicy.__name__ in policy:
-            # FormPolicy predicted wrong action
-            # but it might be Ok if form action is rejected
-            _emulate_form_rejection(processor, partial_tracker)
+        if (
+            policy
+            and predicted != gold
+            and _form_might_have_been_rejected(
+                processor.domain, partial_tracker, predicted
+            )
+        ):
+            # Wrong policy was predicted,
+            # but it might be Ok if form action is rejected.
+            _emulate_form_rejection(partial_tracker)
             # try again
             action, policy, confidence = processor.predict_next_action(partial_tracker)
-            predicted = action.name()
+
+            if action.name() == gold:
+                predicted = action.name()
+            else:
+                _undo_emulating_form_rejection(partial_tracker)
 
     action_executed_eval_store.add_to_store(
         action_predictions=predicted, action_targets=gold
@@ -362,6 +365,15 @@ def _collect_action_executed_predictions(
         partial_tracker.update(event)
 
     return action_executed_eval_store, policy, confidence
+
+
+def _form_might_have_been_rejected(
+    domain: Domain, tracker: DialogueStateTracker, predicted_action_name: Text
+) -> bool:
+    return (
+        tracker.active_loop.get("name") == predicted_action_name
+        and predicted_action_name in domain.form_names
+    )
 
 
 def _predict_tracker_actions(

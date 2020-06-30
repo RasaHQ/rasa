@@ -47,8 +47,6 @@ responses:
     - text: "please provide additional preferences"
   utter_ask_feedback:
     - text: "please give your feedback on your experience so far"
-  utter_submit:
-    - text: "All done!"
   utter_slots_values:
     - text: "I am going to run a restaurant search using the following parameters:\n
              - cuisine: {cuisine}\n
