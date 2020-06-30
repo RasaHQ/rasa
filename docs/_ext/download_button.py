@@ -9,7 +9,7 @@ BUTTON_TEMPLATE = jinja2.Template(
     u"""
     <button 
         disabled
-        class="button download-button"
+        class="button download__button"
     >
         Download project
     </button>

@@ -7,15 +7,15 @@ from docutils.parsers.rst import Directive
 
 BUTTON_TEMPLATE = jinja2.Template(
     u"""
-    <div>
+    <div class="train">
         <button
-            class="button train-button" 
+            class="button train__button" 
             data-endpoint="{{endpoint}}" 
             data-method="{{method}}" 
         >
             Train
         </button>
-        Loading...
+        <i class="fa fa-spinner fa-spin train__spinner train__spinner--hidden"></i>
     </div>
 """
 )
