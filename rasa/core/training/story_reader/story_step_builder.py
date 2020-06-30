@@ -11,7 +11,7 @@ from rasa.core.training.structures import (
     STORY_START,
     StoryStep,
 )
-from rasa.utils.common import raise_warning
+import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class StoryStepBuilder:
             self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
             if conditions:
-                raise_warning(
+                common_utils.raise_warning(
                     f"End or intermediate checkpoints "
                     f"do not support conditions! "
                     f"(checkpoint: {name})",

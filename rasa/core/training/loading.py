@@ -1,17 +1,16 @@
 import logging
 import os
-from pathlib import Path, PurePath
-from typing import Text, Optional, Dict, List, Union, TYPE_CHECKING
+from pathlib import Path
+from typing import Text, Optional, Dict, List, Union
 
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSION
-
-from rasa.core.training.structures import StoryStep
-from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
+from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
+from rasa.core.training.structures import StoryStep
+from rasa.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSION
 
 logger = logging.getLogger(__name__)
 
@@ -24,30 +23,18 @@ def _get_reader(
     use_e2e: bool = False,
 ) -> StoryReader:
 
-    reader = None
-
     if filename.endswith(MARKDOWN_FILE_EXTENSION):
-        reader = MarkdownStoryReader(
+        return MarkdownStoryReader(
             interpreter, domain, template_variables, use_e2e, filename
         )
-    elif PurePath(filename).suffix in YAML_FILE_EXTENSIONS:
-        reader = YAMLStoryReader(
+    elif Path(filename).suffix in YAML_FILE_EXTENSIONS:
+        return YAMLStoryReader(
             interpreter, domain, template_variables, use_e2e, filename
         )
     else:
         # This is a use case for uploading the story over REST API.
         # The source file has a random name.
-        reader = _guess_reader(
-            filename, domain, interpreter, template_variables, use_e2e
-        )
-
-    if not reader:
-        raise ValueError(
-            f"Failed to find a reader class for the story file `{filename}`. "
-            f"Supported formats are {MARKDOWN_FILE_EXTENSION}, {YAML_FILE_EXTENSIONS}."
-        )
-
-    return reader
+        return _guess_reader(filename, domain, interpreter, template_variables, use_e2e)
 
 
 def _guess_reader(
@@ -56,7 +43,7 @@ def _guess_reader(
     interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,
-) -> Optional[StoryReader]:
+) -> StoryReader:
     if YAMLStoryReader.is_yaml_story_file(filename):
         return YAMLStoryReader(
             interpreter, domain, template_variables, use_e2e, filename
@@ -65,7 +52,10 @@ def _guess_reader(
         return MarkdownStoryReader(
             interpreter, domain, template_variables, use_e2e, filename
         )
-    return None
+    raise ValueError(
+        f"Failed to find a reader class for the story file `{filename}`. "
+        f"Supported formats are {MARKDOWN_FILE_EXTENSION}, {YAML_FILE_EXTENSIONS}."
+    )
 
 
 async def load_data_from_resource(

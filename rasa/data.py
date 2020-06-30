@@ -3,7 +3,7 @@ import os
 import shutil
 import tempfile
 import uuid
-from pathlib import PurePath
+from pathlib import Path
 from typing import Tuple, List, Text, Set, Union, Optional, Iterable
 
 from rasa.constants import DEFAULT_E2E_TESTS_PATH
@@ -127,7 +127,7 @@ def _is_valid_filetype(path: Text) -> bool:
     is_datafile = (
         path.endswith(JSON_FILE_EXTENSION)
         or path.endswith(MARKDOWN_FILE_EXTENSION)
-        or PurePath(path).suffix in YAML_FILE_EXTENSIONS
+        or Path(path).suffix in YAML_FILE_EXTENSIONS
     )
 
     return is_file and is_datafile

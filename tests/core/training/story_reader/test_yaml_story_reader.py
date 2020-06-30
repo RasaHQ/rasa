@@ -8,7 +8,7 @@ from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 
 async def test_can_read_test_story_with_slots(default_domain: Domain):
     trackers = await training.load_data(
-        "data/test_yaml_stories/stories_2.yml",
+        "data/test_yaml_stories/simple_story_with_only_end.yml",
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
@@ -22,7 +22,7 @@ async def test_can_read_test_story_with_slots(default_domain: Domain):
 
 async def test_can_read_test_story_with_entities_slot_autofill(default_domain: Domain):
     trackers = await training.load_data(
-        "data/test_yaml_stories/stories_3.yml",
+        "data/test_yaml_stories/story_with_or_and_entities.yml",
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
@@ -61,7 +61,7 @@ async def test_can_read_test_story_with_entities_slot_autofill(default_domain: D
 
 async def test_can_read_test_story_with_entities_without_value(default_domain: Domain,):
     trackers = await training.load_data(
-        "data/test_yaml_stories/stories_4.yml",
+        "data/test_yaml_stories/story_with_or_and_entities_with_no_value.yml",
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,

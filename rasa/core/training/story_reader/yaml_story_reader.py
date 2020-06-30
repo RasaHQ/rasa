@@ -1,6 +1,7 @@
-from pathlib import PurePath
+from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
+import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.constants import DOCS_URL_STORIES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
@@ -8,7 +9,6 @@ from rasa.core.events import UserUttered, SlotSet
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.data import YAML_FILE_EXTENSIONS
-import rasa.utils.common as common_utils
 
 KEY_STORIES = "stories"
 KEY_STORY_NAME = "story"
@@ -25,16 +25,14 @@ KEY_OR = "or"
 
 
 class YAMLStoryReader(StoryReader):
-    """Class that reads the core training data in a YAML format
-
-    """
+    """Class that reads the core training data in a YAML format"""
 
     async def read_from_file(self, filename: Text) -> List[StoryStep]:
         try:
             yaml_content = rasa.utils.io.read_yaml_file(filename)
             if not isinstance(yaml_content, dict):
                 common_utils.raise_warning(
-                    f"Failed to read {filename}. It should be a Yaml dict."
+                    f"Failed to read '{filename}'. It should be a Yaml dict."
                 )
                 return []
 
@@ -48,7 +46,7 @@ class YAMLStoryReader(StoryReader):
 
         except ValueError as e:
             common_utils.raise_warning(
-                f"Failed to read {filename}, it will be skipped. Error: {e}"
+                f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
             )
 
         return []
@@ -59,7 +57,7 @@ class YAMLStoryReader(StoryReader):
                 common_utils.raise_warning(
                     f"Unexpected block found in '{self.source_name}': \n"
                     f"{story_item}\n"
-                    f"Items under the `{KEY_STORIES}` key must be YAML dictionaries."
+                    f"Items under the '{KEY_STORIES}' key must be YAML dictionaries. "
                     f"It will be skipped.",
                     docs=DOCS_URL_STORIES,
                 )
@@ -75,12 +73,20 @@ class YAMLStoryReader(StoryReader):
                 f"Issue found in '{self.source_name}': \n"
                 f"{story_item}\n"
                 f"The story has an empty name. "
-                f"Stories should have a name defined under `{KEY_STORY_NAME}` key. "
+                f"Stories should have a name defined under '{KEY_STORY_NAME}' key. "
                 "It will be skipped.",
                 docs=DOCS_URL_STORIES,
             )
 
-        steps = story_item.get(KEY_STORY_STEPS, "")
+        steps = story_item.get(KEY_STORY_STEPS, [])
+        if not steps:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}': "
+                f"The story has no steps. "
+                "It will be skipped.",
+                docs=DOCS_URL_STORIES,
+            )
+            return
 
         self._new_story_part(story_name, self.source_name)
 
@@ -90,7 +96,7 @@ class YAMLStoryReader(StoryReader):
     def _parse_step(self, step: Dict[Text, Any]) -> None:
 
         if KEY_STORY_USER_UTTERANCE in step.keys():
-            self._parse_plain_story_user_utterance(step)
+            self._parse_user_utterance(step)
         elif KEY_OR in step.keys():
             self._parse_or_statement(step)
         elif KEY_SLOT_NAME in step.keys():
@@ -110,7 +116,7 @@ class YAMLStoryReader(StoryReader):
                 docs=DOCS_URL_STORIES,
             )
 
-    def _parse_plain_story_user_utterance(self, step: Dict[Text, Any]) -> None:
+    def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
 
         if self.use_e2e:
             # TODO
@@ -131,9 +137,9 @@ class YAMLStoryReader(StoryReader):
             else:
                 common_utils.raise_warning(
                     f"Issue found in '{self.source_name}': \n"
-                    f"`OR` statement can only have `{KEY_STORY_USER_UTTERANCE}` "
+                    f"`OR` statement can only have '{KEY_STORY_USER_UTTERANCE}' "
                     f"as a sub-element. This step will be skipped:\n"
-                    f"`{utterance}`\n",
+                    f"'{utterance}'\n",
                     docs=DOCS_URL_STORIES,
                 )
                 return
@@ -159,7 +165,8 @@ class YAMLStoryReader(StoryReader):
             common_utils.raise_warning(
                 f"Issue found in '{self.source_name}': \n"
                 f"User intent '{user_utterance}' should start with "
-                f"'{INTENT_MESSAGE_PREFIX}'",
+                f"'{INTENT_MESSAGE_PREFIX}'. "
+                f"This story step will be skipped.",
                 docs=DOCS_URL_STORIES,
             )
             return None
@@ -213,7 +220,7 @@ class YAMLStoryReader(StoryReader):
 
         self._add_event(action_name, {})
 
-    def _parse_checkpoint(self, step) -> None:
+    def _parse_checkpoint(self, step: Dict[Text, Any]) -> None:
 
         checkpoint_name = step.get(KEY_CHECKPOINT, "")
         slots = step.get(KEY_CHECKPOINT_SLOTS, [])
@@ -226,7 +233,7 @@ class YAMLStoryReader(StoryReader):
                     f"Issue found in '{self.source_name}': \n"
                     f'Checkpoint "{checkpoint_name}" has a invalid slot: '
                     f"{slots}\n"
-                    f"Items under the `{KEY_CHECKPOINT_SLOTS}` key must be YAML dictionaries. "
+                    f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be YAML dictionaries. "
                     f"The checkpoint will be skipped.",
                     docs=DOCS_URL_STORIES,
                 )
@@ -249,7 +256,7 @@ class YAMLStoryReader(StoryReader):
             `True` in case the file is a Core YAML training data file,
             `False` otherwise.
         """
-        suffix = PurePath(file_path).suffix
+        suffix = Path(file_path).suffix
 
         if suffix and suffix not in YAML_FILE_EXTENSIONS:
             return False
