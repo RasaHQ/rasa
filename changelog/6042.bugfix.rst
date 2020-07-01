@@ -1,0 +1,2 @@
+Convert entity values coming from any entity extractor to string during evaluation to avoid mismatches due to
+different types.

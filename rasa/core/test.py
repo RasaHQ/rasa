@@ -5,7 +5,15 @@ import typing
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-import rasa.utils.io
+import rasa.utils.io as io_utils
+from rasa.nlu.constants import (
+    EXTRACTOR,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_TEXT,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_TYPE,
+)
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
@@ -218,9 +226,18 @@ def _clean_entity_results(
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity = {"text": text}
-        for k in ("start", "end", "entity", "value"):
+        cleaned_entity = {ENTITY_ATTRIBUTE_TEXT: text}
+        for k in (
+            ENTITY_ATTRIBUTE_START,
+            ENTITY_ATTRIBUTE_END,
+            ENTITY_ATTRIBUTE_TYPE,
+            ENTITY_ATTRIBUTE_VALUE,
+        ):
             if k in set(r):
+                if k == ENTITY_ATTRIBUTE_VALUE and EXTRACTOR in set(r):
+                    # convert values to strings for evaluation as
+                    # target values are all of type string
+                    r[k] = str(r[k])
                 cleaned_entity[k] = r[k]
         cleaned_entities.append(cleaned_entity)
 
@@ -657,7 +674,7 @@ async def compare_models_in_dir(
         for k, v in number_correct_in_run.items():
             number_correct[k].append(v)
 
-    rasa.utils.io.dump_obj_as_json_to_file(
+    io_utils.dump_obj_as_json_to_file(
         os.path.join(output, RESULTS_FILE), number_correct
     )
 
@@ -671,7 +688,7 @@ async def compare_models(models: List[Text], stories_file: Text, output: Text) -
         number_of_correct_stories = await _evaluate_core_model(model, stories_file)
         number_correct[os.path.basename(model)].append(number_of_correct_stories)
 
-    rasa.utils.io.dump_obj_as_json_to_file(
+    io_utils.dump_obj_as_json_to_file(
         os.path.join(output, RESULTS_FILE), number_correct
     )
 
