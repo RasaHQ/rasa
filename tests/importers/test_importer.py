@@ -16,10 +16,8 @@ from rasa.importers.importer import (
 )
 from rasa.importers.rasa import RasaFileImporter
 
-# noinspection PyUnresolvedReferences
 from rasa.importers.multi_project import MultiProjectImporter
 
-# noinspection PyUnresolvedReferences
 from rasa.nlu.constants import MESSAGE_ACTION_NAME, MESSAGE_INTENT_NAME
 from rasa.nlu.training_data import Message
 from tests.core.conftest import project
@@ -174,6 +172,7 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
         {}, config_path, domain_path, [default_data_path]
     )
 
+    # The `E2EImporter` correctly wraps the underlying `CombinedDataImporter`
     assert isinstance(importer, E2EImporter)
     importer_without_e2e = importer._importer
 
@@ -198,7 +197,7 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
     # Patch to return our test stories
     importer_without_e2e.get_stories = asyncio.coroutine(lambda *args: stories)
 
-    # The wrapping `E2EImporter` simply forwards these
+    # The wrapping `E2EImporter` simply forwards these method calls
     assert (await importer_without_e2e.get_stories()).as_story_string() == (
         await importer.get_stories()
     ).as_story_string()
@@ -207,10 +206,12 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
     # Check additional NLU training data from stories was added
     nlu_data = await importer.get_nlu_data()
 
+    # The `E2EImporter` adds NLU training data based on our training stories
     assert len(nlu_data.training_examples) > len(
         (await importer_without_e2e.get_nlu_data()).training_examples
     )
 
+    # Check if the NLU training data was added correctly from the story training data
     expected_additional_messages = [
         Message("greet_from_stories", data={MESSAGE_INTENT_NAME: "greet_from_stories"}),
         Message("", data={MESSAGE_ACTION_NAME: "utter_greet_from_stories"}),

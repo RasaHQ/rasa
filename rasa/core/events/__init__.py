@@ -267,7 +267,7 @@ class UserUttered(Event):
     def intent_name(self) -> Optional[Text]:
         return self.intent.get("name")
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, UserUttered):
             return False
         else:
@@ -984,7 +984,7 @@ class ActionExecuted(Event):
     """An operation describes an action taken + its result.
 
     It comprises an action and a list of events. operations will be appended
-    to the latest ``Turn`` in the ``Tracker.turns``.
+    to the latest `Turn`` in `Tracker.turns`.
     """
 
     type_name = "action"

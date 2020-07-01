@@ -326,14 +326,14 @@ class E2EImporter(TrainingDataImporter):
         return await self._importer.get_config()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        training_datas = [self._additional_training_data_from_default_actions()]
-        training_datas += await asyncio.gather(
+        training_datasets = [self._additional_training_data_from_default_actions()]
+        training_datasets += await asyncio.gather(
             self._importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
         )
 
         return reduce(
-            lambda merged, other: merged.merge(other), training_datas, TrainingData()
+            lambda merged, other: merged.merge(other), training_datasets, TrainingData()
         )
 
     async def _additional_training_data_from_stories(self) -> TrainingData:
