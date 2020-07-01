@@ -369,6 +369,7 @@ def configure_cors(
     # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
     app.config.CORS_AUTOMATIC_OPTIONS = True
     app.config.CORS_SUPPORTS_CREDENTIALS = True
+    app.config.CORS_EXPOSE_HEADERS = 'filename'
 
     CORS(
         app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
