@@ -117,14 +117,9 @@ class YAMLStoryReader(StoryReader):
             )
 
     def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
-
-        if self.use_e2e:
-            # TODO
-            pass
-        else:
-            utterance = self._parse_raw_user_utterance(step)
-            if utterance:
-                self.current_step_builder.add_user_messages([utterance])
+        utterance = self._parse_raw_user_utterance(step)
+        if utterance:
+            self.current_step_builder.add_user_messages([utterance])
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
         utterances = []
