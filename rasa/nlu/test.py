@@ -1851,18 +1851,18 @@ def compare_nlu(
         for percentage in exclusion_percentages:
             percent_string = f"{percentage}%_exclusion"
 
-            _, train = train.train_test_split(percentage / 100)
+            _, train_included = train.train_test_split(percentage / 100)
             # only count for the first run and ignore the others
             if run == 0:
-                training_examples_per_run.append(len(train.training_examples))
+                training_examples_per_run.append(len(train_included.training_examples))
 
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, "train")
             train_nlu_split_path = os.path.join(train_split_path, TRAIN_DATA_FILE)
             train_nlg_split_path = os.path.join(train_split_path, NLG_DATA_FILE)
             io_utils.create_path(train_nlu_split_path)
-            io_utils.write_text_file(train.nlu_as_markdown(), train_nlu_split_path)
-            io_utils.write_text_file(train.nlg_as_markdown(), train_nlg_split_path)
+            io_utils.write_text_file(train_included.nlu_as_markdown(), train_nlu_split_path)
+            io_utils.write_text_file(train_included.nlg_as_markdown(), train_nlg_split_path)
 
             for nlu_config, model_name in zip(configs, model_names):
                 logger.info(
