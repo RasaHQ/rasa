@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+import tensorflow as tf
 from typing import Optional, Text, Dict, Any, Union, List, Tuple
 
 from rasa.core.constants import DIALOGUE
@@ -229,3 +230,17 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     )
 
     return config
+
+
+def is_csr_sparse_matrix(tensor: tf.Tensor) -> bool:
+    from tensorflow.python.ops.linalg.sparse import sparse_csr_matrix_ops as csr
+
+    if not isinstance(tensor, (tf.Tensor, csr.CSRSparseMatrix)):
+        return False
+
+    try:
+        tf.shape(tensor)[0]
+    except:
+        return True
+
+    return False

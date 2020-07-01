@@ -1458,7 +1458,7 @@ class DIET(RasaModel):
         dense_features = []
 
         for f in features:
-            if isinstance(f, csr.CSRSparseMatrix):
+            if train_utils.is_csr_sparse_matrix(f):
                 if sparse_dropout:
                     _f = self._tf_layers[f"sparse_input_dropout.{name}"](
                         f, self._training
@@ -1491,7 +1491,7 @@ class DIET(RasaModel):
 
         # if there are dense features - we can use them
         for f in features:
-            if not isinstance(f, csr.CSRSparseMatrix):
+            if not train_utils.is_csr_sparse_matrix(f):
                 seq_ids = tf.stop_gradient(f)
                 # add a zero to the seq dimension for the sentence features
                 seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
@@ -1499,7 +1499,7 @@ class DIET(RasaModel):
 
         # use additional sparse to dense layer
         for f in features:
-            if isinstance(f, csr.CSRSparseMatrix):
+            if train_utils.is_csr_sparse_matrix(f):
                 seq_ids = tf.stop_gradient(
                     self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
                 )
@@ -1776,13 +1776,10 @@ class DIET(RasaModel):
     def _get_batch_dim(tf_batch_data: Dict[Text, List[tf.Tensor]]) -> int:
         for key in tf_batch_data:
             for feature in tf_batch_data[key]:
-                if isinstance(feature, csr.CSRSparseMatrix):
-                    shape_and_type = csr.dense_shape_and_type(feature)
-                    return shape_and_type.shape[0]
-                if isinstance(feature, tf.Tensor):
+                if not train_utils.is_csr_sparse_matrix(feature):
                     return tf.shape(feature)[0]
 
-        return None
+        return 0
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]

@@ -7,6 +7,7 @@ from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 from rasa.utils.tensorflow.constants import SOFTMAX, MARGIN, COSINE, INNER
 from tensorflow.python.ops.linalg.sparse import sparse_csr_matrix_ops as csr
+import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ class SparseDropout(tf.keras.layers.Dropout):
             A ValueError if inputs is not a sparse tensor
         """
 
-        if not isinstance(inputs, csr.CSRSparseMatrix):
+        if not train_utils.is_csr_sparse_matrix(inputs):
             raise ValueError("Input tensor should be sparse.")
 
         if training is None:
@@ -128,7 +129,7 @@ class DenseForSparse(tf.keras.layers.Dense):
         Raises:
             A ValueError if inputs is not a sparse tensor
         """
-        if not isinstance(inputs, csr.CSRSparseMatrix):
+        if not train_utils.is_csr_sparse_matrix(inputs):
             raise ValueError("Input tensor should be sparse.")
 
         # outputs will be 2D
