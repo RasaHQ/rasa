@@ -216,12 +216,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.3
+          viewing: 1.10.4
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.4/user-guide/building-assistants/">1.10.4</a>
               <a href="../.././1.10.3/user-guide/building-assistants/">1.10.3</a>
               <a href="../.././1.10.2/user-guide/building-assistants/">1.10.2</a>
               <a href="../.././1.10.1/user-guide/building-assistants/">1.10.1</a>
@@ -716,7 +717,7 @@ which will do something with the information the user has provided once the form
 </pre></div>
 </div>
 <p>In this case, we only tell the user that we’ll be in touch with them, however
-usually you would send this information to an API or a database. See the <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L69">rasa-demo</a>
+usually you would send this information to an API or a database. See the <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L71">rasa-demo</a>
 for an example of how to store this information in a spreadsheet.</p>
 <p>We’ll need to add the form we just created to a new section in our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">forms</span><span class="p">:</span>
@@ -1122,7 +1123,7 @@ rasa shell
 <p>There are also a bunch of ways in which you can customise this policy. In Sara, our demo bot,
 we’ve customized it to suggest intents to the user within a certain confidence range to make
 it easier for the user to give the bot the information it needs.</p>
-<p>This is done by customizing the action <code class="docutils literal notranslate"><span class="pre">ActionDefaultAskAffirmation</span></code> as shown in the <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L443">Sara rasa-demo action server</a>
+<p>This is done by customizing the action <code class="docutils literal notranslate"><span class="pre">ActionDefaultAskAffirmation</span></code> as shown in the <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L424">Sara rasa-demo action server</a>
 We define some intent mappings to make it more intuitive to the user what an intent means.</p>
 <a class="reference internal image-reference" href="../../_images/intent_mappings.png"><img alt="Intent Mappings" class="align-center" src="../../_images/intent_mappings.png" style="width: 240px;" /></a>
 </div>

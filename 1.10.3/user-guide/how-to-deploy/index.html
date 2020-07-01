@@ -222,6 +222,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.10.4/user-guide/how-to-deploy/">1.10.4</a>
               <a href="../../../1.10.3/user-guide/how-to-deploy/">1.10.3</a>
               <a href="../../../1.10.2/user-guide/how-to-deploy/">1.10.2</a>
               <a href="../../../1.10.1/user-guide/how-to-deploy/">1.10.1</a>
@@ -274,9 +275,12 @@
   
 
 
+    
+    
 
 
 
+    <p class="scv-banner"><a href="../../../1.10.4/user-guide/how-to-deploy/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.10.4.</a></p>
 <div class="section" id="deploying-your-rasa-assistant">
 <span id="id1"></span><h1>Deploying Your Rasa Assistant<a class="headerlink" href="#deploying-your-rasa-assistant" title="Permalink to this headline">¶</a></h1>
 
@@ -413,7 +417,7 @@ in which you’ll extend the official SDK image, copy over your code, and add an
 For example:</p>
 <blockquote>
 <div><pre class="literal-block"># Extend the official Rasa SDK image
-FROM rasa/rasa-sdk:1.10.1
+FROM rasa/rasa-sdk:1.10.2
 
 # Use subdirectory as working directory
 WORKDIR /app
