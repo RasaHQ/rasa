@@ -314,9 +314,6 @@ LanguageModelTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
-          # Regular expression to detect tokens
-          "token_pattern": None
-
 
 
 .. _text-featurizers:

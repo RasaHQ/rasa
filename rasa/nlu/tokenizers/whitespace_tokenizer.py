@@ -53,4 +53,6 @@ class WhitespaceTokenizer(Tokenizer):
         if not words:
             words = [text]
 
-        return self._convert_words_to_tokens(words, text)
+        tokens = self._convert_words_to_tokens(words, text)
+
+        return self._apply_token_pattern(tokens)

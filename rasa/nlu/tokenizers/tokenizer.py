@@ -89,14 +89,12 @@ class Tokenizer(Component):
                         tokens = self._split_intent(example)
                     else:
                         tokens = self.tokenize(example, attribute)
-                        tokens = self._apply_token_pattern(tokens)
                     example.set(TOKENS_NAMES[attribute], tokens)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Tokenize the incoming message."""
 
         tokens = self.tokenize(message, TEXT)
-        tokens = self._apply_token_pattern(tokens)
         message.set(TOKENS_NAMES[TEXT], tokens)
 
     def _split_intent(self, message: Message):
@@ -137,7 +135,14 @@ class Tokenizer(Component):
                 word_offset = token.text.index(new_token, running_offset)
                 word_len = len(new_token)
                 running_offset = word_offset + word_len
-                final_tokens.append(Token(new_token, token.start + word_offset))
+                final_tokens.append(
+                    Token(
+                        new_token,
+                        token.start + word_offset,
+                        data=token.data,
+                        lemma=token.lemma,
+                    )
+                )
 
         return final_tokens
 

@@ -34,7 +34,7 @@ class MitieTokenizer(Tokenizer):
             for token, offset in tokenized
         ]
 
-        return tokens
+        return self._apply_token_pattern(tokens)
 
     def _token_from_offset(
         self, text: bytes, offset: int, encoded_sentence: bytes
