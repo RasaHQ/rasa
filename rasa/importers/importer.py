@@ -4,7 +4,7 @@ from typing import Text, Optional, List, Dict
 import logging
 
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, UserUttered
+from rasa.core.events import ActionExecuted, UserUttered, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
 from rasa.nlu.constants import MESSAGE_ACTION_NAME, MESSAGE_INTENT_NAME
@@ -326,7 +326,7 @@ class E2EImporter(TrainingDataImporter):
         return await self._importer.get_config()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        training_datasets = [self._additional_training_data_from_default_actions()]
+        training_datasets = [_additional_training_data_from_default_actions()]
         training_datasets += await asyncio.gather(
             self._importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
@@ -342,36 +342,41 @@ class E2EImporter(TrainingDataImporter):
         additional_messages_from_stories = []
         for story_step in stories.story_steps:
             for event in story_step.events:
-                if isinstance(event, UserUttered):
-                    additional_messages_from_stories.append(
-                        self._messages_from_user_utterance(event)
-                    )
-                elif isinstance(event, ActionExecuted):
-                    additional_messages_from_stories.append(
-                        self._messages_from_action(event)
-                    )
+                message = _message_from_conversation_event(event)
+                if message:
+                    additional_messages_from_stories.append(message)
+
         logger.debug(
             f"Added {len(additional_messages_from_stories)} training data examples "
             f"from the story training data."
         )
         return TrainingData(additional_messages_from_stories)
 
-    @staticmethod
-    def _messages_from_user_utterance(event: UserUttered) -> Message:
-        return Message(event.text, data={MESSAGE_INTENT_NAME: event.intent_name})
 
-    @staticmethod
-    def _messages_from_action(event: ActionExecuted) -> Message:
-        return Message(event.e2e_text, data={MESSAGE_ACTION_NAME: event.action_name})
+def _message_from_conversation_event(event: Event) -> Optional[Message]:
+    if isinstance(event, UserUttered):
+        return _messages_from_user_utterance(event)
+    elif isinstance(event, ActionExecuted):
+        return _messages_from_action(event)
 
-    @staticmethod
-    def _additional_training_data_from_default_actions() -> TrainingData:
-        from rasa.nlu.training_data import Message
-        from rasa.core.actions import action
+    return None
 
-        additional_messages_from_default_actions = [
-            Message("", data={MESSAGE_ACTION_NAME: action_name})
-            for action_name in action.default_action_names()
-        ]
 
-        return TrainingData(additional_messages_from_default_actions)
+def _messages_from_user_utterance(event: UserUttered) -> Message:
+    return Message(event.text, data={MESSAGE_INTENT_NAME: event.intent_name})
+
+
+def _messages_from_action(event: ActionExecuted) -> Message:
+    return Message(event.e2e_text, data={MESSAGE_ACTION_NAME: event.action_name})
+
+
+def _additional_training_data_from_default_actions() -> TrainingData:
+    from rasa.nlu.training_data import Message
+    from rasa.core.actions import action
+
+    additional_messages_from_default_actions = [
+        Message("", data={MESSAGE_ACTION_NAME: action_name})
+        for action_name in action.default_action_names()
+    ]
+
+    return TrainingData(additional_messages_from_default_actions)
