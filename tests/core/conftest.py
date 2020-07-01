@@ -215,17 +215,6 @@ def default_tracker(default_domain: Domain) -> DialogueStateTracker:
     return DialogueStateTracker("my-sender", default_domain.slots)
 
 
-@pytest.fixture(scope="session")
-def project() -> Text:
-    import tempfile
-    from rasa.cli.scaffold import create_initial_project
-
-    directory = tempfile.mkdtemp()
-    create_initial_project(directory)
-
-    return directory
-
-
 @pytest.fixture
 async def form_bot_agent(trained_async, tmpdir_factory) -> Agent:
     zipped_model = await trained_async(

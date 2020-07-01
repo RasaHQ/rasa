@@ -20,7 +20,6 @@ from rasa.importers.multi_project import MultiProjectImporter
 
 from rasa.nlu.constants import MESSAGE_ACTION_NAME, MESSAGE_INTENT_NAME
 from rasa.nlu.training_data import Message
-from tests.core.conftest import project
 
 
 async def test_use_of_interface():
