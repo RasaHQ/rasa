@@ -1,1 +1,1 @@
-The assistant will respond through the `webex` channel to any user (room) communicating to it. Before the bot responded only to a fixed ``roomId`` set in the ``credentials.yml``config file.
+The assistant will respond through the `webex` channel to any user (room) communicating to it. Before the bot responded only to a fixed ``roomId`` set in the ``credentials.yml`` config file.
