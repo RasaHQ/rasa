@@ -21,7 +21,6 @@ env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   BOTO_CONFIG: /dev/null
-  PIP_USE_PEP517: false
 
 jobs:
   api:
