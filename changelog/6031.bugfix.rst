@@ -1,2 +1,0 @@
-Previously, specifying a lock store in the endpoint configuration with a type other than ``redis`` or ``in_memory``
-would lead to an ``AttributeError: 'str' object has no attribute 'type'``. This bug is fixed now.
