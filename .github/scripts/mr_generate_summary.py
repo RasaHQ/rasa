@@ -56,4 +56,4 @@ if __name__ == "__main__":
             data = generate_json(os.path.join(dirpath, f),task_mapping[f], data)
 
     with open(summary_file, "w") as f:
-        json.dump(data, f)
+        json.dump(data, f, sort_keys=True, indent=2)
