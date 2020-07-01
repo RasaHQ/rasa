@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Text
 
-import regex, re
+import regex
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
