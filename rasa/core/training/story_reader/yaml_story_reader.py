@@ -156,17 +156,16 @@ class YAMLStoryReader(StoryReader):
         raw_entities = step.get(KEY_STORY_ENTITIES, [])
         final_entities = YAMLStoryReader._parse_raw_entities(raw_entities)
 
-        if not user_utterance.startswith(INTENT_MESSAGE_PREFIX):
+        if user_utterance.startswith(INTENT_MESSAGE_PREFIX):
             common_utils.raise_warning(
                 f"Issue found in '{self.source_name}': \n"
-                f"User intent '{user_utterance}' should start with "
-                f"'{INTENT_MESSAGE_PREFIX}'. "
-                f"This story step will be skipped.",
+                f"User intent '{user_utterance}' starts with "
+                f"'{INTENT_MESSAGE_PREFIX}'. This is not required.",
                 docs=DOCS_URL_STORIES,
             )
-            return None
-        else:
+            # Remove leading slash
             user_utterance = user_utterance[1:]
+
         intent = {"name": user_utterance, "confidence": 1.0}
         return UserUttered(user_utterance, intent, final_entities)
 

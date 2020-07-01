@@ -93,18 +93,18 @@ async def test_is_yaml_file():
     assert not YAMLStoryReader.is_yaml_story_file(valid_markdown_file)
 
 
-async def test_yaml_intent_no_leading_slash_warning(default_domain: Domain):
-
-    yaml_file = "data/test_wrong_yaml_stories/intent_without_leading_slash.yml"
+async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
+    yaml_file = "data/test_wrong_yaml_stories/intent_with_leading_slash.yml"
 
     with pytest.warns(UserWarning):
-        await training.load_data(
+        tracker = await training.load_data(
             yaml_file,
             default_domain,
             use_story_concatenation=False,
             tracker_limit=1000,
             remove_duplicates=False,
         )
+        assert tracker[0].latest_message == UserUttered("simple", {"name": "simple"})
 
 
 async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
