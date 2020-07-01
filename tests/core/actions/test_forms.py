@@ -44,6 +44,59 @@ responses:
     assert isinstance(events[-1], BotUttered)
 
 
+async def test_request_slots_order():
+    test_yaml_1 = """
+    forms:
+    - my_form1:
+        slot_e:
+          type: from_text
+        slot_b:
+          type: from_text
+        slot_d: 
+          type: from_text
+        slot_c:
+          type: from_text
+    """
+
+    domain = Domain.from_yaml(test_yaml_1)
+
+    form_name = "my_form1"
+    action = FormAction(form_name, None)
+
+    assert action.required_slots(domain) == ["slot_e", "slot_b", "slot_d", "slot_c"]
+
+
+async def test_request_slots_order_after_merge():
+    test_yaml_1 = """
+    forms:
+    - my_form1:
+        slot_e:
+          type: from_text
+        slot_b:
+          type: from_text
+        slot_d: 
+          type: from_text
+        slot_c:
+          type: from_text
+    """
+
+    test_yaml_2 = """
+    forms:
+    - my_form1:
+        slot_a:
+          type: from_text
+    """
+
+    domain1 = Domain.from_yaml(test_yaml_1)
+    domain2 = Domain.from_yaml(test_yaml_2)
+    domain = domain1.merge(domain2)
+
+    form_name = "my_form1"
+    action = FormAction(form_name, None)
+
+    assert action.required_slots(domain) == ["slot_e", "slot_b", "slot_d", "slot_c", "slot_a"]
+
+
 async def test_activate_and_immediate_deactivate():
     slot_name = "num_people"
     slot_value = 5

@@ -248,18 +248,14 @@ class Domain:
         combined["intents"] = merge_lists_of_dicts(
             combined["intents"], domain_dict["intents"], override
         )
-        # TODO(alwx): probably here (forms is where slot_mappings come from)
         combined["forms"] = merge_lists_of_dicts(
             combined["forms"], domain_dict["forms"], override
         )
-        print(combined["forms"])
 
         # remove existing forms from new actions
         for form in combined["forms"]:
             if form in domain_dict["actions"]:
                 domain_dict["actions"].remove(form)
-
-        print(combined["forms"])
 
         for key in ["entities", "actions"]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
