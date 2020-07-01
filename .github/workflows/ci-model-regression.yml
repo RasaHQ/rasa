@@ -115,7 +115,7 @@ jobs:
       if: steps.fc_config.outputs.comment-id != ''
       with:
         edit-mode: 'replace'
-        comment-id: ${{ steps.fc_config.outputs.comment-id }}
+        comment-id: ${{ steps.fc_config_update.outputs.comment-id }}
         reactions: heart, hooray, rocket
 
     - name: Add a comment that the tests are in progress
