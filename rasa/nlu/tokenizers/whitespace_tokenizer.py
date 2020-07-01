@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Text
 
-import regex
+import regex, re
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
@@ -50,5 +50,8 @@ class WhitespaceTokenizer(Tokenizer):
         # if we removed everything like smiles `:)`, use the whole text as 1 token
         if not words:
             words = [text]
+
+        # convert to ascii and check if the resultant string is empty
+        words = [w for w in words if w.encode("ascii", "ignore").strip()]
 
         return self._convert_words_to_tokens(words, text)
