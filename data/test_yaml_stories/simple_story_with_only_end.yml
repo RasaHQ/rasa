@@ -1,7 +1,7 @@
 stories:
 - story: simple_story_with_only_end
   steps:
-  - user: /hello
+  - intent: /hello
   - action: utter_greet
   - slot: name
     value: peter

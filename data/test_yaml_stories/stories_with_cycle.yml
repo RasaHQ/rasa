@@ -1,14 +1,14 @@
 stories:
 - story: utter greet
   steps:
-  - user: /greet
+  - intent: /greet
   - action: utter_greet
   - checkpoint: get_name
 
 - story: user no name
   steps:
   - checkpoint: get_name
-  - user: /default
+  - intent: /default
     entities:
     - name: null
   - checkpoint: process_name
@@ -16,7 +16,7 @@ stories:
 - story: user sends name
   steps:
   - checkpoint: get_name
-  - user: /default
+  - intent: /default
     entities:
     - name: "Josh"
   - checkpoint: process_name

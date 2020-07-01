@@ -13,7 +13,7 @@ from rasa.data import YAML_FILE_EXTENSIONS
 KEY_STORIES = "stories"
 KEY_STORY_NAME = "story"
 KEY_STORY_STEPS = "steps"
-KEY_STORY_USER_UTTERANCE = "user"
+KEY_STORY_USER_INTENT = "intent"
 KEY_STORY_ENTITIES = "entities"
 KEY_SLOT_NAME = "slot"
 KEY_SLOT_VALUE = "value"
@@ -95,7 +95,7 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_step(self, step: Dict[Text, Any]) -> None:
 
-        if KEY_STORY_USER_UTTERANCE in step.keys():
+        if KEY_STORY_USER_INTENT in step.keys():
             self._parse_user_utterance(step)
         elif KEY_OR in step.keys():
             self._parse_or_statement(step)
@@ -130,14 +130,14 @@ class YAMLStoryReader(StoryReader):
         utterances = []
 
         for utterance in step.get(KEY_OR):
-            if KEY_STORY_USER_UTTERANCE in utterance.keys():
+            if KEY_STORY_USER_INTENT in utterance.keys():
                 utterance = self._parse_raw_user_utterance(utterance)
                 if utterance:
                     utterances.append(utterance)
             else:
                 common_utils.raise_warning(
                     f"Issue found in '{self.source_name}': \n"
-                    f"`OR` statement can only have '{KEY_STORY_USER_UTTERANCE}' "
+                    f"`OR` statement can only have '{KEY_STORY_USER_INTENT}' "
                     f"as a sub-element. This step will be skipped:\n"
                     f"'{utterance}'\n",
                     docs=DOCS_URL_STORIES,
@@ -147,7 +147,7 @@ class YAMLStoryReader(StoryReader):
         self.current_step_builder.add_user_messages(utterances)
 
     def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
-        user_utterance = step.get(KEY_STORY_USER_UTTERANCE, "").strip()
+        user_utterance = step.get(KEY_STORY_USER_INTENT, "").strip()
 
         if not user_utterance:
             common_utils.raise_warning(

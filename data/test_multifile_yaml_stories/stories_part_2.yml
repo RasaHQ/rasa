@@ -2,17 +2,17 @@ stories:
 - story: simple_story_with_multiple_turns
   steps:
   - or:
-    - user: /affirm
-    - user: /thank_you
+    - intent: /affirm
+    - intent: /thank_you
   - action: utter_default
-  - user: /goodbye
+  - intent: /goodbye
   - action: utter_goodbye
   - checkpoint: check_goodbye
 
 - story: why does the user want to leave?
   steps:
   - checkpoint: check_goodbye
-  - user: /why
+  - intent: /why
   - action: utter_default
   - checkpoint: check_greet
 
@@ -20,8 +20,8 @@ stories:
   steps:
   - checkpoint: check_greet
   - checkpoint: check_hello # allows multiple entry points
-  - user: /next_intent
+  - intent: /next_intent
   - action: utter_greet # actions taken by the bot
   - checkpoint: check_intermediate # allows intermediate checkpoints
-  - user: /change_bank_details
+  - intent: /change_bank_details
   - action: utter_default  # allows to end without checkpoints

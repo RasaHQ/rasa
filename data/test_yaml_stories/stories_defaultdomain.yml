@@ -2,18 +2,18 @@ stories:
 - story: simple_story_with_only_start
   steps:
   - checkpoint: check_greet # checkpoints at the start define entry points
-  - user: default
+  - intent: default
   - action: utter_default
 
 - story: simple_story_with_only_end
   steps:
-  - user: /greet
+  - intent: /greet
   - action: utter_greet
   - checkpoint: check_greet # checkpoint defining the end of this turn
 
 - story: simple_story_with_only_end
   steps:
-  - user: /greet
+  - intent: /greet
     entities:
     - name: Peter
   - action: utter_greet
@@ -21,9 +21,9 @@ stories:
 
 - story: simple_story_with_multiple_turns
   steps:
-  - user: greet
+  - intent: greet
   - action: utter_greet
-  - user: default
+  - intent: default
   - action: utter_default
-  - user: goodbye
+  - intent: goodbye
   - action: utter_goodbye

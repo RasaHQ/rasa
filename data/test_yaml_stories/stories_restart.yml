@@ -1,8 +1,8 @@
 stories:
 - story: simple_story_with_restart
   steps:
-  - user: /greet
+  - intent: /greet
   - action: utter_greet
-  - user: /goodbye
+  - intent: /goodbye
   - action: action_restart
   - action: restart
