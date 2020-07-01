@@ -17,6 +17,21 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.4] - 2020-07-01
+^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5998 <https://github.com/rasahq/rasa/issues/5998>`_: ``WhitespaceTokenizer`` does not remove vowel signs in Hindi anymore.
+- `#6031 <https://github.com/rasahq/rasa/issues/6031>`_: Previously, specifying a lock store in the endpoint configuration with a type other than ``redis`` or ``in_memory``
+  would lead to an ``AttributeError: 'str' object has no attribute 'type'``. This bug is fixed now.
+- `#6032 <https://github.com/rasahq/rasa/issues/6032>`_: Fix ``Interpreter parsed an intent ...`` warning when using the ``/model/parse`` 
+  endpoint with an NLU-only model.
+- `#6042 <https://github.com/rasahq/rasa/issues/6042>`_: Convert entity values coming from any entity extractor to string during evaluation to avoid mismatches due to
+  different types.
+- `#6078 <https://github.com/rasahq/rasa/issues/6078>`_: The assistant will respond through the `webex` channel to any user (room) communicating to it. Before the bot responded only to a fixed ``roomId`` set in the ``credentials.yml`` config file.
+
+
 [1.10.3] - 2020-06-12
 ^^^^^^^^^^^^^^^^^^^^^
 
