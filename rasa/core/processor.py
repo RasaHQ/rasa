@@ -36,7 +36,6 @@ from rasa.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
-    SessionStarted,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -531,7 +530,7 @@ class MessageProcessor:
         )
 
     async def _predict_and_execute_next_action(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker,
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -803,5 +802,5 @@ class MessageProcessor:
                 )
 
         return self.policy_ensemble.probabilities_using_best_policy(
-            tracker, self.domain
+            tracker, self.domain, self.interpreter
         )

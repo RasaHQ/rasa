@@ -22,12 +22,13 @@ from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
-from rasa.utils.common import class_from_module_path, raise_warning
+from rasa.utils import common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ class PolicyEnsemble:
 
         for k, v in priority_dict.items():
             if len(v) > 1:
-                raise_warning(
+                common_utils.raise_warning(
                     f"Found policies {v} with same priority {k} "
                     f"in PolicyEnsemble. When personalizing "
                     f"priorities, be sure to give all policies "
@@ -117,11 +118,14 @@ class PolicyEnsemble:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         if training_trackers:
             for policy in self.policies:
-                policy.train(training_trackers, domain, **kwargs)
+                policy.train(
+                    training_trackers, domain, interpreter=interpreter, **kwargs
+                )
 
             training_events = self._training_events_from_trackers(training_trackers)
             self.action_fingerprints = self._create_action_fingerprints(training_events)
@@ -130,7 +134,11 @@ class PolicyEnsemble:
         self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
 
     def probabilities_using_best_policy(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         raise NotImplementedError
 
@@ -256,7 +264,7 @@ class PolicyEnsemble:
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
-        ensemble_cls = class_from_module_path(metadata["ensemble_name"])
+        ensemble_cls = common_utils.class_from_module_path(metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
@@ -362,6 +370,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         is_augmented = policy_name.endswith("_" + AugmentedMemoizationPolicy.__name__)
         # also check if confidence is 0, than it cannot be count as prediction
         return not (is_memo or is_augmented) or max_confidence == 0.0
+
     @staticmethod
     def _is_not_mapping_policy(
         policy_name: Text, max_confidence: Optional[float] = None
@@ -424,13 +433,18 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return predictions[best_policy_name].probabilities, best_policy_name
 
     def _best_policy_prediction(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Finds the best policy prediction.
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
 
         Returns:
             probabilities: the list of probabilities for the next actions
@@ -446,8 +460,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             rejected_action_name = tracker.events[-1].action_name
 
         predictions = {
-            f"policy_{i}_{type(p).__name__}": Prediction(
-                p.predict_action_probabilities(tracker, domain), p.priority,
+            f"policy_{i}_{type(p).__name__}": self._get_prediction(
+                p, tracker, domain, interpreter
             )
             for i, p in enumerate(self.policies)
         }
@@ -463,6 +477,34 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 ] = 0.0
 
         return self._pick_best_policy(predictions)
+
+    @staticmethod
+    def _get_prediction(
+        policy: Policy,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+    ) -> Prediction:
+        number_of_arguments_in_rasa_1_0 = 2
+        arguments = common_utils.arguments_of(policy.predict_action_probabilities)
+        if (
+            len(arguments) > number_of_arguments_in_rasa_1_0
+            and "interpreter" in arguments
+        ):
+            probabilities = policy.predict_action_probabilities(
+                tracker, domain, interpreter
+            )
+        else:
+            common_utils.raise_warning(
+                "The function `predict_action_probabilities` of "
+                "the `Policy` interface was changed to support "
+                "additional parameters. Please make sure to "
+                "adapt your custom `Policy` implementation.",
+                category=DeprecationWarning,
+            )
+            probabilities = policy.predict_action_probabilities(tracker, domain)
+
+        return Prediction(probabilities, policy.priority)
 
     def _fallback_after_listen(
         self, domain: Domain, probabilities: List[float], policy_name: Text
@@ -504,7 +546,11 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return probabilities, policy_name
 
     def probabilities_using_best_policy(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Predicts the next action the bot should take after seeing the tracker.
 
@@ -514,13 +560,17 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
 
         Returns:
             best_probabilities: the list of probabilities for the next actions
             best_policy_name: the name of the picked policy
         """
 
-        probabilities, policy_name = self._best_policy_prediction(tracker, domain)
+        probabilities, policy_name = self._best_policy_prediction(
+            tracker, domain, interpreter
+        )
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME

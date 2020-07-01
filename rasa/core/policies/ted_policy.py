@@ -20,6 +20,7 @@ from rasa.core.featurizers import (
     E2ESingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.trackers import DialogueStateTracker
@@ -365,6 +366,7 @@ class TEDPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
@@ -405,7 +407,11 @@ class TEDPolicy(Policy):
         )
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain,
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         """Predict the next action the bot should take.
 
@@ -701,7 +707,6 @@ class TED(RasaModel):
         all_labels_embed = self._embed_label(all_labels)
 
         return all_labels, all_labels_embed
-
 
     @staticmethod
     def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:

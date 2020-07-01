@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import typing
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
@@ -15,6 +16,9 @@ import rasa.utils.common as utils
 from rasa.exceptions import ModelNotFound
 from rasa.core.interpreter import RasaE2EInterpreter
 
+
+if typing.TYPE_CHECKING:
+    from rasa.core.agent import Agent
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +116,6 @@ def test_core(
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
 ):
-    import rasa.core.test
     import rasa.core.utils as core_utils
     import rasa.model
     from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
@@ -146,16 +149,13 @@ def test_core(
     use_e2e = additional_arguments.get("e2e", False)
 
     _interpreter = RegexInterpreter()
-    if use_e2e:
-        if nlu_path:
-            _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path)
-        else:
-            cli_utils.print_warning(
-                "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
-                "evaluation."
-            )
-    _interpreter = RasaE2EInterpreter()
-    _interpreter.interpreter = rasa.nlu.model.Interpreter(_interpreter.trainer.pipeline, []).load(os.path.join(core_path, 'nlu'))
+    if nlu_path:
+        _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path)
+    elif use_e2e:
+        cli_utils.print_warning(
+            "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
+            "evaluation."
+        )
 
     _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 
@@ -163,9 +163,17 @@ def test_core(
         additional_arguments, rasa.core.test, ["stories", "agent"]
     )
 
+    _test_core(stories, _agent, output, **kwargs)
+
+
+def _test_core(
+    stories: Optional[Text], agent: "Agent", output_directory: Text, **kwargs: Any
+) -> None:
+    import rasa.core.test
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
-        rasa.core.test(stories, _agent, out_directory=output, **kwargs)
+        rasa.core.test(stories, agent, out_directory=output_directory, **kwargs)
     )
 
 
