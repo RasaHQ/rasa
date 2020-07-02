@@ -1,1 +1,1 @@
-Remove all null unicode characters from the output of ``regex.sub`` inside ``WhitespaceTokenizer``
+Explicitly remove all emojis which appear as unicode characters from the output of ``regex.sub`` inside ``WhitespaceTokenizer``.
