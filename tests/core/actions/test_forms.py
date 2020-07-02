@@ -49,13 +49,13 @@ async def test_request_slots_order():
     forms:
     - my_form1:
         slot_e:
-          type: from_text
+          - type: from_text
         slot_b:
-          type: from_text
+          - type: from_text
         slot_d: 
-          type: from_text
+          - type: from_text
         slot_c:
-          type: from_text
+          - type: from_text
     """
 
     domain = Domain.from_yaml(test_yaml_1)
@@ -71,20 +71,20 @@ async def test_request_slots_order_after_merge():
     forms:
     - my_form1:
         slot_e:
-          type: from_text
+          - type: from_text
         slot_b:
-          type: from_text
+          - type: from_text
         slot_d: 
-          type: from_text
+          - type: from_text
         slot_c:
-          type: from_text
+          - type: from_text
     """
 
     test_yaml_2 = """
     forms:
     - my_form1:
         slot_a:
-          type: from_text
+          - type: from_text
     """
 
     domain1 = Domain.from_yaml(test_yaml_1)
@@ -94,7 +94,7 @@ async def test_request_slots_order_after_merge():
     form_name = "my_form1"
     action = FormAction(form_name, None)
 
-    assert action.required_slots(domain) == ["slot_e", "slot_b", "slot_d", "slot_c", "slot_a"]
+    assert action.required_slots(domain) == ["slot_e", "slot_b", "slot_d", "slot_c"]
 
 
 async def test_activate_and_immediate_deactivate():
