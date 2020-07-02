@@ -31,9 +31,9 @@ Getting Credentials
      to provide this value in your credentials later in these instructions. It should start
      with ``xoxb``.
 
-  4. In the "OAuth & Permissions > Redirect URLs" enter the endpoint for receiving Slack messages. This is 
+  4. In the "OAuth & Permissions > Redirect URLs" enter the endpoint for receiving Slack messages. This is
      the same URL you entered above for Interactivity & Shortcuts - ``http://<host>:<port>/webhooks/slack/webhook``.
-     
+
   5. Go to the "Event Subscriptions" section, turn on the "Enable Events" and add the endpoint here also.
 
 For more detailed steps, visit the
@@ -71,6 +71,7 @@ You need to supply a ``credentials.yml`` with the following content:
    slack:
      slack_token: "xoxb-286425452756-safjasdf7sl38KLls"
      slack_channel: "C011GR5D33F"
+     proxy: "http://myProxy.online"
      slack_retry_reason_header: "x-slack-retry-reason"  # Slack HTTP header name indicating reason that slack send retry request. This configuration is optional.
      slack_retry_number_header: "x-slack-retry-num"  # Slack HTTP header name indicating the attempt number. This configuration is optional.
      errors_ignore_retry: None  # Any error codes given by Slack included in this list will be ignored. Error codes are listed `here <https://api.slack.com/events-api#errors>`_.
