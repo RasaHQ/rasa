@@ -164,7 +164,9 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_user_message(self, step: Dict[Text, Any]) -> None:
         message = step.get(KEY_STORY_USER_END_TO_END_MESSAGE, "")
-        self.current_step_builder.add_user_messages([UserUttered(message, {})])
+        self.current_step_builder.add_user_messages(
+            [UserUttered(message, {"name": None})]
+        )
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
         utterances = []
