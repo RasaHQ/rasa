@@ -20,37 +20,31 @@ from rasa.utils import io as io_utils
 logger = logging.getLogger(__name__)
 
 
-# In future iterations, this function and the function `create_config_for_keys` below
-# will get additional input parameters to allow for smarter configuration. E.g.
-# training_data: TrainingData
-# domain: Domain
-# stories: StoryGraph
-def get_auto_configuration(config_file: Text) -> Dict[Text, Any]:
+def get_configuration(config_file: Text) -> Dict[Text, Any]:
     """Determine configuration from a configuration file.
 
     Keys that are provided in the file are kept. Keys that are not provided are
     configured automatically.
+
+    Args:
+        config_file: The path to the configuration file.
     """
     if config_file and os.path.exists(config_file):
         config = io_utils.read_config_file(config_file)
 
         missing_keys = [k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not config.get(k)]
-        if not missing_keys:
-           return config
-           
-        return _create_config_for_keys(config, missing_keys)
-        config = _create_config_for_keys(config, missing_keys)
 
-        dump_config(config, config_file)
+        if missing_keys:
+            config = _auto_configure(config, missing_keys)
+            _dump_config(config, config_file)
+
     else:
         config = {}
 
     return config
 
 
-def _create_config_for_keys(
-    config: Dict[Text, Any], keys: List[Text]
-) -> Dict[Text, Any]:
+def _auto_configure(config: Dict[Text, Any], keys: List[Text]) -> Dict[Text, Any]:
     """Complete a config by adding automatic configuration for the specified keys.
 
     Args:
@@ -78,8 +72,20 @@ def _create_config_for_keys(
     return config
 
 
-def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
-    """Dump the automatically configured keys into the config file."""
+def _dump_config(config: Dict[Text, Any], config_file: Text) -> None:
+    """Dump the automatically configured keys into the config file.
+
+    The configuration provided in the file is kept as it is (preserving the order of
+    keys and comments).
+    For keys that were automatically configured, an explanatory comment is added and the
+    automatically chosen configuration is added commented-out.
+    If there are already blocks with comments from a previous auto configuration run,
+    they are replaced with the new auto configuration.
+
+    Args:
+        config: The configuration including the automatically configured keys.
+        config_file: The file into which the configuration should be dumped.
+    """
     import pkg_resources
 
     try:
@@ -112,23 +118,23 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
             lines = f.readlines()
             f.seek(0)
 
-            removing_old_config = False
+            remove_comments_until_next_uncommented_line = False
             for line in lines:
                 insert_section = None
 
                 if empty and config.get("language") and re.match("language:", line):
                     line = f"language: {config['language']}\n"
 
-                if removing_old_config:
+                if remove_comments_until_next_uncommented_line:
                     if re.match("#", line):  # old auto config to be removed
                         continue
-                    removing_old_config = False
+                    remove_comments_until_next_uncommented_line = False
 
                 for key in autoconfigured:
                     if re.match(f"{key}:( *)", line):  # start of next auto-section
                         line = line + _config_comment(key)
                         insert_section = key
-                        removing_old_config = True
+                        remove_comments_until_next_uncommented_line = True
                 f.write(line)
 
                 if not insert_section:
@@ -142,7 +148,7 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
         raise ValueError(f"File '{config_file}' does not exist.")
 
     if autoconfigured:
-        autoconfigured_keys = cli_utils.english_sentence_from_collection(autoconfigured)
+        autoconfigured_keys = cli_utils.transform_collection_to_sentence(autoconfigured)
         cli_utils.print_info(
             f"The configuration for {autoconfigured_keys} was chosen automatically. It "
             f"was written into the config file at `{config_file}`."

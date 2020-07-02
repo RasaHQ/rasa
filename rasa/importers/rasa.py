@@ -30,19 +30,7 @@ class RasaFileImporter(TrainingDataImporter):
             training_data_paths
         )
 
-        self.config = autoconfig.get_auto_configuration(config_file)
-        # # In future iterations, instead sth. like:
-        # self.config = autoconfig.get_autoconfiguration(config_file, self)
-        # # or
-        # training_data = await self.get_nlu_data(language=config["language"])
-        # domain = await self.get_domain()
-        # stories = await self.get_stories()
-        # self.config = autoconfig.get_autoconfiguration(
-        #     config,
-        #     training_data,
-        #     domain,
-        #     stories,
-        # )
+        self.config = autoconfig.get_configuration(config_file)
 
     async def get_config(self) -> Dict:
         return self.config

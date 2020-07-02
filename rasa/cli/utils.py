@@ -62,7 +62,7 @@ def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List[Text]:
     import rasa.utils.io
 
     if not os.path.exists(path):
-        return list(mandatory_keys)
+        return mandatory_keys
 
     config_data = rasa.utils.io.read_config_file(path)
 
@@ -204,8 +204,8 @@ def transform_collection_to_sentence(collection: Collection) -> Text:
     sentence = ""
     if len(collection) >= 2:
         return ", ".join(map(str, x[:-1])) + " and " + x[-1]
-    else: 
-       return "".join(collection)
+    else:
+        return "".join(collection)
 
 
 class bcolors:

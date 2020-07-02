@@ -26,11 +26,11 @@ DEFAULT_CONFIG = "rasa/importers/default_config.yml"
         (SOME_CONFIG, []),
     ],
 )
-def test_get_auto_configuration(
+def test_get_configuration(
     config_path: Text, autoconfig_keys: Set, monkeypatch: MonkeyPatch
 ):
     monkeypatch.setattr(autoconfig, "dump_config", Mock())
-    actual = autoconfig.get_auto_configuration(config_path)
+    actual = autoconfig.get_configuration(config_path)
 
     default = io_utils.read_config_file(DEFAULT_CONFIG)
 
@@ -42,10 +42,10 @@ def test_get_auto_configuration(
 
 
 @pytest.mark.parametrize("keys", (["policies"], ["pipeline"], ["policies", "pipeline"]))
-def test_create_config_for_keys(keys: List[Text]):
+def test_auto_configure(keys: List[Text]):
     default_config = io_utils.read_config_file(DEFAULT_CONFIG)
 
-    config = autoconfig._create_config_for_keys({}, keys)
+    config = autoconfig._auto_configure({}, keys)
 
     for k in keys:
         assert config[k] == default_config[k]  # given keys are configured correctly
@@ -59,7 +59,7 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
 
     config = io_utils.read_config_file(SOME_CONFIG)
 
-    autoconfig.dump_config(config, str(config_path))
+    autoconfig._dump_config(config, str(config_path))
 
     actual = io_utils.read_file(config_path)
     expected = io_utils.read_file(
@@ -106,7 +106,7 @@ def test_dump_config(
     config_path = str(tmp_path / "config.yml")
     shutil.copyfile(CONFIG_FOLDER + "/" + input_file, config_path)
 
-    autoconfig.get_auto_configuration(config_path)
+    autoconfig.get_configuration(config_path)
 
     actual = io_utils.read_file(config_path)
     expected = io_utils.read_file(CONFIG_FOLDER + "/" + expected_file)

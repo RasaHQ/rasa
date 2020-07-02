@@ -172,11 +172,8 @@ def _get_valid_config(
 
     Args:
         config: Path to the config file.
-        mandatory_keys: A dictionary with
-                        key: the config key's name,
-                        value: `False` if the key only needs to be present
-                               `True` if the key needs to have content.
-        default_config: default config to use if the file at `config` doesn't exist
+        mandatory_keys: The keys that have to be specified in the config file.
+        default_config: default config to use if the file at `config` doesn't exist.
     """
     config = get_validated_path(config, "config", default_config)
 
