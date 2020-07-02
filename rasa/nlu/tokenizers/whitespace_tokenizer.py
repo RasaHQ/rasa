@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Text
 
 import regex
+import re
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
@@ -23,6 +24,20 @@ class WhitespaceTokenizer(Tokenizer):
         super().__init__(component_config)
 
         self.case_sensitive = self.component_config["case_sensitive"]
+
+    def remove_emoji(self, text: Text):
+        emoji_pattern = re.compile(
+            "["
+            "\U0001F600-\U0001F64F"  # emoticons
+            "\U0001F300-\U0001F5FF"  # symbols & pictographs
+            "\U0001F680-\U0001F6FF"  # transport & map symbols
+            "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+            "\U00002702-\U000027B0"
+            "\U000024C2-\U0001F251"
+            "]+",
+            flags=re.UNICODE,
+        )
+        return emoji_pattern.sub(r"", text)
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         text = message.get(attribute)
@@ -47,6 +62,10 @@ class WhitespaceTokenizer(Tokenizer):
             " ",
             text,
         ).split()
+
+        words = [self.remove_emoji(w) for w in words]
+        words = [w for w in words if w]
+
         # if we removed everything like smiles `:)`, use the whole text as 1 token
         if not words:
             words = [text]
