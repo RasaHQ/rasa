@@ -2150,7 +2150,7 @@ description = "Open source machine learning framework to automate text- and voic
 name = "rasa-sdk"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "1.10.1"
+version = "1.10.2"
 
 [package.dependencies]
 coloredlogs = ">=10,<15"
@@ -4531,8 +4531,8 @@ questionary = [
     {file = "questionary-1.5.2.tar.gz", hash = "sha256:f6e41e36b6c86fe0c3ff12a30c6c6a4e80129efba5ad0a115d71fd5df119c726"},
 ]
 rasa-sdk = [
-    {file = "rasa-sdk-1.10.1.tar.gz", hash = "sha256:c9ed0f2843b315c0c057fb903ffbdfae9204fe519833c23db2146e029ac75c44"},
-    {file = "rasa_sdk-1.10.1-py3-none-any.whl", hash = "sha256:5685a4dda8d42fe16a824ae2cf5fb84ec266bd063af2936f0f4eb4398166e94c"},
+    {file = "rasa-sdk-1.10.2.tar.gz", hash = "sha256:7e3e41337f107c5f9d66b242a794dca1a30b7743867b0ecff06232f2e38562e7"},
+    {file = "rasa_sdk-1.10.2-py3-none-any.whl", hash = "sha256:e65cb1f0c4efc42aeda0c05bd8eeaacd9db52424f3d54a458175a8699de0e738"},
 ]
 rasabaster = []
 redis = [
