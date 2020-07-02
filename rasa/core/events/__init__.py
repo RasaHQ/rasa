@@ -998,7 +998,7 @@ class ActionExecuted(Event):
         metadata: Optional[Dict] = None,
         # TODO: Throw out message attribute
         message: Optional[Message] = None,
-        e2e_text: Text = "",
+        e2e_text: Optional[Text] = None,
     ) -> None:
         self.action_name = action_name
         self.policy = policy

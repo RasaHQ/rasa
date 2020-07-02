@@ -367,7 +367,7 @@ def _messages_from_user_utterance(event: UserUttered) -> Message:
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
-    return Message(event.e2e_text, data={MESSAGE_ACTION_NAME: event.action_name})
+    return Message(event.e2e_text or "", data={MESSAGE_ACTION_NAME: event.action_name})
 
 
 def _additional_training_data_from_default_actions() -> TrainingData:
