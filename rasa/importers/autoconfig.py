@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 import tempfile
 
-from typing import Text, Dict, Any, List, Set
+from typing import Text, Dict, Any, List
 
 from rasa.cli import utils as cli_utils
 from rasa.constants import (
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # training_data: TrainingData
 # domain: Domain
 # stories: StoryGraph
-def get_auto_configuration(config_file) -> Dict[Text, Any]:
+def get_auto_configuration(config_file: Text) -> Dict[Text, Any]:
     """Determine configuration from a configuration file.
 
     Keys that are provided in the file are kept. Keys that are not provided are
@@ -35,6 +35,10 @@ def get_auto_configuration(config_file) -> Dict[Text, Any]:
         config = io_utils.read_config_file(config_file)
 
         missing_keys = [k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not config.get(k)]
+        if not missing_keys:
+           return config
+           
+        return _create_config_for_keys(config, missing_keys)
         config = _create_config_for_keys(config, missing_keys)
 
         dump_config(config, config_file)
@@ -121,7 +125,7 @@ def dump_config(config: Dict[Text, Any], config_file: Text) -> None:
                     removing_old_config = False
 
                 for key in autoconfigured:
-                    if re.match(f"( *){key}:( *)", line):  # start of next auto-section
+                    if re.match(f"{key}:( *)", line):  # start of next auto-section
                         line = line + _config_comment(key)
                         insert_section = key
                         removing_old_config = True

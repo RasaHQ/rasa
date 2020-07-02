@@ -58,7 +58,7 @@ def get_validated_path(
     return current
 
 
-def missing_config_keys(path: Text, mandatory_keys: List) -> List:
+def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List[Text]:
     import rasa.utils.io
 
     if not os.path.exists(path):
@@ -199,16 +199,13 @@ def payload_from_button_question(button_question: "Question") -> Text:
     return response
 
 
-def english_sentence_from_collection(collection: Collection) -> Text:
+def transform_collection_to_sentence(collection: Collection) -> Text:
     """Takes e.g. a list like [A, B, C] and transforms into a sentence 'A, B and C'."""
     sentence = ""
-    for i, key in enumerate(collection):
-        if len(collection) > 1 and i == len(collection) - 1:
-            sentence += " and "
-        elif i > 0:
-            sentence += ", "
-        sentence += key
-    return sentence
+    if len(collection) >= 2:
+        return ", ".join(map(str, x[:-1])) + " and " + x[-1]
+    else: 
+       return "".join(collection)
 
 
 class bcolors:
