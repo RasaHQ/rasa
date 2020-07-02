@@ -3,7 +3,7 @@ import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Text, Type, Collection
 
 import rasa.core.utils
 import rasa.utils.io
@@ -181,6 +181,15 @@ def is_logging_disabled() -> bool:
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     """Sorts a list of dictionaries by their first key."""
     return sorted(dicts, key=lambda d: list(d.keys())[0])
+
+
+def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
+    """Transforms e.g. a list like ['A', 'B', 'C'] into a sentence 'A, B and C'."""
+    x = [item for item in collection]
+    if len(x) >= 2:
+        return ", ".join(map(str, x[:-1])) + " and " + x[-1]
+    else:
+        return "".join(collection)
 
 
 # noinspection PyUnresolvedReferences

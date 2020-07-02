@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Collection
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 
 if TYPE_CHECKING:
     from questionary import Question
@@ -197,15 +197,6 @@ def payload_from_button_question(button_question: "Question") -> Text:
         # Extract intent slash command if it's a button
         response = response[response.find("(") + 1 : response.find(")")]
     return response
-
-
-def transform_collection_to_sentence(collection: Collection) -> Text:
-    """Takes e.g. a list like [A, B, C] and transforms into a sentence 'A, B and C'."""
-    sentence = ""
-    if len(collection) >= 2:
-        return ", ".join(map(str, x[:-1])) + " and " + x[-1]
-    else:
-        return "".join(collection)
 
 
 class bcolors:

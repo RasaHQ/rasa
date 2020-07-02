@@ -1,6 +1,10 @@
 import pytest
 
-from rasa.utils.common import raise_warning, sort_list_of_dicts_by_first_key
+from rasa.utils.common import (
+    raise_warning,
+    sort_list_of_dicts_by_first_key,
+    transform_collection_to_sentence,
+)
 
 
 def test_sort_dicts_by_keys():
@@ -10,6 +14,32 @@ def test_sort_dicts_by_keys():
     actual = sort_list_of_dicts_by_first_key(test_data)
 
     assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "collection, possible_outputs",
+    [
+        (["a", "b", "c"], ["a, b and c"]),
+        (["a", "b"], ["a and b"]),
+        (["a"], ["a"]),
+        (
+            {"a", "b", "c"},
+            [
+                "a, b and c",
+                "a, c and b",
+                "b, a and c",
+                "b, c and a",
+                "c, a and b",
+                "c, b and a",
+            ],
+        ),
+        ({"a", "b"}, ["a and b", "b and a"]),
+        ({"a"}, ["a"]),
+    ],
+)
+def test_transform_collection_to_sentence(collection, possible_outputs):
+    actual = transform_collection_to_sentence(collection)
+    assert actual in possible_outputs
 
 
 def test_raise_user_warning():
