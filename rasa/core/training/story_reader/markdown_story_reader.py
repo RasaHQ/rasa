@@ -90,7 +90,7 @@ class MarkdownStoryReader(StoryReader):
                     # end-to-end BOT message
                 elif line.startswith("<B>"):
                     event_name, parameters = self._parse_event_line(line[3:])
-                    self._add_event(event_name, parameters)
+                    self._add_event(event_name, parameters, is_e2e=True)
                 # end-to-end USER message
                 elif line.startswith("<U>"):
                     user_messages = [el.strip() for el in line[3:].split(" OR ")]
