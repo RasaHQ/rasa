@@ -28,7 +28,7 @@ class WhitespaceTokenizer(Tokenizer):
         self.emoji_pattern = self.get_emoji_regex()
 
     @staticmethod
-    def get_emoji_regex():
+    def get_emoji_regex() -> re.Pattern:
         emoji_pattern = re.compile(
             "["
             "\U0001F600-\U0001F64F"  # emoticons
@@ -42,7 +42,7 @@ class WhitespaceTokenizer(Tokenizer):
         )
         return emoji_pattern
 
-    def remove_emoji(self, text: Text):
+    def remove_emoji(self, text: Text) -> Text:
 
         return self.emoji_pattern.sub(r"", text)
 
