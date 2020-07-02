@@ -4,10 +4,12 @@ import tempfile
 from contextlib import ExitStack
 from typing import Text, Optional, List, Union, Dict
 
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.importers.importer import TrainingDataImporter
 from rasa import model
 from rasa.model import FingerprintComparisonResult
 from rasa.core.domain import Domain
+from rasa.nlu.model import Interpreter
 from rasa.utils.common import TempDirectoryPath
 
 from rasa.cli.utils import (
@@ -17,7 +19,11 @@ from rasa.cli.utils import (
     bcolors,
     print_color,
 )
-from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CORE_SUBDIRECTORY_NAME
+from rasa.constants import (
+    DEFAULT_MODELS_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+    DEFAULT_NLU_SUBDIRECTORY_NAME,
+)
 
 
 def train(
@@ -28,7 +34,8 @@ def train(
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
-    additional_arguments: Optional[Dict] = None,
+    core_additional_arguments: Optional[Dict] = None,
+    nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
 ) -> Optional[Text]:
     if loop is None:
@@ -47,7 +54,8 @@ def train(
             force_training=force_training,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
-            additional_arguments=additional_arguments,
+            core_additional_arguments=core_additional_arguments,
+            nlu_additional_arguments=nlu_additional_arguments,
         )
     )
 
@@ -60,7 +68,8 @@ async def train_async(
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
-    additional_arguments: Optional[Dict] = None,
+    core_additional_arguments: Optional[Dict] = None,
+    nlu_additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
@@ -73,7 +82,9 @@ async def train_async(
         fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
                                    with the model.
-        additional_arguments: Additional training parameters.
+        core_additional_arguments: Additional training parameters for core training.
+        nlu_additional_arguments: Additional training parameters forwarded to training
+                                  method of each NLU component.
 
     Returns:
         Path of the trained model archive.
@@ -98,7 +109,8 @@ async def train_async(
             force_training,
             fixed_model_name,
             persist_nlu_training_data,
-            additional_arguments,
+            core_additional_arguments=core_additional_arguments,
+            nlu_additional_arguments=nlu_additional_arguments,
         )
 
 
@@ -122,7 +134,8 @@ async def _train_async_internal(
     force_training: bool,
     fixed_model_name: Optional[Text],
     persist_nlu_training_data: bool,
-    additional_arguments: Optional[Dict],
+    core_additional_arguments: Optional[Dict] = None,
+    nlu_additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU). Use only from `train_async`.
 
@@ -131,10 +144,12 @@ async def _train_async_internal(
         train_path: Directory in which to train the model.
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
+        fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
                                    with the model.
-        fixed_model_name: Name of model to be stored.
-        additional_arguments: Additional training parameters.
+        core_additional_arguments: Additional training parameters for core training.
+        nlu_additional_arguments: Additional training parameters forwarded to training
+                                  method of each NLU component.
 
     Returns:
         Path of the trained model archive.
@@ -158,6 +173,7 @@ async def _train_async_internal(
             output=output_path,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
+            additional_arguments=nlu_additional_arguments,
         )
 
     if nlu_data.is_empty():
@@ -166,7 +182,7 @@ async def _train_async_internal(
             file_importer,
             output=output_path,
             fixed_model_name=fixed_model_name,
-            additional_arguments=additional_arguments,
+            additional_arguments=core_additional_arguments,
         )
 
     new_fingerprint = await model.model_fingerprint(file_importer)
@@ -185,7 +201,9 @@ async def _train_async_internal(
             fingerprint_comparison_result=fingerprint_comparison,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
-            additional_arguments=additional_arguments,
+            core_additional_arguments=core_additional_arguments,
+            nlu_additional_arguments=nlu_additional_arguments,
+            old_model_zip_path=old_model,
         )
 
         return model.package_model(
@@ -209,10 +227,29 @@ async def _do_training(
     fingerprint_comparison_result: Optional[FingerprintComparisonResult] = None,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
-    additional_arguments: Optional[Dict] = None,
+    core_additional_arguments: Optional[Dict] = None,
+    nlu_additional_arguments: Optional[Dict] = None,
+    old_model_zip_path: Optional[Text] = None,
 ):
     if not fingerprint_comparison_result:
         fingerprint_comparison_result = FingerprintComparisonResult()
+
+    interpreter_path = None
+    if fingerprint_comparison_result.should_retrain_nlu():
+        model_path = await _train_nlu_with_validated_data(
+            file_importer,
+            output=output_path,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            persist_nlu_training_data=persist_nlu_training_data,
+            additional_arguments=nlu_additional_arguments,
+        )
+        interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
+    else:
+        print_color(
+            "NLU data/configuration did not change. No need to retrain NLU model.",
+            color=bcolors.OKBLUE,
+        )
 
     if fingerprint_comparison_result.should_retrain_core():
         await _train_core_with_validated_data(
@@ -220,7 +257,9 @@ async def _do_training(
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
-            additional_arguments=additional_arguments,
+            additional_arguments=core_additional_arguments,
+            interpreter=_load_interpreter(interpreter_path)
+            or _interpreter_from_previous_model(old_model_zip_path),
         )
     elif fingerprint_comparison_result.should_retrain_nlg():
         print_color(
@@ -236,19 +275,25 @@ async def _do_training(
             color=bcolors.OKBLUE,
         )
 
-    if fingerprint_comparison_result.should_retrain_nlu():
-        await _train_nlu_with_validated_data(
-            file_importer,
-            output=output_path,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-            persist_nlu_training_data=persist_nlu_training_data,
-        )
-    else:
-        print_color(
-            "NLU data/configuration did not change. No need to retrain NLU model.",
-            color=bcolors.OKBLUE,
-        )
+
+def _load_interpreter(
+    interpreter_path: Optional[Text],
+) -> Optional[NaturalLanguageInterpreter]:
+    if interpreter_path:
+        return NaturalLanguageInterpreter.create(interpreter_path)
+
+    return None
+
+
+def _interpreter_from_previous_model(
+    old_model_zip_path: Optional[Text],
+) -> Optional[NaturalLanguageInterpreter]:
+    if not old_model_zip_path:
+        return None
+
+    with model.unpack_model(old_model_zip_path) as unpacked:
+        _, old_nlu = model.get_model_subdirectories(unpacked)
+        return NaturalLanguageInterpreter.create(old_nlu)
 
 
 def train_core(
@@ -335,6 +380,7 @@ async def _train_core_with_validated_data(
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
+    interpreter: Optional[Interpreter] = None,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
 
@@ -359,6 +405,7 @@ async def _train_core_with_validated_data(
             output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
             policy_config=config,
             additional_arguments=additional_arguments,
+            interpreter=interpreter,
         )
         print_color("Core model training completed.", color=bcolors.OKBLUE)
 
@@ -383,6 +430,7 @@ def train_nlu(
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
+    additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains an NLU model.
 
@@ -395,6 +443,8 @@ def train_nlu(
         fixed_model_name: Name of the model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
                                    with the model.
+        additional_arguments: Additional training parameters which will be passed to
+                              the `train` method of each component.
 
 
     Returns:
@@ -412,6 +462,7 @@ def train_nlu(
             train_path,
             fixed_model_name,
             persist_nlu_training_data,
+            additional_arguments,
         )
     )
 
@@ -423,6 +474,7 @@ async def _train_nlu_async(
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
+    additional_arguments: Optional[Dict] = None,
 ):
     if not nlu_data:
         print_error(
@@ -451,6 +503,7 @@ async def _train_nlu_async(
         train_path=train_path,
         fixed_model_name=fixed_model_name,
         persist_nlu_training_data=persist_nlu_training_data,
+        additional_arguments=additional_arguments,
     )
 
 
@@ -460,10 +513,14 @@ async def _train_nlu_with_validated_data(
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
+    additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""
 
     import rasa.nlu.train
+
+    if additional_arguments is None:
+        additional_arguments = {}
 
     with ExitStack() as stack:
         if train_path:
@@ -480,6 +537,7 @@ async def _train_nlu_with_validated_data(
             _train_path,
             fixed_model_name="nlu",
             persist_nlu_training_data=persist_nlu_training_data,
+            **additional_arguments,
         )
         print_color("NLU model training completed.", color=bcolors.OKBLUE)
 

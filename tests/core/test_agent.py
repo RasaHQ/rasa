@@ -1,7 +1,7 @@
 import asyncio
 from pathlib import Path
-from typing import Text, Dict, Any, Optional, Callable
 from unittest.mock import Mock
+from typing import Any, Dict, Text, Optional, Callable
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -57,7 +57,7 @@ def model_server(
     return loop.run_until_complete(sanic_client(app))
 
 
-async def test_training_data_is_reproducible(tmpdir: Path, default_domain: Domain):
+async def test_training_data_is_reproducible():
     training_data_file = "examples/moodbot/data/stories.md"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
@@ -143,7 +143,7 @@ async def test_agent_handle_message(default_agent: Agent):
     ]
 
 
-def test_agent_wrong_use_of_load(tmpdir: Path, default_domain):
+def test_agent_wrong_use_of_load():
     training_data_file = "examples/moodbot/data/stories.md"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]

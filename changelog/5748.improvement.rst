@@ -1,0 +1,6 @@
+Standardize testing output. The following test output can be produced for intents, responses, entities and stories:
+- report: a detailed report with testing metrics per label (e.g. precision, recall, accuracy, etc.)
+- errors: a file that contains incorrect predictions
+- successes: a file that contains correct predictions
+- confusion matrix: plot of confusion matrix
+- histogram: plot of confidence distribution (not available for stories)

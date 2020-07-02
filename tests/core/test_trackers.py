@@ -145,7 +145,7 @@ async def test_tracker_write_to_story(tmpdir, moodbot_domain: Domain):
 async def test_tracker_state_regression_without_bot_utterance(default_agent: Agent):
     sender_id = "test_tracker_state_regression_without_bot_utterance"
     for i in range(0, 2):
-        await default_agent.handle_message("/greet", sender_id=sender_id)
+        await default_agent.handle_text("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # Ensures that the tracker has changed between the utterances
@@ -163,7 +163,7 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent: Age
 async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent):
     sender_id = "test_tracker_state_regression_with_bot_utterance"
     for i in range(0, 2):
-        await default_agent.handle_message("/greet", sender_id=sender_id)
+        await default_agent.handle_text("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     expected = [
@@ -186,7 +186,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
 async def test_bot_utterance_comes_after_action_event(default_agent):
     sender_id = "test_bot_utterance_comes_after_action_event"
 
-    await default_agent.handle_message("/greet", sender_id=sender_id)
+    await default_agent.handle_text("/greet", sender_id=sender_id)
 
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
@@ -588,8 +588,8 @@ def test_session_started_not_part_of_applied_events(default_agent: Agent):
 async def test_tracker_dump_e2e_story(default_agent):
     sender_id = "test_tracker_dump_e2e_story"
 
-    await default_agent.handle_message("/greet", sender_id=sender_id)
-    await default_agent.handle_message("/goodbye", sender_id=sender_id)
+    await default_agent.handle_text("/greet", sender_id=sender_id)
+    await default_agent.handle_text("/goodbye", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     story = tracker.export_stories(e2e=True)

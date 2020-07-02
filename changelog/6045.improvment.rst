@@ -1,0 +1,15 @@
+We updated the way how we save and use features in our NLU pipeline.
+
+The message object now has a dedicated field, called ``features``, to store the features that are generated in the NLU
+pipeline. We adapted all our featurizers in a way that sequence and sentence features are stored independently.
+This allows us to keep different kind of features for the sequence and the sentence. For example, the
+``LexicalSyntacticFeaturizer`` does not produce any sentence features anymore as our experiments showed that those did
+not bring any performance gain just quite a lot of additional values to store.
+
+We also modified the DIET architecture to process the sequence and sentence features independently at first.
+The features are concatenated just before the transformer.
+
+We also removed the ``__CLS__`` token again. Our Tokenizers will not add this token anymore.
+
+.. warning::
+    This change is model-breaking. Please retrain your models.

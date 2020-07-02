@@ -184,3 +184,9 @@ def test_is_not_nlu_file_with_json():
     io.write_text_file('{"test": "a"}', file)
 
     assert not data.is_nlu_file(file)
+
+
+def test_get_story_file_with_yaml():
+    examples_dir = "data/test_yaml_stories"
+    core_files, nlu_files = data.get_core_nlu_files([examples_dir])
+    assert core_files

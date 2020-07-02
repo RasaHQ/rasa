@@ -1,0 +1,1 @@
+Changed to variable CERT_URI in hangouts.py to a string type

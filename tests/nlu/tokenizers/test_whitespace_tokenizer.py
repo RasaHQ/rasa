@@ -137,11 +137,11 @@ def test_whitespace_training(supervised_embeddings_config):
 
     tk.train(TrainingData(training_examples=examples), supervised_embeddings_config)
 
-    assert examples[0].data.get("tokens")[0].text == "any"
-    assert examples[0].data.get("tokens")[1].text == "mexican"
-    assert examples[0].data.get("tokens")[2].text == "restaurant"
-    assert examples[0].data.get("tokens")[3].text == "will"
-    assert examples[0].data.get("tokens")[4].text == "do"
-    assert examples[1].data.get("tokens")[0].text == "i"
-    assert examples[1].data.get("tokens")[1].text == "want"
-    assert examples[1].data.get("tokens")[2].text == "tacos"
+    assert examples[0].data.get(TOKENS_NAMES[TEXT])[0].text == "any"
+    assert examples[0].data.get(TOKENS_NAMES[TEXT])[1].text == "mexican"
+    assert examples[0].data.get(TOKENS_NAMES[TEXT])[2].text == "restaurant"
+    assert examples[0].data.get(TOKENS_NAMES[TEXT])[3].text == "will"
+    assert examples[0].data.get(TOKENS_NAMES[TEXT])[4].text == "do"
+    assert examples[1].data.get(TOKENS_NAMES[TEXT])[0].text == "i"
+    assert examples[1].data.get(TOKENS_NAMES[TEXT])[1].text == "want"
+    assert examples[1].data.get(TOKENS_NAMES[TEXT])[2].text == "tacos"

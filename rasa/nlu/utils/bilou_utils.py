@@ -18,7 +18,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
-import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -149,9 +148,7 @@ def build_tag_id_dict(
     return tag_id_dict
 
 
-def apply_bilou_schema(
-    training_data: TrainingData, include_cls_token: bool = True
-) -> None:
+def apply_bilou_schema(training_data: TrainingData) -> None:
     """Get a list of BILOU entity tags and set them on the given messages.
 
     Args:
@@ -164,8 +161,6 @@ def apply_bilou_schema(
             continue
 
         tokens = message.get(TOKENS_NAMES[TEXT])
-        if not include_cls_token:
-            tokens = train_utils.tokens_without_cls(message)
 
         for attribute, message_key in [
             (ENTITY_ATTRIBUTE_TYPE, BILOU_ENTITIES),
