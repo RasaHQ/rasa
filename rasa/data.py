@@ -3,14 +3,15 @@ import os
 import shutil
 import tempfile
 import uuid
-import re
+from pathlib import Path
 from typing import Tuple, List, Text, Set, Union, Optional, Iterable
-from rasa.nlu.training_data import loading
-from rasa.utils.io import DEFAULT_ENCODING
+
 from rasa.constants import DEFAULT_E2E_TESTS_PATH
+from rasa.nlu.training_data import loading as nlu_loading
 
 logger = logging.getLogger(__name__)
 MARKDOWN_FILE_EXTENSION = ".md"
+YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
 JSON_FILE_EXTENSION = ".json"
 
 
@@ -123,8 +124,10 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
 
 def _is_valid_filetype(path: Text) -> bool:
     is_file = os.path.isfile(path)
-    is_datafile = path.endswith(JSON_FILE_EXTENSION) or path.endswith(
-        MARKDOWN_FILE_EXTENSION
+    is_datafile = (
+        path.endswith(JSON_FILE_EXTENSION)
+        or path.endswith(MARKDOWN_FILE_EXTENSION)
+        or Path(path).suffix in YAML_FILE_EXTENSIONS
     )
 
     return is_file and is_datafile
@@ -139,10 +142,15 @@ def is_nlu_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a nlu file, otherwise `False`.
     """
-    return loading.guess_format(file_path) != loading.UNK
+    return nlu_loading.guess_format(file_path) != nlu_loading.UNK
 
 
 def is_story_file(file_path: Text) -> bool:
+    from rasa.core.training.story_reader.markdown_story_reader import (
+        MarkdownStoryReader,
+    )
+    from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
+
     """Checks if a file is a Rasa story file.
 
     Args:
@@ -151,28 +159,31 @@ def is_story_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file, otherwise `False`.
     """
+    # TODO: Rick
+    # if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
+    #     return False
 
-    if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
-        return False
-
-    try:
-        with open(
-            file_path, encoding=DEFAULT_ENCODING, errors="surrogateescape"
-        ) as lines:
-            return any(
-                _contains_story_pattern(line) or _contains_rule_pattern(line)
-                for line in lines
-            )
-    except Exception as e:
-        # catch-all because we might be loading files we are not expecting to load
-        logger.error(
-            f"Tried to check if '{file_path}' is a story file, but failed to "
-            f"read it. If this file contains story data, you should "
-            f"investigate this error, otherwise it is probably best to "
-            f"move the file to a different location. "
-            f"Error: {e}"
-        )
-        return False
+    # try:
+    #     with open(
+    #         file_path, encoding=DEFAULT_ENCODING, errors="surrogateescape"
+    #     ) as lines:
+    #         return any(
+    #             _contains_story_pattern(line) or _contains_rule_pattern(line)
+    #             for line in lines
+    #         )
+    # except Exception as e:
+    #     # catch-all because we might be loading files we are not expecting to load
+    #     logger.error(
+    #         f"Tried to check if '{file_path}' is a story file, but failed to "
+    #         f"read it. If this file contains story data, you should "
+    #         f"investigate this error, otherwise it is probably best to "
+    #         f"move the file to a different location. "
+    #         f"Error: {e}"
+    #     )
+    #     return False
+    return YAMLStoryReader.is_yaml_story_file(
+        file_path
+    ) or MarkdownStoryReader.is_markdown_story_file(file_path)
 
 
 def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
@@ -196,16 +207,17 @@ def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
     )
 
 
-def _contains_story_pattern(text: Text) -> bool:
-    story_pattern = r".*##.+"
+# TODO: Rick
+# def _contains_story_pattern(text: Text) -> bool:
+#     story_pattern = r".*##.+"
 
-    return re.match(story_pattern, text) is not None
+#     return re.match(story_pattern, text) is not None
 
 
-def _contains_rule_pattern(text: Text) -> bool:
-    rule_pattern = r".*>>.+"
+# def _contains_rule_pattern(text: Text) -> bool:
+#     rule_pattern = r".*>>.+"
 
-    return re.match(rule_pattern, text) is not None
+#     return re.match(rule_pattern, text) is not None
 
 
 def is_domain_file(file_path: Text) -> bool:

@@ -706,7 +706,9 @@ class Agent:
 
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
-        self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
+        self.policy_ensemble.train(
+            training_trackers, self.domain, interpreter=self.interpreter, **kwargs
+        )
         self._set_fingerprint()
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:
@@ -770,7 +772,7 @@ class Agent:
         fontsize: int = 12,
     ) -> None:
         from rasa.core.training.visualization import visualize_stories
-        from rasa.core.training.dsl import StoryFileReader
+        from rasa.core.training import loading
 
         """Visualize the loaded training data from the resource."""
 
@@ -778,7 +780,7 @@ class Agent:
         # largest value from any policy
         max_history = max_history or self._max_history()
 
-        story_steps = await StoryFileReader.read_from_folder(resource_name, self.domain)
+        story_steps = await loading.load_data_from_resource(resource_name, self.domain)
         await visualize_stories(
             story_steps,
             self.domain,

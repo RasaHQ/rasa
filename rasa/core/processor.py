@@ -41,7 +41,6 @@ from rasa.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
-    SessionStarted,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -809,5 +808,5 @@ class MessageProcessor:
                 )
 
         return self.policy_ensemble.probabilities_using_best_policy(
-            tracker, self.domain
+            tracker, self.domain, self.interpreter
         )
