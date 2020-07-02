@@ -2076,13 +2076,12 @@ description = "We have made you a wrapper you can't refuse"
 name = "python-telegram-bot"
 optional = false
 python-versions = "*"
-version = "12.7"
+version = "12.8"
 
 [package.dependencies]
 certifi = "*"
 cryptography = "*"
 decorator = ">=4.4.0"
-future = ">=0.16.0"
 tornado = ">=5.1"
 
 [package.extras]
@@ -4489,8 +4488,8 @@ python-socketio = [
     {file = "python_socketio-4.6.0-py2.py3-none-any.whl", hash = "sha256:d437f797c44b6efba2f201867cf02b8c96b97dff26d4e4281ac08b45817cd522"},
 ]
 python-telegram-bot = [
-    {file = "python-telegram-bot-12.7.tar.gz", hash = "sha256:218b0583afb8baeefe6f2f1ddd8f1bb1ae30f0af3ce9160a372abd2cdf258eef"},
-    {file = "python_telegram_bot-12.7-py2.py3-none-any.whl", hash = "sha256:6878cc642114c8c116ceada41639a9df487f42d5478d9f34cae513cc5c260dee"},
+    {file = "python-telegram-bot-12.8.tar.gz", hash = "sha256:327186c56469216207dcdf8706892e58e0a62e51ef46f5143268e387bbb4edc3"},
+    {file = "python_telegram_bot-12.8-py2.py3-none-any.whl", hash = "sha256:7eebed539ccacf77896cff9e41d1f68746b8ff3ca4da1e2e59285e9c749cb050"},
 ]
 pytype = [
     {file = "pytype-2020.6.1.tar.gz", hash = "sha256:08ddb9940764492b701a8985c30437239eb2c34003448cca760769264f5ff2f8"},
