@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
@@ -9,6 +10,8 @@ from rasa.core.events import UserUttered, SlotSet
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.data import YAML_FILE_EXTENSIONS
+
+logger = logging.getLogger(__name__)
 
 KEY_STORIES = "stories"
 KEY_STORY_NAME = "story"
@@ -133,7 +136,25 @@ class YAMLStoryReader(StoryReader):
     def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
         utterance = self._parse_raw_user_utterance(step)
         if utterance:
+            self._validate_that_utterance_is_in_domain(utterance)
             self.current_step_builder.add_user_messages([utterance])
+
+    def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
+        intent_name = utterance.intent.get("name")
+
+        if not self.domain:
+            logger.debug(
+                "Skipped validating if intent is in domain as domain " "is `None`."
+            )
+            return
+
+        if intent_name not in self.domain.intents:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}': \n"
+                f"Found intent '{intent_name}' in stories which is not part of the "
+                f"domain.",
+                docs=DOCS_URL_STORIES,
+            )
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
         utterances = []

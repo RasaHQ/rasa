@@ -3,7 +3,9 @@ import pytest
 from rasa.core import training
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, UserUttered, SlotSet
+from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
+from rasa.utils import io as io_utils
 
 
 async def test_can_read_test_story_with_slots(default_domain: Domain):
@@ -117,3 +119,36 @@ async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
             tracker_limit=1000,
             remove_duplicates=False,
         )
+
+
+async def test_warning_if_intent_not_in_domain(default_domain: Domain):
+    stories = """
+    stories:
+    - story: I am gonna make you explode 💥
+      steps:
+      # Intent defined in user key.
+      - intent: definitely not in domain
+    """
+
+    reader = YAMLStoryReader(RegexInterpreter(), default_domain)
+    yaml_content = io_utils.read_yaml(stories)
+
+    with pytest.warns(UserWarning):
+        reader.read_from_parsed_yaml(yaml_content)
+
+
+async def test_no_warning_if_intent_in_domain(default_domain: Domain):
+    stories = """
+    stories:
+    - story: I am fine 💥
+      steps:
+      - intent: greet
+    """
+
+    reader = YAMLStoryReader(RegexInterpreter(), default_domain)
+    yaml_content = io_utils.read_yaml(stories)
+
+    with pytest.warns(None) as record:
+        reader.read_from_parsed_yaml(yaml_content)
+
+    assert len(record) == 0
