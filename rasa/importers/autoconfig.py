@@ -15,9 +15,24 @@ from rasa.constants import (
     DOCS_URL_POLICIES,
     CONFIG_KEYS,
 )
-from rasa.utils import io as io_utils
+from rasa.utils import io as io_utils, common as common_utils
 
 logger = logging.getLogger(__name__)
+
+COMMENTS_FOR_KEYS = {
+    "pipeline": (
+        f"# # No configuration for the NLU pipeline was provided. The following "
+        f"default pipeline was used to train your model.\n"
+        f"# # To customise it, uncomment and adjust the pipeline. See "
+        f"{DOCS_URL_PIPELINE} for more information.\n"
+    ),
+    "policies": (
+        f"# # No configuration for policies was provided. The following default "
+        f"policies were used to train your model.\n"
+        f"# # To customise them, uncomment and adjust the policies. See "
+        f"{DOCS_URL_POLICIES} for more information.\n"
+    ),
+}
 
 
 def get_configuration(config_file: Text) -> Dict[Text, Any]:
@@ -132,7 +147,7 @@ def _dump_config(config: Dict[Text, Any], config_file: Text) -> None:
 
                 for key in autoconfigured:
                     if re.match(f"{key}:( *)", line):  # start of next auto-section
-                        line = line + _config_comment(key)
+                        line = line + COMMENTS_FOR_KEYS[key]
                         insert_section = key
                         remove_comments_until_next_uncommented_line = True
                 f.write(line)
@@ -148,7 +163,9 @@ def _dump_config(config: Dict[Text, Any], config_file: Text) -> None:
         raise ValueError(f"File '{config_file}' does not exist.")
 
     if autoconfigured:
-        autoconfigured_keys = cli_utils.transform_collection_to_sentence(autoconfigured)
+        autoconfigured_keys = common_utils.transform_collection_to_sentence(
+            autoconfigured
+        )
         cli_utils.print_info(
             f"The configuration for {autoconfigured_keys} was chosen automatically. It "
             f"was written into the config file at `{config_file}`."
@@ -187,21 +204,3 @@ def _get_lines_to_insert(
             except FileNotFoundError:
                 raise ValueError(f"File {file} does not exist.")
     return lines_to_insert
-
-
-def _config_comment(key: Text) -> Text:
-    if key == "pipeline":
-        comment = (
-            f"# # No configuration for the NLU pipeline was provided. The following "
-            f"default pipeline was used to train your model.\n"
-            f"# # To customise it, uncomment and adjust the pipeline. See "
-            f"{DOCS_URL_PIPELINE} for more information.\n"
-        )
-    else:
-        comment = (
-            f"# # No configuration for policies was provided. The following default "
-            f"policies were used to train your model.\n"
-            f"# # To customise them, uncomment and adjust the policies. See "
-            f"{DOCS_URL_POLICIES} for more information.\n"
-        )
-    return comment
