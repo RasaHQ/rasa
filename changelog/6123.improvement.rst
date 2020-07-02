@@ -1,0 +1,1 @@
+adds support for proxy use in slack channel

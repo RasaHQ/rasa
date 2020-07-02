@@ -66,6 +66,8 @@ You need to supply a ``credentials.yml`` with the following content:
   "OAuth & Permissions" tab as your ``slack_token``. It should start
   with ``xoxb``.
 
+- Optional you can add a ``proxy`` to route outgoing traffic to the slack API through. Only http proxy is currently supported!
+
 .. code-block:: yaml
 
    slack:
