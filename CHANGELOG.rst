@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.5] - 2020-07-02
+^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6119 <https://github.com/rasahq/rasa/issues/6119>`_: Explicitly remove all emojis which appear as unicode characters from the output of ``regex.sub`` inside ``WhitespaceTokenizer``.
+
+
 [1.10.4] - 2020-07-01
 ^^^^^^^^^^^^^^^^^^^^^
 
