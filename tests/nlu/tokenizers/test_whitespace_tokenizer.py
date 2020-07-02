@@ -50,11 +50,6 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             ],
         ),
         (
-            "Joselico gracias Dois 🙏🇺🇸🏦🛠🔥⭐️🦅👑💪",
-            ["Joselico", "gracias", "Dois"],
-            [(0, 8), (9, 16), (17, 21)],
-        ),
-        (
             "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
             [
                 "https://www.google.com/search?"
