@@ -248,6 +248,17 @@ async def rasa_server_without_api() -> Sanic:
     return app
 
 
+@pytest.fixture(scope="session")
+def project() -> Text:
+    import tempfile
+    from rasa.cli.scaffold import create_initial_project
+
+    directory = tempfile.mkdtemp()
+    create_initial_project(directory)
+
+    return directory
+
+
 def get_test_client(server: Sanic) -> SanicTestClient:
     test_client = server.test_client
     test_client.port = None

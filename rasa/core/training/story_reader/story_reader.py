@@ -30,7 +30,7 @@ class StoryReader:
         self.use_e2e = use_e2e
         self.source_name = source_name
 
-    async def read_from_file(self, filename: Text,) -> List[StoryStep]:
+    async def read_from_file(self, filename: Text) -> List[StoryStep]:
         raise NotImplementedError
 
     def _add_current_stories_to_result(self):
@@ -42,12 +42,19 @@ class StoryReader:
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name)
 
-    def _add_event(self, event_name, parameters):
+    def _add_event(
+        self, event_name: Text, parameters: Dict[Text, Any], is_e2e: bool = False
+    ) -> None:
 
         # add 'name' only if event is not a SlotSet,
         # because there might be a slot with slot_key='name'
         if "name" not in parameters and event_name != SlotSet.type_name:
             parameters["name"] = event_name
+
+            if is_e2e:
+                # TODO: This is somewhat hacky and needs be cleaned up in YAML
+                #  implementation
+                parameters["e2e_text"] = action_as_message.text
 
         parsed_events = Event.from_story_string(
             event_name, parameters, default=ActionExecuted
