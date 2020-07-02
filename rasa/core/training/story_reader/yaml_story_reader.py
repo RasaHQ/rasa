@@ -36,13 +36,7 @@ class YAMLStoryReader(StoryReader):
                 )
                 return []
 
-            stories = yaml_content.get(KEY_STORIES)  # pytype: disable=attribute-error
-            if not stories:
-                return []
-
-            self._parse_stories(stories)
-            self._add_current_stories_to_result()
-            return self.story_steps
+            return self.read_from_parsed_yaml(yaml_content)
 
         except ValueError as e:
             common_utils.raise_warning(
@@ -50,6 +44,26 @@ class YAMLStoryReader(StoryReader):
             )
 
         return []
+
+    def read_from_parsed_yaml(
+        self, parsed_content: Dict[Text, Union[Dict, List]]
+    ) -> List[StoryStep]:
+        """Read stories from parsed YAML.
+
+        Args:
+            parsed_content: The parsed YAML as Dict.
+
+        Returns:
+            The parsed stories.
+        """
+        stories = parsed_content.get(KEY_STORIES)  # pytype: disable=attribute-error
+        if not stories:
+            return []
+
+        self._parse_stories(stories)
+        self._add_current_stories_to_result()
+
+        return self.story_steps
 
     def _parse_stories(self, stories: List[Dict[Text, Any]]) -> None:
         for story_item in stories:
