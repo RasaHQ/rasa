@@ -20,7 +20,12 @@ class SlackBot(OutputChannel):
     def name(cls) -> Text:
         return "slack"
 
-    def __init__(self, token: Text, slack_channel: Optional[Text] = None, proxy: Optional[Text] = None) -> None:
+    def __init__(
+        self,
+        token: Text,
+        slack_channel: Optional[Text] = None,
+        proxy: Optional[Text] = None,
+    ) -> None:
 
         self.slack_channel = slack_channel
         self.proxy = proxy
