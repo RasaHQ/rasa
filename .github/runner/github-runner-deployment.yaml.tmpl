@@ -22,10 +22,23 @@ spec:
     spec:
       priorityClassName: high-priority
       automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 180
       containers:
       - name: github-runner
         image: us.gcr.io/rasa-platform/github-runner:2.263.0
         imagePullPolicy: Always
+        livenessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          failureThreshold: 3
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "if [[ `curl -sX GET -H \"Authorization: token ${GITHUB_PAT}\" \
+              https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/actions/runners | \
+              jq -r '.runners[] | select(.name == \"'${POD_NAME}'\") | .status'` == \"offline\" ]]; then \
+              echo \"The GitHub API returns offline status for the ${POD_NAME} runner\" && exit 1; fi"
         resources:
           limits:
             nvidia.com/gpu: 1
@@ -33,6 +46,10 @@ spec:
             nvidia.com/gpu: 1
             memory: 10Gi
         env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         # RUNNER_LABELS - defines labels
         # with which a github-runner will be registered
         - name: RUNNER_LABELS

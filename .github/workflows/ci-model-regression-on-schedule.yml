@@ -105,9 +105,9 @@ jobs:
           # for a given dataset
 
           test -f dataset/configs/$CONFIG || (echo "::warning::The ${{ matrix.config }} configuration file doesn't exist. Skipping the job." \
-            echo "::set-output name=is_dataset_exists::false" && exit 0)
+            && echo "::set-output name=is_dataset_exists::false" && exit 0)
           test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
-            echo "::set-output name=is_config_exists::false" && exit 0)
+            && echo "::set-output name=is_config_exists::false" && exit 0)
           echo "::set-output name=is_dataset_exists::true"
           echo "::set-output name=is_config_exists::true"
           echo "::set-env name=DATASET::${DATASET}"
