@@ -85,7 +85,6 @@ async def test_can_read_test_story_with_entities_without_value(default_domain: D
 
 
 async def test_is_yaml_file():
-
     valid_yaml_file = "data/test_yaml_stories/stories.yml"
     valid_markdown_file = "data/test_stories/stories.md"
 
@@ -108,7 +107,6 @@ async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
 
 
 async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
-
     yaml_file = "data/test_wrong_yaml_stories/wrong_yaml.yml"
 
     with pytest.warns(UserWarning):
