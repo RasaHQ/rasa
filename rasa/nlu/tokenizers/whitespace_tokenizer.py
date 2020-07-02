@@ -28,7 +28,7 @@ class WhitespaceTokenizer(Tokenizer):
         self.emoji_pattern = self.get_emoji_regex()
 
     @staticmethod
-    def get_emoji_regex() -> re.Pattern:
+    def get_emoji_regex():
         emoji_pattern = re.compile(
             "["
             "\U0001F600-\U0001F64F"  # emoticons
