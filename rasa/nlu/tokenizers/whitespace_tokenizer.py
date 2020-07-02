@@ -25,7 +25,10 @@ class WhitespaceTokenizer(Tokenizer):
 
         self.case_sensitive = self.component_config["case_sensitive"]
 
-    def remove_emoji(self, text: Text):
+        self.emoji_pattern = self.get_emoji_regex()
+
+    @staticmethod
+    def get_emoji_regex():
         emoji_pattern = re.compile(
             "["
             "\U0001F600-\U0001F64F"  # emoticons
@@ -37,7 +40,11 @@ class WhitespaceTokenizer(Tokenizer):
             "]+",
             flags=re.UNICODE,
         )
-        return emoji_pattern.sub(r"", text)
+        return emoji_pattern
+
+    def remove_emoji(self, text: Text):
+
+        return self.emoji_pattern.sub(r"", text)
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         text = message.get(attribute)
@@ -63,14 +70,11 @@ class WhitespaceTokenizer(Tokenizer):
             text,
         ).split()
 
-        words = [self.remove_emoji(w) for w in words]
-        words = [w for w in words if w]
-
         # if we removed everything like smiles `:)`, use the whole text as 1 token
         if not words:
             words = [text]
 
-        # convert to ascii and check if the resultant string is empty
-        words = [w for w in words if w.encode("ascii", "ignore").strip()]
+        words = [self.remove_emoji(w) for w in words]
+        words = [w for w in words if w]
 
         return self._convert_words_to_tokens(words, text)
