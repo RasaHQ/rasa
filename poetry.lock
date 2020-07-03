@@ -288,10 +288,10 @@ description = "The AWS SDK for Python"
 name = "boto3"
 optional = false
 python-versions = "*"
-version = "1.14.15"
+version = "1.14.16"
 
 [package.dependencies]
-botocore = ">=1.17.15,<1.18.0"
+botocore = ">=1.17.16,<1.18.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
@@ -301,7 +301,7 @@ description = "Low-level, data-driven core of boto 3."
 name = "botocore"
 optional = false
 python-versions = "*"
-version = "1.17.15"
+version = "1.17.16"
 
 [package.dependencies]
 docutils = ">=0.10,<0.16"
@@ -2032,7 +2032,7 @@ description = "Engine.IO server"
 name = "python-engineio"
 optional = false
 python-versions = "*"
-version = "3.13.0"
+version = "3.13.1"
 
 [package.dependencies]
 six = ">=1.9.0"
@@ -3365,7 +3365,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "b82d8f9d1002dcc3ca153133156aa4d776b34f36ecd3bef13757fa3d4efb188a"
+content-hash = "e87f853ba73906298a1dcb2cd3b3acad0057e6ab8759a4934799f1f010c96952"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
@@ -3486,12 +3486,12 @@ boto = [
     {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
 ]
 boto3 = [
-    {file = "boto3-1.14.15-py2.py3-none-any.whl", hash = "sha256:974a4a495fa876f4e8180e2690c840152f06cc3badbe865f05ed731efadcbf44"},
-    {file = "boto3-1.14.15.tar.gz", hash = "sha256:3c654c1b8f9708e0b457ea1d312ee53451368d09b571ce737dc1f46484112bc1"},
+    {file = "boto3-1.14.16-py2.py3-none-any.whl", hash = "sha256:c2a223f4b48782e8b160b2130265e2a66081df111f630a5a384d6909e29a5aa9"},
+    {file = "boto3-1.14.16.tar.gz", hash = "sha256:ce5a4ab6af9e993d1864209cbbb6f4812f65fbc57ad6b95e5967d8bf38b1dcfb"},
 ]
 botocore = [
-    {file = "botocore-1.17.15-py2.py3-none-any.whl", hash = "sha256:bb3d3e6aa1fb0caac5909421404218fa7fdcdfc5a1b597ec93cb3affb8326d26"},
-    {file = "botocore-1.17.15.tar.gz", hash = "sha256:34ebc56471a75ea28bfd39f1665d58ee13229c75e8cd6c62b2e2abf1f3e75f0f"},
+    {file = "botocore-1.17.16-py2.py3-none-any.whl", hash = "sha256:99d995ef99cf77458a661f3fc64e0c3a4ce77ca30facfdf0472f44b2953dd856"},
+    {file = "botocore-1.17.16.tar.gz", hash = "sha256:fe0c4f7cd6b67eff3b7cb8dff6709a65d6fca10b7b7449a493b2036915e98b4c"},
 ]
 cachetools = [
     {file = "cachetools-4.1.1-py3-none-any.whl", hash = "sha256:513d4ff98dd27f85743a8dc0e92f55ddb1b49e060c2d5961512855cda2c01a98"},
@@ -4492,8 +4492,8 @@ python-dateutil = [
     {file = "python_dateutil-2.8.1-py2.py3-none-any.whl", hash = "sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a"},
 ]
 python-engineio = [
-    {file = "python-engineio-3.13.0.tar.gz", hash = "sha256:2da5e1e5565e170a17169d1a76eb6a099cc96f0a25a5b1e0f9785f151485daea"},
-    {file = "python_engineio-3.13.0-py2.py3-none-any.whl", hash = "sha256:5423045623f094df67ace05d53737b88e39395ac3b1129798a31be2dbc6011cf"},
+    {file = "python-engineio-3.13.1.tar.gz", hash = "sha256:133bdb5fb89f43a53f8612fb1ddbb3a453318713dea18a9ecf5346ed0c0f793c"},
+    {file = "python_engineio-3.13.1-py2.py3-none-any.whl", hash = "sha256:41353c2539493e9e30e0e75e53f9cbb670f09a5ebcf82fe738081a9ba28fe55c"},
 ]
 python-jose = [
     {file = "python-jose-3.1.0.tar.gz", hash = "sha256:8484b7fdb6962e9d242cce7680469ecf92bda95d10bbcbbeb560cacdff3abfce"},
