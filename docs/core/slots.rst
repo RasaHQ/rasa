@@ -206,7 +206,7 @@ Boolean Slot
 
 .. option:: bool
 
-  :Use For: True or False
+  :Use For:   True or False
   :Example:
      .. sourcecode:: yaml
 
@@ -214,14 +214,14 @@ Boolean Slot
            is_authenticated:
               type: bool
   :Description:
-      Checks if slot is set and if True
+              Checks if slot is set and if True
 
 Categorical Slot
 ~~~~~~~~~~~~~~~~
 
 .. option:: categorical
 
-  :Use For: Slots which can take one of N values
+  :Use For:   Slots which can take one of N values
   :Example:
      .. sourcecode:: yaml
 
@@ -234,19 +234,19 @@ Categorical Slot
               - high
 
   :Description:
-     Creates a one-hot encoding describing which of the ``values`` matched.
-     A default value ``__other__`` is automatically added to the user-defined
-     values. All values encountered which are not explicitly defined in the 
-     domain are mapped to ``__other__`` for featurization. The value 
-     ``__other__`` should not be used as a user-defined value; if it is, it 
-     will still behave as the default to which all unseen values are mapped.
+              Creates a one-hot encoding describing which of the ``values`` matched.
+              A default value ``__other__`` is automatically added to the user-defined
+              values. All values encountered which are not explicitly defined in the 
+              domain are mapped to ``__other__`` for featurization. The value 
+              ``__other__`` should not be used as a user-defined value; if it is, it 
+              will still behave as the default to which all unseen values are mapped.
 
 Float Slot
 ~~~~~~~~~~
 
 .. option:: float
 
-  :Use For: Continuous values
+  :Use For:   Continuous values
   :Example:
      .. sourcecode:: yaml
 
@@ -256,20 +256,20 @@ Float Slot
               min_value: -100.0
               max_value:  100.0
 
-  :Defaults: ``max_value=1.0``, ``min_value=0.0``
+  :Defaults:  ``max_value=1.0``, ``min_value=0.0``
   :Description:
-     All values below ``min_value`` will be treated as ``min_value``, the same
-     happens for values above ``max_value``. Hence, if ``max_value`` is set to
-     ``1``, there is no difference between the slot values ``2`` and ``3.5`` in
-     terms of featurization (e.g. both values will influence the dialogue in
-     the same way and the model can not learn to differentiate between them).
+              All values below ``min_value`` will be treated as ``min_value``, the same
+              happens for values above ``max_value``. Hence, if ``max_value`` is set to
+              ``1``, there is no difference between the slot values ``2`` and ``3.5`` in
+              terms of featurization (e.g. both values will influence the dialogue in
+              the same way and the model can not learn to differentiate between them).
 
 List Slot
 ~~~~~~~~~
 
 .. option:: list
 
-  :Use For: Lists of values
+  :Use For:   Lists of values
   :Example:
      .. sourcecode:: yaml
 
@@ -277,10 +277,10 @@ List Slot
            shopping_items:
               type: list
   :Description:
-      The feature of this slot is set to ``1`` if a value with a list is set,
-      where the list is not empty. If no value is set, or the empty list is the
-      set value, the feature will be ``0``. The **length of the list stored in
-      the slot does not influence the dialogue**.
+              The feature of this slot is set to ``1`` if a value with a list is set,
+              where the list is not empty. If no value is set, or the empty list is the
+              set value, the feature will be ``0``. The **length of the list stored in
+              the slot does not influence the dialogue**.
 
 .. _unfeaturized-slot:
 
@@ -289,7 +289,7 @@ Unfeaturized Slot
 
 .. option:: unfeaturized
 
-  :Use For: Data you want to store which shouldn't influence the dialogue flow
+  :Use For:   Data you want to store which shouldn't influence the dialogue flow
   :Example:
      .. sourcecode:: yaml
 
@@ -297,9 +297,9 @@ Unfeaturized Slot
            internal_user_id:
               type: unfeaturized
   :Description:
-      There will not be any featurization of this slot, hence its value does
-      not influence the dialogue flow and is ignored when predicting the next
-      action the bot should run.
+              There will not be any featurization of this slot, hence its value does
+              not influence the dialogue flow and is ignored when predicting the next
+              action the bot should run.
 
 Custom Slot Types
 -----------------
