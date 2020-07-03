@@ -144,11 +144,11 @@ and Mapping Policies always predict with confidence of either 0 or 1), the prior
 policies is considered. Rasa policies have default priorities that are set to ensure the
 expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
 
-    | 5. ``FormPolicy``
-    | 4. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
-    | 3. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
-    | 2. ``MappingPolicy``
-    | 1. ``TEDPolicy`` and ``SklearnPolicy``
+#. ``TEDPolicy`` and ``SklearnPolicy``
+#. ``MappingPolicy``
+#. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
+#. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
+#. ``FormPolicy``
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
 above the ``nlu_threshold``, the bot will still fall back. In general, it is not recommended to have more
@@ -406,14 +406,14 @@ simple example that dispatches a bot utterance and then reverts the interaction:
 .. code-block:: python
 
   class ActionIsBot(Action):
-  """Revertible mapped action for utter_is_bot"""
+    """Revertible mapped action for utter_is_bot"""
 
-  def name(self):
-      return "action_is_bot"
+    def name(self):
+        return "action_is_bot"
 
-  def run(self, dispatcher, tracker, domain):
-      dispatcher.utter_template(template="utter_is_bot")
-      return [UserUtteranceReverted()]
+    def run(self, dispatcher, tracker, domain):
+        dispatcher.utter_template(template="utter_is_bot")
+        return [UserUtteranceReverted()]
 
 .. note::
 

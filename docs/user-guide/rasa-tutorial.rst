@@ -13,9 +13,7 @@ shows the structure of a Rasa project. You can test it out right here without
 installing anything.
 You can also :ref:`install Rasa <installation>` and follow along in your command line.
 
-.. raw:: html
-
-    The <a style="text-decoration: none" href="https://rasa.com/docs/rasa/glossary">glossary</a> contains an overview of the most common terms you’ll see in the Rasa documentation.
+The :ref:`glossary` contains an overview of the most common terms you’ll see in the Rasa documentation.
 
 
 

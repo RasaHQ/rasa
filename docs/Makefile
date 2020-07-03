@@ -60,6 +60,13 @@ html:
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
+.PHONY: markdown
+markdown:
+	rm -rf build/markdown
+	sphinx-build -M markdown ./ build -v
+	cp -r _static/images/* ../newdocs/static/img
+	cp -r build/markdown/* ../newdocs/docs
+
 .PHONY: dirhtml
 dirhtml:
 	poetry run $(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml

@@ -238,15 +238,15 @@ BILOU-based one.
 
 Here's a comparison between the two scoring mechanisms for the phrase "near Alexanderplatz tonight":
 
-==================================================  ========================  ===========================
-extracted                                           Simple tags (score)       BILOU tags (score)
-==================================================  ========================  ===========================
-[near Alexanderplatz](loc) [tonight](time)          loc loc time (3)          B-loc L-loc U-time (3)
-[near](loc) [Alexanderplatz](loc) [tonight](time)   loc loc time (3)          U-loc U-loc U-time (1)
-near [Alexanderplatz](loc) [tonight](time)          O   loc time (2)          O     U-loc U-time (1)
-[near](loc) Alexanderplatz [tonight](time)          loc O   time (2)          U-loc O     U-time (1)
-[near Alexanderplatz tonight](loc)                  loc loc loc  (2)          B-loc I-loc L-loc  (1)
-==================================================  ========================  ===========================
+======================================================  ========================  ===========================
+extracted                                               Simple tags (score)       BILOU tags (score)
+======================================================  ========================  ===========================
+``[near Alexanderplatz](loc) [tonight](time)``          loc loc time (3)          B-loc L-loc U-time (3)
+``[near](loc) [Alexanderplatz](loc) [tonight](time)``   loc loc time (3)          U-loc U-loc U-time (1)
+``near [Alexanderplatz](loc) [tonight](time)``          O   loc time (2)          O     U-loc U-time (1)
+``[near](loc) Alexanderplatz [tonight](time)``          loc O   time (2)          U-loc O     U-time (1)
+``[near Alexanderplatz tonight](loc)``                  loc loc loc  (2)          B-loc I-loc L-loc  (1)
+======================================================  ========================  ===========================
 
 
 .. _core-evaluation:
