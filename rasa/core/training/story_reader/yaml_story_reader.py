@@ -5,7 +5,7 @@ import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.constants import DOCS_URL_STORIES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX, RULE_SNIPPET_ACTION_NAME
-from rasa.core.events import UserUttered, SlotSet
+from rasa.core.events import UserUttered, SlotSet, Form
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.data import YAML_FILE_EXTENSIONS
@@ -19,6 +19,7 @@ KEY_USER_UTTERANCE = "user"
 KEY_ENTITIES = "entities"
 KEY_SLOT_NAME = "slot"
 KEY_SLOT_VALUE = "value"
+KEY_FORM = "form"
 KEY_ACTION = "action"
 KEY_CHECKPOINT = "checkpoint"
 KEY_CHECKPOINT_SLOTS = "slots"
@@ -40,32 +41,29 @@ class YAMLStoryReader(StoryReader):
         """
         try:
             yaml_content = rasa.utils.io.read_yaml_file(filename)
-            if not isinstance(yaml_content, dict):
-                common_utils.raise_warning(
-                    f"Failed to read '{filename}'. It should be a Yaml dict."
-                )
-                return []
-
-            stories = yaml_content.get(KEY_STORIES)  # pytype: disable=attribute-error
-            rules = yaml_content.get(KEY_RULES)  # pytype: disable=attribute-error
-            if not (stories or rules):
-                return []
-
-            self._parse_stories(stories)
-            self._parse_rules(rules)
-
-            self._add_current_stories_to_result()
-
-            return self.story_steps
-
         except ValueError as e:
             common_utils.raise_warning(
                 f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
             )
+            return []
 
-        return []
+        if not isinstance(yaml_content, dict):
+            common_utils.raise_warning(
+                f"Failed to read '{filename}'. It should be a YAML dictionary."
+            )
+            return []
 
-    def _parse_stories(self, stories: Optional[List[Dict[Text, Any]]]) -> None:
+        stories = yaml_content.get(KEY_STORIES, [])
+        self._parse_stories(stories)
+
+        rules = yaml_content.get(KEY_RULES, [])
+        self._parse_rules(rules)
+
+        self._add_current_stories_to_result()
+
+        return self.story_steps
+
+    def _parse_stories(self, stories: List[Dict[Text, Any]]) -> None:
         self._parse_items(
             stories,
             key=KEY_STORIES,
@@ -74,11 +72,10 @@ class YAMLStoryReader(StoryReader):
             is_rule_data=False,
         )
 
-    def _parse_rules(self, rules: Optional[List[Dict[Text, Any]]]) -> None:
+    def _parse_rules(self, rules: List[Dict[Text, Any]]) -> None:
         self._parse_items(
             rules,
             key=KEY_RULES,
-            # TODO: update docs link to point to rules
             docs=DOCS_URL_STORIES,
             item_key_name=KEY_RULE_NAME,
             is_rule_data=True,
@@ -86,19 +83,16 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_items(
         self,
-        items: Optional[List[Dict[Text, Any]]],
+        items: List[Dict[Text, Any]],
         key: Text,
         docs: Text,
         item_key_name: Text,
         is_rule_data: bool,
     ) -> None:
-        if not items:
-            return
-
         for item in items:
             if not isinstance(item, dict):
                 common_utils.raise_warning(
-                    f"Unexpected block found in '{self.source_name}': \n"
+                    f"Unexpected block found in '{self.source_name}':\n"
                     f"{item}\nItems under the '{key}' key must be YAML dictionaries. "
                     f"It will be skipped.",
                     docs=docs,
@@ -166,6 +160,8 @@ class YAMLStoryReader(StoryReader):
             self._parse_action(step, is_rule_data)
         elif KEY_CHECKPOINT in step.keys():
             self._parse_checkpoint(step, is_rule_data)
+        elif KEY_FORM in step.keys():
+            self._parse_form(step[KEY_FORM])
         elif KEY_METADATA in step.keys():
             return
         else:
@@ -178,24 +174,16 @@ class YAMLStoryReader(StoryReader):
 
     @staticmethod
     def _get_item_title(is_rule_data: bool) -> Text:
-        if is_rule_data:
-            return KEY_RULE_NAME
-
-        return KEY_STORY_NAME
+        return KEY_RULE_NAME if is_rule_data else KEY_STORY_NAME
 
     @staticmethod
     def _get_plural_item_title(is_rule_data: bool) -> Text:
-        if is_rule_data:
-            return KEY_RULES
-
-        return KEY_STORIES
+        return KEY_RULES if is_rule_data else KEY_STORIES
 
     @staticmethod
     def _get_docs_link(is_rule_data: bool) -> Text:
-        if is_rule_data:
-            return ""
-
-        return DOCS_URL_STORIES
+        # TODO: update docs link to point to rules
+        return "" if is_rule_data else DOCS_URL_STORIES
 
     def _parse_user_utterance(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
 
@@ -234,7 +222,7 @@ class YAMLStoryReader(StoryReader):
 
         if not user_utterance:
             common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': \n"
+                f"Issue found in '{self.source_name}':\n"
                 f"User utterance cannot be empty. "
                 f"This {self._get_item_title(is_rule_data)} step will be skipped:\n"
                 f"{step}",
@@ -246,15 +234,15 @@ class YAMLStoryReader(StoryReader):
 
         if not user_utterance.startswith(INTENT_MESSAGE_PREFIX):
             common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': \n"
+                f"Issue found in '{self.source_name}':\n"
                 f"User intent '{user_utterance}' should start with "
                 f"'{INTENT_MESSAGE_PREFIX}'. "
                 f"This {self._get_item_title(is_rule_data)} step will be skipped.",
                 docs=self._get_docs_link(is_rule_data),
             )
             return None
-        else:
-            user_utterance = user_utterance[1:]
+
+        user_utterance = user_utterance[1:]
 
         intent = {"name": user_utterance, "confidence": 1.0}
 
@@ -308,6 +296,9 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_rule_snippet_action(self) -> None:
         self._add_event(RULE_SNIPPET_ACTION_NAME, {})
+
+    def _parse_form(self, form_name: Optional[Text]) -> None:
+        self._add_event(Form.type_name, {"name": form_name})
 
     def _parse_checkpoint(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
 

@@ -7,6 +7,7 @@ from rasa.core.events import (
     ActionExecutionRejected,
     Form,
     FormValidation,
+    SlotSet,
 )
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.trackers import DialogueStateTracker
@@ -184,3 +185,39 @@ async def test_read_stories_with_rules(default_domain: Domain):
     assert story_steps[2].block_name == "ML story 1"
     assert story_steps[3].block_name == "rule 3"
     assert story_steps[4].block_name == "ML story 2"
+
+
+async def test_read_rules_without_stories(default_domain: Domain):
+    story_steps = await loading.load_data_from_files(
+        ["data/test_stories/rules_without_stories.md"],
+        default_domain,
+        RegexInterpreter(),
+    )
+
+    # this file contains three rules and two ML stories
+    assert len(story_steps) == 3
+
+    ml_steps = [s for s in story_steps if not s.is_rule]
+    rule_steps = [s for s in story_steps if s.is_rule]
+
+    assert len(ml_steps) == 0
+    assert len(rule_steps) == 3
+
+    assert rule_steps[0].block_name == "rule 1"
+    assert rule_steps[1].block_name == "rule 2"
+    assert rule_steps[2].block_name == "rule 3"
+
+    # inspect the first rule and make sure all events were picked up correctly
+    events = rule_steps[0].events
+
+    assert len(events) == 5
+
+    assert events[0] == Form("loop_q_form")
+    assert events[1] == SlotSet("requested_slot", "some_slot")
+    assert events[2] == ActionExecuted("...")
+    assert events[3] == UserUttered(
+        'inform{"some_slot":"bla"}',
+        {"name": "inform", "confidence": 1.0},
+        [{"entity": "some_slot", "start": 6, "end": 25, "value": "bla"}],
+    )
+    assert events[4] == ActionExecuted("loop_q_form")

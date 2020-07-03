@@ -1,18 +1,33 @@
 rules:
-- rule: simple_rule
-  steps:
-  - ...
-  - intent: activate_q_form
-  - action: loop_q_form
-  - form: loop_q_form
-
 - rule: rule 1
   steps:
   - form: loop_q_form
-  - slot: some_slot
+  - slot: requested_slot
+    value: some_slot
   - ...
-  - user: /inform{"some_slot":"bla"} <!-- can be ANY -->
-  - action: loop_q_form <!-- can be internal core action, can be anything -->
+  - user: /inform
+    entities:
+    - some_slot: bla
+  - action: loop_q_form
+
+- rule: rule 2
+  steps:
+  - form: loop_q_form
+  - slot: requested_slot
+    value: some_slot
+  - ...
+  - user: /explain
+  - action: utter_explain_some_slot
+  - action: loop_q_form
+  - form: loop_q_form
+
+- rule: rule 3
+  steps:
+  - form: loop_q_form
+  - ...
+  - form: null
+  - slot: null
+  - action: stop_q_form
 
 stories:
 - story: simple_story_without_checkpoint
@@ -34,31 +49,3 @@ stories:
   - slot: name
     value: peter
   - checkpoint: check_greet # checkpoint defining the end of this turn
-
-- story: simple_story_with_multiple_turns
-  steps:
-  - or:
-    - user: /affirm
-    - user: /thank_you
-  - action: utter_default
-  - user: /goodbye
-  - action: utter_goodbye
-  - checkpoint: check_goodbye
-
-- story: why does the user want to leave?
-  steps:
-  - checkpoint: check_goodbye
-  - user: /why
-  - action: utter_default
-  - checkpoint: check_greet
-
-- story: show_it_all
-  steps:
-  - checkpoint: check_greet
-  - checkpoint: check_hello # allows multiple entry points
-  - user: /next_intent
-  - action: utter_greet # actions taken by the bot
-  - checkpoint: check_intermediate # allows intermediate checkpoints
-  - user: /change_bank_details
-  - action: utter_default  # allows to end without checkpoints
-

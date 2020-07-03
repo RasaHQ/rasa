@@ -1,7 +1,30 @@
 rules:
-- rule: simple_rule
+- rule: rule 1
   steps:
+  - form: loop_q_form
+  - slot: requested_slot
+    value: some_slot
   - ...
-  - intent: activate_q_form
+  - user: /inform
+    entities:
+    - some_slot: bla
+  - action: loop_q_form
+
+- rule: rule 2
+  steps:
+  - form: loop_q_form
+  - slot: requested_slot
+    value: some_slot
+  - ...
+  - user: /explain
+  - action: utter_explain_some_slot
   - action: loop_q_form
   - form: loop_q_form
+
+- rule: rule 3
+  steps:
+  - form: loop_q_form
+  - ...
+  - form: null
+  - slot: null
+  - action: stop_q_form

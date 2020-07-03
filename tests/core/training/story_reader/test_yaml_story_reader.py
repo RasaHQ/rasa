@@ -4,7 +4,7 @@ import pytest
 
 from rasa.core import training
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, UserUttered, SlotSet
+from rasa.core.events import ActionExecuted, UserUttered, SlotSet, Form
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training import loading
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
@@ -128,7 +128,7 @@ async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
         )
 
 
-async def test_read_rules(default_domain: Domain):
+async def test_read_rules_with_stories(default_domain: Domain):
 
     yaml_file = "data/test_yaml_stories/stories_and_rules.yml"
 
@@ -136,18 +136,52 @@ async def test_read_rules(default_domain: Domain):
         [yaml_file], default_domain, RegexInterpreter()
     )
 
-    # this file contains two rules and two stories
-    # assert len(steps) == 10
+    ml_steps = [s for s in steps if not s.is_rule]
+    rule_steps = [s for s in steps if s.is_rule]
+
+    # this file contains three rules and three ML stories
+    assert len(ml_steps) == 3
+    assert len(rule_steps) == 3
+
+    assert rule_steps[0].block_name == "rule 1"
+    assert rule_steps[1].block_name == "rule 2"
+    assert rule_steps[2].block_name == "rule 3"
+
+    assert ml_steps[0].block_name == "simple_story_without_checkpoint"
+    assert ml_steps[1].block_name == "simple_story_with_only_start"
+    assert ml_steps[2].block_name == "simple_story_with_only_end"
+
+
+async def test_read_rules_without_stories(default_domain: Domain):
+
+    yaml_file = "data/test_yaml_stories/rules_without_stories.yml"
+
+    steps = await loading.load_data_from_files(
+        [yaml_file], default_domain, RegexInterpreter()
+    )
 
     ml_steps = [s for s in steps if not s.is_rule]
     rule_steps = [s for s in steps if s.is_rule]
-    print(len(ml_steps), len(rule_steps))
 
-    assert len(ml_steps) == 9
-    # assert len(rule_steps) == 3
-    #
-    # assert story_steps[0].block_name == "rule 1"
-    # assert story_steps[1].block_name == "rule 2"
-    # assert story_steps[2].block_name == "ML story 1"
-    # assert story_steps[3].block_name == "rule 3"
-    # assert story_steps[4].block_name == "ML story 2"
+    # this file contains three rules and no ML stories
+    assert len(ml_steps) == 0
+    assert len(rule_steps) == 3
+
+    assert rule_steps[0].block_name == "rule 1"
+    assert rule_steps[1].block_name == "rule 2"
+    assert rule_steps[2].block_name == "rule 3"
+
+    # inspect the first rule and make sure all events were picked up correctly
+    events = rule_steps[0].events
+
+    assert len(events) == 5
+
+    assert events[0] == Form("loop_q_form")
+    assert events[1] == SlotSet("requested_slot", "some_slot")
+    assert events[2] == ActionExecuted("...")
+    assert events[3] == UserUttered(
+        "inform",
+        {"name": "inform", "confidence": 1.0},
+        [{"entity": "some_slot", "value": "bla"}],
+    )
+    assert events[4] == ActionExecuted("loop_q_form")
