@@ -1,5 +1,6 @@
 import copy
 import logging
+from enum import Enum
 from typing import Any, List, Optional, Text, Dict, Callable
 
 import rasa.utils.common
@@ -18,15 +19,42 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 logger = logging.getLogger(__name__)
 
 
+class SupportedData(Enum):
+    """Enumeration of a policy's supported training data type."""
+
+    # policy only supports ML-based training data ("stories")
+    ML_DATA = 1
+
+    # policy only supports rule-based data ("rules")
+    RULE_DATA = 2
+
+    # policy supports both ML-based and rule-based data ("stories" as well as "rules")
+    ML_AND_RULE_DATA = 3
+
+
 class Policy:
     SUPPORTS_ONLINE_TRAINING = False
+
+    @staticmethod
+    def supported_data() -> SupportedData:
+        """The type of data supported by this policy.
+
+        By default, this is only ML-based training data. If policies support rule data,
+        or both ML-based data and rule data, they need to override this method.
+
+        Returns:
+            The data type supported by this policy.
+        """
+        return SupportedData.ML_DATA
 
     @staticmethod
     def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
 
     @classmethod
-    def _create_featurizer(cls, featurizer=None) -> TrackerFeaturizer:
+    def _create_featurizer(
+        cls, featurizer: Optional[TrackerFeaturizer] = None
+    ) -> TrackerFeaturizer:
         if featurizer:
             return copy.deepcopy(featurizer)
         else:

@@ -4,16 +4,19 @@ from typing import List, Any, Text
 import pytest
 import copy
 
+from _pytest.logging import LogCaptureFixture
+
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.ensemble import (
     PolicyEnsemble,
     InvalidPolicyConfig,
     SimplePolicyEnsemble,
 )
 from rasa.core.domain import Domain
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.events import UserUttered, Form, Event
 
@@ -377,3 +380,64 @@ def test_from_dict_does_not_change_passed_dict_parameter():
     PolicyEnsemble.from_dict(config_copy)
 
     assert config == config_copy
+
+
+def test_rule_based_data_warnings_no_rule_trackers():
+    trackers = [DialogueStateTracker("some-id", slots=[], is_rule_tracker=False)]
+    policies = [RulePolicy()]
+    ensemble = SimplePolicyEnsemble(policies)
+
+    with pytest.warns(UserWarning) as record:
+        ensemble.train(trackers, Domain.empty(), RegexInterpreter())
+
+    assert (
+        "Found a rule-based policy in your pipeline but no rule-based training data."
+    ) in record[0].message.args[0]
+
+
+def test_rule_based_data_warnings_no_rule_policy():
+    trackers = [DialogueStateTracker("some-id", slots=[], is_rule_tracker=True)]
+    policies = [FallbackPolicy()]
+    ensemble = SimplePolicyEnsemble(policies)
+
+    with pytest.warns(UserWarning) as record:
+        ensemble.train(trackers, Domain.empty(), RegexInterpreter())
+
+    assert (
+        "Found rule-based training data but no policy supporting rule-based data."
+    ) in record[0].message.args[0]
+
+
+class RuleAndMLPolicy(Policy):
+    """Test policy that supports both rule-based and ML-based training data."""
+
+    @staticmethod
+    def supported_data() -> SupportedData:
+        return SupportedData.ML_AND_RULE_DATA
+
+
+@pytest.mark.parametrize(
+    "policy,n_rule_trackers,n_ml_trackers",
+    [(FallbackPolicy(), 0, 3), (RulePolicy(), 2, 0), (RuleAndMLPolicy(), 2, 3)],
+)
+def test_get_training_trackers_for_policy(
+    policy: Policy, n_rule_trackers: int, n_ml_trackers
+):
+    # create four trackers (2 rule-based and 3 ML trackers)
+    trackers = [
+        DialogueStateTracker("id1", slots=[], is_rule_tracker=True),
+        DialogueStateTracker("id2", slots=[], is_rule_tracker=False),
+        DialogueStateTracker("id3", slots=[], is_rule_tracker=False),
+        DialogueStateTracker("id4", slots=[], is_rule_tracker=True),
+        DialogueStateTracker("id5", slots=[], is_rule_tracker=False),
+    ]
+
+    trackers = SimplePolicyEnsemble([])._get_training_trackers_for_policy(
+        policy, trackers
+    )
+
+    rule_trackers = [tracker for tracker in trackers if tracker.is_rule_tracker]
+    ml_trackers = [tracker for tracker in trackers if not tracker.is_rule_tracker]
+
+    assert len(rule_trackers) == n_rule_trackers
+    assert len(ml_trackers) == n_ml_trackers

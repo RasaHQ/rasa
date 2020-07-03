@@ -1,3 +1,4 @@
+from typing import Type
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -24,10 +25,11 @@ from rasa.core.featurizers import (
     FullDialogueTrackerFeaturizer,
 )
 from rasa.core.interpreter import RegexInterpreter
+from rasa.core.policies.policy import SupportedData, Policy
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
@@ -853,3 +855,15 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         next_action = self._get_next_action(trained_policy, events, default_domain)
 
         assert next_action == ACTION_LISTEN_NAME
+
+
+@pytest.mark.parametrize(
+    "policy,supported_data",
+    [
+        (TEDPolicy, SupportedData.ML_DATA),
+        (RulePolicy, SupportedData.RULE_DATA),
+        (FallbackPolicy, SupportedData.ML_DATA),
+    ],
+)
+def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
+    assert policy.supported_data() == supported_data

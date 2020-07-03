@@ -1,0 +1,1 @@
+Add support for rule data in YAML format.

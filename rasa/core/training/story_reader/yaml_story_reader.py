@@ -146,8 +146,8 @@ class YAMLStoryReader(StoryReader):
                 f"Issue found in '{self.source_name}':\n"
                 f"Found an unexpected step in the {self._get_item_title(is_rule_data)} "
                 f"description:\n{step}\nThe step is of type `str` "
-                f"which is only allowed for the rule snippet action '...'. "
-                f"It will be skipped.",
+                f"which is only allowed for the rule snippet action "
+                f"'{RULE_SNIPPET_ACTION_NAME}'. It will be skipped.",
                 docs=self._get_docs_link(is_rule_data),
             )
         elif KEY_USER_UTTERANCE in step.keys():
@@ -163,7 +163,7 @@ class YAMLStoryReader(StoryReader):
         elif KEY_FORM in step.keys():
             self._parse_form(step[KEY_FORM])
         elif KEY_METADATA in step.keys():
-            return
+            pass
         else:
             common_utils.raise_warning(
                 f"Issue found in '{self.source_name}':\n"

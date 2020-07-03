@@ -9,6 +9,7 @@ from rasa.core.events import FormValidation
 from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.policy import SupportedData
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY, RULE_SNIPPET_ACTION_NAME
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -20,6 +21,15 @@ class RulePolicy(MemoizationPolicy):
     """Policy which handles all the rules"""
 
     ENABLE_FEATURE_STRING_COMPRESSION = False
+
+    @staticmethod
+    def supported_data() -> SupportedData:
+        """The type of data supported by this policy.
+
+        Returns:
+            The data type supported by this policy (rule data).
+        """
+        return SupportedData.RULE_DATA
 
     def __init__(
         self,
