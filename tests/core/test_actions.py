@@ -689,7 +689,7 @@ def test_get_form_action():
 def test_get_form_action_if_not_in_forms():
     form_action_name = "my_business_logic"
     domain = Domain.from_yaml(
-        f"""
+        """
     actions:
     - my_action
     """
