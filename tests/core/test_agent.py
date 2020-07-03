@@ -1,5 +1,4 @@
 import asyncio
-from pathlib import Path
 from unittest.mock import Mock
 from typing import Any, Dict, Text, Optional, Callable
 

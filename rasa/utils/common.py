@@ -378,9 +378,7 @@ def raise_warning(
 
 
 class RepeatedLogFilter(logging.Filter):
-    """
-    Filter repeated log records.
-    """
+    """Filter repeated log records."""
 
     last_log = None
 
