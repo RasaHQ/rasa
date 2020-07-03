@@ -1,17 +1,17 @@
 module.exports = {
-  title: 'My Site',
+  title: 'Rasa Open Source Documentation',
   tagline: 'The tagline of my site',
   url: 'https://your-docusaurus-test-site.com',
   baseUrl: '/',
   favicon: 'img/favicon.ico',
-  organizationName: 'facebook', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  organizationName: 'RasaHQ', // Usually your GitHub org/user name.
+  projectName: 'rasa', // Usually your repo name.
   themeConfig: {
     navbar: {
-      title: 'My Site',
+      title: 'Rasa Open Source',
       logo: {
-        alt: 'My Site Logo',
-        src: 'img/logo.svg',
+        alt: 'Rasa',
+        src: 'https://rasa.com/static/60e441f8eadef13bea0cc790c8cf188b/rasa-logo.svg',
       },
       links: [
         {
@@ -20,9 +20,8 @@ module.exports = {
           label: 'Docs',
           position: 'left',
         },
-        {to: 'blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/facebook/docusaurus',
+          href: 'https://github.com/rasahq/rasa',
           label: 'GitHub',
           position: 'right',
         },
@@ -75,7 +74,7 @@ module.exports = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
   },
   presets: [
@@ -86,15 +85,8 @@ module.exports = {
           // It is recommended to set document id as docs home page (`docs/` path).
           homePageId: 'index',
           sidebarPath: require.resolve('./sidebars.js'),
-          // Please change this to your repo.
           editUrl:
-            'https://github.com/facebook/docusaurus/edit/master/website/',
-        },
-        blog: {
-          showReadingTime: true,
-          // Please change this to your repo.
-          editUrl:
-            'https://github.com/facebook/docusaurus/edit/master/website/blog/',
+            'https://github.com/rasahq/rasa/edit/master/docs/',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
