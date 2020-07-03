@@ -42,7 +42,7 @@ class StoryReader:
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name)
 
-    def new_rule_part(self, name: Text, source_name: Text):
+    def _new_rule_part(self, name: Text, source_name: Text):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name, is_rule=True)
 

@@ -107,7 +107,8 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
     nlu_data_files = set()
 
     for root, _, files in os.walk(directory, followlinks=True):
-        # we sort the files here to ensure consistent order for repeatable training results
+        # we sort the files here to ensure consistent order for repeatable training
+        # results
         for f in sorted(files):
             full_path = os.path.join(root, f)
 
@@ -146,11 +147,6 @@ def is_nlu_file(file_path: Text) -> bool:
 
 
 def is_story_file(file_path: Text) -> bool:
-    from rasa.core.training.story_reader.markdown_story_reader import (
-        MarkdownStoryReader,
-    )
-    from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
-
     """Checks if a file is a Rasa story file.
 
     Args:
@@ -159,31 +155,16 @@ def is_story_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file, otherwise `False`.
     """
-    # TODO: Rick
-    # if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
-    #     return False
+    from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 
-    # try:
-    #     with open(
-    #         file_path, encoding=DEFAULT_ENCODING, errors="surrogateescape"
-    #     ) as lines:
-    #         return any(
-    #             _contains_story_pattern(line) or _contains_rule_pattern(line)
-    #             for line in lines
-    #         )
-    # except Exception as e:
-    #     # catch-all because we might be loading files we are not expecting to load
-    #     logger.error(
-    #         f"Tried to check if '{file_path}' is a story file, but failed to "
-    #         f"read it. If this file contains story data, you should "
-    #         f"investigate this error, otherwise it is probably best to "
-    #         f"move the file to a different location. "
-    #         f"Error: {e}"
-    #     )
-    #     return False
-    return YAMLStoryReader.is_yaml_story_file(
-        file_path
-    ) or MarkdownStoryReader.is_markdown_story_file(file_path)
+    if YAMLStoryReader.is_yaml_story_file(file_path):
+        return True
+
+    from rasa.core.training.story_reader.markdown_story_reader import (
+        MarkdownStoryReader,
+    )
+
+    return MarkdownStoryReader.is_markdown_story_file(file_path)
 
 
 def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
@@ -205,19 +186,6 @@ def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
         and is_story_file(file_path)
         and not is_nlu_file(file_path)
     )
-
-
-# TODO: Rick
-# def _contains_story_pattern(text: Text) -> bool:
-#     story_pattern = r".*##.+"
-
-#     return re.match(story_pattern, text) is not None
-
-
-# def _contains_rule_pattern(text: Text) -> bool:
-#     rule_pattern = r".*>>.+"
-
-#     return re.match(rule_pattern, text) is not None
 
 
 def is_domain_file(file_path: Text) -> bool:

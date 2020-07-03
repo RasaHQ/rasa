@@ -1,0 +1,7 @@
+rules:
+- rule: simple_rule
+  steps:
+  - ...
+  - intent: activate_q_form
+  - action: loop_q_form
+  - form: loop_q_form

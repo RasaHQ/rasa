@@ -62,7 +62,7 @@ class EntityAttributes(NamedTuple):
 
 
 def encode_string(s: Text) -> Text:
-    """Return a encoded python string."""
+    """Return an encoded python string."""
 
     def replace(match: Match) -> Text:
         return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
