@@ -54,52 +54,30 @@ class YAMLStoryReader(StoryReader):
             return []
 
         stories = yaml_content.get(KEY_STORIES, [])
-        self._parse_stories(stories)
+        self._parse_data(stories, is_rule_data=False)
 
         rules = yaml_content.get(KEY_RULES, [])
-        self._parse_rules(rules)
+        self._parse_data(rules, is_rule_data=True)
 
         self._add_current_stories_to_result()
 
         return self.story_steps
 
-    def _parse_stories(self, stories: List[Dict[Text, Any]]) -> None:
-        self._parse_items(
-            stories,
-            key=KEY_STORIES,
-            docs=DOCS_URL_STORIES,
-            item_key_name=KEY_STORY_NAME,
-            is_rule_data=False,
-        )
+    def _parse_data(self, data: List[Dict[Text, Any]], is_rule_data: bool) -> None:
+        item_title = self._get_item_title(is_rule_data)
 
-    def _parse_rules(self, rules: List[Dict[Text, Any]]) -> None:
-        self._parse_items(
-            rules,
-            key=KEY_RULES,
-            docs=DOCS_URL_STORIES,
-            item_key_name=KEY_RULE_NAME,
-            is_rule_data=True,
-        )
-
-    def _parse_items(
-        self,
-        items: List[Dict[Text, Any]],
-        key: Text,
-        docs: Text,
-        item_key_name: Text,
-        is_rule_data: bool,
-    ) -> None:
-        for item in items:
+        for item in data:
             if not isinstance(item, dict):
                 common_utils.raise_warning(
                     f"Unexpected block found in '{self.source_name}':\n"
-                    f"{item}\nItems under the '{key}' key must be YAML dictionaries. "
-                    f"It will be skipped.",
-                    docs=docs,
+                    f"{item}\nItems under the "
+                    f"'{self._get_plural_item_title(is_rule_data)}' key must be YAML "
+                    f"dictionaries. It will be skipped.",
+                    docs=self._get_docs_link(is_rule_data),
                 )
                 continue
 
-            if item_key_name in item.keys():
+            if item_title in item.keys():
                 self._parse_plain_item(item, is_rule_data)
 
     def _parse_plain_item(self, item: Dict[Text, Any], is_rule_data: bool) -> None:
