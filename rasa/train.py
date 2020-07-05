@@ -280,7 +280,7 @@ def _load_interpreter(
     interpreter_path: Optional[Text],
 ) -> Optional[NaturalLanguageInterpreter]:
     if interpreter_path:
-        return NaturalLanguageInterpreter.create(interpreter_path)
+        return NaturalLanguageInterpreter.create(interpreter_path, e2e_interpreter = True)
 
     return None
 
@@ -293,7 +293,7 @@ def _interpreter_from_previous_model(
 
     with model.unpack_model(old_model_zip_path) as unpacked:
         _, old_nlu = model.get_model_subdirectories(unpacked)
-        return NaturalLanguageInterpreter.create(old_nlu)
+        return NaturalLanguageInterpreter.create(old_nlu, e2e_interpreter = True)
 
 
 def train_core(

@@ -342,11 +342,11 @@ class TEDPolicy(Policy):
         dense_features = np.array(dense_features)
         return [sparse_features, dense_features]
 
-    def _create_label_data(self, domain) -> RasaModelData:
+    def _create_label_data(self, domain: Domain, interpreter: NaturalLanguageInterpreter) -> RasaModelData:
         # encode all label_ids with policies' featurizer
         # sparse_features, dense_features =
         labels_idx_examples = self.featurizer.state_featurizer.create_encoded_all_actions(
-            domain
+            domain, interpreter
         )
         labels_idx_examples = sorted(labels_idx_examples, key=lambda x: x[0])
         labels_example = [example for (_, example) in labels_idx_examples]
@@ -373,7 +373,7 @@ class TEDPolicy(Policy):
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
 
-        self._label_data = self._create_label_data(domain)
+        self._label_data = self._create_label_data(domain, interpreter)
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(
@@ -421,7 +421,7 @@ class TEDPolicy(Policy):
             return self._default_predictions(domain)
 
         # create model data from tracker
-        data_X = self.featurizer.create_X([tracker], domain)
+        data_X = self.featurizer.create_X([tracker], domain, interpreter)
         model_data = self._create_model_data(data_X)
 
         output = self.model.predict(model_data)

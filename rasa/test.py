@@ -150,7 +150,12 @@ def test_core(
 
     _interpreter = RegexInterpreter()
     if nlu_path:
-        _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path)
+        # use NLUInterpreter if we are doing e2e_testing with intents
+        if use_e2e:
+            _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path)
+        # otherwise load RasaE2EInterpreter
+        else:
+            _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path, e2e_interpreter=True)
     elif use_e2e:
         cli_utils.print_warning(
             "No NLU model found. Using default 'RegexInterpreter' for end-to-end "

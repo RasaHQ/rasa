@@ -80,8 +80,6 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self) -> None:
 
         super().__init__()
-        #TODO: double check if I can change the `Interpreter` `parse` to return Message rather than dict; 
-        self.interpreter = RasaE2EInterpreter()
 
     def featurize_slots(self, slot_dict):
         slot_featurization = np.zeros(len(self.slot_states))
@@ -90,7 +88,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         return None, slot_featurization
 
     def _extract_features(
-        self, message: Message, attribute: Text
+        self, message: Message, attribute: Text, interpreter: NaturalLanguageInterpreter
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
         sparse_features = None
         dense_features = None
@@ -99,7 +97,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             return self.featurize_slots(message)
         # TODO: input will be `Text` or `Dict`;
         # change once e2e YAML parser is merged;
-        message = self.interpreter.parse(message.text)
+        message = interpreter.parse(message.text)
 
 
         if message.get_sparse_features(attribute)[1] is not None:
@@ -136,7 +134,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         return sparse_state, dense_state
 
     def encode_e2e(
-        self, state: Dict[Text, Event],
+        self, state: Dict[Text, Event], interpreter: NaturalLanguageInterpreter
     ):
         """
         Encode the state into a numpy array or a sparse sklearn
@@ -149,14 +147,12 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         """
         if not list(state.keys()) == []:
             state_extracted_features = {
-                key: self._extract_features(state[key], TEXT) for key in state.keys()
+                key: self._extract_features(state[key], TEXT, interpreter) for key in state.keys()
             }
             if not "user" in state_extracted_features.keys():
                 state_extracted_features["user"] = self._extract_features(
-                    self.interpreter.parse(
-                        " "
-                    ),
-                    TEXT,
+                    interpreter.parse(" "),
+                    TEXT, interpreter
                 )
 
         sparse_state, dense_state = self.combine_state_features(
@@ -185,9 +181,10 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
         return sparse_state, dense_state, entity_slot_features
 
-    def create_encoded_all_actions(self, domain):
+    def create_encoded_all_actions(self, domain: Domain, interpreter: NaturalLanguageInterpreter):
+        
         label_data = [
-            (j, self._extract_features(self.interpreter.parse(action), TEXT))
+            (j, self._extract_features(interpreter.parse(action), TEXT, interpreter))
             for j, action in enumerate(domain.action_names)
         ]
         return label_data
@@ -292,7 +289,7 @@ class TrackerFeaturizer:
         return states
 
     def _featurize_states(
-        self, trackers_as_states: List[List[Dict[Text, float]]],
+        self, trackers_as_states: List[List[Dict[Text, float]]], interpreter: NaturalLanguageInterpreter
     ) -> Tuple[np.ndarray, List[int]]:
         """Create X."""
 
@@ -309,7 +306,7 @@ class TrackerFeaturizer:
                 tracker_states = self._pad_states(tracker_states)
 
             story_features = [
-                self.state_featurizer.encode_e2e(state)
+                self.state_featurizer.encode_e2e(state, interpreter)
                 for state in tracker_states
                 if not state is None and not state == {}
             ]
@@ -376,12 +373,12 @@ class TrackerFeaturizer:
             trackers_as_actions,
         ) = self.training_states_and_actions_e2e(trackers, domain)
 
-        self.state_featurizer.interpreter.interpreter = interpreter
+        # TODO: add rules associated features and their processing to marry e2e with rules!
         self.state_featurizer.slot_states = domain.slot_states
         self.state_featurizer.entities = domain.entities 
 
         # noinspection PyPep8Naming
-        X, true_lengths = self._featurize_states(trackers_as_states)
+        X, true_lengths = self._featurize_states(trackers_as_states, interpreter)
         y = self._featurize_labels(trackers_as_actions, domain)
 
         return DialogueTrainingData(X, y, true_lengths)
@@ -397,12 +394,12 @@ class TrackerFeaturizer:
 
     # noinspection PyPep8Naming
     def create_X(
-        self, trackers: List[DialogueStateTracker], domain: Domain,
+        self, trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> np.ndarray:
         """Create X for prediction."""
 
-        trackers_as_states = self.prediction_states(trackers, domain)
-        X, _ = self._featurize_states(trackers_as_states)
+        trackers_as_states = self.prediction_states(trackers, domain, interpreter)
+        X, _ = self._featurize_states(trackers_as_states, interpreter)
         return X
 
     def persist(self, path) -> None:
@@ -695,7 +692,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return trackers_as_states, trackers_as_actions
 
     def prediction_states(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self, trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> List[List[Dict[Text, float]]]:
         from rasa.nlu.model import Interpreter
 
@@ -711,7 +708,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 curr_state = {}
                 for key, value in state.items():
                     if isinstance(value, Message):
-                        curr_state[key] = self.state_featurizer.interpreter.parse(
+                        curr_state[key] = interpreter.parse(
                             value.text
                         )
                         curr_state[key].set("entities", value.get("entities"))

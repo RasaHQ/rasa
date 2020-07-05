@@ -37,14 +37,17 @@ class NaturalLanguageInterpreter:
 
     @staticmethod
     def create(
-        obj: Union["NaturalLanguageInterpreter", EndpointConfig, Text, None]
+        obj: Union["NaturalLanguageInterpreter", EndpointConfig, Text, None], e2e_interpreter: bool = False
     ) -> "NaturalLanguageInterpreter":
         """Factory to create an natural language interpreter."""
 
         if isinstance(obj, NaturalLanguageInterpreter):
             return obj
         elif isinstance(obj, str) and os.path.exists(obj):
-            return RasaNLUInterpreter(model_directory=obj)
+            if e2e_interpreter:
+                return RasaE2EInterpreter(model_directory=obj)
+            else:
+                return RasaNLUInterpreter(model_directory=obj)
         elif isinstance(obj, str) and not os.path.exists(obj):
             # user passed in a string, but file does not exist
             logger.warning(
@@ -302,7 +305,9 @@ def find_same(action_name, attribute, training_data):
 
 
 class RasaE2EInterpreter(NaturalLanguageInterpreter):
-    def __init__(self,):
+    def __init__(self,
+        model_directory: Text,):
+        self.model_directory = model_directory
         self._load_interpreter()
 
     def parse(self, text: Text):
@@ -312,7 +317,9 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         return message
 
     def _load_interpreter(self) -> None:
-        self.interpreter = None
+        from rasa.nlu.model import Interpreter
+
+        self.interpreter = Interpreter.load(self.model_directory)
 
 
 def _create_from_endpoint_config(
