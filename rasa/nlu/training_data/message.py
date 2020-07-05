@@ -76,10 +76,8 @@ class Message:
                 for key, value in self.data.items()
                 if key in self.output_properties
             }
-            d['features'] = self.features
         else:
             d = self.data
-            d['features'] = self.features
 
         # Filter all keys with None value. These could have come while building the
         # Message object in markdown format

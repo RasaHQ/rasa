@@ -312,63 +312,7 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         return message
 
     def _load_interpreter(self) -> None:
-        from rasa.nlu import config
-
-        config = config.load()
-        self.trainer = Trainer(config)
         self.interpreter = None
-
-    def prepare_training_data(self, trackers_as_states, trackers_as_actions, domain):
-        training_examples = []
-        for tracker in trackers_as_states:
-            for state in tracker:
-                if state and not state == {}:
-                    training_examples.append(state["prev_action"])
-                    if "user" in state.keys():
-                        training_examples.append(state["user"])
-        training_examples += [Message(action) for action in domain.action_names]
-        training_data = TrainingData(training_examples=training_examples)
-
-        self.all_slots = domain.slots
-
-        training_examples = [action for tr in trackers_as_actions for action in tr]
-        training_data.training_examples += training_examples
-        return training_data
-
-    def prepare_training_data_and_train(
-        self, trackers_as_states, trackers_as_actions, output_path, domain
-    ):
-        """
-        Trains the vertorizers from real data;
-        Preliminary for when the featurizer is to be used for raw text;
-        Args:
-             - trackers_as_states: real data as a dictionary
-             - trackers_as_actions: output label
-        """
-        training_data = self.prepare_training_data(
-            trackers_as_states, trackers_as_actions, domain
-        )
-        kwargs = {"no_copy": True}
-        self.interpreter = self.trainer.train(training_data, **kwargs)
-        self.entities = domain.entities
-        self.slot_states = domain.slot_states
-
-        ## Not so clever fix for now;
-        ## TODO: properly encode everything in place;
-        for tracker in trackers_as_states:
-            for state in tracker:
-                if state:
-                    for key in state.keys():
-                        if isinstance(state[key], Message):
-                            if (
-                                state[key].get_sparse_features(TEXT)[1] is None
-                                and state[key].get_dense_features(TEXT)[1] is None
-                            ):
-                                name = state[key].as_dict()["text"]
-                                example = find_same(name, TEXT, training_data)
-                                state[key].features +=example.features
-        
-        self.trainer.persist(output_path, fixed_model_name="nlu")
 
 
 def _create_from_endpoint_config(

@@ -18,7 +18,7 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 import scipy.sparse
 
-from rasa.core.interpreter import RasaE2EInterpreter
+from rasa.core.interpreter import RasaE2EInterpreter, NaturalLanguageInterpreter
 from rasa.nlu.constants import TEXT
 from rasa.nlu.training_data import Message
 from rasa.utils.common import is_logging_disabled
@@ -80,12 +80,13 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self) -> None:
 
         super().__init__()
+        #TODO: double check if I can change the `Interpreter` `parse` to return Message rather than dict; 
         self.interpreter = RasaE2EInterpreter()
 
     def featurize_slots(self, slot_dict):
-        slot_featurization = np.zeros(len(self.interpreter.slot_states))
+        slot_featurization = np.zeros(len(self.slot_states))
         for slot_name in list(slot_dict.keys()):
-            slot_featurization[self.interpreter.slot_states.index(slot_name)] = 1
+            slot_featurization[self.slot_states.index(slot_name)] = 1
         return None, slot_featurization
 
     def _extract_features(
@@ -93,10 +94,13 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
         sparse_features = None
         dense_features = None
-
         #check that it is slot dictionary and not the processed empty used utterance
         if isinstance(message, Dict) and not 'intent' in message.keys():
             return self.featurize_slots(message)
+        # TODO: input will be `Text` or `Dict`;
+        # change once e2e YAML parser is merged;
+        message = self.interpreter.parse(message.text)
+
 
         if message.get_sparse_features(attribute)[1] is not None:
             sparse_features = message.get_sparse_features(attribute)[1]
@@ -161,10 +165,10 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
         slot_features = state_extracted_features['slots'][1]
 
-        if self.interpreter.entities == []:
+        if self.entities == []:
             entity_features = None
         else:
-            entity_features = np.zeros(len(self.interpreter.entities))
+            entity_features = np.zeros(len(self.entities))
             if "user" in list(state.keys()):
                 if not state["user"].get("entities") is None:
                     user_entities = [
@@ -172,7 +176,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                     ]
                     for entity_name in user_entities:
                         entity_features[
-                            self.interpreter.entities.index(entity_name)
+                            self.entities.index(entity_name)
                         ] = 1
         if entity_features is None:
             entity_slot_features = slot_features
@@ -336,9 +340,7 @@ class TrackerFeaturizer:
                 self.state_featurizer.action_as_index(action, domain)
                 for action in tracker_actions
             ]
-            for action in tracker_actions:
-                sparse, dense = self.state_featurizer._extract_features(action, TEXT)
-                value = (sparse.tocsr(), dense)
+
 
             labels.append(story_labels)
 
@@ -359,7 +361,7 @@ class TrackerFeaturizer:
         )
 
     def featurize_trackers(
-        self, trackers: List[DialogueStateTracker], domain: Domain, **kwargs
+        self, trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs
     ) -> DialogueTrainingData:
         """Create training data."""
 
@@ -374,9 +376,9 @@ class TrackerFeaturizer:
             trackers_as_actions,
         ) = self.training_states_and_actions_e2e(trackers, domain)
 
-        self.state_featurizer.interpreter.prepare_training_data_and_train(
-            trackers_as_states, trackers_as_actions, kwargs["output_path_nlu"], domain
-        )
+        self.state_featurizer.interpreter.interpreter = interpreter
+        self.state_featurizer.slot_states = domain.slot_states
+        self.state_featurizer.entities = domain.entities 
 
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states)

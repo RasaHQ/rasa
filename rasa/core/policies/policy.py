@@ -65,6 +65,7 @@ class Policy:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> DialogueTrainingData:
         """Transform training trackers into a vector representation.
@@ -82,7 +83,7 @@ class Policy:
         """
 
         training_data = self.featurizer.featurize_trackers(
-            training_trackers, domain, **kwargs
+            training_trackers, domain, interpreter, **kwargs
         )
 
         max_training_samples = kwargs.get("max_training_samples")

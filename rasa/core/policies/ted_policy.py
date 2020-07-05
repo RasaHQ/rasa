@@ -286,7 +286,6 @@ class TEDPolicy(Policy):
         Y_sparse, Y_dense = np.array([]), np.array([])
 
         if data_Y is not None:
-            # label_ids = self._label_ids_for_Y(data_Y)
             label_ids = np.squeeze(data_Y, axis=-1)
             Y_sparse, Y_dense = self._label_features_for_Y(label_ids)
             # explicitly add last dimension to label_ids
@@ -372,7 +371,7 @@ class TEDPolicy(Policy):
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
+        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
 
         self._label_data = self._create_label_data(domain)
 

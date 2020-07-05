@@ -243,9 +243,9 @@ class MarkdownStoryReader(StoryReader):
 
         message_processed = MarkdownReader().parse_training_example(text)
         parse_data = await self.interpreter.parse(text)
-
+        # adding `message_processed.text` to clean out entities
         utterance = UserUttered(
-            text,
+            message_processed.text,
             parse_data.get("intent"),
             message_processed.get("entities"),
             message=message_processed,
