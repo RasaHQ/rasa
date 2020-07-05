@@ -43,7 +43,7 @@ class Policy:
         or both ML-based data and rule data, they need to override this method.
 
         Returns:
-            The data type supported by this policy.
+            The data type supported by this policy (ML-based training data).
         """
         return SupportedData.ML_DATA
 
