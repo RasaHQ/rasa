@@ -14,16 +14,12 @@ class WhitespaceTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # Text will be tokenized with case sensitive as default
-        "case_sensitive": True,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
         super().__init__(component_config)
-
-        self.case_sensitive = self.component_config["case_sensitive"]
 
         self.emoji_pattern = self.get_emoji_regex()
 
@@ -48,9 +44,6 @@ class WhitespaceTokenizer(Tokenizer):
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         text = message.get(attribute)
-
-        if not self.case_sensitive:
-            text = text.lower()
 
         # we need to use regex instead of re, because of
         # https://stackoverflow.com/questions/12746458/python-unicode-regular-expression-matching-failing-with-some-unicode-characters

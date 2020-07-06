@@ -26,8 +26,6 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # Text will be tokenized with case sensitive as default
-        "case_sensitive": True,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
