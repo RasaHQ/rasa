@@ -16,6 +16,7 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
+    DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
 
 from rasa.core.utils import get_dict_hash
@@ -213,7 +214,7 @@ def get_model_subdirectories(
 
     """
     core_path = os.path.join(unpacked_model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
-    nlu_path = os.path.join(unpacked_model_path, "nlu")
+    nlu_path = os.path.join(unpacked_model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
 
     if not os.path.isdir(core_path):
         core_path = None

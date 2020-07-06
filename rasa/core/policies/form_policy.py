@@ -1,11 +1,12 @@
 import logging
 import typing
-from typing import List, Dict, Text, Optional
+from typing import List, Dict, Text, Optional, Any
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
 from rasa.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY
@@ -137,7 +138,11 @@ class FormPolicy(MemoizationPolicy):
         return state_is_unhappy
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts the corresponding form action if there is an active form"""
         result = self._default_predictions(domain)

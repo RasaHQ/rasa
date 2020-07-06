@@ -2,7 +2,6 @@ import pytest
 
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT
 from rasa.nlu.training_data import TrainingData, Message
-from tests.nlu import utilities
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
@@ -20,6 +19,37 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             [(0, 3), (4, 12), (13, 16), (17, 19), (20, 23)],
         ),
         (
+            "50 क्या आपके पास डेरी मिल्क 10 वाले बॉक्स मिल सकते है",
+            [
+                "50",
+                "क्या",
+                "आपके",
+                "पास",
+                "डेरी",
+                "मिल्क",
+                "10",
+                "वाले",
+                "बॉक्स",
+                "मिल",
+                "सकते",
+                "है",
+            ],
+            [
+                (0, 2),
+                (3, 7),
+                (8, 12),
+                (13, 16),
+                (17, 21),
+                (22, 27),
+                (28, 30),
+                (31, 35),
+                (36, 41),
+                (42, 45),
+                (46, 50),
+                (51, 53),
+            ],
+        ),
+        (
             "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
             [
                 "https://www.google.com/search?"
@@ -28,6 +58,13 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             ],
             [(0, 82), (83, 141)],
         ),
+        (
+            "Joselico gracias Dois 🙏🇺🇸🏦🛠🔥⭐️🦅👑💪",
+            ["Joselico", "gracias", "Dois"],
+            [(0, 8), (9, 16), (17, 21)],
+        ),
+        (":)", [":)"], [(0, 2)]),
+        ("Hi :-)", ["Hi"], [(0, 2)]),
     ],
 )
 def test_whitespace(text, expected_tokens, expected_indices):
