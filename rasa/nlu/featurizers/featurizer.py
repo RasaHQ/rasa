@@ -3,6 +3,7 @@ import scipy.sparse
 from typing import Text, Union, Optional, Dict, Any
 
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
+from rasa.nlu.constants import VALID_FEATURE_TYPES
 from rasa.nlu.components import Component
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
@@ -13,13 +14,24 @@ class Features:
     def __init__(
         self,
         features: Union[np.ndarray, scipy.sparse.spmatrix],
+        feature_type: Text,
         message_attribute: Text,
         origin: Text,
     ) -> None:
+        self._validate_feature_type(feature_type)
+
         self.features = features
-        self.type = type
+        self.type = feature_type
         self.origin = origin
         self.message_attribute = message_attribute
+
+    @staticmethod
+    def _validate_feature_type(feature_type: Text) -> None:
+        if feature_type not in VALID_FEATURE_TYPES:
+            raise ValueError(
+                f"Invalid feature type '{feature_type}' used. Valid feature types are: "
+                f"{VALID_FEATURE_TYPES}."
+            )
 
     def is_sparse(self) -> bool:
         """Checks if features are sparse or not.
@@ -99,7 +111,7 @@ class Featurizer(Component):
 
 class DenseFeaturizer(Featurizer):
     @staticmethod
-    def _calculate_cls_vector(
+    def _calculate_sentence_features(
         features: np.ndarray, pooling_operation: Text
     ) -> np.ndarray:
         # take only non zeros feature vectors into account

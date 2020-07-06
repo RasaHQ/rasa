@@ -17,7 +17,6 @@ def test_convert_featurizer_process(component_builder):
     sentence = "Hey how are you today ?"
     message = Message(sentence)
     tokens = tokenizer.tokenize(message, attribute=TEXT)
-    tokens = tokenizer.add_cls_token(tokens, attribute=TEXT)
     message.set(TOKENS_NAMES[TEXT], tokens)
 
     featurizer.process(message, tf_hub_module=tokenizer.module)
@@ -27,11 +26,11 @@ def test_convert_featurizer_process(component_builder):
         [1.0251294, -0.04053932, -0.7018805, -0.82054937, -0.75054353]
     )
 
-    vecs = message.get_dense_features(TEXT, [])
+    seq_vecs, sent_vecs = message.get_dense_features(TEXT, [])
 
-    assert len(tokens) == len(vecs)
-    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
+    assert len(tokens) == len(seq_vecs)
+    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
 
 def test_convert_featurizer_train(component_builder):
@@ -41,8 +40,9 @@ def test_convert_featurizer_train(component_builder):
     sentence = "Hey how are you today ?"
     message = Message(sentence)
     message.set(RESPONSE, sentence)
+
     tokens = tokenizer.tokenize(message, attribute=TEXT)
-    tokens = tokenizer.add_cls_token(tokens, attribute=TEXT)
+
     message.set(TOKENS_NAMES[TEXT], tokens)
     message.set(TOKENS_NAMES[RESPONSE], tokens)
 
@@ -55,21 +55,22 @@ def test_convert_featurizer_train(component_builder):
         [1.0251294, -0.04053932, -0.7018805, -0.82054937, -0.75054353]
     )
 
-    vecs = message.get_dense_features(TEXT, [])
+    seq_vecs, sent_vecs = message.get_dense_features(TEXT, [])
 
-    assert len(tokens) == len(vecs)
-    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
+    assert len(tokens) == len(seq_vecs)
+    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get_dense_features(RESPONSE, [])
+    seq_vecs, sent_vecs = message.get_dense_features(RESPONSE, [])
 
-    assert len(tokens) == len(vecs)
-    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
+    assert len(tokens) == len(seq_vecs)
+    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get_dense_features(INTENT, [])
+    seq_vecs, sent_vecs = message.get_dense_features(INTENT, [])
 
-    assert vecs is None
+    assert seq_vecs is None
+    assert sent_vecs is None
 
 
 @pytest.mark.parametrize(

@@ -5,14 +5,7 @@ from typing import Text, List, Optional, Dict, Any
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
-from rasa.nlu.constants import (
-    RESPONSE,
-    TEXT,
-    CLS_TOKEN,
-    TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    INTENT,
-)
+from rasa.nlu.constants import TEXT, TOKENS_NAMES, MESSAGE_ATTRIBUTES, INTENT
 
 logger = logging.getLogger(__name__)
 
@@ -93,14 +86,12 @@ class Tokenizer(Component):
                         tokens = self._split_intent(example)
                     else:
                         tokens = self.tokenize(example, attribute)
-                        tokens = self.add_cls_token(tokens, attribute)
                     example.set(TOKENS_NAMES[attribute], tokens)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Tokenize the incoming message."""
 
         tokens = self.tokenize(message, TEXT)
-        tokens = self.add_cls_token(tokens, TEXT)
         message.set(TOKENS_NAMES[TEXT], tokens)
 
     def _split_intent(self, message: Message):
@@ -124,14 +115,5 @@ class Tokenizer(Component):
             word_len = len(word)
             running_offset = word_offset + word_len
             tokens.append(Token(word, word_offset))
-
-        return tokens
-
-    @staticmethod
-    def add_cls_token(tokens: List[Token], attribute: Text) -> List[Token]:
-        if attribute in [RESPONSE, TEXT] and tokens:
-            # +1 to have a space between the last token and the __cls__ token
-            idx = tokens[-1].end + 1
-            tokens.append(Token(CLS_TOKEN, idx))
 
         return tokens
