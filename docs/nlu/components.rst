@@ -461,11 +461,15 @@ RegexFeaturizer
     :ref:`diet-classifier` components!
 
 :Configuration:
+    Make the featurizer case insensitive by adding the ``case_sensitive: False`` option, the default being
+    ``case_sensitive: True``.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "RegexFeaturizer"
+          # Text will be processed with case sensitive as default
+          "case_sensitive": True
 
 .. _CountVectorsFeaturizer:
 
