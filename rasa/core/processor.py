@@ -36,7 +36,6 @@ from rasa.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
-    SessionStarted,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -417,18 +416,24 @@ class MessageProcessor:
         if slot_values.strip():
             logger.debug(f"Current slot values: \n{slot_values}")
 
-    def _log_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
-        """Check if the NLU interpreter picks up intents or entities that aren't
-        recognized."""
+    def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
+        """Warns the user if the NLU parse data contains unrecognized features.
 
-        domain_is_not_empty = self.domain and not self.domain.is_empty()
+        Checks intents and entities picked up by the NLU interpreter
+        against the domain and warns the user of those that don't match.
+        Also considers a list of default intents that are valid but don't
+        need to be listed in the domain.
+
+        Args:
+            parse_data: NLUInterpreter parse data to check against the domain.
+        """
+        if not self.domain or self.domain.is_empty():
+            return
 
         intent = parse_data["intent"]["name"]
         if intent:
-            intent_is_recognized = (
-                domain_is_not_empty and intent in self.domain.intents
-            ) or intent in DEFAULT_INTENTS
-            if not intent_is_recognized:
+            known_intents = self.domain.intents + DEFAULT_INTENTS
+            if intent not in known_intents:
                 raise_warning(
                     f"Interpreter parsed an intent '{intent}' "
                     f"which is not defined in the domain. "
@@ -439,7 +444,7 @@ class MessageProcessor:
         entities = parse_data["entities"] or []
         for element in entities:
             entity = element["entity"]
-            if entity and domain_is_not_empty and entity not in self.domain.entities:
+            if entity and entity not in self.domain.entities:
                 raise_warning(
                     f"Interpreter parsed an entity '{entity}' "
                     f"which is not defined in the domain. "
@@ -470,7 +475,7 @@ class MessageProcessor:
             )
         )
 
-        self._log_unseen_features(parse_data)
+        self._check_for_unseen_features(parse_data)
 
         return parse_data
 
@@ -803,5 +808,5 @@ class MessageProcessor:
                 )
 
         return self.policy_ensemble.probabilities_using_best_policy(
-            tracker, self.domain
+            tracker, self.domain, self.interpreter
         )

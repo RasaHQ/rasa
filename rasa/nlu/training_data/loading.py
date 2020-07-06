@@ -1,12 +1,12 @@
 import json
 import logging
 import os
-
+import re
 import typing
 from typing import Optional, Text
 
+import rasa.utils.io as io_utils
 from rasa.nlu import utils
-from rasa.nlu.training_data.formats import markdown
 from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
@@ -16,8 +16,6 @@ from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_PACKAGE,
 )
 from rasa.utils.endpoints import EndpointConfig
-import rasa.utils.io as io_utils
-import re
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -30,11 +28,12 @@ WIT = "wit"
 LUIS = "luis"
 RASA = "rasa_nlu"
 MARKDOWN = "md"
+RASA_YAML = "rasa_yml"
 UNK = "unk"
 MARKDOWN_NLG = "nlg.md"
+JSON = "json"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
-_markdown_section_markers = [f"## {s}:" for s in markdown.available_sections]
 _json_format_heuristics = {
     WIT: lambda js, fn: "data" in js and isinstance(js.get("data"), list),
     LUIS: lambda js, fn: "luis_schema_version" in js,
@@ -101,6 +100,7 @@ async def load_data_from_endpoint(
 def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     """Generates the appropriate reader class based on the file format."""
     from rasa.nlu.training_data.formats import (
+        RasaYAMLReader,
         MarkdownReader,
         WitReader,
         LuisReader,
@@ -122,6 +122,8 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
         reader = MarkdownReader()
     elif fformat == MARKDOWN_NLG:
         reader = NLGMarkdownReader()
+    elif fformat == RASA_YAML:
+        reader = RasaYAMLReader()
     return reader
 
 
@@ -156,6 +158,8 @@ def guess_format(filename: Text) -> Text:
     Returns:
         Guessed file format.
     """
+    from rasa.nlu.training_data.formats import RasaYAMLReader, markdown
+
     guess = UNK
 
     content = ""
@@ -163,10 +167,12 @@ def guess_format(filename: Text) -> Text:
         content = io_utils.read_file(filename)
         js = json.loads(content)
     except ValueError:
-        if any([marker in content for marker in _markdown_section_markers]):
+        if any(marker in content for marker in markdown.MARKDOWN_SECTION_MARKERS):
             guess = MARKDOWN
         elif _is_nlg_story_format(content):
             guess = MARKDOWN_NLG
+        elif RasaYAMLReader.is_yaml_nlu_file(filename):
+            guess = RASA_YAML
     else:
         for fformat, format_heuristic in _json_format_heuristics.items():
             if format_heuristic(js, filename):
