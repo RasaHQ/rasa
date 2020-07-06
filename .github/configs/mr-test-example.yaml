@@ -25,7 +25,7 @@
 ##  - dataset: ["Carbon Bot", "Sara"]
 ##    config: ["all"]
 ##  - dataset: ["Hermit"]
-##    config: ["Sparse + DIET(seq) + ResponseSelector(t2t)", ["Sparse + ConveRT + DIET(seq) + ResponseSelector(t2t)"]
+##    config: ["Sparse + DIET(seq) + ResponseSelector(t2t)", "Sparse + ConveRT + DIET(seq) + ResponseSelector(t2t)"]
 
 include:
   - dataset: ["Carbon Bot"]

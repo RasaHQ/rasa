@@ -3,9 +3,9 @@
 import json
 import os
 
-summary_file = os.environ["SUMMARY_FILE"]
-config = os.environ["CONFIG"]
-dataset = os.environ["DATASET_NAME"]
+SUMMARY_FILE = os.environ["SUMMARY_FILE"]
+CONFIG = os.environ["CONFIG"]
+DATASET = os.environ["DATASET_NAME"]
 task_mapping = {
     "intent_report.json": "intent_classification",
     "CRFEntityExtractor_report.json": "entity_prediction",
@@ -15,20 +15,20 @@ task_mapping = {
 
 
 def generate_json(file, task, data):
-    if not dataset in data:
-        data = {dataset: {config: {}}, **data}
-    elif not config in data[dataset]:
-        data[dataset] = {config: {}, **data[dataset]}
+    if not DATASET in data:
+        data = {DATASET: {CONFIG: {}}, **data}
+    elif not CONFIG in data[DATASET]:
+        data[DATASET] = {CONFIG: {}, **data[DATASET]}
 
-    data[dataset][config] = {
+    data[DATASET][CONFIG] = {
         "accelerator_type": os.environ["ACCELERATOR_TYPE"],
         "test_run_time": os.environ["TEST_RUN_TIME"],
         "train_run_time": os.environ["TRAIN_RUN_TIME"],
         "total_run_time": os.environ["TOTAL_RUN_TIME"],
-        **data[dataset][config],
+        **data[DATASET][CONFIG],
     }
 
-    data[dataset][config][task] = {**read_results(file)}
+    data[DATASET][CONFIG][task] = {**read_results(file)}
 
     return data
 
@@ -44,8 +44,8 @@ def read_results(file):
 
 if __name__ == "__main__":
     data = {}
-    if os.path.exists(summary_file):
-        with open(summary_file) as json_file:
+    if os.path.exists(SUMMARY_FILE):
+        with open(SUMMARY_FILE) as json_file:
             data = json.load(json_file)
 
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
@@ -55,5 +55,5 @@ if __name__ == "__main__":
 
             data = generate_json(os.path.join(dirpath, f),task_mapping[f], data)
 
-    with open(summary_file, "w") as f:
+    with open(SUMMARY_FILE, "w") as f:
         json.dump(data, f, sort_keys=True, indent=2)
