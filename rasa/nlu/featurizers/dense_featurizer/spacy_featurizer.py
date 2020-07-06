@@ -5,15 +5,17 @@ from typing import Any, Optional, Text, Dict, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT,
     SPACY_DOCS,
-    DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+    FEATURIZER_CLASS_ALIAS,
 )
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
@@ -31,7 +33,7 @@ class SpacyFeaturizer(DenseFeaturizer):
 
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
-        # the CLS token. Available options: 'mean' and 'max'
+        # the complete utterance. Available options: 'mean' and 'max'
         POOLING: MEAN_POOLING
     }
 
@@ -42,7 +44,7 @@ class SpacyFeaturizer(DenseFeaturizer):
 
     def _features_for_doc(self, doc: "Doc") -> np.ndarray:
         """Feature vector for a single document / sentence / tokens."""
-        return np.array([t.vector for t in doc])
+        return np.array([t.vector for t in doc if t.text and t.text.strip()])
 
     def train(
         self,
@@ -73,12 +75,22 @@ class SpacyFeaturizer(DenseFeaturizer):
             logger.debug("No features present. You are using an empty spaCy model.")
             return
 
-        features = self._features_for_doc(doc)
-
-        cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
-        features = np.concatenate([features, cls_token_vec])
-
-        features = self._combine_with_existing_dense_features(
-            message, features, DENSE_FEATURE_NAMES[attribute]
+        sequence_features = self._features_for_doc(doc)
+        sentence_features = self._calculate_sentence_features(
+            sequence_features, self.pooling_operation
         )
-        message.set(DENSE_FEATURE_NAMES[attribute], features)
+
+        final_sequence_features = Features(
+            sequence_features,
+            FEATURE_TYPE_SEQUENCE,
+            attribute,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
+        )
+        message.add_features(final_sequence_features)
+        final_sentence_features = Features(
+            sentence_features,
+            FEATURE_TYPE_SENTENCE,
+            attribute,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
+        )
+        message.add_features(final_sentence_features)

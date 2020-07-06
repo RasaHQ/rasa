@@ -4,7 +4,11 @@ import pytest
 from _pytest.tmpdir import TempdirFactory
 import os
 
-from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
+from rasa.constants import (
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_E2E_TESTS_PATH,
+)
 from rasa.nlu.training_data.formats import RasaReader
 from rasa import model
 from rasa.core import utils
@@ -208,6 +212,92 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
 
     assert not selector.is_imported(str(not_relevant_file1))
     assert not selector.is_imported(str(not_relevant_file2))
+
+
+async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
+    tmpdir_factory: TempdirFactory,
+):
+    from rasa.core.interpreter import RegexInterpreter
+    from rasa.core.training.structures import StoryGraph
+    import rasa.core.training.loading as core_loading
+
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config = {"imports": ["bots/Bot A"]}
+    config_path = str(root / "config.yml")
+    utils.dump_obj_as_yaml_to_file(config_path, config)
+
+    story_file = root / "bots" / "Bot A" / "data" / "stories.md"
+    story_file.write(
+        """
+        ## story
+        * greet
+            - utter_greet
+        """,
+        ensure=True,
+    )
+
+    e2e_story_test_file = (
+        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "conversation_tests.md"
+    )
+    e2e_story_test_file.write(
+        """
+        ## story test
+        * greet : "hello"
+            - utter_greet
+        """,
+        ensure=True,
+    )
+
+    selector = MultiProjectImporter(config_path)
+
+    story_steps = await core_loading.load_data_from_resource(
+        resource=str(e2e_story_test_file),
+        domain=Domain.empty(),
+        interpreter=RegexInterpreter(),
+        template_variables=None,
+        use_e2e=True,
+        exclusion_percentage=None,
+    )
+
+    expected = StoryGraph(story_steps)
+
+    actual = await selector.get_stories(use_e2e=True)
+
+    assert expected.as_story_string() == actual.as_story_string()
+
+
+def test_not_importing_e2e_conversation_tests_in_project(
+    tmpdir_factory: TempdirFactory,
+):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config = {"imports": ["bots/Bot A"]}
+    config_path = str(root / "config.yml")
+    utils.dump_obj_as_yaml_to_file(config_path, config)
+
+    story_file = root / "bots" / "Bot A" / "data" / "stories.md"
+    story_file.write("""## story""", ensure=True)
+
+    e2e_story_test_file = (
+        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "conversation_tests.md"
+    )
+    e2e_story_test_file.write(
+        """## story test""", ensure=True,
+    )
+
+    selector = MultiProjectImporter(config_path)
+
+    # Conversation tests should not be included in story paths
+    expected = {
+        "story_paths": [str(story_file)],
+        "e2e_story_paths": [str(e2e_story_test_file)],
+    }
+
+    actual = {
+        "story_paths": selector._story_paths,
+        "e2e_story_paths": selector._e2e_story_paths,
+    }
+
+    assert expected == actual
 
 
 def test_single_additional_file(tmpdir_factory):

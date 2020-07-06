@@ -21,7 +21,6 @@ env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   BOTO_CONFIG: /dev/null
-  PIP_USE_PEP517: false
 
 jobs:
   api:
@@ -113,9 +112,9 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 2
+      max-parallel: 3
       matrix:
-        python-version: [3.6, 3.7]
+        python-version: [3.6, 3.7, 3.8]
 
     steps:
     - name: Checkout git repository 🕝

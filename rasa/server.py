@@ -8,7 +8,7 @@ import traceback
 import typing
 from functools import reduce, wraps
 from inspect import isawaitable
-from typing import Any, Callable, List, Optional, Text, Union
+from typing import Any, Callable, List, Optional, Text, Union, Dict
 
 import rasa
 import rasa.core.utils
@@ -23,7 +23,8 @@ from rasa.constants import (
     DOCS_BASE_URL,
     MINIMUM_COMPATIBLE_VERSION,
 )
-from rasa.core.agent import Agent, load_agent
+from rasa.core import agent
+from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
@@ -333,7 +334,7 @@ async def _load_agent(
             if not lock_store:
                 lock_store = LockStore.create(endpoints.lock_store)
 
-        loaded_agent = await load_agent(
+        loaded_agent = await agent.load_agent(
             model_path,
             model_server,
             remote_storage,
@@ -687,7 +688,7 @@ def create_app(
     @app.post("/conversations/<conversation_id>/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def predict(request: Request, conversation_id: Text):
+    async def predict(request: Request, conversation_id: Text) -> HTTPResponse:
         try:
             # Fetches the appropriate bot response in a json format
             responses = await app.agent.predict_next(conversation_id)
@@ -830,7 +831,7 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value -= 1
 
-    def validate_request(rjs):
+    def validate_request(rjs: Dict):
         if "config" not in rjs:
             raise ErrorResponse(
                 400,
@@ -860,7 +861,7 @@ def create_app(
     @app.post("/model/test/stories")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app, require_core_is_ready=True)
-    async def evaluate_stories(request: Request):
+    async def evaluate_stories(request: Request) -> HTTPResponse:
         """Evaluate stories against the currently loaded model."""
         validate_request_body(
             request,
@@ -884,7 +885,7 @@ def create_app(
 
     @app.post("/model/test/intents")
     @requires_auth(app, auth_token)
-    async def evaluate_intents(request: Request):
+    async def evaluate_intents(request: Request) -> HTTPResponse:
         """Evaluate intents against a Rasa model."""
         validate_request_body(
             request,
@@ -926,7 +927,7 @@ def create_app(
     @app.post("/model/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app, require_core_is_ready=True)
-    async def tracker_predict(request: Request):
+    async def tracker_predict(request: Request) -> HTTPResponse:
         """ Given a list of events, predicts the next action"""
         validate_request_body(
             request,
@@ -953,7 +954,7 @@ def create_app(
         try:
             policy_ensemble = app.agent.policy_ensemble
             probabilities, policy = policy_ensemble.probabilities_using_best_policy(
-                tracker, app.agent.domain
+                tracker, app.agent.domain, app.agent.interpreter
             )
 
             scores = [
@@ -977,7 +978,7 @@ def create_app(
     @app.post("/model/parse")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def parse(request: Request):
+    async def parse(request: Request) -> HTTPResponse:
         validate_request_body(
             request,
             "No text message defined in request_body. Add text message to request body "
@@ -1009,7 +1010,7 @@ def create_app(
 
     @app.put("/model")
     @requires_auth(app, auth_token)
-    async def load_model(request: Request):
+    async def load_model(request: Request) -> HTTPResponse:
         validate_request_body(request, "No path to model file defined in request_body.")
 
         model_path = request.json.get("model_file", None)
@@ -1037,7 +1038,7 @@ def create_app(
 
     @app.delete("/model")
     @requires_auth(app, auth_token)
-    async def unload_model(request: Request):
+    async def unload_model(request: Request) -> HTTPResponse:
         model_file = app.agent.model_directory
 
         app.agent = Agent(lock_store=app.agent.lock_store)
@@ -1048,7 +1049,7 @@ def create_app(
     @app.get("/domain")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def get_domain(request: Request):
+    async def get_domain(request: Request) -> HTTPResponse:
         """Get current domain in yaml or json format."""
 
         accepts = request.headers.get("Accept", default="application/json")

@@ -44,7 +44,7 @@ new Rasa project.
     rasa init
 
 
-Let's remove the default content from this bot, so that the ``nlu.md``, ``stories.md``
+Let's remove the default content from this bot, so that the ``data/nlu.md``, ``data/stories.md``
 and ``domain.yml`` files are empty.
 
 .. _respond-with-memoization-policy:
@@ -71,7 +71,7 @@ You can do this by editing your ``config.yml`` file as follows (you can remove `
    which allows you to clear the conversation history and start fresh.
 
 Now that we’ve defined our policies, we can add some stories for the ``goodbye``, ``thank`` and ``greet``
-intents to the ``stories.md`` file:
+intents to the ``data/stories.md`` file:
 
 .. code-block:: md
 
@@ -104,7 +104,7 @@ We’ll also need to add the intents, actions and responses to our ``domain.yml`
      utter_bye:
        - text: Bye!
 
-Finally, we’ll copy over some NLU data from Sara into our ``nlu.md`` file
+Finally, we’ll copy over some NLU data from Sara into our ``data/nlu.md`` file
 (more can be found `here <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md>`__):
 
 .. code-block:: md
@@ -481,7 +481,7 @@ which will do something with the information the user has provided once the form
        return []
 
 In this case, we only tell the user that we’ll be in touch with them, however
-usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L149>`_
+usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L148>`_
 for an example of how to store this information in a spreadsheet.
 
 We’ll need to add the form we just created to a new section in our ``domain.yml`` file:

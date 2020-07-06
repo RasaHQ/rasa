@@ -247,7 +247,7 @@ def _create_from_endpoint_config(
     elif endpoint_config.type == "redis":
         lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
     else:
-        lock_store = _load_from_module_string(endpoint_config.type)
+        lock_store = _load_from_module_string(endpoint_config)
 
     logger.debug(f"Connected to lock store '{lock_store.__class__.__name__}'.")
 

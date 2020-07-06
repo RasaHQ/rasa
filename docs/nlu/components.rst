@@ -157,8 +157,6 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 - ``intent_split_symbol`` sets the delimiter string to split the intent labels, default is underscore
   (``_``).
 
-    .. note:: All tokenizers add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
-              text and responses.
 
 .. _WhitespaceTokenizer:
 
@@ -320,13 +318,15 @@ As those feature vectors would normally take up a lot of memory, we store them a
 Sparse features only store the values that are non zero and their positions in the vector.
 Thus, we save a lot of memory and are able to train on larger datasets.
 
-By default all featurizers will return a matrix of length ``(number-of-tokens x feature-dimension)``.
-So, the returned matrix will have a feature vector for every token.
+All featurizers can return two different kind of features: sequence features and sentence features.
+The sequence features are a matrix of size ``(number-of-tokens x feature-dimension)``.
+The matrix contains a feature vector for every token in the sequence.
 This allows us to train sequence models.
-However, the additional token at the end (e.g. ``__CLS__``) contains features for the complete utterance.
-This feature vector can be used in any bag-of-words model.
+The sentence features are represented by a matrix of size ``(1 x feature-dimension)``.
+It contains the feature vector for the complete utterance.
+The sentence features can be used in any bag-of-words model.
 The corresponding classifier can therefore decide what kind of features to use.
-
+Note: The ``feature-dimension`` for sequence and sentence features does not have to be the same.
 
 .. _MitieFeaturizer:
 
@@ -348,7 +348,7 @@ MitieFeaturizer
         that makes use of ``dense_features``.
 
 :Configuration:
-    The sentence vector, i.e. the vector of the ``__CLS__`` token, can be calculated in two different ways, either via
+    The sentence vector, i.e. the vector of the complete utterance, can be calculated in two different ways, either via
     mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
     The default pooling method is set to ``mean``.
 
@@ -357,7 +357,7 @@ MitieFeaturizer
         pipeline:
         - name: "MitieFeaturizer"
           # Specify what pooling operation should be used to calculate the vector of
-          # the __CLS__ token. Available options: 'mean' and 'max'.
+          # the complete utterance. Available options: 'mean' and 'max'.
           "pooling": "mean"
 
 
@@ -375,7 +375,7 @@ SpacyFeaturizer
     Creates features for entity extraction, intent classification, and response classification using the spaCy
     featurizer.
 :Configuration:
-    The sentence vector, i.e. the vector of the ``__CLS__`` token, can be calculated in two different ways, either via
+    The sentence vector, i.e. the vector of the complete utterance, can be calculated in two different ways, either via
     mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
     The default pooling method is set to ``mean``.
 
@@ -384,7 +384,7 @@ SpacyFeaturizer
         pipeline:
         - name: "SpacyFeaturizer"
           # Specify what pooling operation should be used to calculate the vector of
-          # the __CLS__ token. Available options: 'mean' and 'max'.
+          # the complete utterance. Available options: 'mean' and 'max'.
           "pooling": "mean"
 
 
@@ -570,51 +570,53 @@ CountVectorsFeaturizer
 
         .. code-block:: none
 
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | Parameter         | Default Value     | Description                                                  |
-         +===================+===================+==============================================================+
-         | use_shared_vocab  | False             | If set to 'True' a common vocabulary is used for labels      |
-         |                   |                   | and user message.                                            |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | analyzer          | word              | Whether the features should be made of word n-gram or        |
-         |                   |                   | character n-grams. Option ‘char_wb’ creates character        |
-         |                   |                   | n-grams only from text inside word boundaries;               |
-         |                   |                   | n-grams at the edges of words are padded with space.         |
-         |                   |                   | Valid values: 'word', 'char', 'char_wb'.                     |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | token_pattern     | r"(?u)\b\w\w+\b"  | Regular expression used to detect tokens.                    |
-         |                   |                   | Only used if 'analyzer' is set to 'word'.                    |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | strip_accents     | None              | Remove accents during the pre-processing step.               |
-         |                   |                   | Valid values: 'ascii', 'unicode', 'None'.                    |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | stop_words        | None              | A list of stop words to use.                                 |
-         |                   |                   | Valid values: 'english' (uses an internal list of            |
-         |                   |                   | English stop words), a list of custom stop words, or         |
-         |                   |                   | 'None'.                                                      |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | min_df            | 1                 | When building the vocabulary ignore terms that have a        |
-         |                   |                   | document frequency strictly lower than the given threshold.  |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | max_df            | 1                 | When building the vocabulary ignore terms that have a        |
-         |                   |                   | document frequency strictly higher than the given threshold  |
-         |                   |                   | (corpus-specific stop words).                                |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | min_ngram         | 1                 | The lower boundary of the range of n-values for different    |
-         |                   |                   | word n-grams or char n-grams to be extracted.                |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | max_ngram         | 1                 | The upper boundary of the range of n-values for different    |
-         |                   |                   | word n-grams or char n-grams to be extracted.                |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | max_features      | None              | If not 'None', build a vocabulary that only consider the top |
-         |                   |                   | max_features ordered by term frequency across the corpus.    |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | lowercase         | True              | Convert all characters to lowercase before tokenizing.       |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | OOV_token         | None              | Keyword for unseen words.                                    |
-         +-------------------+-------------------+--------------------------------------------------------------+
-         | OOV_words         | []                | List of words to be treated as 'OOV_token' during training.  |
-         +-------------------+-------------------+--------------------------------------------------------------+
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | Parameter         | Default Value           | Description                                                  |
+         +===================+=========================+==============================================================+
+         | use_shared_vocab  | False                   | If set to 'True' a common vocabulary is used for labels      |
+         |                   |                         | and user message.                                            |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | analyzer          | word                    | Whether the features should be made of word n-gram or        |
+         |                   |                         | character n-grams. Option ‘char_wb’ creates character        |
+         |                   |                         | n-grams only from text inside word boundaries;               |
+         |                   |                         | n-grams at the edges of words are padded with space.         |
+         |                   |                         | Valid values: 'word', 'char', 'char_wb'.                     |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | token_pattern     | r"(?u)\b\w\w+\b"        | Regular expression used to detect tokens.                    |
+         |                   |                         | Only used if 'analyzer' is set to 'word'.                    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | strip_accents     | None                    | Remove accents during the pre-processing step.               |
+         |                   |                         | Valid values: 'ascii', 'unicode', 'None'.                    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | stop_words        | None                    | A list of stop words to use.                                 |
+         |                   |                         | Valid values: 'english' (uses an internal list of            |
+         |                   |                         | English stop words), a list of custom stop words, or         |
+         |                   |                         | 'None'.                                                      |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | min_df            | 1                       | When building the vocabulary ignore terms that have a        |
+         |                   |                         | document frequency strictly lower than the given threshold.  |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | max_df            | 1                       | When building the vocabulary ignore terms that have a        |
+         |                   |                         | document frequency strictly higher than the given threshold  |
+         |                   |                         | (corpus-specific stop words).                                |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | min_ngram         | 1                       | The lower boundary of the range of n-values for different    |
+         |                   |                         | word n-grams or char n-grams to be extracted.                |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | max_ngram         | 1                       | The upper boundary of the range of n-values for different    |
+         |                   |                         | word n-grams or char n-grams to be extracted.                |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | max_features      | None                    | If not 'None', build a vocabulary that only consider the top |
+         |                   |                         | max_features ordered by term frequency across the corpus.    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | lowercase         | True                    | Convert all characters to lowercase before tokenizing.       |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | OOV_token         | None                    | Keyword for unseen words.                                    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | OOV_words         | []                      | List of words to be treated as 'OOV_token' during training.  |
+         +-------------------+-------------------------+--------------------------------------------------------------+
+         | alias             | CountVectorFeaturizer   | Alias name of featurizer.                                    |
+         +-------------------+-------------------------+--------------------------------------------------------------+
 
 
 .. _LexicalSyntacticFeaturizer:
@@ -1038,6 +1040,9 @@ CRFEntityExtractor
           "L1_c": 0.1
           # weight of the L2 regularization
           "L2_c": 0.1
+          # Name of dense featurizers to use.
+          # If list is empty all available dense features are used.
+          "featurizers": []
 
     .. note::
         If POS features are used (``pos`` or ``pos2`), you need to have ``SpacyTokenizer`` in your pipeline.
@@ -1189,7 +1194,7 @@ ResponseSelector
         - ``embedding_dimension``:
           This parameter defines the output dimension of the embedding layers used inside the model (default: ``20``).
           We are using multiple embeddings layers inside the model architecture.
-          For example, the vector of the ``__CLS__`` token and the intent is passed on to an embedding layer before
+          For example, the vector of the complete utterance and the intent is passed on to an embedding layer before
           they are compared and the loss is calculated.
         - ``number_of_transformer_layers``:
           This parameter sets the number of transformer layers to use (default: ``0``).
@@ -1262,6 +1267,9 @@ ResponseSelector
          | dense_dimension                 | text: 512         | Dense dimension for sparse features to use if no dense       |
          |                                 | label: 512        | features are present.                                        |
          +---------------------------------+-------------------+--------------------------------------------------------------+
+         | concat_dimension                | text: 512         | Concat dimension for sequence and sentence features.         |
+         |                                 | label: 512        |                                                              |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
          | number_of_negative_examples     | 20                | The number of incorrect labels. The algorithm will minimize  |
          |                                 |                   | their similarity to the user input during training.          |
          +---------------------------------+-------------------+--------------------------------------------------------------+
@@ -1326,6 +1334,10 @@ ResponseSelector
          |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
          |                                 |                   | training step ("minibatch").                                 |
          +---------------------------------+-------------------+--------------------------------------------------------------+
+         | featurizers                     | []                | List of featurizer names (alias names). Only features        |
+         |                                 |                   | coming from the listed names are used. If list is empty      |
+         |                                 |                   | all available features are used.                             |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
                   be between ``-1`` and ``1``.
@@ -1383,7 +1395,7 @@ DIETClassifier
     recognition. The architecture is based on a transformer which is shared for both tasks.
     A sequence of entity labels is predicted through a Conditional Random Field (CRF) tagging layer on top of the
     transformer output sequence corresponding to the input sequence of tokens.
-    For the intent labels the transformer output for the ``__CLS__`` token and intent labels are embedded into a
+    For the intent labels the transformer output for the complete utterance and intent labels are embedded into a
     single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
     minimize similarities with negative samples.
 
@@ -1428,7 +1440,7 @@ DIETClassifier
         - ``embedding_dimension``:
           This parameter defines the output dimension of the embedding layers used inside the model (default: ``20``).
           We are using multiple embeddings layers inside the model architecture.
-          For example, the vector of the ``__CLS__`` token and the intent is passed on to an embedding layer before
+          For example, the vector of the complete utterance and the intent is passed on to an embedding layer before
           they are compared and the loss is calculated.
         - ``number_of_transformer_layers``:
           This parameter sets the number of transformer layers to use (default: ``2``).
@@ -1492,6 +1504,9 @@ DIETClassifier
          +---------------------------------+------------------+--------------------------------------------------------------+
          | dense_dimension                 | text: 512        | Dense dimension for sparse features to use if no dense       |
          |                                 | label: 20        | features are present.                                        |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | concat_dimension                | text: 512        | Concat dimension for sequence and sentence features.         |
+         |                                 | label: 20        |                                                              |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
          |                                 |                  | their similarity to the user input during training.          |
@@ -1561,6 +1576,10 @@ DIETClassifier
          | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
          |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
          |                                 |                  | training step ('minibatch').                                 |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | featurizers                     | []               | List of featurizer names (alias names). Only features        |
+         |                                 |                  | coming from the listed names are used. If list is empty      |
+         |                                 |                  | all available features are used.                             |
          +---------------------------------+------------------+--------------------------------------------------------------+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should

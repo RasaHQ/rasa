@@ -1,12 +1,6 @@
 import pytest
 
-from rasa.nlu.constants import (
-    CLS_TOKEN,
-    TEXT,
-    INTENT,
-    RESPONSE,
-    TOKENS_NAMES,
-)
+from rasa.nlu.constants import TEXT, INTENT, RESPONSE, TOKENS_NAMES
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
@@ -28,13 +22,7 @@ def test_tokens_comparison():
 
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
-    [
-        (
-            "Forecast for lunch",
-            ["Forecast", "for", "lunch", CLS_TOKEN],
-            [(0, 8), (9, 12), (13, 18), (19, 26)],
-        )
-    ],
+    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
 def test_train_tokenizer(text, expected_tokens, expected_indices):
     tk = WhitespaceTokenizer()
@@ -63,13 +51,7 @@ def test_train_tokenizer(text, expected_tokens, expected_indices):
 
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
-    [
-        (
-            "Forecast for lunch",
-            ["Forecast", "for", "lunch", CLS_TOKEN],
-            [(0, 8), (9, 12), (13, 18), (19, 26)],
-        )
-    ],
+    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
 def test_process_tokenizer(text, expected_tokens, expected_indices):
     tk = WhitespaceTokenizer()
