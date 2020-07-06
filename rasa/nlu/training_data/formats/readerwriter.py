@@ -10,8 +10,12 @@ if typing.TYPE_CHECKING:
 
 
 class TrainingDataReader:
+    def __init__(self):
+        self.filename: Text = ""
+
     def read(self, filename: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData from a file."""
+        self.filename = filename
         return self.reads(rasa.utils.io.read_file(filename), **kwargs)
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
