@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.6] - 2020-07-06
+^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6143 <https://github.com/rasahq/rasa/issues/6143>`_: Prevent ``WhitespaceTokenizer`` from outputting empty list of tokens.
+
+
 [1.10.5] - 2020-07-02
 ^^^^^^^^^^^^^^^^^^^^^
 
