@@ -67,7 +67,10 @@ class Tokenizer(Component):
         # split symbol for intents
         self.intent_split_symbol = self.component_config.get("intent_split_symbol", "_")
         # token pattern to further split tokens
-        self.token_pattern = self.component_config.get("token_pattern", None)
+        token_pattern = self.component_config.get("token_pattern", None)
+        self.token_pattern_regex = None
+        if token_pattern:
+            self.token_pattern_regex = re.compile(token_pattern)
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenizes the text of the provided attribute of the incoming message."""
@@ -117,14 +120,12 @@ class Tokenizer(Component):
         Returns:
             List of tokens.
         """
-        if not self.token_pattern:
+        if not self.token_pattern_regex:
             return tokens
-
-        token_pattern = re.compile(self.token_pattern)
 
         final_tokens = []
         for token in tokens:
-            new_tokens = token_pattern.findall(token.text)
+            new_tokens = self.token_pattern_regex.findall(token.text)
             new_tokens = [t for t in new_tokens if t]
 
             if not new_tokens:
