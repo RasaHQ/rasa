@@ -3,14 +3,12 @@ import typing
 from collections import defaultdict
 from typing import Any, Dict, Text
 
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter,
 )
 from rasa.nlu.training_data.util import transform_entity_synonyms
 from rasa.nlu.utils import json_to_string
-from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
