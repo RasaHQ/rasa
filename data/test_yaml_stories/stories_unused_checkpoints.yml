@@ -1,14 +1,14 @@
 stories:
 - story: simple_story_with_end_checkpoint_1
   steps:
-  - user: simple
+  - intent: simple
   - action: utter_default
   - action: utter_greet
   - checkpoint: check_end_1
 
 - story: simple_story_with_end_checkpoint_2
   steps:
-  - user: hello
+  - intent: hello
   - action: utter_greet
   - slot: name
     value: peter
@@ -17,7 +17,7 @@ stories:
 - story:  simple_story_with_start
   steps:
   - checkpoint: check_start
-  - user: hello
+  - intent: hello
   - action: utter_greet
   - slot: name
     name: peter

@@ -120,7 +120,7 @@ possibilities (depending on the training run, it might also be correct):
       concerts: None, venues: None
 
     ------
-    ? The bot wants to run 'action_show_concert_reviews', correct?  No
+    ? The bot wants to run 'action_show_venue_reviews', correct?  No
 
 
 Now we type ``n``, because it chose the wrong action, and we get a new
