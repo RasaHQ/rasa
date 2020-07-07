@@ -35,7 +35,7 @@ class SupportedData(Enum):
     def trackers_for_policy(
         policy: Union["Policy", Type["Policy"]], trackers: List[DialogueStateTracker]
     ) -> List[DialogueStateTracker]:
-        """Return trackers to be trained on ML-based policies or rule-based policies.
+        """Return trackers for a given policy.
 
         Args:
             policy: Policy or policy type to return trackers for.
