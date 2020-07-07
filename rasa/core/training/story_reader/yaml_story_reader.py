@@ -17,10 +17,12 @@ KEY_STORIES = "stories"
 KEY_STORY_NAME = "story"
 KEY_STORY_STEPS = "steps"
 KEY_STORY_USER_INTENT = "intent"
+KEY_STORY_USER_END_TO_END_MESSAGE = "user"
 KEY_STORY_ENTITIES = "entities"
 KEY_SLOT_NAME = "slot"
 KEY_SLOT_VALUE = "value"
 KEY_ACTION = "action"
+KEY_BOT_END_TO_END_MESSAGE = "bot"
 KEY_CHECKPOINT = "checkpoint"
 KEY_CHECKPOINT_SLOTS = "slots"
 KEY_METADATA = "metadata"
@@ -113,13 +115,17 @@ class YAMLStoryReader(StoryReader):
     def _parse_step(self, step: Dict[Text, Any]) -> None:
 
         if KEY_STORY_USER_INTENT in step.keys():
-            self._parse_user_utterance(step)
+            self._parse_intent(step)
+        elif KEY_STORY_USER_END_TO_END_MESSAGE in step.keys():
+            self._parse_user_message(step)
         elif KEY_OR in step.keys():
             self._parse_or_statement(step)
         elif KEY_SLOT_NAME in step.keys():
             self._parse_slot(step)
         elif KEY_ACTION in step.keys():
             self._parse_action(step)
+        elif KEY_BOT_END_TO_END_MESSAGE in step.keys():
+            self._parse_bot_message(step)
         elif KEY_CHECKPOINT in step.keys():
             self._parse_checkpoint(step)
         elif KEY_METADATA in step.keys():
@@ -133,7 +139,7 @@ class YAMLStoryReader(StoryReader):
                 docs=DOCS_URL_STORIES,
             )
 
-    def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
+    def _parse_intent(self, step: Dict[Text, Any]) -> None:
         utterance = self._parse_raw_user_utterance(step)
         if utterance:
             self._validate_that_utterance_is_in_domain(utterance)
@@ -155,6 +161,17 @@ class YAMLStoryReader(StoryReader):
                 f"domain.",
                 docs=DOCS_URL_STORIES,
             )
+
+    def _parse_user_message(self, step: Dict[Text, Any]) -> None:
+        import rasa.nlu.training_data.entities_parser as entities_parser
+
+        message = step.get(KEY_STORY_USER_END_TO_END_MESSAGE, "")
+        entities = entities_parser.find_entities_in_training_example(message)
+        plain_text = entities_parser.replace_entities(message)
+
+        self.current_step_builder.add_user_messages(
+            [UserUttered(plain_text, {"name": None}, entities=entities)]
+        )
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
         utterances = []
@@ -248,6 +265,21 @@ class YAMLStoryReader(StoryReader):
             return
 
         self._add_event(action_name, {})
+
+    def _parse_bot_message(self, step: Dict[Text, Any]) -> None:
+        bot_message = step.get(KEY_BOT_END_TO_END_MESSAGE, "")
+        # TODO: Replace with schema validation
+        if not bot_message:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"Bot message cannot be empty. "
+                f"This story step will be skipped:\n"
+                f"{step}",
+                docs=DOCS_URL_STORIES,
+            )
+            return
+
+        self._add_event(bot_message, {"e2e_text": bot_message})
 
     def _parse_checkpoint(self, step: Dict[Text, Any]) -> None:
 

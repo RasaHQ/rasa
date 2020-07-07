@@ -214,12 +214,14 @@ class MarkdownReader(TrainingDataReader):
 
     def parse_e2e_training_example(self, example: Text) -> "Message":
         """Extract entities and synonyms, and convert to plain text."""
-        from rasa.nlu.training_data import Message
+        from rasa.nlu.training_data import Message, entities_parser
 
-        entities = self._find_entities_in_training_example(example)
+        entities = entities_parser.find_entities_in_training_example(example)
 
         plain_text = re.sub(
-            entity_regex, lambda m: "<" + m.groupdict()["entity"] + ">", example
+            entities_parser.ENTITY_REGEX,
+            lambda m: f'<{m.groupdict()["entity"]}>',
+            example,
         )
         message = Message(plain_text.replace(":", ""))
 
