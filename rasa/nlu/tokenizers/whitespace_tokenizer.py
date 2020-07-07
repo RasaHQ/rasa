@@ -40,6 +40,8 @@ class WhitespaceTokenizer(Tokenizer):
             "\U0001F1E0-\U0001F1FF"  # flags (iOS)
             "\U00002702-\U000027B0"
             "\U000024C2-\U0001F251"
+            "\u200d"  # zero width joiner
+            "\u200c"  # zero width non-joiner
             "]+",
             flags=re.UNICODE,
         )
