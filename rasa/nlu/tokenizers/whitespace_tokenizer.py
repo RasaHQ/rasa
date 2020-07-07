@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Text
 import regex
 import re
 
-from constants import DOCS_URL_COMPONENTS
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
 import rasa.utils.common as common_utils
