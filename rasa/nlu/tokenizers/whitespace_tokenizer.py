@@ -32,7 +32,7 @@ class WhitespaceTokenizer(Tokenizer):
 
     @staticmethod
     def get_emoji_regex():
-        emoji_pattern = re.compile(
+        return re.compile(
             "["
             "\U0001F600-\U0001F64F"  # emoticons
             "\U0001F300-\U0001F5FF"  # symbols & pictographs
@@ -45,10 +45,15 @@ class WhitespaceTokenizer(Tokenizer):
             "]+",
             flags=re.UNICODE,
         )
-        return emoji_pattern
 
     def remove_emoji(self, text: Text) -> Text:
-        return self.emoji_pattern.sub(r"", text)
+        """Remove emoji if the full text, aka token, matches the emoji regex."""
+        match = self.emoji_pattern.fullmatch(text)
+
+        if match is not None:
+            return ""
+
+        return text
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         text = message.get(attribute)
@@ -77,11 +82,8 @@ class WhitespaceTokenizer(Tokenizer):
         words = [self.remove_emoji(w) for w in words]
         words = [w for w in words if w]
 
-        substring = [w in text for w in words]
-
-        # if we removed everything like smiles `:)` or removed characters in the middle
-        # of the text, use the whole text as 1 token
-        if not words or not all(substring):
+        # if we removed everything like smiles `:)`, use the whole text as 1 token
+        if not words:
             words = [text]
 
         return self._convert_words_to_tokens(words, text)
