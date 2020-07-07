@@ -5,7 +5,7 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple
+from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Type
 
 import rasa.core
 import rasa.utils.io
@@ -27,7 +27,7 @@ from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, E
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
@@ -119,57 +119,66 @@ class PolicyEnsemble:
                     docs=DOCS_URL_POLICIES,
                 )
 
-    # TODO: This is a temporary implementation for the RulePolicy prototype.
-    # Policies should be able to decide themselves whether to use rules or stories
-    # for training.
-    @staticmethod
-    def _split_ml_and_rule_trackers(
-        training_trackers: List[DialogueStateTracker],
-    ) -> Tuple[List[DialogueStateTracker], List[DialogueStateTracker]]:
-        """Return trackers to be trained on ML-based policies and `RulePolicy`.
-
-        Args:
-            training_trackers: Trackers to split.
+    def _policy_ensemble_contains_policy_with_rules_support(self) -> bool:
+        """Determine whether the policy ensemble contains at least one policy
+        supporting rule-based data.
 
         Returns:
-            Trackers from ML-based training data and rule-based data.
+            Whether or not the policy ensemble contains at least one policy that
+            supports rule-based data.
         """
-        ml_trackers = []
-        rule_trackers = []
-        for tracker in training_trackers:
+        return any(
+            policy.supported_data()
+            in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
+            for policy in self.policies
+        )
 
-            if tracker.is_rule_tracker:
-                rule_trackers.append(tracker)
-            else:
-                ml_trackers.append(tracker)
+    @staticmethod
+    def _training_trackers_contain_rule_trackers(
+        training_trackers: List[DialogueStateTracker],
+    ) -> bool:
+        """Determine whether there are rule-based training trackers.
 
-        return ml_trackers, rule_trackers
+        Args:
+            training_trackers: Trackers to inspect.
 
-    def _policy_ensemble_contains_rule_policy(self) -> bool:
-        """Determine whether `RulePolicy` is part of the policy ensemble."""
-        return any(isinstance(policy, RulePolicy) for policy in self.policies)
+        Returns:
+            Whether or not any of the supplied training trackers contain rule-based
+            data.
+        """
+        return any(tracker.is_rule_tracker for tracker in training_trackers)
 
     def _emit_rule_policy_warning(
-        self, rule_trackers: List[DialogueStateTracker]
+        self, training_trackers: List[DialogueStateTracker]
     ) -> None:
-        """Emit `UserWarning`s about missing `RulePolicy` training data."""
-        rule_policy_is_active = self._policy_ensemble_contains_rule_policy()
+        """Emit `UserWarning`s about missing rule-based data."""
+        is_rules_consuming_policy_available = (
+            self._policy_ensemble_contains_policy_with_rules_support()
+        )
+        training_trackers_contain_rule_trackers = self._training_trackers_contain_rule_trackers(
+            training_trackers
+        )
 
         # TODO: add new docs links to these warnings
-        if rule_policy_is_active and not rule_trackers:
+        if (
+            is_rules_consuming_policy_available
+            and not training_trackers_contain_rule_trackers
+        ):
             common_utils.raise_warning(
-                f"Found `{RulePolicy.__name__}` in your pipeline but "
+                f"Found a rule-based policy in your pipeline but "
                 f"no rule-based training data. Please add rule-based "
                 f"stories to your training data or "
-                f"remove the `{RulePolicy.__name__}` entry in "
+                f"remove the rule-based policy (`{RulePolicy.__name__}`) from your "
                 f"your pipeline."
             )
-        elif not rule_policy_is_active and rule_trackers:
+        elif (
+            not is_rules_consuming_policy_available
+            and training_trackers_contain_rule_trackers
+        ):
             common_utils.raise_warning(
-                f"Found rule-based training data but `{RulePolicy.__name__}` "
-                f"is not part of the configuration. Please add "
-                f"`{RulePolicy.__name__}` to the "
-                f"`policies` section in `{DEFAULT_CONFIG_PATH}`."
+                f"Found rule-based training data but no policy supporting rule-based "
+                f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
+                f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`."
             )
 
     def train(
@@ -180,16 +189,12 @@ class PolicyEnsemble:
         **kwargs: Any,
     ) -> None:
         if training_trackers:
-            ml_trackers, rule_trackers = self._split_ml_and_rule_trackers(
-                training_trackers
-            )
-            self._emit_rule_policy_warning(rule_trackers)
+            self._emit_rule_policy_warning(training_trackers)
 
             for policy in self.policies:
-                trackers_to_train = (
-                    rule_trackers if isinstance(policy, RulePolicy) else ml_trackers
+                trackers_to_train = SupportedData.trackers_for_policy(
+                    policy, training_trackers
                 )
-
                 policy.train(
                     trackers_to_train, domain, interpreter=interpreter, **kwargs
                 )
@@ -198,6 +203,7 @@ class PolicyEnsemble:
             self.action_fingerprints = self._create_action_fingerprints(training_events)
         else:
             logger.info("Skipped training, because there are no training samples.")
+
         self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
 
     def probabilities_using_best_policy(

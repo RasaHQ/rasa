@@ -50,7 +50,7 @@ class NLGMarkdownReader(TrainingDataReader):
                         story_intent = None
 
                 elif line.startswith("-"):
-                    # reach a assistant's utterance
+                    # reach an assistant's utterance
 
                     # utterance might have '-' itself, so joining them back if any
                     utterance = "-".join(line.split("- ")[1:])

@@ -4,16 +4,19 @@ from typing import List, Any, Text
 import pytest
 import copy
 
+from _pytest.logging import LogCaptureFixture
+
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.ensemble import (
     PolicyEnsemble,
     InvalidPolicyConfig,
     SimplePolicyEnsemble,
 )
 from rasa.core.domain import Domain
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.events import UserUttered, Form, Event
 
@@ -377,3 +380,29 @@ def test_from_dict_does_not_change_passed_dict_parameter():
     PolicyEnsemble.from_dict(config_copy)
 
     assert config == config_copy
+
+
+def test_rule_based_data_warnings_no_rule_trackers():
+    trackers = [DialogueStateTracker("some-id", slots=[], is_rule_tracker=False)]
+    policies = [RulePolicy()]
+    ensemble = SimplePolicyEnsemble(policies)
+
+    with pytest.warns(UserWarning) as record:
+        ensemble.train(trackers, Domain.empty(), RegexInterpreter())
+
+    assert (
+        "Found a rule-based policy in your pipeline but no rule-based training data."
+    ) in record[0].message.args[0]
+
+
+def test_rule_based_data_warnings_no_rule_policy():
+    trackers = [DialogueStateTracker("some-id", slots=[], is_rule_tracker=True)]
+    policies = [FallbackPolicy()]
+    ensemble = SimplePolicyEnsemble(policies)
+
+    with pytest.warns(UserWarning) as record:
+        ensemble.train(trackers, Domain.empty(), RegexInterpreter())
+
+    assert (
+        "Found rule-based training data but no policy supporting rule-based data."
+    ) in record[0].message.args[0]

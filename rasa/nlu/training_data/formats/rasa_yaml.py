@@ -107,7 +107,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Issue found while processing '{self.filename}': "
                 f"The intent has an empty name. "
                 f"Intents should have a name defined under the {KEY_INTENT} key. "
-                "It will be skipped.",
+                f"It will be skipped.",
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
             return
@@ -174,7 +174,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Issue found while processing '{self.filename}': "
                 f"The synonym has an empty name. "
                 f"Synonyms should have a name defined under the {KEY_SYNONYM} key. "
-                "It will be skipped.",
+                f"It will be skipped.",
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
             return
@@ -185,7 +185,7 @@ class RasaYAMLReader(TrainingDataReader):
             raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"{KEY_SYNONYM}: {synonym_name} doesn't have any examples. "
-                "It will be skipped.",
+                f"It will be skipped.",
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
             return
@@ -209,7 +209,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Issue found while processing '{self.filename}': "
                 f"The regex has an empty name."
                 f"Regex should have a name defined under the '{KEY_REGEX}' key. "
-                "It will be skipped.",
+                f"It will be skipped.",
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
             return
@@ -219,7 +219,7 @@ class RasaYAMLReader(TrainingDataReader):
             raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"'{KEY_REGEX}: {regex_name}' doesn't have any examples. "
-                "It will be skipped.",
+                f"It will be skipped.",
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
             return
@@ -245,7 +245,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Issue found while processing '{self.filename}': "
                 f"The lookup item has an empty name. "
                 f"Lookup items should have a name defined under the '{KEY_LOOKUP}' "
-                "key. It will be skipped.",
+                f"key. It will be skipped.",
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
             return
@@ -255,7 +255,7 @@ class RasaYAMLReader(TrainingDataReader):
             raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"'{KEY_LOOKUP}: {lookup_item_name}' doesn't have any examples. "
-                "It will be skipped.",
+                f"It will be skipped.",
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
             return
