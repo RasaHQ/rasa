@@ -153,3 +153,14 @@ def test_whitespace_training(supervised_embeddings_config):
     assert examples[1].data.get("tokens")[0].text == "i"
     assert examples[1].data.get("tokens")[1].text == "want"
     assert examples[1].data.get("tokens")[2].text == "tacos"
+
+
+def test_whitespace_does_not_throw_error():
+    import rasa.utils.io as io_utils
+
+    test_sentences = io_utils.read_json_file("data/test_tokenizers_2.json")
+
+    tk = WhitespaceTokenizer()
+
+    for i, text in enumerate(test_sentences):
+        tk.tokenize(Message(text), attribute=TEXT)
