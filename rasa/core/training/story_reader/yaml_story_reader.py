@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Text, List, Any, Optional, Union, Tuple
+from typing import Dict, Text, List, Any, Optional, Union
 
 import rasa.utils.common as common_utils
 import rasa.utils.io
@@ -28,7 +28,7 @@ KEY_OR = "or"
 
 
 class YAMLStoryReader(StoryReader):
-    """Class that reads Core training data and rule data in YAML format"""
+    """Class that reads Core training data and rule data in YAML format."""
 
     async def read_from_file(self, filename: Text) -> List[StoryStep]:
         """Read stories or rules from file.
