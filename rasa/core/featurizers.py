@@ -83,6 +83,10 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
     def get_text_and_attribute(self, input_type: Text, message: Dict) -> List[Text]:
         if input_type == 'user':
+            # TODO: will uncomment once we merge proper creation of UserUttered 
+            # where intent will be set to none when it is one;
+
+
             # if message.get(INTENT):
             #     attribute = INTENT
             #     text = message.get(INTENT)
