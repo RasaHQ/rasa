@@ -303,6 +303,9 @@ class UserUttered(Event):
         )
         return _dict
 
+    def as_dict_core(self) -> Dict[Text, Text]:
+        return {'text': self.text, 'intent': self.intent_name, "entities": self.entities}
+
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
         try:
@@ -1052,6 +1055,9 @@ class ActionExecuted(Event):
 
         d.update({"name": self.action_name, "policy": policy, "confidence": confidence})
         return d
+
+    def as_dict_core(self) -> Dict[Text, Text]:
+        return {'action_name': self.action_name, 'action_text': self.e2e_text}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.set_latest_action_name(self.action_name)

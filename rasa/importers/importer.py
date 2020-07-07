@@ -303,6 +303,7 @@ class E2EImporter(TrainingDataImporter):
                 for event in story_step.events
                 if isinstance(event, ActionExecuted) and event.e2e_text
             ]
+
         # getting rid of duplicate text actions
         additional_e2e_action_names = list(set(additional_e2e_action_names))
 

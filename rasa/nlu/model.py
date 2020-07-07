@@ -181,11 +181,9 @@ class Trainer:
             components.validate_required_components_from_data(
                 self.pipeline, self.training_data
             )
-        if kwargs.get('no_copy') == True:
-            working_data = data
-        else:
-            # data gets modified internally during the training - hence the copy
-            working_data = copy.deepcopy(data)
+
+        # data gets modified internally during the training - hence the copy
+        working_data = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
             logger.info(f"Starting to train component {component.name}")

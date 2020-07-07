@@ -81,23 +81,13 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
         super().__init__()
 
-    def featurize_slots(self, slot_dict):
-        slot_featurization = np.zeros(len(self.slot_states))
-        for slot_name in list(slot_dict.keys()):
-            slot_featurization[self.slot_states.index(slot_name)] = 1
-        return None, slot_featurization
+    def featurize_user_input(self, message: Dict, interpreter: NaturalLanguageInterpreter):
+        text = message.get('text')
 
-    def _extract_features(
-        self, message: Message, attribute: Text, interpreter: NaturalLanguageInterpreter
-    ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
+        message = interpreter.parse(text)
+        attribute = TEXT
         sparse_features = None
         dense_features = None
-        #check that it is slot dictionary and not the processed empty used utterance
-        if isinstance(message, Dict) and not 'intent' in message.keys():
-            return self.featurize_slots(message)
-        # TODO: input will be `Text` or `Dict`;
-        # change once e2e YAML parser is merged;
-        message = interpreter.parse(message.text)
 
 
         if message.get_sparse_features(attribute)[1] is not None:
@@ -114,6 +104,51 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                 )
 
         return sparse_features, dense_features
+
+    def featurize_action(self, message: Dict, interpreter: NaturalLanguageInterpreter):
+        sparse_features = None
+        dense_features = None
+        text = message.get('action_text')
+
+        if text is None:
+            text = message.get('action_name')
+
+
+        message = interpreter.parse(text)
+        attribute = TEXT
+
+        if message.get_sparse_features(attribute)[1] is not None:
+            sparse_features = message.get_sparse_features(attribute)[1]
+
+        if message.get_dense_features(attribute)[1] is not None:
+            dense_features = message.get_dense_features(attribute)[1]
+
+        if sparse_features is not None and dense_features is not None:
+            if sparse_features.shape[0] != dense_features.shape[0]:
+                raise ValueError(
+                    f"Sequence dimensions for sparse and dense features "
+                    f"don't coincide in '{message.text}' for attribute '{attribute}'."
+                )
+
+        return sparse_features, dense_features
+
+    def featurize_slots(self, slot_dict):
+        slot_featurization = np.zeros(len(self.slot_states))
+        for slot_name in list(slot_dict.keys()):
+            slot_featurization[self.slot_states.index(slot_name)] = 1
+        return None, slot_featurization
+
+    def _extract_features(
+        self, message: Dict, input_type: Text, interpreter: NaturalLanguageInterpreter
+    ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
+        if input_type == 'slots':
+            return self.featurize_slots(message)
+        elif input_type == 'user':
+            return self.featurize_user_input(message, interpreter)
+        elif input_type == 'prev_action':
+            return self.featurize_action(message, interpreter)
+        
+
 
     def combine_state_features(self, state_features):
         sparse_state, dense_state = None, None
@@ -147,12 +182,12 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         """
         if not list(state.keys()) == []:
             state_extracted_features = {
-                key: self._extract_features(state[key], TEXT, interpreter) for key in state.keys()
+                key: self._extract_features(state[key], key, interpreter) for key in state.keys()
             }
             if not "user" in state_extracted_features.keys():
                 state_extracted_features["user"] = self._extract_features(
-                    interpreter.parse(" "),
-                    TEXT, interpreter
+                    {'text': " "},
+                    "user", interpreter
                 )
 
         sparse_state, dense_state = self.combine_state_features(
@@ -184,7 +219,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def create_encoded_all_actions(self, domain: Domain, interpreter: NaturalLanguageInterpreter):
         
         label_data = [
-            (j, self._extract_features(interpreter.parse(action), TEXT, interpreter))
+            (j, self._extract_features({'action_text':action}, "prev_action", interpreter))
             for j, action in enumerate(domain.action_names)
         ]
         return label_data
@@ -268,14 +303,9 @@ class TrackerFeaturizer:
                 state_dict = {}
                 for event in state:
                     if isinstance(event, UserUttered):
-                        if not event.message is None:
-                            state_dict["user"] = event.message
+                        state_dict["user"] = event.as_dict_core()
                     elif isinstance(event, ActionExecuted):
-                        if event.message is not None:
-                            state_dict["prev_action"] = event.message
-                        # to turn the default actions such as action_listen into Message;
-                        else:
-                            state_dict["prev_action"] = Message(event.action_name)
+                        state_dict["prev_action"] = event.as_dict_core()
                     state_dict["slots"] = self.collect_slots(tr)
             else:
                 state_dict = {}
@@ -564,10 +594,21 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     @staticmethod
     def _hash_example(states, action) -> int:
         """Hash states for efficient deduplication."""
-        states = [
-            {key: value.text for key, value in s.items() if not key == "slots"}
-            for s in states
-        ]
+        states_to_hash = []
+        for s in states:
+            state = {}
+            for key, value in s.items():
+                if key == 'user':
+                    state[key] = value.get('intent') if value.get('intent') is not None else value.get('text')
+                elif key == 'prev_action':
+                    state[key] = value.get('action_name') if value.get('action_name') is not None else value.get('action_text')
+            states_to_hash.append(state)
+        states = states_to_hash
+
+        # states = [
+        #     {key: value for key, value in s.items() if not key == "slots"}
+        #     for s in states
+        # ]
         frozen_states = tuple(s if s is None else frozenset(s.items()) for s in states)
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))

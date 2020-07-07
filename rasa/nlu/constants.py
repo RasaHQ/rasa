@@ -35,7 +35,10 @@ TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClass
 
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
-MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE]
+MESSAGE_ACTION_NAME = "action_name"
+MESSAGE_INTENT_NAME = "intent_name"
+
+MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE, MESSAGE_ACTION_NAME]
 DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE]
 
 LANGUAGE_MODEL_DOCS = {
@@ -48,6 +51,7 @@ TOKENS_NAMES = {
     TEXT: "text_tokens",
     INTENT: "intent_tokens",
     RESPONSE: "response_tokens",
+    MESSAGE_ACTION_NAME: "action_name_tokens"
 }
 
 TOKENS = "tokens"
@@ -67,6 +71,3 @@ FEATURE_TYPE_SEQUENCE = "sequence"
 VALID_FEATURE_TYPES = [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]
 
 FEATURIZER_CLASS_ALIAS = "alias"
-
-MESSAGE_ACTION_NAME = "action_name"
-MESSAGE_INTENT_NAME = "intent_name"
