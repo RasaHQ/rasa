@@ -1,5 +1,7 @@
 import pytest
 
+from rasa.nlu.components import UnsupportedLanguageError
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -164,3 +166,16 @@ def test_whitespace_does_not_throw_error():
 
     for text in texts:
         tk.tokenize(Message(text), attribute=TEXT)
+
+
+@pytest.mark.parametrize("language, error", [("en", False), ("zh", True)])
+def test_whitespace_language_suuport(language, error, component_builder):
+    config = RasaNLUModelConfig(
+        {"language": language, "pipeline": [{"name": "WhitespaceTokenizer"}]}
+    )
+
+    if error:
+        with pytest.raises(UnsupportedLanguageError):
+            component_builder.create_component({"name": "WhitespaceTokenizer"}, config)
+    else:
+        component_builder.create_component({"name": "WhitespaceTokenizer"}, config)
