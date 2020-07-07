@@ -184,6 +184,7 @@ class YAMLStoryReader(StoryReader):
     def _parse_user_utterance(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
         utterance = self._parse_raw_user_utterance(step, is_rule_data=is_rule_data)
         if utterance:
+            self._validate_that_utterance_is_in_domain(utterance)
             self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
@@ -245,14 +246,12 @@ class YAMLStoryReader(StoryReader):
         if user_utterance.startswith(INTENT_MESSAGE_PREFIX):
             common_utils.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
-                f"User intent '{user_utterance}' should start with "
-                f"'{INTENT_MESSAGE_PREFIX}'. "
-                f"This {self._get_item_title(is_rule_data)} step will be skipped.",
+                f"User intent '{user_utterance}' starts with "
+                f"'{INTENT_MESSAGE_PREFIX}'. This is not required.",
                 docs=self._get_docs_link(is_rule_data),
             )
-            return None
-
-        user_utterance = user_utterance[1:]
+            # Remove leading slash
+            user_utterance = user_utterance[1:]
 
         intent = {"name": user_utterance, "confidence": 1.0}
 
