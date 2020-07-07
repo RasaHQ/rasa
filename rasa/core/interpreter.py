@@ -310,10 +310,10 @@ class RasaE2EInterpreter(NaturalLanguageInterpreter):
         self.model_directory = model_directory
         self._load_interpreter()
 
-    def parse(self, text: Text):
-        message = Message(text, self.interpreter.default_output_attributes(), time=None)
+    def parse(self, text: Text, attribute: Text = TEXT):
+        message = Message(text, {attribute: text}, self.interpreter.default_output_attributes(), time=None)
         for component in self.interpreter.pipeline:
-            component.process(message, **self.interpreter.context)
+            component.process(message, attribute, **self.interpreter.context)
         return message
 
     def _load_interpreter(self) -> None:

@@ -102,7 +102,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         for example in training_data.training_examples:
             self._create_sparse_features(example)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
         self._create_sparse_features(message)
 
     def _create_feature_to_idx_dict(

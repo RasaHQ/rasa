@@ -101,11 +101,7 @@ class Tokenizer(Component):
             tokens = self._split_intent(message)
         elif attribute == MESSAGE_ACTION_NAME: 
         # TODO: Do we want a separate `action_split_symbol` or same as intent?
-            if message.text == "":
-                tokens = self._split_action(message)
-            else:
-                attribute = TEXT
-                tokens = self.tokenize(message, attribute)
+            tokens = self._split_action(message)
         else:
             tokens = self.tokenize(message, attribute)
 
@@ -123,7 +119,11 @@ class Tokenizer(Component):
         return self._convert_words_to_tokens(words, text)
 
     def _split_action(self, message: Message):
-        text = message.get(MESSAGE_ACTION_NAME)
+        if message.get(MESSAGE_ACTION_NAME):
+            text = message.get(MESSAGE_ACTION_NAME)
+        else:
+            # during processing we store action name in text field
+            text = message.get(TEXT)
 
         words = (
             text.split(self.intent_split_symbol)

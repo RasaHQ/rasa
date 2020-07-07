@@ -19,7 +19,7 @@ from rasa.core.training.data import DialogueTrainingData
 import scipy.sparse
 
 from rasa.core.interpreter import RasaE2EInterpreter, NaturalLanguageInterpreter
-from rasa.nlu.constants import TEXT
+from rasa.nlu.constants import TEXT, INTENT, MESSAGE_ACTION_NAME
 from rasa.nlu.training_data import Message
 from rasa.utils.common import is_logging_disabled
 from rasa.utils import train_utils
@@ -81,56 +81,23 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
         super().__init__()
 
-    def featurize_user_input(self, message: Dict, interpreter: NaturalLanguageInterpreter):
-        text = message.get('text')
+    def get_text_and_attribute(self, input_type: Text, message: Dict) -> List[Text]:
+        if input_type == 'user':
+            # if message.get(INTENT):
+            #     attribute = INTENT
+            #     text = message.get(INTENT)
+            # else:
+            attribute = TEXT
+            text = message.get(TEXT)
+        elif input_type == "prev_action":
+            if not message.get('action_text'):
+                attribute = TEXT
+                text = message.get(MESSAGE_ACTION_NAME)
+            else:
+                attribute = TEXT
+                text = message.get('action_text')
+        return text, attribute
 
-        message = interpreter.parse(text)
-        attribute = TEXT
-        sparse_features = None
-        dense_features = None
-
-
-        if message.get_sparse_features(attribute)[1] is not None:
-            sparse_features = message.get_sparse_features(attribute)[1]
-
-        if message.get_dense_features(attribute)[1] is not None:
-            dense_features = message.get_dense_features(attribute)[1]
-
-        if sparse_features is not None and dense_features is not None:
-            if sparse_features.shape[0] != dense_features.shape[0]:
-                raise ValueError(
-                    f"Sequence dimensions for sparse and dense features "
-                    f"don't coincide in '{message.text}' for attribute '{attribute}'."
-                )
-
-        return sparse_features, dense_features
-
-    def featurize_action(self, message: Dict, interpreter: NaturalLanguageInterpreter):
-        sparse_features = None
-        dense_features = None
-        text = message.get('action_text')
-
-        if text is None:
-            text = message.get('action_name')
-
-
-        message = interpreter.parse(text)
-        attribute = TEXT
-
-        if message.get_sparse_features(attribute)[1] is not None:
-            sparse_features = message.get_sparse_features(attribute)[1]
-
-        if message.get_dense_features(attribute)[1] is not None:
-            dense_features = message.get_dense_features(attribute)[1]
-
-        if sparse_features is not None and dense_features is not None:
-            if sparse_features.shape[0] != dense_features.shape[0]:
-                raise ValueError(
-                    f"Sequence dimensions for sparse and dense features "
-                    f"don't coincide in '{message.text}' for attribute '{attribute}'."
-                )
-
-        return sparse_features, dense_features
 
     def featurize_slots(self, slot_dict):
         slot_featurization = np.zeros(len(self.slot_states))
@@ -143,10 +110,26 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
         if input_type == 'slots':
             return self.featurize_slots(message)
-        elif input_type == 'user':
-            return self.featurize_user_input(message, interpreter)
-        elif input_type == 'prev_action':
-            return self.featurize_action(message, interpreter)
+        else:
+            text, attribute = self.get_text_and_attribute(input_type, message)
+            message = interpreter.parse(text, attribute)
+            sparse_features = None
+            dense_features = None
+
+            if message.get_sparse_features(attribute)[1] is not None:
+                sparse_features = message.get_sparse_features(attribute)[1]
+
+            if message.get_dense_features(attribute)[1] is not None:
+                dense_features = message.get_dense_features(attribute)[1]
+
+            if sparse_features is not None and dense_features is not None:
+                if sparse_features.shape[0] != dense_features.shape[0]:
+                    raise ValueError(
+                        f"Sequence dimensions for sparse and dense features "
+                        f"don't coincide in '{message.text}' for attribute '{attribute}'."
+                    )
+
+            return sparse_features, dense_features
         
 
 

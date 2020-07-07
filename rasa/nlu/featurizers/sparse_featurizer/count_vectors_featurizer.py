@@ -31,10 +31,8 @@ logger = logging.getLogger(__name__)
 
 class CountVectorsFeaturizer(SparseFeaturizer):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
-
     All tokens which consist only of digits (e.g. 123 and 99
     but not ab12d) will be represented by a single feature.
-
     Set `analyzer` to 'char_wb'
     to use the idea of Subword Semantic Hashing
     from https://arxiv.org/abs/1810.07150.
@@ -493,7 +491,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> None:
         """Train the featurizer.
-
         Take parameters from config and
         construct a new count vectorizer using the sklearn framework.
         """
@@ -531,7 +528,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     training_data.training_examples,
                 )
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
         """Process incoming message and compute and set features"""
 
         if self.vectorizers is None:
@@ -541,8 +538,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 "didn't receive enough training data"
             )
             return
-
-        attribute = TEXT
+    
         message_tokens = self._get_processed_message_tokens_by_attribute(
             message, attribute
         )
@@ -574,7 +570,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
-
         Returns the metadata necessary to load the model again.
         """
 

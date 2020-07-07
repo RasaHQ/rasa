@@ -62,8 +62,8 @@ class RegexFeaturizer(SparseFeaturizer):
             for attribute in [TEXT, RESPONSE]:
                 self._text_features_with_regex(example, attribute)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        self._text_features_with_regex(message, TEXT)
+    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
+        self._text_features_with_regex(message, attribute)
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
