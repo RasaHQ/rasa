@@ -1,1 +1,1 @@
-Add support for rule data in YAML format.
+Add support for rule data and forms in YAML format.

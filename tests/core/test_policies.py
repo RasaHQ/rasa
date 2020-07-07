@@ -867,3 +867,40 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
 )
 def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
     assert policy.supported_data() == supported_data
+
+
+class RuleAndMLPolicy(Policy):
+    """Test policy that supports both rule-based and ML-based training data."""
+
+    @staticmethod
+    def supported_data() -> SupportedData:
+        return SupportedData.ML_AND_RULE_DATA
+
+
+@pytest.mark.parametrize(
+    "policy,n_rule_trackers,n_ml_trackers",
+    [
+        (FallbackPolicy(), 0, 3),
+        (RulePolicy(), 2, 0),
+        (RuleAndMLPolicy, 2, 3),  # policy can be passed as a `type` as well
+    ],
+)
+def test_get_training_trackers_for_policy(
+    policy: Policy, n_rule_trackers: int, n_ml_trackers
+):
+    # create five trackers (two rule-based and three ML trackers)
+    trackers = [
+        DialogueStateTracker("id1", slots=[], is_rule_tracker=True),
+        DialogueStateTracker("id2", slots=[], is_rule_tracker=False),
+        DialogueStateTracker("id3", slots=[], is_rule_tracker=False),
+        DialogueStateTracker("id4", slots=[], is_rule_tracker=True),
+        DialogueStateTracker("id5", slots=[], is_rule_tracker=False),
+    ]
+
+    trackers = SupportedData.trackers_for_policy(policy, trackers)
+
+    rule_trackers = [tracker for tracker in trackers if tracker.is_rule_tracker]
+    ml_trackers = [tracker for tracker in trackers if not tracker.is_rule_tracker]
+
+    assert len(rule_trackers) == n_rule_trackers
+    assert len(ml_trackers) == n_ml_trackers

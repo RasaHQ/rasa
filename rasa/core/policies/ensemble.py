@@ -181,31 +181,6 @@ class PolicyEnsemble:
                 f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`."
             )
 
-    @staticmethod
-    def _get_training_trackers_for_policy(
-        policy: Policy, training_trackers: List[DialogueStateTracker]
-    ) -> List[DialogueStateTracker]:
-        """Return trackers to be trained on ML-based policies and `RulePolicy`.
-
-        Args:
-            training_trackers: Trackers to split.
-
-        Returns:
-            Trackers from ML-based training data and rule-based data.
-        """
-        supported_data = policy.supported_data()
-
-        if supported_data == SupportedData.RULE_DATA:
-            return [tracker for tracker in training_trackers if tracker.is_rule_tracker]
-
-        if supported_data == SupportedData.ML_DATA:
-            return [
-                tracker for tracker in training_trackers if not tracker.is_rule_tracker
-            ]
-
-        # `supported_data` is `SupportedData.ML_AND_RULE_DATA`
-        return training_trackers
-
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
@@ -217,7 +192,7 @@ class PolicyEnsemble:
             self._emit_rule_policy_warning(training_trackers)
 
             for policy in self.policies:
-                trackers_to_train = self._get_training_trackers_for_policy(
+                trackers_to_train = SupportedData.trackers_for_policy(
                     policy, training_trackers
                 )
                 policy.train(

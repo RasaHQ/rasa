@@ -1,7 +1,7 @@
 import copy
 import logging
 from enum import Enum
-from typing import Any, List, Optional, Text, Dict, Callable
+from typing import Any, List, Optional, Text, Dict, Callable, Type, Union
 
 import rasa.utils.common
 from rasa.core.domain import Domain
@@ -30,6 +30,30 @@ class SupportedData(Enum):
 
     # policy supports both ML-based and rule-based data ("stories" as well as "rules")
     ML_AND_RULE_DATA = 3
+
+    @staticmethod
+    def trackers_for_policy(
+        policy: Union["Policy", Type["Policy"]], trackers: List[DialogueStateTracker]
+    ) -> List[DialogueStateTracker]:
+        """Return trackers to be trained on ML-based policies or rule-based policies.
+
+        Args:
+            policy: Policy or policy type to return trackers for.
+            trackers: Trackers to split.
+
+        Returns:
+            Trackers from ML-based training data and/or rule-based data.
+        """
+        supported_data = policy.supported_data()
+
+        if supported_data == SupportedData.RULE_DATA:
+            return [tracker for tracker in trackers if tracker.is_rule_tracker]
+
+        if supported_data == SupportedData.ML_DATA:
+            return [tracker for tracker in trackers if not tracker.is_rule_tracker]
+
+        # `supported_data` is `SupportedData.ML_AND_RULE_DATA`
+        return trackers
 
 
 class Policy:
