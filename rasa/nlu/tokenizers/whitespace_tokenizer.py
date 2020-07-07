@@ -72,12 +72,11 @@ class WhitespaceTokenizer(Tokenizer):
         words = [self.remove_emoji(w) for w in words]
         words = [w for w in words if w]
 
-        # if we removed everything like smiles `:)`, use the whole text as 1 token
-        if not words:
-            words = [text]
-
         substring = [w in text for w in words]
-        if not all(substring):
+
+        # if we removed everything like smiles `:)` or removed characters in the middle
+        # of the text, use the whole text as 1 token
+        if not words or not all(substring):
             words = [text]
 
         return self._convert_words_to_tokens(words, text)
