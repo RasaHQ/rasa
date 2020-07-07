@@ -8,11 +8,8 @@ import numpy as np
 import pytest
 
 from rasa.core import training
-from rasa.core.events import (
-    UserUttered,
-    ActionExecuted,
-    SessionStarted,
-)
+from rasa.core.domain import Domain
+from rasa.core.events import UserUttered, ActionExecuted, SessionStarted
 from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer,
@@ -151,7 +148,7 @@ async def test_generate_training_data_original_and_augmented_trackers(
     stories_file: Text, default_domain
 ):
     training_trackers = await training.load_data(
-        stories_file, default_domain, augmentation_factor=3,
+        stories_file, default_domain, augmentation_factor=3
     )
     # there are three original stories
     # augmentation factor of 3 indicates max of 3*10 augmented stories generated
@@ -205,7 +202,9 @@ async def test_visualize_training_data_graph(
         ["data/test_stories/stories.md", "data/test_mixed_yaml_md_stories"],
     ],
 )
-async def test_load_multi_file_training_data(stories_resources: List, default_domain):
+async def test_load_multi_file_training_data(
+    stories_resources: List, default_domain: Domain
+):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
     featurizer = MaxHistoryTrackerFeaturizer(
