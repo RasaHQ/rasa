@@ -1,0 +1,4 @@
+Add ``not_supported_language_list`` to component to be able to define languages that a component can NOT handle.
+
+``WhitespaceTokenizer`` is not able to process languages which are not separated by whitespace. ``WhitespaceTokenizer``
+will throw an error if it is used with Chinese, Japanese, Korean, Thai, and Vietnamese.
