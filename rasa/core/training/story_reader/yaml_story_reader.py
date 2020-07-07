@@ -24,7 +24,6 @@ KEY_STEPS = "steps"
 KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
 KEY_STORY_USER_END_TO_END_MESSAGE = "user"
-
 KEY_SLOT_NAME = "slot"
 KEY_SLOT_VALUE = "value"
 KEY_FORM = "form"
@@ -352,7 +351,6 @@ class YAMLStoryReader(StoryReader):
         self._add_event(Form.type_name, {"name": form_name})
 
     def _parse_checkpoint(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
-
         checkpoint_name = step.get(KEY_CHECKPOINT, "")
         slots = step.get(KEY_CHECKPOINT_SLOTS, [])
 
