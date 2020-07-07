@@ -67,13 +67,13 @@ def _create_from_endpoint_config(
 
         nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     else:
-        nlg = _load_from_module_string(endpoint_config, domain)
+        nlg = _load_from_endpoint_config(endpoint_config, domain)
 
     logger.debug(f"Instantiated NLG to '{nlg.__class__.__name__}'.")
     return nlg
 
 
-def _load_from_module_string(
+def _load_from_endpoint_config(
     endpoint_config: EndpointConfig, domain: Domain
 ) -> "NaturalLanguageGenerator":
     """Initializes a custom natural language generator.
