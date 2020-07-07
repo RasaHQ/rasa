@@ -17,6 +17,21 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.7] - 2020-07-07
+^^^^^^^^^^^^^^^^^^^^^
+
+Features
+--------
+- `#6150 <https://github.com/rasahq/rasa/issues/6150>`_: Add ``not_supported_language_list`` to component to be able to define languages that a component can NOT handle.
+
+  ``WhitespaceTokenizer`` is not able to process languages which are not separated by whitespace. ``WhitespaceTokenizer``
+  will throw an error if it is used with Chinese, Japanese, and Thai.
+
+Bugfixes
+--------
+- `#6150 <https://github.com/rasahq/rasa/issues/6150>`_: ``WhitespaceTokenizer`` only removes emoji if complete token matches emoji regex.
+
+
 [1.10.6] - 2020-07-06
 ^^^^^^^^^^^^^^^^^^^^^
 
