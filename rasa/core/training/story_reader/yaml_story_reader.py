@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
@@ -10,13 +11,17 @@ from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.data import YAML_FILE_EXTENSIONS
 
+logger = logging.getLogger(__name__)
+
 KEY_STORIES = "stories"
 KEY_STORY_NAME = "story"
 KEY_RULES = "rules"
 KEY_RULE_NAME = "rule"
 KEY_STEPS = "steps"
-KEY_USER_UTTERANCE = "user"
 KEY_ENTITIES = "entities"
+KEY_STORY_STEPS = "steps"
+KEY_STORY_USER_INTENT = "intent"
+KEY_STORY_ENTITIES = "entities"
 KEY_SLOT_NAME = "slot"
 KEY_SLOT_VALUE = "value"
 KEY_FORM = "form"
@@ -53,10 +58,23 @@ class YAMLStoryReader(StoryReader):
             )
             return []
 
-        stories = yaml_content.get(KEY_STORIES, [])
+        return self.read_from_parsed_yaml(yaml_content)
+
+    def read_from_parsed_yaml(
+        self, parsed_content: Dict[Text, Union[Dict, List]]
+    ) -> List[StoryStep]:
+        """Read stories from parsed YAML.
+
+        Args:
+            parsed_content: The parsed YAML as a dictionary.
+
+        Returns:
+            The parsed stories or rules.
+        """
+        stories = parsed_content.get(KEY_STORIES, [])
         self._parse_data(stories, is_rule_data=False)
 
-        rules = yaml_content.get(KEY_RULES, [])
+        rules = parsed_content.get(KEY_RULES, [])
         self._parse_data(rules, is_rule_data=True)
 
         self._add_current_stories_to_result()
@@ -128,7 +146,7 @@ class YAMLStoryReader(StoryReader):
                 f"'{RULE_SNIPPET_ACTION_NAME}'. It will be skipped.",
                 docs=self._get_docs_link(is_rule_data),
             )
-        elif KEY_USER_UTTERANCE in step.keys():
+        elif KEY_STORY_USER_INTENT in step.keys():
             self._parse_user_utterance(step, is_rule_data)
         elif KEY_OR in step.keys():
             self._parse_or_statement(step, is_rule_data)
@@ -164,27 +182,41 @@ class YAMLStoryReader(StoryReader):
         return "" if is_rule_data else DOCS_URL_STORIES
 
     def _parse_user_utterance(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
-
-        if self.use_e2e:
-            # TODO
-            return
-
         utterance = self._parse_raw_user_utterance(step, is_rule_data=is_rule_data)
         if utterance:
             self.current_step_builder.add_user_messages([utterance])
+
+    def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
+        intent_name = utterance.intent.get("name")
+
+        if not self.domain:
+            logger.debug(
+                "Skipped validating if intent is in domain as domain " "is `None`."
+            )
+            return
+
+        if intent_name not in self.domain.intents:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}': \n"
+                f"Found intent '{intent_name}' in stories which is not part of the "
+                f"domain.",
+                docs=DOCS_URL_STORIES,
+            )
 
     def _parse_or_statement(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
         utterances = []
 
         for utterance in step.get(KEY_OR):
-            if KEY_USER_UTTERANCE in utterance.keys():
-                utterance = self._parse_raw_user_utterance(utterance, is_rule_data)
+            if KEY_STORY_USER_INTENT in utterance.keys():
+                utterance = self._parse_raw_user_utterance(
+                    utterance, is_rule_data=is_rule_data
+                )
                 if utterance:
                     utterances.append(utterance)
             else:
                 common_utils.raise_warning(
                     f"Issue found in '{self.source_name}': \n"
-                    f"`OR` statement can only have '{KEY_USER_UTTERANCE}' "
+                    f"`OR` statement can only have '{KEY_STORY_USER_INTENT}' "
                     f"as a sub-element. This step will be skipped:\n"
                     f"'{utterance}'\n",
                     docs=self._get_docs_link(is_rule_data),
@@ -196,7 +228,7 @@ class YAMLStoryReader(StoryReader):
     def _parse_raw_user_utterance(
         self, step: Dict[Text, Any], is_rule_data: bool
     ) -> Optional[UserUttered]:
-        user_utterance = step.get(KEY_USER_UTTERANCE, "").strip()
+        user_utterance = step.get(KEY_STORY_USER_INTENT, "").strip()
 
         if not user_utterance:
             common_utils.raise_warning(
@@ -210,7 +242,7 @@ class YAMLStoryReader(StoryReader):
         raw_entities = step.get(KEY_ENTITIES, [])
         final_entities = YAMLStoryReader._parse_raw_entities(raw_entities)
 
-        if not user_utterance.startswith(INTENT_MESSAGE_PREFIX):
+        if user_utterance.startswith(INTENT_MESSAGE_PREFIX):
             common_utils.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
                 f"User intent '{user_utterance}' should start with "

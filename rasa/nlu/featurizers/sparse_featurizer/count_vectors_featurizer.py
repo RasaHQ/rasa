@@ -53,11 +53,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # 'char_wb' creates character n-grams inside word boundaries
         # n-grams at the edges of words are padded with space.
         "analyzer": "word",  # use 'char' or 'char_wb' for character
-        # regular expression for tokens
-        # only used if analyzer == 'word'
-        # WARNING this pattern is used during training
-        # but not currently used during inference!
-        "token_pattern": r"(?u)\b\w\w+\b",
         # remove accents during the preprocessing step
         "strip_accents": None,  # {'ascii', 'unicode', None}
         # list of stop words
@@ -94,9 +89,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         # set analyzer
         self.analyzer = self.component_config["analyzer"]
-
-        # regular expression for tokens
-        self.token_pattern = self.component_config["token_pattern"]
 
         # remove accents during the preprocessing step
         self.strip_accents = self.component_config["strip_accents"]
@@ -341,7 +333,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         self.vectorizers = self._create_shared_vocab_vectorizers(
             {
-                "token_pattern": self.token_pattern,
                 "strip_accents": self.strip_accents,
                 "lowercase": self.lowercase,
                 "stop_words": self.stop_words,
@@ -375,7 +366,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         self.vectorizers = self._create_independent_vocab_vectorizers(
             {
-                "token_pattern": self.token_pattern,
                 "strip_accents": self.strip_accents,
                 "lowercase": self.lowercase,
                 "stop_words": self.stop_words,
@@ -605,7 +595,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Create vectorizers for all attributes with shared vocabulary"""
 
         shared_vectorizer = CountVectorizer(
-            token_pattern=parameters["token_pattern"],
+            token_pattern=r"(?u)\b\w+\b",
             strip_accents=parameters["strip_accents"],
             lowercase=parameters["lowercase"],
             stop_words=parameters["stop_words"],
@@ -637,7 +627,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             attribute_vocabulary = vocabulary[attribute] if vocabulary else None
 
             attribute_vectorizer = CountVectorizer(
-                token_pattern=parameters["token_pattern"],
+                token_pattern=r"(?u)\b\w+\b",
                 strip_accents=parameters["strip_accents"],
                 lowercase=parameters["lowercase"],
                 stop_words=parameters["stop_words"],

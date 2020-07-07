@@ -58,6 +58,14 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             ],
             [(0, 82), (83, 141)],
         ),
+        (
+            "Joselico gracias Dois 🙏🇺🇸🏦🛠🔥⭐️🦅👑💪",
+            ["Joselico", "gracias", "Dois"],
+            [(0, 8), (9, 16), (17, 21)],
+        ),
+        (":)", [":)"], [(0, 2)]),
+        ("Hi :-)", ["Hi"], [(0, 2)]),
+        ("👍", ["👍"], [(0, 1)]),
     ],
 )
 def test_whitespace(text, expected_tokens, expected_indices):
