@@ -5,10 +5,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.training_data import Message
 
-from rasa.nlu.constants import (
-    LANGUAGE_MODEL_DOCS,
-    TOKENS,
-)
+from rasa.nlu.constants import LANGUAGE_MODEL_DOCS, TOKENS
 
 
 class LanguageModelTokenizer(Tokenizer):

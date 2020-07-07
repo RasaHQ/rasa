@@ -16,6 +16,8 @@ class WhitespaceTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Regular expression to detect tokens
+        "token_pattern": None,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -79,4 +81,6 @@ class WhitespaceTokenizer(Tokenizer):
         if not words:
             words = [text]
 
-        return self._convert_words_to_tokens(words, text)
+        tokens = self._convert_words_to_tokens(words, text)
+
+        return self._apply_token_pattern(tokens)

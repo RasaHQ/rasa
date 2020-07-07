@@ -178,6 +178,8 @@ WhitespaceTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
+          # Regular expression to detect tokens
+          "token_pattern": None
 
 
 JiebaTokenizer
@@ -206,6 +208,8 @@ JiebaTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
+          # Regular expression to detect tokens
+          "token_pattern": None
 
 
 MitieTokenizer
@@ -225,6 +229,8 @@ MitieTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
+          # Regular expression to detect tokens
+          "token_pattern": None
 
 SpacyTokenizer
 ~~~~~~~~~~~~~~
@@ -244,6 +250,8 @@ SpacyTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
+          # Regular expression to detect tokens
+          "token_pattern": None
 
 .. _ConveRTTokenizer:
 
@@ -274,6 +282,8 @@ ConveRTTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
+          # Regular expression to detect tokens
+          "token_pattern": None
 
 .. _LanguageModelTokenizer:
 
@@ -296,7 +306,6 @@ LanguageModelTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
-
 
 
 .. _text-featurizers:
@@ -577,9 +586,6 @@ CountVectorsFeaturizer
          |                   |                         | n-grams only from text inside word boundaries;               |
          |                   |                         | n-grams at the edges of words are padded with space.         |
          |                   |                         | Valid values: 'word', 'char', 'char_wb'.                     |
-         +-------------------+-------------------------+--------------------------------------------------------------+
-         | token_pattern     | r"(?u)\b\w\w+\b"        | Regular expression used to detect tokens.                    |
-         |                   |                         | Only used if 'analyzer' is set to 'word'.                    |
          +-------------------+-------------------------+--------------------------------------------------------------+
          | strip_accents     | None                    | Remove accents during the pre-processing step.               |
          |                   |                         | Valid values: 'ascii', 'unicode', 'None'.                    |

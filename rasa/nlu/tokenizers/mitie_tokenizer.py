@@ -13,6 +13,8 @@ class MitieTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Regular expression to detect tokens
+        "token_pattern": None,
     }
 
     @classmethod
@@ -31,7 +33,7 @@ class MitieTokenizer(Tokenizer):
             for token, offset in tokenized
         ]
 
-        return tokens
+        return self._apply_token_pattern(tokens)
 
     def _token_from_offset(
         self, text: bytes, offset: int, encoded_sentence: bytes
