@@ -414,7 +414,7 @@ class RasaModel(tf.keras.models.Model):
 
         batch_data = defaultdict(list)
 
-        print(data_signature.items())
+        # print(data_signature.items())
 
         idx = 0
         for k, signature in data_signature.items():

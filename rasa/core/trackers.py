@@ -471,8 +471,8 @@ class DialogueStateTracker:
             possibility = intent_distributions[intent_name] > 0.1
             self.events[-1].set_contextual_possibility(possibility)
 
-            if not possibility:
-                print(f"Last intent {intent_name} is not contextually possible")
+            # if not possibility:
+            #     print(f"Last intent {intent_name} is not contextually possible")
 
     def update(self, event: Event, domain: Optional[Domain] = None) -> None:
         """Modify the state of the tracker according to an ``Event``. """

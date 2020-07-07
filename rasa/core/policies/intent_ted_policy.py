@@ -435,7 +435,7 @@ class IntentTED(TED):
         all_gt_labels = batch["all_gt_labels"][0]
         # neg_label_mask = batch["Neg Label Mask"][0]
 
-        print("label ids", label_ids.shape)
+        # print("label ids", label_ids.shape)
 
         if self.max_history_tracker_featurizer_used:
             # add time dimension if max history featurizer is used

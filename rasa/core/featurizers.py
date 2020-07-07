@@ -282,7 +282,7 @@ class IntentTokenizerSingleStateFeaturizer(LabelTokenizerSingleStateFeaturizer):
             (len(domain.intent_names), len(self.user_vocab)), dtype=np.int32
         )
         d = {k: i for k, i in enumerate(domain.intent_names)}
-        print("action indices", d)
+        # print("action indices", d)
         for idx, name in enumerate(domain.intent_names):
             for t in name.split(self.split_symbol):
                 encoded_all_actions[idx, self.user_vocab[t]] = 1
