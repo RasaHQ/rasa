@@ -158,9 +158,9 @@ def test_whitespace_training(supervised_embeddings_config):
 def test_whitespace_does_not_throw_error():
     import rasa.utils.io as io_utils
 
-    test_sentences = io_utils.read_json_file("data/test_tokenizers_2.json")
+    texts = io_utils.read_json_file("data/test_tokenizers/naughty_strings.json")
 
     tk = WhitespaceTokenizer()
 
-    for i, text in enumerate(test_sentences):
+    for text in texts:
         tk.tokenize(Message(text), attribute=TEXT)
