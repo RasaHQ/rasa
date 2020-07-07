@@ -121,7 +121,12 @@ class PolicyEnsemble:
 
     def _policy_ensemble_contains_policy_with_rules_support(self) -> bool:
         """Determine whether the policy ensemble contains at least one policy
-        supporting rule-based data."""
+        supporting rule-based data.
+
+        Returns:
+            Whether or not the policy ensemble contains at least one policy that
+            supports rule-based data.
+        """
         return any(
             policy.supported_data()
             in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
@@ -147,7 +152,7 @@ class PolicyEnsemble:
         self, training_trackers: List[DialogueStateTracker]
     ) -> None:
         """Emit `UserWarning`s about missing rule-based data."""
-        rule_policy_is_active = (
+        is_rules_consuming_policy_available = (
             self._policy_ensemble_contains_policy_with_rules_support()
         )
         training_trackers_contain_rule_trackers = self._training_trackers_contain_rule_trackers(
@@ -155,7 +160,10 @@ class PolicyEnsemble:
         )
 
         # TODO: add new docs links to these warnings
-        if rule_policy_is_active and not training_trackers_contain_rule_trackers:
+        if (
+            is_rules_consuming_policy_available
+            and not training_trackers_contain_rule_trackers
+        ):
             common_utils.raise_warning(
                 f"Found a rule-based policy in your pipeline but "
                 f"no rule-based training data. Please add rule-based "
@@ -163,7 +171,10 @@ class PolicyEnsemble:
                 f"remove the rule-based policy (`{RulePolicy.__name__}`) from your "
                 f"your pipeline."
             )
-        elif not rule_policy_is_active and training_trackers_contain_rule_trackers:
+        elif (
+            not is_rules_consuming_policy_available
+            and training_trackers_contain_rule_trackers
+        ):
             common_utils.raise_warning(
                 f"Found rule-based training data but no policy supporting rule-based "
                 f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
