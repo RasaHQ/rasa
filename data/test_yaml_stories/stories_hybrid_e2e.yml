@@ -5,7 +5,7 @@ stories:
   - intent: simple
   - action: utter_greet
   # Actual messages are given instead of labels
-  - user: "I am looking for a restaurant"
+  - user: "I am looking for a [Kenyan](cuisine) restaurant"
   - bot: "good for you"
   # Regular labeled events
   - intent: goodbye

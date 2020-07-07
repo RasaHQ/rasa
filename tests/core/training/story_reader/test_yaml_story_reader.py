@@ -172,7 +172,11 @@ async def test_parsing_of_e2e_stories(default_domain: Domain):
         UserUttered("simple", {"name": "simple"}),
         ActionExecuted("utter_greet"),
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("I am looking for a restaurant", {"name": None}),
+        UserUttered(
+            "I am looking for a Kenyan restaurant",
+            {"name": None},
+            entities=[{"start": 19, "end": 25, "value": "Kenyan", "entity": "cuisine"}],
+        ),
         ActionExecuted("good for you", e2e_text="good for you"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("goodbye", {"name": "goodbye"}),

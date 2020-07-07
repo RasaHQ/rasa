@@ -163,9 +163,14 @@ class YAMLStoryReader(StoryReader):
             )
 
     def _parse_user_message(self, step: Dict[Text, Any]) -> None:
+        import rasa.nlu.training_data.entities_parser as entities_parser
+
         message = step.get(KEY_STORY_USER_END_TO_END_MESSAGE, "")
+        entities = entities_parser.find_entities_in_training_example(message)
+        plain_text = entities_parser.replace_entities(message)
+
         self.current_step_builder.add_user_messages(
-            [UserUttered(message, {"name": None})]
+            [UserUttered(plain_text, {"name": None}, entities=entities)]
         )
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
