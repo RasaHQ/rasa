@@ -266,7 +266,7 @@ class YAMLStoryReader(StoryReader):
         # TODO: Replace with schema validation
         if not bot_message:
             common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': \n"
+                f"Issue found in '{self.source_name}':\n"
                 f"Bot message cannot be empty. "
                 f"This story step will be skipped:\n"
                 f"{step}",
