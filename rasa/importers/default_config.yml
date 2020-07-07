@@ -1,4 +1,4 @@
-# Configuration for Rasa NLU.
+# Configuration for the Rasa NLU components.
 # https://rasa.com/docs/rasa/nlu/components/
 language: en
 
@@ -19,7 +19,7 @@ pipeline:
   - name: ResponseSelector
     epochs: 100
 
-# Configuration for Rasa Core.		
+# Configuration for the Rasa Core policies.
 # https://rasa.com/docs/rasa/core/policies/
 policies:
   - name: MemoizationPolicy

@@ -14,10 +14,9 @@ import glob
 from asyncio import AbstractEventLoop
 from io import BytesIO as IOReader
 from pathlib import Path
-from typing import Text, Any, Dict, Union, List, Type, Callable, Tuple
+from typing import Text, Any, Dict, Union, List, Type, Callable
 
 import ruamel.yaml as yaml
-from ruamel.yaml import YAML
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
 
@@ -98,34 +97,18 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-# why had the return type "List[Any]"? To me it seems like it's not a list, just "Any"
-def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
+def read_yaml(content: Text) -> Any:
     """Parses yaml from a text.
 
         Args:
             content: A text containing yaml content.
     """
-    content, _ = read_yaml_including_parser(content)
-    return content or {}
-
-
-def read_yaml_including_parser(
-    content: Text, typ: Text = "safe", add_version: bool = True,
-) -> Tuple[Any, YAML]:
-    """Gets a yaml parser and parses yaml from a text.
-
-    Args:
-        content: A text containing yaml content.
-        typ: Argument `typ` for the YAML constructor.
-        add_version: True if the yaml version should be added to the parser.
-    """
     fix_yaml_loader()
 
     replace_environment_variables()
 
-    yaml_parser = yaml.YAML(typ=typ)
-    if add_version:
-        yaml_parser.version = YAML_VERSION
+    yaml_parser = yaml.YAML(typ="safe")
+    yaml_parser.version = YAML_VERSION
 
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
@@ -136,9 +119,7 @@ def read_yaml_including_parser(
             .decode("utf-16")
         )
 
-    loaded_content = yaml_parser.load(content)
-
-    return loaded_content, yaml_parser
+    return yaml_parser.load(content) or {}
 
 
 def _is_ascii(text: Text) -> bool:

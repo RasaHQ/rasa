@@ -59,20 +59,12 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
 
     config = io_utils.read_config_file(SOME_CONFIG)
 
-    autoconfig._dump_config(config, str(config_path))
+    autoconfig._dump_config(config, str(config_path), [], ["policies"])
 
-    actual = io_utils.read_file(config_path)
-    expected = io_utils.read_file(
-        CONFIG_FOLDER + "/arbitrary_example_config_after_dumping.yml"
-    )
-
-    assert actual == expected
+    assert not config_path.exists()
 
     captured = capsys.readouterr()
-    assert "does not exist or is empty" in captured.out
-
-    for k in CONFIG_AUTOCONFIGURABLE_KEYS:
-        assert k in captured.out
+    assert "has been removed or modified" in captured.out
 
 
 # Test a few cases that are known to be potentially tricky (have failed in the past)
