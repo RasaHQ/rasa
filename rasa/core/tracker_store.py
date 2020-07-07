@@ -1055,7 +1055,9 @@ def _create_from_endpoint_config(
             domain=domain, event_broker=event_broker, **endpoint_config.kwargs
         )
     else:
-        tracker_store = _load_from_endpoint_config(domain, endpoint_config, event_broker)
+        tracker_store = _load_from_endpoint_config(
+            domain, endpoint_config, event_broker
+        )
 
     logger.debug(f"Connected to {tracker_store.__class__.__name__}.")
 
