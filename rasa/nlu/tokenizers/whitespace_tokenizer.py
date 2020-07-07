@@ -3,8 +3,10 @@ from typing import Any, Dict, List, Text
 import regex
 import re
 
+from constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
+import rasa.utils.common as common_utils
 
 
 class WhitespaceTokenizer(Tokenizer):
@@ -22,6 +24,13 @@ class WhitespaceTokenizer(Tokenizer):
         super().__init__(component_config)
 
         self.emoji_pattern = self.get_emoji_regex()
+
+        if "case_sensitive" in self.component_config:
+            common_utils.raise_warning(
+                "The option 'case_sensitive' was moved from the tokenizers to the "
+                "featurizers.",
+                docs=DOCS_URL_COMPONENTS,
+            )
 
     @staticmethod
     def get_emoji_regex():
