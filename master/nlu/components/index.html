@@ -234,22 +234,8 @@ Natural Language Understanding pipeline" />
               <a href="../../../1.10.1/nlu/components/">1.10.1</a>
               <a href="../../../1.10.0/nlu/components/">1.10.0</a>
               <a href="../../../1.9.7/nlu/components/">1.9.7</a>
-              <a href="../../../1.9.6/nlu/components/">1.9.6</a>
-              <a href="../../../1.9.5/nlu/components/">1.9.5</a>
-              <a href="../../../1.9.4/nlu/components/">1.9.4</a>
-              <a href="../../../1.9.3/nlu/components/">1.9.3</a>
-              <a href="../../../1.9.2/nlu/components/">1.9.2</a>
-              <a href="../../../1.9.1/nlu/components/">1.9.1</a>
-              <a href="../../../1.9.0/nlu/components/">1.9.0</a>
               <a href="../../../1.8.3/nlu/components/">1.8.3</a>
-              <a href="../../../1.8.2/nlu/components/">1.8.2</a>
-              <a href="../../../1.8.1/nlu/components/">1.8.1</a>
-              <a href="../../../1.8.0/nlu/components/">1.8.0</a>
               <a href="../../../1.7.4/nlu/components/">1.7.4</a>
-              <a href="../../../1.7.3/nlu/components/">1.7.3</a>
-              <a href="../../../1.7.2/nlu/components/">1.7.2</a>
-              <a href="../../../1.7.1/nlu/components/">1.7.1</a>
-              <a href="../../../1.7.0/nlu/components/">1.7.0</a>
               <a href="../../../1.6.2/nlu/components/">1.6.2</a>
               <a href="../../../1.5.3/nlu/components/">1.5.3</a>
               <a href="../../../1.4.6/nlu/components/">1.4.6</a>
@@ -534,6 +520,8 @@ default being <code class="docutils literal notranslate"><span class="pre">case_
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
   <span class="c1"># Text will be tokenized with case sensitive as default</span>
   <span class="s">&quot;case_sensitive&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+  <span class="c1"># Regular expression to detect tokens</span>
+  <span class="s">&quot;token_pattern&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
 </div>
 </dd>
@@ -569,6 +557,8 @@ If the <code class="docutils literal notranslate"><span class="pre">dictionary_p
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
+  <span class="c1"># Regular expression to detect tokens</span>
+  <span class="s">&quot;token_pattern&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
 </div>
 </dd>
@@ -596,6 +586,8 @@ If the <code class="docutils literal notranslate"><span class="pre">dictionary_p
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
+  <span class="c1"># Regular expression to detect tokens</span>
+  <span class="s">&quot;token_pattern&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
 </div>
 </dd>
@@ -623,6 +615,8 @@ If the <code class="docutils literal notranslate"><span class="pre">dictionary_p
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
+  <span class="c1"># Regular expression to detect tokens</span>
+  <span class="s">&quot;token_pattern&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
 </div>
 </dd>
@@ -663,6 +657,8 @@ default being <code class="docutils literal notranslate"><span class="pre">case_
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
   <span class="c1"># Text will be tokenized with case sensitive as default</span>
   <span class="s">&quot;case_sensitive&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+  <span class="c1"># Regular expression to detect tokens</span>
+  <span class="s">&quot;token_pattern&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
 </div>
 </dd>
@@ -1001,9 +997,6 @@ However, additional parameters exist that can be adapted.</p>
 |                   |                         | n-grams only from text inside word boundaries;               |
 |                   |                         | n-grams at the edges of words are padded with space.         |
 |                   |                         | Valid values: &#39;word&#39;, &#39;char&#39;, &#39;char_wb&#39;.                     |
-+-------------------+-------------------------+--------------------------------------------------------------+
-| token_pattern     | r&quot;(?u)\b\w\w+\b&quot;        | Regular expression used to detect tokens.                    |
-|                   |                         | Only used if &#39;analyzer&#39; is set to &#39;word&#39;.                    |
 +-------------------+-------------------------+--------------------------------------------------------------+
 | strip_accents     | None                    | Remove accents during the pre-processing step.               |
 |                   |                         | Valid values: &#39;ascii&#39;, &#39;unicode&#39;, &#39;None&#39;.                    |
