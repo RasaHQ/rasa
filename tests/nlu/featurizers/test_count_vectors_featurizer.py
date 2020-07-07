@@ -23,7 +23,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     ],
 )
 def test_count_vector_featurizer(sentence, expected, expected_cls):
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer()
 
     train_message = Message(sentence)
     test_message = Message(sentence)
@@ -54,7 +54,7 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
 def test_count_vector_featurizer_response_attribute_featurization(
     sentence, intent, response, intent_features, response_features
 ):
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer()
     tk = WhitespaceTokenizer()
 
     train_message = Message(sentence)
@@ -104,7 +104,7 @@ def test_count_vector_featurizer_response_attribute_featurization(
 def test_count_vector_featurizer_attribute_featurization(
     sentence, intent, response, intent_features, response_features
 ):
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer()
     tk = WhitespaceTokenizer()
 
     train_message = Message(sentence)
@@ -153,9 +153,7 @@ def test_count_vector_featurizer_attribute_featurization(
 def test_count_vector_featurizer_shared_vocab(
     sentence, intent, response, text_features, intent_features, response_features
 ):
-    ftr = CountVectorsFeaturizer(
-        {"token_pattern": r"(?u)\b\w+\b", "use_shared_vocab": True}
-    )
+    ftr = CountVectorsFeaturizer({"use_shared_vocab": True})
     tk = WhitespaceTokenizer()
 
     train_message = Message(sentence)
@@ -188,9 +186,7 @@ def test_count_vector_featurizer_shared_vocab(
     ],
 )
 def test_count_vector_featurizer_oov_token(sentence, expected):
-    ftr = CountVectorsFeaturizer(
-        {"token_pattern": r"(?u)\b\w+\b", "OOV_token": "__oov__"}
-    )
+    ftr = CountVectorsFeaturizer({"OOV_token": "__oov__"})
     train_message = Message(sentence)
     WhitespaceTokenizer().process(train_message)
 
@@ -217,11 +213,7 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
 def test_count_vector_featurizer_oov_words(sentence, expected):
 
     ftr = CountVectorsFeaturizer(
-        {
-            "token_pattern": r"(?u)\b\w+\b",
-            "OOV_token": "__oov__",
-            "OOV_words": ["oov_word0", "OOV_word1"],
-        }
+        {"OOV_token": "__oov__", "OOV_words": ["oov_word0", "OOV_word1"]}
     )
     train_message = Message(sentence)
     WhitespaceTokenizer().process(train_message)
@@ -251,7 +243,7 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
 )
 def test_count_vector_featurizer_using_tokens(tokens, expected):
 
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer()
 
     # using empty string instead of real text string to make sure
     # count vector only can come from `tokens` feature.
@@ -307,7 +299,6 @@ def test_count_vector_featurizer_persist_load(tmp_path):
     # set non default values to config
     config = {
         "analyzer": "char",
-        "token_pattern": r"(?u)\b\w+\b",
         "strip_accents": "ascii",
         "stop_words": "stop",
         "min_df": 2,
