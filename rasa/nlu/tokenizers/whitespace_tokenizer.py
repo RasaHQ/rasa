@@ -19,7 +19,7 @@ class WhitespaceTokenizer(Tokenizer):
     }
 
     # the following language should not be tokenized using the WhitespaceTokenizer
-    not_supported_language_list = ["zh", "ja", "ko", "th", "vi"]
+    not_supported_language_list = ["zh", "ja", "th"]
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
