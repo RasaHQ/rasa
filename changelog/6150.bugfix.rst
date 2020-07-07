@@ -1,0 +1,1 @@
+``WhitespaceTokenizer`` only removes emoji if complete token matches emoji regex.

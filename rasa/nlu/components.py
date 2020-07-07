@@ -392,7 +392,13 @@ class Component(metaclass=ComponentMetaclass):
     # This attribute is designed for instance method: `can_handle_language`.
     # Default value is None which means it can handle all languages.
     # This is an important feature for backwards compatibility of components.
-    language_list = None
+    supported_language_list = None
+
+    # Defines what language(s) this component can NOT handle.
+    # This attribute is designed for instance method: `can_handle_language`.
+    # Default value is None which means it can handle all languages.
+    # This is an important feature for backwards compatibility of components.
+    not_supported_language_list = None
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
@@ -648,10 +654,16 @@ class Component(metaclass=ComponentMetaclass):
         """
 
         # if language_list is set to `None` it means: support all languages
-        if language is None or cls.language_list is None:
+        if language is None or (
+            cls.supported_language_list is None
+            and cls.not_supported_language_list is None
+        ):
             return True
 
-        return language in cls.language_list
+        language_list = cls.supported_language_list or []
+        not_supported_language_list = cls.not_supported_language_list or []
+
+        return language in language_list or language not in not_supported_language_list
 
 
 class ComponentBuilder:

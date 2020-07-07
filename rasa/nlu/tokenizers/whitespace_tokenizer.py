@@ -18,6 +18,9 @@ class WhitespaceTokenizer(Tokenizer):
         "case_sensitive": True,
     }
 
+    # the following language should not be tokenized using the WhitespaceTokenizer
+    not_supported_language_list = ["zh", "ja", "th"]
+
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
@@ -29,7 +32,7 @@ class WhitespaceTokenizer(Tokenizer):
 
     @staticmethod
     def get_emoji_regex():
-        emoji_pattern = re.compile(
+        return re.compile(
             "["
             "\U0001F600-\U0001F64F"  # emoticons
             "\U0001F300-\U0001F5FF"  # symbols & pictographs
@@ -37,14 +40,20 @@ class WhitespaceTokenizer(Tokenizer):
             "\U0001F1E0-\U0001F1FF"  # flags (iOS)
             "\U00002702-\U000027B0"
             "\U000024C2-\U0001F251"
+            "\u200d"  # zero width joiner
+            "\u200c"  # zero width non-joiner
             "]+",
             flags=re.UNICODE,
         )
-        return emoji_pattern
 
     def remove_emoji(self, text: Text) -> Text:
+        """Remove emoji if the full text, aka token, matches the emoji regex."""
+        match = self.emoji_pattern.fullmatch(text)
 
-        return self.emoji_pattern.sub(r"", text)
+        if match is not None:
+            return ""
+
+        return text
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         text = message.get(attribute)
