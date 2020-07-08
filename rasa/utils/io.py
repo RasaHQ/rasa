@@ -240,7 +240,7 @@ def convert_to_ordered_dict(obj: Dict[Any, Any]) -> OrderedDict:
         # use recursion on dictionaries
         if isinstance(v, dict):
             out[k] = convert_to_ordered_dict(v)
-        # use recursion on lists or sets
+        # use recursion on lists
         elif isinstance(v, list):
             converted_list = []
             for element in v:
