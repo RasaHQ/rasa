@@ -397,7 +397,10 @@ optional arguments:
                         The policy and NLU pipeline configuration of your bot.
                         (default: config.yml)
   -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file). (default: domain.yml)
+                        Domain specification. This can be a single YAML file,
+                        or a directory that contains several files with domain
+                        specifications in it. The content of these files will
+                        be read and merged together. (default: domain.yml)
   --out OUT             Directory where your models should be stored.
                         (default: models)
   --augmentation AUGMENTATION
@@ -483,7 +486,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: e10766b1c40c49e2b0f4ea53c25b13fb)
+                        generated. (default: 8a9572a92f054e36958bb1882e7829e5)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
@@ -501,7 +504,10 @@ Train Arguments:
                         The policy and NLU pipeline configuration of your bot.
                         (default: config.yml)
   -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file). (default: domain.yml)
+                        Domain specification. This can be a single YAML file,
+                        or a directory that contains several files with domain
+                        specifications in it. The content of these files will
+                        be read and merged together. (default: domain.yml)
   --out OUT             Directory where your models should be stored.
                         (default: models)
   --augmentation AUGMENTATION
@@ -562,7 +568,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        8e2d5b76e29e4cf1960c2701a2b44225)
+                        d4b3feef4d044413afda3375621c2557)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
@@ -786,7 +792,10 @@ somewhere else, you can specify their location with <code class="docutils litera
 optional arguments:
   -h, --help            show this help message and exit
   -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file). (default: domain.yml)
+                        Domain specification. This can be a single YAML file,
+                        or a directory that contains several files with domain
+                        specifications in it. The content of these files will
+                        be read and merged together. (default: domain.yml)
   -s STORIES, --stories STORIES
                         File or folder containing your training stories.
                         (default: data)
