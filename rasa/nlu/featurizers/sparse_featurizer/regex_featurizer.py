@@ -32,6 +32,11 @@ class RegexFeaturizer(SparseFeaturizer):
     def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
 
+    defaults = {
+        # Text will be processed with case sensitive as default
+        "case_sensitive": True
+    }
+
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
@@ -41,6 +46,7 @@ class RegexFeaturizer(SparseFeaturizer):
         super().__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
+        self.case_sensitive = self.component_config["case_sensitive"]
 
     def add_lookup_tables(self, lookup_tables: List[Dict[Text, Union[Text, List]]]):
         self.known_patterns.extend(self._lookup_table_regexes(lookup_tables))
@@ -118,13 +124,17 @@ class RegexFeaturizer(SparseFeaturizer):
             # nothing to featurize
             return None, None
 
+        flags = 0  # default flag
+        if not self.case_sensitive:
+            flags = re.IGNORECASE
+
         sequence_length = len(tokens)
 
         sequence_features = np.zeros([sequence_length, len(self.known_patterns)])
         sentence_features = np.zeros([1, len(self.known_patterns)])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
-            matches = re.finditer(pattern["pattern"], message.text)
+            matches = re.finditer(pattern["pattern"], message.text, flags=flags)
             matches = list(matches)
 
             for token_index, t in enumerate(tokens):
