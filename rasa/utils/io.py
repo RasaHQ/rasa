@@ -6,20 +6,21 @@ import os
 import pickle
 import tarfile
 import tempfile
-import typing
 import warnings
 import zipfile
 import glob
 from asyncio import AbstractEventLoop
+from collections import OrderedDict
 from io import BytesIO as IOReader
 from pathlib import Path
-from typing import Text, Any, Dict, Union, List, Type, Callable
+from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
 
 import ruamel.yaml as yaml
+from ruamel.yaml import Representer
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
 
 DEFAULT_ENCODING = "utf-8"
@@ -199,7 +200,7 @@ def read_config_file(filename: Text) -> Dict[Text, Any]:
         )
 
 
-def read_yaml_file(filename: Text) -> Union[List[Any], Dict[Text, Any]]:
+def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
      Args:
@@ -225,15 +226,69 @@ def unarchive(byte_array: bytes, directory: Text) -> Text:
         return directory
 
 
-def write_yaml_file(data: Dict, filename: Union[Text, Path]) -> None:
+def convert_to_ordered_dict(obj: Dict[Any, Any]) -> OrderedDict:
+    """Convert nested dictionary to an `OrderedDict`.
+
+    Args:
+        obj: Dictionary to convert.
+
+    Returns:
+        An `OrderedDict` with all nested dictionaries converted.
+    """
+    out = OrderedDict()
+
+    for k, v in obj.items():
+        # use recursion on dictionaries
+        if isinstance(v, dict):
+            out[k] = convert_to_ordered_dict(v)
+        # use recursion on lists
+        elif isinstance(v, list):
+            converted_list = []
+            for element in v:
+                # recursion on list elements if they're `dict`s or `list`s
+                if isinstance(element, (dict, list)):
+                    converted_list.append(convert_to_ordered_dict(element))
+                else:
+                    converted_list.append(element)
+            out[k] = converted_list
+        # everything else can just be copied
+        else:
+            out[k] = v
+
+    return out
+
+
+def fix_yaml_representer() -> None:
+    """Ensure that `OrderedDict`s are dumped so that the order of keys is respected."""
+
+    def _order_rep(dumper: Representer, _data: Dict[Any, Any]) -> Any:
+        return dumper.represent_mapping(
+            "tag:yaml.org,2002:map", _data.items(), flow_style=False
+        )
+
+    yaml.add_representer(OrderedDict, _order_rep)
+
+
+def write_yaml_file(
+    data: Dict[Any, Any],
+    filename: Union[Text, Path],
+    should_preserve_key_order: bool = False,
+) -> None:
     """Writes a yaml file.
 
      Args:
         data: The data to write.
         filename: The path to the file which should be written.
+        should_preserve_key_order: Whether to preserve key order in `data`.
     """
-    with open(str(filename), "w", encoding=DEFAULT_ENCODING) as outfile:
-        yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True)
+    if should_preserve_key_order:
+        fix_yaml_representer()
+        data = convert_to_ordered_dict(data)
+
+    with Path(filename).open("w", encoding=DEFAULT_ENCODING) as outfile:
+        yaml.dump(
+            data, outfile, default_flow_style=False, allow_unicode=True,
+        )
 
 
 def write_text_file(
