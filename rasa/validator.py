@@ -56,7 +56,7 @@ class Validator:
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
                 raise_warning(
-                    f"There is a message in the training data labelled with intent "
+                    f"There is a message in the training data labeled with intent "
                     f"'{intent}'. This intent is not listed in your domain. You "
                     f"should need to add that intent to your domain file!",
                     docs=DOCS_URL_DOMAINS,

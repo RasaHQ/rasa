@@ -97,7 +97,7 @@ class MultiProjectImporter(TrainingDataImporter):
 
                 if data.is_end_to_end_conversation_test_file(full_path):
                     self._e2e_story_paths.append(full_path)
-                elif data.is_domain_file(full_path):
+                elif Domain.is_domain_file(full_path):
                     self._domain_paths.append(full_path)
                 elif data.is_nlu_file(full_path):
                     self._nlu_paths.append(full_path)
