@@ -122,7 +122,7 @@ Common examples have three components: ``text``, ``intent`` and ``entities``. Th
 one is an array.
 
  - The *text* is the user message [required]
- - The *intent* is the intent that should be associated with the text [optional]
+ - The *intent* is the intent that should be associated with the text [required]
  - The *entities* are specific parts of the text which need to be identified [optional]
 
 Entities are specified with a ``start`` and an ``end`` value, which together make a range
