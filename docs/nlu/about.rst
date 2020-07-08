@@ -27,3 +27,4 @@ and returning structured data like
     }
 
 If you want to use Rasa NLU on its own, see :ref:`using-nlu-only`.
+If you use Rasa NLU together with Rasa Core, Rasa NLU is also capable of predicting a response for you.
