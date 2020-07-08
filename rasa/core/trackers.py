@@ -362,7 +362,7 @@ class DialogueStateTracker:
             elif (
                 isinstance(event, ActionExecuted)
                 and event.action_name in form_names
-                and not self._first_loop_execution_or_previous_rejection(
+                and not self._first_loop_execution_or_unhappy_path(
                     event.action_name, applied_events
                 )
             ):
@@ -384,30 +384,53 @@ class DialogueStateTracker:
             if isinstance(e, event_type):
                 break
 
-    @staticmethod
-    def _first_loop_execution_or_previous_rejection(
-        loop_action_name: Text, applied_events: List[Event]
+    def _first_loop_execution_or_unhappy_path(
+        self, loop_action_name: Text, applied_events: List[Event]
     ) -> bool:
-        for event in reversed(applied_events):
-            # Form was rejected previously.
-            if (
-                isinstance(event, ActionExecutionRejected)
-                and event.action_name == loop_action_name
-            ):
-                return True
+        next_action: Optional[Text] = None
 
-            # Form might have run before but was deactivated and is now running again.
+        for event in reversed(applied_events):
+            # Stop looking for a previous form execution if there is a form deactivation
+            # event because it means that the current form is running for the first
+            # time and previous form events belong to different forms.
             if isinstance(event, Form) and event.name is None:
                 return True
 
-            # Form ran before.
-            if (
-                isinstance(event, ActionExecuted)
-                and event.action_name == loop_action_name
-            ):
-                return False
+            if self._is_within_unhappy_path(loop_action_name, event, next_action):
+                return True
+
+            if isinstance(event, ActionExecuted):
+                # We found a previous execution of the form and we are not within an
+                # unhappy path.
+                if event.action_name == loop_action_name:
+                    return False
+
+                # Remember the action as we need that to check whether we might be
+                # within an unhappy path.
+                next_action = event.action_name
 
         return True
+
+    @staticmethod
+    def _is_within_unhappy_path(
+        loop_action_name: Text, event: Event, next_action_in_the_future: Optional[Text]
+    ) -> bool:
+        # When actual users are talking to the action has to return an
+        # `ActionExecutionRejected` in order to enter an unhappy path.
+        form_was_rejected_previously = (
+            isinstance(event, ActionExecutionRejected)
+            and event.action_name == loop_action_name
+        )
+        # During the policy training there are no `ActionExecutionRejected` events
+        # which let us see whether we are within an unhappy path. Hence, we check if a
+        # different action was executed instead of the form after last user utterance.
+        other_action_after_latest_user_utterance = (
+            isinstance(event, UserUttered)
+            and next_action_in_the_future is not None
+            and next_action_in_the_future != loop_action_name
+        )
+
+        return form_was_rejected_previously or other_action_after_latest_user_utterance
 
     @staticmethod
     def _undo_till_previous_loop_execution(
