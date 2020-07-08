@@ -814,7 +814,9 @@ class Domain:
         """Write domain to a file."""
 
         domain_data = self.as_dict()
-        utils.dump_obj_as_yaml_to_file(filename, domain_data)
+        utils.dump_obj_as_yaml_to_file(
+            filename, domain_data, should_preserve_key_order=True
+        )
 
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
@@ -886,7 +888,9 @@ class Domain:
         """Write cleaned domain to a file."""
 
         cleaned_domain_data = self.cleaned_domain()
-        utils.dump_obj_as_yaml_to_file(filename, cleaned_domain_data)
+        utils.dump_obj_as_yaml_to_file(
+            filename, cleaned_domain_data, should_preserve_key_order=True
+        )
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
