@@ -25,6 +25,7 @@ from rasa.core.featurizers import (
     FullDialogueTrackerFeaturizer,
 )
 from rasa.core.interpreter import RegexInterpreter
+from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import SupportedData, Policy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
