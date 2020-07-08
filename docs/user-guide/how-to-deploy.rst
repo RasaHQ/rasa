@@ -60,7 +60,7 @@ For assistants that will receive a lot of user traffic, setting up a Kubernetes 
 our helm charts is the best option. This provides a scalable architecture that is also straightforward to deploy.
 However, you can also customize the Helm charts if you have specific requirements.
 
-    - Default: Read the `Helm Chart Installation docs <https://rasa.com/docs/rasa-x/installation-and-setup/install/helm-chart/>`_ docs.
+    - Default: Read the `Helm Chart Installation <https://rasa.com/docs/rasa-x/installation-and-setup/install/helm-chart/>`_ docs.
     - Custom: Read the above, as well as the `Advanced Configuration <https://rasa.com/docs/rasa-x/installation-and-setup/customize/#helm-chart>`_
       documentation, and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_ to your needs.
 
