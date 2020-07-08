@@ -293,11 +293,6 @@ def _emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
-def _undo_emulating_form_rejection(tracker: DialogueStateTracker) -> None:
-    del tracker.events[-1]
-    tracker.active_loop["rejected"] = False
-
-
 def _collect_action_executed_predictions(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
@@ -306,7 +301,6 @@ def _collect_action_executed_predictions(
     circuit_breaker_tripped: bool,
 ) -> Tuple[EvaluationStore, Optional[Text], Optional[float]]:
     from rasa.core.policies.form_policy import FormPolicy
-    from rasa.core.policies.rule_policy import RulePolicy
 
     action_executed_eval_store = EvaluationStore()
 
@@ -327,16 +321,16 @@ def _collect_action_executed_predictions(
                 processor.domain, partial_tracker, predicted
             )
         ):
-            # Wrong policy was predicted,
+            # Wrong action was predicted,
             # but it might be Ok if form action is rejected.
             _emulate_form_rejection(partial_tracker)
             # try again
             action, policy, confidence = processor.predict_next_action(partial_tracker)
 
-            if action.name() == gold:
-                predicted = action.name()
-            else:
-                _undo_emulating_form_rejection(partial_tracker)
+            # Even if the prediction is also wrong, we don't have to undo the emulation
+            # of the action rejection as we know that the user explicitly specified
+            # that something else than the form was supposed to run.
+            predicted = action.name()
 
     action_executed_eval_store.add_to_store(
         action_predictions=predicted, action_targets=gold
