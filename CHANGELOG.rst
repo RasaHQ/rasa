@@ -85,7 +85,7 @@ Bugfixes
 Bugfixes
 --------
 - `#5521 <https://github.com/rasahq/rasa/issues/5521>`_: Responses used in ResponseSelector now support new lines with explicitly adding ``\n`` between them.
-- `#5758 <https://github.com/rasahq/rasa/issues/5758>`_: Fixed a bug in `rasa export <https://rasa.com/docs/rasa-x/installation-and-setup/existing-deployment/#migrate-conversations>`_ (:ref:`section_export`) which caused Rasa Open Source to only migrate conversation events from the last :ref:`session_config`.
+- `#5758 <https://github.com/rasahq/rasa/issues/5758>`_: Fixed a bug in `rasa export <https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment>`_ (:ref:`section_export`) which caused Rasa Open Source to only migrate conversation events from the last :ref:`session_config`.
 
 
 [1.10.1] - 2020-05-15

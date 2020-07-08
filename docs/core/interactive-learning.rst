@@ -23,7 +23,7 @@ Some people call this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a
 
     Rasa X provides a UI for interactive learning, and you can use any user conversation
     as a starting point. See
-    `Talking to Your Assistant <https://rasa.com/docs/rasa-x/user-guide/enable-workflows#talking-to-your-assistant/>`_
+    `Talk to Your Bot <https://rasa.com/docs/rasa-x/user-guide/share-assistant/#talk-to-your-bot>`_
     in the Rasa X docs.
 
 .. contents::

@@ -23,7 +23,7 @@ important happy paths or is what we call a `minimum viable assistant <https://ra
 
 The recommended deployment methods described below make it easy to share your assistant
 with test users via the `share your assistant feature in
-Rasa X <https://rasa.com/docs/rasa-x/user-guide/enable-workflows#conversations-with-test-users>`_.
+Rasa X <https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share-your-bot>`_.
 Then, when you’re ready to make your assistant available via one or more :ref:`messaging-and-voice-channels`,
 you can easily add them to your existing deployment set up.
 
