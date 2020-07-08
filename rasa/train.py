@@ -97,8 +97,6 @@ async def train_async(
         train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
 
         domain = await file_importer.get_domain()
-        print("have forms", domain.forms)
-        print("have domain", domain.as_yaml())
 
         if domain.is_empty():
             return await handle_domain_if_not_exists(

@@ -894,10 +894,6 @@ class Domain:
         else:
             domain_data = self.as_dict()
 
-        print("have domain data")
-        import json
-
-        print(json.dumps(domain_data, indent=2))
         return utils.dump_obj_as_yaml_to_string(domain_data)
 
     def intent_config(self, intent_name: Text) -> Dict[Text, Any]:

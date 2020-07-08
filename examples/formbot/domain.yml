@@ -79,23 +79,7 @@ responses:
 
 forms:
   - restaurant_form:
-      zzzz:
-        - type: from_entity
-          entity: cuisine
-          not_intent: chitchat
-      zcuisine2:
-        - type: from_entity
-          entity: cuisine
-          not_intent: chitchat
-      cuisine3:
-        - type: from_entity
-          entity: cuisine
-          not_intent: chitchat
-      cuisine4:
-        - type: from_entity
-          entity: cuisine
-          not_intent: chitchat
-      cuisine5:
+      cuisine:
         - type: from_entity
           entity: cuisine
           not_intent: chitchat
