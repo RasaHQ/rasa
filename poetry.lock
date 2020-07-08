@@ -533,6 +533,26 @@ version = "0.6"
 
 [[package]]
 category = "main"
+description = "Python library for extract property from data."
+name = "dataproperty"
+optional = false
+python-versions = ">=3.5"
+version = "0.49.1"
+
+[package.dependencies]
+mbstrdecoder = ">=1.0.0,<2"
+setuptools = ">=38.3.0"
+
+[package.dependencies.typepy]
+extras = ["datetime"]
+version = ">=1.1.1,<2"
+
+[package.extras]
+logging = ["loguru (>=0.4.1,<1)"]
+test = ["pytest", "pytest-md-report", "termcolor"]
+
+[[package]]
+category = "main"
 description = "Decorators for Humans"
 name = "decorator"
 optional = false
@@ -1337,6 +1357,20 @@ version = "2.2"
 requests = "*"
 
 [[package]]
+category = "main"
+description = "multi-byte character string decoder"
+name = "mbstrdecoder"
+optional = false
+python-versions = ">=3.5"
+version = "1.0.0"
+
+[package.dependencies]
+chardet = ">=3.0.4,<4"
+
+[package.extras]
+test = ["Faker (>=1.0.2)", "pytest"]
+
+[[package]]
 category = "dev"
 description = "McCabe checker, plugin for flake8"
 name = "mccabe"
@@ -1418,6 +1452,17 @@ xmltodict = "*"
 
 [package.extras]
 server = ["flask"]
+
+[[package]]
+category = "main"
+description = "msgfy is a Python library for convert Exception instance to a human-readable error message."
+name = "msgfy"
+optional = false
+python-versions = ">=3.5"
+version = "0.1.0"
+
+[package.extras]
+test = ["pytest"]
 
 [[package]]
 category = "dev"
@@ -1631,6 +1676,17 @@ name = "pathtools"
 optional = false
 python-versions = "*"
 version = "0.1.2"
+
+[[package]]
+category = "main"
+description = "pathvalidate is a Python library to sanitize/validate a string such as filenames/file-paths/etc."
+name = "pathvalidate"
+optional = false
+python-versions = ">=3.5"
+version = "2.3.0"
+
+[package.extras]
+test = ["allpairspy", "click", "faker", "pytest"]
 
 [[package]]
 category = "dev"
@@ -1918,6 +1974,42 @@ version = "0.16.0"
 
 [package.dependencies]
 six = "*"
+
+[[package]]
+category = "main"
+description = "pytablewriter is a Python library to write a table in various formats: CSV / Elasticsearch / HTML / JavaScript / JSON / LaTeX / LDJSON / LTSV / Markdown / MediaWiki / NumPy / Excel / Pandas / Python / reStructuredText / SQLite / TOML / TSV / YAML."
+name = "pytablewriter"
+optional = false
+python-versions = ">=3.5"
+version = "0.54.0"
+
+[package.dependencies]
+DataProperty = ">=0.49.1,<2"
+mbstrdecoder = ">=1.0.0,<2"
+msgfy = ">=0.1.0,<1"
+pathvalidate = ">=2.3.0,<3"
+setuptools = ">=38.3.0"
+tabledata = ">=1.1.1,<2"
+tcolorpy = ">=0.0.4,<1"
+
+[package.dependencies.typepy]
+extras = ["datetime"]
+version = ">=1.1.1,<2"
+
+[package.extras]
+all = ["xlwt", "XlsxWriter (>=0.9.6,<2)", "elasticsearch (>=7.0.5,<8)", "pytablereader (>=0.30.0,<2)", "dominate (>=2.1.5,<3)", "loguru (>=0.4.1,<1)", "SimpleSQLite (>=1.1.1,<2)", "toml (>=0.9.3,<1)", "PyYAML (>=3.11,<6)", "simplejson (>=3.8.1,<4)"]
+docs = ["sphinx-rtd-theme", "Sphinx (>=2.4)"]
+es5 = ["elasticsearch (>=5.5.3,<6)"]
+es6 = ["elasticsearch (>=6.3.1,<7)"]
+es7 = ["elasticsearch (>=7.0.5,<8)"]
+excel = ["xlwt", "XlsxWriter (>=0.9.6,<2)"]
+from = ["pytablereader (>=0.30.0,<2)"]
+html = ["dominate (>=2.1.5,<3)"]
+logging = ["loguru (>=0.4.1,<1)"]
+sqlite = ["SimpleSQLite (>=1.1.1,<2)"]
+test = ["toml (>=0.9.3,<1)", "pytablereader (>=0.30.0,<2)", "PyYAML (>=3.11,<6)", "pytest", "tablib", "pytablereader (>=0.29)", "xlwt", "loguru (>=0.4.1,<1)", "termcolor", "SimpleSQLite (>=1.1.1,<2)", "simplejson (>=3.8.1,<4)", "XlsxWriter (>=0.9.6,<2)", "sqliteschema", "elasticsearch (>=7.0.5,<8)", "dominate (>=2.1.5,<3)"]
+toml = ["toml (>=0.9.3,<1)"]
+yaml = ["PyYAML (>=3.11,<6)"]
 
 [[package]]
 category = "dev"
@@ -2649,6 +2741,7 @@ yapf = "*"
 reference = "e053e9f1af57ab56bf0fcfe002405a4cd3d5f761"
 type = "git"
 url = "https://github.com/RasaHQ/sphinx-markdown-builder.git"
+
 [[package]]
 category = "dev"
 description = "Read the Docs theme for Sphinx"
@@ -2853,6 +2946,23 @@ dev = ["twine", "wheel"]
 
 [[package]]
 category = "main"
+description = "tabledata is a Python library to represent tabular data. Used for pytablewriter/pytablereader/SimpleSQLite."
+name = "tabledata"
+optional = false
+python-versions = ">=3.5"
+version = "1.1.2"
+
+[package.dependencies]
+DataProperty = ">=0.48.0,<2"
+setuptools = ">=38.3.0"
+typepy = ">=1.0.0,<2"
+
+[package.extras]
+logging = ["loguru (>=0.4.1,<1)"]
+test = ["pytablewriter (>=0.46)", "pytest"]
+
+[[package]]
+category = "main"
 description = "Pretty-print tabular data"
 name = "tabulate"
 optional = false
@@ -2861,6 +2971,17 @@ version = "0.8.7"
 
 [package.extras]
 widechars = ["wcwidth"]
+
+[[package]]
+category = "main"
+description = "tcolopy is a Python library to apply true color for terminal text."
+name = "tcolorpy"
+optional = false
+python-versions = ">=3.5"
+version = "0.0.5"
+
+[package.extras]
+test = ["pytest"]
 
 [[package]]
 category = "main"
@@ -3205,6 +3326,30 @@ test = ["pytest", "typing-extensions"]
 
 [[package]]
 category = "main"
+description = "typepy is a Python library for variable type checker/validator/converter at a run time."
+name = "typepy"
+optional = false
+python-versions = ">=3.5"
+version = "1.1.1"
+
+[package.dependencies]
+mbstrdecoder = ">=1.0.0,<2"
+setuptools = ">=38.3.0"
+
+[package.dependencies.python-dateutil]
+optional = true
+version = ">=2.8.0,<3.0.0"
+
+[package.dependencies.pytz]
+optional = true
+version = ">=2018.9"
+
+[package.extras]
+datetime = ["python-dateutil (>=2.8.0,<3.0.0)", "pytz (>=2018.9)"]
+test = ["pytest", "termcolor", "python-dateutil (>=2.8.0,<3.0.0)", "pytz (>=2018.9)"]
+
+[[package]]
+category = "main"
 description = "Backported and Experimental Type Hints for Python 3.5+"
 marker = "python_version < \"3.7\""
 name = "typing-extensions"
@@ -3413,7 +3558,6 @@ multidict = ">=4.0"
 [[package]]
 category = "main"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-marker = "python_version < \"3.7\" and python_version != \"3.4\" or python_version < \"3.8\""
 name = "zipp"
 optional = false
 python-versions = ">=3.6"
@@ -3715,6 +3859,10 @@ cymem = [
 dataclasses = [
     {file = "dataclasses-0.6-py3-none-any.whl", hash = "sha256:454a69d788c7fda44efd71e259be79577822f5e3f53f029a22d08004e951dc9f"},
     {file = "dataclasses-0.6.tar.gz", hash = "sha256:6988bd2b895eef432d562370bb707d540f32f7360ab13da45340101bc2307d84"},
+]
+dataproperty = [
+    {file = "DataProperty-0.49.1-py3-none-any.whl", hash = "sha256:1c61f85450a6cffd15faccdeedc28ddd29d9ae95140b583e0aef15feb2c3d54d"},
+    {file = "DataProperty-0.49.1.tar.gz", hash = "sha256:70ea253f74a51e39491770ac69428488bed75d62135accb234d89358d220b6ec"},
 ]
 decorator = [
     {file = "decorator-4.4.2-py2.py3-none-any.whl", hash = "sha256:41fa54c2a0cc4ba648be4fd43cff00aedf5b9465c9bf18d64325bc225f08f760"},
@@ -4119,6 +4267,10 @@ matplotlib = [
 mattermostwrapper = [
     {file = "mattermostwrapper-2.2.tar.gz", hash = "sha256:df17c4224b15c54d959addb12e83e3f1ada34bdb1fbed1048b7b9900d9cff53e"},
 ]
+mbstrdecoder = [
+    {file = "mbstrdecoder-1.0.0-py3-none-any.whl", hash = "sha256:a7cbc188b04937c92129c193a255ec91e8dfd8dd2e7e9bf04b61bc937ac86ad3"},
+    {file = "mbstrdecoder-1.0.0.tar.gz", hash = "sha256:9df7778c0c051c98f6b5a848909202e5cd423c9692665b20d1a9bd0f771b8235"},
+]
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
     {file = "mccabe-0.6.1.tar.gz", hash = "sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"},
@@ -4142,6 +4294,10 @@ more-itertools = [
 moto = [
     {file = "moto-1.3.14-py2.py3-none-any.whl", hash = "sha256:2b3fa22778504b45715868cad95ad458fdea7227f9005b12e522fc9c2ae0cabc"},
     {file = "moto-1.3.14.tar.gz", hash = "sha256:79aeaeed1592a24d3c488840065a3fcb3f4fa7ba40259e112482454c0e48a03a"},
+]
+msgfy = [
+    {file = "msgfy-0.1.0-py3-none-any.whl", hash = "sha256:ce8a8c8c223279fa0a2c0f278eec139fcf761ca4eb98f179f54a1b96f53514f5"},
+    {file = "msgfy-0.1.0.tar.gz", hash = "sha256:474c08302cd56ccee1300ac7976a01ebd1e42716fc9bcd947d39a311a15b7012"},
 ]
 msrest = [
     {file = "msrest-0.6.17-py2.py3-none-any.whl", hash = "sha256:c51ac6ce2d151b47dd4b3eed0fb8596b6e7c2067eff6bb82e874beaf7bfec531"},
@@ -4266,6 +4422,10 @@ pathspec = [
 ]
 pathtools = [
     {file = "pathtools-0.1.2.tar.gz", hash = "sha256:7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0"},
+]
+pathvalidate = [
+    {file = "pathvalidate-2.3.0-py3-none-any.whl", hash = "sha256:1697c8ea71ff4c48e7aa0eda72fe4581404be8f41e51a17363ef682dd6824d35"},
+    {file = "pathvalidate-2.3.0.tar.gz", hash = "sha256:32d30dbacb711c16bb188b12ce7e9a46b41785f50a12f64500f747480a4b6ee3"},
 ]
 pep440-version-utils = [
     {file = "pep440-version-utils-0.3.0.tar.gz", hash = "sha256:ceb8c8da63b54cc555946d91829f72fe323f8d635b22fa54ef0a9800c37f50df"},
@@ -4503,6 +4663,10 @@ pyreadline = [
 ]
 pyrsistent = [
     {file = "pyrsistent-0.16.0.tar.gz", hash = "sha256:28669905fe725965daa16184933676547c5bb40a5153055a8dee2a4bd7933ad3"},
+]
+pytablewriter = [
+    {file = "pytablewriter-0.54.0-py3-none-any.whl", hash = "sha256:5aa600c2d404f5ad82e4fadf48814a2b8d6b5462da82464fee58a3415858f078"},
+    {file = "pytablewriter-0.54.0.tar.gz", hash = "sha256:2d898a3eaf0b19aa0e48d9a9d1fe8db67f65235d6600d2b03817598991c917c4"},
 ]
 pytest = [
     {file = "pytest-5.4.3-py3-none-any.whl", hash = "sha256:5c0db86b698e8f170ba4582a492248919255fcd4c79b1ee64ace34301fb589a1"},
@@ -4942,9 +5106,17 @@ sshpubkeys = [
     {file = "sshpubkeys-3.1.0-py2.py3-none-any.whl", hash = "sha256:9f73d51c2ef1e68cd7bde0825df29b3c6ec89f4ce24ebca3bf9eaa4a23a284db"},
     {file = "sshpubkeys-3.1.0.tar.gz", hash = "sha256:b388399caeeccdc145f06fd0d2665eeecc545385c60b55c282a15a022215af80"},
 ]
+tabledata = [
+    {file = "tabledata-1.1.2-py3-none-any.whl", hash = "sha256:7d2019de87fd5da2f45f4e36fd2dd9da326dd3c3a3191b7b5bdb65a477b29dd5"},
+    {file = "tabledata-1.1.2.tar.gz", hash = "sha256:db893596ab9066e5c4f002ae0fed70657e3b75cceb52dd1de5a0e145e338d830"},
+]
 tabulate = [
     {file = "tabulate-0.8.7-py3-none-any.whl", hash = "sha256:ac64cb76d53b1231d364babcd72abbb16855adac7de6665122f97b593f1eb2ba"},
     {file = "tabulate-0.8.7.tar.gz", hash = "sha256:db2723a20d04bcda8522165c73eea7c300eda74e0ce852d9022e0159d7895007"},
+]
+tcolorpy = [
+    {file = "tcolorpy-0.0.5-py3-none-any.whl", hash = "sha256:aeed3bed7faac29a6529be7e0e0ad77ac68d8353e9a03ca18ffd2ea1d9e1d6df"},
+    {file = "tcolorpy-0.0.5.tar.gz", hash = "sha256:6215a0db797c7520a7ac7833da91595ddd30b6743314096fe6c890d1b91ac228"},
 ]
 tensorboard = [
     {file = "tensorboard-2.2.2-py3-none-any.whl", hash = "sha256:a3feb73e1221c0a512398ad2cd08570fb082d8a2ba364aa0562543ecbd3659ef"},
@@ -5106,6 +5278,10 @@ typed-ast = [
 typeguard = [
     {file = "typeguard-2.9.1-py3-none-any.whl", hash = "sha256:e258567e62d28f9a51d4f7c71f491154e9ef0889286ad2f37e3e22e4f668b21b"},
     {file = "typeguard-2.9.1.tar.gz", hash = "sha256:529ef3d88189cc457f4340388028412f71be8091c2c943465146d4170fb67288"},
+]
+typepy = [
+    {file = "typepy-1.1.1-py3-none-any.whl", hash = "sha256:418e24c44cf5fc260c2e2bbc68a3d0bc8c43f488412663c7ce1f33efa5133323"},
+    {file = "typepy-1.1.1.tar.gz", hash = "sha256:a0850559dfd135577c6d565c0268fcad1327cab9c4c295015d4d882aa9a24786"},
 ]
 typing-extensions = [
     {file = "typing_extensions-3.7.4.2-py2-none-any.whl", hash = "sha256:f8d2bd89d25bc39dabe7d23df520442fa1d8969b82544370e03d88b5a591c392"},
