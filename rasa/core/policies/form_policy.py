@@ -38,30 +38,6 @@ class FormPolicy(MemoizationPolicy):
             featurizer=featurizer, priority=priority, max_history=2, lookup=lookup
         )
 
-    @classmethod
-    def validate_against_domain(
-        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
-    ) -> None:
-        if not domain:
-            return
-
-        from rasa.core.policies.rule_policy import RulePolicy
-
-        suited_policies_for_forms = (FormPolicy, RulePolicy)
-
-        has_policy_for_forms = ensemble is not None and any(
-            isinstance(policy, suited_policies_for_forms)
-            for policy in ensemble.policies
-        )
-
-        if domain.form_names and not has_policy_for_forms:
-            raise InvalidDomain(
-                "You have defined a form action, but haven't added the "
-                "FormPolicy to your policy ensemble. Either remove all "
-                "forms from your domain or exclude the FormPolicy from your "
-                "policy configuration."
-            )
-
     @staticmethod
     def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
         found_forms = [

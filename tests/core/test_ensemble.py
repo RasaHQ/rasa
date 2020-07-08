@@ -4,12 +4,10 @@ from typing import List, Any, Text
 import pytest
 import copy
 
-from _pytest.logging import LogCaptureFixture
-
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.policy import Policy, SupportedData
+from rasa.core.policies.policy import Policy
 from rasa.core.policies.ensemble import (
     PolicyEnsemble,
     InvalidPolicyConfig,
