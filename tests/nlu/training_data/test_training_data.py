@@ -182,11 +182,14 @@ def test_train_test_split(filepaths):
     from rasa.importers.utils import training_data_from_paths
 
     td = training_data_from_paths(filepaths, language="en")
+
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
+    assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
 
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
+    assert len(td.response_examples) == 4
 
     td_train, td_test = td.train_test_split(train_frac=0.8)
 

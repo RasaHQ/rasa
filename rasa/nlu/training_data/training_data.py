@@ -432,7 +432,7 @@ class TrainingData:
         train, test = [], []
         training_examples = set(self.training_examples)
 
-        def _split(_examples: List[Message], _count: int):
+        def _split(_examples: List[Message], _count: int) -> None:
             if random_seed is not None:
                 random.Random(random_seed).shuffle(_examples)
             else:
