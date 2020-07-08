@@ -185,21 +185,6 @@ def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
     )
 
 
-def is_domain_file(file_path: Text) -> bool:
-    """Checks whether the given file path is a Rasa domain file.
-
-    Args:
-        file_path: Path of the file which should be checked.
-
-    Returns:
-        `True` if it's a domain file, otherwise `False`.
-    """
-
-    file_name = os.path.basename(file_path)
-
-    return file_name in ["domain.yml", "domain.yaml"]
-
-
 def is_config_file(file_path: Text) -> bool:
     """Checks whether the given file path is a Rasa config file.
 

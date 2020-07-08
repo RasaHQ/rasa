@@ -32,6 +32,7 @@ def generate_json(file, task, data):
 
     return data
 
+
 def read_results(file):
     with open(file) as json_file:
         data = json.load(json_file)
@@ -53,7 +54,7 @@ if __name__ == "__main__":
             if f not in task_mapping.keys():
                 continue
 
-            data = generate_json(os.path.join(dirpath, f),task_mapping[f], data)
+            data = generate_json(os.path.join(dirpath, f), task_mapping[f], data)
 
     with open(SUMMARY_FILE, "w") as f:
         json.dump(data, f, sort_keys=True, indent=2)
