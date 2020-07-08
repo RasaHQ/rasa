@@ -244,8 +244,8 @@ def convert_to_ordered_dict(obj: Dict[Any, Any]) -> OrderedDict:
         elif isinstance(v, list):
             converted_list = []
             for element in v:
-                # recursion on list elements if they're `dict`s or `list`s
-                if isinstance(element, (dict, list)):
+                # recursion on list elements if they're `dict`s
+                if isinstance(element, dict):
                     converted_list.append(convert_to_ordered_dict(element))
                 else:
                     converted_list.append(element)
