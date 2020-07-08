@@ -1,0 +1,5 @@
+The NLU ``interpreter`` is now passed to the :ref:`policies` during training and
+inference time. Note that this requires an additional parameter ``interpreter`` in the
+method ``predict_action_probabilities`` of the ``Policy`` interface. In case a
+custom ``Policy`` implementation doesn't provide this parameter Rasa Open Source
+will print a warning and omit passing the ``interpreter``.

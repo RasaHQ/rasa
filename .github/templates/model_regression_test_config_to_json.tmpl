@@ -1,0 +1,31 @@
+{{- /*
+
+The template reads an issue/a PR comment and transforms a YAML code block into JSON.
+
+*/ -}}
+{{- $config := ((datasource "github").body | regexp.Find "```(?s)(.*)```" | regexp.ReplaceLiteral "```.*|\r" "" | yaml | toJSON | json) -}}
+{"include":[
+{{- $inc := coll.Slice -}}
+{{- $dataset := coll.Slice -}}
+{{- range $pair := $config.include -}}
+{{- /* use all available datasets if value is equal to all */ -}}
+{{- if eq (index $pair.dataset 0) "all" -}}
+{{ $dataset = (coll.Keys (datasource "mapping").datasets) }}
+{{- else -}}
+{{- $dataset = $pair.dataset -}}
+{{- end -}}
+{{- range $index_dataset, $value_dataset := $dataset -}}
+{{- range $index_config, $value_config := $pair.config -}}
+{{- /* use all available configurations if value is equal to all */ -}}
+{{- if eq $value_config "all" -}}
+{{- range $config_name, $config_file := (datasource "mapping").configurations -}}
+{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $config_name | toJSON) $inc) -}}
+{{- end -}}
+{{- else -}}
+{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $value_config | toJSON) $inc) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- join $inc "," -}}
+]}

@@ -1,0 +1,2 @@
+Convert entity values coming from ``DucklingHTTPExtractor`` to string during evaluation to avoid mismatches due to
+different types.

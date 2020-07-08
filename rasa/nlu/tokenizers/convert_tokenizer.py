@@ -26,6 +26,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Regular expression to detect tokens
+        "token_pattern": None,
         # Text will be tokenized with case sensitive as default
         "case_sensitive": True,
     }
@@ -82,7 +84,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         return tokens_out
 
-    def _clean_tokens(self, tokens: List[bytes]):
+    @staticmethod
+    def _clean_tokens(tokens: List[bytes]) -> List[Text]:
         """Encode tokens and remove special char added by ConveRT."""
 
         tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]

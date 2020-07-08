@@ -13,6 +13,8 @@ from rasa.nlu.constants import (
     TEXT,
     SPACY_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
 )
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
@@ -31,7 +33,7 @@ class SpacyFeaturizer(DenseFeaturizer):
 
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
-        # the CLS token. Available options: 'mean' and 'max'
+        # the complete utterance. Available options: 'mean' and 'max'
         POOLING: MEAN_POOLING
     }
 
@@ -73,12 +75,22 @@ class SpacyFeaturizer(DenseFeaturizer):
             logger.debug("No features present. You are using an empty spaCy model.")
             return
 
-        features = self._features_for_doc(doc)
-
-        cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
-        features = np.concatenate([features, cls_token_vec])
-
-        final_features = Features(
-            features, attribute, self.component_config[FEATURIZER_CLASS_ALIAS]
+        sequence_features = self._features_for_doc(doc)
+        sentence_features = self._calculate_sentence_features(
+            sequence_features, self.pooling_operation
         )
-        message.add_features(final_features)
+
+        final_sequence_features = Features(
+            sequence_features,
+            FEATURE_TYPE_SEQUENCE,
+            attribute,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
+        )
+        message.add_features(final_sequence_features)
+        final_sentence_features = Features(
+            sentence_features,
+            FEATURE_TYPE_SENTENCE,
+            attribute,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
+        )
+        message.add_features(final_sentence_features)

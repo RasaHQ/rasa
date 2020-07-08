@@ -3,7 +3,12 @@ import pytest
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import load_data
 from rasa.nlu.train import Trainer, Interpreter
-from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.utils.tensorflow.constants import (
+    EPOCHS,
+    MASKED_LM,
+    NUM_TRANSFORMER_LAYERS,
+    TRANSFORMER_SIZE,
+)
 from rasa.nlu.constants import RESPONSE_SELECTOR_PROPERTY_NAME
 
 
@@ -14,7 +19,18 @@ from rasa.nlu.constants import RESPONSE_SELECTOR_PROPERTY_NAME
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
             {"name": "ResponseSelector", EPOCHS: 1},
-        ]
+        ],
+        [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {
+                "name": "ResponseSelector",
+                EPOCHS: 1,
+                MASKED_LM: True,
+                TRANSFORMER_SIZE: 256,
+                NUM_TRANSFORMER_LAYERS: 1,
+            },
+        ],
     ],
 )
 def test_train_selector(pipeline, component_builder, tmpdir):
