@@ -272,7 +272,10 @@ class RulePolicy(MemoizationPolicy):
 
 
 def _should_run_rasa_default_action(tracker: DialogueStateTracker) -> Optional[Text]:
-    if tracker.latest_action_name != ACTION_LISTEN_NAME or not tracker.latest_message:
+    if (
+        not tracker.latest_action_name == ACTION_LISTEN_NAME
+        or not tracker.latest_message
+    ):
         return None
 
     return DEFAULT_ACTION_MAPPINGS.get(tracker.latest_message.intent.get("name"))
