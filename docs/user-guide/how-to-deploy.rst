@@ -57,7 +57,7 @@ Helm Chart
 ~~~~~~~~~~
 
 For assistants that will receive a lot of user traffic, setting up a Kubernetes or Openshift deployment via
-our helm charts is the best option. This provides a scalable architecture that is also straightforward to deploy.
+our Helm charts is the best option. This provides a scalable architecture that is also straightforward to deploy.
 However, you can also customize the Helm charts if you have specific requirements.
 
     - Default: Read the `Helm Chart Installation <https://rasa.com/docs/rasa-x/installation-and-setup/install/helm-chart/>`_ docs.
@@ -76,7 +76,7 @@ You can also run Rasa X in a Docker Compose setup, without the cluster environme
 for doing so, as well as manual instructions for any custom setups.
 
     - Default: Read the `Docker Compose Install Script <https://rasa.com/docs/rasa-x/installation-and-setup/install/docker-compose/#docker-compose-install-script>`_ docs or watch the `Masterclass Video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ on deploying Rasa X.
-    - Custom: Read the docs `Docker Compose Manual Install <https://rasa.com/docs/rasa-x/installation-and-setup/install/docker-compose/#docker-compose-manual-install>`_ documentation for full customization options.
+    - Custom: Read the `Docker Compose Manual Install <https://rasa.com/docs/rasa-x/installation-and-setup/install/docker-compose/#docker-compose-manual-install>`_ documentation for full customization options.
 
 Rasa Open Source Only Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -188,6 +188,6 @@ How you reference the custom action image will depend on your deployment. Pick t
 your deployment:
 
     - `Server Quick-Install <https://rasa.com/docs/rasa-x/installation-and-setup/customize/#quick-install-script-customizing>`_
-    - `Helm Chart <https://rasa.com/docs/rasa-x/installation-and-setup/customize/#helm-chart-connect-custom-action-server/>`_
+    - `Helm Chart <https://rasa.com/docs/rasa-x/installation-and-setup/customize/#adding-a-custom-action-server>`_
     - `Docker Compose <https://rasa.com/docs/rasa-x/installation-and-setup/customize/#connecting-a-custom-action-server>`_
     - :ref:`Rasa Open Source Only <running-multiple-services>`
