@@ -9,13 +9,7 @@ from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.loading import (
-    guess_format,
-    UNK,
-    RASA_YAML,
-    JSON,
-    MARKDOWN,
-)
+from rasa.nlu.training_data.loading import guess_format, UNK, RASA_YAML, JSON, MARKDOWN
 from rasa.nlu.training_data.util import get_file_format
 
 
@@ -190,13 +184,26 @@ def test_train_test_split(filepaths):
     td = training_data_from_paths(filepaths, language="en")
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
+
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
 
     td_train, td_test = td.train_test_split(train_frac=0.8)
 
-    assert len(td_train.training_examples) == 35
-    assert len(td_test.training_examples) == 11
+    assert len(td_test.training_examples) + len(td_train.training_examples) == 46
+    assert len(td_train.training_examples) == 34
+    assert len(td_test.training_examples) == 12
+
+    assert len(td.examples_per_intent.keys()) == len(td_test.examples_per_intent.keys())
+    assert len(td.examples_per_intent.keys()) == len(
+        td_train.examples_per_intent.keys()
+    )
+    assert len(td.examples_per_response.keys()) == len(
+        td_test.examples_per_response.keys()
+    )
+    assert len(td.examples_per_response.keys()) == len(
+        td_train.examples_per_response.keys()
+    )
 
 
 @pytest.mark.parametrize(
