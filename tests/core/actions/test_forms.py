@@ -1,3 +1,6 @@
+from typing import Dict, Text
+
+import pytest
 from aioresponses import aioresponses
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -224,3 +227,106 @@ def test_temporary_tracker():
 
     assert extra_slot in temp_tracker.slots.keys()
     assert len(temp_tracker.events) == 2
+
+
+def test_extract_requested_slot_default():
+    """Test default extraction of a slot value from entity with the same name
+    """
+    form = FormAction("some form", None)
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            UserUttered(
+                "bla", entities=[{"entity": "some_slot", "value": "some_value"}]
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_requested_slot(tracker, Domain.empty())
+    assert slot_values == {"some_slot": "some_value"}
+
+
+@pytest.mark.parametrize(
+    "slot_mapping, expected_value",
+    [
+        (
+            {"type": "from_entity", "entity": "some_slot", "intent": "greet"},
+            "some_value",
+        ),
+        (
+            {"type": "from_intent", "intent": "greet", "value": "other_value"},
+            "other_value",
+        ),
+        ({"type": "from_text"}, "bla"),
+        ({"type": "from_text", "intent": "greet"}, "bla"),
+        ({"type": "from_text", "not_intent": "other"}, "bla"),
+    ],
+)
+def test_extract_requested_slot_when_mapping_applies(
+    slot_mapping: Dict, expected_value: Text
+):
+    """Test extraction of a slot value from entity with the different name
+        and certain intent
+    """
+    form_name = "some_form"
+    entity_name = "some_slot"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_dict({"forms": [{form_name: {entity_name: [slot_mapping]}}]})
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            UserUttered(
+                "bla",
+                intent={"name": "greet", "confidence": 1.0},
+                entities=[{"entity": entity_name, "value": "some_value"}],
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_requested_slot(tracker, domain)
+    # check that the value was extracted for correct intent
+    assert slot_values == {"some_slot": expected_value}
+
+
+@pytest.mark.parametrize(
+    "slot_mapping",
+    [
+        {"type": "from_entity", "entity": "some_slot", "intent": "some_intent"},
+        {"type": "from_intent", "intent": "some_intent", "value": "some_value"},
+        {"type": "from_text", "intent": "other"},
+        {"type": "from_text", "not_intent": "greet"},
+    ],
+)
+def test_extract_requested_slot_mapping_does_not_apply(slot_mapping: Dict):
+    """Test extraction of a slot value from entity with the different name
+        and certain intent
+    """
+    form_name = "some_form"
+    entity_name = "some_slot"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_dict({"forms": [{form_name: {entity_name: [slot_mapping]}}]})
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            UserUttered(
+                "bla",
+                intent={"name": "greet", "confidence": 1.0},
+                entities=[{"entity": entity_name, "value": "some_value"}],
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_requested_slot(tracker, domain)
+    # check that the value was not extracted for incorrect intent
+    assert slot_values == {}

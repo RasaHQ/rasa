@@ -22,7 +22,7 @@ from rasa.core.actions.action import (
     ACTION_BACK_NAME,
     ACTION_RESTART_NAME,
 )
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -90,17 +90,14 @@ class PolicyEnsemble:
     ) -> None:
         """Check for elements that only work with certain policy/domain combinations."""
 
-        from rasa.core.policies.form_policy import FormPolicy
         from rasa.core.policies.mapping_policy import MappingPolicy
         from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 
-        policies_needing_validation = [
-            FormPolicy,
-            MappingPolicy,
-            TwoStageFallbackPolicy,
-        ]
+        policies_needing_validation = [MappingPolicy, TwoStageFallbackPolicy]
         for policy in policies_needing_validation:
             policy.validate_against_domain(ensemble, domain)
+
+        _check_policy_for_forms_available(domain, ensemble)
 
     def _check_priorities(self) -> None:
         """Checks for duplicate policy priorities within PolicyEnsemble."""
@@ -400,6 +397,8 @@ class PolicyEnsemble:
                     "".format(policy_name)
                 )
 
+        cls._assert_rule_policy_not_used_with_other_rule_like_policy(parsed_policies)
+
         return parsed_policies
 
     @classmethod
@@ -425,6 +424,37 @@ class PolicyEnsemble:
         )
 
         return state_featurizer_func, state_featurizer_config
+
+    @staticmethod
+    def _assert_rule_policy_not_used_with_other_rule_like_policy(
+        policies: List[Policy],
+    ) -> None:
+        if not any(isinstance(policy, RulePolicy) for policy in policies):
+            return
+
+        from rasa.core.policies.mapping_policy import MappingPolicy
+        from rasa.core.policies.form_policy import FormPolicy
+        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+
+        policies_not_be_used_with_rule_policy = (
+            MappingPolicy,
+            FormPolicy,
+            FallbackPolicy,
+            TwoStageFallbackPolicy,
+        )
+
+        if any(
+            isinstance(policy, policies_not_be_used_with_rule_policy)
+            for policy in policies
+        ):
+            # TODO: Add link to the RulePolicy documentation
+            raise InvalidPolicyConfig(
+                "It is not possible to use the RulePolicy with "
+                "other policies which implement rule-like "
+                "behavior. Either re-implement the desired "
+                "behavior as rules or remove the RulePolicy from"
+                "your policy configuration."
+            )
 
 
 class Prediction(NamedTuple):
@@ -659,6 +689,29 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         logger.debug(f"Predicted next action using {policy_name}")
         return probabilities, policy_name
+
+
+def _check_policy_for_forms_available(
+    domain: Domain, ensemble: Optional["PolicyEnsemble"]
+) -> None:
+    if not ensemble:
+        return
+
+    from rasa.core.policies.form_policy import FormPolicy
+
+    suited_policies_for_forms = (FormPolicy, RulePolicy)
+
+    has_policy_for_forms = ensemble is not None and any(
+        isinstance(policy, suited_policies_for_forms) for policy in ensemble.policies
+    )
+
+    if domain.form_names and not has_policy_for_forms:
+        raise InvalidDomain(
+            "You have defined a form action, but haven't added the "
+            "FormPolicy to your policy ensemble. Either remove all "
+            "forms from your domain or exclude the FormPolicy from your "
+            "policy configuration."
+        )
 
 
 class InvalidPolicyConfig(Exception):

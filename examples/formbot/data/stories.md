@@ -96,6 +96,7 @@
     - slot{"feedback": "great"}
     - form{"name": null}
     - slot{"requested_slot": null}
+    - utter_submit
     - utter_slots_values
 * thankyou
     - utter_noworries
