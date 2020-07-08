@@ -910,6 +910,14 @@ python-versions = ">=3.6"
 version = "2020.6.5"
 
 [[package]]
+category = "dev"
+description = "Turn HTML into equivalent Markdown-structured text."
+name = "html2text"
+optional = false
+python-versions = ">=3.5"
+version = "2020.1.16"
+
+[[package]]
 category = "main"
 description = "A comprehensive HTTP client library."
 name = "httplib2"
@@ -1761,6 +1769,17 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.20"
 
 [[package]]
+category = "dev"
+description = "The kitchen sink of Python utility libraries for doing \"stuff\" in a functional way. Based on the Lo-Dash Javascript library."
+name = "pydash"
+optional = false
+python-versions = "*"
+version = "4.8.0"
+
+[package.extras]
+dev = ["coverage", "flake8", "mock", "pylint", "pytest", "pytest-cov", "sphinx", "sphinx-rtd-theme", "tox", "twine", "wheel"]
+
+[[package]]
 category = "main"
 description = "Python interface to Graphviz's Dot"
 name = "pydot"
@@ -2171,6 +2190,7 @@ version = "0.7.26"
 
 [package.source]
 reference = "rasa-pypi"
+type = "legacy"
 url = "https://pypi.rasa.com/simple"
 
 [[package]]
@@ -2605,6 +2625,25 @@ Sphinx = ">=2.1"
 test = ["pytest (>=3.1.0)", "typing-extensions (>=3.5)", "sphobjinv (>=2.0)", "dataclasses"]
 type_comments = ["typed-ast (>=1.4.0)"]
 
+[[package]]
+category = "dev"
+description = "sphinx builder that outputs markdown files"
+name = "sphinx-markdown-builder"
+optional = false
+python-versions = "*"
+version = "0.5.4"
+
+[package.dependencies]
+html2text = "*"
+pydash = "*"
+sphinx = "*"
+unify = "*"
+yapf = "*"
+
+[package.source]
+reference = "e053e9f1af57ab56bf0fcfe002405a4cd3d5f761"
+type = "git"
+url = "https://github.com/RasaHQ/sphinx-markdown-builder.git"
 [[package]]
 category = "dev"
 description = "Read the Docs theme for Sphinx"
@@ -3188,6 +3227,25 @@ python-versions = ">=3.5"
 version = "3.0.0"
 
 [[package]]
+category = "dev"
+description = "Modifies strings to all use the same (single/double) quote where possible."
+name = "unify"
+optional = false
+python-versions = "*"
+version = "0.5"
+
+[package.dependencies]
+untokenize = "*"
+
+[[package]]
+category = "dev"
+description = "Transforms tokens into original source code (while preserving whitespace)."
+name = "untokenize"
+optional = false
+python-versions = "*"
+version = "0.1.1"
+
+[[package]]
 category = "main"
 description = "URI templates"
 name = "uritemplate"
@@ -3326,6 +3384,14 @@ name = "xmltodict"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "0.12.0"
+
+[[package]]
+category = "dev"
+description = "A formatter for Python code."
+name = "yapf"
+optional = false
+python-versions = "*"
+version = "0.30.0"
 
 [[package]]
 category = "main"
@@ -3824,6 +3890,10 @@ hstspreload = [
     {file = "hstspreload-2020.6.5-py3-none-any.whl", hash = "sha256:9850f199a4678bbc6a392255948d2435b706bc8a7e40df0f84ac2f7348cf4195"},
     {file = "hstspreload-2020.6.5.tar.gz", hash = "sha256:2858151b4f77322c6a61312abccead20217b1169ae0855753c0da45da2049329"},
 ]
+html2text = [
+    {file = "html2text-2020.1.16-py3-none-any.whl", hash = "sha256:c7c629882da0cf377d66f073329ccf34a12ed2adf0169b9285ae4e63ef54c82b"},
+    {file = "html2text-2020.1.16.tar.gz", hash = "sha256:e296318e16b059ddb97f7a8a1d6a5c1d7af4544049a01e261731d2d5cc277bbb"},
+]
 httplib2 = [
     {file = "httplib2-0.18.1-py3-none-any.whl", hash = "sha256:ca2914b015b6247791c4866782fa6042f495b94401a0f0bd3e1d6e0ba2236782"},
     {file = "httplib2-0.18.1.tar.gz", hash = "sha256:8af66c1c52c7ffe1aa5dc4bcd7c769885254b0756e6e69f953c7f0ab49a70ba3"},
@@ -3963,16 +4033,19 @@ kiwisolver = [
     {file = "kiwisolver-1.2.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:443c2320520eda0a5b930b2725b26f6175ca4453c61f739fef7a5847bd262f74"},
     {file = "kiwisolver-1.2.0-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:efcf3397ae1e3c3a4a0a0636542bcad5adad3b1dd3e8e629d0b6e201347176c8"},
     {file = "kiwisolver-1.2.0-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:fccefc0d36a38c57b7bd233a9b485e2f1eb71903ca7ad7adacad6c28a56d62d2"},
+    {file = "kiwisolver-1.2.0-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:be046da49fbc3aa9491cc7296db7e8d27bcf0c3d5d1a40259c10471b014e4e0c"},
     {file = "kiwisolver-1.2.0-cp36-none-win32.whl", hash = "sha256:60a78858580761fe611d22127868f3dc9f98871e6fdf0a15cc4203ed9ba6179b"},
     {file = "kiwisolver-1.2.0-cp36-none-win_amd64.whl", hash = "sha256:556da0a5f60f6486ec4969abbc1dd83cf9b5c2deadc8288508e55c0f5f87d29c"},
     {file = "kiwisolver-1.2.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:7cc095a4661bdd8a5742aaf7c10ea9fac142d76ff1770a0f84394038126d8fc7"},
     {file = "kiwisolver-1.2.0-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:c955791d80e464da3b471ab41eb65cf5a40c15ce9b001fdc5bbc241170de58ec"},
     {file = "kiwisolver-1.2.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:603162139684ee56bcd57acc74035fceed7dd8d732f38c0959c8bd157f913fec"},
+    {file = "kiwisolver-1.2.0-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:63f55f490b958b6299e4e5bdac66ac988c3d11b7fafa522800359075d4fa56d1"},
     {file = "kiwisolver-1.2.0-cp37-none-win32.whl", hash = "sha256:03662cbd3e6729f341a97dd2690b271e51a67a68322affab12a5b011344b973c"},
     {file = "kiwisolver-1.2.0-cp37-none-win_amd64.whl", hash = "sha256:4eadb361baf3069f278b055e3bb53fa189cea2fd02cb2c353b7a99ebb4477ef1"},
     {file = "kiwisolver-1.2.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:c31bc3c8e903d60a1ea31a754c72559398d91b5929fcb329b1c3a3d3f6e72113"},
     {file = "kiwisolver-1.2.0-cp38-cp38-manylinux1_i686.whl", hash = "sha256:d52b989dc23cdaa92582ceb4af8d5bcc94d74b2c3e64cd6785558ec6a879793e"},
     {file = "kiwisolver-1.2.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:e586b28354d7b6584d8973656a7954b1c69c93f708c0c07b77884f91640b7657"},
+    {file = "kiwisolver-1.2.0-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:38d05c9ecb24eee1246391820ed7137ac42a50209c203c908154782fced90e44"},
     {file = "kiwisolver-1.2.0-cp38-none-win32.whl", hash = "sha256:d069ef4b20b1e6b19f790d00097a5d5d2c50871b66d10075dab78938dc2ee2cf"},
     {file = "kiwisolver-1.2.0-cp38-none-win_amd64.whl", hash = "sha256:18d749f3e56c0480dccd1714230da0f328e6e4accf188dd4e6884bdd06bf02dd"},
     {file = "kiwisolver-1.2.0.tar.gz", hash = "sha256:247800260cd38160c362d211dcaf4ed0f7816afb5efe56544748b21d6ad6d17f"},
@@ -4314,6 +4387,10 @@ pycparser = [
     {file = "pycparser-2.20-py2.py3-none-any.whl", hash = "sha256:7582ad22678f0fcd81102833f60ef8d0e57288b6b5fb00323d101be910e35705"},
     {file = "pycparser-2.20.tar.gz", hash = "sha256:2d475327684562c3a96cc71adf7dc8c4f0565175cf86b6d7a404ff4c771f15f0"},
 ]
+pydash = [
+    {file = "pydash-4.8.0-py2.py3-none-any.whl", hash = "sha256:611ad40e3b11fb57396cca4a55ea04641200a1dd632c3c7e2c14849bee386625"},
+    {file = "pydash-4.8.0.tar.gz", hash = "sha256:546afa043ed1defa3122383bebe8b7072f43554ccc5f0c4360638f99e5ed7327"},
+]
 pydot = [
     {file = "pydot-1.4.1-py2.py3-none-any.whl", hash = "sha256:67be714300c78fda5fd52f79ec994039e3f76f074948c67b5ff539b433ad354f"},
     {file = "pydot-1.4.1.tar.gz", hash = "sha256:d49c9d4dd1913beec2a997f831543c8cbd53e535b1a739e921642fe416235f01"},
@@ -4562,6 +4639,7 @@ regex = [
     {file = "regex-2020.5.14.tar.gz", hash = "sha256:ce450ffbfec93821ab1fea94779a8440e10cf63819be6e176eb1973a6017aff5"},
 ]
 requests = [
+    {file = "requests-2.23.0-py2.7.egg", hash = "sha256:5d2d0ffbb515f39417009a46c14256291061ac01ba8f875b90cad137de83beb4"},
     {file = "requests-2.23.0-py2.py3-none-any.whl", hash = "sha256:43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee"},
     {file = "requests-2.23.0.tar.gz", hash = "sha256:b3f43d496c6daba4493e7c431722aeb7dbc6288f52a6e04e7b6023b0247817e6"},
 ]
@@ -4755,6 +4833,7 @@ sphinx-autodoc-typehints = [
     {file = "sphinx-autodoc-typehints-1.10.3.tar.gz", hash = "sha256:a6b3180167479aca2c4d1ed3b5cb044a70a76cccd6b38662d39288ebd9f0dff0"},
     {file = "sphinx_autodoc_typehints-1.10.3-py3-none-any.whl", hash = "sha256:27c9e6ef4f4451766ab8d08b2d8520933b97beb21c913f3df9ab2e59b56e6c6c"},
 ]
+sphinx-markdown-builder = []
 sphinx-rtd-theme = []
 sphinx-tabs = [
     {file = "sphinx-tabs-1.1.13.tar.gz", hash = "sha256:7ad881daa4d18799b254db4aa7feeb9d30256cbccf7d4f3de746d9fcc14e0196"},
@@ -5042,6 +5121,12 @@ ujson = [
     {file = "ujson-3.0.0-cp38-cp38-win_amd64.whl", hash = "sha256:c841a6450d64c24c64cbcca429bab22cdb6daef5eaddfdfebe798a5e9e5aff4c"},
     {file = "ujson-3.0.0.tar.gz", hash = "sha256:e0199849d61cc6418f94d52a314c6a27524d65e82174d2a043fb718f73d1520d"},
 ]
+unify = [
+    {file = "unify-0.5.tar.gz", hash = "sha256:8ddce812b2457212b7598fe574c9e6eb3ad69710f445391338270c7f8a71723c"},
+]
+untokenize = [
+    {file = "untokenize-0.1.1.tar.gz", hash = "sha256:3865dbbbb8efb4bb5eaa72f1be7f3e0be00ea8b7f125c69cbd1f5fda926f37a2"},
+]
 uritemplate = [
     {file = "uritemplate-3.0.1-py2.py3-none-any.whl", hash = "sha256:07620c3f3f8eed1f12600845892b0e036a2420acf513c53f7de0abd911a5894f"},
     {file = "uritemplate-3.0.1.tar.gz", hash = "sha256:5af8ad10cec94f215e3f48112de2022e1d5a37ed427fbd88652fa908f2ab7cae"},
@@ -5110,6 +5195,10 @@ wrapt = [
 xmltodict = [
     {file = "xmltodict-0.12.0-py2.py3-none-any.whl", hash = "sha256:8bbcb45cc982f48b2ca8fe7e7827c5d792f217ecf1792626f808bf41c3b86051"},
     {file = "xmltodict-0.12.0.tar.gz", hash = "sha256:50d8c638ed7ecb88d90561beedbf720c9b4e851a9fa6c47ebd64e99d166d8a21"},
+]
+yapf = [
+    {file = "yapf-0.30.0-py2.py3-none-any.whl", hash = "sha256:3abf61ba67cf603069710d30acbc88cfe565d907e16ad81429ae90ce9651e0c9"},
+    {file = "yapf-0.30.0.tar.gz", hash = "sha256:3000abee4c28daebad55da6c85f3cd07b8062ce48e2e9943c8da1b9667d48427"},
 ]
 yarl = [
     {file = "yarl-1.4.2-cp35-cp35m-macosx_10_13_x86_64.whl", hash = "sha256:3ce3d4f7c6b69c4e4f0704b32eca8123b9c58ae91af740481aa57d7857b5e41b"},
