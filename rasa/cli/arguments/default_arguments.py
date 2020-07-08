@@ -56,8 +56,8 @@ def add_domain_param(
         "--domain",
         type=str,
         default=DEFAULT_DOMAIN_PATH,
-        help="Domain specification. It can be a single 'yaml' file, or a directory "
-        "that contains several files with domain specification in it. The content "
+        help="Domain specification. This can be a single YAML file, or a directory "
+        "that contains several files with domain specifications in it. The content "
         "of these files will be read and merged together.",
     )
 
