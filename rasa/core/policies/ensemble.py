@@ -397,6 +397,8 @@ class PolicyEnsemble:
                     "".format(policy_name)
                 )
 
+        cls._assert_rule_policy_not_used_with_other_rule_like_policy(parsed_policies)
+
         return parsed_policies
 
     @classmethod
@@ -422,6 +424,37 @@ class PolicyEnsemble:
         )
 
         return state_featurizer_func, state_featurizer_config
+
+    @staticmethod
+    def _assert_rule_policy_not_used_with_other_rule_like_policy(
+        policies: List[Policy],
+    ) -> None:
+        if not any(isinstance(policy, RulePolicy) for policy in policies):
+            return
+
+        from rasa.core.policies.mapping_policy import MappingPolicy
+        from rasa.core.policies.form_policy import FormPolicy
+        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+
+        policies_not_be_used_with_rule_policy = (
+            MappingPolicy,
+            FormPolicy,
+            FallbackPolicy,
+            TwoStageFallbackPolicy,
+        )
+
+        if any(
+            isinstance(policy, policies_not_be_used_with_rule_policy)
+            for policy in policies
+        ):
+            # TODO: Add link to the RulePolicy documentation
+            raise InvalidPolicyConfig(
+                "It is not possible to use the RulePolicy with "
+                "other policies which implement rule-like "
+                "behavior. Either re-implement the desired "
+                "behavior as rules or remove the RulePolicy from"
+                "your policy configuration."
+            )
 
 
 class Prediction(NamedTuple):
