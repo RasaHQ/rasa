@@ -10,7 +10,7 @@ Event Brokers
 
 An event broker allows you to connect your running assistant to other services that process the data coming 
 in from conversations. For example, you could `connect your live assistant to 
-Rasa X <https://rasa.com/docs/rasa-x/installation-and-setup/existing-deployment/>`_
+Rasa X <https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment/>`_
 to review and annotate conversations or forward messages to an external analytics
 service. The event broker publishes messages to a message streaming service, 
 also known as a message broker, to forward Rasa :ref:`events` from the Rasa server to other services.
