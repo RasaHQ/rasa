@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
 
 import ruamel.yaml as yaml
-from ruamel.yaml import Representer
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
 
@@ -261,7 +260,7 @@ def convert_to_ordered_dict(obj: Dict[Any, Any]) -> OrderedDict:
 def fix_yaml_representer() -> None:
     """Ensure that `OrderedDict`s are dumped so that the order of keys is respected."""
 
-    def _order_rep(dumper: Representer, _data: Dict[Any, Any]) -> Any:
+    def _order_rep(dumper: yaml.Representer, _data: Dict[Any, Any]) -> Any:
         return dumper.represent_mapping(
             "tag:yaml.org,2002:map", _data.items(), flow_style=False
         )
