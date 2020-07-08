@@ -235,22 +235,8 @@ Natural Language Understanding pipeline" />
               <a href="../../../1.10.1/nlu/components/">1.10.1</a>
               <a href="../../../1.10.0/nlu/components/">1.10.0</a>
               <a href="../../../1.9.7/nlu/components/">1.9.7</a>
-              <a href="../../../1.9.6/nlu/components/">1.9.6</a>
-              <a href="../../../1.9.5/nlu/components/">1.9.5</a>
-              <a href="../../../1.9.4/nlu/components/">1.9.4</a>
-              <a href="../../../1.9.3/nlu/components/">1.9.3</a>
-              <a href="../../../1.9.2/nlu/components/">1.9.2</a>
-              <a href="../../../1.9.1/nlu/components/">1.9.1</a>
-              <a href="../../../1.9.0/nlu/components/">1.9.0</a>
               <a href="../../../1.8.3/nlu/components/">1.8.3</a>
-              <a href="../../../1.8.2/nlu/components/">1.8.2</a>
-              <a href="../../../1.8.1/nlu/components/">1.8.1</a>
-              <a href="../../../1.8.0/nlu/components/">1.8.0</a>
               <a href="../../../1.7.4/nlu/components/">1.7.4</a>
-              <a href="../../../1.7.3/nlu/components/">1.7.3</a>
-              <a href="../../../1.7.2/nlu/components/">1.7.2</a>
-              <a href="../../../1.7.1/nlu/components/">1.7.1</a>
-              <a href="../../../1.7.0/nlu/components/">1.7.0</a>
               <a href="../../../1.6.2/nlu/components/">1.6.2</a>
               <a href="../../../1.5.3/nlu/components/">1.5.3</a>
               <a href="../../../1.4.6/nlu/components/">1.4.6</a>
@@ -525,16 +511,12 @@ labels are tokenized.</p></li>
 <dd class="field-even"><p>Creates a token for every whitespace separated character sequence.</p>
 </dd>
 <dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><p>Make the tokenizer case insensitive by adding the <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">False</span></code> option, the
-default being <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">True</span></code>.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
+<dd class="field-odd"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
   <span class="c1"># Flag to check whether to split intents</span>
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
-  <span class="c1"># Text will be tokenized with case sensitive as default</span>
-  <span class="s">&quot;case_sensitive&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
   <span class="c1"># Regular expression to detect tokens</span>
   <span class="s">&quot;token_pattern&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
@@ -662,16 +644,12 @@ be used if your training data is in English language.</p>
 </div>
 </dd>
 <dt class="field-odd">Configuration</dt>
-<dd class="field-odd"><p>Make the tokenizer case insensitive by adding the <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">False</span></code> option, the
-default being <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">True</span></code>.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
+<dd class="field-odd"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ConveRTTokenizer&quot;</span>
   <span class="c1"># Flag to check whether to split intents</span>
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="c1"># Symbol on which intent should be split</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
-  <span class="c1"># Text will be tokenized with case sensitive as default</span>
-  <span class="s">&quot;case_sensitive&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
   <span class="c1"># Regular expression to detect tokens</span>
   <span class="s">&quot;token_pattern&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
@@ -894,8 +872,12 @@ Regex features for entity extraction are currently only supported by the <a clas
 <a class="reference internal" href="#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> components!</p>
 </dd>
 <dt class="field-even">Configuration</dt>
-<dd class="field-even"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
+<dd class="field-even"><p>Make the featurizer case insensitive by adding the <code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">False</span></code> option, the default being
+<code class="docutils literal notranslate"><span class="pre">case_sensitive:</span> <span class="pre">True</span></code>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
+  <span class="c1"># Text will be processed with case sensitive as default</span>
+  <span class="s">&quot;case_sensitive&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
 </pre></div>
 </div>
 </dd>

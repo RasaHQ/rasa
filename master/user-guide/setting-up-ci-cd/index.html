@@ -235,22 +235,8 @@ and deployed with minimum manual effort" />
               <a href="../../../1.10.1/user-guide/setting-up-ci-cd/">1.10.1</a>
               <a href="../../../1.10.0/user-guide/setting-up-ci-cd/">1.10.0</a>
               <a href="../../../1.9.7/user-guide/setting-up-ci-cd/">1.9.7</a>
-              <a href="../../../1.9.6/user-guide/setting-up-ci-cd/">1.9.6</a>
-              <a href="../../../1.9.5/index/">1.9.5</a>
-              <a href="../../../1.9.4/index/">1.9.4</a>
-              <a href="../../../1.9.3/index/">1.9.3</a>
-              <a href="../../../1.9.2/index/">1.9.2</a>
-              <a href="../../../1.9.1/index/">1.9.1</a>
-              <a href="../../../1.9.0/index/">1.9.0</a>
               <a href="../../../1.8.3/index/">1.8.3</a>
-              <a href="../../../1.8.2/index/">1.8.2</a>
-              <a href="../../../1.8.1/index/">1.8.1</a>
-              <a href="../../../1.8.0/index/">1.8.0</a>
               <a href="../../../1.7.4/index/">1.7.4</a>
-              <a href="../../../1.7.3/index/">1.7.3</a>
-              <a href="../../../1.7.2/index/">1.7.2</a>
-              <a href="../../../1.7.1/index/">1.7.1</a>
-              <a href="../../../1.7.0/index/">1.7.0</a>
               <a href="../../../1.6.2/index/">1.6.2</a>
               <a href="../../../1.5.3/index/">1.5.3</a>
               <a href="../../../1.4.6/index/">1.4.6</a>
@@ -331,7 +317,7 @@ whatever Git repository you use.</p>
 </div>
 <div class="section" id="continuous-integration-ci">
 <h2><a class="toc-backref" href="#id7">Continuous Integration (CI)</a><a class="headerlink" href="#continuous-integration-ci" title="Permalink to this headline">¶</a></h2>
-<p>The best way to improve an assistant is with frequent <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/improve-assistant/">incremental updates</a>.
+<p>The best way to improve an assistant is with frequent <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/fix-problems">incremental updates</a>.
 No matter how small a change is, you want to be sure that it doesn’t introduce
 new problems or negatively impact the performance of your assistant.</p>
 <p>It is usually best to run CI checks on merge / pull requests or on commit. Most tests are
@@ -394,7 +380,7 @@ conversation fails.</p>
 cases you include, so you should continue to grow your set of test conversations
 as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test conversations
 to be representative of the true distribution of real conversations.
-Rasa X makes it easy to <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/improve-assistant.html#add-test-conversation">add test conversations based on real conversations</a>.</p>
+Rasa X makes it easy to <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests">add test conversations based on real conversations</a>.</p>
 <p>Note: End-to-end testing does <strong>not</strong> execute your action code. You will need to
 <a class="reference internal" href="#testing-action-code"><span class="std std-ref">test your action code</span></a> in a seperate step.</p>
 </div>
