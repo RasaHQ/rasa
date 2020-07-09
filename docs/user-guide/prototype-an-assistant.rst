@@ -33,6 +33,7 @@ you can also add or change examples for any of the other intents.
     :language: markdown
     :id: nlu
     :height: 550
+    :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping
 
     ## intent: greet
     - Hi
@@ -80,6 +81,7 @@ Leave the ``type`` field the same for any items you add.
     :language: yaml
     :id: form
     :height: 150
+    :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping
 
     - newsletter_form:
         email:
@@ -104,6 +106,7 @@ to account for the user saying "no" when asked if they want to subscribe to the 
     :language: markdown
     :id: stories
     :height: 250
+    :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping
 
     ## happy path
     * greet
@@ -130,6 +133,7 @@ replace the last three responses with the response you used in your stories abov
     :language: yaml
     :id: responses
     :height: 250
+    :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping
 
     responses:
       utter_greet:
