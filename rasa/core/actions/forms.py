@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 # TODO: Temporary implementation as part of the RulePolicy prototype
 # - add more tests
 # - simplify / refactor
-# - add proper docstrings
 
 
 class FormAction(LoopAction):
@@ -307,7 +306,7 @@ class FormAction(LoopAction):
             domain: The current model domain.
             output_channel: The output channel which can be used to send messages
                 to the user.
-            nlg: The `NaturalLanguageGenerator` to dispatch messages.
+            nlg:  `NaturalLanguageGenerator` to use for response generation.
 
         Returns:
             The validation events including potential bot messages and `SlotSet` events
@@ -486,50 +485,6 @@ class FormAction(LoopAction):
 
         return self._to_list(intent), self._to_list(not_intent)
 
-    async def _activate_if_required(
-        self,
-        tracker: "DialogueStateTracker",
-        domain: Domain,
-        output_channel: OutputChannel,
-        nlg: NaturalLanguageGenerator,
-    ) -> List[Event]:
-        """Activate form if the form is called for the first time.
-
-        If activating, validate any required slots that were filled before
-        form activation and return `Form` event with the name of the form, as well
-        as any `SlotSet` events from validation of pre-filled slots.
-        """
-
-        if tracker.active_loop.get("name") is not None:
-            logger.debug(f"The form '{tracker.active_loop}' is active")
-        else:
-            logger.debug("There is no active form")
-
-        if tracker.active_loop.get("name") == self.name():
-            return []
-        else:
-            logger.debug(f"Activated the form '{self.name()}'")
-            events = [Form(self.name())]
-
-            # collect values of required slots filled before activation
-            prefilled_slots = {}
-
-            for slot_name in self.required_slots(domain):
-                if not self._should_request_slot(tracker, slot_name):
-                    prefilled_slots[slot_name] = tracker.get_slot(slot_name)
-
-            if prefilled_slots:
-                logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
-                events.extend(
-                    await self.validate_slots(
-                        prefilled_slots, tracker, domain, output_channel, nlg
-                    )
-                )
-            else:
-                logger.debug("No pre-filled required slots to validate.")
-
-            return events
-
     async def _validate_if_required(
         self,
         tracker: "DialogueStateTracker",
@@ -558,9 +513,6 @@ class FormAction(LoopAction):
 
         return tracker.get_slot(slot_name) is None
 
-    def __str__(self) -> Text:
-        return f"FormAction('{self.name()}')"
-
     async def activate(
         self,
         output_channel: "OutputChannel",
@@ -568,6 +520,22 @@ class FormAction(LoopAction):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Activate form if the form is called for the first time.
+
+        If activating, validate any required slots that were filled before
+        form activation and return `Form` event with the name of the form, as well
+        as any `SlotSet` events from validation of pre-filled slots.
+
+        Args:
+            output_channel: The output channel which can be used to send messages
+                to the user.
+            nlg: `NaturalLanguageGenerator` to use for response generation.
+            tracker: Current conversation tracker of the user.
+            domain: Current model domain.
+
+        Returns:
+            Events from the activation.
+        """
         # collect values of required slots filled before activation
         prefilled_slots = {}
 
