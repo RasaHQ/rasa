@@ -449,6 +449,7 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         logger.debug(f"Request next slot '{slot_name}'")
 
+        # TODO: Make it possible to use a custom action to ask for the next slot
         action_to_ask_for_next_slot = action.action_from_name(
             self._name_of_utterance(domain, slot_name), None, domain.user_actions
         )
