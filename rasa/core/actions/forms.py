@@ -203,8 +203,8 @@ class FormAction(LoopAction):
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Dict[Text, Any]:
         """Extract the values of the other slots
-            if they are set by corresponding entities from the user input
-            else return None
+        if they are set by corresponding entities from the user input
+        else return `None`.
         """
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
@@ -254,7 +254,7 @@ class FormAction(LoopAction):
         self, tracker: "DialogueStateTracker", domain: Domain
     ) -> Dict[Text, Any]:
         """Extract the value of requested slot from a user input
-            else return None
+        else return `None`.
         """
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
@@ -402,9 +402,7 @@ class FormAction(LoopAction):
         nlg: NaturalLanguageGenerator,
         events_so_far: List[Event],
     ) -> List[Event]:
-        """Request the next slot and utter template if needed,
-            else return None"""
-
+        """Request the next slot and utter template if needed, else return `None`."""
         request_slot_events = []
 
         # If this is not `None` it means that the custom action specified a next slot
@@ -448,8 +446,8 @@ class FormAction(LoopAction):
         full_name = f"utter_ask_{self._form_name}_{slot_name}"
         if full_name in domain.action_names:
             return full_name
-        else:
-            return f"utter_ask_{slot_name}"
+
+        return f"utter_ask_{slot_name}"
 
     async def _ask_for_slot(
         self,
@@ -473,8 +471,7 @@ class FormAction(LoopAction):
     # helpers
     @staticmethod
     def _to_list(x: Optional[Any]) -> List[Any]:
-        """Convert object to a list if it is not a list,
-            None converted to empty list
+        """Convert object to a list if it is not a list, `None` converted to empty list.
         """
         if x is None:
             x = []
@@ -504,8 +501,9 @@ class FormAction(LoopAction):
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
     ) -> List[Event]:
-        """Return a list of events from `self.validate(...)`
-            if validation is required:
+        """Return a list of events from `self.validate(...)`.
+
+         Validation is required if:
             - the form is active
             - the form is called after `action_listen`
             - form validation was not cancelled
@@ -518,9 +516,9 @@ class FormAction(LoopAction):
         if need_validation:
             logger.debug(f"Validating user input '{tracker.latest_message}'.")
             return await self.validate(tracker, domain, output_channel, nlg)
-        else:
-            logger.debug("Skipping validation.")
-            return []
+
+        logger.debug("Skipping validation.")
+        return []
 
     @staticmethod
     def _should_request_slot(tracker: "DialogueStateTracker", slot_name: Text) -> bool:

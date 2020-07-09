@@ -1,14 +1,17 @@
-from typing import List
+from abc import ABC
+from typing import List, TYPE_CHECKING
 
 from rasa.core.actions import Action
-from rasa.core.channels import OutputChannel
-from rasa.core.domain import Domain
 from rasa.core.events import Event, Form
-from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker
+
+if TYPE_CHECKING:
+    from rasa.core.channels import OutputChannel
+    from rasa.core.domain import Domain
+    from rasa.core.nlg import NaturalLanguageGenerator
+    from rasa.core.trackers import DialogueStateTracker
 
 
-class LoopAction(Action):
+class LoopAction(Action, ABC):
     async def run(
         self,
         output_channel: "OutputChannel",

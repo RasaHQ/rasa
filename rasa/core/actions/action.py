@@ -30,16 +30,18 @@ from rasa.core.events import (
     ActionExecuted,
     Event,
     BotUttered,
+    SlotSet,
+    Form,
+    Restarted,
+    SessionStarted,
 )
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
-from typing import Coroutine, Union
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
     from rasa.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
-    from rasa.core.events import SlotSet
 
 logger = logging.getLogger(__name__)
 
@@ -351,8 +353,6 @@ class ActionRestart(ActionUtterTemplate):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        from rasa.core.events import Restarted
-
         # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
@@ -378,8 +378,6 @@ class ActionSessionStart(Action):
     ) -> List["SlotSet"]:
         """Fetch SlotSet events from tracker and carry over key, value and metadata."""
 
-        from rasa.core.events import SlotSet
-
         return [
             SlotSet(key=event.key, value=event.value, metadata=event.metadata)
             for event in tracker.applied_events()
@@ -393,8 +391,6 @@ class ActionSessionStart(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        from rasa.core.events import SessionStarted
-
         _events = [SessionStarted(metadata=self.metadata)]
 
         if domain.session_config.carry_over_slots:
@@ -422,8 +418,6 @@ class ActionDefaultFallback(ActionUtterTemplate):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        from rasa.core.events import UserUtteranceReverted
-
         # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
@@ -443,8 +437,6 @@ class ActionDeactivateForm(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        from rasa.core.events import Form, SlotSet
-
         return [Form(None), SlotSet(REQUESTED_SLOT, None)]
 
 

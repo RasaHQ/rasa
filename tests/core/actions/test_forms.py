@@ -418,8 +418,7 @@ def test_temporary_tracker():
 
 
 def test_extract_requested_slot_default():
-    """Test default extraction of a slot value from entity with the same name
-    """
+    """Test default extraction of a slot value from entity with the same name."""
     form = FormAction("some form", None)
 
     tracker = DialogueStateTracker.from_events(

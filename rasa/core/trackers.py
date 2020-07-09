@@ -346,7 +346,7 @@ class DialogueStateTracker:
 
         applied_events = []
 
-        for idx, event in enumerate(self.events):
+        for event in self.events:
             if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
@@ -375,8 +375,8 @@ class DialogueStateTracker:
 
     @staticmethod
     def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:
-        """Removes events from `done_events` until the first
-           occurrence `event_type` is found which is also removed."""
+        """Removes events from `done_events` until the first occurrence `event_type`
+        is found which is also removed."""
         # list gets modified - hence we need to copy events!
         for e in reversed(done_events[:]):
             del done_events[-1]
