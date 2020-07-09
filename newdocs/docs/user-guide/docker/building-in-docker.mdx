@@ -28,7 +28,7 @@ The only difference is that you’ll be running Rasa inside a Docker container, 
 the image `rasa/rasa`. To initialize your project, run:
 
 ```python
-docker run -v $(pwd):/app rasa/rasa:1.11.0a2-full init --no-prompt
+docker run -v $(pwd):/app rasa/rasa:1.11.0a3-full init --no-prompt
 ```
 
 What does this command mean?
@@ -38,7 +38,7 @@ What does this command mean?
   visible inside the container, and files created in the container will
   get synced back to your computer.
 
-* `rasa/rasa` is the name of the docker image to run. ‘1.11.0a2-full’ is the name of the tag,
+* `rasa/rasa` is the name of the docker image to run. ‘1.11.0a3-full’ is the name of the tag,
   which specifies the version and dependencies.
 
 * the Docker image has the `rasa` command as its entrypoint, which means you don’t
@@ -71,7 +71,7 @@ if you want to run the containers as a different user.
 To talk to your newly-trained assistant, run this command:
 
 ```python
-docker run -it -v $(pwd):/app rasa/rasa:1.11.0a2-full shell
+docker run -it -v $(pwd):/app rasa/rasa:1.11.0a3-full shell
 ```
 
 This will start a shell where you can chat to your assistant.
@@ -88,7 +88,7 @@ If you edit the NLU or Core training data or edit the `config.yml` file, you’l
 retrain your Rasa model. You can do so by running:
 
 ```python
-docker run -v $(pwd):/app rasa/rasa:1.11.0a2-full train --domain domain.yml --data data --out models
+docker run -v $(pwd):/app rasa/rasa:1.11.0a3-full train --domain domain.yml --data data --out models
 ```
 
 Here’s what’s happening in that command:
@@ -96,7 +96,7 @@ Here’s what’s happening in that command:
 * `-v $(pwd):/app`: Mounts your project directory into the Docker
   container so that Rasa can train a model on your training data
 
-* rasa/rasa:1.11.0a2-full: Use the Rasa image with the tag ‘1.11.0a2-full’
+* rasa/rasa:1.11.0a3-full: Use the Rasa image with the tag ‘1.11.0a3-full’
 
 * `train`: Execute the `rasa train` command within the container. For more
   information see [Command Line Interface](/docs/user-guide/command-line-interface).
@@ -111,7 +111,7 @@ You can also leave these out, since we are passing the default values.
 
 ### Choosing a Tag
 
-All `rasa/rasa` image tags start with a version number. The current version is 1.11.0a2. The tags are:
+All `rasa/rasa` image tags start with a version number. The current version is 1.11.0a3. The tags are:
 
 * `{version}`
 
@@ -203,7 +203,7 @@ actions:
 After updating your domain and stories, you have to retrain your model:
 
 ```python
-docker run -v $(pwd):/app rasa/rasa:1.11.0a2-full train
+docker run -v $(pwd):/app rasa/rasa:1.11.0a3-full train
 ```
 
 Your actions will run on a separate server from your Rasa server. First create a network to connect the two containers:
@@ -215,7 +215,7 @@ docker network create my-project
 You can then run the actions with the following command:
 
 ```python
-docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:1.10.1
+docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:1.10.2
 ```
 
 Here’s what’s happening in that command:
@@ -229,7 +229,7 @@ Here’s what’s happening in that command:
 
 * `--name action-server`: Gives the server a specific name for the rasa server to reference
 
-* rasa/rasa-sdk:1.10.1 : Uses the Rasa SDK image with the tag 1.10.1
+* rasa/rasa-sdk:1.10.2 : Uses the Rasa SDK image with the tag 1.10.2
 
 Because the action server is running in detached mode, if you want to stop the container,
 do it with `docker stop action-server`. You can also run `docker ps` at any time to see all
@@ -246,7 +246,7 @@ action_endpoint:
 Now you can talk to your bot again via the `shell` command:
 
 ```python
-docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:1.11.0a2-full shell
+docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:1.11.0a3-full shell
 ```
 
 :::note

@@ -18,35 +18,33 @@ which is omitted unless you provide the `--max-history` argument. Here is the li
 the script:
 
 ```text
-usage: rasa data validate [-h] [-v] [-vv] [--quiet]
-                          [--max-history MAX_HISTORY] [--fail-on-warnings]
-                          [-d DOMAIN] [--data DATA]
-                          {stories} ...
+Traceback (most recent call last):
+  File "/Users/ella/miniconda3/envs/rasa/lib/python3.7/site-packages/pkg_resources/__init__.py", line 584, in _build_master
+    ws.require(__requires__)
+  File "/Users/ella/miniconda3/envs/rasa/lib/python3.7/site-packages/pkg_resources/__init__.py", line 901, in require
+    needed = self.resolve(parse_requirements(requirements))
+  File "/Users/ella/miniconda3/envs/rasa/lib/python3.7/site-packages/pkg_resources/__init__.py", line 792, in resolve
+    raise VersionConflict(dist, req).with_context(dependent_req)
+pkg_resources.ContextualVersionConflict: (ujson 3.0.0 (/Users/ella/miniconda3/envs/rasa/lib/python3.7/site-packages), Requirement.parse('ujson<3.0,>=1.35'), {'rasa'})
 
-positional arguments:
-  {stories}
-    stories             Checks for inconsistencies in the story files.
+During handling of the above exception, another exception occurred:
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --max-history MAX_HISTORY
-                        Number of turns taken into account for story structure
-                        validation. (default: None)
-  --fail-on-warnings    Fail validation on warnings and errors. If omitted
-                        only errors will result in a non zero exit code.
-                        (default: False)
-  -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file). (default: domain.yml)
-  --data DATA           Path to the file or directory containing Rasa data.
-                        (default: data)
-
-Python Logging Options:
-  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
-                        None)
-  -vv, --debug          Print lots of debugging statements. Sets logging level
-                        to DEBUG. (default: None)
-  --quiet               Be quiet! Sets logging level to WARNING. (default:
-                        None)
+Traceback (most recent call last):
+  File "/Users/ella/miniconda3/envs/rasa/bin/rasa", line 6, in <module>
+    from pkg_resources import load_entry_point
+  File "/Users/ella/miniconda3/envs/rasa/lib/python3.7/site-packages/pkg_resources/__init__.py", line 3258, in <module>
+    @_call_aside
+  File "/Users/ella/miniconda3/envs/rasa/lib/python3.7/site-packages/pkg_resources/__init__.py", line 3242, in _call_aside
+    f(*args, **kwargs)
+  File "/Users/ella/miniconda3/envs/rasa/lib/python3.7/site-packages/pkg_resources/__init__.py", line 3271, in _initialize_master_working_set
+    working_set = WorkingSet._build_master()
+  File "/Users/ella/miniconda3/envs/rasa/lib/python3.7/site-packages/pkg_resources/__init__.py", line 586, in _build_master
+    return cls._build_from_requirements(__requires__)
+  File "/Users/ella/miniconda3/envs/rasa/lib/python3.7/site-packages/pkg_resources/__init__.py", line 599, in _build_from_requirements
+    dists = ws.resolve(reqs, Environment())
+  File "/Users/ella/miniconda3/envs/rasa/lib/python3.7/site-packages/pkg_resources/__init__.py", line 787, in resolve
+    raise DistributionNotFound(req, requirers)
+pkg_resources.DistributionNotFound: The 'ujson<3.0,>=1.35' distribution was not found and is required by rasa
 ```
 
 By default the validator searches only for errors in the data (e.g. the same

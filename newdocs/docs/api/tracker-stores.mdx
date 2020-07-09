@@ -142,7 +142,7 @@ extending the `TrackerStore` class.
   Copy the following into a file called `Dockerfile`:
 
   ```python
-  FROM rasa/rasa:1.11.0a2-full
+  FROM rasa/rasa:1.11.0a3-full
 
   # Switch to root user to install packages
   USER root
@@ -165,7 +165,7 @@ extending the `TrackerStore` class.
   Then build the docker image:
 
   ```python
-  docker build . -t rasa-oracle:1.11.0a2-oracle-full
+  docker build . -t rasa-oracle:1.11.0a3-oracle-full
   ```
 
   Now you can configure the tracker store in the `endpoints.yml` as described above,

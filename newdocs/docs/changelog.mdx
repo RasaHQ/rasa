@@ -14,6 +14,44 @@ You **may** edit previous change logs to fix problems like typo corrections or s
 You can find more information on how to add a new change log entry at
 https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 <!-- towncrier release notes start -->
+## [1.10.5] - 2020-07-02
+
+### Bugfixes
+
+* [#6119](https://github.com/rasahq/rasa/issues/6119): Explicitly remove all emojis which appear as unicode characters from the output of `regex.sub` inside `WhitespaceTokenizer`.
+
+## [1.10.4] - 2020-07-01
+
+### Bugfixes
+
+* [#5998](https://github.com/rasahq/rasa/issues/5998): `WhitespaceTokenizer` does not remove vowel signs in Hindi anymore.
+
+* [#6031](https://github.com/rasahq/rasa/issues/6031): Previously, specifying a lock store in the endpoint configuration with a type other than `redis` or `in_memory`
+  would lead to an `AttributeError: 'str' object has no attribute 'type'`. This bug is fixed now.
+
+* [#6032](https://github.com/rasahq/rasa/issues/6032): Fix `Interpreter parsed an intent ...` warning when using the `/model/parse`
+  endpoint with an NLU-only model.
+
+* [#6042](https://github.com/rasahq/rasa/issues/6042): Convert entity values coming from any entity extractor to string during evaluation to avoid mismatches due to
+  different types.
+
+* [#6078](https://github.com/rasahq/rasa/issues/6078): The assistant will respond through the webex channel to any user (room) communicating to it. Before the bot responded only to a fixed `roomId` set in the `credentials.yml` config file.
+
+## [1.10.3] - 2020-06-12
+
+### Improvements
+
+* [#3900](https://github.com/rasahq/rasa/issues/3900): Reduced duplicate logs and warnings when running `rasa train`.
+
+### Bugfixes
+
+* [#5972](https://github.com/rasahq/rasa/issues/5972): Remove the `clean_up_entities` method from the `DIETClassifier` and `CRFEntityExtractor` as it let to incorrect
+  entity predictions.
+
+* [#5976](https://github.com/rasahq/rasa/issues/5976): Fix server crashes that occurred when Rasa Open Source pulls a model from a
+  [model server](/docs/user-guide/configuring-http-api#server-fetch-from-server) and an exception was thrown during
+  model loading (such as a domain with invalid YAML).
+
 ## [1.10.2] - 2020-06-03
 
 ### Bugfixes
