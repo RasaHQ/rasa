@@ -577,7 +577,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         """
         if slice_length is None:
             return states
-        
+
         slice_end = len(states)
         slice_start = max(0, slice_end - slice_length)
         padding = [None] * max(0, slice_length - slice_end)
