@@ -102,16 +102,24 @@ class RulePolicy(MemoizationPolicy):
 
         return True
 
-    def _rule_is_good(self, key: Text, idx: int, state: Dict[Text, float]) -> bool:
+    def _rule_is_good(
+        self, rule_key: Text, turn_index: int, state: Dict[Text, float]
+    ) -> bool:
+        """Check if rule is satisfied with current state at turn."""
+
+        # turn_index goes back in time
+        rule_turns = list(reversed(rule_key.split("|")))
+
         return bool(
-            idx >= len(key.split("|"))
-            or (not list(reversed(key.split("|")))[idx] and not state)
+            # rule is shorter than current turn index
+            turn_index >= len(rule_turns)
+            # current rule and state turns are empty
+            or (not rule_turns[turn_index] and not state)
+            # check that current rule turn features are present in current state turn
             or (
-                list(reversed(key.split("|")))[idx]
+                rule_turns[turn_index]
                 and state
-                and self._features_in_state(
-                    list(reversed(key.split("|")))[idx].split(), state
-                )
+                and self._features_in_state(rule_turns[turn_index].split(), state)
             )
         )
 
