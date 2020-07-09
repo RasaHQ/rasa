@@ -17,11 +17,11 @@ class LoopAction(Action):
         domain: "Domain",
     ) -> List[Event]:
         events = []
+        # we should either activate or validate
         if not await self.is_activated(output_channel, nlg, tracker, domain):
             events += self._default_activation_events()
             events += await self.activate(output_channel, nlg, tracker, domain)
-
-        if not await self.is_done(output_channel, nlg, tracker, domain, events):
+        elif not await self.is_done(output_channel, nlg, tracker, domain, events):
             events += await self.do(output_channel, nlg, tracker, domain, events)
 
         if await self.is_done(output_channel, nlg, tracker, domain, events):
@@ -43,6 +43,7 @@ class LoopAction(Action):
 
     # default implementation checks if form active
     def _default_activation_events(self) -> List[Event]:
+        # TODO if this is in the loop action, probably it should not be `Form`
         return [Form(self.name())]
 
     async def activate(
