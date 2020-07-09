@@ -167,7 +167,7 @@ def _is_config_file_as_expected(
         content = ""
 
     return (
-        content
+        bool(content)
         and missing_keys == _get_missing_config_keys(content)
         and auto_configured_keys == _get_unspecified_autoconfigurable_keys(content)
     )

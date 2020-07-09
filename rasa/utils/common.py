@@ -200,8 +200,7 @@ def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
     x = [item for item in collection]
     if len(x) >= 2:
         return ", ".join(map(str, x[:-1])) + " and " + x[-1]
-    else:
-        return "".join(collection)
+    return "".join(collection)
 
 
 # noinspection PyUnresolvedReferences

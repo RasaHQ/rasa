@@ -90,7 +90,7 @@ def test_add_missing_config_keys_to_file(
 
     config_after_addition = io_utils.read_config_file(config_file)
 
-    assert all([(key in config_after_addition) for key in missing_keys])
+    assert all(key in config_after_addition for key in missing_keys)
 
 
 def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
