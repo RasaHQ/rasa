@@ -74,7 +74,7 @@ class RulePolicy(MemoizationPolicy):
         return feature_str
 
     @staticmethod
-    def _features_in_state(fs, state):
+    def _features_in_state(features, state):
 
         state_slots = defaultdict(set)
         for s in state.keys():
@@ -82,10 +82,12 @@ class RulePolicy(MemoizationPolicy):
                 state_slots[s[: s.rfind("_")]].add(s)
 
         f_slots = defaultdict(set)
-        for f in fs:
+        for f in features:
+            # TODO: this is a hack to make a rule know
+            #  that slot or form should not be set;
+            #  `_None` is added inside domain to indicate that
+            #  the feature should not be present
             if f.endswith("_None"):
-                # TODO: this is a hack to make a rule know
-                #  that slot or form should not be set
                 if any(f[: f.rfind("_")] in key for key in state.keys()):
                     return False
             elif f not in state:
