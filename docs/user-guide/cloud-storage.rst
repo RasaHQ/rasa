@@ -12,6 +12,7 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ ,
 `GCS <https://cloud.google.com/storage/>`_ and `Azure Storage <https://azure.microsoft.com/services/storage/>`_ to save your models.
 
 * Amazon S3 Storage
+
     S3 is supported using the ``boto3`` module which you can
     install with ``pip install boto3``.
 
@@ -28,6 +29,7 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ ,
     If there is no bucket with the name ``BUCKET_NAME``, Rasa will create it.
 
 * Google Cloud Storage
+
     GCS is supported using the ``google-cloud-storage`` package,
     which you can install with ``pip install google-cloud-storage``.
 
@@ -43,6 +45,7 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ ,
     variable to the path of that key file.
 
 * Azure Storage
+
     Azure is supported using the ``azure-storage-blob`` package,
     which you can install with ``pip install azure-storage-blob``.
 
@@ -57,7 +60,7 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ ,
     If there is no container with the name ``AZURE_CONTAINER``, Rasa will create it.
 
 Models are gzipped before they are saved in the cloud. The gzipped file naming convention
-is `{MODEL_NAME}.tar.gz` and it is stored in the root folder of the storage service.
+is ``{MODEL_NAME}.tar.gz`` and it is stored in the root folder of the storage service.
 Currently, you are not able to manually specify the path on the cloud storage.
 
 If storing trained models, Rasa will gzip the new model and upload it to the container. If retrieving/loading models
