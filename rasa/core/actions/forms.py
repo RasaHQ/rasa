@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Text, List, Optional, Union, Any, Dict, Tuple
 import logging
 
@@ -19,6 +20,16 @@ logger = logging.getLogger(__name__)
 # - add more tests
 # - simplify / refactor
 # - add proper docstrings
+
+
+class SlotMapping(Enum):
+    FROM_ENTITY = 0
+    FROM_INTENT = 1
+    FROM_TRIGGER_INTENT = 2
+    FROM_TEXT = 3
+
+    def __str__(self) -> Text:
+        return self.name.lower()
 
 
 class FormAction(LoopAction):
@@ -63,7 +74,7 @@ class FormAction(LoopAction):
         intent, not_intent = self._list_intents(intent, not_intent)
 
         return {
-            "type": "from_entity",
+            "type": str(SlotMapping.FROM_ENTITY),
             "entity": entity,
             "intent": intent,
             "not_intent": not_intent,
@@ -210,7 +221,7 @@ class FormAction(LoopAction):
                 for other_slot_mapping in other_slot_mappings:
                     # check whether the slot should be filled by an entity in the input
                     should_fill_entity_slot = (
-                        other_slot_mapping["type"] == "from_entity"
+                        other_slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)
                         and self.intent_is_desired(other_slot_mapping, tracker)
                         and self.entity_is_desired(other_slot_mapping, slot, tracker)
                     )
@@ -218,7 +229,8 @@ class FormAction(LoopAction):
                     # filled from trigger intent mapping
                     should_fill_trigger_slot = (
                         tracker.active_loop.get("name") != self.name()
-                        and other_slot_mapping["type"] == "from_trigger_intent"
+                        and other_slot_mapping["type"]
+                        == str(SlotMapping.FROM_TRIGGER_INTENT)
                         and self.intent_is_desired(other_slot_mapping, tracker)
                     )
                     if should_fill_entity_slot:
@@ -260,19 +272,19 @@ class FormAction(LoopAction):
             if self.intent_is_desired(requested_slot_mapping, tracker):
                 mapping_type = requested_slot_mapping["type"]
 
-                if mapping_type == "from_entity":
+                if mapping_type == str(SlotMapping.FROM_ENTITY):
                     value = self.get_entity_value(
                         requested_slot_mapping.get("entity"),
                         tracker,
                         requested_slot_mapping.get("role"),
                         requested_slot_mapping.get("group"),
                     )
-                elif mapping_type == "from_intent":
+                elif mapping_type == str(SlotMapping.FROM_INTENT):
                     value = requested_slot_mapping.get("value")
-                elif mapping_type == "from_trigger_intent":
+                elif mapping_type == str(SlotMapping.FROM_TRIGGER_INTENT):
                     # from_trigger_intent is only used on form activation
                     continue
-                elif mapping_type == "from_text":
+                elif mapping_type == str(SlotMapping.FROM_TEXT):
                     value = tracker.latest_message.text
                 else:
                     raise ValueError("Provided slot mapping type is not supported")
