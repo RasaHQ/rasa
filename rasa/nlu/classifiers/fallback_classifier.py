@@ -14,7 +14,6 @@ class FallbackClassifier(Component):
 
     # please make sure to update the docs when changing a default parameter
     defaults = {
-        # ## Architecture of the used neural network
         # If all intent confidence scores are beyond this threshold, set the current
         # intent to `FALLBACK_INTENT_NAME`
         THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_THRESHOLD

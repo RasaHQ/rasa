@@ -48,13 +48,13 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
     def __init__(
         self,
-        sender_id,
-        slots,
-        max_event_history=None,
-        domain=None,
-        is_augmented=False,
+        sender_id: Text,
+        slots: Optional[List[Slot]],
+        max_event_history: Optional[int] = None,
+        domain: Optional[Domain] = None,
+        is_augmented: bool = False,
         is_rule_tracker: bool = False,
-    ):
+    ) -> None:
         super().__init__(
             sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
         )
@@ -73,7 +73,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         sender_source: Optional[Text] = None,
         domain: Optional[Domain] = None,
         is_rule_tracker: bool = False,
-    ):
+    ) -> "TrackerWithCachedStates":
         tracker = cls(
             sender_id, slots, max_event_history, domain, is_rule_tracker=is_rule_tracker
         )
@@ -300,7 +300,7 @@ class TrainingDataGenerator:
             unused_checkpoints = set()  # type: Set[Text]
 
             desc = f"Processed {'rules' if is_rule_data else 'story blocks'}"
-            pbar = tqdm(story_steps, desc=desc, disable=is_logging_disabled(),)
+            pbar = tqdm(story_steps, desc=desc, disable=is_logging_disabled())
             for step in pbar:
                 incoming_trackers = []  # type: List[TrackerWithCachedStates]
                 for start in step.start_checkpoints:
