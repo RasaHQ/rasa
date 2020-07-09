@@ -1,4 +1,4 @@
-from typing import Dict, Text
+from typing import Dict, Text, Optional, List, Any
 
 import pytest
 from aioresponses import aioresponses
@@ -330,3 +330,130 @@ def test_extract_requested_slot_mapping_does_not_apply(slot_mapping: Dict):
     slot_values = form.extract_requested_slot(tracker, domain)
     # check that the value was not extracted for incorrect intent
     assert slot_values == {}
+
+
+@pytest.mark.parametrize(
+    "mapping_entity, mapping_role, mapping_group, entities, intent, expected_slot_values",
+    [
+        (
+            "entity_type",
+            "some_role",
+            None,
+            [
+                {
+                    "entity": "entity_type",
+                    "value": "some_value",
+                    "role": "some_other_role",
+                }
+            ],
+            "some_intent",
+            {},
+        ),
+        (
+            "entity_type",
+            "some_role",
+            None,
+            [{"entity": "entity_type", "value": "some_value", "role": "some_role"}],
+            "some_intent",
+            {"some_other_slot": "some_value"},
+        ),
+        (
+            "entity_type",
+            None,
+            "some_group",
+            [
+                {
+                    "entity": "entity_type",
+                    "value": "some_value",
+                    "group": "some_other_group",
+                }
+            ],
+            "some_intent",
+            {},
+        ),
+        (
+            "entity_type",
+            None,
+            "some_group",
+            [{"entity": "entity_type", "value": "some_value", "group": "some_group"}],
+            "some_intent",
+            {"some_other_slot": "some_value"},
+        ),
+        (
+            "entity_type",
+            "some_role",
+            "some_group",
+            [
+                {
+                    "entity": "entity_type",
+                    "value": "some_value",
+                    "role": "some_role",
+                    "group": "some_group",
+                }
+            ],
+            "some_intent",
+            {"some_other_slot": "some_value"},
+        ),
+        (
+            "entity_type",
+            None,
+            None,
+            [{"entity": "some_entity", "value": "some_value"}],
+            "some_intent",
+            {},
+        ),
+        (
+            "some_entity",
+            None,
+            None,
+            [{"entity": "entity_type", "value": "some_value"}],
+            "some_intent",
+            {},
+        ),
+        (
+            "entity_type",
+            None,
+            None,
+            [{"entity": "entity_type", "value": "some_value"}],
+            "some_intent",
+            {},
+        ),
+    ],
+)
+def test_extract_other_slots_with_entity(
+    mapping_entity: Text,
+    mapping_role: Optional[Text],
+    mapping_group: Optional[Text],
+    entities: List[Dict[Text, Any]],
+    intent: Text,
+    expected_slot_values: Dict[Text, Text],
+):
+    """Test extraction of other not requested slots values from entities."""
+
+    form_name = "some_form"
+    slot_mapping = {
+        "type": "from_entity",
+        "entity": mapping_entity,
+        "role": mapping_role,
+        "group": mapping_group,
+    }
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_dict(
+        {"forms": [{form_name: {"some_other_slot": [slot_mapping]}}]}
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, ["some_slot", "some_other_slot"]),
+            UserUttered(
+                "bla", intent={"name": intent, "confidence": 1.0}, entities=entities
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_other_slots(tracker, domain)
+    # check that the value was extracted for non requested slot
+    assert slot_values == expected_slot_values
