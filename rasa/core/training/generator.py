@@ -297,12 +297,12 @@ class TrainingDataGenerator:
                 break
 
             # track unused checkpoints for this phase
-            unused_checkpoints = set()  # type: Set[Text]
+            unused_checkpoints: Set[Text] = set()
 
             desc = f"Processed {'rules' if is_rule_data else 'story blocks'}"
             pbar = tqdm(story_steps, desc=desc, disable=is_logging_disabled())
             for step in pbar:
-                incoming_trackers = []  # type: List[TrackerWithCachedStates]
+                incoming_trackers: List[TrackerWithCachedStates] = []
                 for start in step.start_checkpoints:
                     if active_trackers[start.name]:
                         ts = start.filter_trackers(active_trackers[start.name])
@@ -418,7 +418,7 @@ class TrainingDataGenerator:
                 # augmentation round, so we process only
                 # story end checkpoints
                 # reset used checkpoints
-                used_checkpoints = set()  # type: Set[Text]
+                used_checkpoints: Set[Text] = set()
 
                 # generate active trackers for augmentation
                 active_trackers = self._create_start_trackers_for_augmentation(
