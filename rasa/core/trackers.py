@@ -13,7 +13,6 @@ from typing import (
     List,
     Deque,
     Iterable,
-    Tuple,
     Union,
 )
 
@@ -168,9 +167,9 @@ class DialogueStateTracker:
     ) -> Dict[Text, Any]:
         """Return the current tracker state as an object."""
 
-        evts = self._events_for_verbosity(event_verbosity)
-        if evts:
-            evts = [e.as_dict() for e in evts]
+        _events = self._events_for_verbosity(event_verbosity)
+        if _events:
+            _events = [e.as_dict() for e in _events]
         latest_event_time = None
         if len(self.events) > 0:
             latest_event_time = self.events[-1].timestamp
@@ -182,7 +181,7 @@ class DialogueStateTracker:
             "latest_event_time": latest_event_time,
             "followup_action": self.followup_action,
             "paused": self.is_paused(),
-            "events": evts,
+            "events": _events,
             "latest_input_channel": self.get_latest_input_channel(),
             # TODO: Should we add a `active_loop` key and provide both keys for a while?
             "active_form": self.active_loop,
