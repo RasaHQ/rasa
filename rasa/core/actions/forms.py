@@ -8,18 +8,17 @@ from rasa.core.channels import OutputChannel
 from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.domain import Domain
 
-from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
-from rasa.core.events import Event, SlotSet, Form
+from rasa.core.actions.action import (
+    ActionExecutionRejection,
+    RemoteAction,
+    ACTION_LISTEN_NAME,
+)
+from rasa.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
-# TODO: Temporary implementation as part of the RulePolicy prototype
-# - add more tests
-# - simplify / refactor
-# - add proper docstrings
 
 
 class SlotMapping(Enum):
@@ -82,7 +81,6 @@ class FormAction(LoopAction):
             "group": group,
         }
 
-    # noinspection PyMethodMayBeStatic
     def slot_mappings(
         self, domain: Domain
     ) -> Dict[Text, Union[Dict, List[Dict[Text, Any]]]]:
@@ -201,7 +199,6 @@ class FormAction(LoopAction):
             value = value[0]
         return value
 
-    # noinspection PyUnusedLocal
     def extract_other_slots(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Dict[Text, Any]:
@@ -253,7 +250,6 @@ class FormAction(LoopAction):
 
         return slot_values
 
-    # noinspection PyUnusedLocal
     def extract_requested_slot(
         self, tracker: "DialogueStateTracker", domain: Domain
     ) -> Dict[Text, Any]:
@@ -307,36 +303,59 @@ class FormAction(LoopAction):
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
     ) -> List[Event]:
-        """Validate slots using helper validation functions.
+        """Validate the extracted slots.
 
-        Call validate_{slot} function for each slot, value pair to be validated.
-        If this function is not implemented, set the slot to the value.
+        If a custom action is available for validating the slots, we call it to validate
+        them. Otherwise there is no validation.
+
+        Args:
+            slot_dict: Extracted slots which are candidates to fill the slots required
+                by the form.
+            tracker: The current conversation tracker.
+            domain: The current model domain.
+            output_channel: The output channel which can be used to send messages
+                to the user.
+            nlg:  `NaturalLanguageGenerator` to use for response generation.
+
+        Returns:
+            The validation events including potential bot messages and `SlotSet` events
+            for the validated slots.
         """
 
-        events = []
-        for slot_name, value in slot_dict.items():
-            validate_name = f"validate_{slot_name}"
-            slot_events = [SlotSet(slot_name, value)]
+        events = [SlotSet(slot_name, value) for slot_name, value in slot_dict.items()]
 
-            if validate_name in domain.action_names:
-                _tracker = self._temporary_tracker(tracker, slot_events, domain)
-                _action = RemoteAction(validate_name, self.action_endpoint)
-                slot_events = await _action.run(output_channel, nlg, _tracker, domain)
+        validate_name = f"validate_{self.name()}"
 
-            tracker = self._temporary_tracker(tracker, slot_events, domain)
-            events.extend(slot_events)
+        if validate_name not in domain.action_names:
+            return events
 
-        return events
+        _tracker = self._temporary_tracker(tracker, events, domain)
+        _action = RemoteAction(validate_name, self.action_endpoint)
+        validate_events = await _action.run(output_channel, nlg, _tracker, domain)
 
-    @staticmethod
+        validated_slot_names = [
+            event.key for event in validate_events if isinstance(event, SlotSet)
+        ]
+
+        # If the custom action doesn't return a SlotSet event for an extracted slot
+        # candidate we assume that it was valid. The custom action has to return a
+        # SlotSet(slot_name, None) event to mark a Slot as invalid.
+        return validate_events + [
+            event for event in events if event.key not in validated_slot_names
+        ]
+
     def _temporary_tracker(
+        self,
         current_tracker: DialogueStateTracker,
         additional_events: List[Event],
         domain: Domain,
     ) -> DialogueStateTracker:
         return DialogueStateTracker.from_events(
             current_tracker.sender_id,
-            current_tracker.events_after_latest_restart() + additional_events,
+            current_tracker.events_after_latest_restart()
+            # Insert form execution event so that it's clearly distinguishable which
+            # events were newly added.
+            + [ActionExecuted(self.name())] + additional_events,
             slots=domain.slots,
         )
 
@@ -375,28 +394,55 @@ class FormAction(LoopAction):
             slot_values, tracker, domain, output_channel, nlg
         )
 
-    # noinspection PyUnusedLocal
     async def request_next_slot(
         self,
         tracker: "DialogueStateTracker",
         domain: Domain,
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
+        events_so_far: List[Event],
     ) -> List[Event]:
         """Request the next slot and utter template if needed,
             else return None"""
 
-        for slot in self.required_slots(domain):
-            if self._should_request_slot(tracker, slot):
-                logger.debug(f"Request next slot '{slot}'")
+        request_slot_events = []
 
-                bot_message_events = await self._ask_for_slot(
-                    domain, nlg, output_channel, slot, tracker
-                )
-                return [SlotSet(REQUESTED_SLOT, slot), *bot_message_events]
+        # If this is not `None` it means that the custom action specified a next slot
+        # to request
+        slot_to_request = next(
+            (
+                event.value
+                for event in events_so_far
+                if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
+            ),
+            None,
+        )
+        temp_tracker = self._temporary_tracker(tracker, events_so_far, domain)
+
+        if not slot_to_request:
+            slot_to_request = self._find_next_slot_to_request(temp_tracker, domain)
+            request_slot_events.append(SlotSet(REQUESTED_SLOT, slot_to_request))
+
+        if slot_to_request:
+            bot_message_events = await self._ask_for_slot(
+                domain, nlg, output_channel, slot_to_request, temp_tracker
+            )
+            return request_slot_events + bot_message_events
 
         # no more required slots to fill
         return [SlotSet(REQUESTED_SLOT, None)]
+
+    def _find_next_slot_to_request(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> Optional[Text]:
+        return next(
+            (
+                slot
+                for slot in self.required_slots(domain)
+                if self._should_request_slot(tracker, slot)
+            ),
+            None,
+        )
 
     def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Text:
         full_name = f"utter_ask_{self._form_name}_{slot_name}"
@@ -413,7 +459,9 @@ class FormAction(LoopAction):
         slot_name: Text,
         tracker: DialogueStateTracker,
     ) -> List[Event]:
+        logger.debug(f"Request next slot '{slot_name}'")
 
+        # TODO: Make it possible to use a custom action to ask for the next slot
         action_to_ask_for_next_slot = action.action_from_name(
             self._name_of_utterance(domain, slot_name), None, domain.user_actions
         )
@@ -449,50 +497,6 @@ class FormAction(LoopAction):
 
         return self._to_list(intent), self._to_list(not_intent)
 
-    async def _activate_if_required(
-        self,
-        tracker: "DialogueStateTracker",
-        domain: Domain,
-        output_channel: OutputChannel,
-        nlg: NaturalLanguageGenerator,
-    ) -> List[Event]:
-        """Activate form if the form is called for the first time.
-
-        If activating, validate any required slots that were filled before
-        form activation and return `Form` event with the name of the form, as well
-        as any `SlotSet` events from validation of pre-filled slots.
-        """
-
-        if tracker.active_loop.get("name") is not None:
-            logger.debug(f"The form '{tracker.active_loop}' is active")
-        else:
-            logger.debug("There is no active form")
-
-        if tracker.active_loop.get("name") == self.name():
-            return []
-        else:
-            logger.debug(f"Activated the form '{self.name()}'")
-            events = [Form(self.name())]
-
-            # collect values of required slots filled before activation
-            prefilled_slots = {}
-
-            for slot_name in self.required_slots(domain):
-                if not self._should_request_slot(tracker, slot_name):
-                    prefilled_slots[slot_name] = tracker.get_slot(slot_name)
-
-            if prefilled_slots:
-                logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
-                events.extend(
-                    await self.validate_slots(
-                        prefilled_slots, tracker, domain, output_channel, nlg
-                    )
-                )
-            else:
-                logger.debug("No pre-filled required slots to validate.")
-
-            return events
-
     async def _validate_if_required(
         self,
         tracker: "DialogueStateTracker",
@@ -506,13 +510,16 @@ class FormAction(LoopAction):
             - the form is called after `action_listen`
             - form validation was not cancelled
         """
-        if tracker.latest_action_name == "action_listen" and tracker.active_loop.get(
-            "validate", True
-        ):
-            logger.debug(f"Validating user input '{tracker.latest_message}'")
+        # no active_loop means that it is called during activation
+        need_validation = not tracker.active_loop or (
+            tracker.latest_action_name == ACTION_LISTEN_NAME
+            and tracker.active_loop.get("validate", True)
+        )
+        if need_validation:
+            logger.debug(f"Validating user input '{tracker.latest_message}'.")
             return await self.validate(tracker, domain, output_channel, nlg)
         else:
-            logger.debug("Skipping validation")
+            logger.debug("Skipping validation.")
             return []
 
     @staticmethod
@@ -521,9 +528,6 @@ class FormAction(LoopAction):
 
         return tracker.get_slot(slot_name) is None
 
-    def __str__(self) -> Text:
-        return f"FormAction('{self.name()}')"
-
     async def activate(
         self,
         output_channel: "OutputChannel",
@@ -531,6 +535,24 @@ class FormAction(LoopAction):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
+        """Activate form if the form is called for the first time.
+
+        If activating, validate any required slots that were filled before
+        form activation and return `Form` event with the name of the form, as well
+        as any `SlotSet` events from validation of pre-filled slots.
+
+        Args:
+            output_channel: The output channel which can be used to send messages
+                to the user.
+            nlg: `NaturalLanguageGenerator` to use for response generation.
+            tracker: Current conversation tracker of the user.
+            domain: Current model domain.
+
+        Returns:
+            Events from the activation.
+        """
+
+        logger.debug(f"Activated the form '{self.name()}'.")
         # collect values of required slots filled before activation
         prefilled_slots = {}
 
@@ -557,9 +579,8 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         events = await self._validate_if_required(tracker, domain, output_channel, nlg)
 
-        temp_tracker = self._temporary_tracker(tracker, events_so_far + events, domain)
         events += await self.request_next_slot(
-            temp_tracker, domain, output_channel, nlg
+            tracker, domain, output_channel, nlg, events_so_far + events
         )
 
         return events
