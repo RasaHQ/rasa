@@ -1051,10 +1051,10 @@ CRFEntityExtractor
           "featurizers": []
 
     .. note::
-        If POS features are used (``pos`` or ``pos2`), you need to have ``SpacyTokenizer`` in your pipeline.
+        If POS features are used (``pos`` or ``pos2``), you need to have ``SpacyTokenizer`` in your pipeline.
 
     .. note::
-        If "``pattern` features are used, you need to have ``RegexFeaturizer`` in your pipeline.
+        If ``pattern`` features are used, you need to have ``RegexFeaturizer`` in your pipeline.
 
 .. _DucklingHTTPExtractor:
 
