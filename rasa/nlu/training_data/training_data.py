@@ -160,13 +160,13 @@ class TrainingData:
         }
 
     @lazy_property
-    def examples_per_intent(self) -> Dict[Text, int]:
+    def number_of_examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
         intents = [ex.get(INTENT) for ex in self.training_examples]
         return dict(Counter(intents))
 
     @lazy_property
-    def examples_per_response(self) -> Dict[Text, int]:
+    def number_of_examples_per_response(self) -> Dict[Text, int]:
         """Calculates the number of examples per response."""
         responses = [
             ex.get(RESPONSE) for ex in self.training_examples if ex.get(RESPONSE)
@@ -361,7 +361,7 @@ class TrainingData:
             )
 
         # emit warnings for intents with only a few training samples
-        for intent, count in self.examples_per_intent.items():
+        for intent, count in self.number_of_examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
                 raise_warning(
                     f"Intent '{intent}' has only {count} training examples! "
@@ -429,6 +429,15 @@ class TrainingData:
     def split_nlu_examples(
         self, train_frac: float, random_seed: Optional[int] = None
     ) -> Tuple[list, list]:
+        """Split the training data into a train and test set.
+
+        Args:
+            train_frac: percentage of examples to add to the training set.
+            random_seed: random seed
+
+        Returns:
+            Test and training examples.
+        """
         train, test = [], []
         training_examples = set(self.training_examples)
 
@@ -446,7 +455,7 @@ class TrainingData:
         # training/test data, we first go over the response examples and then go over
         # intent examples
 
-        for response, count in self.examples_per_response.items():
+        for response, count in self.number_of_examples_per_response.items():
             examples = [
                 e
                 for e in training_examples
@@ -455,7 +464,7 @@ class TrainingData:
             _split(examples, count)
             training_examples = training_examples - set(examples)
 
-        for intent, count in self.examples_per_intent.items():
+        for intent, count in self.number_of_examples_per_intent.items():
             examples = [
                 e
                 for e in training_examples
