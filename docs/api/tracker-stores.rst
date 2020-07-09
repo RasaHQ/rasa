@@ -309,7 +309,7 @@ DynamoTrackerStore
 
             tracker_store:
                 type: dynamo
-                tablename: <name of the table to create, e.g. rasa>
+                table_name: <name of the table to create, e.g. rasa>
                 region: <name of the region associated with the client>
 
     #. To start the Rasa server using your configured ``DynamoDB`` instance,
@@ -320,7 +320,7 @@ DynamoTrackerStore
                 rasa run -m models --endpoints endpoints.yml
 
 :Parameters:
-    - ``tablename (default: ``states``): name of the DynamoDB table
+    - ``table_name (default: ``states``): name of the DynamoDB table
     - ``region`` (default: ``us-east-1``): name of the region associated with the client
 
 
