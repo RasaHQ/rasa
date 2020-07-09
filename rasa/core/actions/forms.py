@@ -454,10 +454,10 @@ class FormAction(LoopAction):
             and tracker.active_loop.get("validate", True)
         )
         if need_validation:
-            logger.debug(f"Validating user input '{tracker.latest_message}'")
+            logger.debug(f"Validating user input '{tracker.latest_message}'.")
             return await self.validate(tracker, domain, output_channel, nlg)
         else:
-            logger.debug("Skipping validation")
+            logger.debug("Skipping validation.")
             return []
 
     @staticmethod
