@@ -384,9 +384,13 @@ def test_dump_yaml_key_order(
             {"b": {"c": {"d": "e"}}},
             OrderedDict({"b": OrderedDict({"c": OrderedDict({"d": "e"})})}),
         ),
+        # a list is not affected
+        ([1, 2, 3], [1, 2, 3]),
+        # a string also isn't
+        ("hello", "hello"),
     ],
 )
-def test_convert_to_ordered_dict(source: Dict[Text, Any], target: OrderedDict):
+def test_convert_to_ordered_dict(source: Any, target: Any):
     assert io_utils.convert_to_ordered_dict(source) == target
 
     def _recursively_check_dict_is_ordered_dict(d):
