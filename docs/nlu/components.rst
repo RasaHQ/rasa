@@ -169,8 +169,6 @@ WhitespaceTokenizer
 :Description:
     Creates a token for every whitespace separated character sequence.
 :Configuration:
-    Make the tokenizer case insensitive by adding the ``case_sensitive: False`` option, the
-    default being ``case_sensitive: True``.
 
     .. code-block:: yaml
 
@@ -180,8 +178,6 @@ WhitespaceTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
-          # Text will be tokenized with case sensitive as default
-          "case_sensitive": True
           # Regular expression to detect tokens
           "token_pattern": None
 
@@ -277,8 +273,6 @@ ConveRTTokenizer
 
 
 :Configuration:
-    Make the tokenizer case insensitive by adding the ``case_sensitive: False`` option, the
-    default being ``case_sensitive: True``.
 
     .. code-block:: yaml
 
@@ -288,8 +282,6 @@ ConveRTTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
-          # Text will be tokenized with case sensitive as default
-          "case_sensitive": True
           # Regular expression to detect tokens
           "token_pattern": None
 
@@ -478,11 +470,15 @@ RegexFeaturizer
     :ref:`diet-classifier` components!
 
 :Configuration:
+    Make the featurizer case insensitive by adding the ``case_sensitive: False`` option, the default being
+    ``case_sensitive: True``.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "RegexFeaturizer"
+          # Text will be processed with case sensitive as default
+          "case_sensitive": True
 
 .. _CountVectorsFeaturizer:
 

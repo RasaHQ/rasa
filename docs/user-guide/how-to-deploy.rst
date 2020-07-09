@@ -23,7 +23,7 @@ important happy paths or is what we call a `minimum viable assistant <https://ra
 
 The recommended deployment methods described below make it easy to share your assistant
 with test users via the `share your assistant feature in
-Rasa X <https://rasa.com/docs/rasa-x/user-guide/enable-workflows#conversations-with-test-users>`_.
+Rasa X <https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share-your-bot>`_.
 Then, when you’re ready to make your assistant available via one or more :ref:`messaging-and-voice-channels`,
 you can easily add them to your existing deployment set up.
 
@@ -32,35 +32,36 @@ you can easily add them to your existing deployment set up.
 Recommended Deployment Methods
 ------------------------------
 
-The recommended way to deploy an assistant is using either the One-Line Deployment or Kubernetes/Openshift
+The recommended way to deploy an assistant is using either the Server Quick-Install or Helm Chart
 options we support. Both deploy Rasa X and your assistant. They are the easiest ways to deploy your assistant,
 allow you to use Rasa X to view conversations and turn them into training data, and are production-ready.
+For more details on deployment methods see the `Rasa X Installation Guide <https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/>`_.
 
-One-Line Deploy Script
-~~~~~~~~~~~~~~~~~~~~~~
+Server Quick-Install
+~~~~~~~~~~~~~~~~~~~~
 
-The one-line deployment script is the easiest way to deploy Rasa X and your assistant. It installs a Kubernetes
+The Server Quick-Install script is the easiest way to deploy Rasa X and your assistant. It installs a Kubernetes
 cluster on your machine with sensible defaults, getting you up and running in one command.
 
-    - Default: Make sure you meet the `OS Requirements <https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#hardware-os-requirements>`_,
+    - Default: Make sure you meet the `OS Requirements <https://rasa.com/docs/rasa-x/installation-and-setup/install/quick-install-script/#hardware-os-requirements>`_,
       then run:
 
       .. copyable::
 
          curl -s get-rasa-x.rasa.com | sudo bash
 
-    - Custom: See `Customizing the Script <https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script>`_
-      in the `One-Line Deploy Script <https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script>`_ docs.
+    - Custom: See `Customizing the Script <https://rasa.com/docs/rasa-x/installation-and-setup/customize/#server-quick-install>`_
+      and the `Server Quick-Install docs <https://rasa.com/docs/rasa-x/installation-and-setup/install/quick-install-script>`_ docs.
 
-Kubernetes/Openshift
-~~~~~~~~~~~~~~~~~~~~
+Helm Chart
+~~~~~~~~~~
 
 For assistants that will receive a lot of user traffic, setting up a Kubernetes or Openshift deployment via
-our helm charts is the best option. This provides a scalable architecture that is also straightforward to deploy.
+our Helm charts is the best option. This provides a scalable architecture that is also straightforward to deploy.
 However, you can also customize the Helm charts if you have specific requirements.
 
-    - Default: Read the `Deploying in Openshift or Kubernetes <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/>`_ docs.
-    - Custom: Read the above, as well as the `Advanced Configuration <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#advanced-configuration>`_
+    - Default: Read the `Helm Chart Installation <https://rasa.com/docs/rasa-x/installation-and-setup/install/helm-chart/>`_ docs.
+    - Custom: Read the above, as well as the `Advanced Configuration <https://rasa.com/docs/rasa-x/installation-and-setup/customize/#helm-chart>`_
       documentation, and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_ to your needs.
 
 .. _rasa-only-deployment:
@@ -71,11 +72,11 @@ Alternative Deployment Methods
 Docker Compose
 ~~~~~~~~~~~~~~
 
-You can also run Rasa X in a Docker Compose setup, without the cluster environment. We have a quick install script
+You can also run Rasa X in a Docker Compose setup, without the cluster environment. We have an install script
 for doing so, as well as manual instructions for any custom setups.
 
-    - Default: Read the `Docker Compose Quick Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ docs or watch the `Masterclass Video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ on deploying Rasa X.
-    - Custom: Read the docs `Docker Compose Manual Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/>`_ documentation for full customization options.
+    - Default: Read the `Docker Compose Install Script <https://rasa.com/docs/rasa-x/installation-and-setup/install/docker-compose/#docker-compose-install-script>`_ docs or watch the `Masterclass Video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ on deploying Rasa X.
+    - Custom: Read the `Docker Compose Manual Install <https://rasa.com/docs/rasa-x/installation-and-setup/install/docker-compose/#docker-compose-manual-install>`_ documentation for full customization options.
 
 Rasa Open Source Only Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -186,7 +187,7 @@ your chosen container registry.
 How you reference the custom action image will depend on your deployment. Pick the relevant documentation for
 your deployment:
 
-    - `One-Line Deployment <https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script>`_
-    - `Kubernetes or Openshift <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#adding-a-custom-action-server>`_
-    - `Docker Compose <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/#connect-a-custom-action-server>`_
+    - `Server Quick-Install <https://rasa.com/docs/rasa-x/installation-and-setup/customize/#quick-install-script-customizing>`_
+    - `Helm Chart <https://rasa.com/docs/rasa-x/installation-and-setup/customize/#adding-a-custom-action-server>`_
+    - `Docker Compose <https://rasa.com/docs/rasa-x/installation-and-setup/customize/#connecting-a-custom-action-server>`_
     - :ref:`Rasa Open Source Only <running-multiple-services>`
