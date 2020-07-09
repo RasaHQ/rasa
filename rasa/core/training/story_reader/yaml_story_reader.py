@@ -272,9 +272,8 @@ class YAMLStoryReader(StoryReader):
     def _parse_slot(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
 
         slot_name = step.get(KEY_SLOT_NAME, "")
-        slot_value = step.get(KEY_SLOT_VALUE, "")
 
-        if not slot_name or not slot_value:
+        if not slot_name or KEY_SLOT_VALUE not in step:
             common_utils.raise_warning(
                 f"Issue found in '{self.source_name}': \n"
                 f"Slots should have a name and a value. "
@@ -283,6 +282,8 @@ class YAMLStoryReader(StoryReader):
                 docs=self._get_docs_link(is_rule_data),
             )
             return
+
+        slot_value = step.get(KEY_SLOT_VALUE, "")
 
         self._add_event(SlotSet.type_name, {slot_name: slot_value})
 
