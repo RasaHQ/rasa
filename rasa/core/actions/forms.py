@@ -70,7 +70,6 @@ class FormAction(LoopAction):
             "group": group,
         }
 
-    # noinspection PyMethodMayBeStatic
     def slot_mappings(
         self, domain: Domain
     ) -> Dict[Text, Union[Dict, List[Dict[Text, Any]]]]:
@@ -189,7 +188,6 @@ class FormAction(LoopAction):
             value = value[0]
         return value
 
-    # noinspection PyUnusedLocal
     def extract_other_slots(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Dict[Text, Any]:
@@ -240,7 +238,6 @@ class FormAction(LoopAction):
 
         return slot_values
 
-    # noinspection PyUnusedLocal
     def extract_requested_slot(
         self, tracker: "DialogueStateTracker", domain: Domain
     ) -> Dict[Text, Any]:
@@ -382,7 +379,6 @@ class FormAction(LoopAction):
             slot_values, tracker, domain, output_channel, nlg
         )
 
-    # noinspection PyUnusedLocal
     async def request_next_slot(
         self,
         tracker: "DialogueStateTracker",
