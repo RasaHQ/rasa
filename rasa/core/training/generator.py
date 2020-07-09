@@ -238,13 +238,16 @@ class TrainingDataGenerator:
     def _generate(
         self, story_steps: List[StoryStep], is_rule_data: bool = False
     ) -> List[TrackerWithCachedStates]:
+        if not story_steps:
+            logger.debug(f"No {'rules' if is_rule_data else 'story blocks'} found.")
+            return []
+
         if self.config.remove_duplicates and self.config.unique_last_num_states:
             logger.debug(
                 "Generated trackers will be deduplicated "
                 "based on their unique last {} states."
                 "".format(self.config.unique_last_num_states)
             )
-
         self._mark_first_action_in_story_steps_as_unpredictable()
 
         active_trackers = defaultdict(list)
