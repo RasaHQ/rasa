@@ -1,6 +1,7 @@
 import logging
 from typing import List, Dict, Text, Optional, Any
 
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
 from rasa.core.events import FormValidation
@@ -9,6 +10,8 @@ from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY
+
+from rasa.utils import common as common_utils
 
 
 logger = logging.getLogger(__name__)
@@ -30,6 +33,13 @@ class FormPolicy(MemoizationPolicy):
         # previous meaningful action before action listen
         super().__init__(
             featurizer=featurizer, priority=priority, max_history=2, lookup=lookup
+        )
+
+        common_utils.raise_warning(
+            f"'{FormPolicy.__name__}' is deprecated and will be removed in "
+            "in the future. It is recommended to use the 'RulePolicy' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
     @staticmethod
