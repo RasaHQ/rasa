@@ -53,7 +53,7 @@ name to point to that server's IP address, or use the IP address itself.
 
 After installing ngrok, run:
 
-.. copyable::
+.. code-block:: bash
 
    ngrok http 5005; rasa run
 
