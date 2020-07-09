@@ -678,12 +678,29 @@ def test_get_form_action():
     actions:
     - my_action
     forms:
-    - {form_action_name}
+    - {form_action_name}:
+        my_slot:
+        - type: from_text
     """
     )
 
     actual = domain.action_for_name(form_action_name, None)
     assert isinstance(actual, FormAction)
+
+
+def test_get_form_action_without_slot_mapping():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+    forms:
+    - {form_action_name}
+    """
+    )
+
+    actual = domain.action_for_name(form_action_name, None)
+    assert isinstance(actual, RemoteAction)
 
 
 def test_get_form_action_if_not_in_forms():

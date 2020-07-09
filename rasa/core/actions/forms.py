@@ -48,7 +48,7 @@ class FormAction(LoopAction):
         Returns:
             A list of slot names.
         """
-        return list(self.slot_mappings(domain).keys())
+        return list(domain.slot_mapping_for_form(self.name()).keys())
 
     def from_entity(
         self,
@@ -81,27 +81,6 @@ class FormAction(LoopAction):
             "group": group,
         }
 
-    def slot_mappings(
-        self, domain: Domain
-    ) -> Dict[Text, Union[Dict, List[Dict[Text, Any]]]]:
-        """A dictionary to map required slots.
-
-        Options:
-        - an extracted entity
-        - intent: value pairs
-        - trigger_intent: value pairs
-        - a whole message
-        or a list of them, where the first match will be picked
-
-        Empty dict is converted to a mapping of
-        the slot to the extracted entity with the same name
-        """
-
-        return next(
-            (form[self.name()] for form in domain.forms if self.name() in form.keys()),
-            {},
-        )
-
     def get_mappings_for_slot(
         self, slot_to_fill: Text, domain: Domain
     ) -> List[Dict[Text, Any]]:
@@ -111,7 +90,9 @@ class FormAction(LoopAction):
         """
 
         requested_slot_mappings = self._to_list(
-            self.slot_mappings(domain).get(slot_to_fill, self.from_entity(slot_to_fill))
+            domain.slot_mapping_for_form(self.name()).get(
+                slot_to_fill, self.from_entity(slot_to_fill)
+            )
         )
         # check provided slot mappings
         for requested_slot_mapping in requested_slot_mappings:
