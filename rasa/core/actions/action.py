@@ -722,7 +722,6 @@ class ActionDefaultAskAffirmation(Action):
     ) -> List[Event]:
         intent_to_affirm = tracker.latest_message.intent.get("name")
 
-        # TODO: Simplify once the RulePolicy is out of prototype stage
         intent_ranking = tracker.latest_message.intent.get(INTENT_RANKING_KEY, [])
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
