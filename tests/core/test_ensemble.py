@@ -4,12 +4,10 @@ from typing import List, Any, Text
 import pytest
 import copy
 
-from _pytest.logging import LogCaptureFixture
-
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.policy import Policy, SupportedData
+from rasa.core.policies.policy import Policy
 from rasa.core.policies.ensemble import (
     PolicyEnsemble,
     InvalidPolicyConfig,
@@ -406,3 +404,21 @@ def test_rule_based_data_warnings_no_rule_policy():
     assert (
         "Found rule-based training data but no policy supporting rule-based data."
     ) in record[0].message.args[0]
+
+
+@pytest.mark.parametrize(
+    "policies",
+    [
+        ["RulePolicy", "MappingPolicy"],
+        ["RulePolicy", "FallbackPolicy"],
+        ["RulePolicy", "TwoStageFallbackPolicy"],
+        ["RulePolicy", "FormPolicy"],
+        ["RulePolicy", "FallbackPolicy", "FormPolicy"],
+    ],
+)
+def test_mutual_exclusion_of_rule_policy_and_old_rule_like_policies(
+    policies: List[Text],
+):
+    policy_config = [{"name": policy_name} for policy_name in policies]
+    with pytest.raises(InvalidPolicyConfig):
+        PolicyEnsemble.from_dict({"policies": policy_config})

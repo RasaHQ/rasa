@@ -1,9 +1,8 @@
 import logging
-import typing
 from typing import List, Dict, Text, Optional, Any
 
 import re
-from collections import defaultdict, deque
+from collections import defaultdict
 
 from rasa.core.events import FormValidation
 from rasa.core.domain import Domain
@@ -11,10 +10,28 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import FORM_POLICY_PRIORITY, RULE_SNIPPET_ACTION_NAME
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.constants import (
+    FORM_POLICY_PRIORITY,
+    RULE_SNIPPET_ACTION_NAME,
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    USER_INTENT_SESSION_START,
+)
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_BACK_NAME,
+    ACTION_SESSION_START_NAME,
+)
 
 logger = logging.getLogger(__name__)
+
+# These are Rasa Open Source default actions and overrule everything at any time.
+DEFAULT_ACTION_MAPPINGS = {
+    USER_INTENT_RESTART: ACTION_RESTART_NAME,
+    USER_INTENT_BACK: ACTION_BACK_NAME,
+    USER_INTENT_SESSION_START: ACTION_SESSION_START_NAME,
+}
 
 
 class RulePolicy(MemoizationPolicy):
@@ -37,11 +54,12 @@ class RulePolicy(MemoizationPolicy):
         priority: int = FORM_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
     ) -> None:
+        if not featurizer:
+            # max history is set to `None` in order to capture lengths of rule stories
+            featurizer = self._standard_featurizer()
+            featurizer.max_history = None
 
-        # max history is set to None in order to capture lengths of rule stories
-        super().__init__(
-            featurizer=featurizer, priority=priority, max_history=None, lookup=lookup
-        )
+        super().__init__(featurizer=featurizer, priority=priority, lookup=lookup)
 
     def _create_feature_key(self, states: List[Dict]):
 
@@ -159,6 +177,14 @@ class RulePolicy(MemoizationPolicy):
         if not self.is_enabled:
             return result
 
+        # Rasa Open Source default actions overrule anything. If users want to achieve
+        # the same, they need to a rule or make sure that their form rejects
+        # accordingly.
+        rasa_default_action_name = _should_run_rasa_default_action(tracker)
+        if rasa_default_action_name:
+            result[domain.index_for_action(rasa_default_action_name)] = 1
+            return result
+
         active_form_name = tracker.active_form_name()
         active_form_rejected = tracker.active_loop.get("rejected")
         should_predict_form = (
@@ -243,3 +269,13 @@ class RulePolicy(MemoizationPolicy):
                 logger.debug("There is no applicable rule.")
 
         return result
+
+
+def _should_run_rasa_default_action(tracker: DialogueStateTracker) -> Optional[Text]:
+    if (
+        not tracker.latest_action_name == ACTION_LISTEN_NAME
+        or not tracker.latest_message
+    ):
+        return None
+
+    return DEFAULT_ACTION_MAPPINGS.get(tracker.latest_message.intent.get("name"))

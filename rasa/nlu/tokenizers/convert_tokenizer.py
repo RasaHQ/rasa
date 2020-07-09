@@ -28,8 +28,6 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         "intent_split_symbol": "_",
         # Regular expression to detect tokens
         "token_pattern": None,
-        # Text will be tokenized with case sensitive as default
-        "case_sensitive": True,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:

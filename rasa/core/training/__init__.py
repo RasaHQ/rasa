@@ -1,4 +1,3 @@
-import typing
 from typing import Text, List, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -17,12 +16,12 @@ async def extract_rule_data(
     exclusion_percentage: int = None,
 ) -> "StoryGraph":
     from rasa.core.interpreter import RegexInterpreter
-    from rasa.core.training.dsl import StoryFileReader
+    from rasa.core.training import loading
     from rasa.core.training.structures import StoryGraph
 
     if not interpreter:
         interpreter = RegexInterpreter()
-    story_steps = await StoryFileReader.read_from_folder(
+    story_steps = await loading.load_data_from_resource(
         resource_name,
         domain,
         interpreter,

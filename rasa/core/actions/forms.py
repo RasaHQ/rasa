@@ -71,77 +71,6 @@ class FormAction(LoopAction):
             "group": group,
         }
 
-    def from_trigger_intent(
-        self,
-        value: Any,
-        intent: Optional[Union[Text, List[Text]]] = None,
-        not_intent: Optional[Union[Text, List[Text]]] = None,
-    ) -> Dict[Text, Any]:
-        """A dictionary for slot mapping to extract slot value.
-
-        From:
-        - trigger_intent: value pair
-        - conditioned on
-            - intent if it is not None
-            - not_intent if it is not None,
-                meaning user intent should not be this intent
-
-        Only used on form activation.
-        """
-
-        intent, not_intent = self._list_intents(intent, not_intent)
-
-        return {
-            "type": "from_trigger_intent",
-            "value": value,
-            "intent": intent,
-            "not_intent": not_intent,
-        }
-
-    def from_intent(
-        self,
-        value: Any,
-        intent: Optional[Union[Text, List[Text]]] = None,
-        not_intent: Optional[Union[Text, List[Text]]] = None,
-    ) -> Dict[Text, Any]:
-        """A dictionary for slot mapping to extract slot value.
-
-        From:
-        - intent: value pair
-        - conditioned on
-            - intent if it is not None
-            - not_intent if it is not None,
-                meaning user intent should not be this intent
-        """
-
-        intent, not_intent = self._list_intents(intent, not_intent)
-
-        return {
-            "type": "from_intent",
-            "value": value,
-            "intent": intent,
-            "not_intent": not_intent,
-        }
-
-    def from_text(
-        self,
-        intent: Optional[Union[Text, List[Text]]] = None,
-        not_intent: Optional[Union[Text, List[Text]]] = None,
-    ) -> Dict[Text, Any]:
-        """A dictionary for slot mapping to extract slot value.
-
-        From:
-        - a whole message
-        - conditioned on
-            - intent if it is not None
-            - not_intent if it is not None,
-                meaning user intent should not be this intent
-        """
-
-        intent, not_intent = self._list_intents(intent, not_intent)
-
-        return {"type": "from_text", "intent": intent, "not_intent": not_intent}
-
     # noinspection PyMethodMayBeStatic
     def slot_mappings(
         self, domain: Domain
@@ -196,11 +125,9 @@ class FormAction(LoopAction):
 
         intent = tracker.latest_message.intent.get("name")
 
-        intent_not_blacklisted = (
-            not mapping_intents and intent not in mapping_not_intents
-        )
+        intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
 
-        return intent_not_blacklisted or intent in mapping_intents
+        return intent_not_blocked or intent in mapping_intents
 
     def entity_is_desired(
         self,
