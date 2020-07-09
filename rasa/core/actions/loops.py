@@ -17,11 +17,12 @@ class LoopAction(Action):
         domain: "Domain",
     ) -> List[Event]:
         events = []
-        # we should either activate or validate
+
         if not await self.is_activated(output_channel, nlg, tracker, domain):
             events += self._default_activation_events()
             events += await self.activate(output_channel, nlg, tracker, domain)
-        elif not await self.is_done(output_channel, nlg, tracker, domain, events):
+
+        if not await self.is_done(output_channel, nlg, tracker, domain, events):
             events += await self.do(output_channel, nlg, tracker, domain, events)
 
         if await self.is_done(output_channel, nlg, tracker, domain, events):

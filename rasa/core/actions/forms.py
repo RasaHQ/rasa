@@ -448,9 +448,12 @@ class FormAction(LoopAction):
             - the form is called after `action_listen`
             - form validation was not cancelled
         """
-        if tracker.latest_action_name == "action_listen" and tracker.active_loop.get(
-            "validate", True
-        ):
+        # no active_loop means that it is called during activation
+        need_validation = not tracker.active_loop or (
+            tracker.latest_action_name == "action_listen"
+            and tracker.active_loop.get("validate", True)
+        )
+        if need_validation:
             logger.debug(f"Validating user input '{tracker.latest_message}'")
             return await self.validate(tracker, domain, output_channel, nlg)
         else:
@@ -487,17 +490,9 @@ class FormAction(LoopAction):
             return []
 
         logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
-        events = await self.validate_slots(
+        return await self.validate_slots(
             prefilled_slots, tracker, domain, output_channel, nlg
         )
-        # there could be a separate form activation action
-        # therefore we shouldn't check for previous action_listen before validation
-        logger.debug(
-            f"Validating user input that triggered the form "
-            f"'{tracker.latest_message}'"
-        )
-        events += await self.validate(tracker, domain, output_channel, nlg)
-        return events
 
     async def do(
         self,
