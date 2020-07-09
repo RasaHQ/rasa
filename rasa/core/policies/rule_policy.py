@@ -7,6 +7,7 @@ from collections import defaultdict
 from rasa.core.events import FormValidation
 from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
 from rasa.core.trackers import DialogueStateTracker
@@ -61,7 +62,7 @@ class RulePolicy(MemoizationPolicy):
 
         super().__init__(featurizer=featurizer, priority=priority, lookup=lookup)
 
-    def _create_feature_key(self, states: List[Dict]):
+    def _create_feature_key(self, states: List[Dict]) -> Text:
 
         feature_str = ""
         for state in states:
@@ -74,7 +75,7 @@ class RulePolicy(MemoizationPolicy):
         return feature_str
 
     @staticmethod
-    def _features_in_state(features, state):
+    def _features_in_state(features: List[Text], state: Dict[Text, float]) -> bool:
 
         state_slots = defaultdict(set)
         for s in state.keys():
@@ -101,15 +102,15 @@ class RulePolicy(MemoizationPolicy):
 
         return True
 
-    def _rule_is_good(self, key, i, state):
+    def _rule_is_good(self, key: Text, idx: int, state: Dict[Text, float]) -> bool:
         return (
-            i >= len(key.split("|"))
-            or (not list(reversed(key.split("|")))[i] and not state)
+            idx >= len(key.split("|"))
+            or (not list(reversed(key.split("|")))[idx] and not state)
             or (
-                list(reversed(key.split("|")))[i]
+                list(reversed(key.split("|")))[idx]
                 and state
                 and self._features_in_state(
-                    list(reversed(key.split("|")))[i].split(), state
+                    list(reversed(key.split("|")))[idx].split(), state
                 )
             )
         )
@@ -118,6 +119,7 @@ class RulePolicy(MemoizationPolicy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers."""
@@ -166,7 +168,11 @@ class RulePolicy(MemoizationPolicy):
         logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts the next action the bot should take after seeing the tracker.
 
