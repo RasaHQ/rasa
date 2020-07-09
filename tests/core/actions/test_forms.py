@@ -3,7 +3,7 @@ from typing import Dict, Text, List, Optional, Any
 import pytest
 from aioresponses import aioresponses
 
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
 from rasa.core.actions.forms import FormAction, REQUESTED_SLOT
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain
@@ -164,6 +164,41 @@ async def test_set_slot_and_deactivate():
     ]
 
 
+async def test_action_rejection():
+    form_name = "my form"
+    slot_to_fill = "some slot"
+    tracker = DialogueStateTracker.from_events(
+        sender_id="bla",
+        evts=[
+            Form(form_name),
+            SlotSet(REQUESTED_SLOT, slot_to_fill),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": "greet"}),
+        ],
+    )
+    form_name = "my form"
+    action = FormAction(form_name, None)
+    domain = f"""
+    forms:
+    - {form_name}:
+        {slot_to_fill}:
+        - type: from_entity
+          entity: some_entity
+    slots:
+      {slot_to_fill}:
+        type: unfeaturized
+    """
+    domain = Domain.from_yaml(domain)
+
+    with pytest.raises(ActionExecutionRejection):
+        await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.templates),
+            tracker,
+            domain,
+        )
+
+
 @pytest.mark.parametrize(
     "validate_return_events, expected_events",
     [
@@ -271,6 +306,60 @@ async def test_validate_slots(
             domain,
         )
         assert events == expected_events
+
+
+async def test_validate_slots_with_other_action_after_user_utterance():
+    form_name = "my form"
+    slot_name = "num_people"
+    slot_value = "hi"
+    events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(slot_value, entities=[{"entity": "num_tables", "value": 5}]),
+        ActionExecuted("action_in_between"),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
+
+    domain = f"""
+    slots:
+      {slot_name}:
+        type: unfeaturized
+    forms:
+    - {form_name}:
+        {slot_name}:
+        - type: from_text
+    actions:
+    - validate_{form_name}
+    """
+    domain = Domain.from_yaml(domain)
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    expected_slot_value = "✅"
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": slot_name, "value": expected_slot_value}
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action = FormAction(form_name, action_server)
+
+        events = await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.templates),
+            tracker,
+            domain,
+        )
+
+    assert events == [
+        Form(form_name),
+        SlotSet(slot_name, expected_slot_value),
+        SlotSet(REQUESTED_SLOT, None),
+        Form(None),
+    ]
 
 
 def test_name_of_utterance():
@@ -677,3 +766,19 @@ def test_extract_requested_slot_from_entity(
 
     slot_values = form.extract_requested_slot(tracker, domain)
     assert slot_values == expected_slot_values
+
+
+def test_invalid_slot_mapping():
+    form_name = "my_form"
+    form = FormAction(form_name, None)
+    slot_name = "test"
+    tracker = DialogueStateTracker.from_events(
+        "sender", [SlotSet(REQUESTED_SLOT, slot_name)]
+    )
+
+    domain = Domain.from_dict(
+        {"forms": [{form_name: {slot_name: [{"type": "invalid"}]}}]}
+    )
+
+    with pytest.raises(ValueError):
+        form.extract_requested_slot(tracker, domain)

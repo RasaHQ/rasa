@@ -7,17 +7,17 @@ from rasa.core.channels import OutputChannel
 from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.domain import Domain
 
-from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
+from rasa.core.actions.action import (
+    ActionExecutionRejection,
+    RemoteAction,
+    ACTION_LISTEN_NAME,
+)
 from rasa.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
-# TODO: Temporary implementation as part of the RulePolicy prototype
-# - add more tests
-# - simplify / refactor
 
 
 class FormAction(LoopAction):
