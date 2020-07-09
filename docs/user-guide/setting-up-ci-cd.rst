@@ -37,7 +37,7 @@ Continuous Integration (CI)
 ---------------------------
 
 The best way to improve an assistant is with frequent `incremental updates
-<https://rasa.com/docs/rasa-x/user-guide/improve-assistant/>`_.
+<https://rasa.com/docs/rasa-x/user-guide/fix-problems>`_.
 No matter how small a change is, you want to be sure that it doesn't introduce
 new problems or negatively impact the performance of your assistant.
 
@@ -110,7 +110,7 @@ End-to-end testing is only as thorough and accurate as the test
 cases you include, so you should continue to grow your set of test conversations
 as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test conversations
 to be representative of the true distribution of real conversations.
-Rasa X makes it easy to `add test conversations based on real conversations <https://rasa.com/docs/rasa-x/user-guide/improve-assistant.html#add-test-conversation>`_.
+Rasa X makes it easy to `add test conversations based on real conversations <https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests>`_.
 
 Note: End-to-end testing does **not** execute your action code. You will need to
 :ref:`test your action code <testing-action-code>` in a seperate step.

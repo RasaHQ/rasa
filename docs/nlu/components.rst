@@ -169,8 +169,6 @@ WhitespaceTokenizer
 :Description:
     Creates a token for every whitespace separated character sequence.
 :Configuration:
-    Make the tokenizer case insensitive by adding the ``case_sensitive: False`` option, the
-    default being ``case_sensitive: True``.
 
     .. code-block:: yaml
 
@@ -180,8 +178,8 @@ WhitespaceTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
-          # Text will be tokenized with case sensitive as default
-          "case_sensitive": True
+          # Regular expression to detect tokens
+          "token_pattern": None
 
 
 JiebaTokenizer
@@ -210,6 +208,8 @@ JiebaTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
+          # Regular expression to detect tokens
+          "token_pattern": None
 
 
 MitieTokenizer
@@ -229,6 +229,8 @@ MitieTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
+          # Regular expression to detect tokens
+          "token_pattern": None
 
 SpacyTokenizer
 ~~~~~~~~~~~~~~
@@ -248,6 +250,8 @@ SpacyTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
+          # Regular expression to detect tokens
+          "token_pattern": None
 
 .. _ConveRTTokenizer:
 
@@ -269,8 +273,6 @@ ConveRTTokenizer
 
 
 :Configuration:
-    Make the tokenizer case insensitive by adding the ``case_sensitive: False`` option, the
-    default being ``case_sensitive: True``.
 
     .. code-block:: yaml
 
@@ -280,8 +282,8 @@ ConveRTTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
-          # Text will be tokenized with case sensitive as default
-          "case_sensitive": True
+          # Regular expression to detect tokens
+          "token_pattern": None
 
 .. _LanguageModelTokenizer:
 
@@ -304,7 +306,6 @@ LanguageModelTokenizer
           "intent_tokenization_flag": False
           # Symbol on which intent should be split
           "intent_split_symbol": "_"
-
 
 
 .. _text-featurizers:
@@ -469,11 +470,15 @@ RegexFeaturizer
     :ref:`diet-classifier` components!
 
 :Configuration:
+    Make the featurizer case insensitive by adding the ``case_sensitive: False`` option, the default being
+    ``case_sensitive: True``.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "RegexFeaturizer"
+          # Text will be processed with case sensitive as default
+          "case_sensitive": True
 
 .. _CountVectorsFeaturizer:
 
@@ -581,9 +586,6 @@ CountVectorsFeaturizer
          |                   |                         | n-grams only from text inside word boundaries;               |
          |                   |                         | n-grams at the edges of words are padded with space.         |
          |                   |                         | Valid values: 'word', 'char', 'char_wb'.                     |
-         +-------------------+-------------------------+--------------------------------------------------------------+
-         | token_pattern     | r"(?u)\b\w\w+\b"        | Regular expression used to detect tokens.                    |
-         |                   |                         | Only used if 'analyzer' is set to 'word'.                    |
          +-------------------+-------------------------+--------------------------------------------------------------+
          | strip_accents     | None                    | Remove accents during the pre-processing step.               |
          |                   |                         | Valid values: 'ascii', 'unicode', 'None'.                    |
