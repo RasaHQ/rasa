@@ -225,39 +225,33 @@ def unarchive(byte_array: bytes, directory: Text) -> Text:
         return directory
 
 
-def convert_to_ordered_dict(obj: Dict[Any, Any]) -> OrderedDict:
-    """Convert nested dictionary to an `OrderedDict`.
+def convert_to_ordered_dict(obj: Any) -> Any:
+    """Convert object to an `OrderedDict`.
 
     Args:
-        obj: Dictionary to convert.
+        obj: Object to convert.
 
     Returns:
-        An `OrderedDict` with all nested dictionaries converted.
+        An `OrderedDict` with all nested dictionaries converted if `obj` is a
+        dictionary, otherwise the object itself.
     """
-    out = OrderedDict()
+    # use recursion on lists
+    if isinstance(obj, list):
+        return [convert_to_ordered_dict(element) for element in obj]
 
-    for k, v in obj.items():
+    if isinstance(obj, dict):
+        out = OrderedDict()
         # use recursion on dictionaries
-        if isinstance(v, dict):
+        for k, v in obj.items():
             out[k] = convert_to_ordered_dict(v)
-        # use recursion on lists
-        elif isinstance(v, list):
-            converted_list = []
-            for element in v:
-                # recursion on list elements if they're `dict`s
-                if isinstance(element, dict):
-                    converted_list.append(convert_to_ordered_dict(element))
-                else:
-                    converted_list.append(element)
-            out[k] = converted_list
-        # everything else can just be copied
-        else:
-            out[k] = v
 
-    return out
+        return out
+
+    # return all other objects
+    return obj
 
 
-def fix_yaml_representer() -> None:
+def _enable_ordered_dict_yaml_dumping() -> None:
     """Ensure that `OrderedDict`s are dumped so that the order of keys is respected."""
 
     def _order_rep(dumper: yaml.Representer, _data: Dict[Any, Any]) -> Any:
@@ -269,9 +263,7 @@ def fix_yaml_representer() -> None:
 
 
 def write_yaml_file(
-    data: Dict[Any, Any],
-    filename: Union[Text, Path],
-    should_preserve_key_order: bool = False,
+    data: Any, filename: Union[Text, Path], should_preserve_key_order: bool = False,
 ) -> None:
     """Writes a yaml file.
 
@@ -281,7 +273,7 @@ def write_yaml_file(
         should_preserve_key_order: Whether to preserve key order in `data`.
     """
     if should_preserve_key_order:
-        fix_yaml_representer()
+        _enable_ordered_dict_yaml_dumping()
         data = convert_to_ordered_dict(data)
 
     with Path(filename).open("w", encoding=DEFAULT_ENCODING) as outfile:

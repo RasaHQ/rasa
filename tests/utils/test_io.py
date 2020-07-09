@@ -346,14 +346,13 @@ def test_create_directory_for_file(tmp_path: Path):
 def test_dump_yaml_key_order(
     tmp_path: Path, should_preserve_key_order: bool, expected_keys: List[Text]
 ):
-    file = tmp_path / "dir" / "test.yml"
+    file = tmp_path / "test.yml"
 
     # create YAML file with keys in reverse-alphabetical order
     content = ""
     for i in reversed(string.ascii_lowercase):
         content += f"{i}: {uuid.uuid4().hex}\n"
 
-    io_utils.create_directory_for_file(file)
     file.write_text(content)
 
     # load this file and ensure keys are in correct reverse-alphabetical order

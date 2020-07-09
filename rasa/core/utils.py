@@ -202,9 +202,9 @@ def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
 
 
 def dump_obj_as_yaml_to_file(
-    filename: Union[Text, Path], obj: Dict, should_preserve_key_order: bool = False
+    filename: Union[Text, Path], obj: Any, should_preserve_key_order: bool = False
 ) -> None:
-    """Writes data (python dict) to the filename in yaml repr.
+    """Writes `obj` to the filename in YAML repr.
 
     Args:
         filename: Target filename.
