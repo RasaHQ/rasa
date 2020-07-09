@@ -226,18 +226,16 @@ def _get_commented_out_autoconfig_lines(
 
     autoconfig_lines = {}
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        for key in autoconfigured:
-            file = Path(tmp_dir) / f"temp_{key}.yml"
-            file.touch()
-            yaml_parser.dump(config.get(key), file)
+    for key in autoconfigured:
+        stream = yaml.compat.StringIO()
+        yaml_parser.dump(config.get(key), stream)
+        dump = stream.getvalue()
 
-            try:
-                with open(file) as f:
-                    lines = f.readlines()
-                    for i, line in enumerate(lines):
-                        lines[i] = "# " + line
-                    autoconfig_lines[key] = lines
-            except FileNotFoundError:
-                raise ValueError(f"File {file} does not exist.")
+        lines = dump.split("\n")
+        lines = lines[:-1]  # yaml dump adds an empty line at the end
+        for i, line in enumerate(lines):
+            lines[i] = "# " + line + "\n"
+
+        autoconfig_lines[key] = lines
+
     return autoconfig_lines
