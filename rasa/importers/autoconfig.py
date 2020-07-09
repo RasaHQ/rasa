@@ -53,7 +53,7 @@ def get_configuration(config_file_path: Text) -> Dict[Text, Any]:
             _dump_config(config, config_file_path, missing_keys, keys_to_configure)
 
     else:
-        logger.debug(f"No configuration file was provided to the TrainingDataImporter.")
+        logger.debug("No configuration file was provided to the TrainingDataImporter.")
         config = {}
 
     return config

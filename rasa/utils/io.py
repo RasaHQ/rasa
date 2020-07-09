@@ -100,8 +100,8 @@ def replace_environment_variables() -> None:
 def read_yaml(content: Text) -> Any:
     """Parses yaml from a text.
 
-        Args:
-            content: A text containing yaml content.
+    Args:
+        content: A text containing yaml content.
     """
     fix_yaml_loader()
 

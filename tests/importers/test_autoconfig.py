@@ -11,53 +11,93 @@ from rasa.constants import CONFIG_AUTOCONFIGURABLE_KEYS
 from rasa.importers import autoconfig
 from rasa.utils import io as io_utils
 
-CONFIG_FOLDER = "data/test_config"
+CONFIG_FOLDER = Path("data/test_config")
 
-SOME_CONFIG = CONFIG_FOLDER + "/arbitrary_example_config.yml"
-DEFAULT_CONFIG = "rasa/importers/default_config.yml"
+SOME_CONFIG = CONFIG_FOLDER / "stack_config.yml"
+DEFAULT_CONFIG = Path("rasa/importers/default_config.yml")
 
 
 @pytest.mark.parametrize(
     "config_path, autoconfig_keys",
     [
-        ("rasa/cli/initial_project/config.yml", ["pipeline", "policies"]),
-        (CONFIG_FOLDER + "/config_pipeline_only.yml", ["policies"]),
-        (CONFIG_FOLDER + "/config_policies_only.yml", ["pipeline"]),
+        (Path("rasa/cli/initial_project/config.yml"), ["pipeline", "policies"]),
+        (CONFIG_FOLDER / "config_policies_empty.yml", ["policies"]),
+        (CONFIG_FOLDER / "config_pipeline_empty.yml", ["pipeline"]),
+        (CONFIG_FOLDER / "config_policies_missing.yml", ["policies"]),
+        (CONFIG_FOLDER / "config_pipeline_missing.yml", ["pipeline"]),
         (SOME_CONFIG, []),
     ],
 )
 def test_get_configuration(
-    config_path: Text, autoconfig_keys: Set, monkeypatch: MonkeyPatch
+    config_path: Path, autoconfig_keys: Set, monkeypatch: MonkeyPatch
 ):
+    def _auto_configure(_, keys_to_configure):
+        return keys_to_configure
+
     monkeypatch.setattr(autoconfig, "_dump_config", Mock())
-    actual = autoconfig.get_configuration(config_path)
+    monkeypatch.setattr(autoconfig, "_auto_configure", _auto_configure)
 
-    default = io_utils.read_config_file(DEFAULT_CONFIG)
+    config = autoconfig.get_configuration(str(config_path))
 
-    expected = io_utils.read_config_file(config_path)
-    for key in autoconfig_keys:
-        expected[key] = default[key]
+    if autoconfig_keys:
+        expected_config = _auto_configure(config, autoconfig_keys)
+    else:
+        expected_config = config
 
-    assert actual == expected
+    assert sorted(config) == sorted(expected_config)
 
 
-@pytest.mark.parametrize("keys", (["policies"], ["pipeline"], ["policies", "pipeline"]))
-def test_auto_configure(keys: List[Text]):
+@pytest.mark.parametrize("config_file", ("non_existent_config.yml", None))
+def test_get_configuration_missing_file(tmp_path: Path, config_file: Text):
+    if config_file:
+        config_file = tmp_path / "non_existent_config.yml"
+
+    config = autoconfig.get_configuration(str(config_file))
+
+    assert config == {}
+
+
+@pytest.mark.parametrize(
+    "keys_to_configure", (["policies"], ["pipeline"], ["policies", "pipeline"])
+)
+def test_auto_configure(keys_to_configure: List[Text]):
     default_config = io_utils.read_config_file(DEFAULT_CONFIG)
 
-    config = autoconfig._auto_configure({}, keys)
+    config = autoconfig._auto_configure({}, keys_to_configure)
 
-    for k in keys:
+    for k in keys_to_configure:
         assert config[k] == default_config[k]  # given keys are configured correctly
 
-    assert len(config) == len(keys)  # no other keys are configured
+    assert len(config) == len(keys_to_configure)  # no other keys are configured
+
+
+@pytest.mark.parametrize(
+    "config_path, missing_keys",
+    [
+        (CONFIG_FOLDER / "config_language_only.yml", ["pipeline", "policies"]),
+        (CONFIG_FOLDER / "config_policies_missing.yml", ["policies"]),
+        (CONFIG_FOLDER / "config_pipeline_missing.yml", ["pipeline"]),
+        (SOME_CONFIG, []),
+    ],
+)
+def test_add_missing_config_keys_to_file(
+    tmp_path: Path, config_path: Path, missing_keys: List[Text],
+):
+    config_file = str(tmp_path / "config.yml")
+    shutil.copyfile(str(config_path), config_file)
+
+    autoconfig._add_missing_config_keys_to_file(config_file, missing_keys)
+
+    config_after_addition = io_utils.read_config_file(config_file)
+
+    assert all([(key in config_after_addition) for key in missing_keys])
 
 
 def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
 
     config_path = tmp_path / "non_existent_config.yml"
 
-    config = io_utils.read_config_file(SOME_CONFIG)
+    config = io_utils.read_config_file(str(SOME_CONFIG))
 
     autoconfig._dump_config(config, str(config_path), [], ["policies"])
 
@@ -95,13 +135,13 @@ def test_dump_config(
     capsys: CaptureFixture,
     autoconfig_keys: List[Text],
 ):
-    config_path = str(tmp_path / "config.yml")
-    shutil.copyfile(CONFIG_FOLDER + "/" + input_file, config_path)
+    config_file = str(tmp_path / "config.yml")
+    shutil.copyfile(str(CONFIG_FOLDER / input_file), config_file)
 
-    autoconfig.get_configuration(config_path)
+    autoconfig.get_configuration(config_file)
 
-    actual = io_utils.read_file(config_path)
-    expected = io_utils.read_file(CONFIG_FOLDER + "/" + expected_file)
+    actual = io_utils.read_file(config_file)
+    expected = io_utils.read_file(str(CONFIG_FOLDER / expected_file))
 
     assert actual == expected
 
