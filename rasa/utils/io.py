@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import pickle
+import re
 import tarfile
 import tempfile
 import warnings
@@ -76,9 +77,6 @@ def fix_yaml_loader() -> None:
 
 def replace_environment_variables() -> None:
     """Enable yaml loader to process the environment variables in the yaml."""
-    import re
-    import os
-
     # eg. ${USER_NAME}, ${PASSWORD}
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
     yaml.add_implicit_resolver("!env_var", env_var_pattern)
@@ -99,10 +97,10 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
+def read_yaml(content: Text) -> Any:
     """Parses yaml from a text.
 
-     Args:
+    Args:
         content: A text containing yaml content.
 
     Raises:
@@ -185,7 +183,7 @@ def pickle_load(filename: Union[Text, Path]) -> Any:
 def read_config_file(filename: Text) -> Dict[Text, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary
 
-     Args:
+    Args:
         filename: The path to the file which should be read.
     """
     content = read_yaml(read_file(filename))
@@ -205,7 +203,7 @@ def read_config_file(filename: Text) -> Dict[Text, Any]:
 def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
-     Args:
+    Args:
         filename: The path to the file which should be read.
     """
     return read_yaml(read_file(filename, DEFAULT_ENCODING))
@@ -270,7 +268,7 @@ def write_yaml_file(
 ) -> None:
     """Writes a yaml file.
 
-     Args:
+    Args:
         data: The data to write.
         filename: The path to the file which should be written.
         should_preserve_key_order: Whether to preserve key order in `data`.
@@ -461,7 +459,6 @@ def create_directory(directory_path: Text) -> None:
 
 def zip_folder(folder: Text) -> Text:
     """Create an archive from a folder."""
-    import tempfile
     import shutil
 
     zipped_path = tempfile.NamedTemporaryFile(delete=False)
