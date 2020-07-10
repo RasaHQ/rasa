@@ -144,7 +144,7 @@ For example:
 
 
 
-![image](../../img/memoization_policy_convo.png)
+<img alt="Memoization Policy Conversation" src="../../img/memoization_policy_convo.png" />
 
 While it’s good to test the bot interactively, we should also add end to end test cases that
 can later be included as part of a [CI/CD system](/docs/user-guide/setting-up-ci-cd). End-to-end [test conversations](/docs/user-guide/testing-your-assistant#end-to-end-testing)
@@ -715,7 +715,7 @@ maybe because they were gone for a few minutes:
 
 
 
-![image](../../img/greet_interjection.png)
+<img alt="Greeting Interjection" src="../../img/greet_interjection.png" width="240" />
 
 The greet intent is a good example where we will always give the same response and
 yet we don’t want the intent to affect the dialogue history. To do this, the response
@@ -775,7 +775,7 @@ For example, a user might ask a related FAQ in the middle of filling a form:
 
 
 
-![image](../../img/generic_interjection.png)
+<img alt="Generic Interjections" src="../../img/generic_interjection.png" width="240" />
 
 To handle FAQs defined with retrieval actions, you can add a simple story that will be handled by the MemoizationPolicy:
 
@@ -795,7 +795,7 @@ For example:
 
 
 
-![image](../../img/generic_interjection_handled.png)
+<img alt="Generic Interjection Handled" src="../../img/generic_interjection_handled.png" width="240" />
 
 If you find it difficult to write stories in this format, you can always use [Interactive Learning](https://rasa.com/docs/rasa/core/interactive-learning/)
 to help you create them.
@@ -810,7 +810,7 @@ the bot has requested, and the response should differ for each slot. For example
 
 
 
-![image](../../img/contextual_interjection.png)
+<img alt="Contextual Interjection" src="../../img/contextual_interjection.png" width="240" />
 
 To handle this, we need to make the `requested_slot` featurized, and assign it the categorical type:
 
@@ -968,7 +968,7 @@ We define some intent mappings to make it more intuitive to the user what an int
 
 
 
-![image](../../img/intent_mappings.png)
+<img alt="Intent Mappings" src="../../img/intent_mappings.png" width="240" />
 
 #### Out of scope intent
 
