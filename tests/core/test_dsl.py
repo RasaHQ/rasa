@@ -2,10 +2,6 @@ from typing import Text, Dict
 
 import pytest
 
-from typing import Text, Dict
-
-import pytest
-
 from rasa.core.events import UserUttered
 from rasa.core.training.dsl import EndToEndReader
 
