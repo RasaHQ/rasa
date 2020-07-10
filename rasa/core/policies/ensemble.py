@@ -5,11 +5,15 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple
+from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Type
 
 import rasa.core
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL, DOCS_URL_POLICIES
+from rasa.constants import (
+    MINIMUM_COMPATIBLE_VERSION,
+    DOCS_URL_POLICIES,
+    DEFAULT_CONFIG_PATH,
+)
 
 from rasa.core import utils
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
@@ -18,14 +22,15 @@ from rasa.core.actions.action import (
     ACTION_BACK_NAME,
     ACTION_RESTART_NAME,
 )
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
 from rasa.utils import common as common_utils
@@ -53,16 +58,13 @@ class PolicyEnsemble:
     def _check_for_important_policies(self) -> None:
         from rasa.core.policies.mapping_policy import MappingPolicy
 
-        if not any(isinstance(policy, MappingPolicy) for policy in self.policies):
+        if not any(
+            isinstance(policy, (MappingPolicy, RulePolicy)) for policy in self.policies
+        ):
             logger.info(
-                "MappingPolicy not included in policy ensemble. Default intents "
-                "'{} and {} will not trigger actions '{}' and '{}'."
-                "".format(
-                    USER_INTENT_RESTART,
-                    USER_INTENT_BACK,
-                    ACTION_RESTART_NAME,
-                    ACTION_BACK_NAME,
-                )
+                f"MappingPolicy not included in policy ensemble. Default intents "
+                f"'{USER_INTENT_RESTART} and {USER_INTENT_BACK} will not trigger "
+                f"actions '{ACTION_RESTART_NAME}' and '{ACTION_BACK_NAME}'."
             )
 
     @staticmethod
@@ -85,17 +87,14 @@ class PolicyEnsemble:
     ) -> None:
         """Check for elements that only work with certain policy/domain combinations."""
 
-        from rasa.core.policies.form_policy import FormPolicy
         from rasa.core.policies.mapping_policy import MappingPolicy
         from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 
-        policies_needing_validation = [
-            FormPolicy,
-            MappingPolicy,
-            TwoStageFallbackPolicy,
-        ]
+        policies_needing_validation = [MappingPolicy, TwoStageFallbackPolicy]
         for policy in policies_needing_validation:
             policy.validate_against_domain(ensemble, domain)
+
+        _check_policy_for_forms_available(domain, ensemble)
 
     def _check_priorities(self) -> None:
         """Checks for duplicate policy priorities within PolicyEnsemble."""
@@ -114,6 +113,68 @@ class PolicyEnsemble:
                     docs=DOCS_URL_POLICIES,
                 )
 
+    def _policy_ensemble_contains_policy_with_rules_support(self) -> bool:
+        """Determine whether the policy ensemble contains at least one policy
+        supporting rule-based data.
+
+        Returns:
+            Whether or not the policy ensemble contains at least one policy that
+            supports rule-based data.
+        """
+        return any(
+            policy.supported_data()
+            in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
+            for policy in self.policies
+        )
+
+    @staticmethod
+    def _training_trackers_contain_rule_trackers(
+        training_trackers: List[DialogueStateTracker],
+    ) -> bool:
+        """Determine whether there are rule-based training trackers.
+
+        Args:
+            training_trackers: Trackers to inspect.
+
+        Returns:
+            Whether or not any of the supplied training trackers contain rule-based
+            data.
+        """
+        return any(tracker.is_rule_tracker for tracker in training_trackers)
+
+    def _emit_rule_policy_warning(
+        self, training_trackers: List[DialogueStateTracker]
+    ) -> None:
+        """Emit `UserWarning`s about missing rule-based data."""
+        is_rules_consuming_policy_available = (
+            self._policy_ensemble_contains_policy_with_rules_support()
+        )
+        training_trackers_contain_rule_trackers = self._training_trackers_contain_rule_trackers(
+            training_trackers
+        )
+
+        # TODO: add new docs links to these warnings
+        if (
+            is_rules_consuming_policy_available
+            and not training_trackers_contain_rule_trackers
+        ):
+            common_utils.raise_warning(
+                f"Found a rule-based policy in your pipeline but "
+                f"no rule-based training data. Please add rule-based "
+                f"stories to your training data or "
+                f"remove the rule-based policy (`{RulePolicy.__name__}`) from your "
+                f"your pipeline."
+            )
+        elif (
+            not is_rules_consuming_policy_available
+            and training_trackers_contain_rule_trackers
+        ):
+            common_utils.raise_warning(
+                f"Found rule-based training data but no policy supporting rule-based "
+                f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
+                f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`."
+            )
+
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
@@ -122,15 +183,21 @@ class PolicyEnsemble:
         **kwargs: Any,
     ) -> None:
         if training_trackers:
+            self._emit_rule_policy_warning(training_trackers)
+
             for policy in self.policies:
+                trackers_to_train = SupportedData.trackers_for_policy(
+                    policy, training_trackers
+                )
                 policy.train(
-                    training_trackers, domain, interpreter=interpreter, **kwargs
+                    trackers_to_train, domain, interpreter=interpreter, **kwargs
                 )
 
             training_events = self._training_events_from_trackers(training_trackers)
             self.action_fingerprints = self._create_action_fingerprints(training_events)
         else:
             logger.info("Skipped training, because there are no training samples.")
+
         self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
 
     def probabilities_using_best_policy(
@@ -327,6 +394,8 @@ class PolicyEnsemble:
                     "".format(policy_name)
                 )
 
+        cls._assert_rule_policy_not_used_with_other_rule_like_policy(parsed_policies)
+
         return parsed_policies
 
     @classmethod
@@ -352,6 +421,37 @@ class PolicyEnsemble:
         )
 
         return state_featurizer_func, state_featurizer_config
+
+    @staticmethod
+    def _assert_rule_policy_not_used_with_other_rule_like_policy(
+        policies: List[Policy],
+    ) -> None:
+        if not any(isinstance(policy, RulePolicy) for policy in policies):
+            return
+
+        from rasa.core.policies.mapping_policy import MappingPolicy
+        from rasa.core.policies.form_policy import FormPolicy
+        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+
+        policies_not_be_used_with_rule_policy = (
+            MappingPolicy,
+            FormPolicy,
+            FallbackPolicy,
+            TwoStageFallbackPolicy,
+        )
+
+        if any(
+            isinstance(policy, policies_not_be_used_with_rule_policy)
+            for policy in policies
+        ):
+            # TODO: Add link to the RulePolicy documentation
+            raise InvalidPolicyConfig(
+                "It is not possible to use the RulePolicy with "
+                "other policies which implement rule-like "
+                "behavior. Either re-implement the desired "
+                "behavior as rules or remove the RulePolicy from"
+                "your policy configuration."
+            )
 
 
 class Prediction(NamedTuple):
@@ -586,6 +686,29 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         logger.debug(f"Predicted next action using {policy_name}")
         return probabilities, policy_name
+
+
+def _check_policy_for_forms_available(
+    domain: Domain, ensemble: Optional["PolicyEnsemble"]
+) -> None:
+    if not ensemble:
+        return
+
+    from rasa.core.policies.form_policy import FormPolicy
+
+    suited_policies_for_forms = (FormPolicy, RulePolicy)
+
+    has_policy_for_forms = ensemble is not None and any(
+        isinstance(policy, suited_policies_for_forms) for policy in ensemble.policies
+    )
+
+    if domain.form_names and not has_policy_for_forms:
+        raise InvalidDomain(
+            "You have defined a form action, but haven't added the "
+            "FormPolicy to your policy ensemble. Either remove all "
+            "forms from your domain or exclude the FormPolicy from your "
+            "policy configuration."
+        )
 
 
 class InvalidPolicyConfig(Exception):

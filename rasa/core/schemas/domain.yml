@@ -30,6 +30,8 @@ mapping:
     type: "seq"
     sequence:
     - type: "str"
+    - type: "map"
+      allowempty: True
     allowempty: True
   config:
     type: "map"

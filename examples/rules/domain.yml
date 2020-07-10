@@ -1,0 +1,91 @@
+intents:
+- activate_q_form
+- inform
+- explain
+- stopp
+- ask_possibilities
+- faq
+- affirm
+- deny
+- greet
+- switch_faq
+- nlu_fallback
+
+entities:
+- some_slot
+
+slots:
+  some_slot:
+    type: unfeaturized
+  detailed_faq:
+    type: bool
+
+actions:
+- utter_explain_some_slot
+- action_stop_q_form
+- utter_list_possibilities
+- utter_faq
+- utter_ask_did_help
+- utter_continue
+- utter_detailed_faq
+- utter_ask_stop
+- utter_stop
+- utter_greet
+- action_switch_faq
+- utter_did_you_mean
+# You can implement a custom action to validate extracted slots of your form.
+# Return a `slot` event which sets the value to `None` in order to make the form request
+# the slot again. You can also return `slot` events for other slots which you can
+# extract as part of your custom action.
+#- validate_loop_q_form
+
+forms:
+- loop_q_form:
+    some_slot:
+    # Slot mappings can be defined in the domain.
+    # You can also implement custom slot mappings in your validate function for the
+    # `Form` by returning the desired slot events.
+    # The slot mappings follow the same syntax as currently in the SDK implementation.
+    - type: from_entity
+      entity: some_slot
+    # Example of a slot mapping which extracts the slot value from the message text if
+    # the intent is `greet`.
+    # - type: from_text
+    #   intent: greet
+    # Example of a slot mapping which sets the slot to `my value` in case the message
+    # has an intent `greet`
+    # - type: from_intent
+    #   intent: greet
+    #   value: "my value"
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true
+
+responses:
+  utter_ask_some_slot:
+    - text: "utter_ask_some_slot"
+  utter_explain_some_slot:
+    - text: "utter_explain_some_slot"
+  utter_list_possibilities:
+    - text: "utter_list_possibilities"
+  utter_faq:
+    - text: "utter_faq"
+  utter_ask_did_help:
+    - text: "utter_ask_did_help"
+  utter_continue:
+    - text: "utter_continue"
+  utter_detailed_faq:
+    - text: "utter_detailed_faq"
+  utter_ask_stop:
+    - text: "utter_ask_stop"
+  utter_stop:
+    - text: "utter_stop"
+  utter_greet:
+    - text: "utter_greet"
+  utter_did_you_mean:
+    - text: "utter_did_you_mean"
+  utter_revert_fallback_and_reapply_last_intent:
+    - text: "utter_revert_fallback_and_reapply_last_intent"
+  utter_default:
+    - text: "I give up."
