@@ -13,7 +13,6 @@ from typing import (
     List,
     Deque,
     Iterable,
-    Tuple,
     Union,
 )
 
@@ -168,9 +167,9 @@ class DialogueStateTracker:
     ) -> Dict[Text, Any]:
         """Return the current tracker state as an object."""
 
-        evts = self._events_for_verbosity(event_verbosity)
-        if evts:
-            evts = [e.as_dict() for e in evts]
+        _events = self._events_for_verbosity(event_verbosity)
+        if _events:
+            _events = [e.as_dict() for e in _events]
         latest_event_time = None
         if len(self.events) > 0:
             latest_event_time = self.events[-1].timestamp
@@ -182,7 +181,7 @@ class DialogueStateTracker:
             "latest_event_time": latest_event_time,
             "followup_action": self.followup_action,
             "paused": self.is_paused(),
-            "events": evts,
+            "events": _events,
             "latest_input_channel": self.get_latest_input_channel(),
             # TODO: Should we add a `active_loop` key and provide both keys for a while?
             "active_form": self.active_loop,
@@ -347,7 +346,7 @@ class DialogueStateTracker:
 
         applied_events = []
 
-        for idx, event in enumerate(self.events):
+        for event in self.events:
             if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
@@ -376,8 +375,8 @@ class DialogueStateTracker:
 
     @staticmethod
     def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:
-        """Removes events from `done_events` until the first
-           occurrence `event_type` is found which is also removed."""
+        """Removes events from `done_events` until the first occurrence `event_type`
+        is found which is also removed."""
         # list gets modified - hence we need to copy events!
         for e in reversed(done_events[:]):
             del done_events[-1]

@@ -13,7 +13,6 @@ from rasa.core.interpreter import RegexInterpreter
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training import loading
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
-from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import Story
 
 

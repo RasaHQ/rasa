@@ -30,16 +30,18 @@ from rasa.core.events import (
     ActionExecuted,
     Event,
     BotUttered,
+    SlotSet,
+    Form,
+    Restarted,
+    SessionStarted,
 )
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
-from typing import Coroutine, Union
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
     from rasa.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
-    from rasa.core.events import SlotSet
 
 logger = logging.getLogger(__name__)
 
@@ -109,11 +111,10 @@ def action_from_name(
     name: Text,
     action_endpoint: Optional[EndpointConfig],
     user_actions: List[Text],
-    form_names: Optional[List[Text]] = None,
+    should_use_form_action: bool = False,
 ) -> "Action":
     """Return an action instance for the name."""
 
-    # TODO: Why do we need to create instances of everything if just need one thing?!
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
 
     if name in defaults and name not in user_actions:
@@ -122,7 +123,7 @@ def action_from_name(
         return ActionUtterTemplate(name)
     elif name.startswith(RESPOND_PREFIX):
         return ActionRetrieveResponse(name)
-    elif form_names and name in form_names:
+    elif should_use_form_action:
         from rasa.core.actions.forms import FormAction
 
         return FormAction(name, action_endpoint)
@@ -351,8 +352,6 @@ class ActionRestart(ActionUtterTemplate):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        from rasa.core.events import Restarted
-
         # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
@@ -378,8 +377,6 @@ class ActionSessionStart(Action):
     ) -> List["SlotSet"]:
         """Fetch SlotSet events from tracker and carry over key, value and metadata."""
 
-        from rasa.core.events import SlotSet
-
         return [
             SlotSet(key=event.key, value=event.value, metadata=event.metadata)
             for event in tracker.applied_events()
@@ -393,8 +390,6 @@ class ActionSessionStart(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        from rasa.core.events import SessionStarted
-
         _events = [SessionStarted(metadata=self.metadata)]
 
         if domain.session_config.carry_over_slots:
@@ -422,8 +417,6 @@ class ActionDefaultFallback(ActionUtterTemplate):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        from rasa.core.events import UserUtteranceReverted
-
         # only utter the response if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
@@ -443,8 +436,6 @@ class ActionDeactivateForm(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        from rasa.core.events import Form, SlotSet
-
         return [Form(None), SlotSet(REQUESTED_SLOT, None)]
 
 
@@ -731,7 +722,6 @@ class ActionDefaultAskAffirmation(Action):
     ) -> List[Event]:
         intent_to_affirm = tracker.latest_message.intent.get("name")
 
-        # TODO: Simplify once the RulePolicy is out of prototype stage
         intent_ranking = tracker.latest_message.intent.get(INTENT_RANKING_KEY, [])
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME

@@ -4,8 +4,9 @@ import os
 import typing
 from typing import Any, List, Text, Optional
 
-from rasa.constants import DOCS_URL_POLICIES
+from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 import rasa.utils.io
+from rasa.utils import common as common_utils
 
 from rasa.core.actions.action import (
     ACTION_BACK_NAME,
@@ -49,6 +50,13 @@ class MappingPolicy(Policy):
         """Create a new Mapping policy."""
 
         super().__init__(priority=priority)
+
+        common_utils.raise_warning(
+            f"'{MappingPolicy.__name__}' is deprecated and will be removed in "
+            "the future. It is recommended to use the 'RulePolicy' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
 
     @classmethod
     def validate_against_domain(

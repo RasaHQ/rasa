@@ -7,6 +7,7 @@ from collections import defaultdict
 from rasa.core.events import FormValidation
 from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
 from rasa.core.trackers import DialogueStateTracker
@@ -61,7 +62,7 @@ class RulePolicy(MemoizationPolicy):
 
         super().__init__(featurizer=featurizer, priority=priority, lookup=lookup)
 
-    def _create_feature_key(self, states: List[Dict]):
+    def _create_feature_key(self, states: List[Dict]) -> Text:
 
         feature_str = ""
         for state in states:
@@ -74,7 +75,7 @@ class RulePolicy(MemoizationPolicy):
         return feature_str
 
     @staticmethod
-    def _features_in_state(fs, state):
+    def _features_in_state(features: List[Text], state: Dict[Text, float]) -> bool:
 
         state_slots = defaultdict(set)
         for s in state.keys():
@@ -82,10 +83,12 @@ class RulePolicy(MemoizationPolicy):
                 state_slots[s[: s.rfind("_")]].add(s)
 
         f_slots = defaultdict(set)
-        for f in fs:
+        for f in features:
+            # TODO: this is a hack to make a rule know
+            #  that slot or form should not be set;
+            #  `_None` is added inside domain to indicate that
+            #  the feature should not be present
             if f.endswith("_None"):
-                # TODO: this is a hack to make a rule know
-                #  that slot or form should not be set
                 if any(f[: f.rfind("_")] in key for key in state.keys()):
                     return False
             elif f not in state:
@@ -99,16 +102,24 @@ class RulePolicy(MemoizationPolicy):
 
         return True
 
-    def _rule_is_good(self, key, i, state):
-        return (
-            i >= len(key.split("|"))
-            or (not list(reversed(key.split("|")))[i] and not state)
+    def _rule_is_good(
+        self, rule_key: Text, turn_index: int, state: Dict[Text, float]
+    ) -> bool:
+        """Check if rule is satisfied with current state at turn."""
+
+        # turn_index goes back in time
+        rule_turns = list(reversed(rule_key.split("|")))
+
+        return bool(
+            # rule is shorter than current turn index
+            turn_index >= len(rule_turns)
+            # current rule and state turns are empty
+            or (not rule_turns[turn_index] and not state)
+            # check that current rule turn features are present in current state turn
             or (
-                list(reversed(key.split("|")))[i]
+                rule_turns[turn_index]
                 and state
-                and self._features_in_state(
-                    list(reversed(key.split("|")))[i].split(), state
-                )
+                and self._features_in_state(rule_turns[turn_index].split(), state)
             )
         )
 
@@ -116,6 +127,7 @@ class RulePolicy(MemoizationPolicy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers."""
@@ -164,7 +176,11 @@ class RulePolicy(MemoizationPolicy):
         logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts the next action the bot should take after seeing the tracker.
 
@@ -206,8 +222,9 @@ class RulePolicy(MemoizationPolicy):
             logger.debug(f"Predicted form '{active_form_name}'.")
             result[domain.index_for_action(active_form_name)] = 1
             return result
+
         # predict `action_listen` if form action was run successfully
-        elif should_predict_listen:
+        if should_predict_listen:
             logger.debug(
                 f"Predicted '{ACTION_LISTEN_NAME}' after form '{active_form_name}'."
             )

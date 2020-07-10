@@ -1,14 +1,17 @@
-from typing import List
+from abc import ABC
+from typing import List, TYPE_CHECKING
 
 from rasa.core.actions import Action
-from rasa.core.channels import OutputChannel
-from rasa.core.domain import Domain
 from rasa.core.events import Event, Form
-from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker
+
+if TYPE_CHECKING:
+    from rasa.core.channels import OutputChannel
+    from rasa.core.domain import Domain
+    from rasa.core.nlg import NaturalLanguageGenerator
+    from rasa.core.trackers import DialogueStateTracker
 
 
-class LoopAction(Action):
+class LoopAction(Action, ABC):
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -17,6 +20,7 @@ class LoopAction(Action):
         domain: "Domain",
     ) -> List[Event]:
         events = []
+
         if not await self.is_activated(output_channel, nlg, tracker, domain):
             events += self._default_activation_events()
             events += await self.activate(output_channel, nlg, tracker, domain)
@@ -43,6 +47,7 @@ class LoopAction(Action):
 
     # default implementation checks if form active
     def _default_activation_events(self) -> List[Event]:
+        # TODO if this is in the loop action, probably it should not be `Form`
         return [Form(self.name())]
 
     async def activate(

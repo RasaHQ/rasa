@@ -89,13 +89,13 @@ class MemoizationPolicy(Policy):
 
         if self.max_history:
             assert len(trackers_as_states[0]) == self.max_history, (
-                "Trying to mem featurized data with {} historic turns. Expected: "
-                "{}".format(len(trackers_as_states[0]), self.max_history)
+                f"Trying to memorizefeaturized data with {len(trackers_as_states[0])} "
+                f"historic turns. Expected: {self.max_history}"
             )
 
         assert len(trackers_as_actions[0]) == 1, (
-            "The second dimension of trackers_as_action should be 1, "
-            "instead of {}".format(len(trackers_as_actions[0]))
+            f"The second dimension of trackers_as_action should be 1, "
+            f"instead of {len(trackers_as_actions[0])}"
         )
 
         ambiguous_feature_keys = set()
@@ -116,13 +116,12 @@ class MemoizationPolicy(Policy):
                     if self.lookup[feature_key] != feature_item:
                         if online:
                             logger.info(
-                                "Original stories are "
-                                "different for {} -- {}\n"
-                                "Memorized the new ones for "
-                                "now. Delete contradicting "
-                                "examples after exporting "
-                                "the new stories."
-                                "".format(states, action)
+                                f"Original stories are "
+                                f"different for {states} -- {action}\n"
+                                f"Memorized the new ones for "
+                                f"now. Delete contradicting "
+                                f"examples after exporting "
+                                f"the new stories."
                             )
                             self.lookup[feature_key] = feature_item
                         else:
@@ -164,7 +163,7 @@ class MemoizationPolicy(Policy):
             trackers_as_actions,
         ) = self.featurizer.training_states_and_actions(training_trackers, domain)
         self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
-        logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
+        logger.debug(f"Memorized {len(self.lookup)} unique examples.")
 
     def _recall_states(self, states: List[Dict[Text, float]]) -> Optional[int]:
 

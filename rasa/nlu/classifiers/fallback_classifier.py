@@ -14,7 +14,6 @@ class FallbackClassifier(Component):
 
     # please make sure to update the docs when changing a default parameter
     defaults = {
-        # ## Architecture of the used neural network
         # If all intent confidence scores are beyond this threshold, set the current
         # intent to `FALLBACK_INTENT_NAME`
         THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_THRESHOLD
@@ -44,8 +43,8 @@ class FallbackClassifier(Component):
         if not self._should_fallback(message):
             return
 
-        message.data[INTENT] = self._fallback_intent()
-        message.data[INTENT_RANKING_KEY].insert(0, self._fallback_intent())
+        message.data[INTENT] = _fallback_intent()
+        message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent())
 
     def _should_fallback(self, message: Message) -> bool:
         return (
@@ -53,9 +52,10 @@ class FallbackClassifier(Component):
             < self.component_config[THRESHOLD_KEY]
         )
 
-    def _fallback_intent(self) -> Dict[Text, Union[Text, float]]:
-        return {
-            "name": DEFAULT_NLU_FALLBACK_INTENT_NAME,
-            # TODO: Re-consider how we represent the confidence here
-            INTENT_CONFIDENCE_KEY: 1.0,
-        }
+
+def _fallback_intent() -> Dict[Text, Union[Text, float]]:
+    return {
+        "name": DEFAULT_NLU_FALLBACK_INTENT_NAME,
+        # TODO: Re-consider how we represent the confidence here
+        INTENT_CONFIDENCE_KEY: 1.0,
+    }

@@ -48,13 +48,13 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
     def __init__(
         self,
-        sender_id,
-        slots,
-        max_event_history=None,
-        domain=None,
-        is_augmented=False,
+        sender_id: Text,
+        slots: Optional[List[Slot]],
+        max_event_history: Optional[int] = None,
+        domain: Optional[Domain] = None,
+        is_augmented: bool = False,
         is_rule_tracker: bool = False,
-    ):
+    ) -> None:
         super().__init__(
             sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
         )
@@ -73,7 +73,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         sender_source: Optional[Text] = None,
         domain: Optional[Domain] = None,
         is_rule_tracker: bool = False,
-    ):
+    ) -> "TrackerWithCachedStates":
         tracker = cls(
             sender_id, slots, max_event_history, domain, is_rule_tracker=is_rule_tracker
         )
@@ -238,13 +238,16 @@ class TrainingDataGenerator:
     def _generate(
         self, story_steps: List[StoryStep], is_rule_data: bool = False
     ) -> List[TrackerWithCachedStates]:
+        if not story_steps:
+            logger.debug(f"No {'rules' if is_rule_data else 'story blocks'} found.")
+            return []
+
         if self.config.remove_duplicates and self.config.unique_last_num_states:
             logger.debug(
                 "Generated trackers will be deduplicated "
                 "based on their unique last {} states."
                 "".format(self.config.unique_last_num_states)
             )
-
         self._mark_first_action_in_story_steps_as_unpredictable()
 
         active_trackers = defaultdict(list)
@@ -297,12 +300,12 @@ class TrainingDataGenerator:
                 break
 
             # track unused checkpoints for this phase
-            unused_checkpoints = set()  # type: Set[Text]
+            unused_checkpoints: Set[Text] = set()
 
             desc = f"Processed {'rules' if is_rule_data else 'story blocks'}"
-            pbar = tqdm(story_steps, desc=desc, disable=is_logging_disabled(),)
+            pbar = tqdm(story_steps, desc=desc, disable=is_logging_disabled())
             for step in pbar:
-                incoming_trackers = []  # type: List[TrackerWithCachedStates]
+                incoming_trackers: List[TrackerWithCachedStates] = []
                 for start in step.start_checkpoints:
                     if active_trackers[start.name]:
                         ts = start.filter_trackers(active_trackers[start.name])
@@ -418,7 +421,7 @@ class TrainingDataGenerator:
                 # augmentation round, so we process only
                 # story end checkpoints
                 # reset used checkpoints
-                used_checkpoints = set()  # type: Set[Text]
+                used_checkpoints: Set[Text] = set()
 
                 # generate active trackers for augmentation
                 active_trackers = self._create_start_trackers_for_augmentation(

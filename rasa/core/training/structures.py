@@ -10,16 +10,7 @@ from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
-from rasa.core.events import (
-    UserUttered,
-    ActionExecuted,
-    Form,
-    FormValidation,
-    SlotSet,
-    Event,
-    ActionExecutionRejected,
-    SessionStarted,
-)
+from rasa.core.events import UserUttered, ActionExecuted, Event, SessionStarted
 from rasa.core.trackers import DialogueStateTracker
 
 if typing.TYPE_CHECKING:
@@ -153,7 +144,8 @@ class StoryStep:
                 or isinstance(s, SessionStarted)
             ):
                 continue
-            elif isinstance(s, UserUttered):
+
+            if isinstance(s, UserUttered):
                 result += self._user_string(s, e2e)
             elif isinstance(s, Event):
                 converted = s.as_story_string()

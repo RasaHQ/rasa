@@ -104,6 +104,9 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
 
      Args:
         content: A text containing yaml content.
+
+    Raises:
+        ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
     fix_yaml_loader()
 
@@ -263,7 +266,7 @@ def _enable_ordered_dict_yaml_dumping() -> None:
 
 
 def write_yaml_file(
-    data: Any, filename: Union[Text, Path], should_preserve_key_order: bool = False,
+    data: Any, filename: Union[Text, Path], should_preserve_key_order: bool = False
 ) -> None:
     """Writes a yaml file.
 
@@ -277,9 +280,7 @@ def write_yaml_file(
         data = convert_to_ordered_dict(data)
 
     with Path(filename).open("w", encoding=DEFAULT_ENCODING) as outfile:
-        yaml.dump(
-            data, outfile, default_flow_style=False, allow_unicode=True,
-        )
+        yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True)
 
 
 def write_text_file(

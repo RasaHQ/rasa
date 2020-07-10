@@ -575,15 +575,15 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         If the slice is at the array borders, padding will be added to ensure
         the slice length.
         """
-        if slice_length is not None:
-            slice_end = len(states)
-            slice_start = max(0, slice_end - slice_length)
-            padding = [None] * max(0, slice_length - slice_end)
-            # noinspection PyTypeChecker
-            state_features = padding + states[slice_start:]
-            return state_features
-        else:
+        if slice_length is None:
             return states
+
+        slice_end = len(states)
+        slice_start = max(0, slice_end - slice_length)
+        padding = [None] * max(0, slice_length - slice_end)
+        # noinspection PyTypeChecker
+        state_features = padding + states[slice_start:]
+        return state_features
 
     @staticmethod
     def _hash_example(states, action) -> int:
