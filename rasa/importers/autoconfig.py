@@ -1,8 +1,6 @@
 import copy
 import logging
 import os
-from pathlib import Path
-import tempfile
 
 from typing import Text, Dict, Any, List
 
@@ -59,8 +57,8 @@ def get_configuration(config_file_path: Text) -> Dict[Text, Any]:
     return config
 
 
-def _get_unspecified_autoconfigurable_keys(config: Dict[Text, Any]) -> List[Text]:
-    return [k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not config.get(k)]
+def _get_unspecified_autoconfigurable_keys(config: Dict[Text, Any]) -> Set[Text]:
+    return {k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not config.get(k)}
 
 
 def _get_missing_config_keys(config: Dict[Text, Any]) -> List[Text]:
@@ -176,10 +174,11 @@ def _is_config_file_as_expected(
 def _add_missing_config_keys_to_file(
     config_file_path: Text, missing_keys: List
 ) -> None:
-    if missing_keys:
-        with open(config_file_path, "a", encoding=io_utils.DEFAULT_ENCODING) as f:
-            for key in missing_keys:
-                f.write(f"{key}:\n")
+    if not missing_keys:
+        return
+    with open(config_file_path, "a", encoding=io_utils.DEFAULT_ENCODING) as f:
+        for key in missing_keys:
+            f.write(f"{key}:\n")
 
 
 def _get_lines_including_autoconfig(
@@ -234,7 +233,7 @@ def _get_commented_out_autoconfig_lines(
         lines = dump.split("\n")
         lines = lines[:-1]  # yaml dump adds an empty line at the end
         for i, line in enumerate(lines):
-            lines[i] = "# " + line + "\n"
+            lines[i] = f"# {line}\n"
 
         autoconfig_lines[key] = lines
 
