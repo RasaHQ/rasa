@@ -2,7 +2,7 @@ import copy
 import logging
 import os
 
-from typing import Text, Dict, Any, List
+from typing import Text, Dict, Any, List, Set
 
 from rasa.cli import utils as cli_utils
 from rasa.constants import (
@@ -19,14 +19,14 @@ COMMENTS_FOR_KEYS = {
     "pipeline": (
         f"# # No configuration for the NLU pipeline was provided. The following "
         f"default pipeline was used to train your model.\n"
-        f"# # To customise it, uncomment and adjust the pipeline. See "
-        f"{DOCS_URL_PIPELINE} for more information.\n"
+        f"# # If you'd like to customize it, uncomment and adjust the pipeline.\n"
+        f"# # See {DOCS_URL_PIPELINE} for more information.\n"
     ),
     "policies": (
         f"# # No configuration for policies was provided. The following default "
         f"policies were used to train your model.\n"
-        f"# # To customise them, uncomment and adjust the policies. See "
-        f"{DOCS_URL_POLICIES} for more information.\n"
+        f"# # If you'd like to customize them, uncomment and adjust the policies.\n"
+        f"# # See {DOCS_URL_POLICIES} for more information.\n"
     ),
 }
 
@@ -40,19 +40,18 @@ def get_configuration(config_file_path: Text) -> Dict[Text, Any]:
     Args:
         config_file_path: The path to the configuration file.
     """
-    if config_file_path and os.path.exists(config_file_path):
-        config = io_utils.read_config_file(config_file_path)
-
-        missing_keys = _get_missing_config_keys(config)
-        keys_to_configure = _get_unspecified_autoconfigurable_keys(config)
-
-        if keys_to_configure:
-            config = _auto_configure(config, keys_to_configure)
-            _dump_config(config, config_file_path, missing_keys, keys_to_configure)
-
-    else:
+    if not config_file_path or not os.path.exists(config_file_path):
         logger.debug("No configuration file was provided to the TrainingDataImporter.")
-        config = {}
+        return {}
+
+    config = io_utils.read_config_file(config_file_path)
+
+    missing_keys = _get_missing_config_keys(config)
+    keys_to_configure = _get_unspecified_autoconfigurable_keys(config)
+
+    if keys_to_configure:
+        config = _auto_configure(config, keys_to_configure)
+        _dump_config(config, config_file_path, missing_keys, keys_to_configure)
 
     return config
 
@@ -61,12 +60,12 @@ def _get_unspecified_autoconfigurable_keys(config: Dict[Text, Any]) -> Set[Text]
     return {k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not config.get(k)}
 
 
-def _get_missing_config_keys(config: Dict[Text, Any]) -> List[Text]:
-    return [k for k in CONFIG_KEYS if k not in config.keys()]
+def _get_missing_config_keys(config: Dict[Text, Any]) -> Set[Text]:
+    return {k for k in CONFIG_KEYS if k not in config.keys()}
 
 
 def _auto_configure(
-    config: Dict[Text, Any], keys_to_configure: List[Text]
+    config: Dict[Text, Any], keys_to_configure: Set[Text]
 ) -> Dict[Text, Any]:
     """Complete a config by adding automatic configuration for the specified keys.
 
@@ -84,7 +83,7 @@ def _auto_configure(
         logger.debug(
             f"The provided configuration does not contain the key(s) "
             f"{common_utils.transform_collection_to_sentence(keys_to_configure)}. "
-            f"Running automatic configuration for them now."
+            f"Values will be provided from the default configuration."
         )
 
     default_config_file = pkg_resources.resource_filename(
@@ -103,8 +102,8 @@ def _auto_configure(
 def _dump_config(
     config: Dict[Text, Any],
     config_file_path: Text,
-    missing_keys: List[Text],
-    auto_configured_keys: List[Text],
+    missing_keys: Set[Text],
+    auto_configured_keys: Set[Text],
 ) -> None:
     """Dump the automatically configured keys into the config file.
 
@@ -146,18 +145,17 @@ def _dump_config(
         for line in updated_lines:
             f.write(line)
 
-    if auto_configured_keys:
-        auto_configured_keys = common_utils.transform_collection_to_sentence(
-            auto_configured_keys
-        )
-        cli_utils.print_info(
-            f"The configuration for {auto_configured_keys} was chosen automatically. It "
-            f"was written into the config file at '{config_file_path}'."
-        )
+    auto_configured_keys = common_utils.transform_collection_to_sentence(
+        auto_configured_keys
+    )
+    cli_utils.print_info(
+        f"The configuration for {auto_configured_keys} was chosen automatically. It "
+        f"was written into the config file at '{config_file_path}'."
+    )
 
 
 def _is_config_file_as_expected(
-    config_file_path: Text, missing_keys: List[Text], auto_configured_keys: List[Text],
+    config_file_path: Text, missing_keys: Set[Text], auto_configured_keys: Set[Text],
 ) -> bool:
     try:
         content = io_utils.read_config_file(config_file_path)
@@ -172,7 +170,7 @@ def _is_config_file_as_expected(
 
 
 def _add_missing_config_keys_to_file(
-    config_file_path: Text, missing_keys: List
+    config_file_path: Text, missing_keys: Set[Text]
 ) -> None:
     if not missing_keys:
         return
@@ -216,24 +214,25 @@ def _get_lines_including_autoconfig(
 
 
 def _get_commented_out_autoconfig_lines(
-    config: Dict[Text, Any], autoconfigured: List[Text]
+    config: Dict[Text, Any], auto_configured_keys: Set[Text]
 ) -> Dict[Text, List[Text]]:
     import ruamel.yaml as yaml
+    import ruamel.yaml.compat
 
     yaml_parser = yaml.YAML()
     yaml_parser.indent(mapping=2, sequence=4, offset=2)
 
     autoconfig_lines = {}
 
-    for key in autoconfigured:
+    for key in auto_configured_keys:
         stream = yaml.compat.StringIO()
         yaml_parser.dump(config.get(key), stream)
         dump = stream.getvalue()
 
         lines = dump.split("\n")
-        lines = lines[:-1]  # yaml dump adds an empty line at the end
-        for i, line in enumerate(lines):
-            lines[i] = f"# {line}\n"
+        if not lines[-1]:
+            lines = lines[:-1]  # yaml dump adds an empty line at the end
+        lines = [f"# {line}\n" for line in lines]
 
         autoconfig_lines[key] = lines
 

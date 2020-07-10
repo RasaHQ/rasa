@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from typing import List, Text, Set
+from typing import Text, Set
 from unittest.mock import Mock
 
 import pytest
@@ -20,18 +20,18 @@ DEFAULT_CONFIG = Path("rasa/importers/default_config.yml")
 @pytest.mark.parametrize(
     "config_path, autoconfig_keys",
     [
-        (Path("rasa/cli/initial_project/config.yml"), ["pipeline", "policies"]),
-        (CONFIG_FOLDER / "config_policies_empty.yml", ["policies"]),
-        (CONFIG_FOLDER / "config_pipeline_empty.yml", ["pipeline"]),
-        (CONFIG_FOLDER / "config_policies_missing.yml", ["policies"]),
-        (CONFIG_FOLDER / "config_pipeline_missing.yml", ["pipeline"]),
-        (SOME_CONFIG, []),
+        (Path("rasa/cli/initial_project/config.yml"), {"pipeline", "policies"}),
+        (CONFIG_FOLDER / "config_policies_empty.yml", {"policies"}),
+        (CONFIG_FOLDER / "config_pipeline_empty.yml", {"pipeline"}),
+        (CONFIG_FOLDER / "config_policies_missing.yml", {"policies"}),
+        (CONFIG_FOLDER / "config_pipeline_missing.yml", {"pipeline"}),
+        (SOME_CONFIG, set()),
     ],
 )
 def test_get_configuration(
-    config_path: Path, autoconfig_keys: Set, monkeypatch: MonkeyPatch
+    config_path: Path, autoconfig_keys: Set[Text], monkeypatch: MonkeyPatch
 ):
-    def _auto_configure(_, keys_to_configure):
+    def _auto_configure(_, keys_to_configure: Set[Text]) -> Set[Text]:
         return keys_to_configure
 
     monkeypatch.setattr(autoconfig, "_dump_config", Mock())
@@ -58,9 +58,9 @@ def test_get_configuration_missing_file(tmp_path: Path, config_file: Text):
 
 
 @pytest.mark.parametrize(
-    "keys_to_configure", (["policies"], ["pipeline"], ["policies", "pipeline"])
+    "keys_to_configure", ({"policies"}, {"pipeline"}, {"policies", "pipeline"})
 )
-def test_auto_configure(keys_to_configure: List[Text]):
+def test_auto_configure(keys_to_configure: Set[Text]):
     default_config = io_utils.read_config_file(DEFAULT_CONFIG)
 
     config = autoconfig._auto_configure({}, keys_to_configure)
@@ -74,14 +74,14 @@ def test_auto_configure(keys_to_configure: List[Text]):
 @pytest.mark.parametrize(
     "config_path, missing_keys",
     [
-        (CONFIG_FOLDER / "config_language_only.yml", ["pipeline", "policies"]),
-        (CONFIG_FOLDER / "config_policies_missing.yml", ["policies"]),
-        (CONFIG_FOLDER / "config_pipeline_missing.yml", ["pipeline"]),
+        (CONFIG_FOLDER / "config_language_only.yml", {"pipeline", "policies"}),
+        (CONFIG_FOLDER / "config_policies_missing.yml", {"policies"}),
+        (CONFIG_FOLDER / "config_pipeline_missing.yml", {"pipeline"}),
         (SOME_CONFIG, []),
     ],
 )
 def test_add_missing_config_keys_to_file(
-    tmp_path: Path, config_path: Path, missing_keys: List[Text],
+    tmp_path: Path, config_path: Path, missing_keys: Set[Text],
 ):
     config_file = str(tmp_path / "config.yml")
     shutil.copyfile(str(config_path), config_file)
@@ -99,7 +99,7 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
 
     config = io_utils.read_config_file(str(SOME_CONFIG))
 
-    autoconfig._dump_config(config, str(config_path), [], ["policies"])
+    autoconfig._dump_config(config, str(config_path), set(), {"policies"})
 
     assert not config_path.exists()
 
@@ -114,17 +114,17 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
         (
             "config_with_comments.yml",
             "config_with_comments_after_dumping.yml",
-            ["policies"],
+            {"policies"},
         ),  # comments in various positions
         (
             "config_empty.yml",
             "config_empty_after_dumping.yml",
-            ["policies", "pipeline"],
+            {"policies", "pipeline"},
         ),  # no empty lines
         (
             "config_with_comments_after_dumping.yml",
             "config_with_comments_after_dumping.yml",
-            ["policies"],
+            {"policies"},
         ),  # with previous auto config that needs to be overwritten
     ],
 )
@@ -133,7 +133,7 @@ def test_dump_config(
     input_file: Text,
     expected_file: Text,
     capsys: CaptureFixture,
-    autoconfig_keys: List[Text],
+    autoconfig_keys: Set[Text],
 ):
     config_file = str(tmp_path / "config.yml")
     shutil.copyfile(str(CONFIG_FOLDER / input_file), config_file)

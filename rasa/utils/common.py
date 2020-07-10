@@ -197,7 +197,7 @@ def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
 
 def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
     """Transforms e.g. a list like ['A', 'B', 'C'] into a sentence 'A, B and C'."""
-    x = [item for item in collection]
+    x = list(collection)
     if len(x) >= 2:
         return ", ".join(map(str, x[:-1])) + " and " + x[-1]
     return "".join(collection)

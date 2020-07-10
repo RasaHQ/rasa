@@ -168,7 +168,7 @@ def _get_valid_config(
     mandatory_keys: List[Text],
     default_config: Text = DEFAULT_CONFIG_PATH,
 ) -> Text:
-    """ Get a config from a config file and check if it is valid.
+    """Get a config from a config file and check if it is valid.
 
     Exit if the config isn't valid.
 
@@ -176,6 +176,8 @@ def _get_valid_config(
         config: Path to the config file.
         mandatory_keys: The keys that have to be specified in the config file.
         default_config: default config to use if the file at `config` doesn't exist.
+
+    Returns: The path to the config file if the config is valid.
     """
     config = get_validated_path(config, "config", default_config)
 

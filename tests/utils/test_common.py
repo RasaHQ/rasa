@@ -1,4 +1,5 @@
 import logging
+from typing import Collection, List, Text
 
 import pytest
 
@@ -38,9 +39,12 @@ def test_sort_dicts_by_keys():
         ),
         ({"a", "b"}, ["a and b", "b and a"]),
         ({"a"}, ["a"]),
+        ({}, [""]),
     ],
 )
-def test_transform_collection_to_sentence(collection, possible_outputs):
+def test_transform_collection_to_sentence(
+    collection: Collection, possible_outputs: List[Text]
+):
     actual = transform_collection_to_sentence(collection)
     assert actual in possible_outputs
 

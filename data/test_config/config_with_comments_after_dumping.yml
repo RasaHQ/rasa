@@ -21,7 +21,8 @@ pipeline:
 # so many
 policies: # even here
 # # No configuration for policies was provided. The following default policies were used to train your model.
-# # To customise them, uncomment and adjust the policies. See https://rasa.com/docs/rasa/core/policies/ for more information.
+# # If you'd like to customize them, uncomment and adjust the policies.
+# # See https://rasa.com/docs/rasa/core/policies/ for more information.
 #   - name: MemoizationPolicy
 #   - name: TEDPolicy
 #     max_history: 5
