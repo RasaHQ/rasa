@@ -208,7 +208,7 @@ class TrainingData:
         return entity_groups_used or entity_roles_used
 
     @lazy_property
-    def examples_per_entity(self) -> Dict[Text, int]:
+    def number_of_examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
 
         entities = []
@@ -369,7 +369,7 @@ class TrainingData:
                 )
 
         # emit warnings for entities with only a few training samples
-        for entity, count in self.examples_per_entity.items():
+        for entity, count in self.number_of_examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
                 raise_warning(
                     f"Entity {entity} has only {count} training examples! "

@@ -98,9 +98,9 @@ def test_composite_entities_data():
     assert td.entities == {"location", "topping", "size"}
     assert td.entity_groups == {"1", "2"}
     assert td.entity_roles == {"to", "from"}
-    assert td.examples_per_entity["entity 'location'"] == 8
-    assert td.examples_per_entity["group '1'"] == 9
-    assert td.examples_per_entity["role 'from'"] == 3
+    assert td.number_of_examples_per_entity["entity 'location'"] == 8
+    assert td.number_of_examples_per_entity["group '1'"] == 9
+    assert td.number_of_examples_per_entity["role 'from'"] == 3
 
 
 @pytest.mark.parametrize(
@@ -197,15 +197,17 @@ def test_train_test_split(filepaths):
     assert len(td_train.training_examples) == 34
     assert len(td_test.training_examples) == 12
 
-    assert len(td.examples_per_intent.keys()) == len(td_test.examples_per_intent.keys())
-    assert len(td.examples_per_intent.keys()) == len(
-        td_train.examples_per_intent.keys()
+    assert len(td.number_of_examples_per_intent.keys()) == len(
+        td_test.number_of_examples_per_intent.keys()
     )
-    assert len(td.examples_per_response.keys()) == len(
-        td_test.examples_per_response.keys()
+    assert len(td.number_of_examples_per_intent.keys()) == len(
+        td_train.number_of_examples_per_intent.keys()
     )
-    assert len(td.examples_per_response.keys()) == len(
-        td_train.examples_per_response.keys()
+    assert len(td.number_of_examples_per_response.keys()) == len(
+        td_test.number_of_examples_per_response.keys()
+    )
+    assert len(td.number_of_examples_per_response.keys()) == len(
+        td_train.number_of_examples_per_response.keys()
     )
 
 
