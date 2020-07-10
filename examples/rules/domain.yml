@@ -33,19 +33,30 @@ actions:
 - utter_greet
 - action_switch_faq
 - utter_did_you_mean
-- action_validate_loop_q_form
+# You can implement a custom action to validate extracted slots of your form.
+# Return a `slot` event which sets the value to `None` in order to make the form request
+# the slot again. You can also return `slot` events for other slots which you can
+# extract as part of your custom action.
+#- validate_loop_q_form
 
 forms:
 - loop_q_form:
     some_slot:
     # Slot mappings can be defined in the domain.
-    # There will be an option in the future to overwrite this from the custom action
-    # server.
-    # The slot mappings follow the same syntax as currently in the SDK implementation
+    # You can also implement custom slot mappings in your validate function for the
+    # `Form` by returning the desired slot events.
+    # The slot mappings follow the same syntax as currently in the SDK implementation.
     - type: from_entity
       entity: some_slot
-#    some_slot:
-#    - type: from_text
+    # Example of a slot mapping which extracts the slot value from the message text if
+    # the intent is `greet`.
+    # - type: from_text
+    #   intent: greet
+    # Example of a slot mapping which sets the slot to `my value` in case the message
+    # has an intent `greet`
+    # - type: from_intent
+    #   intent: greet
+    #   value: "my value"
 
 session_config:
   session_expiration_time: 60  # value in minutes
