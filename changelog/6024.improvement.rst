@@ -1,0 +1,1 @@
+``rasa data split nlu`` now makes sure that there is at least one example per intent and response in the test data.
