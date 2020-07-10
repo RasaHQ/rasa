@@ -1,0 +1,1 @@
+Fixed a bug where an invalid language variable prevents rasa from finding training examples when importing Dialogflow data.
