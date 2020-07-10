@@ -666,7 +666,7 @@ def trained_rule_policy_domain() -> Domain:
 @pytest.fixture(scope="session")
 async def trained_rule_policy(trained_rule_policy_domain: Domain) -> RulePolicy:
     trackers = await training.load_data(
-        "examples/rules/data/stories.md", trained_rule_policy_domain
+        "examples/rules/data/rules.yml", trained_rule_policy_domain
     )
 
     rule_policy = RulePolicy()

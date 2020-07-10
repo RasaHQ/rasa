@@ -978,3 +978,11 @@ def test_get_training_trackers_for_policy(
 
     assert len(rule_trackers) == n_rule_trackers
     assert len(ml_trackers) == n_ml_trackers
+
+
+@pytest.mark.parametrize(
+    "policy", [FormPolicy, MappingPolicy, FallbackPolicy, TwoStageFallbackPolicy]
+)
+def test_deprecation_warnings_for_old_rule_like_policies(policy: Type[Policy]):
+    with pytest.warns(FutureWarning):
+        policy(None)

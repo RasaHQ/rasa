@@ -111,11 +111,10 @@ def action_from_name(
     name: Text,
     action_endpoint: Optional[EndpointConfig],
     user_actions: List[Text],
-    form_names: Optional[List[Text]] = None,
+    should_use_form_action: bool = False,
 ) -> "Action":
     """Return an action instance for the name."""
 
-    # TODO: Why do we need to create instances of everything if just need one thing?!
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
 
     if name in defaults and name not in user_actions:
@@ -124,7 +123,7 @@ def action_from_name(
         return ActionUtterTemplate(name)
     elif name.startswith(RESPOND_PREFIX):
         return ActionRetrieveResponse(name)
-    elif form_names and name in form_names:
+    elif should_use_form_action:
         from rasa.core.actions.forms import FormAction
 
         return FormAction(name, action_endpoint)
@@ -723,7 +722,6 @@ class ActionDefaultAskAffirmation(Action):
     ) -> List[Event]:
         intent_to_affirm = tracker.latest_message.intent.get("name")
 
-        # TODO: Simplify once the RulePolicy is out of prototype stage
         intent_ranking = tracker.latest_message.intent.get(INTENT_RANKING_KEY, [])
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME

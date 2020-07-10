@@ -544,8 +544,15 @@ class Domain:
         if action_name not in self.action_names:
             self._raise_action_not_found_exception(action_name)
 
+        should_use_form_action = (
+            action_name in self.form_names and self.slot_mapping_for_form(action_name)
+        )
+
         return action.action_from_name(
-            action_name, action_endpoint, self.user_actions_and_forms, self.form_names
+            action_name,
+            action_endpoint,
+            self.user_actions_and_forms,
+            should_use_form_action,
         )
 
     def action_for_index(
@@ -1142,6 +1149,26 @@ class Domain:
             pass
 
         return False
+
+    def slot_mapping_for_form(self, form_name: Text) -> Dict:
+        """Retrieve the slot mappings for a form which are defined in the domain.
+
+        Options:
+        - an extracted entity
+        - intent: value pairs
+        - trigger_intent: value pairs
+        - a whole message
+        or a list of them, where the first match will be picked
+
+        Args:
+            form_name: The name of the form.
+
+        Returns:
+            The slot mapping or an empty dictionary in case no mapping was found.
+        """
+        return next(
+            (form[form_name] for form in self.forms if form_name in form.keys()), {}
+        )
 
 
 class TemplateDomain(Domain):

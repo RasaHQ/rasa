@@ -2,6 +2,8 @@ import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
+from ruamel.yaml.parser import ParserError
+
 import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.constants import DOCS_URL_STORIES
@@ -44,7 +46,7 @@ class YAMLStoryReader(StoryReader):
         """
         try:
             yaml_content = rasa.utils.io.read_yaml_file(filename)
-        except ValueError as e:
+        except (ValueError, ParserError) as e:
             common_utils.raise_warning(
                 f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
             )
@@ -272,9 +274,8 @@ class YAMLStoryReader(StoryReader):
     def _parse_slot(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
 
         slot_name = step.get(KEY_SLOT_NAME, "")
-        slot_value = step.get(KEY_SLOT_VALUE, "")
 
-        if not slot_name or not slot_value:
+        if not slot_name or KEY_SLOT_VALUE not in step:
             common_utils.raise_warning(
                 f"Issue found in '{self.source_name}': \n"
                 f"Slots should have a name and a value. "
@@ -283,6 +284,8 @@ class YAMLStoryReader(StoryReader):
                 docs=self._get_docs_link(is_rule_data),
             )
             return
+
+        slot_value = step.get(KEY_SLOT_VALUE, "")
 
         self._add_event(SlotSet.type_name, {slot_name: slot_value})
 

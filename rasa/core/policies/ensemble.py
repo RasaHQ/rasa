@@ -58,16 +58,13 @@ class PolicyEnsemble:
     def _check_for_important_policies(self) -> None:
         from rasa.core.policies.mapping_policy import MappingPolicy
 
-        if not any(isinstance(policy, MappingPolicy) for policy in self.policies):
+        if not any(
+            isinstance(policy, (MappingPolicy, RulePolicy)) for policy in self.policies
+        ):
             logger.info(
-                "MappingPolicy not included in policy ensemble. Default intents "
-                "'{} and {} will not trigger actions '{}' and '{}'."
-                "".format(
-                    USER_INTENT_RESTART,
-                    USER_INTENT_BACK,
-                    ACTION_RESTART_NAME,
-                    ACTION_BACK_NAME,
-                )
+                f"MappingPolicy not included in policy ensemble. Default intents "
+                f"'{USER_INTENT_RESTART} and {USER_INTENT_BACK} will not trigger "
+                f"actions '{ACTION_RESTART_NAME}' and '{ACTION_BACK_NAME}'."
             )
 
     @staticmethod
