@@ -2,6 +2,8 @@ import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
+from ruamel.yaml.parser import ParserError
+
 import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.constants import DOCS_URL_STORIES
@@ -44,7 +46,7 @@ class YAMLStoryReader(StoryReader):
         """
         try:
             yaml_content = rasa.utils.io.read_yaml_file(filename)
-        except ValueError as e:
+        except (ValueError, ParserError) as e:
             common_utils.raise_warning(
                 f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
             )
