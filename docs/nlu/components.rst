@@ -1130,7 +1130,9 @@ EntitySynonymMapper
         - name: "EntitySynonymMapper"
 
     .. note::
-        When using the EntitySynonymMapper as part of an NLU pipeline, it will need to be placed below the Entity Extractor in the configuration file.
+
+        When using the ``EntitySynonymMapper`` as part of an NLU pipeline, it will need to be placed
+        below any entity extractors in the configuration file.
 
 .. _CRFEntityExtractor:
 
