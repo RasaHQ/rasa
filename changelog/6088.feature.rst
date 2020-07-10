@@ -14,7 +14,7 @@ confidence.
   pipeline:
   - ... # Other NLU components
   - name: FallbackClassifier
-    # If the highest ranked intent has a confidence lower than the threshold than
-    # the NLU pipeline predicts an intent `nlu_fallback` which you can then use in
+    # If the highest ranked intent has a confidence lower than the threshold then
+    # the NLU pipeline predicts an intent `nlu_fallback` which you can then be used in
     # stories / rules to implement an appropriate fallback.
     threshold: 0.5
