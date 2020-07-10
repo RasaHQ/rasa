@@ -120,7 +120,7 @@ def _get_pika_parameters(
     import pika
 
     if host.startswith("amqp"):
-        # user supplied a amqp url containing all the info
+        # user supplied an AMQP URL containing all the info
         parameters = pika.URLParameters(host)
         parameters.connection_attempts = connection_attempts
         parameters.retry_delay = retry_delay_in_seconds

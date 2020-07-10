@@ -1,0 +1,51 @@
+rules:
+- rule: rule 1
+  steps:
+  - form: loop_q_form
+  - slot: requested_slot
+    value: some_slot
+  - ...
+  - intent: inform
+    entities:
+    - some_slot: bla
+  - action: loop_q_form
+
+- rule: rule 2
+  steps:
+  - form: loop_q_form
+  - slot: requested_slot
+    value: some_slot
+  - ...
+  - intent: explain
+  - action: utter_explain_some_slot
+  - action: loop_q_form
+  - form: loop_q_form
+
+- rule: rule 3
+  steps:
+  - form: loop_q_form
+  - ...
+  - form: null
+  - slot: null
+  - action: stop_q_form
+
+stories:
+- story: simple_story_without_checkpoint
+  steps:
+  - intent: simple
+  - action: utter_default
+  - action: utter_greet
+
+- story: simple_story_with_only_start
+  steps:
+  - checkpoint: check_greet # checkpoints at the start define entry points
+  - intent: simple
+  - action: utter_default
+
+- story: simple_story_with_only_end
+  steps:
+  - intent: hello
+  - action: utter_greet
+  - slot: name
+    value: peter
+  - checkpoint: check_greet # checkpoint defining the end of this turn

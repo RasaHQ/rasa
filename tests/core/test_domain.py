@@ -12,11 +12,7 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
 )
-from rasa.core.domain import (
-    USED_ENTITIES_KEY,
-    USE_ENTITIES_KEY,
-    IGNORE_ENTITIES_KEY,
-)
+from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -168,7 +164,7 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10
-    assert len(domain.action_names) == 13
+    assert len(domain.action_names) == 15
 
 
 def test_avoid_action_repetition():
@@ -375,6 +371,30 @@ session_config:
     assert merged.session_config == SessionConfig(40, True)
 
 
+def test_merge_domain_with_forms():
+    test_yaml_1 = """
+    forms:
+    # Old style form definitions (before RulePolicy)
+    - my_form
+    - my_form2
+    """
+
+    test_yaml_2 = """
+    forms:
+    - my_form3:
+        slot1:
+          type: from_text
+    """
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+    domain = domain_1.merge(domain_2)
+
+    expected_number_of_forms = 3
+    assert len(domain.form_names) == expected_number_of_forms
+    assert len(domain.forms) == expected_number_of_forms
+
+
 @pytest.mark.parametrize(
     "intents, entities, intent_properties",
     [
@@ -407,7 +427,7 @@ session_config:
             ],
             ["entity", "other", "third"],
             {
-                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"],},
+                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"]},
                 "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
@@ -418,7 +438,7 @@ session_config:
             ],
             ["entity", "other", "third"],
             {
-                "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye",},
+                "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye"},
                 "goodbye": {USED_ENTITIES_KEY: []},
             },
         ),
@@ -529,7 +549,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=["random_name", "random_name"],
-            form_names=[],
+            forms=[],
         )
 
     with pytest.raises(InvalidDomain):
@@ -539,7 +559,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[TextSlot("random_name"), TextSlot("random_name")],
             templates={},
             action_names=[],
-            form_names=[],
+            forms=[],
         )
 
     with pytest.raises(InvalidDomain):
@@ -549,7 +569,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=[],
-            form_names=[],
+            forms=[],
         )
 
     with pytest.raises(InvalidDomain):
@@ -559,7 +579,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=[],
-            form_names=["random_name", "random_name"],
+            forms=["random_name", "random_name"],
         )
 
 

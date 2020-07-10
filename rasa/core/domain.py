@@ -241,6 +241,16 @@ class Domain:
         def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
             return sorted(list(set(l1 + l2)))
 
+        def merge_lists_of_dicts(
+            dict_list1: List[Dict],
+            dict_list2: List[Dict],
+            override_existing_values: bool = False,
+        ) -> List[Dict]:
+            dict1 = {list(i.keys())[0]: i for i in dict_list1}
+            dict2 = {list(i.keys())[0]: i for i in dict_list2}
+            merged_dicts = merge_dicts(dict1, dict2, override_existing_values)
+            return list(merged_dicts.values())
+
         if override:
             config = domain_dict["config"]
             for key, val in config.items():  # pytype: disable=attribute-error
@@ -249,18 +259,19 @@ class Domain:
         if override or self.session_config == SessionConfig.default():
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
-        # intents is list of dicts
-        intents_1 = {list(i.keys())[0]: i for i in combined[KEY_INTENTS]}
-        intents_2 = {list(i.keys())[0]: i for i in domain_dict[KEY_INTENTS]}
-        merged_intents = merge_dicts(intents_1, intents_2, override)
-        combined[KEY_INTENTS] = list(merged_intents.values())
+        combined[KEY_INTENTS] = merge_lists_of_dicts(
+            combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
+        )
+        combined[KEY_FORMS] = merge_lists_of_dicts(
+            combined[KEY_FORMS], domain_dict[KEY_FORMS], override
+        )
 
         # remove existing forms from new actions
         for form in combined[KEY_FORMS]:
             if form in domain_dict[KEY_ACTIONS]:
                 domain_dict[KEY_ACTIONS].remove(form)
 
-        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_FORMS]:
+        for key in [KEY_ENTITIES, KEY_ACTIONS]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_RESPONSES, KEY_SLOTS]:
@@ -419,14 +430,23 @@ class Domain:
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
-        form_names: List[Text],
+        forms: List[Union[Text, Dict]],
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
-        self.form_names = form_names
+
+        # Forms used to be a list of form names. Now they can also contain
+        # `SlotMapping`s
+        if not forms or (forms and isinstance(forms[0], str)):
+            self.form_names = forms
+            self.forms: List[Dict] = [{form_name: {}} for form_name in forms]
+        elif isinstance(forms[0], dict):
+            self.forms: List[Dict] = forms
+            self.form_names = [list(f.keys())[0] for f in forms]
+
         self.slots = slots
         self.templates = templates
         self.session_config = session_config
@@ -436,7 +456,8 @@ class Domain:
 
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-            action.combine_user_with_default_actions(self.user_actions) + form_names
+            action.combine_user_with_default_actions(self.user_actions)
+            + self.form_names
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -523,8 +544,15 @@ class Domain:
         if action_name not in self.action_names:
             self._raise_action_not_found_exception(action_name)
 
+        should_use_form_action = (
+            action_name in self.form_names and self.slot_mapping_for_form(action_name)
+        )
+
         return action.action_from_name(
-            action_name, action_endpoint, self.user_actions_and_forms
+            action_name,
+            action_endpoint,
+            self.user_actions_and_forms,
+            should_use_form_action,
         )
 
     def action_for_index(
@@ -652,10 +680,17 @@ class Domain:
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
             if slot is not None:
-                for i, slot_value in enumerate(slot.as_feature()):
-                    if slot_value != 0:
-                        slot_id = f"slot_{key}_{i}"
-                        state_dict[slot_id] = slot_value
+                if slot.value == "None" and slot.as_feature():
+                    # TODO: this is a hack to make a rule know
+                    #  that slot or form should not be set
+                    #  but only if the slot is featurized
+                    slot_id = f"slot_{key}_None"
+                    state_dict[slot_id] = 1
+                else:
+                    for i, slot_value in enumerate(slot.as_feature()):
+                        if slot_value != 0:
+                            slot_id = f"slot_{key}_{i}"
+                            state_dict[slot_id] = slot_value
 
         if "intent_ranking" in latest_message.parse_data:
             for intent in latest_message.parse_data["intent_ranking"]:
@@ -699,7 +734,7 @@ class Domain:
     @staticmethod
     def get_active_form(tracker: "DialogueStateTracker") -> Dict[Text, float]:
         """Turn tracker's active form into a state name."""
-        form = tracker.active_form.get("name")
+        form = tracker.active_loop.get("name")
         if form is not None:
             return {ACTIVE_FORM_PREFIX + form: 1.0}
         else:
@@ -793,14 +828,16 @@ class Domain:
             KEY_SLOTS: self._slot_definitions(),
             KEY_RESPONSES: self.templates,
             KEY_ACTIONS: self.user_actions,  # class names of the actions
-            KEY_FORMS: self.form_names,
+            KEY_FORMS: self.forms,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:
         """Write domain to a file."""
 
         domain_data = self.as_dict()
-        utils.dump_obj_as_yaml_to_file(filename, domain_data)
+        utils.dump_obj_as_yaml_to_file(
+            filename, domain_data, should_preserve_key_order=True
+        )
 
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
@@ -872,7 +909,9 @@ class Domain:
         """Write cleaned domain to a file."""
 
         cleaned_domain_data = self.cleaned_domain()
-        utils.dump_obj_as_yaml_to_file(filename, cleaned_domain_data)
+        utils.dump_obj_as_yaml_to_file(
+            filename, cleaned_domain_data, should_preserve_key_order=True
+        )
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
@@ -1110,6 +1149,26 @@ class Domain:
             pass
 
         return False
+
+    def slot_mapping_for_form(self, form_name: Text) -> Dict:
+        """Retrieve the slot mappings for a form which are defined in the domain.
+
+        Options:
+        - an extracted entity
+        - intent: value pairs
+        - trigger_intent: value pairs
+        - a whole message
+        or a list of them, where the first match will be picked
+
+        Args:
+            form_name: The name of the form.
+
+        Returns:
+            The slot mapping or an empty dictionary in case no mapping was found.
+        """
+        return next(
+            (form[form_name] for form in self.forms if form_name in form.keys()), {}
+        )
 
 
 class TemplateDomain(Domain):
