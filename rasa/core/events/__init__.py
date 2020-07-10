@@ -1057,7 +1057,7 @@ class ActionExecuted(Event):
         return d
 
     def as_dict_core(self) -> Dict[Text, Text]:
-        return {'action_name': self.action_name, 'action_text': self.e2e_text}
+        return {'action_name': self.action_name, 'text': self.e2e_text}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.set_latest_action_name(self.action_name)
