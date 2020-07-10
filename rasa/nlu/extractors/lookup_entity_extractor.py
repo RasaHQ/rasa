@@ -36,28 +36,27 @@ class LookupEntityExtractor(EntityExtractor):
             self.component_config["entities"] = None
             self.component_config["files_path"] = None
             common_utils.raise_warning(
-                f"Can't extract Lookup Entities, Please configure the entities and file path for 'CustomEntityExtractor' in the config.yml."
+                "Can't extract Lookup Entities, Please configure the entities and file path for 'LookupEntityExtractor' in the config.yml."
             )
 
         # check if entities are configured with their respective file path
-        elif component_config["entities"] is not None and component_config["files_path"] is not None:
-            if len(component_config["entities"]) != len(component_config["files_path"]):
-                self.component_config["files_path"] = None
-                common_utils.raise_warning(
-                    f"Can't extract Lookup Entities, Make sure you have configured the entities and their respective file path properly"
-                )
+        # elif component_config["entities"] is not None and component_config["files_path"] is not None:
+        elif len(component_config["entities"]) != len(component_config["files_path"]):
+            self.component_config["files_path"] = None
+            common_utils.raise_warning(
+                "Can't extract Lookup Entities, Make sure you have configured the entities and their respective file path properly for 'LookupEntityExtractor' in the config.yml."
+            )
         # check if the given file path exists
         elif component_config["files_path"] is not None:
             for i in range(len(component_config["files_path"])):
                 file_path = component_config["files_path"][i]
-                print("file_path: ", file_path)
-                # try:
                 if os.path.isfile(file_path):
                     pass
                 else:
                     self.component_config["files_path"] = None
+                    print("File path", file_path)
                     common_utils.raise_warning(
-                        f"Can't extract Lookup Entities, File '{file_path}' does not exist."
+                        f"Can't extract Lookup Entities, File \"{file_path}\" does not exist."
                     )
                     break
 
