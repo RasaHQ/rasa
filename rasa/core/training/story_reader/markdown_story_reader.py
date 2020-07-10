@@ -63,7 +63,7 @@ class MarkdownStoryReader(StoryReader):
                     continue
                 elif line.startswith(">>"):
                     # reached a new rule block
-                    rule_name = line[1:].strip("> ")
+                    rule_name = line.lstrip(">> ")
                     self._new_rule_part(rule_name, self.source_name)
                 elif line.startswith("#"):
                     # reached a new story block
