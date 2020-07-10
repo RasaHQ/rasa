@@ -100,20 +100,20 @@ class LookupEntityExtractor(EntityExtractor):
         """
         results = []
         for i in range(len(entities)):
-            f = open(file_path[i], "r")
-            examples = f.readlines()
+            with open(file_path[i], "r") as f:
+                examples = f.readlines()
 
-            for example in examples:
-                if example.lower().strip() in user_input.lower():
-                    start_index = user_input.lower().index(example.lower().strip())
-                    end_index = start_index + len(example.strip())
-                    temp = {
+                for example in examples:
+                    if example.lower().strip() in user_input.lower():
+                        start_index = user_input.lower().index(example.lower().strip())
+                        end_index = start_index + len(example.strip())
+                        temp = {
                         "entity": entities[i], 
                         "start": start_index,
                         "end": end_index,
                         "value": user_input[start_index:end_index]
-                    }
-                    results.append(temp)
+                        }
+                        results.append(temp)
         return results
 
     def process(self, message, **kwargs):
