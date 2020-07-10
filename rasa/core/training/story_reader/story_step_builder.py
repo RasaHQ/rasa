@@ -17,12 +17,13 @@ logger = logging.getLogger(__name__)
 
 
 class StoryStepBuilder:
-    def __init__(self, name: Text, source_name: Text) -> None:
+    def __init__(self, name: Text, source_name: Text, is_rule: bool = False) -> None:
         self.name = name
         self.source_name = source_name
         self.story_steps = []
         self.current_steps = []
         self.start_checkpoints = []
+        self.is_rule = is_rule
 
     def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:
 
@@ -107,6 +108,7 @@ class StoryStepBuilder:
                 block_name=self.name,
                 start_checkpoints=start_checkpoints,
                 source_name=self.source_name,
+                is_rule=self.is_rule,
             )
         ]
         return current_turns
