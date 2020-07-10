@@ -602,6 +602,9 @@ class FormAction(LoopAction):
             return None
 
         mappings = self.get_mappings_for_slot(slot_to_fill, domain)
+        mappings = [
+            m for m in mappings if m.get("type") == str(SlotMapping.FROM_ENTITY)
+        ]
 
         if not mappings:
             return None
