@@ -135,10 +135,10 @@ class WronglyPredictedAction(ActionExecuted):
     type_name = "wrong_action"
 
     def __init__(
-        self, correct_action, predicted_action, policy, confidence, timestamp=None
+        self, correct_action, predicted_action, policy, confidence, timestamp=None, correct_action_text = None
     ) -> None:
         self.predicted_action = predicted_action
-        super().__init__(correct_action, policy, confidence, timestamp=timestamp)
+        super().__init__(correct_action, policy, confidence, timestamp=timestamp, e2e_text=correct_action_text)
 
     def as_story_string(self) -> Text:
         return f"{self.action_name}   <!-- predicted: {self.predicted_action} -->"
@@ -318,6 +318,7 @@ def _collect_action_executed_predictions(
     action_executed_eval_store = EvaluationStore()
 
     gold = event.action_name
+    gold_text = event.e2e_text
 
     if circuit_breaker_tripped:
         predicted = "circuit breaker tripped"
@@ -342,7 +343,7 @@ def _collect_action_executed_predictions(
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
-                gold, predicted, event.policy, event.confidence, event.timestamp
+                gold, predicted, event.policy, event.confidence, event.timestamp, gold_text
             )
         )
         if fail_on_prediction_errors:

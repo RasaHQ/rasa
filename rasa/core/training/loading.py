@@ -10,6 +10,7 @@ from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryR
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 from rasa.core.training.structures import StoryStep
+from rasa.core.events import ActionExecuted
 from rasa.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSION
 
 logger = logging.getLogger(__name__)

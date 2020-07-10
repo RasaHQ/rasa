@@ -67,7 +67,7 @@ class SingleStateFeaturizer:
         if action is None:
             return np.ones(domain.num_actions, dtype=int) * -1
 
-        y = domain.index_for_action(action.text)
+        y = domain.index_for_action(action)
         return y
 
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
@@ -80,42 +80,49 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self) -> None:
 
         super().__init__()
+        self.output_shapes = {}
 
-    def get_text_and_attribute(self, input_type: Text, message: Dict) -> List[Text]:
-        if input_type == 'user':
-            # TODO: will uncomment once we merge proper creation of UserUttered 
-            # where intent will be set to none when it is one;
+    def _featurize_slots(self, slot_dict: Dict) -> np.ndarray:
+        """
+        Featurizes slot values;
+        Input:
+            - slot_dict: dictionary where keys are slots with corresponding values, looks
+            like [slot_name]_value
 
-
-            # if message.get(INTENT):
-            #     attribute = INTENT
-            #     text = message.get(INTENT)
-            # else:
-            attribute = TEXT
-            text = message.get(TEXT)
-        elif input_type == "prev_action":
-            if not message.get('action_text'):
-                attribute = TEXT
-                text = message.get(MESSAGE_ACTION_NAME)
-            else:
-                attribute = TEXT
-                text = message.get('action_text')
-        return text, attribute
-
-
-    def featurize_slots(self, slot_dict):
+        """
         slot_featurization = np.zeros(len(self.slot_states))
         for slot_name in list(slot_dict.keys()):
             slot_featurization[self.slot_states.index(slot_name)] = 1
         return None, slot_featurization
 
+    def _featurize_entities(self, state: Dict) -> np.ndarray:
+        if self.entities == []:
+            entity_features = None
+        else:
+            entity_features = np.zeros(len(self.entities))
+            if "user" in list(state.keys()):
+                if not state["user"].get("entities") is None:
+                    user_entities = [
+                        entity["entity"] for entity in state["user"].get("entities")
+                    ]
+                    for entity_name in user_entities:
+                        entity_features[
+                            self.entities.index(entity_name)
+                        ] = 1
+        return entity_features
+
     def _extract_features(
         self, message: Dict, input_type: Text, interpreter: NaturalLanguageInterpreter
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
+        """
+        Function which featurizes the message for `user` and `prev_action`using trained interpreter 
+        """
         if input_type == 'slots':
-            return self.featurize_slots(message)
+            return self._featurize_slots(message)
         else:
-            text, attribute = self.get_text_and_attribute(input_type, message)
+            attribute = message["attribute"]
+            text = message[attribute]
+
             message = interpreter.parse(text, attribute)
             sparse_features = None
             dense_features = None
@@ -133,27 +140,17 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                         f"don't coincide in '{message.text}' for attribute '{attribute}'."
                     )
 
-            return sparse_features, dense_features
-        
-
-
-    def combine_state_features(self, state_features):
-        sparse_state, dense_state = None, None
-        if (
-            state_features["user"][0] is not None
-            and state_features["prev_action"][0] is not None
-        ):
-            sparse_state = scipy.sparse.hstack(
-                [state_features["user"][0], state_features["prev_action"][0]]
-            )
-        if (
-            state_features["user"][1] is not None
-            and state_features["prev_action"][1] is not None
-        ):
-            dense_state = np.hstack(
-                (state_features["user"][1], state_features["prev_action"][1])
-            )
-        return sparse_state, dense_state
+            if not sparse_features is None and not self.output_shapes.get(input_type + '_' + attribute + '_sparse'):
+                self.output_shapes[input_type + '_' + attribute + '_sparse'] = sparse_features.shape[-1]
+            if attribute.endswith('text'):
+                # store 1 to indicate "TEXT"
+                output_features = [sparse_features, dense_features, None, 1]
+                if not dense_features is None and not self.output_shapes.get(input_type + '_' + attribute + '_dense'):
+                    self.output_shapes[input_type + '_' + attribute + '_dense'] = dense_features.shape[-1]
+            else:
+                # store -1 to indicate intent / action
+                output_features = [None, None, sparse_features, -1]
+            return output_features
 
     def encode_e2e(
         self, state: Dict[Text, Event], interpreter: NaturalLanguageInterpreter
@@ -173,42 +170,36 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             }
             if not "user" in state_extracted_features.keys():
                 state_extracted_features["user"] = self._extract_features(
-                    {'text': " "},
+                    {'text': " ", 'attribute': TEXT},
                     "user", interpreter
                 )
 
-        sparse_state, dense_state = self.combine_state_features(
-            state_extracted_features
-        )
-
         slot_features = state_extracted_features['slots'][1]
+        entity_features = self._featurize_entities(state)
 
-        if self.entities == []:
-            entity_features = None
-        else:
-            entity_features = np.zeros(len(self.entities))
-            if "user" in list(state.keys()):
-                if not state["user"].get("entities") is None:
-                    user_entities = [
-                        entity["entity"] for entity in state["user"].get("entities")
-                    ]
-                    for entity_name in user_entities:
-                        entity_features[
-                            self.entities.index(entity_name)
-                        ] = 1
         if entity_features is None:
             entity_slot_features = slot_features
         else:
             entity_slot_features = np.hstack((entity_features, slot_features))
 
-        return sparse_state, dense_state, entity_slot_features
+        return state_extracted_features["user"] + state_extracted_features["prev_action"] + [entity_slot_features]
 
     def create_encoded_all_actions(self, domain: Domain, interpreter: NaturalLanguageInterpreter):
-        
-        label_data = [
-            (j, self._extract_features({'action_text':action}, "prev_action", interpreter))
-            for j, action in enumerate(domain.action_names)
-        ]
+        label_data = []
+        for j, action in enumerate(domain.action_names):
+            if self._extract_features({'action_name':action, "attribute": MESSAGE_ACTION_NAME}, "prev_action", interpreter)[2].nnz == 0:
+                action_features = self._extract_features({TEXT: action, "attribute": TEXT}, "prev_action", interpreter)
+                if self.output_shapes.get("prev_action_" + MESSAGE_ACTION_NAME + "_sparse"):
+                    action_features[2] = scipy.sparse.coo_matrix((1, self.output_shapes.get("prev_action_" + MESSAGE_ACTION_NAME + "_sparse")))
+            else:
+                action_features = self._extract_features({MESSAGE_ACTION_NAME:action, "attribute": MESSAGE_ACTION_NAME}, "prev_action", interpreter)
+                if self.output_shapes.get("prev_action_" + TEXT + "_sparse"):
+                    action_features[0] = scipy.sparse.coo_matrix((1, self.output_shapes.get("prev_action_" + TEXT + "_sparse")))
+                if self.output_shapes.get("prev_action_" + TEXT + "_dense"):
+                    action_features[1] = np.ones((1, self.output_shapes.get("prev_action_" + TEXT + "_dense")))*-1
+
+            label_data.append((j, action_features))
+
         return label_data
 
 
@@ -291,8 +282,17 @@ class TrackerFeaturizer:
                 for event in state:
                     if isinstance(event, UserUttered):
                         state_dict["user"] = event.as_dict_core()
+                        # if event.as_dict_core().get(INTENT):
+                        #     state_dict["user"]['attribute'] = INTENT
+                        # else:
+                        state_dict["user"]['attribute'] = TEXT
                     elif isinstance(event, ActionExecuted):
                         state_dict["prev_action"] = event.as_dict_core()
+
+                        if event.as_dict_core().get(TEXT):
+                            state_dict["prev_action"]["attribute"] = TEXT
+                        else:
+                            state_dict["prev_action"]["attribute"] = MESSAGE_ACTION_NAME
                     state_dict["slots"] = self.collect_slots(tr)
             else:
                 state_dict = {}
@@ -304,6 +304,34 @@ class TrackerFeaturizer:
         """Pads states."""
 
         return states
+
+    def _fill_in_features(self, features):
+        shapes = self.state_featurizer.output_shapes
+        
+        for feature in features:
+            intent_rows_to_fill = np.where(feature[:,3]==1)[0]
+            user_text_rows_to_fill = np.where(feature[:,3]!=1)[0]
+            action_names_rows_to_fill = np.where(feature[:,7]==1)[0]
+            action_text_rows_to_fill = np.where(feature[:,7]!=1)[0]
+            
+            for key in shapes.keys():
+                if INTENT in key:
+                    feature[np.array(intent_rows_to_fill), 2] = [scipy.sparse.coo_matrix((1, shapes.get(key)))] * len(intent_rows_to_fill)
+                elif f"user_{TEXT}" in key:
+                    if "sparse" in key:
+                        feature[np.array(user_text_rows_to_fill), 0] = [scipy.sparse.coo_matrix((1, shapes.get(key)))] * len(user_text_rows_to_fill)
+                    elif "dense" in key:
+                        feature[np.array(user_text_rows_to_fill), 1] = [np.ones((1, shapes.get(key)))*-1] * len(user_text_rows_to_fill)
+
+                if MESSAGE_ACTION_NAME in key:
+                    feature[np.array(action_names_rows_to_fill), 6] = [scipy.sparse.coo_matrix((1, shapes.get(key)))] * len(action_names_rows_to_fill)
+                elif f"prev_action_{TEXT}" in key:
+                    if "sparse" in key:
+                        feature[np.array(action_text_rows_to_fill), 4] = [scipy.sparse.coo_matrix((1, shapes.get(key)))] * len(action_text_rows_to_fill)
+                    elif "dense" in key:
+                        feature[np.array(action_text_rows_to_fill), 5] = [np.ones((1, shapes.get(key)))*-1] * len(action_text_rows_to_fill)
+            
+        return features
 
     def _featurize_states(
         self, trackers_as_states: List[List[Dict[Text, float]]], interpreter: NaturalLanguageInterpreter
@@ -332,8 +360,9 @@ class TrackerFeaturizer:
 
             if not story_features == []:
                 features.append(np.array(story_features))
-                true_lengths.append(dialogue_len)
+                true_lengths.append(dialogue_len) 
 
+        features = self._fill_in_features(features)
         # noinspection PyPep8Naming
         X = np.array(features)
 
@@ -414,8 +443,7 @@ class TrackerFeaturizer:
         self, trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> np.ndarray:
         """Create X for prediction."""
-
-        trackers_as_states = self.prediction_states(trackers, domain, interpreter)
+        trackers_as_states = self.prediction_states(trackers, domain)
         X, _ = self._featurize_states(trackers_as_states, interpreter)
         return X
 
@@ -633,26 +661,26 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                                 trackers_as_states_e2e.append(sliced_states)
 
                                 if len(sliced_states) > 1:
-                                    if event.message is not None:
+                                    if event.e2e_text is not None:
                                         trackers_as_actions_e2e.append(
-                                            [Message(event.message.text)]
+                                            [event.e2e_text]
                                         )
                                     # if it is a default action, turn it into a message
                                     else:
                                         trackers_as_actions_e2e.append(
-                                            [Message(event.action_name)]
+                                            [event.action_name]
                                         )
                         else:
                             trackers_as_states_e2e.append(sliced_states)
                             if len(sliced_states) > 1:
-                                if event.message is not None:
+                                if event.e2e_text is not None:
                                     trackers_as_actions_e2e.append(
-                                        [Message(event.message.text)]
+                                        [event.e2e_text]
                                     )
                                 # if it is a default action, turn it into a message
                                 else:
                                     trackers_as_actions_e2e.append(
-                                        [Message(event.action_name)]
+                                        [event.action_name]
                                     )
                         pbar.set_postfix(
                             {"# actions": "{:d}".format(len(trackers_as_actions_e2e))}
@@ -720,34 +748,16 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return trackers_as_states, trackers_as_actions
 
     def prediction_states(
-        self, trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter
+        self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> List[List[Dict[Text, float]]]:
-        from rasa.nlu.model import Interpreter
 
         """Transforms list of trackers to lists of states for prediction."""
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
-        # !!! To have DIET at prediction time, we would need to load it at 
-        # every prediction step which I don't think is a good idea.  
 
-        trackers_as_states_modified = []
-        for tracker in trackers_as_states:
-            curr_tracker = []
-            for state in tracker:
-                curr_state = {}
-                for key, value in state.items():
-                    if isinstance(value, Message):
-                        curr_state[key] = interpreter.parse(
-                            value.text
-                        )
-                        curr_state[key].set("entities", value.get("entities"))
-                    else:
-                        curr_state[key] = value
-                curr_tracker.append(curr_state)
-            trackers_as_states_modified.append(curr_tracker)
 
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)
-            for states in trackers_as_states_modified
+            for states in trackers_as_states
         ]
 
         return trackers_as_states
