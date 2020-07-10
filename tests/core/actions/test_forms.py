@@ -784,15 +784,21 @@ def test_invalid_slot_mapping():
 
 
 @pytest.mark.parametrize(
-    "mapping_entity, mapping_role, mapping_group, entities, intent, expected_slot_values",
+    "some_other_slot_mapping, some_slot_mapping, entities, intent, expected_slot_values",
     [
         (
-            "entity_type",
-            "some_role",
-            None,
             [
                 {
-                    "entity": "entity_type",
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "role": "some_role",
+                }
+            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [
+                {
+                    "entity": "some_entity",
                     "value": "some_value",
                     "role": "some_other_role",
                 }
@@ -801,20 +807,32 @@ def test_invalid_slot_mapping():
             {},
         ),
         (
-            "entity_type",
-            "some_role",
-            None,
-            [{"entity": "entity_type", "value": "some_value", "role": "some_role"}],
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "role": "some_role",
+                }
+            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [{"entity": "some_entity", "value": "some_value", "role": "some_role"}],
             "some_intent",
             {"some_other_slot": "some_value"},
         ),
         (
-            "entity_type",
-            None,
-            "some_group",
             [
                 {
-                    "entity": "entity_type",
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "group": "some_group",
+                }
+            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [
+                {
+                    "entity": "some_entity",
                     "value": "some_value",
                     "group": "some_other_group",
                 }
@@ -823,20 +841,33 @@ def test_invalid_slot_mapping():
             {},
         ),
         (
-            "entity_type",
-            None,
-            "some_group",
-            [{"entity": "entity_type", "value": "some_value", "group": "some_group"}],
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "group": "some_group",
+                }
+            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [{"entity": "some_entity", "value": "some_value", "group": "some_group"}],
             "some_intent",
             {"some_other_slot": "some_value"},
         ),
         (
-            "entity_type",
-            "some_role",
-            "some_group",
             [
                 {
-                    "entity": "entity_type",
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "group": "some_group",
+                    "role": "some_role",
+                }
+            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [
+                {
+                    "entity": "some_entity",
                     "value": "some_value",
                     "role": "some_role",
                     "group": "some_group",
@@ -846,35 +877,43 @@ def test_invalid_slot_mapping():
             {"some_other_slot": "some_value"},
         ),
         (
-            "entity_type",
-            None,
-            None,
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_other_entity",
+                }
+            ],
             [{"entity": "some_entity", "value": "some_value"}],
             "some_intent",
             {},
         ),
         (
-            "some_entity",
-            None,
-            None,
-            [{"entity": "entity_type", "value": "some_value"}],
-            "some_intent",
-            {},
-        ),
-        (
-            "entity_type",
-            None,
-            None,
-            [{"entity": "entity_type", "value": "some_value"}],
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "role": "some_role",
+                }
+            ],
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_other_entity",
+                }
+            ],
+            [{"entity": "some_entity", "value": "some_value", "role": "some_role"}],
             "some_intent",
             {},
         ),
     ],
 )
 def test_extract_other_slots_with_entity(
-    mapping_entity: Text,
-    mapping_role: Optional[Text],
-    mapping_group: Optional[Text],
+    some_other_slot_mapping: List[Dict[Text, Any]],
+    some_slot_mapping: List[Dict[Text, Any]],
     entities: List[Dict[Text, Any]],
     intent: Text,
     expected_slot_values: Dict[Text, Text],
@@ -882,22 +921,25 @@ def test_extract_other_slots_with_entity(
     """Test extraction of other not requested slots values from entities."""
 
     form_name = "some_form"
-    slot_mapping = {
-        "type": "from_entity",
-        "entity": mapping_entity,
-        "role": mapping_role,
-        "group": mapping_group,
-    }
     form = FormAction(form_name, None)
 
     domain = Domain.from_dict(
-        {"forms": [{form_name: {"some_other_slot": [slot_mapping]}}]}
+        {
+            "forms": [
+                {
+                    form_name: {
+                        "some_other_slot": some_other_slot_mapping,
+                        "some_slot": some_slot_mapping,
+                    }
+                }
+            ]
+        }
     )
 
     tracker = DialogueStateTracker.from_events(
         "default",
         [
-            SlotSet(REQUESTED_SLOT, ["some_slot", "some_other_slot"]),
+            SlotSet(REQUESTED_SLOT, "some_slot"),
             UserUttered(
                 "bla", intent={"name": intent, "confidence": 1.0}, entities=entities
             ),
