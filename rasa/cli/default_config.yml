@@ -13,4 +13,3 @@ policies:
     max_history: 5
   - name: FormPolicy
   - name: MappingPolicy
-  
