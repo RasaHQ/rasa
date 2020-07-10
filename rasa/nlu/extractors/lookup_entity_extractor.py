@@ -99,7 +99,7 @@ class LookupEntityExtractor(EntityExtractor):
         and check whether it exists in the user's message
         """
         results = []
-        for i in range(0, len(entities)):
+        for i in range(len(entities)):
             f = open(file_path[i], "r")
             examples = f.readlines()
 
@@ -107,11 +107,12 @@ class LookupEntityExtractor(EntityExtractor):
                 if example.lower().strip() in user_input.lower():
                     start_index = user_input.lower().index(example.lower().strip())
                     end_index = start_index + len(example.strip())
-                    temp = {}
-                    temp["entity"] = entities[i]
-                    temp["start"] = start_index
-                    temp["end"] = end_index
-                    temp["value"] = user_input[start_index:end_index]
+                    temp = {
+                        "entity": entities[i], 
+                        "start": start_index,
+                        "end": end_index,
+                        "value": user_input[start_index:end_index]
+                    }
                     results.append(temp)
         return results
 
