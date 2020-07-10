@@ -30,7 +30,7 @@ class StoryReader:
         self.use_e2e = use_e2e
         self.source_name = source_name
 
-    async def read_from_file(self, filename: Text,) -> List[StoryStep]:
+    async def read_from_file(self, filename: Text) -> List[StoryStep]:
         raise NotImplementedError
 
     def _add_current_stories_to_result(self):
@@ -41,6 +41,10 @@ class StoryReader:
     def _new_story_part(self, name: Text, source_name: Text):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name)
+
+    def _new_rule_part(self, name: Text, source_name: Text):
+        self._add_current_stories_to_result()
+        self.current_step_builder = StoryStepBuilder(name, source_name, is_rule=True)
 
     def _add_event(self, event_name, parameters):
 

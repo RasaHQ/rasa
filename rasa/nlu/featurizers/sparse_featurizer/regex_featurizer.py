@@ -4,12 +4,12 @@ import re
 from typing import Any, Dict, List, Optional, Text, Union, Type, Tuple
 
 import numpy as np
-
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-import rasa.utils.io
-import rasa.utils.io
 import scipy.sparse
+
+import rasa.utils.io
+import rasa.utils.io
 from rasa.nlu import utils
+from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     RESPONSE,
@@ -19,12 +19,10 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
 )
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
-from rasa.nlu.training_data import Message, TrainingData
-import rasa.utils.common as common_utils
 from rasa.nlu.model import Metadata
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +31,11 @@ class RegexFeaturizer(SparseFeaturizer):
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
+
+    defaults = {
+        # Text will be processed with case sensitive as default
+        "case_sensitive": True
+    }
 
     def __init__(
         self,
@@ -43,6 +46,7 @@ class RegexFeaturizer(SparseFeaturizer):
         super().__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
+        self.case_sensitive = self.component_config["case_sensitive"]
 
     def add_lookup_tables(self, lookup_tables: List[Dict[Text, Union[Text, List]]]):
         self.known_patterns.extend(self._lookup_table_regexes(lookup_tables))
@@ -120,13 +124,17 @@ class RegexFeaturizer(SparseFeaturizer):
             # nothing to featurize
             return None, None
 
+        flags = 0  # default flag
+        if not self.case_sensitive:
+            flags = re.IGNORECASE
+
         sequence_length = len(tokens)
 
         sequence_features = np.zeros([sequence_length, len(self.known_patterns)])
         sentence_features = np.zeros([1, len(self.known_patterns)])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
-            matches = re.finditer(pattern["pattern"], message.text)
+            matches = re.finditer(pattern["pattern"], message.text, flags=flags)
             matches = list(matches)
 
             for token_index, t in enumerate(tokens):
@@ -158,13 +166,6 @@ class RegexFeaturizer(SparseFeaturizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
-            common_utils.raise_warning(
-                "Directly including lookup tables as a list is deprecated since Rasa "
-                "1.6.",
-                FutureWarning,
-                docs=DOCS_URL_TRAINING_DATA_NLU + "#lookup-tables",
-            )
-
         # otherwise it's a file path.
         else:
 

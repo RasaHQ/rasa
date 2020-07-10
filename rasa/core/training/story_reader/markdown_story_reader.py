@@ -14,10 +14,7 @@ from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.dsl import EndToEndReader
 from rasa.core.training.story_reader.story_reader import StoryReader
-from rasa.core.training.structures import (
-    StoryStep,
-    FORM_PREFIX,
-)
+from rasa.core.training.structures import StoryStep, FORM_PREFIX
 from rasa.data import MARKDOWN_FILE_EXTENSION
 from rasa.utils.common import raise_warning
 
@@ -29,7 +26,7 @@ class MarkdownStoryReader(StoryReader):
 
     """
 
-    async def read_from_file(self, filename: Text,) -> List[StoryStep]:
+    async def read_from_file(self, filename: Text) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
 
         try:
@@ -64,6 +61,10 @@ class MarkdownStoryReader(StoryReader):
                     continue
                 elif multiline_comment:
                     continue
+                elif line.startswith(">>"):
+                    # reached a new rule block
+                    rule_name = line.lstrip(">> ")
+                    self._new_rule_part(rule_name, self.source_name)
                 elif line.startswith("#"):
                     # reached a new story block
                     name = line[1:].strip("# ")
@@ -221,31 +222,41 @@ class MarkdownStoryReader(StoryReader):
 
     @staticmethod
     def is_markdown_story_file(file_path: Text) -> bool:
+        """Check if file contains Core training data or rule data in Markdown format.
 
+        Args:
+            file_path: Path of the file to check.
+
+        Returns:
+            `True` in case the file is a Core Markdown training data or rule data file,
+            `False` otherwise.
+        """
         suffix = PurePath(file_path).suffix
 
         if suffix and suffix != MARKDOWN_FILE_EXTENSION:
             return False
+
         try:
             with open(
                 file_path, encoding=io_utils.DEFAULT_ENCODING, errors="surrogateescape"
             ) as lines:
                 return any(
-                    MarkdownStoryReader._contains_story_pattern(line) for line in lines
+                    MarkdownStoryReader._contains_story_or_rule_pattern(line)
+                    for line in lines
                 )
         except Exception as e:
             # catch-all because we might be loading files we are not expecting to load
             logger.error(
                 f"Tried to check if '{file_path}' is a story file, but failed to "
-                f"read it. If this file contains story data, you should "
+                f"read it. If this file contains story or rule data, you should "
                 f"investigate this error, otherwise it is probably best to "
-                f"move the file to a different location. "
-                f"Error: {e}"
+                f"move the file to a different location. Error: {e}"
             )
             return False
 
     @staticmethod
-    def _contains_story_pattern(text: Text) -> bool:
+    def _contains_story_or_rule_pattern(text: Text) -> bool:
         story_pattern = r".*##.+"
+        rule_pattern = r".*>>.+"
 
-        return re.match(story_pattern, text) is not None
+        return any(re.match(pattern, text) for pattern in [story_pattern, rule_pattern])
