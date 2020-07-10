@@ -1,3 +1,5 @@
+const remarkSources = require('remark-sources');
+
 module.exports = {
   title: 'Rasa Open Source Documentation',
   tagline: 'The tagline of my site',
@@ -85,8 +87,8 @@ module.exports = {
           // It is recommended to set document id as docs home page (`docs/` path).
           homePageId: 'index',
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl:
-            'https://github.com/rasahq/rasa/edit/master/docs/',
+          editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
+          remarkPlugins: [remarkSources],
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
