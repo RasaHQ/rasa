@@ -151,7 +151,7 @@ def drop_intents_below_freq(
     keep_examples = [
         ex
         for ex in training_data.intent_examples
-        if training_data.examples_per_intent[ex.get(INTENT)] >= cutoff
+        if training_data.number_of_examples_per_intent[ex.get(INTENT)] >= cutoff
     ]
 
     return TrainingData(

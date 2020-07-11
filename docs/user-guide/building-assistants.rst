@@ -481,7 +481,7 @@ which will do something with the information the user has provided once the form
        return []
 
 In this case, we only tell the user that we’ll be in touch with them, however
-usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L149>`_
+usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L148>`_
 for an example of how to store this information in a spreadsheet.
 
 We’ll need to add the form we just created to a new section in our ``domain.yml`` file:
@@ -686,7 +686,8 @@ The decision to handle these types of user input should always come from reviewi
 real conversations. You should first build part of your assistant, test it with real users
 (whether that's your end user, or your colleague) and then add what's missing. You shouldn't
 try to implement every possible edge case that you think might happen, because in the end
-your users may never actually behave in that way. `Rasa X <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`__
+your users may never actually behave in that way.
+`Rasa X <https://rasa.com/docs/rasa-x/>`__
 is a tool that can help you review conversations and make these types of decisions.
 
 Generic interjections
