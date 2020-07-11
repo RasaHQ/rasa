@@ -781,3 +781,172 @@ def test_invalid_slot_mapping():
 
     with pytest.raises(ValueError):
         form.extract_requested_slot(tracker, domain)
+
+
+@pytest.mark.parametrize(
+    "some_other_slot_mapping, some_slot_mapping, entities, intent, expected_slot_values",
+    [
+        (
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "role": "some_role",
+                }
+            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [
+                {
+                    "entity": "some_entity",
+                    "value": "some_value",
+                    "role": "some_other_role",
+                }
+            ],
+            "some_intent",
+            {},
+        ),
+        (
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "role": "some_role",
+                }
+            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [{"entity": "some_entity", "value": "some_value", "role": "some_role"}],
+            "some_intent",
+            {"some_other_slot": "some_value"},
+        ),
+        (
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "group": "some_group",
+                }
+            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [
+                {
+                    "entity": "some_entity",
+                    "value": "some_value",
+                    "group": "some_other_group",
+                }
+            ],
+            "some_intent",
+            {},
+        ),
+        (
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "group": "some_group",
+                }
+            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [{"entity": "some_entity", "value": "some_value", "group": "some_group"}],
+            "some_intent",
+            {"some_other_slot": "some_value"},
+        ),
+        (
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "group": "some_group",
+                    "role": "some_role",
+                }
+            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [
+                {
+                    "entity": "some_entity",
+                    "value": "some_value",
+                    "role": "some_role",
+                    "group": "some_group",
+                }
+            ],
+            "some_intent",
+            {"some_other_slot": "some_value"},
+        ),
+        (
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_other_entity",
+                }
+            ],
+            [{"entity": "some_entity", "value": "some_value"}],
+            "some_intent",
+            {},
+        ),
+        (
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                    "role": "some_role",
+                }
+            ],
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_other_entity",
+                }
+            ],
+            [{"entity": "some_entity", "value": "some_value", "role": "some_role"}],
+            "some_intent",
+            {},
+        ),
+    ],
+)
+def test_extract_other_slots_with_entity(
+    some_other_slot_mapping: List[Dict[Text, Any]],
+    some_slot_mapping: List[Dict[Text, Any]],
+    entities: List[Dict[Text, Any]],
+    intent: Text,
+    expected_slot_values: Dict[Text, Text],
+):
+    """Test extraction of other not requested slots values from entities."""
+
+    form_name = "some_form"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_dict(
+        {
+            "forms": [
+                {
+                    form_name: {
+                        "some_other_slot": some_other_slot_mapping,
+                        "some_slot": some_slot_mapping,
+                    }
+                }
+            ]
+        }
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            UserUttered(
+                "bla", intent={"name": intent, "confidence": 1.0}, entities=entities
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_other_slots(tracker, domain)
+    # check that the value was extracted for non requested slot
+    assert slot_values == expected_slot_values
