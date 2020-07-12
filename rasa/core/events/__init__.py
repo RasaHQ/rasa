@@ -223,6 +223,8 @@ class UserUttered(Event):
         self.entities = entities if entities else []
         self.input_channel = input_channel
         self.message_id = message_id
+        self.message = message if message else None
+
 
         super().__init__(timestamp, metadata)
 
