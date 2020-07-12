@@ -349,6 +349,7 @@ async def test_multi_project_training(trained_async):
     assert all([i in domain.intents for i in expected_intents])
 
     nlu_training_data_file = os.path.join(unpacked, "nlu", "training_data.json")
+
     nlu_training_data = RasaReader().read(nlu_training_data_file)
 
     assert expected_intents == nlu_training_data.intents
