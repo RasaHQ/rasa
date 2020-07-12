@@ -1,16 +1,11 @@
-import logging
 import os
+import logging
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.utils.common as common_utils
-from rasa.constants import DOCS_URL_COMPONENTS
-from rasa.nlu import utils
-from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import ENTITIES
-from rasa.nlu.extractors.extractor import EntityExtractor
-from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
+from rasa.nlu.extractors.extractor import EntityExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -24,102 +19,98 @@ class LookupEntityExtractor(EntityExtractor):
     """
 
     defaults = {
-        "entities": None,
-        "files_path": None
+        # lookup key for extracting lookup entities,
+        # it contains the dictonary of lookup entity names
+        # and their respective data files
+        # example:
+        # - name: LookupEntityExtractor
+        #   lookup:
+        #      city: /some/path/city.txt
+        #      person: /some/other/path/person.txt
+        "lookup": None
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
         super(LookupEntityExtractor, self).__init__(component_config)
 
-        # check if "entities" and "file_path" are configured in the config.yml
-        if component_config is not None and "entities" not in component_config or "files_path" not in component_config:
-            self.component_config["entities"] = None
-            self.component_config["files_path"] = None
-            common_utils.raise_warning(
-                "Can't extract Lookup Entities, Please configure the entities and file path for 'LookupEntityExtractor' in the config.yml."
-            )
-
-        # check if entities are configured with their respective file path
-        # elif component_config["entities"] is not None and component_config["files_path"] is not None:
-        elif len(component_config["entities"]) != len(component_config["files_path"]):
-            self.component_config["files_path"] = None
-            common_utils.raise_warning(
-                "Can't extract Lookup Entities, Make sure you have configured the entities and their respective file path properly for 'LookupEntityExtractor' in the config.yml."
-            )
-        # check if the given file path exists
-        elif component_config["files_path"] is not None:
-            for i in range(len(component_config["files_path"])):
-                file_path = component_config["files_path"][i]
-                if os.path.isfile(file_path):
-                    pass
-                else:
-                    self.component_config["files_path"] = None
-                    print("File path", file_path)
-                    common_utils.raise_warning(
-                        f"Can't extract Lookup Entities, File \"{file_path}\" does not exist."
-                    )
-                    break
-
-    def add_extractor_name(
-        self, entities: List[Dict[Text, Any]]
-    ) -> List[Dict[Text, Any]]:
-        """
-        Adds the Extractor name to the Message class during the prediction.
-        """
-        for entity in entities:
-            entity["extractor"] = self.name
-        return entities
-
-    @staticmethod
-    def _parse_entities(self, text: Text) -> List[Dict[Text, Any]]:
-        """
-        pass the user input to  extract the entities
-
-        """
-
-        user_input = text
-        entities = self.component_config["entities"]
-        files_path = self.component_config["files_path"]
-
-        if files_path is not None and entities is not None:
-            if len(entities) != len(files_path):
-                return []
+        if component_config is not None and "lookup" in component_config:
+            if component_config["lookup"] is not None:
+                # check if the entities and respective file path exists
+                for key, value in list(component_config["lookup"].items()):
+                    self.add_entities_if_lookup_entity(key, value)
             else:
+                self.component_config["lookup"] = None
+
+            if not bool(component_config["lookup"]):
+                # if the lookup dictionary is empty after filtering
+                # the lookup entities, assign it None value
+                self.component_config["lookup"] = None
+        else:
+            common_utils.raise_warning(
+                "Can't extract Lookup Entities,\
+                Please configure the lookup entities in the config.yml."
+            )
+
+    def add_entities_if_lookup_entity(self, entity, file_path) -> None:
+        if file_path is not None:
+            if os.path.isfile(file_path):
+                pass
+            else:
+                # remove the entity from the lookup dictionary,
+                # if the file path doesn't exist
+                self.component_config["lookup"].pop(entity)
+                common_utils.raise_warning(
+                    f"can't extract lookup entity: '{entity}',\
+                    make sure the provided file '{file_path}' exists.")
+        else:
+            # remove the entity from the lookup dictionary,
+            # if the file path is not provided
+            self.component_config["lookup"].pop(entity)
+            common_utils.raise_warning(
+                f"can't extract '{entity}' entity,\
+                please provide the example file.")
+
+    def _parse_entities(self, user_input: Text) -> List[Dict[Text, Any]]:
+        """Extract entities from the user input."""
+        if self.component_config["lookup"] is not None:
+            for entity, file_path in list(
+                    self.component_config["lookup"].items()):
                 results = self._parse_all_entities(
-                    user_input, entities, files_path)
+                    user_input, entity, file_path)
                 return results
         else:
             return []
 
-    @staticmethod
-    def _parse_all_entities(user_input: str, entities: list, file_path: list) -> List[Dict[Text, Any]]:
+    def _parse_all_entities(
+        self,
+        user_input: str, entity: list, file_path: list
+    ) -> List[Dict[Text, Any]]:
         """
         This method does the actual entity extraction work.\n
         So here I am running the loop over the list of data in the text file\n
         and check whether it exists in the user's message
         """
         results = []
-        for i in range(len(entities)):
-            with open(file_path[i], "r") as f:
-                examples = f.readlines()
+        with open(file_path, "r") as f:
+            examples = f.readlines()
 
-                for example in examples:
-                    if example.lower().strip() in user_input.lower():
-                        start_index = user_input.lower().index(example.lower().strip())
-                        end_index = start_index + len(example.strip())
-                        temp = {
-                        "entity": entities[i], 
+            for example in examples:
+                example = example.lower().strip()
+                if example in user_input.lower():
+                    start_index = user_input.lower().index(example)
+                    end_index = start_index + len(example.strip())
+                    results.append({
+                        "entity": entity,
                         "start": start_index,
                         "end": end_index,
                         "value": user_input[start_index:end_index]
-                        }
-                        results.append(temp)
+                    })
         return results
 
-    def process(self, message, **kwargs):
+    def process(self, message: Message, **kwargs: Any) -> None:
         """Retrieve the text message, parse the entities."""
 
-        extracted_entities = self._parse_entities(self, message.text)
+        extracted_entities = self._parse_entities(message.text)
         extracted_entities = self.add_extractor_name(extracted_entities)
 
         message.set(
