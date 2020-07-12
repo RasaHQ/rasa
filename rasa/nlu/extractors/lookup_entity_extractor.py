@@ -12,10 +12,9 @@ logger = logging.getLogger(__name__)
 
 class LookupEntityExtractor(EntityExtractor):
     """
-    Searches for entities in the user's message from a list of examples.\n
-    Required Parameters: \n
-    @entities -> list \n
-    @files_path -> list
+    Searches for entities in the user's message from a list of examples.
+    Required Parameters:
+    @lookup -> dict
     """
 
     defaults = {
@@ -81,13 +80,13 @@ class LookupEntityExtractor(EntityExtractor):
         else:
             return []
 
+    @staticmethod
     def _parse_all_entities(
-        self,
         user_input: str, entity: list, file_path: list
     ) -> List[Dict[Text, Any]]:
         """
-        This method does the actual entity extraction work.\n
-        So here I am running the loop over the list of data in the text file\n
+        This method does the actual entity extraction work.
+        So here I am running the loop over the list of data in the text file
         and check whether it exists in the user's message
         """
         results = []
