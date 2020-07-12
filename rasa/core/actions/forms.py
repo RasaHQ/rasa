@@ -123,6 +123,7 @@ class FormAction(LoopAction):
         self,
         requested_slot_mapping: Dict[Text, Any],
         slot: Text,
+        entity_type_of_slot_to_fill: Optional[Text],
         tracker: "DialogueStateTracker",
     ) -> bool:
         """Check whether slot should be filled by an entity in the input or not.
@@ -130,6 +131,7 @@ class FormAction(LoopAction):
         Args:
             requested_slot_mapping: Slot mapping.
             slot: The slot to be filled.
+            entity_type_of_slot_to_fill: Entity type of slot to fill.
             tracker: The tracker.
 
         Returns:
@@ -139,18 +141,24 @@ class FormAction(LoopAction):
         # slot name is equal to the entity type
         slot_equals_entity = slot == requested_slot_mapping.get("entity")
 
-        # TODO: adding this breaks other slots logic
         # use the custom slot mapping 'from_entity' defined by the user to check
-        # whether we can fill a slot with an entity
-        # matching_values = self.get_entity_value(
-        #     requested_slot_mapping.get("entity"),
-        #     tracker,
-        #     requested_slot_mapping.get("role"),
-        #     requested_slot_mapping.get("group"),
-        # )
-        # slot_fulfils_entity_mapping = matching_values is not None
+        # whether we can fill a slot with an entity (only if a role or a group label
+        # is set)
+        if (
+            requested_slot_mapping.get("role") is None
+            and requested_slot_mapping.get("group") is None
+        ) or entity_type_of_slot_to_fill != requested_slot_mapping.get("entity"):
+            slot_fulfils_entity_mapping = False
+        else:
+            matching_values = self.get_entity_value(
+                requested_slot_mapping.get("entity"),
+                tracker,
+                requested_slot_mapping.get("role"),
+                requested_slot_mapping.get("group"),
+            )
+            slot_fulfils_entity_mapping = matching_values is not None
 
-        return slot_equals_entity  # or slot_fulfils_entity_mapping
+        return slot_equals_entity or slot_fulfils_entity_mapping
 
     @staticmethod
     def get_entity_value(
@@ -189,6 +197,10 @@ class FormAction(LoopAction):
         """
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
+        entity_type_of_slot_to_fill = self._get_entity_type_of_slot_to_fill(
+            slot_to_fill, domain
+        )
+
         slot_values = {}
         for slot in self.required_slots(domain):
             # look for other slots
@@ -201,7 +213,12 @@ class FormAction(LoopAction):
                     should_fill_entity_slot = (
                         other_slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)
                         and self.intent_is_desired(other_slot_mapping, tracker)
-                        and self.entity_is_desired(other_slot_mapping, slot, tracker)
+                        and self.entity_is_desired(
+                            other_slot_mapping,
+                            slot,
+                            entity_type_of_slot_to_fill,
+                            tracker,
+                        )
                     )
                     # check whether the slot should be
                     # filled from trigger intent mapping
@@ -577,3 +594,25 @@ class FormAction(LoopAction):
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:
         logger.debug(f"Deactivating the form '{self.name()}'")
         return []
+
+    def _get_entity_type_of_slot_to_fill(
+        self, slot_to_fill: Text, domain: "Domain"
+    ) -> Optional[Text]:
+        if not slot_to_fill:
+            return None
+
+        mappings = self.get_mappings_for_slot(slot_to_fill, domain)
+        mappings = [
+            m for m in mappings if m.get("type") == str(SlotMapping.FROM_ENTITY)
+        ]
+
+        if not mappings:
+            return None
+
+        entity_type = mappings[0].get("entity")
+
+        for i in range(1, len(mappings)):
+            if entity_type != mappings[i].get("entity"):
+                return None
+
+        return entity_type
