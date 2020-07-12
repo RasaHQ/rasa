@@ -184,6 +184,7 @@ class SpacyNLP(Component):
     ) -> Dict[Text, List[Any]]:
         attribute_docs = {}
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+
             texts = [
                 self.get_text(e, attribute) for e in training_data.training_examples
             ]
