@@ -42,8 +42,9 @@ class StoryReader:
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name)
 
-
-    def _add_event(self, event_name: Text, parameters: Dict[Text, Any]) -> None:
+    def _add_event(
+        self, event_name: Text, parameters: Dict[Text, Any], is_e2e: bool = False
+    ) -> None:
 
         # add 'name' only if event is not a SlotSet,
         # because there might be a slot with slot_key='name'
