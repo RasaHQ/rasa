@@ -349,8 +349,8 @@ async def test_multi_project_training(trained_async):
     assert all([i in domain.intents for i in expected_intents])
 
     nlu_training_data_file = os.path.join(unpacked, "nlu", "training_data.json")
-    # TODO: we need to update training nlu data schema as it includes that minlength of text is 1 
-    # but for default actions it will be less (""); 
+    # TODO: we need to update training nlu data schema as it includes that minlength of text is 1
+    # but for default actions it will be less ("");
     nlu_training_data = RasaReader().read(nlu_training_data_file)
 
     assert expected_intents == nlu_training_data.intents
