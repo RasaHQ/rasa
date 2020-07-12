@@ -288,4 +288,3 @@ async def test_adding_e2e_actions_to_domain(project: Text):
     domain = await importer.get_domain()
 
     assert all(action_name in domain.action_names for action_name in additional_actions)
-

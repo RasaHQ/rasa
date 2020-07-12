@@ -141,7 +141,7 @@ async def test_persist_form_story():
         ActionExecuted("utter_goodbye"),
         ActionExecuted("action_listen"),
     ]
-    
+
     for event in events:
         tracker.update(event)
 
