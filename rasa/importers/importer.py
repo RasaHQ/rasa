@@ -287,6 +287,7 @@ class E2EImporter(TrainingDataImporter):
     """
 
     def __init__(self, importer: TrainingDataImporter) -> None:
+
         self.importer = importer
         self._cached_stories: Optional[StoryGraph] = None
 

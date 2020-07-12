@@ -3,6 +3,7 @@ import pytest
 from rasa.core import training
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.events import ActionExecuted, UserUttered, SlotSet
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader

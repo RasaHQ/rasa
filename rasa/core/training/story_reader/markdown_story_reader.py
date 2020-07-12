@@ -29,11 +29,12 @@ class MarkdownStoryReader(StoryReader):
 
     """
 
-    async def read_from_file(self, filename: Text,) -> List[StoryStep]:
+    async def read_from_file(self, filename: Text) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
 
         try:
-            with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
+            # TODO: Hack by Genie for Windows
+            with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING, errors="ignore") as f:
                 lines = f.readlines()
 
             return await self._process_lines(lines)
@@ -85,10 +86,16 @@ class MarkdownStoryReader(StoryReader):
                 elif line.startswith("*"):
                     # reached a user message
                     user_messages = [el.strip() for el in line[1:].split(" OR ")]
-                    if self.use_e2e:
-                        await self._add_e2e_messages(user_messages, line_num)
-                    else:
-                        await self._add_user_messages(user_messages, line_num)
+                    # TODO: Hack by Genie for temporary markdown support (till line 98)
+                    await self.add_user_messages_e2e(user_messages, line_num)
+                    # end-to-end BOT message
+                elif line.startswith("<B>"):
+                    event_name, parameters = self._parse_event_line(line[3:])
+                    self._add_event(event_name, parameters, is_e2e=True)
+                # end-to-end USER message
+                elif line.startswith("<U>"):
+                    user_messages = [el.strip() for el in line[3:].split(" OR ")]
+                    await self.add_user_messages_e2e(user_messages, line_num)
                 else:
                     # reached an unknown type of line
                     logger.warning(
@@ -182,6 +189,18 @@ class MarkdownStoryReader(StoryReader):
         )
         self.current_step_builder.add_user_messages(parsed_messages)
 
+    # TODO: Hack by Genie for temporary Markdown support
+    async def add_user_messages_e2e(self, messages, line_num):
+        if not self.current_step_builder:
+            raise StoryParseError(
+                "User message '{}' at invalid location. "
+                "Expected story start.".format(messages)
+            )
+        parsed_messages = await asyncio.gather(
+            *[self._parse_message_e2e(m, line_num) for m in messages]
+        )
+        self.current_step_builder.add_user_messages(parsed_messages)
+
     async def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
@@ -217,6 +236,22 @@ class MarkdownStoryReader(StoryReader):
                 UserWarning,
                 docs=DOCS_URL_DOMAINS,
             )
+        return utterance
+
+    # TODO: Hack by Genie for temporary Markdown support
+    async def _parse_message_e2e(self, text: Text, line_num: int) -> UserUttered:
+        from rasa.nlu.training_data.formats.markdown import MarkdownReader
+
+        message_processed = MarkdownReader().parse_training_example(text)
+        parse_data = await self.interpreter.parse(text)
+
+        utterance = UserUttered(
+            text,
+            parse_data.get("intent"),
+            message_processed.get("entities"),
+            message=message_processed,
+        )
+        intent_name = utterance.intent.get("name")
         return utterance
 
     @staticmethod
