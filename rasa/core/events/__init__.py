@@ -226,7 +226,6 @@ class UserUttered(Event):
         self.message_id = message_id
         self.message = message if message else None
 
-
         super().__init__(timestamp, metadata)
 
         if parse_data:
