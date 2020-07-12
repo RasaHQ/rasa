@@ -42,6 +42,7 @@ class StoryReader:
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name)
 
+
     def _new_rule_part(self, name: Text, source_name: Text):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name, is_rule=True)
@@ -51,7 +52,17 @@ class StoryReader:
         # add 'name' only if event is not a SlotSet,
         # because there might be a slot with slot_key='name'
         if "name" not in parameters and event_name != SlotSet.type_name:
-            parameters["name"] = event_name
+            # TODO: Hack by Genie as part of the prototype
+            from rasa.nlu.training_data.formats.markdown import MarkdownReader
+
+            action_as_message = MarkdownReader().parse_e2e_training_example(event_name)
+            parameters["name"] = action_as_message.text
+            parameters["message"] = action_as_message
+
+            if is_e2e:
+                # TODO: This is somewhat hacky and needs be cleaned up in YAML
+                #  implementation
+                parameters["e2e_text"] = action_as_message.text
 
         parsed_events = Event.from_story_string(
             event_name, parameters, default=ActionExecuted
