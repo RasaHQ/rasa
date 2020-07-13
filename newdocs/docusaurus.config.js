@@ -1,4 +1,5 @@
 const remarkSources = require('remark-sources');
+const remarkCollapse = require('remark-collapse');
 
 module.exports = {
   title: 'Rasa Open Source Documentation',
@@ -88,7 +89,7 @@ module.exports = {
           homePageId: 'index',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
-          remarkPlugins: [remarkSources],
+          remarkPlugins: [[remarkCollapse, { test: '' }], remarkSources],
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),

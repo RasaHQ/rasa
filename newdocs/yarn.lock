@@ -5780,6 +5780,13 @@ mdast-util-definitions@^3.0.0:
   dependencies:
     unist-util-visit "^2.0.0"
 
+mdast-util-heading-range@^2.0.1:
+  version "2.1.4"
+  resolved "https://registry.yarnpkg.com/mdast-util-heading-range/-/mdast-util-heading-range-2.1.4.tgz#152d1c71affb6172b1bbf5fee01072bf1b058709"
+  integrity sha512-ea+YwoFQZiwSf5TLlk9qtKb0AUKsn1oCzdskn2SXsHylA/vW9ZxmMzuCNsFi9siWW1WS1/JSOipX2brUwisIHA==
+  dependencies:
+    mdast-util-to-string "^1.0.0"
+
 mdast-util-to-hast@9.1.0:
   version "9.1.0"
   resolved "https://registry.yarnpkg.com/mdast-util-to-hast/-/mdast-util-to-hast-9.1.0.tgz#6ef121dd3cd3b006bf8650b1b9454da0faf79ffe"
@@ -5797,7 +5804,7 @@ mdast-util-to-hast@9.1.0:
     unist-util-position "^3.0.0"
     unist-util-visit "^2.0.0"
 
-mdast-util-to-string@^1.1.0:
+mdast-util-to-string@^1.0.0, mdast-util-to-string@^1.0.2, mdast-util-to-string@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/mdast-util-to-string/-/mdast-util-to-string-1.1.0.tgz#27055500103f51637bd07d01da01eb1967a43527"
   integrity sha512-jVU0Nr2B9X3MU4tSK7JP1CMkSvOj7X5l/GboG1tKRw52lLF1x2Ju92Ms9tNetCcbfX3hzlM73zYo2NKkWSfF/A==
@@ -7877,6 +7884,14 @@ remark-admonitions@^1.2.1:
     rehype-parse "^6.0.2"
     unified "^8.4.2"
     unist-util-visit "^2.0.1"
+
+remark-collapse@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/remark-collapse/-/remark-collapse-0.1.2.tgz#7ebf0b0e0932f39a8599a754906e0a097906070b"
+  integrity sha1-fr8LDgky85qFmadUkG4KCXkGBws=
+  dependencies:
+    mdast-util-heading-range "^2.0.1"
+    mdast-util-to-string "^1.0.2"
 
 remark-emoji@^2.1.0:
   version "2.1.0"
