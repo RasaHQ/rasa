@@ -135,12 +135,14 @@ class EntityExtractor(Component):
         last_entity_tag = NO_ENTITY_TAG
         last_role_tag = NO_ENTITY_TAG
         last_group_tag = NO_ENTITY_TAG
+        last_token_end = -1
 
         for idx, token in enumerate(tokens):
             current_entity_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
 
             if current_entity_tag == NO_ENTITY_TAG:
                 last_entity_tag = NO_ENTITY_TAG
+                last_token_end = token.end
                 continue
 
             current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
@@ -164,13 +166,28 @@ class EntityExtractor(Component):
                 )
                 entities.append(entity)
             else:
-                entities[-1][ENTITY_ATTRIBUTE_END] = token.end
-                if confidences is not None:
-                    self._update_confidence_values(entities, confidences, idx)
+                if last_token_end == token.start - 1:
+                    entities[-1][ENTITY_ATTRIBUTE_END] = token.end
+                    if confidences is not None:
+                        self._update_confidence_values(entities, confidences, idx)
+                else:
+                    # create a new entity as the two entities are separated by a comma
+                    # or some other symbol
+                    entity = self._create_new_entity(
+                        list(tags.keys()),
+                        current_entity_tag,
+                        current_group_tag,
+                        current_role_tag,
+                        token,
+                        idx,
+                        confidences,
+                    )
+                    entities.append(entity)
 
             last_entity_tag = current_entity_tag
             last_group_tag = current_group_tag
             last_role_tag = current_role_tag
+            last_token_end = token.end
 
         for entity in entities:
             entity[ENTITY_ATTRIBUTE_VALUE] = text[
