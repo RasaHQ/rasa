@@ -22,7 +22,7 @@ components you want to use directly in the configuration file. See
 
 :::
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="how-to-choose-a-pipeline"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="how-to-choose-a-pipeline"></a>
 
 ## How to Choose a Pipeline
 
@@ -73,7 +73,7 @@ pipeline:
 
 ### A Longer Answer
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="recommended-pipeline-english"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-english"></a>
 
 We recommend using following pipeline, if your training data is in English:
 
@@ -106,7 +106,7 @@ The advantage of the [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer)
 creates a contextual vector representation for the complete sentence.
 However, `ConveRT` is only available in English.
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="recommended-pipeline-pretrained-non-english"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-pretrained-non-english"></a>
 
 If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
 the following pipeline:
@@ -136,7 +136,7 @@ It uses the [SpacyFeaturizer](/docs/nlu/components#spacyfeaturizer) instead of t
 [SpacyFeaturizer](/docs/nlu/components#spacyfeaturizer) provides pre-trained word embeddings from either GloVe or fastText in many different languages
 (see [Pre-trained Word Vectors](/docs/nlu/language-support#pretrained-word-vectors)).
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="recommended-pipeline-non-english"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-non-english"></a>
 
 If you don’t use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
 and can train your model to be more domain specific.
@@ -355,7 +355,7 @@ pipeline:
   batch_strategy: sequence
 ```
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="component-lifecycle"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="component-lifecycle"></a>
 
 ## Component Lifecycle
 
@@ -435,7 +435,7 @@ in the image show the call order and visualize the path of the passed
 context. After all components are trained and persisted, the
 final context dictionary is used to persist the model’s metadata.
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="pipeline-templates"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="pipeline-templates"></a>
 
 ## Pipeline Templates (deprecated)
 

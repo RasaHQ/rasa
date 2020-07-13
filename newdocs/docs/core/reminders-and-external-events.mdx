@@ -10,14 +10,14 @@ about things after a given period of time, or to respond to external events (oth
 You can find a full example assistant that implements these features
 [here](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md).
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="reminders"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="reminders"></a>
 
 ## Reminders
 
 Instead of an external sensor, you might just want to be reminded about something after a certain amount of time.
 For this, Rasa provides the special event `ReminderScheduled`, and another event, `ReminderCancelled`, to unschedule a reminder.
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="scheduling-reminders-guide"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="scheduling-reminders-guide"></a>
 
 ### Scheduling Reminders
 
@@ -122,7 +122,7 @@ using the [CallbackInput](/docs/user-guide/connectors/your-own-website#callbacki
 
 :::
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="cancelling-reminders-guide"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="cancelling-reminders-guide"></a>
 
 ### Cancelling Reminders
 
@@ -157,7 +157,7 @@ For example,
 * `ReminderCancelled("...")` cancels the one unique reminder with the given name “`...`” that you supplied
   during its creation
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="external-event-guide"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="external-event-guide"></a>
 
 ## External Events
 
@@ -171,7 +171,7 @@ So for Rasa it is almost as if you had entered a message that got classified wit
 Rasa then needs to respond to this input with an action such as `action_warn_dry`.
 The easiest and most reliable way to connect this action with the intent is via the [Mapping Policy](/docs/core/policies#mapping-policy).
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="getting-conversation-id"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="getting-conversation-id"></a>
 
 ### Getting the Conversation ID
 
@@ -223,7 +223,7 @@ conversation is: 38cc25d7e23e4dde800353751b7c2d3e”.
 If you want your assistant to link to the Raspberry Pi automatically, you will have to write a custom action that
 informs the Pi about the conversation id when your conversation starts (see [Customizing the session start action](/docs/api/rasa-sdk#custom-session-start)).
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="responding-to-external-events"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="responding-to-external-events"></a>
 
 ### Responding to External Events
 
