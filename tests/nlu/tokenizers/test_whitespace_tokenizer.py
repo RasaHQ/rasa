@@ -210,6 +210,7 @@ def test_whitespace_processing_with_attribute(
         {ACTION_NAME: "Where are you going?", ACTION_TEXT: "Where are you going?",},
     )
     expected_action_tokens_text = ["Where", "are", "you", "going"]
+
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
     tk.process(message, ACTION_TEXT)
