@@ -310,6 +310,8 @@ class E2EImporter(TrainingDataImporter):
                 if isinstance(event, ActionExecuted) and event.e2e_text
             ]
 
+        additional_e2e_action_names = list(set(additional_e2e_action_names))
+
         return Domain(
             [], [], [], {}, action_names=additional_e2e_action_names, forms=[]
         )
