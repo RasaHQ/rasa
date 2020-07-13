@@ -253,7 +253,6 @@ class MarkdownStoryReader(StoryReader):
             message_processed.get("entities"),
             message=message_processed,
         )
-        intent_name = utterance.intent.get("name")
         return utterance
 
     @staticmethod
