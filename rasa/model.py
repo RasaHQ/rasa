@@ -11,9 +11,9 @@ import rasa.utils.io
 from rasa.cli.utils import print_success, create_output_path
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
-    CONFIG_MANDATORY_KEYS_CORE,
-    CONFIG_MANDATORY_KEYS_NLU,
-    CONFIG_MANDATORY_KEYS,
+    CONFIG_KEYS_CORE,
+    CONFIG_KEYS_NLU,
+    CONFIG_KEYS,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
     DEFAULT_NLU_SUBDIRECTORY_NAME,
@@ -291,14 +291,12 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     domain_without_nlg = Domain.from_dict(domain_dict)
 
     return {
-        FINGERPRINT_CONFIG_KEY: _get_hash_of_config(
-            config, exclude_keys=CONFIG_MANDATORY_KEYS
-        ),
+        FINGERPRINT_CONFIG_KEY: _get_hash_of_config(config, exclude_keys=CONFIG_KEYS),
         FINGERPRINT_CONFIG_CORE_KEY: _get_hash_of_config(
-            config, include_keys=CONFIG_MANDATORY_KEYS_CORE
+            config, include_keys=CONFIG_KEYS_CORE
         ),
         FINGERPRINT_CONFIG_NLU_KEY: _get_hash_of_config(
-            config, include_keys=CONFIG_MANDATORY_KEYS_NLU
+            config, include_keys=CONFIG_KEYS_NLU
         ),
         FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: hash(domain_without_nlg),
         FINGERPRINT_NLG_KEY: get_dict_hash(responses),

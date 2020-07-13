@@ -97,6 +97,7 @@ async def train_async(
         train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
 
         domain = await file_importer.get_domain()
+
         if domain.is_empty():
             return await handle_domain_if_not_exists(
                 file_importer, output_path, fixed_model_name
@@ -492,8 +493,8 @@ async def _train_nlu_async(
     if training_datas.is_empty():
         print_error(
             f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
-            "Please verify the data format. "
-            "The NLU model training will be skipped now."
+            f"Please verify the data format. "
+            f"The NLU model training will be skipped now."
         )
         return
 

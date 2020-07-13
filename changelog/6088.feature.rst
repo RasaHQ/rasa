@@ -1,0 +1,20 @@
+Added the new dialogue policy ``RulePolicy`` which will replace the old "rule-like"
+policies :ref:`mapping-policy`, :ref:`fallback-policy`,
+:ref:`two-stage-fallback-policy`, and :ref:`form-policy`. These policies are now
+deprecated and will be removed in the future. Please see ``examples/rules``
+for a usage example.
+
+Added new NLU component ``FallbackClassifier`` which predicts an intent ``nlu_fallback``
+in case the confidence was below a given threshold. The intent ``nlu_fallback`` may
+then be used to write stories / rules to handle the fallback in case of low NLU
+confidence.
+
+.. code-block::
+
+  pipeline:
+  - ... # Other NLU components
+  - name: FallbackClassifier
+    # If the highest ranked intent has a confidence lower than the threshold then
+    # the NLU pipeline predicts an intent `nlu_fallback` which you can then be used in
+    # stories / rules to implement an appropriate fallback.
+    threshold: 0.5
