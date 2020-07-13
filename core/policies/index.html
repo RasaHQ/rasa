@@ -224,12 +224,13 @@ require generalization." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/core/policies/">2.0.0a1</a>
               <a href="../.././1.10.7/core/policies/">1.10.7</a>
               <a href="../.././1.10.6/core/policies/">1.10.6</a>
               <a href="../.././1.10.5/core/policies/">1.10.5</a>
@@ -289,15 +290,14 @@ require generalization." />
 </ul>
 </li>
 <li><p><a class="reference internal" href="#action-selection" id="id11">Action Selection</a></p></li>
-<li><p><a class="reference internal" href="#keras-policy" id="id12">Keras Policy</a></p></li>
-<li><p><a class="reference internal" href="#embedding-policy" id="id13">Embedding Policy</a></p></li>
-<li><p><a class="reference internal" href="#ted-policy" id="id14">TED Policy</a></p></li>
-<li><p><a class="reference internal" href="#mapping-policy" id="id15">Mapping Policy</a></p></li>
-<li><p><a class="reference internal" href="#memoization-policy" id="id16">Memoization Policy</a></p></li>
-<li><p><a class="reference internal" href="#augmented-memoization-policy" id="id17">Augmented Memoization Policy</a></p></li>
-<li><p><a class="reference internal" href="#fallback-policy" id="id18">Fallback Policy</a></p></li>
-<li><p><a class="reference internal" href="#two-stage-fallback-policy" id="id19">Two-Stage Fallback Policy</a></p></li>
-<li><p><a class="reference internal" href="#form-policy" id="id20">Form Policy</a></p></li>
+<li><p><a class="reference internal" href="#embedding-policy" id="id12">Embedding Policy</a></p></li>
+<li><p><a class="reference internal" href="#ted-policy" id="id13">TED Policy</a></p></li>
+<li><p><a class="reference internal" href="#mapping-policy" id="id14">Mapping Policy</a></p></li>
+<li><p><a class="reference internal" href="#memoization-policy" id="id15">Memoization Policy</a></p></li>
+<li><p><a class="reference internal" href="#augmented-memoization-policy" id="id16">Augmented Memoization Policy</a></p></li>
+<li><p><a class="reference internal" href="#fallback-policy" id="id17">Fallback Policy</a></p></li>
+<li><p><a class="reference internal" href="#two-stage-fallback-policy" id="id18">Two-Stage Fallback Policy</a></p></li>
+<li><p><a class="reference internal" href="#form-policy" id="id19">Form Policy</a></p></li>
 </ul>
 </div>
 <div class="section" id="configuring-policies">
@@ -318,7 +318,7 @@ which you can use to customize the policies your assistant uses.
 In the example below, the last two lines show how to use a custom
 policy class and pass arguments to it.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;KerasPolicy&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;TEDPolicy&quot;</span>
     <span class="nt">featurizer</span><span class="p">:</span>
     <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MaxHistoryTrackerFeaturizer</span>
       <span class="nt">max_history</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
@@ -413,7 +413,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 <div class="line">4. <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code></div>
 <div class="line">3. <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">AugmentedMemoizationPolicy</span></code></div>
 <div class="line">2. <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code></div>
-<div class="line">1. <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code>, and <code class="docutils literal notranslate"><span class="pre">SklearnPolicy</span></code></div>
+<div class="line">1. <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">SklearnPolicy</span></code></div>
 </div>
 </div></blockquote>
 <p>This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
@@ -430,122 +430,8 @@ but we <strong>do not recommend</strong> changing them outside of specific cases
 Doing so can lead to unexpected and undesired bot behavior.</p>
 </div>
 </div>
-<div class="section" id="keras-policy">
-<span id="id2"></span><h2><a class="toc-backref" href="#id12">Keras Policy</a><a class="headerlink" href="#keras-policy" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> uses a neural network implemented in
-<a class="reference external" href="http://keras.io">Keras</a> to select the next action.
-The default architecture is based on an LSTM, but you can override the
-<code class="docutils literal notranslate"><span class="pre">KerasPolicy.model_architecture</span></code> method to implement your own architecture.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">model_architecture</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">output_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Sequential</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a keras model and return a compiled model.&quot;&quot;&quot;</span>
-
-    <span class="kn">from</span> <span class="nn">tensorflow.keras.models</span> <span class="kn">import</span> <span class="n">Sequential</span>
-    <span class="kn">from</span> <span class="nn">tensorflow.keras.layers</span> <span class="kn">import</span> <span class="p">(</span>
-        <span class="n">Masking</span><span class="p">,</span>
-        <span class="n">LSTM</span><span class="p">,</span>
-        <span class="n">Dense</span><span class="p">,</span>
-        <span class="n">TimeDistributed</span><span class="p">,</span>
-        <span class="n">Activation</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Build Model</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">Sequential</span><span class="p">()</span>
-
-    <span class="c1"># the shape of the y vector of the labels,</span>
-    <span class="c1"># determines which output from rnn will be used</span>
-    <span class="c1"># to calculate the loss</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="c1"># y is (num examples, num features) so</span>
-        <span class="c1"># only the last output from the rnn is used to</span>
-        <span class="c1"># calculate the loss</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Masking</span><span class="p">(</span><span class="n">mask_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="n">input_shape</span><span class="p">))</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">LSTM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_size</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.2</span><span class="p">))</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Dense</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_size</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">output_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
-    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="c1"># y is (num examples, max_dialogue_len, num features) so</span>
-        <span class="c1"># all the outputs from the rnn are used to</span>
-        <span class="c1"># calculate the loss, therefore a sequence is returned and</span>
-        <span class="c1"># time distributed layer is used</span>
-
-        <span class="c1"># the first value in input_shape is max dialogue_len,</span>
-        <span class="c1"># it is set to None, to allow dynamic_rnn creation</span>
-        <span class="c1"># during prediction</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Masking</span><span class="p">(</span><span class="n">mask_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">LSTM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_size</span><span class="p">,</span> <span class="n">return_sequences</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.2</span><span class="p">))</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">TimeDistributed</span><span class="p">(</span><span class="n">Dense</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="n">output_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Cannot construct the model because&quot;</span>
-            <span class="s2">&quot;length of output_shape = </span><span class="si">{}</span><span class="s2"> &quot;</span>
-            <span class="s2">&quot;should be 1 or 2.&quot;</span>
-            <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output_shape</span><span class="p">))</span>
-        <span class="p">)</span>
-
-    <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Activation</span><span class="p">(</span><span class="s2">&quot;softmax&quot;</span><span class="p">))</span>
-
-    <span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
-        <span class="n">loss</span><span class="o">=</span><span class="s2">&quot;categorical_crossentropy&quot;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s2">&quot;rmsprop&quot;</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;accuracy&quot;</span><span class="p">]</span>
-    <span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">common_utils</span><span class="o">.</span><span class="n">obtain_verbosity</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-
-    <span class="k">return</span> <span class="n">model</span>
-</pre></div>
-</div>
-<p>and the training is run here:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">train</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span>
-    <span class="n">training_trackers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DialogueStateTracker</span><span class="p">],</span>
-    <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-
-    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
-    <span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">set_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
-
-    <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">featurize_for_training</span><span class="p">(</span><span class="n">training_trackers</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="c1"># noinspection PyPep8Naming</span>
-    <span class="n">shuffled_X</span><span class="p">,</span> <span class="n">shuffled_y</span> <span class="o">=</span> <span class="n">training_data</span><span class="o">.</span><span class="n">shuffled_X_y</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_architecture</span><span class="p">(</span>
-            <span class="n">shuffled_X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">shuffled_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-        <span class="p">)</span>
-
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Fitting model with </span><span class="si">{</span><span class="n">training_data</span><span class="o">.</span><span class="n">num_examples</span><span class="p">()</span><span class="si">}</span><span class="s2"> total samples and a &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;validation split of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">validation_split</span><span class="si">}</span><span class="s2">.&quot;</span>
-    <span class="p">)</span>
-
-    <span class="c1"># filter out kwargs that cannot be passed to fit</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_valid_params</span><span class="p">(</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span>
-    <span class="p">)</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-        <span class="n">shuffled_X</span><span class="p">,</span>
-        <span class="n">shuffled_y</span><span class="p">,</span>
-        <span class="n">epochs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
-        <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-        <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="o">=</span><span class="n">common_utils</span><span class="o">.</span><span class="n">obtain_verbosity</span><span class="p">(),</span>
-        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span>
-
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Done fitting Keras Policy model.&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>You can implement the model of your choice by overriding these methods,
-or initialize <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> with pre-defined <code class="docutils literal notranslate"><span class="pre">keras</span> <span class="pre">model</span></code>.</p>
-<p>In order to get reproducible training results for the same inputs you can
-set the <code class="docutils literal notranslate"><span class="pre">random_seed</span></code> attribute of the <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> to any integer.</p>
-</div>
 <div class="section" id="embedding-policy">
-<span id="id3"></span><h2><a class="toc-backref" href="#id13">Embedding Policy</a><a class="headerlink" href="#embedding-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id2"></span><h2><a class="toc-backref" href="#id12">Embedding Policy</a><a class="headerlink" href="#embedding-policy" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -555,7 +441,7 @@ in your policy configuration. The functionality of the policy stayed the same.</
 </div></blockquote>
 </div>
 <div class="section" id="ted-policy">
-<span id="id4"></span><h2><a class="toc-backref" href="#id14">TED Policy</a><a class="headerlink" href="#ted-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id3"></span><h2><a class="toc-backref" href="#id13">TED Policy</a><a class="headerlink" href="#ted-policy" title="Permalink to this headline">¶</a></h2>
 <p>The Transformer Embedding Dialogue (TED) Policy is described in
 <a class="reference external" href="https://arxiv.org/abs/1910.00486">our paper</a>.</p>
 <p>This policy has a pre-defined architecture, which comprises the
@@ -752,7 +638,7 @@ for details.</p>
 </div></blockquote>
 </div>
 <div class="section" id="mapping-policy">
-<span id="id5"></span><h2><a class="toc-backref" href="#id15">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id4"></span><h2><a class="toc-backref" href="#id14">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> can be used to directly map intents to actions. The
 mappings are assigned by giving an intent the property <code class="docutils literal notranslate"><span class="pre">triggers</span></code>, e.g.:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">intents</span><span class="p">:</span>
@@ -799,14 +685,14 @@ in your policy example these intents will not work.</p>
 </div>
 </div>
 <div class="section" id="memoization-policy">
-<h2><a class="toc-backref" href="#id16">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id15">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> just memorizes the conversations in your
 training data. It predicts the next action with confidence <code class="docutils literal notranslate"><span class="pre">1.0</span></code>
 if this exact conversation exists in the training data, otherwise it
 predicts <code class="docutils literal notranslate"><span class="pre">None</span></code> with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
 </div>
 <div class="section" id="augmented-memoization-policy">
-<h2><a class="toc-backref" href="#id17">Augmented Memoization Policy</a><a class="headerlink" href="#augmented-memoization-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id16">Augmented Memoization Policy</a><a class="headerlink" href="#augmented-memoization-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">AugmentedMemoizationPolicy</span></code> remembers examples from training
 stories for up to <code class="docutils literal notranslate"><span class="pre">max_history</span></code> turns, just like the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code>.
 Additionally, it has a forgetting mechanism that will forget a certain amount
@@ -823,7 +709,7 @@ data as well.</p>
 </div>
 </div>
 <div class="section" id="fallback-policy">
-<span id="id6"></span><h2><a class="toc-backref" href="#id18">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id5"></span><h2><a class="toc-backref" href="#id17">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a> if at least one of the following occurs:</p>
 <ol class="arabic simple">
 <li><p>The intent recognition has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>.</p></li>
@@ -871,7 +757,7 @@ or action is below the respective threshold</p></td>
 </table>
 <p>You can also configure the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> in your python code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.core.policies.fallback</span> <span class="kn">import</span> <span class="n">FallbackPolicy</span>
-<span class="kn">from</span> <span class="nn">rasa.core.policies.keras_policy</span> <span class="kn">import</span> <span class="n">KerasPolicy</span>
+<span class="kn">from</span> <span class="nn">rasa.core.policies.keras_policy</span> <span class="kn">import</span> <span class="n">TEDPolicy</span>
 <span class="kn">from</span> <span class="nn">rasa.core.agent</span> <span class="kn">import</span> <span class="n">Agent</span>
 
 <span class="n">fallback</span> <span class="o">=</span> <span class="n">FallbackPolicy</span><span class="p">(</span><span class="n">fallback_action_name</span><span class="o">=</span><span class="s2">&quot;action_default_fallback&quot;</span><span class="p">,</span>
@@ -879,7 +765,7 @@ or action is below the respective threshold</p></td>
                           <span class="n">nlu_threshold</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
                           <span class="n">ambiguity_threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 
-<span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span><span class="s2">&quot;domain.yml&quot;</span><span class="p">,</span> <span class="n">policies</span><span class="o">=</span><span class="p">[</span><span class="n">KerasPolicy</span><span class="p">(),</span> <span class="n">fallback</span><span class="p">])</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span><span class="s2">&quot;domain.yml&quot;</span><span class="p">,</span> <span class="n">policies</span><span class="o">=</span><span class="p">[</span><span class="n">TEDPolicy</span><span class="p">(),</span> <span class="n">fallback</span><span class="p">])</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -890,7 +776,7 @@ or action is below the respective threshold</p></td>
 </div></blockquote>
 </div>
 <div class="section" id="two-stage-fallback-policy">
-<h2><a class="toc-backref" href="#id19">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id6"></span><h2><a class="toc-backref" href="#id18">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.</p>
 <ul>
@@ -989,7 +875,7 @@ intents</p></td>
 </div></blockquote>
 </div>
 <div class="section" id="form-policy">
-<span id="id7"></span><h2><a class="toc-backref" href="#id20">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id7"></span><h2><a class="toc-backref" href="#id19">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> is an extension of the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> which
 handles the filling of forms. Once a <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> is called, the
 <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> will continually predict the <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> until all required

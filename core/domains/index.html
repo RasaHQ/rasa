@@ -220,12 +220,13 @@ AI Assistants and chatbots using open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/core/domains/">2.0.0a1</a>
               <a href="../.././1.10.7/core/domains/">1.10.7</a>
               <a href="../.././1.10.6/core/domains/">1.10.6</a>
               <a href="../.././1.10.5/core/domains/">1.10.5</a>
@@ -481,8 +482,8 @@ can be sent like so:</p>
 </div>
 <div class="section" id="channel-specific-responses">
 <h2><a class="toc-backref" href="#id8">Channel-Specific Responses</a><a class="headerlink" href="#channel-specific-responses" title="Permalink to this headline">¶</a></h2>
-<p>For each response, you can have multiple <strong>response templates</strong> (see <a class="reference internal" href="#variations"><span class="std std-ref">Variations</span></a>).
-If you have certain response templates that you would like sent only to specific
+<p>For each response, you can have multiple <strong>response variations</strong> (see <a class="reference internal" href="#variations"><span class="std std-ref">Variations</span></a>).
+If you have certain response variations that you would like sent only to specific
 channels, you can specify this with the <code class="docutils literal notranslate"><span class="pre">channel:</span></code> key. The value should match
 the name defined in the <code class="docutils literal notranslate"><span class="pre">name()</span></code> method of the channel’s <code class="docutils literal notranslate"><span class="pre">OutputChannel</span></code>
 class. Channel-specific responses are especially useful if creating custom
@@ -504,10 +505,10 @@ output payloads that will only work in certain channels.</p>
 </pre></div>
 </div>
 <p>Each time your bot looks for responses, it will first check to see if there
-are any channel-specific response templates for the connected channel. If there are, it
-will choose <strong>only</strong> from these response templates. If no channel-specific response templates are
-found, it will choose from any response templates that do not have a defined <code class="docutils literal notranslate"><span class="pre">channel</span></code>.
-Therefore, it is good practice to always have at least one response template for each
+are any channel-specific response variations for the connected channel. If there are, it
+will choose <strong>only</strong> from these response variations. If no channel-specific response variations are
+found, it will choose from any response variations that do not have a defined <code class="docutils literal notranslate"><span class="pre">channel</span></code>.
+Therefore, it is good practice to always have at least one response variation for each
 response that has no <code class="docutils literal notranslate"><span class="pre">channel</span></code> specified so that your bot can respond in all
 environments, including in the shell and in interactive learning.</p>
 </div>
@@ -546,7 +547,7 @@ arguments to <code class="docutils literal notranslate"><span class="pre">utter_
 <div class="section" id="variations">
 <span id="id2"></span><h2><a class="toc-backref" href="#id10">Variations</a><a class="headerlink" href="#variations" title="Permalink to this headline">¶</a></h2>
 <p>If you want to randomly vary the response sent to the user, you can list
-multiple <strong>response templates</strong> and Rasa will randomly pick one of them, e.g.:</p>
+multiple <strong>response variations</strong> and Rasa will randomly pick one of them, e.g.:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">responses</span><span class="p">:</span>
   <span class="nt">utter_greeting</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;Hey,</span><span class="nv"> </span><span class="s">{name}.</span><span class="nv"> </span><span class="s">How</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">you?&quot;</span>

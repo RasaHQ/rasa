@@ -226,6 +226,7 @@ external APIs or improve dialogue with custom actions written in Python." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../2.0.0a1/api/rasa-sdk/">2.0.0a1</a>
               <a href="../../../1.10.7/api/rasa-sdk/">1.10.7</a>
               <a href="../../../1.10.6/api/rasa-sdk/">1.10.6</a>
               <a href="../../../1.10.5/api/rasa-sdk/">1.10.5</a>
@@ -273,7 +274,7 @@ external APIs or improve dialogue with custom actions written in Python." />
 
 
 
-    <p class="scv-banner"><a href="../../../1.10.7/api/rasa-sdk/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.10.7.</a></p>
+    <p class="scv-banner"><a href="../../../2.0.0a1/api/rasa-sdk/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 2.0.0a1.</a></p>
 <div class="section" id="rasa-sdk">
 <span id="id1"></span><h1>Rasa SDK<a class="headerlink" href="#rasa-sdk" title="Permalink to this headline">¶</a></h1>
 
@@ -406,9 +407,7 @@ back to the user with the <code class="docutils literal notranslate"><span class
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dispatcher</strong> – the dispatcher which is used to
 send messages back to the user. Use
-<code class="docutils literal notranslate"><span class="pre">dipatcher.utter_message()</span></code> or any other
-<code class="docutils literal notranslate"><span class="pre">rasa_sdk.executor.CollectingDispatcher</span></code>
-method.</p></li>
+<code class="docutils literal notranslate"><span class="pre">dispatcher.utter_message()</span></code> for sending messages.</p></li>
 <li><p><strong>tracker</strong> – the state tracker for the current
 user. You can access slot values using
 <code class="docutils literal notranslate"><span class="pre">tracker.get_slot(slot_name)</span></code>, the most recent user message

@@ -224,12 +224,13 @@ open source dialogue management." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/core/interactive-learning/">2.0.0a1</a>
               <a href="../.././1.10.7/core/interactive-learning/">1.10.7</a>
               <a href="../.././1.10.6/core/interactive-learning/">1.10.6</a>
               <a href="../.././1.10.5/core/interactive-learning/">1.10.5</a>
@@ -291,7 +292,7 @@ Some people call this <a class="reference external" href="https://medium.com/&#6
 <p class="admonition-title">Note</p>
 <p>Rasa X provides a UI for interactive learning, and you can use any user conversation
 as a starting point. See
-<a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/enable-workflows#talking-to-your-assistant/">Talking to Your Assistant</a>
+<a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/share-assistant/#talk-to-your-bot">Talk to Your Bot</a>
 in the Rasa X docs.</p>
 </div>
 <div class="contents local topic" id="contents">
@@ -383,7 +384,7 @@ Current slots:
   concerts: None, venues: None
 
 ------
-? The bot wants to run &#39;action_show_concert_reviews&#39;, correct?  No
+? The bot wants to run &#39;action_show_venue_reviews&#39;, correct?  No
 </pre></div>
 </div>
 <p>Now we type <code class="docutils literal notranslate"><span class="pre">n</span></code>, because it chose the wrong action, and we get a new
@@ -463,7 +464,7 @@ happy paths are still covered by the basic story given in <a class="reference in
 any of the required slots,
 you will be asked whether you want the form action to try and extract a slot
 from the user’s message when returning to the form. This is best explained with
-and example:</p>
+an example:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span> 7    restaurant_form 1.00
       slot{&quot;num_people&quot;: &quot;3&quot;}
       slot{&quot;requested_slot&quot;: &quot;outdoor_seating&quot;}

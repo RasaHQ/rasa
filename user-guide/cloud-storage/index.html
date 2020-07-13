@@ -220,12 +220,13 @@ GDPR-compliant intent recognition and entity extraction." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/user-guide/cloud-storage/">2.0.0a1</a>
               <a href="../.././1.10.7/user-guide/cloud-storage/">1.10.7</a>
               <a href="../.././1.10.6/user-guide/cloud-storage/">1.10.6</a>
               <a href="../.././1.10.5/user-guide/cloud-storage/">1.10.5</a>
@@ -312,8 +313,8 @@ variable to the path of that key file.</p>
 </dl>
 </li>
 <li><dl>
-<dt>Azure Storage</dt><dd><p>Azure is supported using the <code class="docutils literal notranslate"><span class="pre">azure-storage-blob</span></code> package,
-which you can install with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">azure-storage-blob</span></code>.</p>
+<dt>Azure Storage</dt><dd><p>Azure is supported using the legacy <code class="docutils literal notranslate"><span class="pre">azure-storage-blob</span></code> package (v 2.1.0),
+which you can install with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-I</span> <span class="pre">azure-storage-blob==2.1.0</span></code>.</p>
 <p>Start the Rasa server with <code class="docutils literal notranslate"><span class="pre">remote-storage</span></code> option set to <code class="docutils literal notranslate"><span class="pre">azure</span></code>.</p>
 <p>The following environment variables must be set:</p>
 <ul class="simple">

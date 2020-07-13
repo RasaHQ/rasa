@@ -216,12 +216,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/user-guide/command-line-interface/">2.0.0a1</a>
               <a href="../.././1.10.7/user-guide/command-line-interface/">1.10.7</a>
               <a href="../.././1.10.6/user-guide/command-line-interface/">1.10.6</a>
               <a href="../.././1.10.5/user-guide/command-line-interface/">1.10.5</a>
@@ -362,8 +363,10 @@
 │   └── stories.md
 ├── domain.yml
 ├── endpoints.yml
-└── models
-    └── &lt;timestamp&gt;.tar.gz
+├── models
+│   └── &lt;timestamp&gt;.tar.gz
+└── tests
+   └── conversation_tests.md
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> command will ask you if you want to train an initial model using this data.
@@ -496,7 +499,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: c4d267d22c814d1784ce17b8ae09e69d)
+                        generated. (default: ef5903675b4c461d8e1a4b92a5da4759)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
@@ -551,7 +554,14 @@ extracts as intents and entities from text, you can use the command <code class=
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa shell --debug
 </pre></div>
 </div>
-<p>The full list of options for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> is</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In order to see the typical greetings and/or session start behavior you might see
+in an external channel, you will need to explicitly send <code class="docutils literal notranslate"><span class="pre">/session_start</span></code>
+as the first message. Otherwise, the session start behavior will begin as described in
+<a class="reference internal" href="../../core/domains/#session-config"><span class="std std-ref">Session configuration</span></a>.</p>
+</div>
+<p>The full list of options for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> is:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa shell [-h] [-v] [-vv] [--quiet]
                   [--conversation-id CONVERSATION_ID] [-m MODEL]
                   [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
@@ -578,7 +588,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        09555c16815e4c8a98094b8b922afb72)
+                        689065a8d1804c0d9729842afd48488d)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this

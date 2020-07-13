@@ -220,12 +220,13 @@ Rasa Core and how you can migrate from one version to another." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href=".././2.0.0a1/migration-guide/">2.0.0a1</a>
               <a href=".././1.10.7/migration-guide/">1.10.7</a>
               <a href=".././1.10.6/migration-guide/">1.10.6</a>
               <a href=".././1.10.5/migration-guide/">1.10.5</a>
@@ -278,6 +279,27 @@ Rasa Core and how you can migrate from one version to another." />
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/migration-guide.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><p>This page contains information about changes between major versions and
 how you can migrate from one version to another.</p>
+<div class="section" id="rasa-1-10-to-rasa-2-0">
+<span id="migration-to-rasa-2-0"></span><h2>Rasa 1.10 to Rasa 2.0<a class="headerlink" href="#rasa-1-10-to-rasa-2-0" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="general">
+<h3>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>The deprecated brokers <code class="docutils literal notranslate"><span class="pre">FileProducer</span></code>, <code class="docutils literal notranslate"><span class="pre">KafkaProducer</span></code>, <code class="docutils literal notranslate"><span class="pre">PikaProducer</span></code>
+and the <code class="docutils literal notranslate"><span class="pre">SQLProducer</span></code> have been removed. If you used these brokers in your
+<code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> make sure to use the renamed variants instead:
+- <code class="docutils literal notranslate"><span class="pre">FileProducer</span></code> became <code class="docutils literal notranslate"><span class="pre">FileEventBroker</span></code>
+- <code class="docutils literal notranslate"><span class="pre">KafkaProducer</span></code> became <code class="docutils literal notranslate"><span class="pre">KafkaEventBroker</span></code>
+- <code class="docutils literal notranslate"><span class="pre">PikaProducer</span></code> became <code class="docutils literal notranslate"><span class="pre">PikaEventBroker</span></code>
+- <code class="docutils literal notranslate"><span class="pre">SQLProducer</span></code> became  <code class="docutils literal notranslate"><span class="pre">SQLEventBroker</span></code></p></li>
+<li><p>The deprecated <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> has been removed. If you used this
+component in your <code class="docutils literal notranslate"><span class="pre">pipeline</span></code> configuration (<code class="docutils literal notranslate"><span class="pre">config.yml</span></code>) you can replace it
+with <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code>. It accepts the same configuration parameters.</p></li>
+<li><p>The deprecated <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> has been removed. If you used this
+component in your <code class="docutils literal notranslate"><span class="pre">policies</span></code> configuration (<code class="docutils literal notranslate"><span class="pre">config.yml</span></code>) you can replace it
+with <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>. It accepts the same configuration parameters.</p></li>
+</ul>
+</div>
+</div>
 <div class="section" id="rasa-1-7-to-rasa-1-8">
 <span id="migration-to-rasa-1-8"></span><h2>Rasa 1.7 to Rasa 1.8<a class="headerlink" href="#rasa-1-7-to-rasa-1-8" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
@@ -286,10 +308,10 @@ how you can migrate from one version to another.</p>
 It is not possible to load previously trained models. Please make sure to retrain a
 model before trying to use it with this improved version.</p>
 </div>
-<div class="section" id="general">
-<h3>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id2">
+<h3>General<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <ul>
-<li><p>The <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a> replaced the <a class="reference internal" href="../core/policies/#keras-policy"><span class="std std-ref">Keras Policy</span></a> as recommended machine
+<li><p>The <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a> replaced the <code class="docutils literal notranslate"><span class="pre">keras_policy</span></code> as recommended machine
 learning policy. New projects generated with <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> will automatically use
 this policy. In case you want to change your existing model configuration to use the
 <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a> add this to the <code class="docutils literal notranslate"><span class="pre">policies</span></code> section in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>
@@ -386,7 +408,7 @@ renamed. Please update your configuration files using the following mapping:</p>
 <p>Old configuration options will be mapped to the new names, and a warning will be thrown.
 However, these will be deprecated in a future release.</p>
 </li>
-<li><p><a class="reference internal" href="../nlu/components/#embedding-intent-classifier"><span class="std std-ref">EmbeddingIntentClassifier</span></a> is now deprecated and will be replaced by <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a>
+<li><p>The Embedding Intent Classifier is now deprecated and will be replaced by <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a>
 in the future.
 <code class="docutils literal notranslate"><span class="pre">DIETClassfier</span></code> performs intent classification as well as entity recognition.
 If you want to get the same model behavior as the current <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, you can use
@@ -479,8 +501,8 @@ components with <a class="reference internal" href="../nlu/components/#diet-clas
 </div>
 <div class="section" id="rasa-1-6-to-rasa-1-7">
 <span id="migration-to-rasa-1-7"></span><h2>Rasa 1.6 to Rasa 1.7<a class="headerlink" href="#rasa-1-6-to-rasa-1-7" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id2">
-<h3>General<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id3">
+<h3>General<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>By default, the <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> will
 now normalize the top 10 confidence results if the <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;softmax&quot;</span></code> (which has been
@@ -497,8 +519,8 @@ configuration parameter; to turn off normalization to match the previous behavio
 It is not possible to load previously trained models. Please make sure to retrain a
 model before trying to use it with this improved version.</p>
 </div>
-<div class="section" id="id3">
-<h3>General<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id4">
+<h3>General<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Default parameters of <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> are changed. See <a class="reference internal" href="../nlu/components/#components"><span class="std std-ref">Components</span></a> for details.
 Architecture implementation is changed as well, so <strong>old trained models cannot be loaded</strong>.
@@ -540,8 +562,8 @@ identifier. Make sure you don’t include <code class="docutils literal notransl
 It is not possible to load previously trained models. Please make sure to retrain a
 model before trying to use it with this improved version.</p>
 </div>
-<div class="section" id="id4">
-<h3>General<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id5">
+<h3>General<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>The scripts in <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa.nlu</span></code> can no longer be executed. To train, test, run, … an NLU or Core
 model, you should now use the command line interface <code class="docutils literal notranslate"><span class="pre">rasa</span></code>. The functionality is, for the most part, the same as before.
@@ -582,7 +604,7 @@ any kind of data files or directory to be <code class="docutils literal notransl
 <div class="section" id="http-api">
 <h3>HTTP API<a class="headerlink" href="#http-api" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>There are numerous HTTP API endpoint changes which can be found <a class="reference external" href="http://rasa.com/docs/rasa/api/http-api/">here</a>.</p></li>
+<li><p>There are numerous HTTP API endpoint changes which can be found <a class="reference external" href="https://rasa.com/docs/rasa/api/http-api/">here</a>.</p></li>
 </ul>
 </div>
 </div>
