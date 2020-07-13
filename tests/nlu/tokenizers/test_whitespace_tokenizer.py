@@ -2,7 +2,7 @@ import pytest
 
 from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT
+from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT, MESSAGE_ACTION_NAME, ACTION_TEXT
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
@@ -121,6 +121,20 @@ def test_whitespace_training(supervised_embeddings_config):
                 ],
             },
         ),
+        Message(
+            "action_restart",
+            {
+                "action_name": "action_restart"
+            },
+        ),
+        Message(
+            "Where are you going?",
+            {
+                MESSAGE_ACTION_NAME: "Where are you going?",
+                ACTION_TEXT: "Where are you going?"
+
+            },
+        ),
     ]
 
     tk = WhitespaceTokenizer()
@@ -135,6 +149,14 @@ def test_whitespace_training(supervised_embeddings_config):
     assert examples[1].data.get(TOKENS_NAMES[TEXT])[0].text == "I"
     assert examples[1].data.get(TOKENS_NAMES[TEXT])[1].text == "want"
     assert examples[1].data.get(TOKENS_NAMES[TEXT])[2].text == "Tacos"
+    assert examples[2].data.get(TOKENS_NAMES[MESSAGE_ACTION_NAME])[0].text == "action"
+    assert examples[2].data.get(TOKENS_NAMES[MESSAGE_ACTION_NAME])[1].text == "restart"
+    assert examples[2].data.get(TOKENS_NAMES[TEXT])[0].text == "action_restart"
+    assert examples[2].data.get(TOKENS_NAMES[ACTION_TEXT]) == None
+    assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[0].text == "where"
+    assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[1].text == "are"
+    assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[2].text == "you"
+    assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[3].text == "going"
 
 
 def test_whitespace_does_not_throw_error():
@@ -159,3 +181,32 @@ def test_whitespace_language_suuport(language, error, component_builder):
             component_builder.create_component({"name": "WhitespaceTokenizer"}, config)
     else:
         component_builder.create_component({"name": "WhitespaceTokenizer"}, config)
+
+
+def test_whitespace_processing_with_attribute(supervised_embeddings_config):
+    message = Message("Any Mexican restaurant will do", {"intent": "restaurant_search", "entities": [
+                    {"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}],
+            },)
+    expected_tokens_intent = ["restaurant_search"]
+    expected_tokens_text = ["any", "mexican", "restaurant", "will", "do"]
+    component_config = {"case_sensitive": False}
+    tk = WhitespaceTokenizer(component_config)
+    tk.process(message, INTENT)
+    tokens_intent = message.get(TOKENS_NAMES[INTENT])
+    tk.process(message, TEXT)
+    tokens_text = message.get(TOKENS_NAMES[TEXT])
+    assert [t.text for t in tokens_intent] == expected_tokens_intent
+    assert [t.text for t in tokens_text] == expected_tokens_text
+
+    message = Message("Where are you going?", 
+        {MESSAGE_ACTION_NAME: "Where are you going?", ACTION_TEXT: "Where are you going?"},
+        )
+    expected_action_tokens_text = ["where", "are", "you", "going"]
+    component_config = {"case_sensitive": False}
+    tk = WhitespaceTokenizer(component_config)
+    tk.process(message, ACTION_TEXT)
+    tokens_action_text = message.get(TOKENS_NAMES[ACTION_TEXT])
+    tk.process(message, TEXT)
+    tokens_text = message.get(TOKENS_NAMES[TEXT])
+    assert [t.text for t in tokens_action_text] == expected_action_tokens_text
+    assert [t.text for t in tokens_text] == expected_action_tokens_text
