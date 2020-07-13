@@ -1,8 +1,12 @@
 TEXT = "text"
 INTENT = "intent"
 RESPONSE = "response"
+ACTION_TEXT = "action_text"
 
 RESPONSE_KEY_ATTRIBUTE = "response_key"
+
+MESSAGE_ACTION_NAME = "action_name"
+MESSAGE_INTENT_NAME = "intent_name"
 
 ENTITIES = "entities"
 BILOU_ENTITIES = "bilou_entities"
@@ -70,6 +74,3 @@ FEATURE_TYPE_SEQUENCE = "sequence"
 VALID_FEATURE_TYPES = [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]
 
 FEATURIZER_CLASS_ALIAS = "alias"
-
-MESSAGE_ACTION_NAME = "action_name"
-MESSAGE_INTENT_NAME = "intent_name"
