@@ -353,7 +353,7 @@ scv_whitelist_branches = (re.compile("^master$"),)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
 scv_whitelist_tags = (
     re.compile(r"^[2-9]+\.\d+\.\d+$"),
-    re.compile(r"^2\.[0-9]+\.[0-9]?(\w+)?$"),
+    re.compile(r"^2\.[0-9]+\.[0-9]+(\w+)?$"),
     re.compile(r"^1\.[1-9][0-9]+\.\d+$"),
     re.compile(r"^1\.9\.7$"),
     re.compile(r"^1\.8\.3$"),
