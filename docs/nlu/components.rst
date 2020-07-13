@@ -138,7 +138,7 @@ HFTransformersNLP
             model_name: "bert"
             # Pre-Trained weights to be loaded
             model_weights: "bert-base-uncased"
-            
+
             # An optional path to a specific directory to download and cache the pre-trained model weights.
             # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
             cache_dir: null
@@ -1128,6 +1128,11 @@ EntitySynonymMapper
 
         pipeline:
         - name: "EntitySynonymMapper"
+
+    .. note::
+
+        When using the ``EntitySynonymMapper`` as part of an NLU pipeline, it will need to be placed
+        below any entity extractors in the configuration file.
 
 .. _CRFEntityExtractor:
 
