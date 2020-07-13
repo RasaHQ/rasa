@@ -2176,6 +2176,7 @@ version = "0.7.26"
 
 [package.source]
 reference = "rasa-pypi"
+type = "legacy"
 url = "https://pypi.rasa.com/simple"
 
 [[package]]
@@ -3365,7 +3366,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "1a619fa006b278dc57a768f8e4aeafed8474ab2e42b6ba98d6e1d58bf38e6524"
+content-hash = "e87f853ba73906298a1dcb2cd3b3acad0057e6ab8759a4934799f1f010c96952"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
