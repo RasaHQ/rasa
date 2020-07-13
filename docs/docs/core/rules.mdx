@@ -1,0 +1,172 @@
+---
+id: rules
+sidebar_label: Rules
+title: Rules
+description: Use Rasa Open Source rules to respond to FAQs, fill forms, or handle fallbacks gracefully.
+---
+
+Rasa rules are a form of training data used to train Rasa's dialogue management models.
+Rules describe parts of conversations which should always follow the same path.
+Useful applications for rules are for example:
+
+* **FAQs**: FAQs are questions which users ask independent of the current context.
+  Rules are an easy way to specify fixed answers to these questions.
+
+* [Fallback Actions](./fallback-actions.mdx): Users might confront your assistant with unexpected messages.
+  The messages will typically receive low intent confidence.
+  You can use the :ref:`fallback-classifier` in combination with rules to treat
+  messages with low NLU confidence like an FAQ.
+
+* [Forms](./forms.mdx) : It's a common use case for assistants to collect form-like
+  data from the user. Both, activation of forms as well as handling of unexpected
+  events as part of a form, are often following fixed paths.
+
+**Don't overuse rules**. They are great to handle small specific conversation parts but
+unlike [Stories](./stories.mdx) rules don't have the power to generalize to unseen conversation
+paths. Combine rules and stories to make your assistant robust and able to handle
+real user behavior.
+
+## Writing a Rule
+
+Before you start writing rules, you have to make sure that the
+[RulePolicy](./policies.mdx#rule-policy) is added to your model configuration:
+
+```yaml
+policies:
+- ... # Other policies
+- name: RulePolicy
+```
+
+Rules can then be added to the `rules` section of your training data.
+
+### Rules for the Conversation Start
+
+To write a rule which only applies at the beginning of a conversation, start with the
+intent which starts the conversation and then add the actions which your assistant
+should perform in response to that.
+
+```yaml
+rules:
+
+- rule: Say `hello` when the user starts a conversation with intent `greet`
+  steps:
+  - intent: greet
+  - action: utter_greet
+```
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="applying-anytime"></a>
+
+### Rules which Apply Anytime
+
+To indicate that a rule can apply at any point in a conversation, specify `...` as
+first conversation step. The `...` indicate that the rule applies independent of the
+previous conversation.
+
+```yaml
+rules:
+
+- rule: Say `hello` whenever the user sends a message with intent `greet`
+  steps:
+  - ...
+  - intent: greet
+  - action: utter_greet
+```
+
+This example rule applies at the start of conversation as well as when the user decides
+to a send a message with an intent `greet` in the middle of an ongoing conversation.
+
+### Rules with Pre-Conditions
+
+Rules can describe requirements which have to be fulfilled for the rule to be
+applicable. To do so, add any information about the prior conversation, before the
+`...`:
+
+```yaml
+rules:
+
+- rule: Only say `hello` when the user provided a name
+  steps:
+  - slot: user_provided_name
+    value: true
+  - ...
+  - intent: greet
+  - action: utter_greet
+```
+
+### Not Predicting `action_listen` at the End of a Rule
+
+Rules default to wait for the next user message when they finished their last step:
+
+```yaml
+rules:
+
+- rule: Rule which will wait for user message when it was applied
+  steps:
+  - intent: greet
+  - action: utter_greet
+  # Every rule implicitly includes a prediction for `action_listen` as last step.
+  # This means that Rasa Open Source will wait for the next user message.
+  - action_listen
+```
+
+If you want to hand over to another story or rule, add `...` as last step in order to
+indicate that the assistant should execute another action before waiting for more user
+input.
+
+```yaml
+rules:
+
+- rule: Rule which will not wait for user message once it was applied
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - ...
+```
+### Rules and Forms
+
+When a [Form](./forms.mdx) is active, rules become applicable again if
+
+- the form filled all required slots
+- the form rejected its execution (see [Handling unhappy paths](./forms.mdx#section-unhappy) for more details)
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="use-cases"></a>
+
+## Use Cases
+
+This section explains common use cases of rules.
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="faqs"></a>
+
+### FAQs / Mapping Intents to Actions
+
+Some messages do not require any context to answer them. Common examples are either FAQs
+or triggers which are sent by [Reminders and External Events](./reminders-and-external-events.mdx).
+
+To map an intent to a certain action, you need
+[Rules which Apply Anytime](./rules.mdx#applying-anytime).
+The following example always responds with an action `utter_greet` in case the user
+greets the assistant.
+
+```yaml
+rules:
+
+- rule: Say `hello` whenever the user sends a message with intent `greet`
+  steps:
+  - ...
+  - intent: greet
+  - action: utter_greet
+```
+
+### Failing Gracefully
+
+Handling unknown messages gracefully is key to a successful assistant. As unknown
+messages can happen at any time in a conversation, they are a special case of
+[FAQs](./rules.mdx#faqs). Please see the docs on
+[Fallback Actions](./fallback-actions.mdx) for different ways to
+handle fallbacks gracefully.
+
+### Forms
+
+Use [Forms](./forms.mdx) if you need to collect multiple pieces of information from a user
+before being able to process their request. A common example for this is booking a table
+at a restaurant which requires information like name, number of people, and time.

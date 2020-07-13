@@ -138,7 +138,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 
 4. `FallbackPolicy` and `TwoStageFallbackPolicy`
 
-5. `FormPolicy`
+5. `RulePolicy` and FormPolicy`
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
 above the `nlu_threshold`, the bot will still fall back. In general, it is not recommended to have more
@@ -372,6 +372,13 @@ starspace algorithm in the case `maximum_negative_similarity = maximum_positive_
 for details.
 
 :::
+
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="rule-policy"></a>
+
+## RulePolicy
+
+TODO
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="mapping-policy"></a>
 
