@@ -314,6 +314,8 @@ class E2EImporter(TrainingDataImporter):
 
         additional_e2e_action_names = list(additional_e2e_action_names)
 
+        additional_e2e_action_names = list(set(additional_e2e_action_names))
+
         return Domain(
             [], [], [], {}, action_names=additional_e2e_action_names, forms=[]
         )
