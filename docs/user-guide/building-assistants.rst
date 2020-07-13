@@ -73,10 +73,7 @@ You can do this by editing your ``config.yml`` file as follows (you can remove `
 Now that we’ve defined our policies, we can add some stories for the ``goodbye``, ``thank`` and ``greet``
 intents to the ``data/stories.md`` file:
 
-.. code-editor::
-   :language: markdown
-   :id: intents
-   :height: 200
+.. code-block:: md
 
    ## greet
    * greet
@@ -92,10 +89,7 @@ intents to the ``data/stories.md`` file:
 
 We’ll also need to add the intents, actions and responses to our ``domain.yml`` file in the following sections:
 
-.. code-editor::
-   :language: yaml
-   :id: domain
-   :height: 200
+.. code-block:: md
 
    intents:
      - greet
