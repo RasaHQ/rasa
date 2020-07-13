@@ -30,6 +30,309 @@ how you can migrate from one version to another.
   component in your `policies` configuration (`config.yml`) you can replace it
   with `TEDPolicy`. It accepts the same configuration parameters.
 
+### Rule Policy
+
+With the introduction of [Rules](./core/rules.mdx) the following policies were
+deprecated:
+
+- [Mapping Policy](./core/policies.mdx#mapping-policy)
+- [Fallback Policy](./core/policies.mdx#fallback-policy)
+- [Two-Stage-Fallback Policy](./core/policies.mdx#two-stage-fallback-policy)
+- [Form Policy](./core/policies.mdx#form-policy)
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migrate-mapping-policy-to-rule-policy"></a>
+
+#### Migrating from the Mapping Policy
+
+If you previously used the [Mapping Policy](./core/policies.mdx#mapping-policy), you
+can follow the documentation on [FAQs](./core/rules.mdx#faqs) to convert your mapped
+intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
+
+```yaml
+intents:
+ - ask_is_bot:
+     triggers: action_is_bot
+```
+
+This would become the following rule:
+
+```yaml
+rules:
+    rule: Rule to map `ask_is_bot` intent
+    steps:
+    - ...
+    - intent: ask_is_bot
+    - action: action_is_bot
+```
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migrate-fallback-policy-to-rule-policy"></a>
+
+#### Migrating from the Fallback Policy
+
+If you previously used the [Fallback Policy](./core/policies.mdx#fallback-policy), then the following model
+configuration would translate as follows given a previous configuration like this:
+
+```yaml
+policies:
+  - name: "FallbackPolicy"
+    nlu_threshold: 0.4
+    core_threshold: 0.3
+    fallback_action_name: "action_default_fallback"
+    ambiguity_threshold: 0.1
+```
+
+The new configuration would then look like:
+
+```yaml
+policies:
+# Other policies
+- name: RulePolicy
+  core_fallback_threshold: 0.3
+  fallback_action_name: "action_default_fallback"
+
+pipeline:
+  # Other components
+  - name: FallbackClassifier
+    threshold: 0.4
+    ambiguity_threshold: 0.1
+```
+
+In addition you need to add a [Rule](./core/rules.mdx) to specify which action to run
+in case of low NLU confidence:
+
+```yaml
+rules:
+
+- rule: Ask the user to rephrase whenever they send a message with low NLU confidence
+  steps:
+  - ...
+  - intent: nlu_fallback
+  - action: utter_please_rephrase
+```
+
+Please see the [Fallback Actions](./core/fallback-actions) documentation for more
+information.
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migrate-two-stage-policy-to-rule-policy"></a>
+
+#### Migrating from the Two-Stage-Fallback Policy
+
+If you previously used the
+[Two-Stage-Fallback Policy](./core/policies.mdx#two-stage-fallback-policy), then the following model
+configuration would translate as follows given a previous configuration like this:
+
+```yaml
+policies:
+  - name: TwoStageFallbackPolicy
+    nlu_threshold: 0.4
+    ambiguity_threshold: 0.1
+    core_threshold: 0.3
+    fallback_core_action_name: "action_default_fallback"
+    fallback_nlu_action_name: "action_default_fallback"
+    deny_suggestion_intent_name: "out_of_scope"
+```
+
+The new configuration would then look like:
+
+```yaml
+policies:
+# Other policies
+- name: RulePolicy
+  core_fallback_threshold: 0.3
+  fallback_action_name: "action_default_fallback"
+
+pipeline:
+  # Other components
+  - name: FallbackClassifier
+    threshold: 0.4
+    ambiguity_threshold: 0.1
+```
+
+In addition you need to add a [Rule](./core/rules.mdx) to activate the Two-Stage Fallback for
+messages with low NLU confidence.
+
+```yaml
+- rule: Implementation of the TwoStageFallbackPolicy
+  steps:
+  - ...
+  # This intent is automatically triggered by the `FallbackClassifier` in the NLU
+  # pipeline in case the intent confidence was below the specified threshold.
+  - intent: nlu_fallback
+  # The Fallback is now implemented as a form.
+  - action: two_stage_fallback
+  - form: two_stage_fallback
+```
+
+Note that the previous parameters `fallback_nlu_action_name` and
+`deny_suggestion_intent_name` are no longer configurable and have the fixed values
+`action_default_fallback` and `out_of_scope`.
+
+Please see the [Fallback Actions](./core/fallback-actions) documentation for more
+information.
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migrate-form-policy-to-rule-policy"></a>
+
+#### FormPolicy
+
+As of Rasa Open Source 2.0 the logic for [Forms](./core/forms.mdx) was moved from the
+Rasa SDK to Rasa Open Source to ease implementations of custom action libraries.
+This means that you no longer need to use the `FormAction` when implementing custom
+actions with the Python SDK. Instead you can use a regular `Action` to validate and
+request slots.
+
+It is now recommended to move the slot mappings from your custom action to the
+[Domain](./core/domains.mdx) of your bot. Consider a custom form action like this:
+
+```python
+
+class RestaurantForm(FormAction):
+    def name(self) -> Text:
+        return "restaurant_form"
+
+    @staticmethod
+    def required_slots(tracker: Tracker) -> List[Text]:
+        return ["cuisine"]
+
+    def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict]]]:
+        return {
+            "cuisine": self.from_entity(entity="cuisine", not_intent="chitchat"),
+        }
+
+    @staticmethod
+    def cuisine_db() -> List[Text]:
+        """Database of supported cuisines"""
+
+        return ["caribbean", "chinese", "french"]
+
+    def validate_cuisine(
+        self,
+        value: Text,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> Dict[Text, Any]:
+        """Validate cuisine value."""
+
+        if value.lower() in self.cuisine_db():
+            # validation succeeded, set the value of the "cuisine" slot to value
+            return {"cuisine": value}
+        else:
+            dispatcher.utter_message(template="utter_wrong_cuisine")
+            # validation failed, set this slot to None, meaning the
+            # user will be asked for the slot again
+            return {"cuisine": None}
+
+    def submit(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict]:
+        """Define what the form has to do
+            after all required slots are filled"""
+
+        # utter submit template
+        dispatcher.utter_message(template="utter_submit")
+        return []
+```
+
+Start the migration by adding the [RulePolicy](./core/policies.mdx#rule-policy) to your
+model configuration:
+
+```yaml
+policies:
+# Other policies
+# ...
+- name: RulePolicy
+```
+
+Then you need to define the form and the required slots in the domain as described in
+[Forms](./core/forms.mdx#form-domain):
+
+```yaml
+forms:
+  restaurant_form:
+    cuisine:
+    - type: cuisine
+      entity: cuisine
+      not_intent: chitchat
+```
+
+You don't have to add a rule for activating the form as this is already covered by your
+existing stories. However, you have to add a story for handle the submission of the
+form.
+
+```yaml
+rules:
+- rule: Submit form
+  steps:
+  # Condition that form is active.
+  - form: restaurant_form
+  - ...
+  - action: restaurant_form
+  - form: null
+  - slot: requested_slot
+    value: null
+  # The action we want to run when the form is submitted.
+  - action: utter_submit
+```
+
+The last step is to implement a custom action to validate the form slots. Start by
+adding the custom action to your domain:
+
+```yaml
+actions:
+# Other actions
+# ...
+- validate_restaurant_form
+```
+
+Then add a custom action which validates the `cuisine` slot:
+
+```python
+class RestaurantFormValidator(Action):
+    def name(self) -> Text:
+        return "validate_restaurant_form"
+
+    def run(
+        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
+    ) -> List[EventType]:
+        extracted_slots: Dict[Text, Any] = tracker.get_extracted_slots()
+
+        cuisine_slot_value = extracted_slots.get("cuisine")
+        validated_slot_event = self.validate_cuisine(
+            cuisine_slot_value, dispatcher, tracker, domain
+        )
+        return [validated_slot_event]
+
+    @staticmethod
+    def cuisine_db() -> List[Text]:
+        """Database of supported cuisines"""
+
+        return ["caribbean", "chinese", "french"]
+
+    def validate_cuisine(
+        self,
+        value: Text,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> EventType:
+        """Validate cuisine value."""
+
+        if value.lower() in self.cuisine_db():
+            # validation succeeded, set the value of the "cuisine" slot to value
+            return SlotSet("cuisine", value)
+        else:
+            dispatcher.utter_message(template="utter_wrong_cuisine")
+            # validation failed, set this slot to None, meaning the
+            # user will be asked for the slot again
+            return SlotSet("cuisine", None)
+```
+
+Please see [Forms](./core/forms.mdx) if you have further customizations in your
+``FormAction``.
+
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-8"></a>
 
 ## Rasa 1.7 to Rasa 1.8
