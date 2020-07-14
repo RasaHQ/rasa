@@ -26,7 +26,10 @@ class LookupEntityExtractor(EntityExtractor):
         #   lookup:
         #      city: /some/path/city.txt
         #      person: /some/other/path/person.txt
-        "lookup": None
+        "lookup": None,
+        # lower case the entity value from the lookup file and
+        # user query while comparing them
+        "lowercase": True
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
@@ -36,19 +39,20 @@ class LookupEntityExtractor(EntityExtractor):
             if component_config["lookup"] is not None:
                 # check if the entities and respective file path exists
                 for key, value in list(component_config["lookup"].items()):
-                    self.add_entities_if_lookup_entity(key, value)
+                    self._validate_lookup_entry(key, value)
             else:
-                self.component_config["lookup"] = None
-
-            if not bool(component_config["lookup"]):
-                # if the lookup dictionary is empty after filtering
-                # the lookup entities, assign it None value
-                self.component_config["lookup"] = None
+                message = (
+                    "Can't extract Lookup Entities, "
+                    "Please provide a valid entries for "
+                    "entities and their respective file paths."
+                )
+                raise ValueError(message)
         else:
-            common_utils.raise_warning(
-                "Can't extract Lookup Entities,\
-                Please configure the lookup entities in the config.yml."
+            message = (
+                "Can't extract Lookup Entities, "
+                "Please configure the lookup entities in the config.yml."
             )
+            raise ValueError(message)
 
     def _validate_lookup_entry(self, entity: Text, file_path: Text) -> None:
         if file_path is not None:
@@ -56,44 +60,55 @@ class LookupEntityExtractor(EntityExtractor):
                 # remove the entity from the lookup dictionary,
                 # if the file path doesn't exist
                 self.component_config["lookup"].pop(entity)
-                common_utils.raise_warning(
-                    f"The file path '{file_path}' for entity '{entity}' does not exist. Please provide a valid file path.")
+                message = (
+                    f"The file path '{file_path}' for entity '{entity}' "
+                    "does not exist. "
+                    "Please provide a valid file path."
+                )
+                common_utils.raise_warning(message)
         else:
             # remove the entity from the lookup dictionary,
             # if the file path is not provided
             self.component_config["lookup"].pop(entity)
-                common_utils.raise_warning(
-                    f"No file path for entity '{entity}' was given. Please provide a valid file path.")
+            message = (
+                f"No file path for entity '{entity}' was given. "
+                "Please provide a valid file path."
+            )
+            common_utils.raise_warning(message)
 
     def _parse_entities(self, user_input: Text) -> List[Dict[Text, Any]]:
         """Extract entities from the user input."""
-        if self.component_config["lookup"] is not None:
-            for entity, file_path in list(
-                    self.component_config["lookup"].items()):
-                results = self._parse_all_entities(
-                    user_input, entity, file_path)
-                return results
-        else:
-            return []
+        for entity, file_path in self.component_config["lookup"].items():
+            results = self._extract_entities(
+                self, user_input, entity, file_path)
+            return results
 
     @staticmethod
-    def _parse_all_entities(
-        user_input: str, entity: list, file_path: list
+    def _extract_entities(
+        self, user_input: Text,
+        entity: Text, file_path: Text
     ) -> List[Dict[Text, Any]]:
         """
         This method does the actual entity extraction work.
-        So here I am running the loop over the list of data in the text file
+        So here we are running the loop over the list of data in the text file
         and check whether it exists in the user's message
         """
         results = []
-        with open(file_path, "r") as f:
-            examples = f.readlines()
+        user_input_temp = user_input
+        if self.component_config["lowercase"]:
+            # check for lower case
+            user_input_temp = user_input.lower()
 
-            for example in examples:
-                example = example.lower().strip()
-                if example in user_input.lower():
-                    start_index = user_input.lower().index(example)
-                    end_index = start_index + len(example.strip())
+        with open(file_path, "r") as file:
+            for example in file:
+                # check for lower case
+                if self.component_config["lowercase"]:
+                    example = example.lower().strip()
+                else:
+                    example = example.strip()
+                if example in user_input_temp:
+                    start_index = user_input_temp.index(example)
+                    end_index = start_index + len(example)
                     results.append({
                         "entity": entity,
                         "start": start_index,
