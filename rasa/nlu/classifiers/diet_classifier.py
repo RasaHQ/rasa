@@ -1963,7 +1963,7 @@ class DIET(RasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
-        text_transformed, _, _, _ = self._create_sequence(
+        text_transformed, sequence_x, sentence_x, _, _ = self._create_sequence(
             tf_batch_data[TEXT_SEQUENCE_FEATURES],
             tf_batch_data[TEXT_SENTENCE_FEATURES],
             mask_sequence_text,
@@ -1975,7 +1975,9 @@ class DIET(RasaModel):
 
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(
-                self._batch_predict_intents(sequence_lengths, text_transformed)
+                self._batch_predict_intents(
+                    sequence_lengths, text_transformed, sentence_x
+                )
             )
 
         if self.config[ENTITY_RECOGNITION]:
@@ -2022,14 +2024,23 @@ class DIET(RasaModel):
         return predictions
 
     def _batch_predict_intents(
-        self, sequence_lengths: tf.Tensor, text_transformed: tf.Tensor
+        self,
+        sequence_lengths: tf.Tensor,
+        text_transformed: tf.Tensor,
+        text_in: tf.Tensor,
     ) -> Dict[Text, tf.Tensor]:
+
+        text_in = self._tf_layers[f"ffnn.attention.{TEXT}"](text_in)
+
+        sentence_vector, _ = self._tf_layers[f"{TEXT}_attention"](
+            text_in, text_transformed
+        )
+        sentence_vector = tf.squeeze(sentence_vector, axis=1)
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels()
 
         # get sentence feature vector for intent classification
-        sentence_vector = self._last_token(text_transformed, sequence_lengths)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
         # pytype cannot infer that 'self._tf_layers[f"loss.{LABEL}"]' has methods
