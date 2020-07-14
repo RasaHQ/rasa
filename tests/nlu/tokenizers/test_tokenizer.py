@@ -49,6 +49,7 @@ def test_train_tokenizer(text, expected_tokens, expected_indices):
 
     assert [t.text for t in tokens] == [text]
 
+
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
@@ -71,6 +72,7 @@ def test_train_tokenizer_e2e_actions(text, expected_tokens, expected_indices):
         assert [t.text for t in tokens] == expected_tokens
         assert [t.start for t in tokens] == [i[0] for i in expected_indices]
         assert [t.end for t in tokens] == [i[1] for i in expected_indices]
+
 
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
@@ -127,6 +129,7 @@ def test_process_tokenizer_action_name(text, expected_tokens):
 
     assert [t.text for t in tokens] == expected_tokens
 
+
 @pytest.mark.parametrize(
     "text, expected_tokens",
     [("I am hungry", ["I","am", "hungry"])],
@@ -149,7 +152,6 @@ def test_process_tokenizer_action_test(text, expected_tokens):
     assert [t.text for t in tokens] == [text]
 
 
-
 @pytest.mark.parametrize(
     "text, expected_tokens",
     [
@@ -166,6 +168,7 @@ def test_split_intent(text, expected_tokens):
     message.set(INTENT, text)
 
     assert [t.text for t in tk._split_intent(message)] == expected_tokens
+
 
 @pytest.mark.parametrize(
     "token_pattern, tokens, expected_tokens",

@@ -398,6 +398,7 @@ def test_count_vectors_featurizer_train():
     assert (1, 1) == seq_vec.shape
     assert np.all(seq_vec.toarray()[0] == np.array([1]))
 
+
 @pytest.mark.parametrize(
     "sentence, action_name, action_text, action_name_features, response_features",
     [("hello", "greet", None, [[1]], None), ("hello", "greet", "hi", None, [[1]])],
@@ -483,11 +484,3 @@ def test_count_vector_featurizer_process_by_attribute(
     else:
         assert action_name_seq_vecs is None
         assert action_name_sen_vecs is None
-
-
-
-
-
-
-
-

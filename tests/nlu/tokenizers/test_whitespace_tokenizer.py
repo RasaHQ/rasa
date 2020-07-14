@@ -152,7 +152,7 @@ def test_whitespace_training(supervised_embeddings_config):
     assert examples[2].data.get(TOKENS_NAMES[MESSAGE_ACTION_NAME])[0].text == "action"
     assert examples[2].data.get(TOKENS_NAMES[MESSAGE_ACTION_NAME])[1].text == "restart"
     assert examples[2].data.get(TOKENS_NAMES[TEXT])[0].text == "action_restart"
-    assert examples[2].data.get(TOKENS_NAMES[ACTION_TEXT]) == None
+    assert examples[2].data.get(TOKENS_NAMES[ACTION_TEXT]) is None
     assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[0].text == "where"
     assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[1].text == "are"
     assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[2].text == "you"
@@ -198,9 +198,7 @@ def test_whitespace_processing_with_attribute(supervised_embeddings_config):
     assert [t.text for t in tokens_intent] == expected_tokens_intent
     assert [t.text for t in tokens_text] == expected_tokens_text
 
-    message = Message("Where are you going?", 
-        {MESSAGE_ACTION_NAME: "Where are you going?", ACTION_TEXT: "Where are you going?"},
-        )
+    message = Message("Where are you going?", {MESSAGE_ACTION_NAME: "Where are you going?", ACTION_TEXT: "Where are you going?"},)
     expected_action_tokens_text = ["where", "are", "you", "going"]
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
