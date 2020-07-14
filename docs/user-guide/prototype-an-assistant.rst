@@ -14,7 +14,7 @@ You can test it out right here without installing anything. You can also install
 
 To prototype an assistant, start with a single `user goal <glossary>`_
 that your assistant will handle. You can create a prototype using the user goal we have chosen
-“subscribing to a newsletter”, or you can come up with your own. If you choose your own user goal,
+"subscribing to a newsletter", or you can come up with your own. If you choose your own user goal,
 you can create a prototype that handles your goal by following the instructions to change each
 section throughout the tutorial.
 
@@ -27,9 +27,8 @@ section throughout the tutorial.
 Your assistant can only learn to recognize intents for which it has seen examples, so we need to provide some data.
 
 Add examples for your user-goal specific intents in the format shown below.
-You can delete the `subscribe` and `inform` intents if you’re not using them;
+You can delete the ``subscribe`` and ``inform`` intents if you’re not using them;
 you can also add or change examples for any of the other intents.
-
 
 .. code-editor::
     :language: yaml
@@ -39,7 +38,7 @@ you can also add or change examples for any of the other intents.
 
     nlu:
     - intent: greet
-       examples: |
+      examples: |
            Hi
            Hey!
            Hallo
@@ -47,24 +46,26 @@ you can also add or change examples for any of the other intents.
            Good morning
 
     - intent: subscribe
-       examples: |
+      examples: |
            I want to get the newsletter
            Can you send me the newsletter?
            Can you sign me up for the newsletter?
 
     - intent: inform
-       examples: |
+      examples: |
            My email is example@example.com
            random@example.com
            Please send it to anything@example.com
            Email is something@example.com
+
+:ref:`Read about best practices for NLU <training-data-format>`
 
 
 3. Define a simple form
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 For most user goals, the bot will need to collect some information from the user to fulfill their request.
-To do so, we define a `form <>`_. You can change the name of the form to reflect your user goal.
+To do so, we define a `form <glossary>`_. You can change the name of the form to reflect your user goal.
 Add to or replace the "email" item in the list below to reflect the information the bot needs
 to collect for your user goal. Leave the "type" field the same for any items you add.
 
@@ -87,7 +88,6 @@ Rules are conversation snippets that should always precede in exactly the same w
 first step of the rule tells the bot that regardless of what precedes, the next steps should always
 follow one another. Update the rule below for running the form you defined above.
 
-
 .. code-editor::
     :language: yaml
     :id: rules
@@ -98,12 +98,12 @@ follow one another. Update the rule below for running the form you defined above
      - rule: activate subscribe form
        steps:
        - ...
-       - user: /subscribe
+       - intent: subscribe
        - action: newsletter_form
        - form: newsletter_form
 
 
-4. Write some stories
+5. Write some stories
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Stories are example conversations of how your assistant should handle a user’s intent in context.
@@ -111,11 +111,10 @@ The first stories you write should follow the `happy path <glossary>` for your u
 
 A story contains one or more blocks of (user) intent and (bot) `actions <glossary>`_ or `responses <glossary>`_.
 The form you defined above is one kind of action; responses are just bot messages.
-Give intuitive names to your responses starting with `utter_` for now; you’ll define what they return later.
+Give intuitive names to your responses starting with ``utter_`` for now; you’ll define what they return later.
 
 Using the general template of the story we have shown you below, write a story or two that serve
 the user goal you have chosen. You can include the steps from your form rule wherever appropriate.
-
 
 .. code-editor::
     :language: yaml
@@ -126,14 +125,16 @@ the user goal you have chosen. You can include the steps from your form rule whe
     stories:
      - story: greet and subscribe
        steps:
-       - user: /greet
+       - intent: greet
        - action: utter_greet
-       - user: /subscribe
+       - intent: subscribe
        - action: newsletter_form
        - form: newsletter_form
 
+:ref:`Read about best practices for writing stories <stories>`
 
-5. Edit responses
+
+6. Edit responses
 ~~~~~~~~~~~~~~~~~
 To give your bot messages to respond to the user with, you need to define responses.
 You can specify one or more text options for each response. If there are multiple, one of the options
@@ -165,12 +166,13 @@ replace the last three responses with the response you used in your stories abov
 
 .. note::
 
-    Note: For this prototype, we have only defined responses, meaning the only thing the assistant does is
-    respond with a predefined message. Custom actions, however, can be defined to do whatever you’d like.
-    For example, for the user goal of subscribing to a newsletter, you could create a custom action that
-    adds the user’s email to a database. You can see an example of this in Sara’s action code.
+    For this prototype, we have only defined responses, meaning the only thing the assistant does is respond with a
+    predefined message. Custom actions, however, can be defined to do whatever you’d like.
+    For example, for the user goal of subscribing to a newsletter, you could create a custom action
+    that adds the user’s email to a database. You can see an example of this in `Sara's action code <action code>`_.
 
-6. Train and run
+
+7. Train and run
 ~~~~~~~~~~~~~~~~
 
 Rasa has a command line interface that allows you to train and run your bot from a terminal.
@@ -181,7 +183,8 @@ the button below:
     :endpoint: https://trainer-service.prototyping.rasa.com/trainings
     :method: POST
 
-7. What's next?
+
+8. What's next?
 ~~~~~~~~~~~~~~~
 
 You can download this project and build on it to create a more advanced assistant.
