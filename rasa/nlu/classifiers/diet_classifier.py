@@ -37,6 +37,8 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    SENTENCE_FEATURES,
+    SEQUENCE_FEATURES,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.nlu.training_data import TrainingData
@@ -249,8 +251,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
-        f"{SENTENCE}_{FEATURIZERS}": [],
-        f"{SEQUENCE}_{FEATURIZERS}": [],
+        SEQUENCE_FEATURES: [],
+        SENTENCE_FEATURES: [],
         APPLY_NORMALIZATION: False,
     }
 
@@ -430,8 +432,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return all(
             label_example.features_present(
                 attribute,
-                self.component_config[f"{SEQUENCE}_{FEATURIZERS}"],
-                self.component_config[f"{SENTENCE}_{FEATURIZERS}"],
+                self.component_config[SEQUENCE_FEATURES],
+                self.component_config[SENTENCE_FEATURES],
             )
             for label_example in labels_example
         )
@@ -450,13 +452,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             sparse_sentence_features,
         ) = message.get_sparse_features(
             attribute,
-            self.component_config[f"{SEQUENCE}_{FEATURIZERS}"],
-            self.component_config[f"{SENTENCE}_{FEATURIZERS}"],
+            self.component_config[SEQUENCE_FEATURES],
+            self.component_config[SENTENCE_FEATURES],
         )
         dense_sequence_features, dense_sentence_features = message.get_dense_features(
             attribute,
-            self.component_config[f"{SEQUENCE}_{FEATURIZERS}"],
-            self.component_config[f"{SENTENCE}_{FEATURIZERS}"],
+            self.component_config[SEQUENCE_FEATURES],
+            self.component_config[SENTENCE_FEATURES],
         )
 
         if dense_sequence_features is not None and sparse_sequence_features is not None:
