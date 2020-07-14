@@ -88,6 +88,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
+    APPLY_NORMALIZATION,
 )
 
 
@@ -250,6 +251,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         FEATURIZERS: [],
         f"{SENTENCE}_{FEATURIZERS}": [],
         f"{SEQUENCE}_{FEATURIZERS}": [],
+        APPLY_NORMALIZATION: False,
     }
 
     # init helpers
@@ -1448,6 +1450,7 @@ class DIET(RasaModel):
             use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
             use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
             max_relative_position=self.config[MAX_RELATIVE_POSITION],
+            apply_normalization=self.config[APPLY_NORMALIZATION],
         )
 
     def _prepare_label_classification_layers(self) -> None:

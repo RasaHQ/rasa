@@ -415,6 +415,7 @@ class AttentionLayer(tf.keras.layers.Layer):
         use_value_relative_position: bool = False,
         max_relative_position: Optional[int] = None,
         heads_share_relative_embedding: bool = False,
+        apply_normalization: bool = True,
     ) -> None:
         super().__init__()
 
@@ -432,6 +433,7 @@ class AttentionLayer(tf.keras.layers.Layer):
         )
         self._dropout = tf.keras.layers.Dropout(dropout_rate)
         self._ffnn = Ffnn([units], dropout_rate, reg_lambda, sparsity, layer_name)
+        self.apply_normalization = apply_normalization
 
     # noinspection PyMethodOverriding
     def call(
@@ -459,14 +461,16 @@ class AttentionLayer(tf.keras.layers.Layer):
         # make sure query input matches units in last dimension
         query_input = self._ffnn(query_input, training=training)
 
-        query_input_norm = self._layer_norm(
-            query_input
-        )  # (batch_size, query_length, units)
-        source_input_norm = self._layer_norm(
-            source_input
-        )  # (batch_size, source_length, units)
+        if self.apply_normalization:
+            query_input = self._layer_norm(
+                query_input
+            )  # (batch_size, query_length, units)
+            source_input = self._layer_norm(
+                source_input
+            )  # (batch_size, source_length, units)
+
         attn_out, _ = self._mha(
-            query_input_norm, source_input_norm, pad_mask=pad_mask, training=training
+            query_input, source_input, pad_mask=pad_mask, training=training
         )
         attn_out = self._dropout(attn_out, training=training)
 

@@ -75,3 +75,5 @@ SEQUENCE_FEATURES = "sequence_features"
 SENTENCE_FEATURES = "sentence_features"
 
 FEATURIZERS = "featurizers"
+
+APPLY_NORMALIZATION = "apply_normalization"
