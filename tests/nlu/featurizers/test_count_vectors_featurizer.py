@@ -496,6 +496,7 @@ def test_count_vector_featurizer_process_by_attribute(
     action_name_seq_vecs, action_name_sen_vecs = test_message.get_sparse_features(
         ACTION_NAME, []
     )
+
     if action_name_features:
         assert action_name_seq_vecs.toarray()[0] == action_name_features
         assert action_name_sen_vecs is None
