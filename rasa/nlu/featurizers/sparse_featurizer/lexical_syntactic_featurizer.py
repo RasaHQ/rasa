@@ -18,6 +18,7 @@ from rasa.nlu.constants import (
     TEXT,
     FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
+    MESSAGE_ACTION_NAME
 )
 
 from rasa.nlu.model import Metadata
@@ -119,7 +120,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         all_features = []
         for example in training_data.training_examples:
             tokens = example.get(TOKENS_NAMES[TEXT])
-            all_features.append(self._tokens_to_features(tokens))
+            if tokens:
+                all_features.append(self._tokens_to_features(tokens))
 
         # build vocabulary of features
         feature_vocabulary = self._build_feature_vocabulary(all_features)
@@ -166,21 +168,23 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         features."""
         import scipy.sparse
         # TODO: do I get it right that these features will still exist only for user text?  
+        tokens = None
+        if not message.get(MESSAGE_ACTION_NAME):
+            tokens = message.get(TOKENS_NAMES[TEXT])
+        if tokens:
 
-        tokens = message.get(TOKENS_NAMES[TEXT])
+            sentence_features = self._tokens_to_features(tokens)
+            one_hot_seq_feature_vector = self._features_to_one_hot(sentence_features)
 
-        sentence_features = self._tokens_to_features(tokens)
-        one_hot_seq_feature_vector = self._features_to_one_hot(sentence_features)
+            sequence_features = scipy.sparse.coo_matrix(one_hot_seq_feature_vector)
 
-        sequence_features = scipy.sparse.coo_matrix(one_hot_seq_feature_vector)
-
-        final_sequence_features = Features(
-            sequence_features,
-            FEATURE_TYPE_SEQUENCE,
-            TEXT,
-            self.component_config[FEATURIZER_CLASS_ALIAS],
-        )
-        message.add_features(final_sequence_features)
+            final_sequence_features = Features(
+                sequence_features,
+                FEATURE_TYPE_SEQUENCE,
+                TEXT,
+                self.component_config[FEATURIZER_CLASS_ALIAS],
+            )
+            message.add_features(final_sequence_features)
 
     def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
         """Convert words into discrete features."""
