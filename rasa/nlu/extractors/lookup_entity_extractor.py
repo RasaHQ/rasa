@@ -52,15 +52,12 @@ class LookupEntityExtractor(EntityExtractor):
 
     def _validate_lookup_entry(self, entity: Text, file_path: Text) -> None:
         if file_path is not None:
-            if os.path.isfile(file_path):
-                pass
-            else:
+            if not os.path.isfile(file_path):
                 # remove the entity from the lookup dictionary,
                 # if the file path doesn't exist
                 self.component_config["lookup"].pop(entity)
                 common_utils.raise_warning(
-                    f"can't extract lookup entity: '{entity}',\
-                    make sure the provided file '{file_path}' exists.")
+                    f"The file path '{file_path}' for entity '{entity}' does not exist. Please provide a valid file path.")
         else:
             # remove the entity from the lookup dictionary,
             # if the file path is not provided
