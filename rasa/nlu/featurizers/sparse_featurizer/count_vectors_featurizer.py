@@ -19,6 +19,8 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     INTENT,
+    MESSAGE_ACTION_NAME,
+    ACTION_TEXT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     RESPONSE,
     FEATURE_TYPE_SEQUENCE,
@@ -216,8 +218,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
             return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
-
-        return message.get(attribute).split()
+        if not attribute == MESSAGE_ACTION_NAME or attribute == INTENT:
+            return message.get(attribute).split()
+        else:
+            return []
 
     def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
         """Apply processing and cleaning steps to text"""
@@ -424,7 +428,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             sequence_features.append(seq_vec.tocoo())
 
-            if attribute in [TEXT, RESPONSE]:
+            if attribute in [TEXT, RESPONSE, ACTION_TEXT]:
                 tokens_text = [" ".join(tokens)]
                 sentence_vec = self.vectorizers[attribute].transform(tokens_text)
                 sentence_vec.sort_indices()
@@ -521,7 +525,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     training_data.training_examples,
                 )
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
         """Process incoming message and compute and set features"""
 
         if self.vectorizers is None:
@@ -532,7 +536,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             )
             return
 
-        attribute = TEXT
         message_tokens = self._get_processed_message_tokens_by_attribute(
             message, attribute
         )

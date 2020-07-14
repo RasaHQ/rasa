@@ -104,20 +104,21 @@ class Tokenizer(Component):
 
     def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
         """Tokenize the incoming message."""
-        if attribute == INTENT:
-            tokens = self._split_intent(message)
-        elif attribute == MESSAGE_ACTION_NAME: 
-            # when we have text action, the text will be stored both in `action_name` and in `text`;
-            # we need to check if the text is empty to make sure that it is actually the `action_name`
-            if not message.get(ACTION_TEXT):
-                tokens = self._split_action(message)
+        if message.get(attribute):
+            if attribute == INTENT:
+                tokens = self._split_intent(message)
+            elif attribute == MESSAGE_ACTION_NAME: 
+                # when we have text action, the text will be stored both in `action_name` and in `text`;
+                # we need to check if the text is empty to make sure that it is actually the `action_name`
+                if not message.get(ACTION_TEXT):
+                    tokens = self._split_action(message)
+                else:
+                    attribute = ACTION_TEXT
+                    tokens = self.tokenize(message, attribute)
             else:
-                attribute = ACTION_TEXT
                 tokens = self.tokenize(message, attribute)
-        else:
-            tokens = self.tokenize(message, attribute)
 
-        message.set(TOKENS_NAMES[attribute], tokens)
+            message.set(TOKENS_NAMES[attribute], tokens)
 
     def _split_intent(self, message: Message) -> List[Token]:
         text = message.get(INTENT)
