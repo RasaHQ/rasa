@@ -3,6 +3,7 @@ id: deploying-in-docker-compose
 sidebar_label: Deploying a Rasa Open Source Assistant in Docker Compose
 title: Deploying a Rasa Open Source Assistant in Docker Compose
 ---
+import variables from '@site/src/variables';
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="deploying-rasa-in-docker-compose"></a>
 
@@ -56,18 +57,17 @@ touch docker-compose.yml
 
 Add the following content to the file:
 
-```python
-version: '3.0'
+<pre><code parentName="pre" className="language-yaml">
+{`version: '3.0'
 services:
   rasa:
-    image: rasa/rasa:1.11.0a3-full
+    image: rasa/rasa:${variables.release}-full
     ports:
       - 5005:5005
     volumes:
       - ./:/app
     command:
-      - run
-```
+      - run`}</code></pre>
 
 The file starts with the version of the Docker Compose specification that you
 want to use.
@@ -77,11 +77,11 @@ The first service is the `rasa` service, which runs your Rasa server.
 To add the action server, add the image of your action server code. To learn how to deploy
 an action server image, see [Building an Action Server Image](/docs/user-guide/how-to-deploy#building-an-action-server-image).
 
-```python
-version: '3.0'
+<pre><code parentName="pre" className="language-yaml">
+{`version: '3.0'
 services:
   rasa:
-    image: rasa/rasa:1.11.0a3-full
+    image: rasa/rasa:${variables.release}-full
     ports:
       - 5005:5005
     volumes:
@@ -90,8 +90,7 @@ services:
       - run
   app:
     image: <image:tag>
-    expose: 5055
-```
+    expose: 5055`}</code></pre>
 
 The `expose: 5005` is what allows the `rasa` service to reach the `app` service on that port.
 To instruct the `rasa` service to send its action requests to that endpoint, add it to your `endpoints.yml`:

@@ -3,6 +3,7 @@ id: how-to-deploy
 sidebar_label: Deploying Your Rasa Assistant
 title: Deploying Your Rasa Assistant
 ---
+import variables from '@site/src/variables';
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="deploying-your-rasa-assistant"></a>
 
@@ -108,9 +109,9 @@ To create your image:
    in which you’ll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
    For example:
 
-   ```python
-   # Extend the official Rasa SDK image
-   FROM rasa/rasa-sdk:1.10.2
+   <pre><code parentName="pre" className="language-python">
+   {`# Extend the official Rasa SDK image
+   FROM rasa/rasa-sdk:${variables.rasa_sdk_version}
 
    # Use subdirectory as working directory
    WORKDIR /app
@@ -128,8 +129,7 @@ To create your image:
    COPY ./actions /app/actions
 
    # By best practices, don't run the code with root user
-   USER 1001
-   ```
+   USER 1001`}</code></pre>
 
 You can then build the image via the following command:
 

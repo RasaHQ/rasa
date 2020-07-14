@@ -3,6 +3,7 @@ id: tracker-stores
 sidebar_label: Tracker Stores
 title: Tracker Stores
 ---
+import variables from '@site/src/variables';
 
 All conversations are stored within a tracker store.
 Rasa Open Source provides implementations for different store types out of the box.
@@ -141,32 +142,30 @@ extending the `TrackerStore` class.
   rename it to `oracle.rpm` and store it in the directory from where you’ll be building the docker image.
   Copy the following into a file called `Dockerfile`:
 
-  ```python
-  FROM rasa/rasa:1.11.0a3-full
+<pre><code parentName="pre" className="language-bash">
+{`FROM rasa/rasa:${variables.release}-full
 
-  # Switch to root user to install packages
-  USER root
+# Switch to root user to install packages
+USER root
 
-  RUN apt-get update -qq && apt-get install -y --no-install-recommends alien libaio1 && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update -qq && apt-get install -y --no-install-recommends alien libaio1 && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-  # Copy in oracle instaclient
-  # [https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html)
-  COPY oracle.rpm oracle.rpm
+# Copy in oracle instaclient
+# [https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html)
+COPY oracle.rpm oracle.rpm
 
-  # Install the Python wrapper library for the Oracle drivers
-  RUN pip install cx-Oracle
+# Install the Python wrapper library for the Oracle drivers
+RUN pip install cx-Oracle
 
-  # Install Oracle client libraries
-  RUN alien -i oracle.rpm
+# Install Oracle client libraries
+RUN alien -i oracle.rpm
 
-  USER 1001
-  ```
+USER 1001`}</code></pre>
 
   Then build the docker image:
 
-  ```python
-  docker build . -t rasa-oracle:1.11.0a3-oracle-full
-  ```
+<pre><code parentName="pre" className="language-bash">
+{`docker build . -t rasa-oracle:${variables.release}-oracle-full`}</code></pre>
 
   Now you can configure the tracker store in the `endpoints.yml` as described above,
   and start the container. The `dialect` parameter with this setup will be `oracle+cx_oracle`.

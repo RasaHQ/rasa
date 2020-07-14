@@ -3,6 +3,7 @@ id: building-in-docker
 sidebar_label: Building a Rasa Assistant in Docker
 title: Building a Rasa Assistant in Docker
 ---
+import variables from '@site/src/variables';
 
 If you don’t have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
 on your local machine. If you already have a model you’re satisfied with, see
@@ -27,22 +28,22 @@ Just like in the [tutorial](/docs/user-guide/rasa-tutorial), you’ll use the `r
 The only difference is that you’ll be running Rasa inside a Docker container, using
 the image `rasa/rasa`. To initialize your project, run:
 
-```python
-docker run -v $(pwd):/app rasa/rasa:1.11.0a3-full init --no-prompt
-```
+<pre><code parentName="pre" className="language-bash">
+{`docker run -v $(pwd):/app rasa/rasa:${variables.release}-full init --no-prompt`}</code></pre>
 
 What does this command mean?
 
-* `-v $(pwd):/app` mounts your current working directory to the working directory
-  in the Docker container. This means that files you create on your computer will be
-  visible inside the container, and files created in the container will
-  get synced back to your computer.
+<ul>
+  <li><inlineCode>-v $(pwd):/app</inlineCode> mounts your current working directory to the working directory
+    in the Docker container. This means that files you create on your computer will be
+    visible inside the container, and files created in the container will
+    get synced back to your computer.</li>
+  <li><inlineCode>rasa/rasa</inlineCode> is the name of the docker image to run. ‘{variables.release}-full‘ is the name of the tag,
+    which specifies the version and dependencies.</li>
 
-* `rasa/rasa` is the name of the docker image to run. ‘1.11.0a3-full’ is the name of the tag,
-  which specifies the version and dependencies.
-
-* the Docker image has the `rasa` command as its entrypoint, which means you don’t
-  have to type `rasa init`, just `init` is enough.
+  <li>the Docker image has the <inlineCode>rasa</inlineCode> command as its entrypoint, which means you don’t
+    have to type <inlineCode>rasa init</inlineCode>, just <inlineCode>init</inlineCode> is enough.</li>
+</ul>
 
 Running this command will produce a lot of output. What happens is:
 
@@ -70,9 +71,8 @@ if you want to run the containers as a different user.
 
 To talk to your newly-trained assistant, run this command:
 
-```python
-docker run -it -v $(pwd):/app rasa/rasa:1.11.0a3-full shell
-```
+<pre><code parentName="pre" className="language-bash">
+{`docker run -it -v $(pwd):/app rasa/rasa:${variables.release}-full shell`}</code></pre>
 
 This will start a shell where you can chat to your assistant.
 Note that this command includes the flags `-it`, which means that you are running
@@ -87,19 +87,20 @@ you need to pass the `-it` flags.
 If you edit the NLU or Core training data or edit the `config.yml` file, you’ll need to
 retrain your Rasa model. You can do so by running:
 
-```python
-docker run -v $(pwd):/app rasa/rasa:1.11.0a3-full train --domain domain.yml --data data --out models
-```
+<pre><code parentName="pre" className="language-bash">
+{`docker run -v $(pwd):/app rasa/rasa:${variables.release}-full train --domain domain.yml --data data --out models`}</code></pre>
 
 Here’s what’s happening in that command:
 
-* `-v $(pwd):/app`: Mounts your project directory into the Docker
-  container so that Rasa can train a model on your training data
+<ul>
+  <li><inlineCode>-v $(pwd):/app</inlineCode>: Mounts your project directory into the Docker
+  container so that Rasa can train a model on your training data</li>
 
-* rasa/rasa:1.11.0a3-full: Use the Rasa image with the tag ‘1.11.0a3-full’
+  <li>rasa/rasa:{variables.release}-full: Use the Rasa image with the tag ‘{variables.release}-full’</li>
 
-* `train`: Execute the `rasa train` command within the container. For more
-  information see [Command Line Interface](/docs/user-guide/command-line-interface).
+  <li><inlineCode>train</inlineCode>: Execute the <inlineCode>rasa train</inlineCode> command within the container. For more
+  information see <a href="/docs/user-guide/command-line-interface">Command Line Interface</a>.</li>
+</ul>
 
 In this case, we’ve also passed values for the location of the domain file, training
 data, and the models output directory to show how these can be customized.
@@ -111,7 +112,9 @@ You can also leave these out, since we are passing the default values.
 
 ### Choosing a Tag
 
-All `rasa/rasa` image tags start with a version number. The current version is 1.11.0a3. The tags are:
+<p>
+  All <inlineCode>rasa/rasa</inlineCode> image tags start with a version number. The current version is  {variables.release}. The tags are:
+</p>
 
 * `{version}`
 
@@ -202,9 +205,8 @@ actions:
 
 After updating your domain and stories, you have to retrain your model:
 
-```python
-docker run -v $(pwd):/app rasa/rasa:1.11.0a3-full train
-```
+<pre><code parentName="pre" className="language-bash">
+{`docker run -v $(pwd):/app rasa/rasa:${variables.release}-full train`}</code></pre>
 
 Your actions will run on a separate server from your Rasa server. First create a network to connect the two containers:
 
@@ -214,9 +216,9 @@ docker network create my-project
 
 You can then run the actions with the following command:
 
-```python
-docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:1.10.2
-```
+<pre><code parentName="pre" className="language-bash">
+{`docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:${variables.rasa_sdk_version}`}</code></pre>
+
 
 Here’s what’s happening in that command:
 
@@ -229,7 +231,7 @@ Here’s what’s happening in that command:
 
 * `--name action-server`: Gives the server a specific name for the rasa server to reference
 
-* rasa/rasa-sdk:1.10.2 : Uses the Rasa SDK image with the tag 1.10.2
+* <code>rasa/rasa-sdk:{variables.rasa_sdk_version}</code> : Uses the Rasa SDK image with the tag {`${variables.rasa_sdk_version}`}
 
 Because the action server is running in detached mode, if you want to stop the container,
 do it with `docker stop action-server`. You can also run `docker ps` at any time to see all
@@ -245,9 +247,8 @@ action_endpoint:
 
 Now you can talk to your bot again via the `shell` command:
 
-```python
-docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:1.11.0a3-full shell
-```
+<pre><code parentName="pre" className="language-bash">
+{`docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:${variables.release}-full shell`}</code></pre>
 
 :::note
 If you stop and restart the `action-server` container, you might see an error like this:

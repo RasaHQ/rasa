@@ -3,10 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "docusaurus start",
-    "build": "docusaurus build",
+    "start": "yarn run variables && docusaurus start",
+    "build": "yarn run variables && docusaurus build",
     "swizzle": "docusaurus swizzle",
-    "deploy": "docusaurus deploy"
+    "deploy": "docusaurus deploy",
+    "variables": "node compile_variables.js"
   },
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.56",
