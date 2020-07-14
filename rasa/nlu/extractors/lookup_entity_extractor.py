@@ -62,9 +62,8 @@ class LookupEntityExtractor(EntityExtractor):
             # remove the entity from the lookup dictionary,
             # if the file path is not provided
             self.component_config["lookup"].pop(entity)
-            common_utils.raise_warning(
-                f"can't extract '{entity}' entity,\
-                please provide the example file.")
+                common_utils.raise_warning(
+                    f"No file path for entity '{entity}' was given. Please provide a valid file path.")
 
     def _parse_entities(self, user_input: Text) -> List[Dict[Text, Any]]:
         """Extract entities from the user input."""
