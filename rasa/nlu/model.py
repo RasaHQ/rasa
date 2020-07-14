@@ -169,10 +169,6 @@ class Trainer:
 
         return pipeline
 
-    def filter_data(self, training_data: TrainingData) -> TrainingData:
-        training_data.training_examples = [example for example in training_data.training_examples if not example.get(MESSAGE_ACTION_NAME) and not example.get(MESSAGE_INTENT_NAME)]
-        return training_data
-
     def train(self, data: TrainingData, **kwargs: Any) -> "Interpreter":
         """Trains the underlying pipeline using the provided training data."""
 

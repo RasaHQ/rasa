@@ -45,16 +45,20 @@ DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE, ACTION_TEXT]
 LANGUAGE_MODEL_DOCS = {
     TEXT: "text_language_model_doc",
     RESPONSE: "response_language_model_doc",
-    ACTION_TEXT: "action_text_model_doc"
+    ACTION_TEXT: "action_text_model_doc",
 }
-SPACY_DOCS = {TEXT: "text_spacy_doc", RESPONSE: "response_spacy_doc", ACTION_TEXT: "action_text_spacy_doc"}
+SPACY_DOCS = {
+    TEXT: "text_spacy_doc",
+    RESPONSE: "response_spacy_doc",
+    ACTION_TEXT: "action_text_spacy_doc",
+}
 
 TOKENS_NAMES = {
     TEXT: "text_tokens",
     INTENT: "intent_tokens",
     RESPONSE: "response_tokens",
     MESSAGE_ACTION_NAME: "action_name_tokens",
-    ACTION_TEXT: "action_text_tokens"
+    ACTION_TEXT: "action_text_tokens",
 }
 
 TOKENS = "tokens"
