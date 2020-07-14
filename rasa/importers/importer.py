@@ -378,7 +378,14 @@ def _messages_from_user_utterance(event: UserUttered) -> Message:
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
-    return Message(event.e2e_text or "", data={MESSAGE_ACTION_NAME: event.action_name, ACTION_TEXT: event.e2e_text or ""})
+    # we need to store the action text twice to be able to differentiate between user and bot text in NLU processing
+    return Message(
+        event.e2e_text or "",
+        data={
+            MESSAGE_ACTION_NAME: event.action_name,
+            ACTION_TEXT: event.e2e_text or "",
+        },
+    )
 
 
 def _additional_training_data_from_default_actions() -> TrainingData:

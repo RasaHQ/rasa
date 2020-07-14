@@ -18,7 +18,7 @@ from rasa.nlu.constants import (
     TEXT,
     FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
-    MESSAGE_ACTION_NAME
+    MESSAGE_ACTION_NAME,
 )
 
 from rasa.nlu.model import Metadata
@@ -167,7 +167,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         """Convert incoming messages into sparse features using the configured
         features."""
         import scipy.sparse
-        # TODO: do I get it right that these features will still exist only for user text?  
+
+        # TODO: do I get it right that these features will still exist only for user text?
         tokens = None
         if not message.get(MESSAGE_ACTION_NAME):
             tokens = message.get(TOKENS_NAMES[TEXT])

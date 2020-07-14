@@ -12,8 +12,9 @@ from typing import Tuple
 
 class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
     """Computes the forward decoding in a linear-chain CRF."""
-    ## TODO: the way transition params are initialised in Windows doesn't pass the type check for TensorLike.
-    # I'll look into it later. 
+
+    # TODO: the way transition params are initialised in Windows doesn't pass the type check for TensorLike.
+    # I'll look into it later.
     @typechecked
     def __init__(self, transition_params, **kwargs) -> None:
         """Initialize the CrfDecodeForwardRnnCell.
