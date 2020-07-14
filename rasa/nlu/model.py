@@ -17,6 +17,9 @@ from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.constants import MESSAGE_ACTION_NAME, ACTION_TEXT, MESSAGE_INTENT_NAME
 
 MODEL_NAME_PREFIX = "nlu_"
 
@@ -165,6 +168,10 @@ class Trainer:
             components.validate_pipeline(pipeline)
 
         return pipeline
+
+    def filter_data(self, training_data: TrainingData) -> TrainingData:
+        training_data.training_examples = [example for example in training_data.training_examples if not example.get(MESSAGE_ACTION_NAME) and not example.get(MESSAGE_INTENT_NAME)]
+        return training_data
 
     def train(self, data: TrainingData, **kwargs: Any) -> "Interpreter":
         """Trains the underlying pipeline using the provided training data."""
