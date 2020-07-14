@@ -1428,7 +1428,7 @@ class DIET(RasaModel):
             self.config[WEIGHT_SPARSITY],
             f"ffnn.attention.{TEXT}",
         )
-        self._tf_layers[f"{TEXT}_attention"] = MultiHeadAttention(
+        self._tf_layers[f"attention.{TEXT}"] = MultiHeadAttention(
             self.config[TRANSFORMER_SIZE],
             self.config[NUM_HEADS],
             attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
@@ -1508,8 +1508,6 @@ class DIET(RasaModel):
         for f in features:
             if not isinstance(f, tf.SparseTensor):
                 seq_ids = tf.stop_gradient(f)
-                # add a zero to the seq dimension for the sentence features
-                # seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
                 return seq_ids
 
         # use additional sparse to dense layer
@@ -1518,8 +1516,6 @@ class DIET(RasaModel):
                 seq_ids = tf.stop_gradient(
                     self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
                 )
-                # add a zero to the seq dimension for the sentence features
-                # seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
                 return seq_ids
 
         return None
@@ -1622,7 +1618,6 @@ class DIET(RasaModel):
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
         mask_sequence: tf.Tensor,
-        mask: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
         dense_dropout: bool = False,
@@ -1821,7 +1816,6 @@ class DIET(RasaModel):
             tf_batch_data[TEXT_SEQUENCE_FEATURES],
             tf_batch_data[TEXT_SENTENCE_FEATURES],
             mask_sequence_text,
-            mask_text,
             self.text_name,
             sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
             dense_dropout=self.config[DENSE_INPUT_DROPOUT],
@@ -1845,11 +1839,7 @@ class DIET(RasaModel):
 
         if self.config[INTENT_CLASSIFICATION]:
             loss = self._batch_loss_intent(
-                sequence_lengths,
-                mask_text,
-                text_transformed,
-                text_sentence_in,
-                tf_batch_data,
+                mask_text, text_transformed, text_sentence_in, tf_batch_data
             )
             losses.append(loss)
 
@@ -1862,16 +1852,14 @@ class DIET(RasaModel):
 
     def _batch_loss_intent(
         self,
-        sequence_lengths: tf.Tensor,
         mask_text: tf.Tensor,
         text_transformed: tf.Tensor,
         text_in: tf.Tensor,
         tf_batch_data: Dict[Text, List[tf.Tensor]],
     ) -> tf.Tensor:
-
         text_in = self._tf_layers[f"ffnn.attention.{TEXT}"](text_in)
 
-        sentence_vector, _ = self._tf_layers[f"{TEXT}_attention"](
+        sentence_vector, _ = self._tf_layers[f"attention.{TEXT}"](
             text_in, text_transformed
         )
         sentence_vector = tf.squeeze(sentence_vector, axis=1)
@@ -1912,9 +1900,6 @@ class DIET(RasaModel):
                 continue
 
             tag_ids = tf_batch_data[f"{tag_spec.tag_name}_{TAG_IDS}"][0]
-            # add a zero (no entity) for the sentence features to match the shape of
-            # inputs
-            # tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
 
             loss, f1, _logits = self._calculate_entity_loss(
                 text_transformed,
@@ -1961,13 +1946,10 @@ class DIET(RasaModel):
             tf_batch_data, TEXT_SEQUENCE_LENGTH, batch_dim=1
         )
 
-        mask = self._compute_mask(sequence_lengths)
-
         text_transformed, sequence_x, sentence_x, _, _ = self._create_sequence(
             tf_batch_data[TEXT_SEQUENCE_FEATURES],
             tf_batch_data[TEXT_SENTENCE_FEATURES],
             mask_sequence_text,
-            mask,
             self.text_name,
         )
 
@@ -1975,9 +1957,7 @@ class DIET(RasaModel):
 
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(
-                self._batch_predict_intents(
-                    sequence_lengths, text_transformed, sentence_x
-                )
+                self._batch_predict_intents(text_transformed, sentence_x)
             )
 
         if self.config[ENTITY_RECOGNITION]:
@@ -2024,15 +2004,12 @@ class DIET(RasaModel):
         return predictions
 
     def _batch_predict_intents(
-        self,
-        sequence_lengths: tf.Tensor,
-        text_transformed: tf.Tensor,
-        text_in: tf.Tensor,
+        self, text_transformed: tf.Tensor, text_in: tf.Tensor
     ) -> Dict[Text, tf.Tensor]:
 
         text_in = self._tf_layers[f"ffnn.attention.{TEXT}"](text_in)
 
-        sentence_vector, _ = self._tf_layers[f"{TEXT}_attention"](
+        sentence_vector, _ = self._tf_layers[f"attention.{TEXT}"](
             text_in, text_transformed
         )
         sentence_vector = tf.squeeze(sentence_vector, axis=1)
