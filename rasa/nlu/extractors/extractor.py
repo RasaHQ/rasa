@@ -155,6 +155,7 @@ class EntityExtractor(Component):
             )
 
             if new_tag_found:
+                # new entity found
                 entity = self._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
@@ -165,24 +166,27 @@ class EntityExtractor(Component):
                     confidences,
                 )
                 entities.append(entity)
+            elif last_token_end - token.start <= 1:
+                # current token has the same entity tag as the token before and
+                # the two tokens are only separated by at most one symbol (e.g. space,
+                # dash, etc.)
+                entities[-1][ENTITY_ATTRIBUTE_END] = token.end
+                if confidences is not None:
+                    self._update_confidence_values(entities, confidences, idx)
             else:
-                if last_token_end == token.start - 1:
-                    entities[-1][ENTITY_ATTRIBUTE_END] = token.end
-                    if confidences is not None:
-                        self._update_confidence_values(entities, confidences, idx)
-                else:
-                    # create a new entity as the two entities are separated by a comma
-                    # or some other symbol
-                    entity = self._create_new_entity(
-                        list(tags.keys()),
-                        current_entity_tag,
-                        current_group_tag,
-                        current_role_tag,
-                        token,
-                        idx,
-                        confidences,
-                    )
-                    entities.append(entity)
+                # the token has the same entity tag as the token before but the two
+                # tokens are separated by at least 2 symbols (e.g. multiple spaces,
+                # a comma and a space, etc.)
+                entity = self._create_new_entity(
+                    list(tags.keys()),
+                    current_entity_tag,
+                    current_group_tag,
+                    current_role_tag,
+                    token,
+                    idx,
+                    confidences,
+                )
+                entities.append(entity)
 
             last_entity_tag = current_entity_tag
             last_group_tag = current_group_tag
