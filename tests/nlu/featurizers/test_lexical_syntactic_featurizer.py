@@ -160,7 +160,6 @@ def test_text_featurizer_using_pos_with_action_text(sentence, expected, spacy_nl
     SpacyTokenizer().process(test_message, attribute=ACTION_TEXT)
 
     featurizer.train(TrainingData([train_message]))
-    # Checking that text is processed as expected
     featurizer.process(test_message, attribute=TEXT)
 
     seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
