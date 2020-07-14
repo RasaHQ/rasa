@@ -200,7 +200,7 @@ class NluDataImporter(TrainingDataImporter):
         return await self._importer.get_config()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        return await self._importer.get_nlu_data(language)
+        return await self._importer.get_nlu_data(language, only_nlu=True)
 
 
 class CoreDataImporter(TrainingDataImporter):
@@ -220,7 +220,7 @@ class CoreDataImporter(TrainingDataImporter):
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         return await self._importer.get_stories(
-            interpreter, template_variables, use_e2e, exclusion_percentage
+            interpreter, template_variables, use_e2e, exclusion_percentage, only_core=True,
         )
 
     async def get_config(self) -> Dict:
@@ -333,12 +333,14 @@ class E2EImporter(TrainingDataImporter):
     async def get_config(self) -> Dict:
         return await self.importer.get_config()
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    async def get_nlu_data(self, language: Optional[Text] = "en", only_nlu: bool = False) -> TrainingData:
         training_datasets = [_additional_training_data_from_default_actions()]
+
         training_datasets += await asyncio.gather(
             self.importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
         )
+
 
         return reduce(
             lambda merged, other: merged.merge(other), training_datasets, TrainingData()
