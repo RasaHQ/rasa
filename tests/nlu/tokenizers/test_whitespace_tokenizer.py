@@ -217,3 +217,4 @@ def test_whitespace_processing_with_attribute(supervised_embeddings_config):
     tokens_text = message.get(TOKENS_NAMES[TEXT])
     assert [t.text for t in tokens_action_text] == expected_action_tokens_text
     assert [t.text for t in tokens_text] == expected_action_tokens_text
+    
