@@ -1,32 +1,19 @@
 const { readFileSync, writeFileSync } = require('fs');
 const { execSync } = require('child_process');
+const toml = require('toml');
 
-const VERSION_PATTERN = new RegExp(/^__version__ = "(.+)"$/);
 const VARIABLES_FILE_PATH = './src/variables.js';
+const PYPROJECT_FILE_PATH = '../pyproject.toml';
+const COMMAND_RASA_SDK_VERSION =
+    'python -c "from rasa_sdk import __version__ as rasa_sdk_version; print(rasa_sdk_version)"';
 const JSON_SPACE_INDENT = 4;
 
 const getRasaVersion = () => {
-    const version = readFileSync('../rasa/version.py')
-        .toString()
-        .split('\n')
-        .filter((line) => VERSION_PATTERN.test(line))
-        // cleanup the line
-        .map((line) => line.replace(VERSION_PATTERN, '$1'))
-        // cleanup the version
-        .map((line) => line.split('.').slice(0, 3).join('.'))[0];
-    if (!version) {
-        // error
-    }
-    return version;
+    const pyproject = readFileSync(PYPROJECT_FILE_PATH).toString();
+    return toml.parse(pyproject).tool.poetry.version;
 };
 
-const getRasaSdkVersion = () => {
-    return execSync(
-        'poetry run python -c "from rasa_sdk import __version__ as rasa_sdk_version; print(rasa_sdk_version)"',
-    )
-        .toString()
-        .trim();
-};
+const getRasaSdkVersion = () => execSync(COMMAND_RASA_SDK_VERSION).toString().trim();
 
 const writeVariablesFile = () => {
     const variables = JSON.stringify(
