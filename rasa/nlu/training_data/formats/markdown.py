@@ -216,8 +216,6 @@ class MarkdownReader(TrainingDataReader):
         """Extract entities and synonyms, and convert to plain text."""
         from rasa.nlu.training_data import Message, entities_parser
 
-        entities = entities_parser.find_entities_in_training_example(example)
-
         plain_text = re.sub(
             entities_parser.ENTITY_REGEX,
             lambda m: f'<{m.groupdict()["entity"]}>',
