@@ -17,13 +17,10 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     LABEL_IDS,
     EntityTagSpec,
-    TEXT_SEQUENCE_LENGTH,
-    LABEL_SEQUENCE_LENGTH,
-    TEXT_SEQUENCE_FEATURES,
-    LABEL_SEQUENCE_FEATURES,
     TEXT_SENTENCE_FEATURES,
     LABEL_SENTENCE_FEATURES,
     SENTENCE,
+    SEQUENCE,
 )
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -215,6 +212,8 @@ class ResponseSelector(DIETClassifier):
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
+        f"{SENTENCE}_{FEATURIZERS}": [],
+        f"{SEQUENCE}_{FEATURIZERS}": [],
     }
 
     def __init__(

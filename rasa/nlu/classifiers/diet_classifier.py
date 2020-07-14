@@ -248,6 +248,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
+        f"{SENTENCE}_{FEATURIZERS}": [],
+        f"{SEQUENCE}_{FEATURIZERS}": [],
     }
 
     # init helpers
@@ -425,7 +427,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return all(
             label_example.features_present(
-                attribute, self.component_config[FEATURIZERS]
+                attribute,
+                self.component_config[f"{SEQUENCE}_{FEATURIZERS}"],
+                self.component_config[f"{SENTENCE}_{FEATURIZERS}"],
             )
             for label_example in labels_example
         )
@@ -442,9 +446,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         (
             sparse_sequence_features,
             sparse_sentence_features,
-        ) = message.get_sparse_features(attribute, self.component_config[FEATURIZERS])
+        ) = message.get_sparse_features(
+            attribute,
+            self.component_config[f"{SEQUENCE}_{FEATURIZERS}"],
+            self.component_config[f"{SENTENCE}_{FEATURIZERS}"],
+        )
         dense_sequence_features, dense_sentence_features = message.get_dense_features(
-            attribute, self.component_config[FEATURIZERS]
+            attribute,
+            self.component_config[f"{SEQUENCE}_{FEATURIZERS}"],
+            self.component_config[f"{SENTENCE}_{FEATURIZERS}"],
         )
 
         if dense_sequence_features is not None and sparse_sequence_features is not None:
