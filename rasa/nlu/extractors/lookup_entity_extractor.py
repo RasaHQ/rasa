@@ -50,7 +50,7 @@ class LookupEntityExtractor(EntityExtractor):
                 Please configure the lookup entities in the config.yml."
             )
 
-    def add_entities_if_lookup_entity(self, entity, file_path) -> None:
+    def _validate_lookup_entry(self, entity: Text, file_path: Text) -> None:
         if file_path is not None:
             if os.path.isfile(file_path):
                 pass
