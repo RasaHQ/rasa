@@ -1302,6 +1302,7 @@ class DIET(RasaModel):
         if self.config[INTENT_CLASSIFICATION]:
             self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
             self._prepare_input_layers(self.label_name)
+            self._prepare_label_attention_layers()
             self._prepare_label_classification_layers()
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
@@ -1420,7 +1421,7 @@ class DIET(RasaModel):
         # set scaling to False, so that it doesn't overpower other losses
         self._prepare_dot_product_loss(f"{name}_mask", scale_loss=False)
 
-    def _prepare_label_classification_layers(self) -> None:
+    def _prepare_label_attention_layers(self) -> None:
         self._tf_layers[f"ffnn.attention.{TEXT}"] = layers.Ffnn(
             [self.config[TRANSFORMER_SIZE]],
             self.config[DROP_RATE],
@@ -1439,6 +1440,7 @@ class DIET(RasaModel):
             max_relative_position=self.config[MAX_RELATIVE_POSITION],
         )
 
+    def _prepare_label_classification_layers(self) -> None:
         self._prepare_embed_layers(TEXT)
         self._prepare_embed_layers(LABEL)
 

@@ -23,6 +23,7 @@ from rasa.nlu.classifiers.diet_classifier import (
     LABEL_SEQUENCE_FEATURES,
     TEXT_SENTENCE_FEATURES,
     LABEL_SENTENCE_FEATURES,
+    SENTENCE,
 )
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -468,23 +469,14 @@ class DIET2DIET(DIET):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        sequence_mask_label = super()._get_mask_for(
-            self.tf_label_data, LABEL_SEQUENCE_LENGTH
-        )
-        batch_dim = tf.shape(self.tf_label_data[LABEL_IDS][0])[0]
-        sequence_lengths_label = self._get_sequence_lengths(
-            self.tf_label_data, LABEL_SEQUENCE_LENGTH, batch_dim
-        )
-        mask_label = self._compute_mask(sequence_lengths_label)
-
-        label_transformed, _, _, _ = self._create_sequence(
-            self.tf_label_data[LABEL_SEQUENCE_FEATURES],
+        sentence_label = self._combine_sparse_dense_features(
             self.tf_label_data[LABEL_SENTENCE_FEATURES],
-            sequence_mask_label,
-            mask_label,
-            self.label_name,
+            f"{self.label_name}_{SENTENCE}",
+            None,
+            False,
+            False,
         )
-        sentence_label = self._last_token(label_transformed, sequence_lengths_label)
+        sentence_label = tf.squeeze(sentence_label, axis=1)
 
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](sentence_label)
 
@@ -495,66 +487,26 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        batch_dim = self._get_batch_dim(tf_batch_data)
-        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-        sequence_lengths_text = self._get_sequence_lengths(
-            tf_batch_data, TEXT_SEQUENCE_LENGTH, batch_dim
-        )
-        mask_text = self._compute_mask(sequence_lengths_text)
-
-        (
-            text_transformed,
-            text_in,
-            text_seq_ids,
-            lm_mask_bool_text,
-        ) = self._create_sequence(
-            tf_batch_data[TEXT_SEQUENCE_FEATURES],
+        sentence_vector_text = self._combine_sparse_dense_features(
             tf_batch_data[TEXT_SENTENCE_FEATURES],
-            sequence_mask_text,
-            mask_text,
-            self.text_name,
+            f"{self.text_name}_{SENTENCE}",
+            None,
             sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
             dense_dropout=self.config[DENSE_INPUT_DROPOUT],
-            masked_lm_loss=self.config[MASKED_LM],
-            sequence_ids=True,
         )
+        sentence_vector_text = tf.squeeze(sentence_vector_text, axis=1)
 
-        sequence_mask_label = super()._get_mask_for(
-            tf_batch_data, LABEL_SEQUENCE_LENGTH
-        )
-        sequence_lengths_label = self._get_sequence_lengths(
-            tf_batch_data, LABEL_SEQUENCE_LENGTH, batch_dim
-        )
-        mask_label = self._compute_mask(sequence_lengths_label)
-
-        label_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data[LABEL_SEQUENCE_FEATURES],
+        sentence_vector_label = self._combine_sparse_dense_features(
             tf_batch_data[LABEL_SENTENCE_FEATURES],
-            sequence_mask_label,
-            mask_label,
-            self.label_name,
+            f"{self.label_name}_{SENTENCE}",
+            None,
+            False,
+            False,
         )
+        sentence_vector_label = tf.squeeze(sentence_vector_label, axis=1)
 
         losses = []
 
-        if self.config[MASKED_LM]:
-            loss, acc = self._mask_loss(
-                text_transformed,
-                text_in,
-                text_seq_ids,
-                lm_mask_bool_text,
-                self.text_name,
-            )
-
-            self.mask_loss.update_state(loss)
-            self.mask_acc.update_state(acc)
-            losses.append(loss)
-
-        # get sentence feature vector for label classification
-        sentence_vector_text = self._last_token(text_transformed, sequence_lengths_text)
-        sentence_vector_label = self._last_token(
-            label_transformed, sequence_lengths_label
-        )
         label_ids = tf_batch_data[LABEL_IDS][0]
 
         loss, acc = self._calculate_label_loss(
@@ -573,19 +525,14 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
-        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
-        sequence_lengths_text = self._get_sequence_lengths(
-            tf_batch_data, TEXT_SEQUENCE_LENGTH, batch_dim=1
-        )
-        mask_text = self._compute_mask(sequence_lengths_text)
-
-        text_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data[TEXT_SEQUENCE_FEATURES],
+        sentence_vector = self._combine_sparse_dense_features(
             tf_batch_data[TEXT_SENTENCE_FEATURES],
-            sequence_mask_text,
-            mask_text,
-            self.text_name,
+            f"{self.text_name}_{SENTENCE}",
+            None,
+            False,
+            False,
         )
+        sentence_vector = tf.squeeze(sentence_vector, axis=1)
 
         out = {}
 
@@ -593,7 +540,6 @@ class DIET2DIET(DIET):
             _, self.all_labels_embed = self._create_all_labels()
 
         # get sentence feature vector for intent classification
-        sentence_vector = self._last_token(text_transformed, sequence_lengths_text)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
