@@ -102,7 +102,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         for example in training_data.training_examples:
             self._create_sparse_features(example)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
         self._create_sparse_features(message)
 
     def _create_feature_to_idx_dict(
@@ -165,6 +165,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         """Convert incoming messages into sparse features using the configured
         features."""
         import scipy.sparse
+        # TODO: do I get it right that these features will still exist only for user text?  
 
         tokens = message.get(TOKENS_NAMES[TEXT])
 

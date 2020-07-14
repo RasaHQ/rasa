@@ -9,7 +9,7 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
     LexicalSyntacticFeaturizer,
 )
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import TEXT, SPACY_DOCS
+from rasa.nlu.constants import TEXT, SPACY_DOCS, ACTION_TEXT
 from rasa.nlu.training_data import Message
 
 
@@ -127,3 +127,52 @@ def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
     assert sen_vec is None
 
     assert np.all(seq_vec.toarray() == expected)
+
+@pytest.mark.parametrize(
+    "sentence, expected",
+    [
+        (
+            "The sun is shining",
+            [
+                [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+            ],
+        )
+    ],
+)
+def test_text_featurizer_using_pos_with_action_text(sentence, expected, spacy_nlp):
+    featurizer = LexicalSyntacticFeaturizer({"features": [["pos", "pos2"]]})
+
+    train_message = Message(sentence, {ACTION_TEXT: sentence})
+    test_message = Message(sentence, {ACTION_TEXT: sentence})
+
+    train_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
+    train_message.set(SPACY_DOCS[ACTION_TEXT], spacy_nlp(sentence))
+    test_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
+    test_message.set(SPACY_DOCS[ACTION_TEXT], spacy_nlp(sentence))
+
+    SpacyTokenizer().process(train_message)
+    SpacyTokenizer().process(train_message, attribute=ACTION_TEXT)
+    SpacyTokenizer().process(test_message)
+    SpacyTokenizer().process(test_message, attribute=ACTION_TEXT)
+
+    featurizer.train(TrainingData([train_message]))
+    # Checking that text is processed as expected 
+    featurizer.process(test_message, attribute=TEXT)
+
+    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
+
+    assert isinstance(seq_vec, scipy.sparse.coo_matrix)
+    assert sen_vec is None
+
+    assert np.all(seq_vec.toarray() == expected)
+
+    # Checking that action_text does not get processed and passing attribute works
+    featurizer.process(test_message, attribute=ACTION_TEXT)
+
+    seq_vec, sen_vec = test_message.get_sparse_features(ACTION_TEXT, [])
+
+    assert seq_vec is None
+    assert sen_vec is None
