@@ -475,6 +475,9 @@ class DIET2DIET(DIET):
             False,
             False,
         )
+        sentence_label = self._tf_layers[f"ffnn.{self.label_name}_{SENTENCE}"](
+            sentence_label, self._training
+        )
         sentence_label = tf.squeeze(sentence_label, axis=1)
 
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](sentence_label)
@@ -493,6 +496,9 @@ class DIET2DIET(DIET):
             sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
             dense_dropout=self.config[DENSE_INPUT_DROPOUT],
         )
+        sentence_vector_text = self._tf_layers[f"ffnn.{self.text_name}_{SENTENCE}"](
+            sentence_vector_text, self._training
+        )
         sentence_vector_text = tf.squeeze(sentence_vector_text, axis=1)
 
         sentence_vector_label = self._combine_sparse_dense_features(
@@ -501,6 +507,9 @@ class DIET2DIET(DIET):
             None,
             False,
             False,
+        )
+        sentence_vector_label = self._tf_layers[f"ffnn.{self.label_name}_{SENTENCE}"](
+            sentence_vector_label, self._training
         )
         sentence_vector_label = tf.squeeze(sentence_vector_label, axis=1)
 
@@ -530,6 +539,9 @@ class DIET2DIET(DIET):
             None,
             False,
             False,
+        )
+        sentence_vector = self._tf_layers[f"ffnn.{self.text_name}_{SENTENCE}"](
+            sentence_vector, self._training
         )
         sentence_vector = tf.squeeze(sentence_vector, axis=1)
 

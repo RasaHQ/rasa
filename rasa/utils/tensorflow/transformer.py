@@ -405,8 +405,6 @@ class AttentionLayer(tf.keras.layers.Layer):
         self,
         units: int,
         num_heads: int,
-        reg_lambda: float,
-        layer_name: Text,
         dropout_rate: float = 0.1,
         attention_dropout_rate: float = 0.0,
         sparsity: float = 0.8,
@@ -419,7 +417,8 @@ class AttentionLayer(tf.keras.layers.Layer):
     ) -> None:
         super().__init__()
 
-        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self._query_layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self._source_layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self._mha = MultiHeadAttention(
             units,
             num_heads,
@@ -432,7 +431,6 @@ class AttentionLayer(tf.keras.layers.Layer):
             heads_share_relative_embedding,
         )
         self._dropout = tf.keras.layers.Dropout(dropout_rate)
-        self._ffnn = Ffnn([units], dropout_rate, reg_lambda, sparsity, layer_name)
         self.apply_normalization = apply_normalization
 
     # noinspection PyMethodOverriding
@@ -458,14 +456,14 @@ class AttentionLayer(tf.keras.layers.Layer):
         if training is None:
             training = K.learning_phase()
 
-        # make sure query input matches units in last dimension
-        query_input = self._ffnn(query_input, training=training)
+        if query_input.shape[-1] != source_input.shape[-1]:
+            raise ValueError("Last dimension of query and source input needs to match.")
 
         if self.apply_normalization:
-            query_input = self._layer_norm(
+            query_input = self._query_layer_norm(
                 query_input
             )  # (batch_size, query_length, units)
-            source_input = self._layer_norm(
+            source_input = self._source_layer_norm(
                 source_input
             )  # (batch_size, source_length, units)
 
