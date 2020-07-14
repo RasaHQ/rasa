@@ -236,8 +236,9 @@ Rasa will automatically fill that variable with a value found in a slot called
 
 In custom code, you can retrieve a response by using:
 
-<!-- from rasa_sdk.actions import Action -->
-```python3
+```python
+from rasa_sdk.actions import Action
+
 class ActionCustom(Action):
    def name(self):
       return "action_custom"

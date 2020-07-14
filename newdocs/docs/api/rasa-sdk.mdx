@@ -100,7 +100,7 @@ In a restaurant bot, if the user says “show me a Mexican restaurant”,
 your bot could execute the action `ActionCheckRestaurants`,
 which might look like this:
 
-```python3
+```python
 from rasa_sdk import Action
 from rasa_sdk.events import SlotSet
 
@@ -189,7 +189,7 @@ carry them over into the next session. Let’s say you do not want to carry over
 slots, but only a user’s name and their phone number. To do that, you’d override the
 `action_session_start` with a custom action that might look like this:
 
-```python3
+```python
 from typing import Text, List, Dict, Any
 
 from rasa_sdk import Action, Tracker
