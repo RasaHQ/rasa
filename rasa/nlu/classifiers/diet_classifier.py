@@ -21,7 +21,7 @@ from rasa.nlu.test import determine_token_labels
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.utils.tensorflow.transformer import TransformerEncoder, MultiHeadAttention
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import (
@@ -1421,6 +1421,24 @@ class DIET(RasaModel):
         self._prepare_dot_product_loss(f"{name}_mask", scale_loss=False)
 
     def _prepare_label_classification_layers(self) -> None:
+        self._tf_layers[f"ffnn.attention.{TEXT}"] = layers.Ffnn(
+            [self.config[TRANSFORMER_SIZE]],
+            self.config[DROP_RATE],
+            self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
+            f"ffnn.attention.{TEXT}",
+        )
+        self._tf_layers[f"{TEXT}_attention"] = MultiHeadAttention(
+            self.config[TRANSFORMER_SIZE],
+            self.config[NUM_HEADS],
+            attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+            sparsity=self.config[WEIGHT_SPARSITY],
+            unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
+            use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+            use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+            max_relative_position=self.config[MAX_RELATIVE_POSITION],
+        )
+
         self._prepare_embed_layers(TEXT)
         self._prepare_embed_layers(LABEL)
 
@@ -1491,7 +1509,7 @@ class DIET(RasaModel):
             if not isinstance(f, tf.SparseTensor):
                 seq_ids = tf.stop_gradient(f)
                 # add a zero to the seq dimension for the sentence features
-                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
+                # seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
                 return seq_ids
 
         # use additional sparse to dense layer
@@ -1501,7 +1519,7 @@ class DIET(RasaModel):
                     self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
                 )
                 # add a zero to the seq dimension for the sentence features
-                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
+                # seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
                 return seq_ids
 
         return None
@@ -1595,6 +1613,7 @@ class DIET(RasaModel):
             sparse_dropout,
             dense_dropout,
         )
+
         x = tf.reduce_sum(x, axis=1)  # convert to bag-of-words
         return self._tf_layers[f"ffnn.{name}"](x, self._training)
 
@@ -1609,40 +1628,44 @@ class DIET(RasaModel):
         dense_dropout: bool = False,
         masked_lm_loss: bool = False,
         sequence_ids: bool = False,
-    ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
+    ) -> Tuple[
+        tf.Tensor, tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]
+    ]:
         if sequence_ids:
             seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
         else:
             seq_ids = None
 
-        inputs = self._combine_sequence_sentence_features(
+        sequence_x = self._combine_sparse_dense_features(
             sequence_features,
-            sentence_features,
+            f"{name}_{SEQUENCE}",
             mask_sequence,
-            mask,
-            name,
             sparse_dropout,
             dense_dropout,
         )
-        inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
+        sentence_x = self._combine_sparse_dense_features(
+            sentence_features, f"{name}_{SENTENCE}", None, sparse_dropout, dense_dropout
+        )
+
+        sequence_x = self._tf_layers[f"ffnn.{name}"](sequence_x, self._training)
 
         if masked_lm_loss:
             transformer_inputs, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
-                inputs, mask, self._training
+                sequence_x, mask_sequence, self._training
             )
         else:
-            transformer_inputs = inputs
+            transformer_inputs = sequence_x
             lm_mask_bool = None
 
         outputs = self._tf_layers[f"{name}_transformer"](
-            transformer_inputs, 1 - mask, self._training
+            transformer_inputs, 1 - mask_sequence, self._training
         )
 
         if self.config[NUM_TRANSFORMER_LAYERS] > 0:
             # apply activation
             outputs = tfa.activations.gelu(outputs)
 
-        return outputs, inputs, seq_ids, lm_mask_bool
+        return outputs, sequence_x, sentence_x, seq_ids, lm_mask_bool
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
@@ -1790,7 +1813,8 @@ class DIET(RasaModel):
 
         (
             text_transformed,
-            text_in,
+            text_sequence_in,
+            text_sentence_in,
             text_seq_ids,
             lm_mask_bool_text,
         ) = self._create_sequence(
@@ -1809,7 +1833,11 @@ class DIET(RasaModel):
 
         if self.config[MASKED_LM]:
             loss, acc = self._mask_loss(
-                text_transformed, text_in, text_seq_ids, lm_mask_bool_text, TEXT
+                text_transformed,
+                text_sequence_in,
+                text_seq_ids,
+                lm_mask_bool_text,
+                TEXT,
             )
             self.mask_loss.update_state(loss)
             self.mask_acc.update_state(acc)
@@ -1817,13 +1845,17 @@ class DIET(RasaModel):
 
         if self.config[INTENT_CLASSIFICATION]:
             loss = self._batch_loss_intent(
-                sequence_lengths, mask_text, text_transformed, tf_batch_data
+                sequence_lengths,
+                mask_text,
+                text_transformed,
+                text_sentence_in,
+                tf_batch_data,
             )
             losses.append(loss)
 
         if self.config[ENTITY_RECOGNITION]:
             losses += self._batch_loss_entities(
-                mask_text, sequence_lengths, text_transformed, tf_batch_data
+                mask_sequence_text, sequence_lengths, text_transformed, tf_batch_data
             )
 
         return tf.math.add_n(losses)
@@ -1833,10 +1865,16 @@ class DIET(RasaModel):
         sequence_lengths: tf.Tensor,
         mask_text: tf.Tensor,
         text_transformed: tf.Tensor,
+        text_in: tf.Tensor,
         tf_batch_data: Dict[Text, List[tf.Tensor]],
     ) -> tf.Tensor:
-        # get sentence features vector for intent classification
-        sentence_vector = self._last_token(text_transformed, sequence_lengths)
+
+        text_in = self._tf_layers[f"ffnn.attention.{TEXT}"](text_in)
+
+        sentence_vector, _ = self._tf_layers[f"{TEXT}_attention"](
+            text_in, text_transformed
+        )
+        sentence_vector = tf.squeeze(sentence_vector, axis=1)
 
         mask_sequence_label = self._get_mask_for(tf_batch_data, LABEL_SEQUENCE_LENGTH)
 
@@ -1876,7 +1914,7 @@ class DIET(RasaModel):
             tag_ids = tf_batch_data[f"{tag_spec.tag_name}_{TAG_IDS}"][0]
             # add a zero (no entity) for the sentence features to match the shape of
             # inputs
-            tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
+            # tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
 
             loss, f1, _logits = self._calculate_entity_loss(
                 text_transformed,
