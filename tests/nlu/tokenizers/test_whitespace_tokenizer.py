@@ -1,5 +1,6 @@
 import pytest
 
+
 from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (

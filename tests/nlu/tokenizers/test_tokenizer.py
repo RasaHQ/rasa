@@ -178,6 +178,7 @@ def test_process_tokenizer(
 @pytest.mark.parametrize(
     "text, expected_tokens", [("action_listen", ["action", "listen"])],
 )
+
 def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
     tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
@@ -216,39 +217,6 @@ def test_process_tokenizer_action_test(text: Text, expected_tokens: List[Text]):
     "text, expected_tokens",
     [("action_listen", ["action","listen"])],
 )
-def test_process_tokenizer_action_name(text, expected_tokens):
-    tk = WhitespaceTokenizer()
-
-    message = Message(text)
-    message.set(MESSAGE_ACTION_NAME, text)
-
-    tk.process(message, MESSAGE_ACTION_NAME)
-
-    tokens = message.get(TOKENS_NAMES[MESSAGE_ACTION_NAME])
-
-    assert [t.text for t in tokens] == expected_tokens
-
-
-@pytest.mark.parametrize(
-    "text, expected_tokens",
-    [("I am hungry", ["I","am", "hungry"])],
-)
-def test_process_tokenizer_action_test(text, expected_tokens):
-    tk = WhitespaceTokenizer()
-
-    message = Message(text)
-    message.set(MESSAGE_ACTION_NAME, text)
-    message.set(ACTION_TEXT, text)
-
-    tk.process(message, ACTION_TEXT)
-
-    tokens = message.get(TOKENS_NAMES[ACTION_TEXT])
-    assert [t.text for t in tokens] == expected_tokens
-
-    message.set(ACTION_TEXT, "")
-    tk.process(message, MESSAGE_ACTION_NAME)
-    tokens = message.get(TOKENS_NAMES[MESSAGE_ACTION_NAME])
-    assert [t.text for t in tokens] == [text]
 
 
 @pytest.mark.parametrize(
