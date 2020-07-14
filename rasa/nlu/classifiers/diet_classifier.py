@@ -21,7 +21,11 @@ from rasa.nlu.test import determine_token_labels
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.transformer import TransformerEncoder, MultiHeadAttention
+from rasa.utils.tensorflow.transformer import (
+    TransformerEncoder,
+    MultiHeadAttention,
+    AttentionLayer,
+)
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import (
@@ -1422,16 +1426,12 @@ class DIET(RasaModel):
         self._prepare_dot_product_loss(f"{name}_mask", scale_loss=False)
 
     def _prepare_label_attention_layers(self) -> None:
-        self._tf_layers[f"ffnn.attention.{TEXT}"] = layers.Ffnn(
-            [self.config[TRANSFORMER_SIZE]],
-            self.config[DROP_RATE],
-            self.config[REGULARIZATION_CONSTANT],
-            self.config[WEIGHT_SPARSITY],
-            f"ffnn.attention.{TEXT}",
-        )
-        self._tf_layers[f"attention.{TEXT}"] = MultiHeadAttention(
+        self._tf_layers[f"attention.{TEXT}"] = AttentionLayer(
             self.config[TRANSFORMER_SIZE],
             self.config[NUM_HEADS],
+            self.config[REGULARIZATION_CONSTANT],
+            f"attention.{TEXT}",
+            dropout_rate=self.config[DROP_RATE],
             attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
             sparsity=self.config[WEIGHT_SPARSITY],
             unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
@@ -1859,9 +1859,7 @@ class DIET(RasaModel):
         text_in: tf.Tensor,
         tf_batch_data: Dict[Text, List[tf.Tensor]],
     ) -> tf.Tensor:
-        text_in = self._tf_layers[f"ffnn.attention.{TEXT}"](text_in)
-
-        sentence_vector, _ = self._tf_layers[f"attention.{TEXT}"](
+        sentence_vector = self._tf_layers[f"attention.{TEXT}"](
             text_in, text_transformed
         )
         sentence_vector = tf.squeeze(sentence_vector, axis=1)
@@ -2009,9 +2007,7 @@ class DIET(RasaModel):
         self, text_transformed: tf.Tensor, text_in: tf.Tensor
     ) -> Dict[Text, tf.Tensor]:
 
-        text_in = self._tf_layers[f"ffnn.attention.{TEXT}"](text_in)
-
-        sentence_vector, _ = self._tf_layers[f"attention.{TEXT}"](
+        sentence_vector = self._tf_layers[f"attention.{TEXT}"](
             text_in, text_transformed
         )
         sentence_vector = tf.squeeze(sentence_vector, axis=1)

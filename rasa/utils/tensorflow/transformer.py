@@ -4,7 +4,7 @@ import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 import numpy as np
-from rasa.utils.tensorflow.layers import DenseWithSparseWeights
+from rasa.utils.tensorflow.layers import DenseWithSparseWeights, Ffnn
 
 
 # from https://www.tensorflow.org/tutorials/text/transformer
@@ -378,6 +378,101 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         output = self._output_dense_layer(attention)  # (batch_size, length, units)
 
         return output, attention_weights
+
+
+class AttentionLayer(tf.keras.layers.Layer):
+    """Attention layer.
+
+    Arguments:
+        units: Positive integer, output dim of hidden layer.
+        num_heads: Positive integer, number of heads
+            to repeat the same attention structure.
+        dropout_rate: Float between 0 and 1; fraction of the input units to drop.
+        attention_dropout_rate: Float, dropout rate inside attention for training.
+        sparsity: Float between 0 and 1. Fraction of the `kernel`
+            weights to set to zero.
+        unidirectional: Boolean, use a unidirectional or bidirectional encoder.
+        use_key_relative_position: Boolean, if 'True' use key
+            relative embeddings in attention.
+        use_value_relative_position: Boolean, if 'True' use value
+            relative embeddings in attention.
+        max_relative_position: Positive integer, max position for relative embeddings.
+        heads_share_relative_embedding: Boolean, if 'True'
+            heads will share relative embeddings.
+    """
+
+    def __init__(
+        self,
+        units: int,
+        num_heads: int,
+        reg_lambda: float,
+        layer_name: Text,
+        dropout_rate: float = 0.1,
+        attention_dropout_rate: float = 0.0,
+        sparsity: float = 0.8,
+        unidirectional: bool = False,
+        use_key_relative_position: bool = False,
+        use_value_relative_position: bool = False,
+        max_relative_position: Optional[int] = None,
+        heads_share_relative_embedding: bool = False,
+    ) -> None:
+        super().__init__()
+
+        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self._mha = MultiHeadAttention(
+            units,
+            num_heads,
+            attention_dropout_rate,
+            sparsity,
+            unidirectional,
+            use_key_relative_position,
+            use_value_relative_position,
+            max_relative_position,
+            heads_share_relative_embedding,
+        )
+        self._dropout = tf.keras.layers.Dropout(dropout_rate)
+        self._ffnn = Ffnn([units], dropout_rate, reg_lambda, sparsity, layer_name)
+
+    # noinspection PyMethodOverriding
+    def call(
+        self,
+        query_input: tf.Tensor,
+        source_input: tf.Tensor,
+        pad_mask: Optional[tf.Tensor] = None,
+        training: Optional[Union[tf.Tensor, bool]] = None,
+    ) -> tf.Tensor:
+        """Apply transformer encoder layer.
+
+        Arguments:
+            query_input: A tensor with shape [batch_size, query_length, input_size].
+            source_input: A tensor with shape [batch_size, source_length, input_size].
+            pad_mask: Float tensor with shape broadcastable
+                to (..., length, length). Defaults to None.
+            training: A bool, whether in training mode or not.
+
+        Returns:
+            Transformer encoder layer output with shape [batch_size, length, units]
+        """
+        if training is None:
+            training = K.learning_phase()
+
+        # make sure query input matches units in last dimension
+        query_input = self._ffnn(query_input, training=training)
+
+        query_input_norm = self._layer_norm(
+            query_input
+        )  # (batch_size, query_length, units)
+        source_input_norm = self._layer_norm(
+            source_input
+        )  # (batch_size, source_length, units)
+        attn_out, _ = self._mha(
+            query_input_norm, source_input_norm, pad_mask=pad_mask, training=training
+        )
+        attn_out = self._dropout(attn_out, training=training)
+
+        query_input += attn_out
+
+        return query_input  # (batch_size, query_length, units)
 
 
 class TransformerEncoderLayer(tf.keras.layers.Layer):
