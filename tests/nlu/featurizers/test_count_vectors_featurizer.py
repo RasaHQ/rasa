@@ -4,7 +4,14 @@ import scipy.sparse
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT, RESPONSE, MESSAGE_ACTION_NAME, ACTION_TEXT
+from rasa.nlu.constants import (
+    TOKENS_NAMES,
+    TEXT,
+    INTENT,
+    RESPONSE,
+    MESSAGE_ACTION_NAME,
+    ACTION_TEXT,
+)
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
@@ -425,7 +432,9 @@ def test_count_vector_featurizer_action_attribute_featurization(
     tk.train(data)
     ftr.train(data)
 
-    action_name_seq_vecs, action_name_sen_vecs = train_message.get_sparse_features(MESSAGE_ACTION_NAME, [])
+    action_name_seq_vecs, action_name_sen_vecs = train_message.get_sparse_features(
+        MESSAGE_ACTION_NAME, []
+    )
     response_seq_vecs, response_sen_vecs = train_message.get_sparse_features(
         ACTION_TEXT, []
     )
@@ -473,10 +482,12 @@ def test_count_vector_featurizer_process_by_attribute(
     test_message.set(ACTION_TEXT, action_text)
 
     for attribute in [TEXT, MESSAGE_ACTION_NAME, ACTION_TEXT]:
-        for module in [tk,ftr]:
+        for module in [tk, ftr]:
             module.process(test_message, attribute=attribute)
 
-    action_name_seq_vecs, action_name_sen_vecs = test_message.get_sparse_features(MESSAGE_ACTION_NAME, [])
+    action_name_seq_vecs, action_name_sen_vecs = test_message.get_sparse_features(
+        MESSAGE_ACTION_NAME, []
+    )
 
     if action_name_features:
         assert action_name_seq_vecs.toarray()[0] == action_name_features

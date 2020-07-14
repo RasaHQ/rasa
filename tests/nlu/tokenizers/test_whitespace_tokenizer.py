@@ -1,5 +1,6 @@
 import pytest
 
+
 from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT, MESSAGE_ACTION_NAME, ACTION_TEXT
@@ -121,18 +122,12 @@ def test_whitespace_training(supervised_embeddings_config):
                 ],
             },
         ),
-        Message(
-            "action_restart",
-            {
-                "action_name": "action_restart"
-            },
-        ),
+        Message("action_restart", {"action_name": "action_restart"},),
         Message(
             "Where are you going?",
             {
                 MESSAGE_ACTION_NAME: "Where are you going?",
-                ACTION_TEXT: "Where are you going?"
-
+                ACTION_TEXT: "Where are you going?",
             },
         ),
     ]
@@ -184,9 +179,15 @@ def test_whitespace_language_suuport(language, error, component_builder):
 
 
 def test_whitespace_processing_with_attribute(supervised_embeddings_config):
-    message = Message("Any Mexican restaurant will do", {"intent": "restaurant_search", "entities": [
-                    {"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}],
-            },)
+    message = Message(
+        "Any Mexican restaurant will do",
+        {
+            "intent": "restaurant_search",
+            "entities": [
+                {"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}
+            ],
+        },
+    )
     expected_tokens_intent = ["restaurant_search"]
     expected_tokens_text = ["any", "mexican", "restaurant", "will", "do"]
     component_config = {"case_sensitive": False}
@@ -198,7 +199,13 @@ def test_whitespace_processing_with_attribute(supervised_embeddings_config):
     assert [t.text for t in tokens_intent] == expected_tokens_intent
     assert [t.text for t in tokens_text] == expected_tokens_text
 
-    message = Message("Where are you going?", {MESSAGE_ACTION_NAME: "Where are you going?", ACTION_TEXT: "Where are you going?"},)
+    message = Message(
+        "Where are you going?",
+        {
+            MESSAGE_ACTION_NAME: "Where are you going?",
+            ACTION_TEXT: "Where are you going?",
+        },
+    )
     expected_action_tokens_text = ["where", "are", "you", "going"]
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
