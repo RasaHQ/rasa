@@ -224,12 +224,13 @@ AI assistants" />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/nlu/entity-extraction/">2.0.0a1</a>
               <a href="../.././1.10.7/nlu/entity-extraction/">1.10.7</a>
               <a href="../.././1.10.6/nlu/entity-extraction/">1.10.6</a>
               <a href="../.././1.10.5/nlu/entity-extraction/">1.10.5</a>
@@ -239,22 +240,8 @@ AI assistants" />
               <a href="../.././1.10.1/nlu/entity-extraction/">1.10.1</a>
               <a href="../.././1.10.0/nlu/entity-extraction/">1.10.0</a>
               <a href="../.././1.9.7/nlu/entity-extraction/">1.9.7</a>
-              <a href="../.././1.9.6/nlu/entity-extraction/">1.9.6</a>
-              <a href="../.././1.9.5/nlu/entity-extraction/">1.9.5</a>
-              <a href="../.././1.9.4/nlu/entity-extraction/">1.9.4</a>
-              <a href="../.././1.9.3/nlu/entity-extraction/">1.9.3</a>
-              <a href="../.././1.9.2/nlu/entity-extraction/">1.9.2</a>
-              <a href="../.././1.9.1/nlu/entity-extraction/">1.9.1</a>
-              <a href="../.././1.9.0/nlu/entity-extraction/">1.9.0</a>
               <a href="../.././1.8.3/nlu/entity-extraction/">1.8.3</a>
-              <a href="../.././1.8.2/nlu/entity-extraction/">1.8.2</a>
-              <a href="../.././1.8.1/nlu/entity-extraction/">1.8.1</a>
-              <a href="../.././1.8.0/nlu/entity-extraction/">1.8.0</a>
               <a href="../.././1.7.4/nlu/entity-extraction/">1.7.4</a>
-              <a href="../.././1.7.3/nlu/entity-extraction/">1.7.3</a>
-              <a href="../.././1.7.2/nlu/entity-extraction/">1.7.2</a>
-              <a href="../.././1.7.1/nlu/entity-extraction/">1.7.1</a>
-              <a href="../.././1.7.0/nlu/entity-extraction/">1.7.0</a>
               <a href="../.././1.6.2/nlu/entity-extraction/">1.6.2</a>
               <a href="../.././1.5.3/nlu/entity-extraction/">1.5.3</a>
               <a href="../.././1.4.6/nlu/entity-extraction/">1.4.6</a>
@@ -384,9 +371,9 @@ exactly. Instead it will return the trained synonym.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">confidence</span></code> will be set by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component. The
+<p>The <code class="docutils literal notranslate"><span class="pre">confidence</span></code> will be set by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> and the <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> component. The
 <code class="docutils literal notranslate"><span class="pre">DucklingHTTPExtractor</span></code> will always return <code class="docutils literal notranslate"><span class="pre">1</span></code>. The <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> extractor
-and <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> do not provide this information and return <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
+does not provide this information and returns <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
 </div>
 <p>Some extractors, like <code class="docutils literal notranslate"><span class="pre">duckling</span></code>, may include additional information. For example:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
@@ -495,7 +482,7 @@ For example, you should not only have example like <code class="docutils literal
 <h2><a class="toc-backref" href="#id5">Extracting Places, Dates, People, Organizations</a><a class="headerlink" href="#extracting-places-dates-people-organizations" title="Permalink to this headline">¶</a></h2>
 <p>spaCy has excellent pre-trained named-entity recognizers for a few different languages.
 You can test them out in this
-<a class="reference external" href="https://demos.explosion.ai/displacy-ent/">interactive demo</a>.
+<a class="reference external" href="https://explosion.ai/demos/displacy-ent">interactive demo</a>.
 We don’t recommend that you try to train your own NER using spaCy,
 unless you have a lot of data and know what you are doing.
 Note that some spaCy models are highly case-sensitive.</p>

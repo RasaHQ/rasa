@@ -220,12 +220,13 @@ your conversation fail gracefully with open source dialogue management." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/core/fallback-actions/">2.0.0a1</a>
               <a href="../.././1.10.7/core/fallback-actions/">1.10.7</a>
               <a href="../.././1.10.6/core/fallback-actions/">1.10.6</a>
               <a href="../.././1.10.5/core/fallback-actions/">1.10.5</a>
@@ -235,22 +236,8 @@ your conversation fail gracefully with open source dialogue management." />
               <a href="../.././1.10.1/core/fallback-actions/">1.10.1</a>
               <a href="../.././1.10.0/core/fallback-actions/">1.10.0</a>
               <a href="../.././1.9.7/core/fallback-actions/">1.9.7</a>
-              <a href="../.././1.9.6/core/fallback-actions/">1.9.6</a>
-              <a href="../.././1.9.5/core/fallback-actions/">1.9.5</a>
-              <a href="../.././1.9.4/core/fallback-actions/">1.9.4</a>
-              <a href="../.././1.9.3/core/fallback-actions/">1.9.3</a>
-              <a href="../.././1.9.2/core/fallback-actions/">1.9.2</a>
-              <a href="../.././1.9.1/core/fallback-actions/">1.9.1</a>
-              <a href="../.././1.9.0/core/fallback-actions/">1.9.0</a>
               <a href="../.././1.8.3/core/fallback-actions/">1.8.3</a>
-              <a href="../.././1.8.2/core/fallback-actions/">1.8.2</a>
-              <a href="../.././1.8.1/core/fallback-actions/">1.8.1</a>
-              <a href="../.././1.8.0/core/fallback-actions/">1.8.0</a>
               <a href="../.././1.7.4/core/fallback-actions/">1.7.4</a>
-              <a href="../.././1.7.3/core/fallback-actions/">1.7.3</a>
-              <a href="../.././1.7.2/core/fallback-actions/">1.7.2</a>
-              <a href="../.././1.7.1/core/fallback-actions/">1.7.1</a>
-              <a href="../.././1.7.0/core/fallback-actions/">1.7.0</a>
               <a href="../.././1.6.2/core/fallback-actions/">1.6.2</a>
               <a href="../.././1.5.3/core/fallback-actions/">1.5.3</a>
               <a href="../.././1.4.6/core/fallback-actions/">1.4.6</a>
@@ -299,13 +286,15 @@ policy ensemble.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> has one fallback action, which will
 be executed if the intent recognition has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>
 or if none of the dialogue policies predict an action with
-confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</p>
+confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code> or if the highest ranked intent differs in
+confidence with the second highest ranked intent by less than <code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code>.</p>
 <p>The thresholds and fallback action can be adjusted in the policy configuration
 file as parameters of the <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code>.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policies</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;FallbackPolicy&quot;</span>
     <span class="nt">nlu_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.4</span>
     <span class="nt">core_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="nt">ambiguity_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
     <span class="nt">fallback_action_name</span><span class="p">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
 </pre></div>
 </div>
@@ -330,6 +319,7 @@ your policy configuration file. For example:</p>
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;FallbackPolicy&quot;</span>
     <span class="nt">nlu_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.4</span>
     <span class="nt">core_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="nt">ambiguity_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
     <span class="nt">fallback_action_name</span><span class="p">:</span> <span class="s">&quot;my_fallback_action&quot;</span>
 </pre></div>
 </div>
@@ -399,6 +389,7 @@ policy configuration file.</p>
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TwoStageFallbackPolicy</span>
     <span class="nt">nlu_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
     <span class="nt">core_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="nt">ambiguity_threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
     <span class="nt">fallback_core_action_name</span><span class="p">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
     <span class="nt">fallback_nlu_action_name</span><span class="p">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
     <span class="nt">deny_suggestion_intent_name</span><span class="p">:</span> <span class="s">&quot;out_of_scope&quot;</span>

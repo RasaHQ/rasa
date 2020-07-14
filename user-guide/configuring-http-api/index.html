@@ -220,12 +220,13 @@ with your backend components." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/user-guide/configuring-http-api/">2.0.0a1</a>
               <a href="../.././1.10.7/user-guide/configuring-http-api/">1.10.7</a>
               <a href="../.././1.10.6/user-guide/configuring-http-api/">1.10.6</a>
               <a href="../.././1.10.5/user-guide/configuring-http-api/">1.10.5</a>
@@ -235,22 +236,8 @@ with your backend components." />
               <a href="../.././1.10.1/user-guide/configuring-http-api/">1.10.1</a>
               <a href="../.././1.10.0/user-guide/configuring-http-api/">1.10.0</a>
               <a href="../.././1.9.7/user-guide/configuring-http-api/">1.9.7</a>
-              <a href="../.././1.9.6/user-guide/configuring-http-api/">1.9.6</a>
-              <a href="../.././1.9.5/user-guide/configuring-http-api/">1.9.5</a>
-              <a href="../.././1.9.4/user-guide/configuring-http-api/">1.9.4</a>
-              <a href="../.././1.9.3/user-guide/configuring-http-api/">1.9.3</a>
-              <a href="../.././1.9.2/user-guide/configuring-http-api/">1.9.2</a>
-              <a href="../.././1.9.1/user-guide/configuring-http-api/">1.9.1</a>
-              <a href="../.././1.9.0/user-guide/configuring-http-api/">1.9.0</a>
               <a href="../.././1.8.3/user-guide/configuring-http-api/">1.8.3</a>
-              <a href="../.././1.8.2/user-guide/configuring-http-api/">1.8.2</a>
-              <a href="../.././1.8.1/user-guide/configuring-http-api/">1.8.1</a>
-              <a href="../.././1.8.0/user-guide/configuring-http-api/">1.8.0</a>
               <a href="../.././1.7.4/user-guide/configuring-http-api/">1.7.4</a>
-              <a href="../.././1.7.3/user-guide/configuring-http-api/">1.7.3</a>
-              <a href="../.././1.7.2/user-guide/configuring-http-api/">1.7.2</a>
-              <a href="../.././1.7.1/index/">1.7.1</a>
-              <a href="../.././1.7.0/index/">1.7.0</a>
               <a href="../.././1.6.2/index/">1.6.2</a>
               <a href="../.././1.5.3/index/">1.5.3</a>
               <a href="../.././1.4.6/index/">1.4.6</a>
@@ -450,10 +437,11 @@ as a parameter:</p>
 Requests to the server need to contain a valid JWT token in
 the <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header that is signed using this secret
 and the <code class="docutils literal notranslate"><span class="pre">HS256</span></code> algorithm.</p>
-<p>The user must have <code class="docutils literal notranslate"><span class="pre">username</span></code> and <code class="docutils literal notranslate"><span class="pre">role</span></code> attributes.
+<p>The token’s payload must contain an object under the <code class="docutils literal notranslate"><span class="pre">user</span></code> key,
+which in turn must contain the <code class="docutils literal notranslate"><span class="pre">username</span></code> and <code class="docutils literal notranslate"><span class="pre">role</span></code> attributes.
 If the <code class="docutils literal notranslate"><span class="pre">role</span></code> is <code class="docutils literal notranslate"><span class="pre">admin</span></code>, all endpoints are accessible.
 If the <code class="docutils literal notranslate"><span class="pre">role</span></code> is <code class="docutils literal notranslate"><span class="pre">user</span></code>, endpoints with a <code class="docutils literal notranslate"><span class="pre">sender_id</span></code> parameter are only accessible
-if the <code class="docutils literal notranslate"><span class="pre">sender_id</span></code> matches the user’s <code class="docutils literal notranslate"><span class="pre">username</span></code>.</p>
+if the <code class="docutils literal notranslate"><span class="pre">sender_id</span></code> matches the payload’s <code class="docutils literal notranslate"><span class="pre">username</span></code> property.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run <span class="se">\</span>
     -m models <span class="se">\</span>
     --enable-api <span class="se">\</span>
@@ -468,6 +456,16 @@ if the <code class="docutils literal notranslate"><span class="pre">sender_id</s
                  &quot;Gl8eZFVfKXA6jhncgRn-I&quot;
 </pre></div>
 </div>
+<p>The following is an example payload for a JWT token:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;user&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;username&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;sender_id&gt;&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>To create and encode the token, you can use tools such as the <a class="reference external" href="https://jwt.io/">JWT Debugger</a>, or a Python module such as <a class="reference external" href="https://pyjwt.readthedocs.io/en/latest/">PyJWT</a>.</p>
 </div>
 <div class="section" id="endpoint-configuration">
 <h2><a class="toc-backref" href="#id6">Endpoint Configuration</a><a class="headerlink" href="#endpoint-configuration" title="Permalink to this headline">¶</a></h2>

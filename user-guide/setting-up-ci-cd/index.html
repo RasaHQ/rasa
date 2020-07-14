@@ -220,12 +220,13 @@ and deployed with minimum manual effort" />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/user-guide/setting-up-ci-cd/">2.0.0a1</a>
               <a href="../.././1.10.7/user-guide/setting-up-ci-cd/">1.10.7</a>
               <a href="../.././1.10.6/user-guide/setting-up-ci-cd/">1.10.6</a>
               <a href="../.././1.10.5/user-guide/setting-up-ci-cd/">1.10.5</a>
@@ -235,22 +236,8 @@ and deployed with minimum manual effort" />
               <a href="../.././1.10.1/user-guide/setting-up-ci-cd/">1.10.1</a>
               <a href="../.././1.10.0/user-guide/setting-up-ci-cd/">1.10.0</a>
               <a href="../.././1.9.7/user-guide/setting-up-ci-cd/">1.9.7</a>
-              <a href="../.././1.9.6/user-guide/setting-up-ci-cd/">1.9.6</a>
-              <a href="../.././1.9.5/index/">1.9.5</a>
-              <a href="../.././1.9.4/index/">1.9.4</a>
-              <a href="../.././1.9.3/index/">1.9.3</a>
-              <a href="../.././1.9.2/index/">1.9.2</a>
-              <a href="../.././1.9.1/index/">1.9.1</a>
-              <a href="../.././1.9.0/index/">1.9.0</a>
               <a href="../.././1.8.3/index/">1.8.3</a>
-              <a href="../.././1.8.2/index/">1.8.2</a>
-              <a href="../.././1.8.1/index/">1.8.1</a>
-              <a href="../.././1.8.0/index/">1.8.0</a>
               <a href="../.././1.7.4/index/">1.7.4</a>
-              <a href="../.././1.7.3/index/">1.7.3</a>
-              <a href="../.././1.7.2/index/">1.7.2</a>
-              <a href="../.././1.7.1/index/">1.7.1</a>
-              <a href="../.././1.7.0/index/">1.7.0</a>
               <a href="../.././1.6.2/index/">1.6.2</a>
               <a href="../.././1.5.3/index/">1.5.3</a>
               <a href="../.././1.4.6/index/">1.4.6</a>
@@ -322,13 +309,13 @@ to your assistant and efficiently test and deploy those changes.</p>
 <p>This guide will cover <strong>what</strong> should go in a CI/CD pipeline, specific to a
 Rasa project. <strong>How</strong> you implement that pipeline is up to you.
 There are many CI/CD tools out there, such as <a class="reference external" href="https://github.com/features/actions">GitHub Actions</a>,
-<a class="reference external" href="https://docs.gitlab.com/ee/ci/">GitLab CI/CD</a>, <a class="reference external" href="https://jenkins.io/doc/">Jenkins</a>, and
+<a class="reference external" href="https://docs.gitlab.com/ee/ci/">GitLab CI/CD</a>, <a class="reference external" href="https://www.jenkins.io/doc/">Jenkins</a>, and
 <a class="reference external" href="https://circleci.com/docs/2.0/">CircleCI</a>. We recommend choosing a tool that integrates with
 whatever Git repository you use.</p>
 </div>
 <div class="section" id="continuous-integration-ci">
 <h2><a class="toc-backref" href="#id7">Continuous Integration (CI)</a><a class="headerlink" href="#continuous-integration-ci" title="Permalink to this headline">¶</a></h2>
-<p>The best way to improve an assistant is with frequent <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/improve-assistant/">incremental updates</a>.
+<p>The best way to improve an assistant is with frequent <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/fix-problems">incremental updates</a>.
 No matter how small a change is, you want to be sure that it doesn’t introduce
 new problems or negatively impact the performance of your assistant.</p>
 <p>It is usually best to run CI checks on merge / pull requests or on commit. Most tests are
@@ -391,7 +378,7 @@ conversation fails.</p>
 cases you include, so you should continue to grow your set of test conversations
 as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test conversations
 to be representative of the true distribution of real conversations.
-Rasa X makes it easy to <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/improve-assistant.html#add-test-conversation">add test conversations based on real conversations</a>.</p>
+Rasa X makes it easy to <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests">add test conversations based on real conversations</a>.</p>
 <p>Note: End-to-end testing does <strong>not</strong> execute your action code. You will need to
 <a class="reference internal" href="#testing-action-code"><span class="std std-ref">test your action code</span></a> in a seperate step.</p>
 </div>
@@ -471,7 +458,7 @@ would be incompatible with the current production model.</p>
 <p>As examples, see the CI/CD pipelines for
 <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/.github/workflows/build_and_deploy.yml">Sara</a>,
 the Rasa assistant that you can talk to in the Rasa Docs, and
-<a class="reference external" href="https://github.com/RasaHQ/carbon-assistant/blob/master/.github/workflows/model_ci.yml">Carbon Bot</a>.
+<a class="reference external" href="https://github.com/RasaHQ/carbon-bot/blob/master/.github/workflows/model_ci.yml">Carbon Bot</a>.
 Both use <a class="reference external" href="https://github.com/features/actions">Github Actions</a> as a CI/CD tool.</p>
 <p>These examples are just two of many possibilities. If you have a CI/CD setup you like, please
 share it with the Rasa community on the <a class="reference external" href="https://forum.rasa.com">forum</a>.</p>

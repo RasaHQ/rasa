@@ -216,12 +216,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././2.0.0a1/user-guide/connectors/facebook-messenger/">2.0.0a1</a>
               <a href="../../.././1.10.7/user-guide/connectors/facebook-messenger/">1.10.7</a>
               <a href="../../.././1.10.6/user-guide/connectors/facebook-messenger/">1.10.6</a>
               <a href="../../.././1.10.5/user-guide/connectors/facebook-messenger/">1.10.5</a>
@@ -231,22 +232,8 @@
               <a href="../../.././1.10.1/user-guide/connectors/facebook-messenger/">1.10.1</a>
               <a href="../../.././1.10.0/user-guide/connectors/facebook-messenger/">1.10.0</a>
               <a href="../../.././1.9.7/user-guide/connectors/facebook-messenger/">1.9.7</a>
-              <a href="../../.././1.9.6/user-guide/connectors/facebook-messenger/">1.9.6</a>
-              <a href="../../.././1.9.5/user-guide/connectors/facebook-messenger/">1.9.5</a>
-              <a href="../../.././1.9.4/user-guide/connectors/facebook-messenger/">1.9.4</a>
-              <a href="../../.././1.9.3/user-guide/connectors/facebook-messenger/">1.9.3</a>
-              <a href="../../.././1.9.2/user-guide/connectors/facebook-messenger/">1.9.2</a>
-              <a href="../../.././1.9.1/user-guide/connectors/facebook-messenger/">1.9.1</a>
-              <a href="../../.././1.9.0/user-guide/connectors/facebook-messenger/">1.9.0</a>
               <a href="../../.././1.8.3/user-guide/connectors/facebook-messenger/">1.8.3</a>
-              <a href="../../.././1.8.2/user-guide/connectors/facebook-messenger/">1.8.2</a>
-              <a href="../../.././1.8.1/user-guide/connectors/facebook-messenger/">1.8.1</a>
-              <a href="../../.././1.8.0/user-guide/connectors/facebook-messenger/">1.8.0</a>
               <a href="../../.././1.7.4/user-guide/connectors/facebook-messenger/">1.7.4</a>
-              <a href="../../.././1.7.3/user-guide/connectors/facebook-messenger/">1.7.3</a>
-              <a href="../../.././1.7.2/user-guide/connectors/facebook-messenger/">1.7.2</a>
-              <a href="../../.././1.7.1/user-guide/connectors/facebook-messenger/">1.7.1</a>
-              <a href="../../.././1.7.0/user-guide/connectors/facebook-messenger/">1.7.0</a>
               <a href="../../.././1.6.2/user-guide/connectors/facebook-messenger/">1.6.2</a>
               <a href="../../.././1.5.3/user-guide/connectors/facebook-messenger/">1.5.3</a>
               <a href="../../.././1.4.6/user-guide/connectors/facebook-messenger/">1.4.6</a>
@@ -340,6 +327,75 @@ entry in your <code class="docutils literal notranslate"><span class="pre">crede
 the host and port with the appropriate values. This is the URL
 you should add in the configuration of the webhook.</p>
 </div>
+</div>
+<div class="section" id="supported-response-attachments">
+<h2>Supported response attachments<a class="headerlink" href="#supported-response-attachments" title="Permalink to this headline">¶</a></h2>
+<p>In addition to typical text, image, and custom responses, the Facebook Messenger
+channel supports the following additional response template attachments:</p>
+<ul>
+<li><p><a class="reference external" href="https://developers.facebook.com/docs/messenger-platform/send-messages/buttons">Buttons</a>
+are structured the same as other Rasa buttons. Facebook API limits the amount of
+buttons you can sent in a message to 3. If more than 3 buttons are provided in a
+message, Rasa will ignore all provided buttons.</p></li>
+<li><p><a class="reference external" href="https://developers.facebook.com/docs/messenger-platform/send-messages/quick-replies">Quick Replies</a>
+provide a way to present a set of up to 13 buttons in-conversation that contain a
+title and optional image, and appear prominently above the composer. You can also
+use quick replies to request a person’s email address or phone number.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">utter_fb_quick_reply_example</span><span class="p">:</span>
+   <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Hello World!</span>
+     <span class="nt">quick_replies</span><span class="p">:</span>
+       <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Text quick reply</span>
+         <span class="nt">payload</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/example_intent</span>
+       <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Image quick reply</span>
+         <span class="nt">payload</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/example_intent</span>
+         <span class="nt">image_url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://example.com/img/red.png</span>
+       <span class="c1"># below are Facebook provided quick replies</span>
+       <span class="c1"># the title and payload will be filled</span>
+       <span class="c1"># with the user&#39;s information from their profile</span>
+       <span class="p p-Indicator">-</span> <span class="nt">content_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">user_email</span>
+         <span class="nt">title</span><span class="p">:</span>
+         <span class="nt">payload</span><span class="p">:</span>
+       <span class="p p-Indicator">-</span> <span class="nt">content_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">user_phone_number</span>
+         <span class="nt">title</span><span class="p">:</span>
+         <span class="nt">payload</span><span class="p">:</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Both Quick Reply and Button titles in Facebook Messenger have a character limit of
+20. Titles longer than 20 characters will be truncated.</p>
+</div>
+<ul>
+<li><p><a class="reference external" href="https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic">Elements</a>
+provide a way to create a horizontally scrollable list up to 10 content elements that
+integrate buttons, images, and more alongside text a single message.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">utter_fb_element_example</span><span class="p">:</span>
+   <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Hello World!</span>
+     <span class="nt">elements</span><span class="p">:</span>
+       <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Element Title 1</span>
+         <span class="nt">subtitle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Subtitles are supported</span>
+         <span class="nt">buttons</span><span class="p">:</span> <span class="c1"># note the button limit still applies here</span>
+           <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Example button A</span>
+             <span class="nt">payload</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/example_intent</span>
+           <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Example button B</span>
+             <span class="nt">payload</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/example_intent</span>
+           <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Example button C</span>
+             <span class="nt">payload</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/example_intent</span>
+       <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Element Title 2</span>
+         <span class="nt">image_url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://example.com/img/red.png</span>
+         <span class="nt">buttons</span><span class="p">:</span>
+           <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Example button D</span>
+             <span class="nt">payload</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/example_intent</span>
+           <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Example button E</span>
+             <span class="nt">payload</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/example_intent</span>
+           <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Example button F</span>
+             <span class="nt">payload</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/example_intent</span>
+</pre></div>
+</div>
+</li>
+</ul>
 </div>
 </div>
 
