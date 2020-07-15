@@ -49,6 +49,9 @@ install-mitie:
 install-full: install install-mitie
 	poetry install -E full
 
+install-docs:
+	cd newdocs/ && yarn install
+
 formatter:
 	poetry run black rasa tests
 
