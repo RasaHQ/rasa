@@ -18,7 +18,7 @@ def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
     assert os.path.exists("./workspace/data/stories.md")
 
 
-def test_not_fount_init_path(run: Callable[..., RunResult]):
+def test_not_found_init_path(run: Callable[..., RunResult]):
     output = run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
 
     assert (

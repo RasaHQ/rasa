@@ -42,11 +42,12 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
     print_success("Finished creating project structure.")
 
-    should_train = (
-        questionary.confirm("Do you want to train an initial model? 💪🏽")
-        .skip_if(args.no_prompt, default=True)
-        .ask()
-    )
+    if args.no_prompt:
+        should_train = True
+    else:
+        should_train = (
+            questionary.confirm("Do you want to train an initial model? 💪🏽").ask()
+        )
 
     if should_train:
         print_success("Training an initial model...")
@@ -70,13 +71,14 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
     from rasa.core import constants
     import questionary
 
-    should_run = (
-        questionary.confirm(
-            "Do you want to speak to the trained assistant on the command line? 🤖"
+    if args.no_prompt:
+        should_run = False
+    else:
+        should_run = (
+            questionary.confirm(
+                "Do you want to speak to the trained assistant on the command line? 🤖"
+            ).ask()
         )
-        .skip_if(args.no_prompt, default=False)
-        .ask()
-    )
 
     if should_run:
         # provide defaults for command line arguments
@@ -180,15 +182,15 @@ def run(args: argparse.Namespace) -> None:
 
     if args.init_dir is not None:
         path = args.init_dir
+    elif args.no_prompt:
+        path = "."
     else:
         path = (
             questionary.text(
                 "Please enter a path where the project will be "
                 "created [default: current directory]",
                 default=".",
-            )
-            .skip_if(args.no_prompt, default=".")
-            .ask()
+            ).ask()
         )
 
     if args.no_prompt and not os.path.isdir(path):

@@ -1,6 +1,6 @@
 from typing import Callable
 from _pytest.pytester import RunResult
-
+import pytest
 
 def test_cli_start(run: Callable[..., RunResult]):
     """
@@ -30,6 +30,9 @@ def test_data_convert_help(run: Callable[..., RunResult]):
         assert output.outlines[i] == line
 
 
+# Windows output doesn't contain all this information,
+# so we execute this test only on Linux/MacOS
+@pytest.mark.unix
 def test_version_print_lines(run: Callable[..., RunResult]):
     output = run("--version")
     output_text = "".join(output.outlines)

@@ -1272,6 +1272,13 @@ class SessionStarted(Event):
 
     type_name = "session_started"
 
+    def __init__(
+        self,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        super().__init__(timestamp, metadata)
+
     def __hash__(self) -> int:
         return hash(32143124320)
 
