@@ -68,6 +68,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
     FEATURIZERS,
+    CHECKPOINT_MODEL,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -76,7 +77,6 @@ from rasa.nlu.constants import (
     INTENT,
     DEFAULT_OPEN_UTTERANCE_TYPE,
     TEXT,
-    CHECKPOINT_MODEL,
 )
 
 from rasa.utils.tensorflow.model_data import RasaModelData

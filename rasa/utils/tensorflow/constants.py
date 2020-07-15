@@ -71,3 +71,4 @@ TENSORBOARD_LOG_DIR = "tensorboard_log_directory"
 TENSORBOARD_LOG_LEVEL = "tensorboard_log_level"
 
 FEATURIZERS = "featurizers"
+CHECKPOINT_MODEL = "checkpoint_model"

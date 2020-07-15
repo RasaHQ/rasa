@@ -33,7 +33,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    CHECKPOINT_MODEL,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.nlu.training_data import TrainingData
@@ -84,6 +83,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_LEVEL,
     FEATURIZERS,
+    CHECKPOINT_MODEL,
 )
 
 
