@@ -48,16 +48,17 @@ jobs:
     - name: Install Dependencies 📦
       run: make install
 
-    - name: Build & Publish Docs 🏃‍♀️
-      env:
-        GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
-      run: |
-        eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
-        echo "$GITHUB_DOCS_KEY" > "docs_key"
-        ssh-add docs_key
+    # FIXME: https://github.com/RasaHQ/rasa/issues/6166
+    # - name: Build & Publish Docs 🏃‍♀️
+    #   env:
+    #     GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
+    #   run: |
+    #     eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
+    #     echo "$GITHUB_DOCS_KEY" > "docs_key"
+    #     ssh-add docs_key
 
-        git config --global user.email "builds@github-ci.com"
-        git config --global user.name "GitHub CI"
-        git remote set-url --push origin "git@github.com:${{github.repository}}"
+    #     git config --global user.email "builds@github-ci.com"
+    #     git config --global user.name "GitHub CI"
+    #     git remote set-url --push origin "git@github.com:${{github.repository}}"
 
-        poetry run sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
+    #     poetry run sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
