@@ -11,7 +11,7 @@ The ``ReminderScheduled`` event and the
 `trigger_intent endpoint <../../api/http-api/#operation/triggerConversationIntent>`_ let your assistant remind you
 about things after a given period of time, or to respond to external events (other applications, sensors, etc.).
 You can find a full example assistant that implements these features
-`here <https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md>`_.
+`here <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_.
 
 .. contents::
    :local:
@@ -75,7 +75,7 @@ But here we want to make use of the fact that the reminder can carry entities, a
 
   Reminders currently (Rasa 1.8) don't work in `rasa shell`.
   You have to test them with a
-  `running Rasa X server <https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/>`_ instead.
+  `running Rasa X server <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ instead.
 
 .. note::
 

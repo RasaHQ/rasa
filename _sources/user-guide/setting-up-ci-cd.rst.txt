@@ -28,7 +28,7 @@ to your assistant and efficiently test and deploy those changes.
 This guide will cover **what** should go in a CI/CD pipeline, specific to a
 Rasa project. **How** you implement that pipeline is up to you.
 There are many CI/CD tools out there, such as `GitHub Actions <https://github.com/features/actions>`_,
-`GitLab CI/CD <https://docs.gitlab.com/ee/ci/>`_, `Jenkins <https://www.jenkins.io/doc/>`_, and
+`GitLab CI/CD <https://docs.gitlab.com/ee/ci/>`_, `Jenkins <https://jenkins.io/doc/>`_, and
 `CircleCI <https://circleci.com/docs/2.0/>`_. We recommend choosing a tool that integrates with
 whatever Git repository you use.
 
@@ -37,7 +37,7 @@ Continuous Integration (CI)
 ---------------------------
 
 The best way to improve an assistant is with frequent `incremental updates
-<https://rasa.com/docs/rasa-x/user-guide/fix-problems>`_.
+<https://rasa.com/docs/rasa-x/user-guide/improve-assistant/>`_.
 No matter how small a change is, you want to be sure that it doesn't introduce
 new problems or negatively impact the performance of your assistant.
 
@@ -110,7 +110,7 @@ End-to-end testing is only as thorough and accurate as the test
 cases you include, so you should continue to grow your set of test conversations
 as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test conversations
 to be representative of the true distribution of real conversations.
-Rasa X makes it easy to `add test conversations based on real conversations <https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests>`_.
+Rasa X makes it easy to `add test conversations based on real conversations <https://rasa.com/docs/rasa-x/user-guide/improve-assistant.html#add-test-conversation>`_.
 
 Note: End-to-end testing does **not** execute your action code. You will need to
 :ref:`test your action code <testing-action-code>` in a seperate step.
@@ -208,7 +208,7 @@ Example CI/CD pipelines
 As examples, see the CI/CD pipelines for
 `Sara <https://github.com/RasaHQ/rasa-demo/blob/master/.github/workflows/build_and_deploy.yml>`_,
 the Rasa assistant that you can talk to in the Rasa Docs, and
-`Carbon Bot <https://github.com/RasaHQ/carbon-bot/blob/master/.github/workflows/model_ci.yml>`_.
+`Carbon Bot <https://github.com/RasaHQ/carbon-assistant/blob/master/.github/workflows/model_ci.yml>`_.
 Both use `Github Actions <https://github.com/features/actions>`_ as a CI/CD tool.
 
 These examples are just two of many possibilities. If you have a CI/CD setup you like, please

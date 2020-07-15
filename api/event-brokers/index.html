@@ -220,13 +220,12 @@ you to stream events to a message broker." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 2.0.0a1
+          viewing: 1.10.7
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
-              <a href="../.././2.0.0a1/api/event-brokers/">2.0.0a1</a>
               <a href="../.././1.10.7/api/event-brokers/">1.10.7</a>
               <a href="../.././1.10.6/api/event-brokers/">1.10.6</a>
               <a href="../.././1.10.5/api/event-brokers/">1.10.5</a>
@@ -236,8 +235,22 @@ you to stream events to a message broker." />
               <a href="../.././1.10.1/api/event-brokers/">1.10.1</a>
               <a href="../.././1.10.0/api/event-brokers/">1.10.0</a>
               <a href="../.././1.9.7/api/event-brokers/">1.9.7</a>
+              <a href="../.././1.9.6/api/event-brokers/">1.9.6</a>
+              <a href="../.././1.9.5/api/event-brokers/">1.9.5</a>
+              <a href="../.././1.9.4/api/event-brokers/">1.9.4</a>
+              <a href="../.././1.9.3/api/event-brokers/">1.9.3</a>
+              <a href="../.././1.9.2/api/event-brokers/">1.9.2</a>
+              <a href="../.././1.9.1/api/event-brokers/">1.9.1</a>
+              <a href="../.././1.9.0/api/event-brokers/">1.9.0</a>
               <a href="../.././1.8.3/api/event-brokers/">1.8.3</a>
+              <a href="../.././1.8.2/api/event-brokers/">1.8.2</a>
+              <a href="../.././1.8.1/api/event-brokers/">1.8.1</a>
+              <a href="../.././1.8.0/api/event-brokers/">1.8.0</a>
               <a href="../.././1.7.4/api/event-brokers/">1.7.4</a>
+              <a href="../.././1.7.3/api/event-brokers/">1.7.3</a>
+              <a href="../.././1.7.2/api/event-brokers/">1.7.2</a>
+              <a href="../.././1.7.1/api/event-brokers/">1.7.1</a>
+              <a href="../.././1.7.0/api/event-brokers/">1.7.0</a>
               <a href="../.././1.6.2/api/event-brokers/">1.6.2</a>
               <a href="../.././1.5.3/api/event-brokers/">1.5.3</a>
               <a href="../.././1.4.6/api/event-brokers/">1.4.6</a>
@@ -278,7 +291,7 @@ you to stream events to a message broker." />
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/api/event-brokers.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><p>An event broker allows you to connect your running assistant to other services that process the data coming
-in from conversations. For example, you could <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment/">connect your live assistant to
+in from conversations. For example, you could <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/existing-deployment/">connect your live assistant to
 Rasa X</a>
 to review and annotate conversations or forward messages to an external analytics
 service. The event broker publishes messages to a message streaming service,
@@ -535,7 +548,7 @@ could look like the following:</p>
 <p>PostgreSQL databases can be used as well:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">event_broker</span><span class="p">:</span>
   <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
-  <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span>
+  <span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span>
   <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5432</span>
   <span class="nt">dialect</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">postgresql</span>
   <span class="nt">username</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myuser</span>

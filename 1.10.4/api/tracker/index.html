@@ -230,7 +230,6 @@ the box." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
-              <a href="../../../2.0.0a1/api/tracker/">2.0.0a1</a>
               <a href="../../../1.10.7/api/tracker/">1.10.7</a>
               <a href="../../../1.10.6/api/tracker/">1.10.6</a>
               <a href="../../../1.10.5/api/tracker/">1.10.5</a>
@@ -240,8 +239,22 @@ the box." />
               <a href="../../../1.10.1/api/tracker/">1.10.1</a>
               <a href="../../../1.10.0/api/tracker/">1.10.0</a>
               <a href="../../../1.9.7/api/tracker/">1.9.7</a>
+              <a href="../../../1.9.6/api/tracker/">1.9.6</a>
+              <a href="../../../1.9.5/api/tracker/">1.9.5</a>
+              <a href="../../../1.9.4/api/tracker/">1.9.4</a>
+              <a href="../../../1.9.3/api/tracker/">1.9.3</a>
+              <a href="../../../1.9.2/api/tracker/">1.9.2</a>
+              <a href="../../../1.9.1/api/tracker/">1.9.1</a>
+              <a href="../../../1.9.0/api/tracker/">1.9.0</a>
               <a href="../../../1.8.3/api/tracker/">1.8.3</a>
+              <a href="../../../1.8.2/api/tracker/">1.8.2</a>
+              <a href="../../../1.8.1/api/tracker/">1.8.1</a>
+              <a href="../../../1.8.0/api/tracker/">1.8.0</a>
               <a href="../../../1.7.4/api/tracker/">1.7.4</a>
+              <a href="../../../1.7.3/api/tracker/">1.7.3</a>
+              <a href="../../../1.7.2/api/tracker/">1.7.2</a>
+              <a href="../../../1.7.1/api/tracker/">1.7.1</a>
+              <a href="../../../1.7.0/api/tracker/">1.7.0</a>
               <a href="../../../1.6.2/api/tracker/">1.6.2</a>
               <a href="../../../1.5.3/api/tracker/">1.5.3</a>
               <a href="../../../1.4.6/api/tracker/">1.4.6</a>
@@ -278,7 +291,7 @@ the box." />
 
 
 
-    <p class="scv-banner"><a href="../../../2.0.0a1/api/tracker/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 2.0.0a1.</a></p>
+    <p class="scv-banner"><a href="../../../1.10.7/api/tracker/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.10.7.</a></p>
 <div class="section" id="tracker">
 <span id="id1"></span><h1>Tracker<a class="headerlink" href="#tracker" title="Permalink to this headline">¶</a></h1>
 
@@ -292,22 +305,10 @@ check out the docs on <a class="reference internal" href="../../core/domains/#se
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/rasa/core/trackers.py" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST DOCSTRING EDITS</a>
   </div><dl class="py class">
 <dt id="rasa.core.trackers.DialogueStateTracker">
-<em class="property">class </em><code class="sig-prename descclassname">rasa.core.trackers.</code><code class="sig-name descname">DialogueStateTracker</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sender_id</span></em>, <em class="sig-param"><span class="n">slots</span></em>, <em class="sig-param"><span class="n">max_event_history</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sender_source</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">is_rule_tracker</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">rasa.core.trackers.</code><code class="sig-name descname">DialogueStateTracker</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sender_id</span></em>, <em class="sig-param"><span class="n">slots</span></em>, <em class="sig-param"><span class="n">max_event_history</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sender_source</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Maintains the state of a conversation.</p>
 <p>The field max_event_history will only give you these last events,
 it can be set in the tracker_store</p>
-<dl class="py method">
-<dt id="rasa.core.trackers.DialogueStateTracker.active_form_name">
-<code class="sig-name descname">active_form_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.active_form_name" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the name of the currently active form.</p>
-<p>Returns: <cite>None</cite> if no active form or the name of the currenly active form.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py method">
 <dt id="rasa.core.trackers.DialogueStateTracker.applied_events">
 <code class="sig-name descname">applied_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.applied_events" title="Permalink to this definition">¶</a></dt>
@@ -448,7 +449,7 @@ the tracker, these events will be replayed to recreate the state.</p>
 
 <dl class="py method">
 <dt id="rasa.core.trackers.DialogueStateTracker.get_last_event_for">
-<code class="sig-name descname">get_last_event_for</code><span class="sig-paren">(</span><em class="sig-param">event_type</em>, <em class="sig-param">action_names_to_exclude=None</em>, <em class="sig-param">skip=0</em>, <em class="sig-param">event_verbosity=&lt;EventVerbosity.APPLIED: 2&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_last_event_for" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_last_event_for</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event_type</span></em>, <em class="sig-param"><span class="n">action_names_to_exclude</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">skip</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_last_event_for" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets the last event of a given type which was actually applied.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -458,7 +459,6 @@ the tracker, these events will be replayed to recreate the state.</p>
 should be excluded from the results. Can be used to skip
 <cite>action_listen</cite> events.</p></li>
 <li><p><strong>skip</strong> – Skips n possible results before return an event.</p></li>
-<li><p><strong>event_verbosity</strong> – Which <cite>EventVerbosity</cite> should be used to search for events.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
