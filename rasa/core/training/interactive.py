@@ -1205,11 +1205,13 @@ async def _correct_entities(
 
     parse_original = latest_message.get("parse_data", {})
     entity_str = _as_md_message(parse_original)
+
     question = questionary.text(
         "Please mark the entities using [value](type) notation", default=entity_str
     )
 
     annotation = await _ask_questions(question, conversation_id, endpoint)
+
     # noinspection PyProtectedMember
     parse_annotated = MarkdownReader().parse_training_example(annotation)
 
@@ -1236,7 +1238,12 @@ def _merge_annotated_and_original_entities(
 
 
 def _is_same_entity_annotation(entity, other) -> Any:
-    return entity["value"] == other["value"] and entity["entity"] == other["entity"]
+    return (
+        entity["value"] == other["value"]
+        and entity["entity"] == other["entity"]
+        and entity.get("group", None) == other.get("group", None)
+        and entity.get("role", None) == other.get("group", None)
+    )
 
 
 async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -> None:
