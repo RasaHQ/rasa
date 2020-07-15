@@ -76,6 +76,7 @@ from rasa.nlu.constants import (
     INTENT,
     DEFAULT_OPEN_UTTERANCE_TYPE,
     TEXT,
+    CHECKPOINT_MODEL,
 )
 
 from rasa.utils.tensorflow.model_data import RasaModelData
@@ -209,6 +210,8 @@ class ResponseSelector(DIETClassifier):
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
+        # Perform model checkpointing
+        CHECKPOINT_MODEL: False,
     }
 
     def __init__(
