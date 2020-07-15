@@ -220,7 +220,7 @@ class CoreDataImporter(TrainingDataImporter):
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         return await self._importer.get_stories(
-            interpreter, template_variables, use_e2e, exclusion_percentage, only_core=True,
+            interpreter, template_variables, use_e2e, exclusion_percentage, 
         )
 
     async def get_config(self) -> Dict:
