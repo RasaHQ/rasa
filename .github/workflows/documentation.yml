@@ -28,6 +28,11 @@ jobs:
       with:
         python-version: 3.6
 
+    - name: Set up Node 12.x 🦙
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+
     - name: Read Poetry Version 🔢
       run: |
         echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
@@ -46,19 +51,19 @@ jobs:
         restore-keys: ${{ runner.os }}-poetry-3.6-non-full
 
     - name: Install Dependencies 📦
-      run: make install
+      run: make install install-docs
 
-    # FIXME: https://github.com/RasaHQ/rasa/issues/6166
-    # - name: Build & Publish Docs 🏃‍♀️
-    #   env:
-    #     GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
-    #   run: |
-    #     eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
-    #     echo "$GITHUB_DOCS_KEY" > "docs_key"
-    #     ssh-add docs_key
+    - name: Build & Publish Docs 🏃‍♀️
+      env:
+        GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
+        DEPLOYMENT_BRANCH: documentation
+      run: |
+        eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
+        echo "$GITHUB_DOCS_KEY" > "docs_key"
+        ssh-add docs_key
 
-    #     git config --global user.email "builds@github-ci.com"
-    #     git config --global user.name "GitHub CI"
-    #     git remote set-url --push origin "git@github.com:${{github.repository}}"
+        git config --global user.email "builds@github-ci.com"
+        git config --global user.name "GitHub CI"
+        git remote set-url --push origin "git@github.com:${{github.repository}}"
 
-    #     poetry run sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
+        cd newdocs && poetry run yarn deploy

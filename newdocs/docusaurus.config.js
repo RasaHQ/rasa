@@ -7,8 +7,8 @@ module.exports = {
   url: 'https://your-docusaurus-test-site.com',
   baseUrl: '/',
   favicon: 'img/favicon.ico',
-  organizationName: 'RasaHQ', // Usually your GitHub org/user name.
-  projectName: 'rasa', // Usually your repo name.
+  organizationName: 'RasaHQ',
+  projectName: 'rasa',
   themeConfig: {
     navbar: {
       title: 'Rasa Open Source',
