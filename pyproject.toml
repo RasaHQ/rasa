@@ -158,7 +158,6 @@ sphinx-tabs = "~1.1.13"
 sphinx-autodoc-typehints = "==1.10.3"
 rasabaster = "^0.7.23"
 pep440-version-utils = "^0.3.0"
-sphinx-markdown-builder = {git = "https://github.com/RasaHQ/sphinx-markdown-builder.git", rev = "convert-docs"}
 
 [tool.poetry.extras]
 spacy = [ "spacy",]

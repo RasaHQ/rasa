@@ -2632,26 +2632,6 @@ type_comments = ["typed-ast (>=1.4.0)"]
 
 [[package]]
 category = "dev"
-description = "sphinx builder that outputs markdown files"
-name = "sphinx-markdown-builder"
-optional = false
-python-versions = "*"
-version = "0.5.4"
-
-[package.dependencies]
-html2text = "*"
-pydash = "*"
-sphinx = "*"
-unify = "*"
-yapf = "*"
-
-[package.source]
-reference = "e053e9f1af57ab56bf0fcfe002405a4cd3d5f761"
-type = "git"
-url = "https://github.com/RasaHQ/sphinx-markdown-builder.git"
-
-[[package]]
-category = "dev"
 description = "Read the Docs theme for Sphinx"
 name = "sphinx-rtd-theme"
 optional = false
