@@ -87,6 +87,8 @@ module.exports = {
         docs: {
           // It is recommended to set document id as docs home page (`docs/` path).
           homePageId: 'index',
+          // https://v2.docusaurus.io/docs/next/docs-introduction/#docs-only-mode
+          routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
           remarkPlugins: [[remarkCollapse, { test: '' }], remarkSources],
