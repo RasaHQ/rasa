@@ -36,13 +36,19 @@ class SlackBot(OutputChannel):
     def _get_text_from_slack_buttons(buttons: List[Dict]) -> Text:
         return "".join([b.get("title", "") for b in buttons])
 
+    async def _post_message(self, **kwargs: Any):
+        if self.ts:
+            await self.client.chat_postMessage(**kwargs, thread_ts=self.ts)
+        else:
+            await self.client.chat_postMessage(**kwargs)
+
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
         for message_part in text.strip().split("\n\n"):
             await self._post_message(
-                channel=recipient, as_user=True, text=message_part, type="mrkdwn"
+                channel=recipient, as_user=True, text=message_part, type="mrkdwn",
             )
 
     async def send_image_url(
@@ -50,35 +56,18 @@ class SlackBot(OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
         image_block = {"type": "image", "image_url": image, "alt_text": image}
-        if self.ts:
-            await self.client.chat_postMessage(
-                channel=recipient,
-                as_user=True,
-                text=image,
-                blocks=[image_block],
-                thread_ts=self.ts,
-            )
-        else:
-            await self.client.chat_postMessage(
-                channel=recipient, as_user=True, text=image, blocks=[image_block],
-            )
+
+        await self._post_message(
+            channel=recipient, as_user=True, text=image, blocks=[image_block],
+        )
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-        if self.ts:
-            await self.client.chat_postMessage(
-                channel=recipient,
-                as_user=True,
-                attachments=[attachment],
-                thread_ts=self.ts,
-                **kwargs,
-            )
-        else:
-            await self.client.chat_postMessage(
-                channel=recipient, as_user=True, attachments=[attachment], **kwargs,
-            )
+        await self._post_message(
+            channel=recipient, as_user=True, attachments=[attachment], **kwargs,
+        )
 
     async def send_text_with_buttons(
         self,
@@ -107,21 +96,13 @@ class SlackBot(OutputChannel):
                     "value": button["payload"],
                 }
             )
-        if self.ts:
-            await self.client.chat_postMessage(
-                channel=recipient,
-                as_user=True,
-                text=text,
-                blocks=[text_block, button_block],
-                thread_ts=self.ts,
-            )
-        else:
-            await self.client.chat_postMessage(
-                channel=recipient,
-                as_user=True,
-                text=text,
-                blocks=[text_block, button_block],
-            )
+
+        await self._post_message(
+            channel=recipient,
+            as_user=True,
+            text=text,
+            blocks=[text_block, button_block],
+        )
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
@@ -187,6 +168,8 @@ class SlackInput(InputChannel):
                 included in this list will be ignored.
                 Error codes are listed
                 `here <https://api.slack.com/events-api#errors>`_.
+            use_threads: If enabled, your Bot will send responses in Slack as a threaded message.
+                Responses will appear as a normal Slack message if set to False.
 
         """
         self.slack_token = slack_token

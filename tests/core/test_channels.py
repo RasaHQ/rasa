@@ -18,6 +18,7 @@ from rasa.core.channels.rasa_chat import (
     CONVERSATION_ID_KEY,
     INTERACTIVE_LEARNING_PERMISSION,
 )
+from rasa.constants import SLACK_TEST_ATTACHMENT
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
@@ -477,7 +478,6 @@ def test_botframework_attachments():
 
 def test_slack_metadata():
     from rasa.core.channels.slack import SlackInput
-    from sanic.request import Request
 
     user = "user1"
     channel = "channel1"
@@ -833,37 +833,7 @@ async def test_slackbot_send_attachment_only():
         )
 
         bot = SlackBot("DummyToken", "General")
-        attachment = {
-            "fallback": "Financial Advisor Summary",
-            "color": "#36a64f",
-            "author_name": "ABE",
-            "title": "Financial Advisor Summary",
-            "title_link": "http://tenfactorialrocks.com",
-            "image_url": "https://r.com/cancel/r12",
-            "thumb_url": "https://r.com/cancel/r12",
-            "actions": [
-                {
-                    "type": "button",
-                    "text": "\ud83d\udcc8 Dashboard",
-                    "url": "https://r.com/cancel/r12",
-                    "style": "primary",
-                },
-                {
-                    "type": "button",
-                    "text": "\ud83d\udccb Download XL",
-                    "url": "https://r.com/cancel/r12",
-                    "style": "danger",
-                },
-                {
-                    "type": "button",
-                    "text": "\ud83d\udce7 E-Mail",
-                    "url": "https://r.com/cancel/r12",
-                    "style": "danger",
-                },
-            ],
-            "footer": "Powered by 1010rocks",
-            "ts": 1531889719,
-        }
+        attachment = SLACK_TEST_ATTACHMENT
 
         await bot.send_attachment("ID", attachment)
 
@@ -892,37 +862,7 @@ async def test_slackbot_send_attachment_only_threaded():
         )
 
         bot = SlackBot("DummyToken", "General", ts="DummyThread")
-        attachment = {
-            "fallback": "Financial Advisor Summary",
-            "color": "#36a64f",
-            "author_name": "ABE",
-            "title": "Financial Advisor Summary",
-            "title_link": "http://tenfactorialrocks.com",
-            "image_url": "https://r.com/cancel/r12",
-            "thumb_url": "https://r.com/cancel/r12",
-            "actions": [
-                {
-                    "type": "button",
-                    "text": "\ud83d\udcc8 Dashboard",
-                    "url": "https://r.com/cancel/r12",
-                    "style": "primary",
-                },
-                {
-                    "type": "button",
-                    "text": "\ud83d\udccb Download XL",
-                    "url": "https://r.com/cancel/r12",
-                    "style": "danger",
-                },
-                {
-                    "type": "button",
-                    "text": "\ud83d\udce7 E-Mail",
-                    "url": "https://r.com/cancel/r12",
-                    "style": "danger",
-                },
-            ],
-            "footer": "Powered by 1010rocks",
-            "ts": 1531889719,
-        }
+        attachment = SLACK_TEST_ATTACHMENT
 
         await bot.send_attachment("ID", attachment)
 
@@ -952,38 +892,8 @@ async def test_slackbot_send_attachment_with_text():
         )
 
         bot = SlackBot("DummyToken", "General")
-        attachment = {
-            "fallback": "Financial Advisor Summary",
-            "color": "#36a64f",
-            "author_name": "ABE",
-            "title": "Financial Advisor Summary",
-            "title_link": "http://tenfactorialrocks.com",
-            "text": "Here is the summary:",
-            "image_url": "https://r.com/cancel/r12",
-            "thumb_url": "https://r.com/cancel/r12",
-            "actions": [
-                {
-                    "type": "button",
-                    "text": "\ud83d\udcc8 Dashboard",
-                    "url": "https://r.com/cancel/r12",
-                    "style": "primary",
-                },
-                {
-                    "type": "button",
-                    "text": "\ud83d\udccb XL",
-                    "url": "https://r.com/cancel/r12",
-                    "style": "danger",
-                },
-                {
-                    "type": "button",
-                    "text": "\ud83d\udce7 E-Mail",
-                    "url": "https://r.com/cancel/r123",
-                    "style": "danger",
-                },
-            ],
-            "footer": "Powered by 1010rocks",
-            "ts": 1531889719,
-        }
+        attachment = SLACK_TEST_ATTACHMENT
+        attachment["text"] = "Here is the summary:"
 
         await bot.send_attachment("ID", attachment)
 
@@ -1012,38 +922,8 @@ async def test_slackbot_send_attachment_with_text_threaded():
         )
 
         bot = SlackBot("DummyToken", "General", ts="DummyThread")
-        attachment = {
-            "fallback": "Financial Advisor Summary",
-            "color": "#36a64f",
-            "author_name": "ABE",
-            "title": "Financial Advisor Summary",
-            "title_link": "http://tenfactorialrocks.com",
-            "text": "Here is the summary:",
-            "image_url": "https://r.com/cancel/r12",
-            "thumb_url": "https://r.com/cancel/r12",
-            "actions": [
-                {
-                    "type": "button",
-                    "text": "\ud83d\udcc8 Dashboard",
-                    "url": "https://r.com/cancel/r12",
-                    "style": "primary",
-                },
-                {
-                    "type": "button",
-                    "text": "\ud83d\udccb XL",
-                    "url": "https://r.com/cancel/r12",
-                    "style": "danger",
-                },
-                {
-                    "type": "button",
-                    "text": "\ud83d\udce7 E-Mail",
-                    "url": "https://r.com/cancel/r123",
-                    "style": "danger",
-                },
-            ],
-            "footer": "Powered by 1010rocks",
-            "ts": 1531889719,
-        }
+        attachment = SLACK_TEST_ATTACHMENT
+        attachment["text"] = "Here is the summary:"
 
         await bot.send_attachment("ID", attachment)
 

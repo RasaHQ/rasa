@@ -73,3 +73,35 @@ DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION = True
 ENV_GPU_CONFIG = "TF_GPU_MEMORY_ALLOC"
 ENV_CPU_INTER_OP_CONFIG = "TF_INTER_OP_PARALLELISM_THREADS"
 ENV_CPU_INTRA_OP_CONFIG = "TF_INTRA_OP_PARALLELISM_THREADS"
+
+SLACK_TEST_ATTACHMENT = {
+    "fallback": "Financial Advisor Summary",
+    "color": "#36a64f",
+    "author_name": "ABE",
+    "title": "Financial Advisor Summary",
+    "title_link": "http://tenfactorialrocks.com",
+    "image_url": "https://r.com/cancel/r12",
+    "thumb_url": "https://r.com/cancel/r12",
+    "actions": [
+        {
+            "type": "button",
+            "text": "\ud83d\udcc8 Dashboard",
+            "url": "https://r.com/cancel/r12",
+            "style": "primary",
+        },
+        {
+            "type": "button",
+            "text": "\ud83d\udccb Download XL",
+            "url": "https://r.com/cancel/r12",
+            "style": "danger",
+        },
+        {
+            "type": "button",
+            "text": "\ud83d\udce7 E-Mail",
+            "url": "https://r.com/cancel/r12",
+            "style": "danger",
+        },
+    ],
+    "footer": "Powered by 1010rocks",
+    "ts": 1531889719,
+}
