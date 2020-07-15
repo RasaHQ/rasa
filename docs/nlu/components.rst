@@ -946,6 +946,32 @@ EntitySynonymMapper
         pipeline:
         - name: "EntitySynonymMapper"
 
+LookupEntityExtractor
+~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Extracts entities using a lookup table
+:Outputs: ``entities``
+:Requires: Nothing
+:Description:
+    This component extract entities using a lookup table. You can define the lookup table in the configuration file.
+    You specify the entities that should be extracted and the respective lookup file.
+    Each line in the lookup file is a possible value of the entity.
+    The component checks if the user message contains a value from the file.
+    If a match is found, the value is extracted as entity.
+
+:Configuration:
+    By default we convert the entries in the lookup file and the user message to lowercase before we check if there
+    is a match. You can disable this behaviour by setting ``lowercase: False``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: LookupEntityExtractor
+          lookup:
+            city: /some/path/city.txt
+            person: /some/other/path/person.txt
+          lowercase: True
+
 .. _CRFEntityExtractor:
 
 CRFEntityExtractor
