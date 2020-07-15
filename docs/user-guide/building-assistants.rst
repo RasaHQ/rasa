@@ -691,7 +691,8 @@ The decision to handle these types of user input should always come from reviewi
 real conversations. You should first build part of your assistant, test it with real users
 (whether that's your end user, or your colleague) and then add what's missing. You shouldn't
 try to implement every possible edge case that you think might happen, because in the end
-your users may never actually behave in that way. `Rasa X <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`__
+your users may never actually behave in that way.
+`Rasa X <https://rasa.com/docs/rasa-x/>`__
 is a tool that can help you review conversations and make these types of decisions.
 
 Generic interjections

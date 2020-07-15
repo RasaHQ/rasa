@@ -3,7 +3,6 @@ from typing import List, Text
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
 
-from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
 from rasa.utils.io import DEFAULT_ENCODING
 
 

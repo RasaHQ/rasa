@@ -627,7 +627,9 @@ class Agent:
         max_histories = [
             policy.featurizer.max_history
             for policy in self.policy_ensemble.policies
-            if hasattr(policy.featurizer, "max_history")
+            if policy.featurizer
+            and hasattr(policy.featurizer, "max_history")
+            and policy.featurizer.max_history is not None
         ]
 
         return max(max_histories or [0])
@@ -635,8 +637,12 @@ class Agent:
     def _are_all_featurizers_using_a_max_history(self) -> bool:
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
-        def has_max_history_featurizer(policy):
-            return policy.featurizer and hasattr(policy.featurizer, "max_history")
+        def has_max_history_featurizer(policy: Policy) -> bool:
+            return (
+                policy.featurizer
+                and hasattr(policy.featurizer, "max_history")
+                and policy.featurizer.max_history is not None
+            )
 
         for p in self.policy_ensemble.policies:
             if p.featurizer and not has_max_history_featurizer(p):
