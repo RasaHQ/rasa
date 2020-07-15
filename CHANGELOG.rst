@@ -17,6 +17,15 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.8] - 2020-07-15
+^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6075 <https://github.com/rasahq/rasa/issues/6075>`_: Add 'Access-Control-Expose-Headers' for 'filename' header
+- `#6137 <https://github.com/rasahq/rasa/issues/6137>`_: Fixed a bug where an invalid language variable prevents rasa from finding training examples when importing Dialogflow data.
+
+
 [1.10.7] - 2020-07-07
 ^^^^^^^^^^^^^^^^^^^^^
 
