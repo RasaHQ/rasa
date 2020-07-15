@@ -40,9 +40,15 @@ then
     yarn run new-version $NEW_VERSION
 fi
 
-echo "Pushing changes to git..."
-git add .
-git ci -am "AUTO docusaurus $TODAY"
-git push origin $DOCS_BRANCH
+if [ -z "$(git status --porcelain)" ]
+then
 
-echo "Done 👌"
+    echo "Pushing changes to git..."
+    git add .
+    git ci -am "AUTO docusaurus $TODAY"
+    git push origin $DOCS_BRANCH
+
+    echo "Done 👌"
+else
+    echo "Nothing changed in docs, done 👍"
+fi
