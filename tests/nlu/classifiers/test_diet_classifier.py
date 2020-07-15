@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
-import scipy.sparse
 from unittest.mock import Mock
 
+from rasa.nlu.constants import FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
 from rasa.nlu.featurizers.featurizer import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
@@ -50,23 +50,52 @@ def test_compute_default_label_features():
     [
         (
             [
-                Message("test a", features=[Features(np.zeros(2), TEXT, "test")]),
+                Message(
+                    "test a",
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                    ],
+                ),
                 Message(
                     "test b",
                     features=[
-                        Features(np.zeros(2), TEXT, "test"),
-                        Features(scipy.sparse.csr_matrix([1, 1]), TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
                     ],
                 ),
             ],
             True,
         ),
-        ([Message("test a", features=[Features(np.zeros(2), INTENT, "test")])], False),
+        (
+            [
+                Message(
+                    "test a",
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
+                    ],
+                )
+            ],
+            False,
+        ),
+        (
+            [
+                Message(
+                    "test a",
+                    features=[
+                        Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, INTENT, "test")
+                    ],
+                )
+            ],
+            False,
+        ),
     ],
 )
 def test_check_labels_features_exist(messages, expected):
     attribute = TEXT
-    assert DIETClassifier._check_labels_features_exist(messages, attribute) == expected
+    classifier = DIETClassifier()
+    assert classifier._check_labels_features_exist(messages, attribute) == expected
 
 
 @pytest.mark.parametrize(

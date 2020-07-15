@@ -3,7 +3,7 @@ import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Text, Type, Collection
 
 import rasa.core.utils
 import rasa.utils.io
@@ -158,6 +158,18 @@ def update_asyncio_log_level() -> None:
     logging.getLogger("asyncio").setLevel(log_level)
 
 
+def set_log_and_warnings_filters() -> None:
+    """
+    Set log filters on the root logger, and duplicate filters for warnings.
+
+    Filters only propagate on handlers, not loggers.
+    """
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(RepeatedLogFilter())
+
+    warnings.filterwarnings("once", category=UserWarning)
+
+
 def obtain_verbosity() -> int:
     """Returns a verbosity level according to the set log level."""
     log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
@@ -181,6 +193,14 @@ def is_logging_disabled() -> bool:
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     """Sorts a list of dictionaries by their first key."""
     return sorted(dicts, key=lambda d: list(d.keys())[0])
+
+
+def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
+    """Transforms e.g. a list like ['A', 'B', 'C'] into a sentence 'A, B and C'."""
+    x = list(collection)
+    if len(x) >= 2:
+        return ", ".join(map(str, x[:-1])) + " and " + x[-1]
+    return "".join(collection)
 
 
 # noinspection PyUnresolvedReferences
@@ -363,3 +383,22 @@ def raise_warning(
     warnings.formatwarning = formatwarning
     warnings.warn(message, category=category, **kwargs)
     warnings.formatwarning = original_formatter
+
+
+class RepeatedLogFilter(logging.Filter):
+    """Filter repeated log records."""
+
+    last_log = None
+
+    def filter(self, record):
+        current_log = (
+            record.levelno,
+            record.pathname,
+            record.lineno,
+            record.msg,
+            record.args,
+        )
+        if current_log != self.last_log:
+            self.last_log = current_log
+            return True
+        return False
