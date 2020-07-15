@@ -164,7 +164,7 @@ class SlackInput(InputChannel):
         slack_retry_reason_header: Optional[Text] = None,
         slack_retry_number_header: Optional[Text] = None,
         errors_ignore_retry: Optional[List[Text]] = None,
-        use_threads: Optional[Text] = None,
+        use_threads: Optional[bool] = False,
     ) -> None:
         """Create a Slack input channel.
 
