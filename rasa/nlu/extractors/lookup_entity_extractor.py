@@ -79,11 +79,9 @@ class LookupEntityExtractor(EntityExtractor):
     def _parse_entities(self, user_input: Text) -> List[Dict[Text, Any]]:
         """Extract entities from the user input."""
         for entity, file_path in self.component_config["lookup"].items():
-            results = self._extract_entities(
-                self, user_input, entity, file_path)
+            results = self._extract_entities(user_input, entity, file_path)
             return results
 
-    @staticmethod
     def _extract_entities(
         self, user_input: Text,
         entity: Text, file_path: Text
