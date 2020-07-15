@@ -15,8 +15,9 @@ Getting Credentials
 
 **How to get the Cisco Webex Teams credentials:**
 
-You need to set up a bot. Please visit below link to create a bot
-`Webex Authentication <https://developer.webex.com/authentication.html>`_.
+You need to set up a bot. Check out the Cisco Webex for Developers
+`documentation <https://developer.webex.com/docs/bots>`_ for information
+about how to create your bot.
 
 After you have created the bot through Cisco Webex Teams, you need to create a
 room in Cisco Webex Teams. Then add the bot in the room the same way you would

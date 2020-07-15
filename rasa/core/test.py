@@ -3,9 +3,10 @@ import os
 import warnings
 import typing
 from collections import defaultdict, namedtuple
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import rasa.utils.io as io_utils
+from rasa.core.domain import Domain
 from rasa.nlu.constants import (
     EXTRACTOR,
     ENTITY_ATTRIBUTE_VALUE,
@@ -23,30 +24,26 @@ from rasa.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
+    from rasa.core.processor import MessageProcessor
 
-import matplotlib
 
+CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
+REPORT_STORIES_FILE = "story_report.json"
 FAILED_STORIES_FILE = "failed_stories.md"
-
-# At first, matplotlib will be initialized with default OS-specific available backend
-# if that didn't happen, we'll try to set it up manually
-if matplotlib.get_backend() is not None:
-    pass
-else:  # pragma: no cover
-    try:
-        # If the `tkinter` package is available, we can use the `TkAgg` backend
-        import tkinter
-
-        matplotlib.use("TkAgg")
-    except ImportError:
-        matplotlib.use("agg")
+SUCCESSFUL_STORIES_FILE = "successful_stories.md"
 
 
 logger = logging.getLogger(__name__)
 
-StoryEvalution = namedtuple(
+StoryEvaluation = namedtuple(
     "StoryEvaluation",
-    "evaluation_store failed_stories action_list in_training_data_fraction",
+    [
+        "evaluation_store",
+        "failed_stories",
+        "successful_stories",
+        "action_list",
+        "in_training_data_fraction",
+    ],
 )
 
 
@@ -55,10 +52,10 @@ class EvaluationStore:
 
     def __init__(
         self,
-        action_predictions: Optional[List[str]] = None,
-        action_targets: Optional[List[str]] = None,
-        intent_predictions: Optional[List[str]] = None,
-        intent_targets: Optional[List[str]] = None,
+        action_predictions: Optional[List[Text]] = None,
+        action_targets: Optional[List[Text]] = None,
+        intent_predictions: Optional[List[Text]] = None,
+        intent_targets: Optional[List[Text]] = None,
         entity_predictions: Optional[List[Dict[Text, Any]]] = None,
         entity_targets: Optional[List[Dict[Text, Any]]] = None,
     ) -> None:
@@ -71,10 +68,10 @@ class EvaluationStore:
 
     def add_to_store(
         self,
-        action_predictions: Optional[List[str]] = None,
-        action_targets: Optional[List[str]] = None,
-        intent_predictions: Optional[List[str]] = None,
-        intent_targets: Optional[List[str]] = None,
+        action_predictions: Optional[Union[Text, List[Text]]] = None,
+        action_targets: Optional[Union[Text, List[Text]]] = None,
+        intent_predictions: Optional[Union[Text, List[Text]]] = None,
+        intent_targets: Optional[Union[Text, List[Text]]] = None,
         entity_predictions: Optional[List[Dict[Text, Any]]] = None,
         entity_targets: Optional[List[Dict[Text, Any]]] = None,
     ) -> None:
@@ -98,7 +95,7 @@ class EvaluationStore:
             entity_targets=other.entity_targets,
         )
 
-    def has_prediction_target_mismatch(self):
+    def has_prediction_target_mismatch(self) -> bool:
         return (
             self.intent_predictions != self.intent_targets
             or self.entity_predictions != self.entity_targets
@@ -139,14 +136,12 @@ class WronglyPredictedAction(ActionExecuted):
 
     def __init__(
         self, correct_action, predicted_action, policy, confidence, timestamp=None
-    ):
+    ) -> None:
         self.predicted_action = predicted_action
         super().__init__(correct_action, policy, confidence, timestamp=timestamp)
 
-    def as_story_string(self):
-        return "{}   <!-- predicted: {} -->".format(
-            self.action_name, self.predicted_action
-        )
+    def as_story_string(self) -> Text:
+        return f"{self.action_name}   <!-- predicted: {self.predicted_action} -->"
 
 
 class EndToEndUserUtterance(UserUttered):
@@ -155,7 +150,7 @@ class EndToEndUserUtterance(UserUttered):
     Mostly used to print the full end-to-end user message in the
     `failed_stories.md` output file."""
 
-    def as_story_string(self, e2e=True):
+    def as_story_string(self, e2e: bool = True) -> Text:
         return super().as_story_string(e2e=True)
 
 
@@ -167,7 +162,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
     type_name = "wrong_utterance"
 
-    def __init__(self, event: UserUttered, eval_store: EvaluationStore):
+    def __init__(self, event: UserUttered, eval_store: EvaluationStore) -> None:
 
         if not eval_store.intent_predictions:
             self.predicted_intent = None
@@ -186,22 +181,25 @@ class WronglyClassifiedUserUtterance(UserUttered):
             event.input_channel,
         )
 
-    def as_story_string(self, e2e=True):
+    def as_story_string(self, e2e: bool = True) -> Text:
         from rasa.core.events import md_format_message
 
         correct_message = md_format_message(self.text, self.intent, self.entities)
         predicted_message = md_format_message(
             self.text, self.predicted_intent, self.predicted_entities
         )
-        return "{}: {}   <!-- predicted: {}: {} -->".format(
-            self.intent.get("name"),
-            correct_message,
-            self.predicted_intent,
-            predicted_message,
+        return (
+            f"{self.intent.get('name')}: {correct_message}   <!-- predicted: "
+            f"{self.predicted_intent}: {predicted_message} -->"
         )
 
 
-async def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=False):
+async def _generate_trackers(
+    resource_name: Text,
+    agent: "Agent",
+    max_stories: Optional[int] = None,
+    use_e2e: bool = False,
+) -> List[Any]:
     from rasa.core.training.generator import TrainingDataGenerator
 
     from rasa.core import training
@@ -288,31 +286,20 @@ def _collect_user_uttered_predictions(
     return user_uttered_eval_store
 
 
-def _emulate_form_rejection(processor, partial_tracker):
-    from rasa.core.policies.form_policy import FormPolicy
+def _emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
     from rasa.core.events import ActionExecutionRejected
 
-    if partial_tracker.active_form.get("name"):
-        for p in processor.policy_ensemble.policies:
-            if isinstance(p, FormPolicy):
-                # emulate form rejection
-                partial_tracker.update(
-                    ActionExecutionRejected(partial_tracker.active_form["name"])
-                )
-                # check if unhappy path is covered by the train stories
-                if not p.state_is_unhappy(partial_tracker, processor.domain):
-                    # this state is not covered by the stories
-                    del partial_tracker.events[-1]
-                    partial_tracker.active_form["rejected"] = False
+    rejected_action_name: Text = partial_tracker.active_loop["name"]
+    partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
 def _collect_action_executed_predictions(
-    processor,
-    partial_tracker,
-    event,
-    fail_on_prediction_errors,
-    circuit_breaker_tripped,
-):
+    processor: "MessageProcessor",
+    partial_tracker: DialogueStateTracker,
+    event: ActionExecuted,
+    fail_on_prediction_errors: bool,
+    circuit_breaker_tripped: bool,
+) -> Tuple[EvaluationStore, Optional[Text], Optional[float]]:
     from rasa.core.policies.form_policy import FormPolicy
 
     action_executed_eval_store = EvaluationStore()
@@ -327,12 +314,22 @@ def _collect_action_executed_predictions(
         action, policy, confidence = processor.predict_next_action(partial_tracker)
         predicted = action.name()
 
-        if policy and predicted != gold and FormPolicy.__name__ in policy:
-            # FormPolicy predicted wrong action
-            # but it might be Ok if form action is rejected
-            _emulate_form_rejection(processor, partial_tracker)
+        if (
+            policy
+            and predicted != gold
+            and _form_might_have_been_rejected(
+                processor.domain, partial_tracker, predicted
+            )
+        ):
+            # Wrong action was predicted,
+            # but it might be Ok if form action is rejected.
+            _emulate_form_rejection(partial_tracker)
             # try again
             action, policy, confidence = processor.predict_next_action(partial_tracker)
+
+            # Even if the prediction is also wrong, we don't have to undo the emulation
+            # of the action rejection as we know that the user explicitly specified
+            # that something else than the form was supposed to run.
             predicted = action.name()
 
     action_executed_eval_store.add_to_store(
@@ -365,10 +362,21 @@ def _collect_action_executed_predictions(
     return action_executed_eval_store, policy, confidence
 
 
+def _form_might_have_been_rejected(
+    domain: Domain, tracker: DialogueStateTracker, predicted_action_name: Text
+) -> bool:
+    return (
+        tracker.active_loop.get("name") == predicted_action_name
+        and predicted_action_name in domain.form_names
+    )
+
+
 def _predict_tracker_actions(
-    tracker, agent: "Agent", fail_on_prediction_errors=False, use_e2e=False
-):
-    from rasa.core.trackers import DialogueStateTracker
+    tracker: DialogueStateTracker,
+    agent: "Agent",
+    fail_on_prediction_errors: bool = False,
+    use_e2e: bool = False,
+) -> Tuple[EvaluationStore, DialogueStateTracker, List[Dict[Text, Any]]]:
 
     processor = agent.create_processor()
     tracker_eval_store = EvaluationStore()
@@ -430,7 +438,7 @@ def _predict_tracker_actions(
     return tracker_eval_store, partial_tracker, tracker_actions
 
 
-def _in_training_data_fraction(action_list):
+def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
     """Given a list of action items, returns the fraction of actions
 
     that were predicted using one of the Memoization policies."""
@@ -445,18 +453,19 @@ def _in_training_data_fraction(action_list):
     return len(in_training_data) / len(action_list)
 
 
-def collect_story_predictions(
+def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
     fail_on_prediction_errors: bool = False,
     use_e2e: bool = False,
-) -> Tuple[StoryEvalution, int]:
+) -> Tuple[StoryEvaluation, int]:
     """Test the stories from a file, running them through the stored model."""
-    from rasa.nlu.test import get_evaluation_metrics
+    from rasa.test import get_evaluation_metrics
     from tqdm import tqdm
 
     story_eval_store = EvaluationStore()
     failed = []
+    success = []
     correct_dialogues = []
     number_of_stories = len(completed_trackers)
 
@@ -479,6 +488,7 @@ def collect_story_predictions(
             correct_dialogues.append(0)
         else:
             correct_dialogues.append(1)
+            success.append(predicted_tracker)
 
     logger.info("Finished collecting predictions.")
     with warnings.catch_warnings():
@@ -491,7 +501,7 @@ def collect_story_predictions(
 
     in_training_data_fraction = _in_training_data_fraction(action_list)
 
-    log_evaluation_table(
+    _log_evaluation_table(
         [1] * len(completed_trackers),
         "END-TO-END" if use_e2e else "CONVERSATION",
         report,
@@ -503,9 +513,10 @@ def collect_story_predictions(
     )
 
     return (
-        StoryEvalution(
+        StoryEvaluation(
             evaluation_store=story_eval_store,
             failed_stories=failed,
+            successful_stories=success,
             action_list=action_list,
             in_training_data_fraction=in_training_data_fraction,
         ),
@@ -513,19 +524,22 @@ def collect_story_predictions(
     )
 
 
-def log_failed_stories(failed, out_directory):
-    """Take stories as a list of dicts."""
+def _log_stories(
+    stories: List[DialogueStateTracker], filename: Text, out_directory: Text
+) -> None:
+    """Write given stories to the given file."""
     if not out_directory:
         return
+
     with open(
-        os.path.join(out_directory, FAILED_STORIES_FILE), "w", encoding=DEFAULT_ENCODING
+        os.path.join(out_directory, filename), "w", encoding=DEFAULT_ENCODING
     ) as f:
-        if len(failed) == 0:
-            f.write("<!-- All stories passed -->")
-        else:
-            for failure in failed:
-                f.write(failure.export_stories(include_source=True))
-                f.write("\n\n")
+        if not stories:
+            f.write("<!-- No stories found. -->")
+
+        for story in stories:
+            f.write(story.export_stories(include_source=True))
+            f.write("\n\n")
 
 
 async def test(
@@ -536,13 +550,32 @@ async def test(
     fail_on_prediction_errors: bool = False,
     e2e: bool = False,
     disable_plotting: bool = False,
-):
-    """Run the evaluation of the stories, optionally plot the results."""
-    from rasa.nlu.test import get_evaluation_metrics
+    successes: bool = False,
+    errors: bool = True,
+) -> Dict[Text, Any]:
+    """Run the evaluation of the stories, optionally plot the results.
+
+    Args:
+        stories: the stories to evaulate on
+        agent: the agent
+        max_stories: maximum number of stories to consider
+        out_directory: path to directory to results to
+        fail_on_prediction_errors: boolean indicating whether to fail on prediction
+            errors or not
+        e2e: boolean indicating whether to use end to end evaluation or not
+        disable_plotting: boolean indicating whether to disable plotting or not
+        successes: boolean indicating whether to write down successful predictions or
+            not
+        errors: boolean indicating whether to write down incorrect predictions or not
+
+    Returns:
+        Evaluation summary.
+    """
+    from rasa.test import get_evaluation_metrics
 
     completed_trackers = await _generate_trackers(stories, agent, max_stories, e2e)
 
-    story_evaluation, _ = collect_story_predictions(
+    story_evaluation, _ = _collect_story_predictions(
         completed_trackers, agent, fail_on_prediction_errors, e2e
     )
 
@@ -554,22 +587,46 @@ async def test(
         warnings.simplefilter("ignore", UndefinedMetricWarning)
 
         targets, predictions = evaluation_store.serialise()
-        report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)
 
-    if out_directory:
-        plot_story_evaluation(
+        if out_directory:
+            report, precision, f1, accuracy = get_evaluation_metrics(
+                targets, predictions, output_dict=True
+            )
+
+            report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
+            io_utils.dump_obj_as_json_to_file(report_filename, report)
+            logger.info(f"Stories report saved to {report_filename}.")
+        else:
+            report, precision, f1, accuracy = get_evaluation_metrics(
+                targets, predictions, output_dict=True
+            )
+
+    _log_evaluation_table(
+        evaluation_store.action_targets,
+        "ACTION",
+        report,
+        precision,
+        f1,
+        accuracy,
+        story_evaluation.in_training_data_fraction,
+        include_report=False,
+    )
+
+    if not disable_plotting:
+        _plot_story_evaluation(
             evaluation_store.action_targets,
             evaluation_store.action_predictions,
-            report,
-            precision,
-            f1,
-            accuracy,
-            story_evaluation.in_training_data_fraction,
             out_directory,
-            disable_plotting,
         )
 
-    log_failed_stories(story_evaluation.failed_stories, out_directory)
+    if errors:
+        _log_stories(
+            story_evaluation.failed_stories, FAILED_STORIES_FILE, out_directory
+        )
+    if successes:
+        _log_stories(
+            story_evaluation.successful_stories, SUCCESSFUL_STORIES_FILE, out_directory
+        )
 
     return {
         "report": report,
@@ -582,21 +639,19 @@ async def test(
     }
 
 
-def log_evaluation_table(
-    golds,
-    name,
-    report,
-    precision,
-    f1,
-    accuracy,
-    in_training_data_fraction,
-    include_report=True,
-):  # pragma: no cover
+def _log_evaluation_table(
+    golds: List[Any],
+    name: Text,
+    report: Dict[Text, Any],
+    precision: float,
+    f1: float,
+    accuracy: float,
+    in_training_data_fraction: float,
+    include_report: bool = True,
+) -> None:  # pragma: no cover
     """Log the sklearn evaluation metrics."""
     logger.info(f"Evaluation Results on {name} level:")
-    logger.info(
-        "\tCorrect:          {} / {}".format(int(len(golds) * accuracy), len(golds))
-    )
+    logger.info(f"\tCorrect:          {int(len(golds) * accuracy)} / {len(golds)}")
     logger.info(f"\tF1-Score:         {f1:.3f}")
     logger.info(f"\tPrecision:        {precision:.3f}")
     logger.info(f"\tAccuracy:         {accuracy:.3f}")
@@ -606,56 +661,40 @@ def log_evaluation_table(
         logger.info(f"\tClassification report: \n{report}")
 
 
-def plot_story_evaluation(
-    test_y,
-    predictions,
-    report,
-    precision,
-    f1,
-    accuracy,
-    in_training_data_fraction,
-    out_directory,
-    disable_plotting,
-):
-    """Plot the results of story evaluation"""
+def _plot_story_evaluation(
+    targets: List[Text], predictions: List[Text], output_directory: Optional[Text]
+) -> None:
+    """Plot a confusion matrix of story evaluation."""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
-    import matplotlib.pyplot as plt
-    from rasa.nlu.test import plot_confusion_matrix
+    from rasa.utils.plotting import plot_confusion_matrix
 
-    log_evaluation_table(
-        test_y,
-        "ACTION",
-        report,
-        precision,
-        f1,
-        accuracy,
-        in_training_data_fraction,
-        include_report=True,
-    )
+    confusion_matrix_filename = CONFUSION_MATRIX_STORIES_FILE
+    if output_directory:
+        confusion_matrix_filename = os.path.join(
+            output_directory, confusion_matrix_filename
+        )
 
-    if disable_plotting:
-        return
-
-    cnf_matrix = confusion_matrix(test_y, predictions)
+    cnf_matrix = confusion_matrix(targets, predictions)
 
     plot_confusion_matrix(
         cnf_matrix,
-        classes=unique_labels(test_y, predictions),
+        classes=unique_labels(targets, predictions),
         title="Action Confusion matrix",
+        output_file=confusion_matrix_filename,
     )
-
-    fig = plt.gcf()
-    fig.set_size_inches(int(20), int(20))
-    fig.savefig(os.path.join(out_directory, "story_confmat.pdf"), bbox_inches="tight")
 
 
 async def compare_models_in_dir(
     model_dir: Text, stories_file: Text, output: Text
 ) -> None:
-    """Evaluates multiple trained models in a directory on a test set."""
-    import rasa.utils.io as io_utils
+    """Evaluate multiple trained models in a directory on a test set.
 
+    Args:
+        model_dir: path to directory that contains the models to evaluate
+        stories_file: path to the story file
+        output: output directory to store results to
+    """
     number_correct = defaultdict(list)
 
     for run in io_utils.list_subdirectories(model_dir):
@@ -680,8 +719,13 @@ async def compare_models_in_dir(
 
 
 async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
-    """Evaluates provided trained models on a test set."""
+    """Evaluate provided trained models on a test set.
 
+    Args:
+        models: list of trained model paths
+        stories_file: path to the story file
+        output: output directory to store results to
+    """
     number_correct = defaultdict(list)
 
     for model in models:
@@ -700,87 +744,11 @@ async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
 
     agent = Agent.load(model)
     completed_trackers = await _generate_trackers(stories_file, agent)
-    story_eval_store, number_of_stories = collect_story_predictions(
+    story_eval_store, number_of_stories = _collect_story_predictions(
         completed_trackers, agent
     )
     failed_stories = story_eval_store.failed_stories
     return number_of_stories - len(failed_stories)
-
-
-def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
-    """Plot NLU model comparison graph"""
-    graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
-
-    _plot_curve(
-        output,
-        number_of_examples,
-        x_label_text="Number of intent examples present during training",
-        y_label_text="Label-weighted average F1 score on test set",
-        graph_path=graph_path,
-    )
-
-
-def plot_core_results(output: Text, number_of_examples: List[int]) -> None:
-    """Plot core model comparison graph"""
-    graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
-
-    _plot_curve(
-        output,
-        number_of_examples,
-        x_label_text="Number of stories present during training",
-        y_label_text="Number of correct test stories",
-        graph_path=graph_path,
-    )
-
-
-def _plot_curve(
-    output: Text,
-    number_of_examples: List[int],
-    x_label_text: Text,
-    y_label_text: Text,
-    graph_path: Text,
-) -> None:
-    """Plot the results from a model comparison.
-
-    Args:
-        output: Output directory to save resulting plots to
-        number_of_examples: Number of examples per run
-        x_label_text: text for the x axis
-        y_label_text: text for the y axis
-        graph_path: output path of the plot
-    """
-    import matplotlib.pyplot as plt
-    import numpy as np
-    import rasa.utils.io
-
-    ax = plt.gca()
-
-    # load results from file
-    data = rasa.utils.io.read_json_file(os.path.join(output, RESULTS_FILE))
-    x = number_of_examples
-
-    # compute mean of all the runs for different configs
-    for label in data.keys():
-        if len(data[label]) == 0:
-            continue
-        mean = np.mean(data[label], axis=0)
-        std = np.std(data[label], axis=0)
-        ax.plot(x, mean, label=label, marker=".")
-        ax.fill_between(
-            x,
-            [m - s for m, s in zip(mean, std)],
-            [m + s for m, s in zip(mean, std)],
-            color="#6b2def",
-            alpha=0.2,
-        )
-    ax.legend(loc=4)
-
-    ax.set_xlabel(x_label_text)
-    ax.set_ylabel(y_label_text)
-
-    plt.savefig(graph_path, format="pdf")
-
-    logger.info(f"Comparison graph saved to '{graph_path}'.")
 
 
 if __name__ == "__main__":

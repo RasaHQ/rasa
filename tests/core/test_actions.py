@@ -27,6 +27,8 @@ from rasa.core.actions.action import (
     RemoteAction,
     ActionSessionStart,
 )
+from rasa.core.actions.forms import FormAction
+from rasa.core.actions.two_stage_fallback import ACTION_TWO_STAGE_FALLBACK_NAME
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain, SessionConfig
 from rasa.core.events import (
@@ -41,7 +43,7 @@ from rasa.core.events import (
     UserUttered,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
-from rasa.core.constants import USER_INTENT_SESSION_START
+from rasa.core.constants import USER_INTENT_SESSION_START, RULE_SNIPPET_ACTION_NAME
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
@@ -108,12 +110,12 @@ def test_domain_action_instantiation():
         slots=[],
         templates={},
         action_names=["my_module.ActionTest", "utter_test", "respond_test"],
-        form_names=[],
+        forms=[],
     )
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 12
+    assert len(instantiated_actions) == 14
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -122,10 +124,12 @@ def test_domain_action_instantiation():
     assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
     assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
     assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
-    assert instantiated_actions[8].name() == ACTION_BACK_NAME
-    assert instantiated_actions[9].name() == "my_module.ActionTest"
-    assert instantiated_actions[10].name() == "utter_test"
-    assert instantiated_actions[11].name() == "respond_test"
+    assert instantiated_actions[8].name() == ACTION_TWO_STAGE_FALLBACK_NAME
+    assert instantiated_actions[9].name() == ACTION_BACK_NAME
+    assert instantiated_actions[10].name() == RULE_SNIPPET_ACTION_NAME
+    assert instantiated_actions[11].name() == "my_module.ActionTest"
+    assert instantiated_actions[12].name() == "utter_test"
+    assert instantiated_actions[13].name() == "respond_test"
 
 
 async def test_remote_action_runs(
@@ -232,7 +236,9 @@ async def test_remote_action_logs_events(
     assert events[0] == BotUttered(
         "test text", {"buttons": [{"title": "cheap", "payload": "cheap"}]}
     )
-    assert events[1] == BotUttered("hey there None!")
+    assert events[1] == BotUttered(
+        "hey there None!", metadata={"template_name": "utter_greet"}
+    )
     assert events[2] == SlotSet("name", "rasa")
 
 
@@ -276,7 +282,9 @@ async def test_remote_action_utterances_with_none_values(
         )
 
     assert events == [
-        BotUttered("what dou want to eat?"),
+        BotUttered(
+            "what dou want to eat?", metadata={"template_name": "utter_ask_cuisine"}
+        ),
         Form("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
     ]
@@ -354,7 +362,12 @@ async def test_action_utter_retrieved_response(
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
-            "response_selector": {"chitchat": {"response": {"name": "I am a bot."}}}
+            "response_selector": {
+                "chitchat": {
+                    "response": {"name": "I am a bot."},
+                    "full_retrieval_intent": "chitchat/ask_name",
+                }
+            }
         },
     )
     events = await ActionRetrieveResponse(action_name).run(
@@ -363,6 +376,9 @@ async def test_action_utter_retrieved_response(
 
     assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
         "text"
+    )
+    assert (
+        events[0].as_dict().get("metadata").get("template_name") == "chitchat/ask_name"
     )
 
 
@@ -375,7 +391,12 @@ async def test_action_utter_default_retrieved_response(
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
-            "response_selector": {"default": {"response": {"name": "I am a bot."}}}
+            "response_selector": {
+                "default": {
+                    "response": {"name": "I am a bot."},
+                    "full_retrieval_intent": "chitchat/ask_name",
+                }
+            }
         },
     )
     events = await ActionRetrieveResponse(action_name).run(
@@ -396,7 +417,12 @@ async def test_action_utter_retrieved_empty_response(
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
-            "response_selector": {"dummy": {"response": {"name": "I am a bot."}}}
+            "response_selector": {
+                "dummy": {
+                    "response": {"name": "I am a bot."},
+                    "full_retrieval_intent": "chitchat/ask_name",
+                }
+            }
         },
     )
     events = await ActionRetrieveResponse(action_name).run(
@@ -413,7 +439,11 @@ async def test_action_utter_template(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
-    assert events == [BotUttered("this is a default channel")]
+    assert events == [
+        BotUttered(
+            "this is a default channel", metadata={"template_name": "utter_channel"}
+        )
+    ]
 
 
 async def test_action_utter_template_unknown_template(
@@ -442,6 +472,7 @@ async def test_action_utter_template_with_buttons(
                     {"payload": "button2", "title": "button2"},
                 ]
             },
+            metadata={"template_name": "utter_buttons"},
         )
     ]
 
@@ -470,7 +501,10 @@ async def test_action_utter_template_channel_specific(
     )
 
     assert events == [
-        BotUttered("you're talking to me on slack!", metadata={"channel": "slack"})
+        BotUttered(
+            "you're talking to me on slack!",
+            metadata={"channel": "slack", "template_name": "utter_channel"},
+        )
     ]
 
 
@@ -482,7 +516,7 @@ async def test_action_back(
     )
 
     assert events == [
-        BotUttered("backing up..."),
+        BotUttered("backing up...", metadata={"template_name": "utter_back"}),
         UserUtteranceReverted(),
         UserUtteranceReverted(),
     ]
@@ -495,7 +529,13 @@ async def test_action_restart(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert events == [BotUttered("congrats, you've restarted me!"), Restarted()]
+    assert events == [
+        BotUttered(
+            "congrats, you've restarted me!",
+            metadata={"template_name": "utter_restart"},
+        ),
+        Restarted(),
+    ]
 
 
 async def test_action_session_start_without_slots(
@@ -588,7 +628,10 @@ async def test_action_default_fallback(
     )
 
     assert events == [
-        BotUttered("sorry, I didn't get that, can you rephrase it?"),
+        BotUttered(
+            "sorry, I didn't get that, can you rephrase it?",
+            metadata={"template_name": "utter_default"},
+        ),
         UserUtteranceReverted(),
     ]
 
@@ -609,6 +652,7 @@ async def test_action_default_ask_affirmation(
                     {"title": "No", "payload": "/out_of_scope"},
                 ]
             },
+            {"template_name": "action_default_ask_affirmation"},
         )
     ]
 
@@ -620,4 +664,53 @@ async def test_action_default_ask_rephrase(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert events == [BotUttered("can you rephrase that?")]
+    assert events == [
+        BotUttered(
+            "can you rephrase that?", metadata={"template_name": "utter_ask_rephrase"}
+        )
+    ]
+
+
+def test_get_form_action():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+    forms:
+    - {form_action_name}:
+        my_slot:
+        - type: from_text
+    """
+    )
+
+    actual = domain.action_for_name(form_action_name, None)
+    assert isinstance(actual, FormAction)
+
+
+def test_get_form_action_without_slot_mapping():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+    forms:
+    - {form_action_name}
+    """
+    )
+
+    actual = domain.action_for_name(form_action_name, None)
+    assert isinstance(actual, RemoteAction)
+
+
+def test_get_form_action_if_not_in_forms():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        """
+    actions:
+    - my_action
+    """
+    )
+
+    with pytest.raises(NameError):
+        assert not domain.action_for_name(form_action_name, None)

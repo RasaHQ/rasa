@@ -11,7 +11,7 @@ The ``ReminderScheduled`` event and the
 `trigger_intent endpoint <../../api/http-api/#operation/triggerConversationIntent>`_ let your assistant remind you
 about things after a given period of time, or to respond to external events (other applications, sensors, etc.).
 You can find a full example assistant that implements these features
-`here <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_.
+`here <https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md>`_.
 
 .. contents::
    :local:

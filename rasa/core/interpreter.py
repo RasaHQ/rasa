@@ -30,23 +30,9 @@ class NaturalLanguageInterpreter:
 
     @staticmethod
     def create(
-        obj: Union["NaturalLanguageInterpreter", EndpointConfig, Text, None],
-        # this second parameter is deprecated!
-        endpoint: Optional[EndpointConfig] = None,
+        obj: Union["NaturalLanguageInterpreter", EndpointConfig, Text, None]
     ) -> "NaturalLanguageInterpreter":
         """Factory to create an natural language interpreter."""
-
-        if endpoint is not None:
-            raise_warning(
-                "Calling `NaturalLanguageInterpreter.create` with two parameters"
-                "is deprecated. The `endpoint` parameter will be removed in the "
-                "future. You should replace a call "
-                "`NaturalLanguageInterpreter.create(s, e)` "
-                "with the single parameter version "
-                "`NaturalLanguageInterpreter.create(e or s)`.",
-                category=DeprecationWarning,
-            )
-            obj = endpoint or obj
 
         if isinstance(obj, NaturalLanguageInterpreter):
             return obj

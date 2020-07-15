@@ -73,7 +73,8 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         force_training=args.force,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
-        additional_arguments=extract_additional_arguments(args),
+        core_additional_arguments=extract_core_additional_arguments(args),
+        nlu_additional_arguments=extract_nlu_additional_arguments(args),
     )
 
 
@@ -92,7 +93,7 @@ def train_core(
     story_file = get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
-    additional_arguments = extract_additional_arguments(args)
+    additional_arguments = extract_core_additional_arguments(args)
 
     # Policies might be a list for the compare training. Do normal training
     # if only list item was passed.
@@ -138,10 +139,11 @@ def train_nlu(
         train_path=train_path,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
+        additional_arguments=extract_nlu_additional_arguments(args),
     )
 
 
-def extract_additional_arguments(args: argparse.Namespace) -> Dict:
+def extract_core_additional_arguments(args: argparse.Namespace) -> Dict:
     arguments = {}
 
     if "augmentation" in args:
@@ -152,11 +154,31 @@ def extract_additional_arguments(args: argparse.Namespace) -> Dict:
     return arguments
 
 
+def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
+    arguments = {}
+
+    if "num_threads" in args:
+        arguments["num_threads"] = args.num_threads
+
+    return arguments
+
+
 def _get_valid_config(
     config: Optional[Text],
     mandatory_keys: List[Text],
     default_config: Text = DEFAULT_CONFIG_PATH,
 ) -> Text:
+    """Get a config from a config file and check if it is valid.
+
+    Exit if the config isn't valid.
+
+    Args:
+        config: Path to the config file.
+        mandatory_keys: The keys that have to be specified in the config file.
+        default_config: default config to use if the file at `config` doesn't exist.
+
+    Returns: The path to the config file if the config is valid.
+    """
     config = get_validated_path(config, "config", default_config)
 
     if not os.path.exists(config):

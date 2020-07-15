@@ -8,13 +8,11 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.constants import DOCS_URL_COMPONENTS
-
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
@@ -43,15 +41,10 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.utils.common import class_from_module_path, raise_warning
-from rasa.utils.tensorflow.constants import (
-    INTENT_CLASSIFICATION,
-    ENTITY_RECOGNITION,
-    NUM_TRANSFORMER_LAYERS,
-)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
-    from rasa.nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
+    from rasa.nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +82,7 @@ component_classes = [
     MitieIntentClassifier,
     KeywordIntentClassifier,
     DIETClassifier,
-    EmbeddingIntentClassifier,
+    FallbackClassifier,
     # selectors
     ResponseSelector,
 ]
@@ -97,117 +90,39 @@ component_classes = [
 # Mapping from a components name to its class to allow name based lookup.
 registered_components = {c.name: c for c in component_classes}
 
-# DEPRECATED ensures compatibility, will be remove in future versions
-old_style_names = {
-    "nlp_spacy": "SpacyNLP",
-    "nlp_mitie": "MitieNLP",
-    "ner_spacy": "SpacyEntityExtractor",
-    "ner_mitie": "MitieEntityExtractor",
-    "ner_crf": "CRFEntityExtractor",
-    "ner_duckling_http": "DucklingHTTPExtractor",
-    "ner_synonyms": "EntitySynonymMapper",
-    "intent_featurizer_spacy": "SpacyFeaturizer",
-    "intent_featurizer_mitie": "MitieFeaturizer",
-    "intent_featurizer_ngrams": "NGramFeaturizer",
-    "intent_entity_featurizer_regex": "RegexFeaturizer",
-    "intent_featurizer_count_vectors": "CountVectorsFeaturizer",
-    "tokenizer_mitie": "MitieTokenizer",
-    "tokenizer_spacy": "SpacyTokenizer",
-    "tokenizer_whitespace": "WhitespaceTokenizer",
-    "tokenizer_jieba": "JiebaTokenizer",
-    "intent_classifier_sklearn": "SklearnIntentClassifier",
-    "intent_classifier_mitie": "MitieIntentClassifier",
-    "intent_classifier_keyword": "KeywordIntentClassifier",
-    "intent_classifier_tensorflow_embedding": "EmbeddingIntentClassifier",
-}
-
-# To simplify usage, there are a couple of model templates, that already add
-# necessary components in the right order. They also implement
-# the preexisting `backends`.
-registered_pipeline_templates = {
-    "pretrained_embeddings_spacy": [
-        {"name": "SpacyNLP"},
-        {"name": "SpacyTokenizer"},
-        {"name": "SpacyFeaturizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CRFEntityExtractor"},
-        {"name": "EntitySynonymMapper"},
-        {"name": "SklearnIntentClassifier"},
-    ],
-    "keyword": [{"name": "KeywordIntentClassifier"}],
-    "supervised_embeddings": [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CRFEntityExtractor"},
-        {"name": "EntitySynonymMapper"},
-        {"name": "CountVectorsFeaturizer"},
-        {
-            "name": "CountVectorsFeaturizer",
-            "analyzer": "char_wb",
-            "min_ngram": 1,
-            "max_ngram": 4,
-        },
-        {"name": "EmbeddingIntentClassifier"},
-    ],
-    "pretrained_embeddings_convert": [
-        {"name": "ConveRTTokenizer"},
-        {"name": "ConveRTFeaturizer"},
-        {"name": "EmbeddingIntentClassifier"},
-    ],
-}
-
-
-def pipeline_template(s: Text) -> Optional[List[Dict[Text, Any]]]:
-    import copy
-
-    # do a deepcopy to avoid changing the template configurations
-    return copy.deepcopy(registered_pipeline_templates.get(s))
-
 
 def get_component_class(component_name: Text) -> Type["Component"]:
     """Resolve component name to a registered components class."""
 
     if component_name not in registered_components:
-        if component_name not in old_style_names:
-            try:
-                return class_from_module_path(component_name)
+        try:
+            return class_from_module_path(component_name)
 
-            except AttributeError:
-                # when component_name is a path to a class but the path does not contain
-                # that class
-                module_name, _, class_name = component_name.rpartition(".")
-                raise Exception(
-                    f"Failed to find class '{class_name}' in module '{module_name}'.\n"
-                )
-            except ImportError as e:
-                # when component_name is a path to a class but that path is invalid or
-                # when component_name is a class name and not part of old_style_names
-
-                is_path = "." in component_name
-
-                if is_path:
-                    module_name, _, _ = component_name.rpartition(".")
-                    exception_message = f"Failed to find module '{module_name}'. \n{e}"
-                else:
-                    exception_message = (
-                        f"Cannot find class '{component_name}' from global namespace. "
-                        f"Please check that there is no typo in the class "
-                        f"name and that you have imported the class into the global "
-                        f"namespace."
-                    )
-
-                raise ModuleNotFoundError(exception_message)
-        else:
-            # DEPRECATED ensures compatibility, remove in future versions
-            raise_warning(
-                f"Your nlu config file "
-                f"contains old style component name `{component_name}`, "
-                f"you should change it to its new class name: "
-                f"`{old_style_names[component_name]}`.",
-                FutureWarning,
-                docs=DOCS_URL_COMPONENTS,
+        except AttributeError:
+            # when component_name is a path to a class but the path does not contain
+            # that class
+            module_name, _, class_name = component_name.rpartition(".")
+            raise Exception(
+                f"Failed to find class '{class_name}' in module '{module_name}'.\n"
             )
-            component_name = old_style_names[component_name]
+        except ImportError as e:
+            # when component_name is a path to a class but that path is invalid or
+            # when component_name is a class name and not part of old_style_names
+
+            is_path = "." in component_name
+
+            if is_path:
+                module_name, _, _ = component_name.rpartition(".")
+                exception_message = f"Failed to find module '{module_name}'. \n{e}"
+            else:
+                exception_message = (
+                    f"Cannot find class '{component_name}' from global namespace. "
+                    f"Please check that there is no typo in the class "
+                    f"name and that you have imported the class into the global "
+                    f"namespace."
+                )
+
+            raise ModuleNotFoundError(exception_message)
 
     return registered_components[component_name]
 

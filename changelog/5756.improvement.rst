@@ -1,0 +1,8 @@
+To avoid the problem of our entity extractors predicting entity labels for just a part of the words,
+we introduced a cleaning method after the prediction was done.
+We should avoid the incorrect prediction in the first place.
+To achieve this we will not tokenize words into sub-words anymore.
+We take the mean feature vectors of the sub-words as the feature vector of the word.
+
+.. warning::
+    This change is model breaking. Please, retrain your models.

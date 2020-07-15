@@ -273,7 +273,7 @@ PostgreSQL databases can be used as well:
 
     event_broker:
       type: SQL
-      host: 127.0.0.1
+      url: 127.0.0.1
       port: 5432
       dialect: postgresql
       username: myuser

@@ -3,7 +3,7 @@ import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Text, Type, Collection
 
 import rasa.core.utils
 import rasa.utils.io
@@ -195,6 +195,14 @@ def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     return sorted(dicts, key=lambda d: list(d.keys())[0])
 
 
+def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
+    """Transforms e.g. a list like ['A', 'B', 'C'] into a sentence 'A, B and C'."""
+    x = list(collection)
+    if len(x) >= 2:
+        return ", ".join(map(str, x[:-1])) + " and " + x[-1]
+    return "".join(collection)
+
+
 # noinspection PyUnresolvedReferences
 def class_from_module_path(
     module_path: Text, lookup_path: Optional[Text] = None
@@ -294,6 +302,21 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
     )
 
 
+def update_existing_keys(
+    original: Dict[Any, Any], updates: Dict[Any, Any]
+) -> Dict[Any, Any]:
+    """Iterate through all the updates and update a value in the original dictionary.
+
+    If the updates contain a key that is not present in the original dict, it will
+    be ignored."""
+
+    updated = original.copy()
+    for k, v in updates.items():
+        if k in updated:
+            updated[k] = v
+    return updated
+
+
 def lazy_property(function: Callable) -> Any:
     """Allows to avoid recomputing a property over and over.
 
@@ -354,10 +377,8 @@ def raise_warning(
         # try to set useful defaults for the most common warning categories
         if category == DeprecationWarning:
             kwargs["stacklevel"] = 3
-        elif category == UserWarning:
+        elif category in (UserWarning, FutureWarning):
             kwargs["stacklevel"] = 2
-        elif category == FutureWarning:
-            kwargs["stacklevel"] = 3
 
     warnings.formatwarning = formatwarning
     warnings.warn(message, category=category, **kwargs)
@@ -365,9 +386,7 @@ def raise_warning(
 
 
 class RepeatedLogFilter(logging.Filter):
-    """
-    Filter repeated log records.
-    """
+    """Filter repeated log records."""
 
     last_log = None
 

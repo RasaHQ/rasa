@@ -1,0 +1,2 @@
+Update ``FeatureSignature`` to store just the feature dimension instead of the complete shape. This change fixes the
+usage of the option ``share_hidden_layers`` in the ``DIETClassifier``.

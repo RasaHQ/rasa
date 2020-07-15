@@ -36,7 +36,6 @@ def pipelines_for_tests():
                 "CRFEntityExtractor",
                 "DucklingHTTPExtractor",
                 "DIETClassifier",
-                "EmbeddingIntentClassifier",
                 "ResponseSelector",
                 "EntitySynonymMapper",
             ),
@@ -73,6 +72,7 @@ def pipelines_for_tests():
                 "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
             ),
         ),
+        ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
     ]
 
 
@@ -145,7 +145,9 @@ async def test_train_model_empty_pipeline(component_builder):
 
 
 async def test_train_named_model(component_builder, tmpdir):
-    _config = RasaNLUModelConfig({"pipeline": "keyword", "language": "en"})
+    _config = RasaNLUModelConfig(
+        {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
+    )
 
     (trained, _, persisted_path) = await train(
         _config,
@@ -176,7 +178,9 @@ async def test_handles_pipeline_with_non_existing_component(
 
 
 async def test_train_model_training_data_persisted(component_builder, tmpdir):
-    _config = RasaNLUModelConfig({"pipeline": "keyword", "language": "en"})
+    _config = RasaNLUModelConfig(
+        {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
+    )
 
     (trained, _, persisted_path) = await train(
         _config,
@@ -195,7 +199,9 @@ async def test_train_model_training_data_persisted(component_builder, tmpdir):
 
 
 async def test_train_model_no_training_data_persisted(component_builder, tmpdir):
-    _config = RasaNLUModelConfig({"pipeline": "keyword", "language": "en"})
+    _config = RasaNLUModelConfig(
+        {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
+    )
 
     (trained, _, persisted_path) = await train(
         _config,

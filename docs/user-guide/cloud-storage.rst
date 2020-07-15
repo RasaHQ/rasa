@@ -45,7 +45,6 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ ,
     variable to the path of that key file.
 
 * Azure Storage
-
     Azure is supported using the ``azure-storage-blob`` package,
     which you can install with ``pip install azure-storage-blob``.
 

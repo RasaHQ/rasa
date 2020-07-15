@@ -1,0 +1,74 @@
+# GitHub Runner deployment - uses to deploy a github runner
+# which is used by the CI for model regression tests
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-runner-{{getenv "GITHUB_RUN_ID"}}
+  namespace: github-runner
+  labels:
+    app: github-runner
+    pod: github-runner-{{getenv "GITHUB_RUN_ID"}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-runner
+      pod: github-runner-{{getenv "GITHUB_RUN_ID"}}
+  template:
+    metadata:
+      labels:
+        app: github-runner
+        pod: github-runner-{{getenv "GITHUB_RUN_ID"}}
+    spec:
+      priorityClassName: high-priority
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 180
+      containers:
+      - name: github-runner
+        image: us.gcr.io/rasa-platform/github-runner:2.263.0
+        imagePullPolicy: Always
+        livenessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          failureThreshold: 3
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "if [[ `curl -sX GET -H \"Authorization: token ${GITHUB_PAT}\" \
+              https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/actions/runners | \
+              jq -r '.runners[] | select(.name == \"'${POD_NAME}'\") | .status'` == \"offline\" ]]; then \
+              echo \"The GitHub API returns offline status for the ${POD_NAME} runner\" && exit 1; fi"
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+          requests:
+            nvidia.com/gpu: 1
+            memory: 10Gi
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        # RUNNER_LABELS - defines labels
+        # with which a github-runner will be registered
+        - name: RUNNER_LABELS
+          value: "self-hosted,gpu,kubernetes"
+        # GITHUB_OWNER - a name of the repository owner
+        - name: GITHUB_OWNER
+          valueFrom:
+            secretKeyRef:
+              name: github-rasa
+              key: owner
+        # GITHUB_REPOSITORY - a name of the repository
+        - name: GITHUB_REPOSITORY
+          valueFrom:
+            secretKeyRef:
+              name: github-rasa
+              key: repository
+        # GITHUB_PAT - Personal Access Token
+        - name: GITHUB_PAT
+          valueFrom:
+            secretKeyRef:
+              name: github-rasa
+              key: pat

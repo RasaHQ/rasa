@@ -25,6 +25,8 @@ class SpacyTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Regular expression to detect tokens
+        "token_pattern": None,
     }
 
     def get_doc(self, message: Message, attribute: Text) -> "Doc":
@@ -33,12 +35,15 @@ class SpacyTokenizer(Tokenizer):
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         doc = self.get_doc(message, attribute)
 
-        return [
+        tokens = [
             Token(
                 t.text, t.idx, lemma=t.lemma_, data={POS_TAG_KEY: self._tag_of_token(t)}
             )
             for t in doc
+            if t.text and t.text.strip()
         ]
+
+        return self._apply_token_pattern(tokens)
 
     @staticmethod
     def _tag_of_token(token: Any) -> Text:

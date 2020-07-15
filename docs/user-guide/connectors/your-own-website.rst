@@ -39,7 +39,7 @@ for generating a session id and sending it to the Rasa Core server by
 emitting the event ``session_request`` with ``{session_id: [session_id]}``
 immediately after the ``connect`` event.
 
-The example `Webchat <https://github.com/mrbot-ai/rasa-webchat>`_
+The example `Webchat <https://github.com/botfront/rasa-webchat>`_
 implements this session creation mechanism (version >= 0.5.0).
 
 

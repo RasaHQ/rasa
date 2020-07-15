@@ -1,0 +1,2 @@
+Introduced a new ``YAML`` format for Core training data and implemented a parser
+for it. Rasa Open Source can now read stories in both ``Markdown`` and ``YAML`` format.
