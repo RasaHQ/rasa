@@ -218,6 +218,7 @@ AI Assistant." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../2.0.0a1/index/">2.0.0a1</a>
               <a href="../../../1.10.8/index/">1.10.8</a>
               <a href="../../../1.10.7/index/">1.10.7</a>
               <a href="../../../1.10.6/index/">1.10.6</a>
@@ -228,22 +229,8 @@ AI Assistant." />
               <a href="../../../1.10.1/index/">1.10.1</a>
               <a href="../../../1.10.0/index/">1.10.0</a>
               <a href="../../../1.9.7/index/">1.9.7</a>
-              <a href="../../../1.9.6/index/">1.9.6</a>
-              <a href="../../../1.9.5/index/">1.9.5</a>
-              <a href="../../../1.9.4/index/">1.9.4</a>
-              <a href="../../../1.9.3/index/">1.9.3</a>
-              <a href="../../../1.9.2/index/">1.9.2</a>
-              <a href="../../../1.9.1/index/">1.9.1</a>
-              <a href="../../../1.9.0/index/">1.9.0</a>
               <a href="../../../1.8.3/user-guide/evaluating-models/">1.8.3</a>
-              <a href="../../../1.8.2/user-guide/evaluating-models/">1.8.2</a>
-              <a href="../../../1.8.1/user-guide/evaluating-models/">1.8.1</a>
-              <a href="../../../1.8.0/user-guide/evaluating-models/">1.8.0</a>
               <a href="../../../1.7.4/user-guide/evaluating-models/">1.7.4</a>
-              <a href="../../../1.7.3/user-guide/evaluating-models/">1.7.3</a>
-              <a href="../../../1.7.2/user-guide/evaluating-models/">1.7.2</a>
-              <a href="../../../1.7.1/user-guide/evaluating-models/">1.7.1</a>
-              <a href="../../../1.7.0/user-guide/evaluating-models/">1.7.0</a>
               <a href="../../../1.6.2/user-guide/evaluating-models/">1.6.2</a>
               <a href="../../../1.5.3/user-guide/evaluating-models/">1.5.3</a>
               <a href="../../../1.4.6/user-guide/evaluating-models/">1.4.6</a>
@@ -326,10 +313,9 @@ To do this, add the flag <code class="docutils literal notranslate"><span class=
 </div>
 <p>The full list of options for the script is:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [--successes] [--no-errors] [--histogram HISTOGRAM]
-                     [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
-                     [--cross-validation] [-f FOLDS] [-r RUNS]
-                     [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
+                     [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
+                     [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
+                     [--successes] [--no-errors]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -341,22 +327,17 @@ optional arguments:
                         data)
   --out OUT             Output path for any files created during the
                         evaluation. (default: results)
-  --successes           If set successful predictions (intent and entities)
-                        will be written to a file. (default: False)
-  --no-errors           If set incorrect predictions (intent and entities)
-                        will NOT be written to a file. (default: False)
-  --histogram HISTOGRAM
-                        Output path for the confidence histogram. (default:
-                        hist.png)
-  --confmat CONFMAT     Output path for the confusion matrix plot. (default:
-                        confmat.png)
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                         Model configuration file. If a single file is passed
                         and cross validation mode is chosen, cross-validation
                         is performed, if multiple configs or a folder of
                         configs are passed, models will be trained and
                         compared directly. (default: None)
-  --no-plot             Don&#39;t render evaluation plots (default: False)
+  --no-plot             Don&#39;t render evaluation plots. (default: False)
+  --successes           If set successful predictions will be written to a
+                        file. (default: False)
+  --no-errors           If set incorrect predictions will NOT be written to a
+                        file. (default: False)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
@@ -505,7 +486,8 @@ incorrect action was predicted instead.</p>
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
-                      [--evaluate-model-directory] [--no-plot]
+                      [--evaluate-model-directory] [--no-plot] [--successes]
+                      [--no-errors]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -541,7 +523,11 @@ optional arguments:
                         train core --config &lt;config-1&gt; &lt;config-2&gt;&#39;. All models
                         in the provided directory are evaluated and compared
                         against each other. (default: False)
-  --no-plot             Don&#39;t render evaluation plots (default: False)
+  --no-plot             Don&#39;t render evaluation plots. (default: False)
+  --successes           If set successful predictions will be written to a
+                        file. (default: False)
+  --no-errors           If set incorrect predictions will NOT be written to a
+                        file. (default: False)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:

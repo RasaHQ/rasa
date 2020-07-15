@@ -220,12 +220,13 @@ in open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.8
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/core/retrieval-actions/">2.0.0a1</a>
               <a href="../.././1.10.8/core/retrieval-actions/">1.10.8</a>
               <a href="../.././1.10.7/core/retrieval-actions/">1.10.7</a>
               <a href="../.././1.10.6/core/retrieval-actions/">1.10.6</a>
@@ -236,22 +237,8 @@ in open source bot framework Rasa." />
               <a href="../.././1.10.1/core/retrieval-actions/">1.10.1</a>
               <a href="../.././1.10.0/core/retrieval-actions/">1.10.0</a>
               <a href="../.././1.9.7/core/retrieval-actions/">1.9.7</a>
-              <a href="../.././1.9.6/core/retrieval-actions/">1.9.6</a>
-              <a href="../.././1.9.5/core/retrieval-actions/">1.9.5</a>
-              <a href="../.././1.9.4/core/retrieval-actions/">1.9.4</a>
-              <a href="../.././1.9.3/core/retrieval-actions/">1.9.3</a>
-              <a href="../.././1.9.2/core/retrieval-actions/">1.9.2</a>
-              <a href="../.././1.9.1/core/retrieval-actions/">1.9.1</a>
-              <a href="../.././1.9.0/core/retrieval-actions/">1.9.0</a>
               <a href="../.././1.8.3/core/retrieval-actions/">1.8.3</a>
-              <a href="../.././1.8.2/core/retrieval-actions/">1.8.2</a>
-              <a href="../.././1.8.1/core/retrieval-actions/">1.8.1</a>
-              <a href="../.././1.8.0/core/retrieval-actions/">1.8.0</a>
               <a href="../.././1.7.4/core/retrieval-actions/">1.7.4</a>
-              <a href="../.././1.7.3/core/retrieval-actions/">1.7.3</a>
-              <a href="../.././1.7.2/core/retrieval-actions/">1.7.2</a>
-              <a href="../.././1.7.1/core/retrieval-actions/">1.7.1</a>
-              <a href="../.././1.7.0/core/retrieval-actions/">1.7.0</a>
               <a href="../.././1.6.2/core/retrieval-actions/">1.6.2</a>
               <a href="../.././1.5.3/core/retrieval-actions/">1.5.3</a>
               <a href="../.././1.4.6/core/retrieval-actions/">1.4.6</a>
@@ -372,7 +359,7 @@ above example - <code class="docutils literal notranslate"><span class="pre">ask
 <p>The retrieval model is trained separately as part of the NLU training pipeline to select the correct response.
 One important thing to remember is that the retrieval model uses the text of the response messages
 to select the correct one. If you change the text of these responses, you have to retrain your retrieval model!
-This is a key difference to the response templates in your domain file.</p>
+This is a key difference to the responses defined in your domain file.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The file containing response texts must exist as a separate file inside the training data directory passed
@@ -396,7 +383,7 @@ components should be placed before <code class="docutils literal notranslate"><s
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
   <span class="nt">intent_split_symbol</span><span class="p">:</span> <span class="s">&quot;_&quot;</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;DIETClassifier&quot;</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
 </pre></div>
 </div>
@@ -442,24 +429,21 @@ component in the config:</p>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
   <span class="nt">intent_split_symbol</span><span class="p">:</span> <span class="s">&quot;_&quot;</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;DIETClassifier&quot;</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
   <span class="nt">retrieval_intent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">chitchat</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
   <span class="nt">retrieval_intent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">faq</span>
 </pre></div>
 </div>
-<dl class="simple">
-<dt>You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single</dt><dd><p><code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> component and leaving the <code class="docutils literal notranslate"><span class="pre">retrieval_intent</span></code> to its default value(None):</p>
-</dd>
-</dl>
+<p>You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> component and leaving the <code class="docutils literal notranslate"><span class="pre">retrieval_intent</span></code> to its default value(None):</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">language</span><span class="p">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="nt">pipeline</span><span class="p">:</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
   <span class="nt">intent_split_symbol</span><span class="p">:</span> <span class="s">&quot;_&quot;</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;DIETClassifier&quot;</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
 </pre></div>
 </div>

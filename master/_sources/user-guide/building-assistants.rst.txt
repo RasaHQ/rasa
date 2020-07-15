@@ -658,17 +658,22 @@ should be handled by writing regular stories, so your model can learn this behav
 
       - ``actions.py``: Define the form action, including the ``required_slots``, ``slot_mappings`` and ``submit`` methods
       - ``data/nlu.md``:
+
           - Add examples for an intent to activate the form
           - Add examples for an ``inform`` intent to fill the form
       - ``domain.yml``:
+
           - Add all slots required by the form
           - Add ``utter_ask_{slot}`` responses for all required slots
           - Add your form action to the ``forms`` section
           - Add all intents and entities from your NLU training data
+
       - ``data/stories.md``: Add a story for the form
       - ``config.yml``:
+
           - Add the ``FormPolicy`` to your policies
           - Add entity extractors to your pipeline
+
       - ``endpoints.yml``: Define the ``action_endpoint``
 
 
@@ -895,11 +900,14 @@ Don’t forget to add a few end to end stories to your ``test_stories.md`` for t
       - ``actions.py``: Define ``action_greet``
       - ``data/nlu.md``: Add training data for an ``explain`` intent
       - ``domain.yml``:
+
           - Map intent ``greet`` to  ``action_greet_user``
-          - Make ``requested_slot`` a categorical slots with all required slots as values
+          - Make ``requested_slot`` a categorical slot with all required slots as values
           - Add the ``explain`` intent
           - Add responses for contextual question interruptions
+
       - ``data/stories.md``:
+
           - Remove stories using mapped intents if you have them
           - Add stories with FAQ & contextual interruptions in the middle of filling a form
 
@@ -1009,15 +1017,24 @@ let’s say the user asks "I want to apply for a job at Rasa", we can then reply
     Here's a minimal checklist of files we modified to help our assistant fail gracefully:
 
       - ``data/nlu.md``:
+
           - Add training data for the ``out_of_scope`` intent & any specific out of scope intents that you want to handle seperately
+
       - ``data/stories.md``:
+
           - Add stories for any specific out of scope intents
+
       - ``domain.yml``:
+
           - Add the ``out_of_scope`` intent & any specific out of scope intents
           - Add an ``utter_out_of_scope`` response & responses for any specific out of scope intents
+
       - ``actions.py``:
+
           - Customise ``ActionDefaultAskAffirmation`` to suggest intents for the user to choose from
+
       - ``config.yml``:
+
           - Add the TwoStageFallbackPolicy to the ``policies`` section
 
 

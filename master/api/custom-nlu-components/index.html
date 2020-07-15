@@ -226,6 +226,7 @@ analysis to integrate with open source bot framework Rasa." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../2.0.0a1/api/custom-nlu-components/">2.0.0a1</a>
               <a href="../../../1.10.8/api/custom-nlu-components/">1.10.8</a>
               <a href="../../../1.10.7/api/custom-nlu-components/">1.10.7</a>
               <a href="../../../1.10.6/api/custom-nlu-components/">1.10.6</a>
@@ -236,22 +237,8 @@ analysis to integrate with open source bot framework Rasa." />
               <a href="../../../1.10.1/api/custom-nlu-components/">1.10.1</a>
               <a href="../../../1.10.0/api/custom-nlu-components/">1.10.0</a>
               <a href="../../../1.9.7/api/custom-nlu-components/">1.9.7</a>
-              <a href="../../../1.9.6/api/custom-nlu-components/">1.9.6</a>
-              <a href="../../../1.9.5/api/custom-nlu-components/">1.9.5</a>
-              <a href="../../../1.9.4/api/custom-nlu-components/">1.9.4</a>
-              <a href="../../../1.9.3/api/custom-nlu-components/">1.9.3</a>
-              <a href="../../../1.9.2/api/custom-nlu-components/">1.9.2</a>
-              <a href="../../../1.9.1/api/custom-nlu-components/">1.9.1</a>
-              <a href="../../../1.9.0/api/custom-nlu-components/">1.9.0</a>
               <a href="../../../1.8.3/api/custom-nlu-components/">1.8.3</a>
-              <a href="../../../1.8.2/api/custom-nlu-components/">1.8.2</a>
-              <a href="../../../1.8.1/api/custom-nlu-components/">1.8.1</a>
-              <a href="../../../1.8.0/api/custom-nlu-components/">1.8.0</a>
               <a href="../../../1.7.4/api/custom-nlu-components/">1.7.4</a>
-              <a href="../../../1.7.3/api/custom-nlu-components/">1.7.3</a>
-              <a href="../../../1.7.2/api/custom-nlu-components/">1.7.2</a>
-              <a href="../../../1.7.1/api/custom-nlu-components/">1.7.1</a>
-              <a href="../../../1.7.0/api/custom-nlu-components/">1.7.0</a>
               <a href="../../../1.6.2/api/custom-nlu-components/">1.6.2</a>
               <a href="../../../1.5.3/api/custom-nlu-components/">1.5.3</a>
               <a href="../../../1.4.6/api/custom-nlu-components/">1.4.6</a>
@@ -288,7 +275,7 @@ analysis to integrate with open source bot framework Rasa." />
 
 
 
-    <p class="scv-banner"><a href="../../../1.10.8/api/custom-nlu-components/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.10.8.</a></p>
+    <p class="scv-banner"><a href="../../../2.0.0a1/api/custom-nlu-components/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 2.0.0a1.</a></p>
 <div class="section" id="custom-nlu-components">
 <span id="id1"></span><h1>Custom NLU Components<a class="headerlink" href="#custom-nlu-components" title="Permalink to this headline">¶</a></h1>
 
@@ -399,7 +386,13 @@ methods that you should implement:</p>
 85
 86
 87
-88</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">typing</span>
+88
+89
+90
+91
+92
+93
+94</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">typing</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Text</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Type</span>
 
 <span class="kn">from</span> <span class="nn">rasa.nlu.components</span> <span class="kn">import</span> <span class="n">Component</span>
@@ -431,7 +424,13 @@ methods that you should implement:</p>
     <span class="c1"># This attribute is designed for instance method: `can_handle_language`.</span>
     <span class="c1"># Default value is None which means it can handle all languages.</span>
     <span class="c1"># This is an important feature for backwards compatibility of components.</span>
-    <span class="n">language_list</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">supported_language_list</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Defines what language(s) this component can NOT handle.</span>
+    <span class="c1"># This attribute is designed for instance method: `can_handle_language`.</span>
+    <span class="c1"># Default value is None which means it can handle all languages.</span>
+    <span class="c1"># This is an important feature for backwards compatibility of components.</span>
+    <span class="n">not_supported_language_list</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">component_config</span><span class="p">)</span>

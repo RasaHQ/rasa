@@ -220,12 +220,13 @@ and deployed with minimum manual effort" />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.8
+          viewing: 2.0.0a1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././2.0.0a1/user-guide/setting-up-ci-cd/">2.0.0a1</a>
               <a href="../.././1.10.8/user-guide/setting-up-ci-cd/">1.10.8</a>
               <a href="../.././1.10.7/user-guide/setting-up-ci-cd/">1.10.7</a>
               <a href="../.././1.10.6/user-guide/setting-up-ci-cd/">1.10.6</a>
@@ -236,22 +237,8 @@ and deployed with minimum manual effort" />
               <a href="../.././1.10.1/user-guide/setting-up-ci-cd/">1.10.1</a>
               <a href="../.././1.10.0/user-guide/setting-up-ci-cd/">1.10.0</a>
               <a href="../.././1.9.7/user-guide/setting-up-ci-cd/">1.9.7</a>
-              <a href="../.././1.9.6/user-guide/setting-up-ci-cd/">1.9.6</a>
-              <a href="../.././1.9.5/index/">1.9.5</a>
-              <a href="../.././1.9.4/index/">1.9.4</a>
-              <a href="../.././1.9.3/index/">1.9.3</a>
-              <a href="../.././1.9.2/index/">1.9.2</a>
-              <a href="../.././1.9.1/index/">1.9.1</a>
-              <a href="../.././1.9.0/index/">1.9.0</a>
               <a href="../.././1.8.3/index/">1.8.3</a>
-              <a href="../.././1.8.2/index/">1.8.2</a>
-              <a href="../.././1.8.1/index/">1.8.1</a>
-              <a href="../.././1.8.0/index/">1.8.0</a>
               <a href="../.././1.7.4/index/">1.7.4</a>
-              <a href="../.././1.7.3/index/">1.7.3</a>
-              <a href="../.././1.7.2/index/">1.7.2</a>
-              <a href="../.././1.7.1/index/">1.7.1</a>
-              <a href="../.././1.7.0/index/">1.7.0</a>
               <a href="../.././1.6.2/index/">1.6.2</a>
               <a href="../.././1.5.3/index/">1.5.3</a>
               <a href="../.././1.4.6/index/">1.4.6</a>
@@ -323,7 +310,7 @@ to your assistant and efficiently test and deploy those changes.</p>
 <p>This guide will cover <strong>what</strong> should go in a CI/CD pipeline, specific to a
 Rasa project. <strong>How</strong> you implement that pipeline is up to you.
 There are many CI/CD tools out there, such as <a class="reference external" href="https://github.com/features/actions">GitHub Actions</a>,
-<a class="reference external" href="https://docs.gitlab.com/ee/ci/">GitLab CI/CD</a>, <a class="reference external" href="https://jenkins.io/doc/">Jenkins</a>, and
+<a class="reference external" href="https://docs.gitlab.com/ee/ci/">GitLab CI/CD</a>, <a class="reference external" href="https://www.jenkins.io/doc/">Jenkins</a>, and
 <a class="reference external" href="https://circleci.com/docs/2.0/">CircleCI</a>. We recommend choosing a tool that integrates with
 whatever Git repository you use.</p>
 </div>
@@ -472,7 +459,7 @@ would be incompatible with the current production model.</p>
 <p>As examples, see the CI/CD pipelines for
 <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/.github/workflows/build_and_deploy.yml">Sara</a>,
 the Rasa assistant that you can talk to in the Rasa Docs, and
-<a class="reference external" href="https://github.com/RasaHQ/carbon-assistant/blob/master/.github/workflows/model_ci.yml">Carbon Bot</a>.
+<a class="reference external" href="https://github.com/RasaHQ/carbon-bot/blob/master/.github/workflows/model_ci.yml">Carbon Bot</a>.
 Both use <a class="reference external" href="https://github.com/features/actions">Github Actions</a> as a CI/CD tool.</p>
 <p>These examples are just two of many possibilities. If you have a CI/CD setup you like, please
 share it with the Rasa community on the <a class="reference external" href="https://forum.rasa.com">forum</a>.</p>
