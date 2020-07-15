@@ -13,6 +13,10 @@ on:
 #                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
 # - GITHUB_TOKEN: (default, from github actions)
 
+env:
+  DOCS_FOLDER: newdocs
+  DOCS_BRANCH: documentation
+
 jobs:
   docs:
     name: Build Docs
@@ -60,11 +64,13 @@ jobs:
     - name: Install Dependencies 📦
       run: make install install-docs
 
+    - name: Build Docs variables 🧶
+      run: cd $DOCS_FOLDER && yarn run variables
+
     - name: Build & Publish Docs 🏃‍♀️
       env:
+        # TODO: NEW_VERSION
         GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
-        GIT_USER: tmbo
-        DEPLOYMENT_BRANCH: documentation
       run: |
         eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
         echo "$GITHUB_DOCS_KEY" > "docs_key"
@@ -74,4 +80,4 @@ jobs:
         git config --global user.name "GitHub CI"
         git remote set-url --push origin "git@github.com:${{github.repository}}"
 
-        cd newdocs && poetry run yarn deploy
+        ./scripts/push_docs_to_branch.sh
