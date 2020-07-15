@@ -6,7 +6,7 @@
     "start": "yarn run variables && docusaurus start",
     "build": "yarn run variables && docusaurus build",
     "swizzle": "docusaurus swizzle",
-    "deploy": "docusaurus deploy",
+    "deploy": "yarn run variables && docusaurus deploy",
     "variables": "node compile_variables.js"
   },
   "dependencies": {
