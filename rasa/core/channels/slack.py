@@ -41,18 +41,9 @@ class SlackBot(OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
         for message_part in text.strip().split("\n\n"):
-            if self.ts:
-                await self.client.chat_postMessage(
-                    channel=recipient,
-                    as_user=True,
-                    text=message_part,
-                    type="mrkdwn",
-                    thread_ts=self.ts,
-                )
-            else:
-                await self.client.chat_postMessage(
-                    channel=recipient, as_user=True, text=message_part, type="mrkdwn"
-                )
+            await self._post_message(
+                channel=recipient, as_user=True, text=message_part, type="mrkdwn"
+            )
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
