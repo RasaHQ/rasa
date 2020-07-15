@@ -60,6 +60,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    CHECKPOINT_MODEL,
 )
 
 
@@ -178,6 +179,8 @@ class TEDPolicy(Policy):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
+        # Perform model checkpointing
+        CHECKPOINT_MODEL: False,
     }
 
     @staticmethod
@@ -322,7 +325,7 @@ class TEDPolicy(Policy):
             self.config[BATCH_SIZES],
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
-            batch_strategy=self.config[BATCH_STRATEGY],
+            batch_strategy=self.config[BATCH_STRATEGY]
         )
 
     def predict_action_probabilities(
@@ -369,8 +372,11 @@ class TEDPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        self.model.save(str(tf_model_file))
-
+        if self.model.best_model_file is not None:
+            self.model.copy_best(str(tf_model_file))
+        else:
+            self.model.save(str(tf_model_file))
+        
         io_utils.json_pickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority
         )
@@ -461,6 +467,7 @@ class TED(RasaModel):
             random_seed=config[RANDOM_SEED],
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
             tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
+            checkpoint_model=config[CHECKPOINT_MODEL]
         )
 
         self.config = config

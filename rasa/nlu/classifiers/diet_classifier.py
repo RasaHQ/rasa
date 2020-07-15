@@ -1024,7 +1024,6 @@ class DIET(RasaModel):
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
             tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
             checkpoint_model=config[CHECKPOINT_MODEL]
-            #model_checkpoint_dir=config[MODEL_CHECKPOINT_DIR],
         )
 
         self.config = config
