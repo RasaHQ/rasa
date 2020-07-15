@@ -68,7 +68,6 @@ jobs:
 
     - name: Build & Publish Docs 🏃‍♀️
       env:
-        # TODO: NEW_VERSION
         GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
       run: |
         eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key

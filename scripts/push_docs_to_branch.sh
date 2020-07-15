@@ -7,6 +7,20 @@ TESTS_FOLDER=tests
 DATA_FOLDER=data
 TMP_DOCS_FOLDER=tmp-documentation
 TODAY=`date "+%Y%m%d"`
+# we build new versions only for majors
+PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.0\\.0$"
+MASTER_REF=refs/heads/master
+
+[[ ! $GITHUB_REF =~ $PATTERN_FOR_NEW_VERSION ]] \
+&& [[ $GITHUB_REF != $MASTER_REF ]] \
+&& echo "Not on master or major version, skipping." \
+&& exit 0
+
+NEW_VERSION=
+if [ "$GITHUB_REF" != $MASTER_REF ]
+then
+    NEW_VERSION=${GITHUB_REF/refs\/tags\//}
+fi
 
 # clone the $DOCS_BRANCH in a temp directory
 git clone --depth=1 --branch=$DOCS_BRANCH git@github.com:$GITHUB_REPOSITORY.git $TMP_DOCS_FOLDER
@@ -20,10 +34,8 @@ cp -R $TESTS_FOLDER $TMP_DOCS_FOLDER/$TESTS_FOLDER
 
 cd $TMP_DOCS_FOLDER
 
-if [ -z "$NEW_VERSION" ]
+if [ ! -z "$NEW_VERSION" ]
 then
-    echo "Skipping generation of new version."
-else
     echo "Generating docs for new version $NEW_VERSION..."
     yarn run new-version $NEW_VERSION
 fi
