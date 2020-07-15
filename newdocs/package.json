@@ -5,7 +5,7 @@
   "scripts": {
     "start": "yarn run variables && docusaurus start",
     "build": "yarn run variables && docusaurus build",
-    "new-version": "docusaurus docs:version"
+    "new-version": "docusaurus docs:version",
     "variables": "node compile_variables.js"
   },
   "dependencies": {
