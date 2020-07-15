@@ -342,6 +342,7 @@ class SlackInput(InputChannel):
                 ts = None
         else:
             output_channel = None
+            ts = None
 
         try:
             user_msg = UserMessage(
