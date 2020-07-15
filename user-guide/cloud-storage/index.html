@@ -220,7 +220,7 @@ GDPR-compliant intent recognition and entity extraction." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 2.0.0a1
+          viewing: 1.10.8
         </span>
       </div>
       <div class="other-versions">
@@ -281,8 +281,9 @@ GDPR-compliant intent recognition and entity extraction." />
   </div><p>Rasa supports using <a class="reference external" href="https://aws.amazon.com/s3/">S3</a> ,
 <a class="reference external" href="https://cloud.google.com/storage/">GCS</a> and <a class="reference external" href="https://azure.microsoft.com/services/storage/">Azure Storage</a> to save your models.</p>
 <ul>
-<li><dl>
-<dt>Amazon S3 Storage</dt><dd><p>S3 is supported using the <code class="docutils literal notranslate"><span class="pre">boto3</span></code> module which you can
+<li><p>Amazon S3 Storage</p>
+<blockquote>
+<div><p>S3 is supported using the <code class="docutils literal notranslate"><span class="pre">boto3</span></code> module which you can
 install with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">boto3</span></code>.</p>
 <p>Start the Rasa server with <code class="docutils literal notranslate"><span class="pre">remote-storage</span></code> option set to
 <code class="docutils literal notranslate"><span class="pre">aws</span></code>. Get your S3 credentials and set the following
@@ -295,11 +296,11 @@ environment variables:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">AWS_ENDPOINT_URL</span></code></p></li>
 </ul>
 <p>If there is no bucket with the name <code class="docutils literal notranslate"><span class="pre">BUCKET_NAME</span></code>, Rasa will create it.</p>
-</dd>
-</dl>
+</div></blockquote>
 </li>
-<li><dl>
-<dt>Google Cloud Storage</dt><dd><p>GCS is supported using the <code class="docutils literal notranslate"><span class="pre">google-cloud-storage</span></code> package,
+<li><p>Google Cloud Storage</p>
+<blockquote>
+<div><p>GCS is supported using the <code class="docutils literal notranslate"><span class="pre">google-cloud-storage</span></code> package,
 which you can install with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">google-cloud-storage</span></code>.</p>
 <p>Start the Rasa server with <code class="docutils literal notranslate"><span class="pre">remote-storage</span></code> option set to <code class="docutils literal notranslate"><span class="pre">gcs</span></code>.</p>
 <p>When running on google app engine and compute engine, the auth
@@ -310,12 +311,12 @@ for details on setting up authentication. It involves creating
 a service account key file from google cloud console,
 and setting the <code class="docutils literal notranslate"><span class="pre">GOOGLE_APPLICATION_CREDENTIALS</span></code> environment
 variable to the path of that key file.</p>
-</dd>
-</dl>
+</div></blockquote>
 </li>
-<li><dl>
-<dt>Azure Storage</dt><dd><p>Azure is supported using the legacy <code class="docutils literal notranslate"><span class="pre">azure-storage-blob</span></code> package (v 2.1.0),
-which you can install with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-I</span> <span class="pre">azure-storage-blob==2.1.0</span></code>.</p>
+<li><p>Azure Storage</p>
+<blockquote>
+<div><p>Azure is supported using the <code class="docutils literal notranslate"><span class="pre">azure-storage-blob</span></code> package,
+which you can install with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">azure-storage-blob</span></code>.</p>
 <p>Start the Rasa server with <code class="docutils literal notranslate"><span class="pre">remote-storage</span></code> option set to <code class="docutils literal notranslate"><span class="pre">azure</span></code>.</p>
 <p>The following environment variables must be set:</p>
 <ul class="simple">
@@ -324,12 +325,11 @@ which you can install with <code class="docutils literal notranslate"><span clas
 <li><p><code class="docutils literal notranslate"><span class="pre">AZURE_ACCOUNT_KEY</span></code></p></li>
 </ul>
 <p>If there is no container with the name <code class="docutils literal notranslate"><span class="pre">AZURE_CONTAINER</span></code>, Rasa will create it.</p>
-</dd>
-</dl>
+</div></blockquote>
 </li>
 </ul>
 <p>Models are gzipped before they are saved in the cloud. The gzipped file naming convention
-is <cite>{MODEL_NAME}.tar.gz</cite> and it is stored in the root folder of the storage service.
+is <code class="docutils literal notranslate"><span class="pre">{MODEL_NAME}.tar.gz</span></code> and it is stored in the root folder of the storage service.
 Currently, you are not able to manually specify the path on the cloud storage.</p>
 <p>If storing trained models, Rasa will gzip the new model and upload it to the container. If retrieving/loading models
 from the cloud storage, Rasa will download the gzipped model locally and extract the contents to a temporary directory.</p>

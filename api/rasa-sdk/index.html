@@ -220,7 +220,7 @@ external APIs or improve dialogue with custom actions written in Python." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 2.0.0a1
+          viewing: 1.10.8
         </span>
       </div>
       <div class="other-versions">
@@ -477,7 +477,7 @@ slots, but only a user’s name and their phone number. To do that, you’d over
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">EventType</span><span class="p">]:</span>
 
         <span class="c1"># the session should begin with a `session_started` event</span>
-        <span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="n">SessionStarted</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)]</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="n">SessionStarted</span><span class="p">()]</span>
 
         <span class="c1"># any slots that should be carried over should come after the</span>
         <span class="c1"># `session_started` event</span>

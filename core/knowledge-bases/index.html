@@ -220,7 +220,7 @@ in open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 2.0.0a1
+          viewing: 1.10.8
         </span>
       </div>
       <div class="other-versions">
@@ -325,7 +325,7 @@ Since the information is subject to change, hard-coding the information isn’t 
 custom action that inherits from <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code>, a pre-written custom action that contains
 the logic to query a knowledge base for objects and their attributes.</p>
 <p>You can find a complete example in <code class="docutils literal notranslate"><span class="pre">examples/knowledgebasebot</span></code>
-(<a class="reference external" href="https://github.com/RasaHQ/rasa/tree/master/examples/knowledgebasebot/">knowledge base bot</a>), as well as instructions
+(<a class="reference external" href="https://github.com/RasaHQ/rasa/blob/master/examples/knowledgebasebot/">knowledge base bot</a>), as well as instructions
 for implementing this custom action below.</p>
 <div class="section" id="using-actionqueryknowledgebase">
 <h2><a class="toc-backref" href="#id4">Using <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code></a><a class="headerlink" href="#using-actionqueryknowledgebase" title="Permalink to this headline">¶</a></h2>
@@ -409,7 +409,7 @@ If it doesn’t, you’ll have to <a class="reference internal" href="#customize
 <p>In this section:</p>
 <ul class="simple">
 <li><p>we will introduce a new intent, <code class="docutils literal notranslate"><span class="pre">query_knowledge_base</span></code></p></li>
-<li><p>we will annotate <code class="docutils literal notranslate"><span class="pre">mention</span></code> entities so that our model detects indirect mentions of objects like “the
+<li><p>we will to annotate <code class="docutils literal notranslate"><span class="pre">mention</span></code> entities so that our model detects indirect mentions of objects like “the
 first one”</p></li>
 <li><p>we will use <a class="reference internal" href="../../nlu/training-data-format/#entity-synonyms"><span class="std std-ref">synonyms</span></a> extensively</p></li>
 </ul>
@@ -439,7 +439,7 @@ attribute of an object. The intent should contain lots of variations of both of 
 <p>The above example just shows examples related to the restaurant domain.
 You should add examples for every object type that exists in your knowledge base to the same <code class="docutils literal notranslate"><span class="pre">query_knowledge_base</span></code> intent.</p>
 <p>In addition to adding a variety of training examples for each query type,
-you need to specify and annotate the following entities in your training examples:</p>
+you need to specify the and annotate the following entities in your training examples:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">object_type</span></code>: Whenever a training example references a specific object type from your knowledge base, the object type should
 be marked as an entity. Use <a class="reference internal" href="../../nlu/training-data-format/#entity-synonyms"><span class="std std-ref">synonyms</span></a> to map e.g. <code class="docutils literal notranslate"><span class="pre">restaurants</span></code> to <code class="docutils literal notranslate"><span class="pre">restaurant</span></code>, the correct

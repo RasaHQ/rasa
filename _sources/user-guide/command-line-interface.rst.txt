@@ -59,10 +59,8 @@ This creates the following files:
    │   └── stories.md
    ├── domain.yml
    ├── endpoints.yml
-   ├── models
-   │   └── <timestamp>.tar.gz
-   └── tests
-      └── conversation_tests.md
+   └── models
+       └── <timestamp>.tar.gz
 
 The ``rasa init`` command will ask you if you want to train an initial model using this data.
 If you answer no, the ``models`` directory will be empty.
@@ -145,13 +143,8 @@ To increase the logging level for debugging, run:
 
    rasa shell --debug
 
-.. note::
-   In order to see the typical greetings and/or session start behavior you might see
-   in an external channel, you will need to explicitly send ``/session_start``
-   as the first message. Otherwise, the session start behavior will begin as described in
-   :ref:`session_config`.
 
-The full list of options for ``rasa shell`` is:
+The full list of options for ``rasa shell`` is
 
 .. program-output:: rasa shell --help
 
