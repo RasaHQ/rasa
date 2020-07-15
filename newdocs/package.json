@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "start": "yarn run variables && docusaurus start",
-    "build": "yarn run variables && docusaurus build",
+    // build happens on the `documentation` branch, where
+    // we expect the variables to be already computed
+    "build": "docusaurus build",
     "new-version": "docusaurus docs:version",
     "variables": "node compile_variables.js"
   },
