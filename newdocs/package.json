@@ -7,6 +7,7 @@
     "build": "yarn run variables && docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "yarn run variables && docusaurus deploy",
+    "new-version": "docusaurus docs:version"
     "variables": "node compile_variables.js"
   },
   "dependencies": {
