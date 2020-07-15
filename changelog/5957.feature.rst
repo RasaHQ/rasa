@@ -1,0 +1,2 @@
+Add new entity extractor ``LookupEntityExtractor``. The entity extractor extracts entities using a lookup table.
+For more information see :ref:`LookupEntityExtractor`.

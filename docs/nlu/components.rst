@@ -946,6 +946,8 @@ EntitySynonymMapper
         pipeline:
         - name: "EntitySynonymMapper"
 
+.. _LookupEntityExtractor:
+
 LookupEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~~
 
