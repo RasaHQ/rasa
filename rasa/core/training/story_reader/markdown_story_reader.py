@@ -90,7 +90,7 @@ class MarkdownStoryReader(StoryReader):
                     # reached a user message
                     user_messages = [el.strip() for el in line[1:].split(" OR ")]
                     # TODO: Hack by Genie for temporary markdown support (till line 98)
-                    await self.add_user_messages_e2e(user_messages, line_num)
+                    await self._add_user_messages(user_messages, line_num)
                     # end-to-end BOT message
                 elif line.startswith("<B>"):
                     event_name, parameters = self._parse_event_line(line[3:])
