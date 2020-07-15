@@ -50,6 +50,13 @@ jobs:
         key: ${{ runner.os }}-poetry-3.6-non-full-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-3.6-non-full
 
+    - name: Load Yarn Cached Packages ⬇
+      uses: actions/cache@v1
+      with:
+        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('newdocs/yarn.lock') }}
+        restore-keys: ${{ runner.os }}-yarn-12.x
+
     - name: Install Dependencies 📦
       run: make install install-docs
 
