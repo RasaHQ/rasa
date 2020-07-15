@@ -346,6 +346,12 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
          |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
          |                                 |                  | training step ('minibatch').                                 |
          +---------------------------------+------------------+--------------------------------------------------------------+
+         | checkpoint_model                | False            | Save the best performing model during training. Models are   |
+         |                                 |                  | stored to the location specified by `--out`. Only the one    |
+         |                                 |                  | best model will be saved.                                    |
+         |                                 |                  | Requires `evaluate_on_number_of_examples > 0` and            |
+         |                                 |                  | `evaluate_every_number_of_epochs > 0`                        |
+         +---------------------------------+------------------+--------------------------------------------------------------+
 
         .. warning::
 

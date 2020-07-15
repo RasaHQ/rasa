@@ -376,7 +376,7 @@ class TEDPolicy(Policy):
             self.model.copy_best(str(tf_model_file))
         else:
             self.model.save(str(tf_model_file))
-        
+
         io_utils.json_pickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority
         )
