@@ -3,7 +3,6 @@ name: Publish Documentation
 on:
   push:
     branches:
-    - '[0-9]+.[0-9]+.x'
     - 'master'
     tags:
     - '**'
