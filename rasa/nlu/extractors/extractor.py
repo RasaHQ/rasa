@@ -166,7 +166,7 @@ class EntityExtractor(Component):
                     confidences,
                 )
                 entities.append(entity)
-            elif last_token_end - token.start <= 1:
+            elif token.start - last_token_end <= 1:
                 # current token has the same entity tag as the token before and
                 # the two tokens are only separated by at most one symbol (e.g. space,
                 # dash, etc.)
