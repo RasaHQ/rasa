@@ -1205,13 +1205,11 @@ async def _correct_entities(
 
     parse_original = latest_message.get("parse_data", {})
     entity_str = _as_md_message(parse_original)
-
     question = questionary.text(
         "Please mark the entities using [value](type) notation", default=entity_str
     )
 
     annotation = await _ask_questions(question, conversation_id, endpoint)
-
     # noinspection PyProtectedMember
     parse_annotated = MarkdownReader().parse_training_example(annotation)
 
