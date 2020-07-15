@@ -31,7 +31,7 @@ def pipelines_for_tests():
             [
                 {
                     "name": "LookupEntityExtractor",
-                    "lookup": "data/test/lookup_tables/plates.txt",
+                    "lookup": {"plates": "data/test/lookup_tables/plates.txt"},
                 }
             ],
         ),
