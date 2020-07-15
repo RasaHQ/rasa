@@ -63,6 +63,7 @@ jobs:
     - name: Build & Publish Docs 🏃‍♀️
       env:
         GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
+        GIT_USER: tmbo
         DEPLOYMENT_BRANCH: documentation
       run: |
         eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
