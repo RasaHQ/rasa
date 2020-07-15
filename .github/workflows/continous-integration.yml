@@ -103,7 +103,6 @@ jobs:
 
     - name: Test Docs 📃
       run: |
-        make install-full
         poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
         cd newdocs && poetry run yarn build
         
