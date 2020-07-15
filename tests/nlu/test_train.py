@@ -28,6 +28,15 @@ def pipelines_for_tests():
         ("en", as_pipeline("KeywordIntentClassifier")),
         (
             "en",
+            [
+                {
+                    "name": "LookupEntityExtractor",
+                    "lookup": "data/test/lookup_tables/plates.txt",
+                }
+            ],
+        ),
+        (
+            "en",
             as_pipeline(
                 "WhitespaceTokenizer",
                 "RegexFeaturizer",
