@@ -1,4 +1,6 @@
 import tempfile
+from typing import Text, List
+
 import ruamel.yaml as yaml
 
 from rasa.nlu.model import Interpreter
@@ -12,6 +14,15 @@ def write_file_config(file_config):
         f.write(yaml.safe_dump(file_config))
         f.flush()
         return f
+
+
+def write_tmp_file(content: List[Text]) -> Text:
+    with tempfile.NamedTemporaryFile("w+", delete=False) as f:
+        for c in content:
+            f.write(c)
+            f.write("\n")
+        f.flush()
+        return f.name
 
 
 async def interpreter_for(component_builder, data, path, config):

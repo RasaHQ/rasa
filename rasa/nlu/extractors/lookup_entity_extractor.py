@@ -53,7 +53,7 @@ class LookupEntityExtractor(EntityExtractor):
         self.lowercase = self.component_config["lowercase"]
 
         # check if the entities and respective file path exists
-        for entity_type, file_path in self.lookup.items():
+        for entity_type, file_path in list(self.lookup.items()):
             self._validate_lookup_entry(entity_type, file_path)
 
         if not self.lookup:
@@ -107,7 +107,7 @@ class LookupEntityExtractor(EntityExtractor):
             for example in file:
                 example = example.strip()
                 if self.lowercase:
-                    example = example.strip()
+                    example = example.lower()
 
                 if example in _user_message:
                     start_index = _user_message.index(example)
