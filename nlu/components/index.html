@@ -220,12 +220,13 @@ Natural Language Understanding pipeline" />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 1.10.8
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.8/nlu/components/">1.10.8</a>
               <a href="../.././1.10.7/nlu/components/">1.10.7</a>
               <a href="../.././1.10.6/nlu/components/">1.10.6</a>
               <a href="../.././1.10.5/nlu/components/">1.10.5</a>
@@ -1609,6 +1610,11 @@ existing entity, it appends itself to the processor list of this entity.</p>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When using the <code class="docutils literal notranslate"><span class="pre">EntitySynonymMapper</span></code> as part of an NLU pipeline, it will need to be placed
+below any entity extractors in the configuration file.</p>
+</div>
 </dd>
 </dl>
 </div>
@@ -1712,11 +1718,11 @@ You define the features as [before, token, after] array.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If POS features are used (<code class="docutils literal notranslate"><span class="pre">pos</span></code> or <code class="docutils literal notranslate"><span class="pre">pos2`),</span> <span class="pre">you</span> <span class="pre">need</span> <span class="pre">to</span> <span class="pre">have</span> <span class="pre">``SpacyTokenizer</span></code> in your pipeline.</p>
+<p>If POS features are used (<code class="docutils literal notranslate"><span class="pre">pos</span></code> or <code class="docutils literal notranslate"><span class="pre">pos2</span></code>), you need to have <code class="docutils literal notranslate"><span class="pre">SpacyTokenizer</span></code> in your pipeline.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If “<code class="docutils literal notranslate"><span class="pre">pattern`</span> <span class="pre">features</span> <span class="pre">are</span> <span class="pre">used,</span> <span class="pre">you</span> <span class="pre">need</span> <span class="pre">to</span> <span class="pre">have</span> <span class="pre">``RegexFeaturizer</span></code> in your pipeline.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">pattern</span></code> features are used, you need to have <code class="docutils literal notranslate"><span class="pre">RegexFeaturizer</span></code> in your pipeline.</p>
 </div>
 </dd>
 </dl>

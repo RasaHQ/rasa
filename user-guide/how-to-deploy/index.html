@@ -216,12 +216,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.7
+          viewing: 1.10.8
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.8/user-guide/how-to-deploy/">1.10.8</a>
               <a href="../.././1.10.7/user-guide/how-to-deploy/">1.10.7</a>
               <a href="../.././1.10.6/user-guide/how-to-deploy/">1.10.6</a>
               <a href="../.././1.10.5/user-guide/how-to-deploy/">1.10.5</a>
@@ -290,49 +291,50 @@
 It will allow you to make your assistant available to users and set you up with a production-ready environment.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#when-to-deploy-your-assistant" id="id6">When to Deploy Your Assistant</a></p></li>
-<li><p><a class="reference internal" href="#recommended-deployment-methods" id="id7">Recommended Deployment Methods</a></p>
+<li><p><a class="reference internal" href="#when-to-deploy-your-assistant" id="id7">When to Deploy Your Assistant</a></p></li>
+<li><p><a class="reference internal" href="#recommended-deployment-methods" id="id8">Recommended Deployment Methods</a></p>
 <ul>
-<li><p><a class="reference internal" href="#one-line-deploy-script" id="id8">One-Line Deploy Script</a></p></li>
-<li><p><a class="reference internal" href="#kubernetes-openshift" id="id9">Kubernetes/Openshift</a></p></li>
+<li><p><a class="reference internal" href="#server-quick-install" id="id9">Server Quick-Install</a></p></li>
+<li><p><a class="reference internal" href="#helm-chart" id="id10">Helm Chart</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#alternative-deployment-methods" id="id10">Alternative Deployment Methods</a></p>
+<li><p><a class="reference internal" href="#alternative-deployment-methods" id="id11">Alternative Deployment Methods</a></p>
 <ul>
-<li><p><a class="reference internal" href="#docker-compose" id="id11">Docker Compose</a></p></li>
-<li><p><a class="reference internal" href="#rasa-open-source-only-deployment" id="id12">Rasa Open Source Only Deployment</a></p></li>
+<li><p><a class="reference internal" href="#docker-compose" id="id12">Docker Compose</a></p></li>
+<li><p><a class="reference internal" href="#rasa-open-source-only-deployment" id="id13">Rasa Open Source Only Deployment</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#deploying-your-action-server" id="id13">Deploying Your Action Server</a></p>
+<li><p><a class="reference internal" href="#deploying-your-action-server" id="id14">Deploying Your Action Server</a></p>
 <ul>
-<li><p><a class="reference internal" href="#building-an-action-server-image" id="id14">Building an Action Server Image</a></p></li>
-<li><p><a class="reference internal" href="#using-your-custom-action-server-image" id="id15">Using your Custom Action Server Image</a></p></li>
+<li><p><a class="reference internal" href="#building-an-action-server-image" id="id15">Building an Action Server Image</a></p></li>
+<li><p><a class="reference internal" href="#using-your-custom-action-server-image" id="id16">Using your Custom Action Server Image</a></p></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="section" id="when-to-deploy-your-assistant">
-<h2><a class="toc-backref" href="#id6">When to Deploy Your Assistant</a><a class="headerlink" href="#when-to-deploy-your-assistant" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">When to Deploy Your Assistant</a><a class="headerlink" href="#when-to-deploy-your-assistant" title="Permalink to this headline">¶</a></h2>
 <p>The best time to deploy your assistant and make it available to test users is once it can handle the most
 important happy paths or is what we call a <a class="reference external" href="https://rasa.com/docs/rasa/glossary">minimum viable assistant</a>.</p>
 <p>The recommended deployment methods described below make it easy to share your assistant
-with test users via the <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/enable-workflows#conversations-with-test-users">share your assistant feature in
+with test users via the <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share-your-bot">share your assistant feature in
 Rasa X</a>.
 Then, when you’re ready to make your assistant available via one or more <a class="reference internal" href="../messaging-and-voice-channels/#messaging-and-voice-channels"><span class="std std-ref">Messaging and Voice Channels</span></a>,
 you can easily add them to your existing deployment set up.</p>
 </div>
 <div class="section" id="recommended-deployment-methods">
-<span id="id2"></span><h2><a class="toc-backref" href="#id7">Recommended Deployment Methods</a><a class="headerlink" href="#recommended-deployment-methods" title="Permalink to this headline">¶</a></h2>
-<p>The recommended way to deploy an assistant is using either the One-Line Deployment or Kubernetes/Openshift
+<span id="id2"></span><h2><a class="toc-backref" href="#id8">Recommended Deployment Methods</a><a class="headerlink" href="#recommended-deployment-methods" title="Permalink to this headline">¶</a></h2>
+<p>The recommended way to deploy an assistant is using either the Server Quick-Install or Helm Chart
 options we support. Both deploy Rasa X and your assistant. They are the easiest ways to deploy your assistant,
-allow you to use Rasa X to view conversations and turn them into training data, and are production-ready.</p>
-<div class="section" id="one-line-deploy-script">
-<h3><a class="toc-backref" href="#id8">One-Line Deploy Script</a><a class="headerlink" href="#one-line-deploy-script" title="Permalink to this headline">¶</a></h3>
-<p>The one-line deployment script is the easiest way to deploy Rasa X and your assistant. It installs a Kubernetes
+allow you to use Rasa X to view conversations and turn them into training data, and are production-ready.
+For more details on deployment methods see the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/">Rasa X Installation Guide</a>.</p>
+<div class="section" id="server-quick-install">
+<h3><a class="toc-backref" href="#id9">Server Quick-Install</a><a class="headerlink" href="#server-quick-install" title="Permalink to this headline">¶</a></h3>
+<p>The Server Quick-Install script is the easiest way to deploy Rasa X and your assistant. It installs a Kubernetes
 cluster on your machine with sensible defaults, getting you up and running in one command.</p>
 <blockquote>
 <div><ul>
-<li><p>Default: Make sure you meet the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#hardware-os-requirements">OS Requirements</a>,
+<li><p>Default: Make sure you meet the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/install/quick-install-script/#hardware-os-requirements">OS Requirements</a>,
 then run:</p>
 
   <pre class="copyable-snippet">
@@ -343,40 +345,40 @@ curl -s get-rasa-x.rasa.com | sudo bash
     <div class="copyable confirm" id="curl--s-get-rasa-x.rasa.com-|-sudo-bash">copied!</div>
   </pre>
 </li>
-<li><p>Custom: See <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script">Customizing the Script</a>
-in the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script">One-Line Deploy Script</a> docs.</p></li>
+<li><p>Custom: See <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/customize/#server-quick-install">Customizing the Script</a>
+and the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/install/quick-install-script">Server Quick-Install docs</a> docs.</p></li>
 </ul>
 </div></blockquote>
 </div>
-<div class="section" id="kubernetes-openshift">
-<h3><a class="toc-backref" href="#id9">Kubernetes/Openshift</a><a class="headerlink" href="#kubernetes-openshift" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="helm-chart">
+<h3><a class="toc-backref" href="#id10">Helm Chart</a><a class="headerlink" href="#helm-chart" title="Permalink to this headline">¶</a></h3>
 <p>For assistants that will receive a lot of user traffic, setting up a Kubernetes or Openshift deployment via
-our helm charts is the best option. This provides a scalable architecture that is also straightforward to deploy.
+our Helm charts is the best option. This provides a scalable architecture that is also straightforward to deploy.
 However, you can also customize the Helm charts if you have specific requirements.</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>Default: Read the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/">Deploying in Openshift or Kubernetes</a> docs.</p></li>
-<li><p>Custom: Read the above, as well as the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#advanced-configuration">Advanced Configuration</a>
+<li><p>Default: Read the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/install/helm-chart/">Helm Chart Installation</a> docs.</p></li>
+<li><p>Custom: Read the above, as well as the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/customize/#helm-chart">Advanced Configuration</a>
 documentation, and customize the <a class="reference external" href="https://github.com/RasaHQ/rasa-x-helm">open source Helm charts</a> to your needs.</p></li>
 </ul>
 </div></blockquote>
 </div>
 </div>
 <div class="section" id="alternative-deployment-methods">
-<span id="rasa-only-deployment"></span><h2><a class="toc-backref" href="#id10">Alternative Deployment Methods</a><a class="headerlink" href="#alternative-deployment-methods" title="Permalink to this headline">¶</a></h2>
+<span id="rasa-only-deployment"></span><h2><a class="toc-backref" href="#id11">Alternative Deployment Methods</a><a class="headerlink" href="#alternative-deployment-methods" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="docker-compose">
-<h3><a class="toc-backref" href="#id11">Docker Compose</a><a class="headerlink" href="#docker-compose" title="Permalink to this headline">¶</a></h3>
-<p>You can also run Rasa X in a Docker Compose setup, without the cluster environment. We have a quick install script
+<h3><a class="toc-backref" href="#id12">Docker Compose</a><a class="headerlink" href="#docker-compose" title="Permalink to this headline">¶</a></h3>
+<p>You can also run Rasa X in a Docker Compose setup, without the cluster environment. We have an install script
 for doing so, as well as manual instructions for any custom setups.</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>Default: Read the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/">Docker Compose Quick Install</a> docs or watch the <a class="reference external" href="https://www.youtube.com/watch?v=IUYdwy8HPVc">Masterclass Video</a> on deploying Rasa X.</p></li>
-<li><p>Custom: Read the docs <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/">Docker Compose Manual Install</a> documentation for full customization options.</p></li>
+<li><p>Default: Read the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/install/docker-compose/#docker-compose-install-script">Docker Compose Install Script</a> docs or watch the <a class="reference external" href="https://www.youtube.com/watch?v=IUYdwy8HPVc">Masterclass Video</a> on deploying Rasa X.</p></li>
+<li><p>Custom: Read the <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/install/docker-compose/#docker-compose-manual-install">Docker Compose Manual Install</a> documentation for full customization options.</p></li>
 </ul>
 </div></blockquote>
 </div>
 <div class="section" id="rasa-open-source-only-deployment">
-<h3><a class="toc-backref" href="#id12">Rasa Open Source Only Deployment</a><a class="headerlink" href="#rasa-open-source-only-deployment" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13">Rasa Open Source Only Deployment</a><a class="headerlink" href="#rasa-open-source-only-deployment" title="Permalink to this headline">¶</a></h3>
 <p>It is also possible to deploy a Rasa assistant without Rasa X using Docker Compose. To do so, you can build your
 Rasa Assistant locally or in Docker. Then you can deploy your model in Docker Compose.</p>
 <div class="toctree-wrapper compound">
@@ -389,9 +391,9 @@ Rasa Assistant locally or in Docker. Then you can deploy your model in Docker Co
 </div>
 </div>
 <div class="section" id="deploying-your-action-server">
-<h2><a class="toc-backref" href="#id13">Deploying Your Action Server</a><a class="headerlink" href="#deploying-your-action-server" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id14">Deploying Your Action Server</a><a class="headerlink" href="#deploying-your-action-server" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="building-an-action-server-image">
-<span id="id4"></span><h3><a class="toc-backref" href="#id14">Building an Action Server Image</a><a class="headerlink" href="#building-an-action-server-image" title="Permalink to this headline">¶</a></h3>
+<span id="id3"></span><h3><a class="toc-backref" href="#id15">Building an Action Server Image</a><a class="headerlink" href="#building-an-action-server-image" title="Permalink to this headline">¶</a></h3>
 <p>If you build an image that includes your action code and store it in a container registry, you can run it
 as part of your deployment, without having to move code between servers.
 In addition, you can add any additional dependencies of systems or Python libraries
@@ -451,7 +453,7 @@ example, you could version or date your tags, as well as create different tags t
 and development servers. You should create a new tag any time you update your code and want to re-deploy it.</p>
 </div>
 <div class="section" id="using-your-custom-action-server-image">
-<h3><a class="toc-backref" href="#id15">Using your Custom Action Server Image</a><a class="headerlink" href="#using-your-custom-action-server-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16">Using your Custom Action Server Image</a><a class="headerlink" href="#using-your-custom-action-server-image" title="Permalink to this headline">¶</a></h3>
 <p>If you’re building this image to make it available from another server,
 for example a Rasa X or Rasa Enterprise deployment, you should push the image to a cloud repository.</p>
 <p>This documentation assumes you are pushing your images to <a class="reference external" href="https://hub.docker.com/">DockerHub</a>.
@@ -474,9 +476,9 @@ your chosen container registry.</p>
 your deployment:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/one-line-deploy-script/#customizing-the-script">One-Line Deployment</a></p></li>
-<li><p><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#adding-a-custom-action-server">Kubernetes or Openshift</a></p></li>
-<li><p><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/#connect-a-custom-action-server">Docker Compose</a></p></li>
+<li><p><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/customize/#quick-install-script-customizing">Server Quick-Install</a></p></li>
+<li><p><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/customize/#adding-a-custom-action-server">Helm Chart</a></p></li>
+<li><p><a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/customize/#connecting-a-custom-action-server">Docker Compose</a></p></li>
 <li><p><a class="reference internal" href="../docker/deploying-in-docker-compose/#running-multiple-services"><span class="std std-ref">Rasa Open Source Only</span></a></p></li>
 </ul>
 </div></blockquote>
