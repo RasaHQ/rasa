@@ -39,7 +39,9 @@ cd $TMP_DOCS_FOLDER
 if [ ! -z "$NEW_VERSION" ]
 then
     echo "Generating docs for new version $NEW_VERSION..."
+    cd docs
     yarn run new-version $NEW_VERSION
+    cd ..
 fi
 
 if [ -z "$(git status --porcelain)" ]
