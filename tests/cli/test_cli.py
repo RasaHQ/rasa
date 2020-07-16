@@ -30,10 +30,19 @@ def test_data_convert_help(run: Callable[..., RunResult]):
         assert output.outlines[i] == line
 
 
-# Windows output doesn't contain all this information,
-# so we execute this test only on Linux/MacOS
-@pytest.mark.unix
-def test_version_print_lines(run: Callable[..., RunResult]):
+@pytest.mark.linux
+@pytest.mark.darwin
+def test_version_print_lines_unix(run: Callable[..., RunResult]):
+    output = run("--version")
+    output_text = "".join(output.outlines)
+    assert "Rasa Version" in output_text
+    assert "Python Version" in output_text
+    assert "Operating System" in output_text
+    assert "Python Path" in output_text
+
+
+@pytest.mark.win32
+def test_version_print_lines_windows(run: Callable[..., RunResult]):
     output = run("--version")
     output_text = "".join(output.outlines)
     assert "Rasa Version" in output_text

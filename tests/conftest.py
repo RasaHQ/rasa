@@ -1,5 +1,7 @@
 import asyncio
 import random
+import pytest
+import sys
 import uuid
 
 from sanic.request import Request
@@ -7,7 +9,6 @@ from sanic.testing import SanicTestClient
 
 from typing import Iterator, Callable
 
-import pytest
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
 from sanic import Sanic
@@ -40,6 +41,7 @@ from tests.core.conftest import (
     INCORRECT_NLU_DATA,
 )
 
+PLATFORMS = set("darwin linux win32".split())
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -269,6 +271,13 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
         uuid.uuid4().hex,
         timestamp=timestamp if timestamp is not None else random.random(),
     )
+
+
+def pytest_runtest_setup(item):
+    supported_platforms = PLATFORMS.intersection(mark.name for mark in item.iter_markers())
+    plat = sys.platform
+    if supported_platforms and plat not in supported_platforms:
+        pytest.skip("cannot run on platform {}".format(plat))
 
 
 class MockExporter(Exporter):

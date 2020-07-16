@@ -9,7 +9,6 @@ from pytest_sanic.utils import TestClient
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import StreamingHTTPResponse
-from uvloop.loop import Loop
 
 import rasa.core
 from rasa.core.policies.form_policy import FormPolicy
@@ -26,6 +25,12 @@ from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
+
+USE_UVLOOP = True
+try:
+    from uvloop.loop import Loop
+except ImportError:
+    USE_UVLOOP = False
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
@@ -52,10 +57,14 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
 
 @pytest.fixture()
 def model_server(
-    loop: Loop, sanic_client: Callable, trained_moodbot_path: Text
+    loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_moodbot_path: Text
 ) -> TestClient:
     app = model_server_app(trained_moodbot_path, model_hash="somehash")
-    return loop.run_until_complete(sanic_client(app))
+
+    if USE_UVLOOP:
+        return Loop().run_until_complete(sanic_client(app))
+    else:
+        return loop.run_until_complete(sanic_client(app))
 
 
 async def test_training_data_is_reproducible():
