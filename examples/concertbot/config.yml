@@ -18,6 +18,5 @@ policies:
     epochs: 200
     batch_size: 50
     max_training_samples: 300
-  - name: FallbackPolicy
   - name: MemoizationPolicy
-  - name: MappingPolicy
+  - name: RulePolicy
