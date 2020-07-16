@@ -40,7 +40,9 @@ TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClass
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
 MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE, MESSAGE_ACTION_NAME, ACTION_TEXT]
+# the dense featurizable attributes are essentially text attributes
 DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE, ACTION_TEXT]
+NAME_ATTRIBUTES = [INTENT, MESSAGE_ACTION_NAME]
 
 LANGUAGE_MODEL_DOCS = {
     TEXT: "text_language_model_doc",

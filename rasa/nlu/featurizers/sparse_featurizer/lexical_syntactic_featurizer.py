@@ -169,9 +169,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         import scipy.sparse
 
         # TODO: do I get it right that these features will still exist only for user text?
-        tokens = None
-        if not message.get(MESSAGE_ACTION_NAME):
-            tokens = message.get(TOKENS_NAMES[TEXT])
+        tokens = message.get(TOKENS_NAMES[TEXT])
         if tokens:
 
             sentence_features = self._tokens_to_features(tokens)
