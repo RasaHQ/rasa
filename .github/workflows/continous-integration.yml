@@ -80,7 +80,7 @@ jobs:
     - name: Load Yarn Cached Packages ⬇
       uses: actions/cache@v1
       with:
-        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        path: newdocs/node_modules
         key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('newdocs/yarn.lock') }}
         restore-keys: ${{ runner.os }}-yarn-12.x
 
