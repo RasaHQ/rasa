@@ -46,7 +46,7 @@ then
 else
     echo "Pushing changes to git..."
     git add .
-    git ci -am "AUTO docusaurus $TODAY"
+    git commit -am "AUTO docusaurus $TODAY"
     git push origin $DOCS_BRANCH
 
     echo "Done 👌"
