@@ -21,7 +21,6 @@ def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
 def test_not_found_init_path(run: Callable[..., RunResult]):
     output = run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
 
-    assert output == []
     assert (
         output.outlines[-1]
         == "\033[91mProject init path './workspace' not found.\033[0m"

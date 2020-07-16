@@ -75,6 +75,7 @@ jobs:
     - name: Test Code 🔍
       env:
         JOBS: 2
+        PYTHONIOENCODING: "utf-8"
       run: make test
 
     - name: Send Coverage Report 📊
