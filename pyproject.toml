@@ -28,11 +28,13 @@ url = "https://pypi.rasa.com/simple/"
 [tool.towncrier]
 package = "rasa"
 package_dir = "rasa"
-filename = "CHANGELOG.rst"
+filename = "./newdocs/docs/changelog.mdx"
 directory = "./changelog"
-underlines = "^-_"
-title_format = "[{version}] - {project_date}"
-template = "./changelog/_template.jinja2"
+underlines = "   "
+title_format = "## [{version}] - {project_date}"
+template = "./changelog/_template.md.jinja2"
+start_string = "<!-- TOWNCRIER -->\n"
+issue_format = "[#{issue}](https://github.com/rasahq/rasa/issues/{issue})"
 [[tool.towncrier.type]]
 directory = "removal"
 name = "Deprecations and Removals"
@@ -164,7 +166,7 @@ spacy = [ "spacy",]
 convert = [ "tensorflow-text",]
 transformers = [ "transformers",]
 full = [ "spacy", "tensorflow-text", "transformers", "jieba",]
-gh-release-notes = [ "pypandoc", "github3.py",]
+gh-release-notes = [ "github3.py",]
 
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"
@@ -175,10 +177,6 @@ optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
 version = "~2.2"
-optional = true
-
-[tool.poetry.dependencies.pypandoc]
-version = ">=1.4,<1.6"
 optional = true
 
 [tool.poetry.dependencies."github3.py"]
