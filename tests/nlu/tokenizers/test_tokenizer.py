@@ -171,7 +171,7 @@ def test_process_tokenizer(text, expected_tokens, expected_indices):
     "text, expected_tokens", [("action_listen", ["action", "listen"])],
 )
 def test_process_tokenizer_action_name(text, expected_tokens):
-    tk = WhitespaceTokenizer()
+    tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
     message = Message(text)
     message.set(MESSAGE_ACTION_NAME, text)
@@ -187,7 +187,7 @@ def test_process_tokenizer_action_name(text, expected_tokens):
     "text, expected_tokens", [("I am hungry", ["I", "am", "hungry"])],
 )
 def test_process_tokenizer_action_test(text, expected_tokens):
-    tk = WhitespaceTokenizer()
+    tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
     message = Message(text)
     message.set(MESSAGE_ACTION_NAME, text)
@@ -270,7 +270,6 @@ def test_apply_token_pattern(
         assert actual_token.text == expected_token.text
         assert actual_token.start == expected_token.start
         assert actual_token.end == expected_token.end
-
 
 
 @pytest.mark.parametrize(
