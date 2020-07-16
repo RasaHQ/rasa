@@ -24,3 +24,4 @@ rules:
       - ...
       - intent: bot_challenge
       - action: utter_iamabot
+      
