@@ -1,0 +1,26 @@
+rules:
+  - rule:
+    steps:
+      - ...
+      - intent: nlu_fallback
+      - action: utter_default
+  - rule:
+    steps:
+      - ...
+      - intent: greet
+      - action: utter_greet
+  - rule:
+    steps:
+      - ...
+      - intent: thankyou
+      - action: utter_youarewelcome
+  - rule:
+    steps:
+      - ...
+      - intent: goodbye
+      - action: utter_goodbye
+  - rule:
+    steps:
+      - ...
+      - intent: bot_challenge
+      - action: utter_iamabot
