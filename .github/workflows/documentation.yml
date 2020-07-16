@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - 'master'
+    - 'new-docs-ci-build'
     tags:
     - '**'
 
