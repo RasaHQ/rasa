@@ -65,7 +65,7 @@ jobs:
       run: make install install-docs
 
     - name: Build Docs variables 🧶
-      run: cd $DOCS_FOLDER && yarn run variables
+      run: cd $DOCS_FOLDER && poetry run yarn variables
 
     - name: Build & Publish Docs 🏃‍♀️
       env:
