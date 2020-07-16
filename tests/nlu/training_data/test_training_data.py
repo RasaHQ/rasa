@@ -1,15 +1,16 @@
-import pytest
-import tempfile
+from typing import Text
 
-from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
+import pytest
+
+import rasa.utils.io as io_utils
 from rasa.nlu import training_data
+from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.loading import guess_format, UNK, load_data
+from rasa.nlu.training_data.loading import guess_format, UNK, RASA_YAML, JSON, MARKDOWN
 from rasa.nlu.training_data.util import get_file_format
-import rasa.utils.io as io_utils
 
 
 def test_luis_data():
@@ -97,9 +98,9 @@ def test_composite_entities_data():
     assert td.entities == {"location", "topping", "size"}
     assert td.entity_groups == {"1", "2"}
     assert td.entity_roles == {"to", "from"}
-    assert td.examples_per_entity["entity 'location'"] == 8
-    assert td.examples_per_entity["group '1'"] == 9
-    assert td.examples_per_entity["role 'from'"] == 3
+    assert td.number_of_examples_per_entity["entity 'location'"] == 8
+    assert td.number_of_examples_per_entity["group '1'"] == 9
+    assert td.number_of_examples_per_entity["role 'from'"] == 3
 
 
 @pytest.mark.parametrize(
@@ -181,15 +182,33 @@ def test_train_test_split(filepaths):
     from rasa.importers.utils import training_data_from_paths
 
     td = training_data_from_paths(filepaths, language="en")
+
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
+    assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
+
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
+    assert len(td.response_examples) == 4
 
     td_train, td_test = td.train_test_split(train_frac=0.8)
 
-    assert len(td_train.training_examples) == 35
-    assert len(td_test.training_examples) == 11
+    assert len(td_test.training_examples) + len(td_train.training_examples) == 46
+    assert len(td_train.training_examples) == 34
+    assert len(td_test.training_examples) == 12
+
+    assert len(td.number_of_examples_per_intent.keys()) == len(
+        td_test.number_of_examples_per_intent.keys()
+    )
+    assert len(td.number_of_examples_per_intent.keys()) == len(
+        td_train.number_of_examples_per_intent.keys()
+    )
+    assert len(td.number_of_examples_per_response.keys()) == len(
+        td_test.number_of_examples_per_response.keys()
+    )
+    assert len(td.number_of_examples_per_response.keys()) == len(
+        td_train.number_of_examples_per_response.keys()
+    )
 
 
 @pytest.mark.parametrize(
@@ -482,33 +501,28 @@ def test_training_data_conversion(
     #     f.write(td.as_json(indent=2))
 
 
-def test_get_file_format():
-    fformat = get_file_format("data/examples/luis/demo-restaurants_v5.json")
+@pytest.mark.parametrize(
+    "data_file,expected_format",
+    [
+        ("data/examples/luis/demo-restaurants_v5.json", JSON),
+        ("data/examples", JSON),
+        ("examples/moodbot/data/nlu.md", MARKDOWN),
+        ("data/rasa_yaml_examples", RASA_YAML),
+    ],
+)
+def test_get_supported_file_format(data_file: Text, expected_format: Text):
+    fformat = get_file_format(data_file)
+    assert fformat == expected_format
 
-    assert fformat == "json"
 
-    fformat = get_file_format("data/examples")
-
-    assert fformat == "json"
-
-    fformat = get_file_format("examples/moodbot/data/nlu.md")
-
-    assert fformat == "md"
-
+@pytest.mark.parametrize("data_file", ["path-does-not-exists", None])
+def test_get_non_existing_file_format_raises(data_file: Text):
     with pytest.raises(AttributeError):
-        get_file_format("path-does-not-exists")
-
-    with pytest.raises(AttributeError):
-        get_file_format(None)
+        get_file_format(data_file)
 
 
 def test_guess_format_from_non_existing_file_path():
     assert guess_format("not existing path") == UNK
-
-
-def test_load_data_from_non_existing_file():
-    with pytest.raises(ValueError):
-        load_data("some path")
 
 
 def test_is_empty():

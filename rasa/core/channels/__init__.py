@@ -44,7 +44,7 @@ input_channel_classes: List[Type[InputChannel]] = [
     HangoutsInput,
 ]
 
-# Mapping from a input channel name to its class to allow name based lookup.
+# Mapping from an input channel name to its class to allow name based lookup.
 BUILTIN_CHANNELS: Dict[Text, Type[InputChannel]] = {
     c.name(): c for c in input_channel_classes
 }

@@ -1,0 +1,3 @@
+Added possibility to split the domain into separate files. All YAML files under the path specified with ``--domain`` will be scanned for domain information (e.g. intents, actions, etc) and then combined into a single domain.
+
+The default value for ``--domain`` is still ``domain.yml``.

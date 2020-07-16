@@ -56,23 +56,19 @@ def test_text_featurizer(sentence, expected_features):
 
     featurizer.process(test_message)
 
-    actual = test_message.get_sparse_features(TEXT, [])
+    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
 
-    assert isinstance(actual, scipy.sparse.coo_matrix)
-    assert np.all(actual.toarray() == expected_features)
+    assert isinstance(seq_vec, scipy.sparse.coo_matrix)
+    assert sen_vec is None
+
+    assert np.all(seq_vec.toarray() == expected_features[:-1])
 
 
 @pytest.mark.parametrize(
-    "sentence, expected, expected_cls",
-    [
-        (
-            "hello 123 hello 123 hello",
-            [[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0]],
-            [[2.0, 2.0, 3.0, 2.0, 3.0, 2.0, 2.0]],
-        )
-    ],
+    "sentence, expected",
+    [("hello 123 hello 123 hello", [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0])],
 )
-def test_text_featurizer_window_size(sentence, expected, expected_cls):
+def test_text_featurizer_window_size(sentence, expected):
     featurizer = LexicalSyntacticFeaturizer(
         {"features": [["upper"], ["digit"], ["low"], ["digit"]]}
     )
@@ -87,12 +83,12 @@ def test_text_featurizer_window_size(sentence, expected, expected_cls):
 
     featurizer.process(test_message)
 
-    actual = test_message.get_sparse_features(TEXT, [])
+    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
 
-    assert isinstance(actual, scipy.sparse.coo_matrix)
+    assert isinstance(seq_vec, scipy.sparse.coo_matrix)
+    assert sen_vec is None
 
-    assert np.all(actual.toarray()[0] == expected)
-    assert np.all(actual.toarray()[-1] == expected_cls)
+    assert np.all(seq_vec.toarray()[0] == expected)
 
 
 @pytest.mark.parametrize(
@@ -105,7 +101,6 @@ def test_text_featurizer_window_size(sentence, expected, expected_cls):
                 [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
                 [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0],
             ],
         )
     ],
@@ -126,8 +121,9 @@ def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
 
     featurizer.process(test_message)
 
-    actual = test_message.get_sparse_features(TEXT, [])
+    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
 
-    assert isinstance(actual, scipy.sparse.coo_matrix)
+    assert isinstance(seq_vec, scipy.sparse.coo_matrix)
+    assert sen_vec is None
 
-    assert np.all(actual.toarray() == expected)
+    assert np.all(seq_vec.toarray() == expected)

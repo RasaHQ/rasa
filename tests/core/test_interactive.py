@@ -1,6 +1,7 @@
 import asyncio
 import json
 from collections import deque
+from pathlib import Path
 from typing import Text, List
 
 import pytest
@@ -12,9 +13,10 @@ from mock import Mock
 
 import rasa.utils.io
 from rasa.core.actions import action
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.channels import UserMessage
 from rasa.core.domain import Domain
-from rasa.core.events import BotUttered
+from rasa.core.events import BotUttered, ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training import interactive
 from rasa.importers.rasa import TrainingDataImporter
@@ -26,7 +28,7 @@ from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture
-def mock_endpoint():
+def mock_endpoint() -> EndpointConfig:
     return EndpointConfig("https://example.com")
 
 
@@ -322,7 +324,9 @@ def test_utter_custom_message():
     assert json.dumps({"a": "b"}) in actual
 
 
-async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
+async def test_interactive_domain_persistence(
+    mock_endpoint: EndpointConfig, tmp_path: Path
+):
     # Test method interactive._write_domain_to_file
 
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
@@ -330,7 +334,7 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
 
     events = tracker_json.get("events", [])
 
-    domain_path = tmpdir.join("interactive_domain_save.yml").strpath
+    domain_path = str(tmp_path / "interactive_domain_save.yml")
 
     url = f"{mock_endpoint.url}/domain"
     with aioresponses() as mocked:
@@ -339,12 +343,37 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
         serialised_domain = await interactive.retrieve_domain(mock_endpoint)
         old_domain = Domain.from_dict(serialised_domain)
 
-        await interactive._write_domain_to_file(domain_path, events, old_domain)
+        interactive._write_domain_to_file(domain_path, events, old_domain)
 
     saved_domain = rasa.utils.io.read_config_file(domain_path)
 
     for default_action in action.default_actions():
         assert default_action.name() not in saved_domain["actions"]
+
+
+async def test_write_domain_to_file_with_form(tmp_path: Path):
+    domain_path = str(tmp_path / "domain.yml")
+    form_name = "my_form"
+    old_domain = Domain.from_yaml(
+        f"""
+    actions:
+    - utter_greet
+    - utter_goodbye
+    forms:
+    - {form_name}
+    intents:
+    - greet
+    """
+    )
+
+    events = [ActionExecuted(form_name), ActionExecuted(ACTION_LISTEN_NAME)]
+    events = [e.as_dict() for e in events]
+
+    interactive._write_domain_to_file(domain_path, events, old_domain)
+
+    assert set(Domain.from_path(domain_path).action_names) == set(
+        old_domain.action_names
+    )
 
 
 async def test_filter_intents_before_save_nlu_file():
