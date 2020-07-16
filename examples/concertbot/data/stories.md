@@ -1,15 +1,3 @@
-## greet
-* greet
-    - utter_greet
-
-## happy
-* thankyou
-    - utter_youarewelcome
-
-## goodbye
-* goodbye
-    - utter_goodbye
-
 ## venue_search
 * search_venues
     - action_search_venues
@@ -33,7 +21,3 @@
     - slot{"concerts": [{"artist": "Foo Fighters", "reviews": 4.5}]}
 * compare_reviews
     - action_show_concert_reviews
-
-## bot challenge
-* bot_challenge
-  - utter_iamabot
