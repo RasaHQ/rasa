@@ -158,7 +158,7 @@ def test_find_nlu_files_with_different_formats(test_input, expected):
     examples_dir = "data/examples"
     data_dir = os.path.join(examples_dir, test_input)
     core_files, nlu_files = data.get_core_nlu_files([data_dir])
-    # assert Path(nlu_files[1]) == Path(expected[1])
+    assert [Path(f).resolve() for f in nlu_files] == [Path(f).resolve() for f in expected]
 
 
 def test_is_nlu_file_with_json():
