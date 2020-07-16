@@ -202,9 +202,10 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
         response = requests.post("http://localhost:5005/model/train", json=payload)
         shared_statuses["training_result"] = response.status_code
 
+        return
+
     train_request = Process(target=send_request)
     yield train_request
-    train_request.terminate()
 
 
 # due to unknown reasons this test can not be run in pycharm, it
