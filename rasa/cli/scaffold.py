@@ -45,9 +45,9 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
     if args.no_prompt:
         should_train = True
     else:
-        should_train = (
-            questionary.confirm("Do you want to train an initial model? 💪🏽").ask()
-        )
+        should_train = questionary.confirm(
+            "Do you want to train an initial model? 💪🏽"
+        ).ask()
 
     if should_train:
         print_success("Training an initial model...")
@@ -74,11 +74,9 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
     if args.no_prompt:
         should_run = False
     else:
-        should_run = (
-            questionary.confirm(
-                "Do you want to speak to the trained assistant on the command line? 🤖"
-            ).ask()
-        )
+        should_run = questionary.confirm(
+            "Do you want to speak to the trained assistant on the command line? 🤖"
+        ).ask()
 
     if should_run:
         # provide defaults for command line arguments
@@ -185,13 +183,11 @@ def run(args: argparse.Namespace) -> None:
     elif args.no_prompt:
         path = "."
     else:
-        path = (
-            questionary.text(
-                "Please enter a path where the project will be "
-                "created [default: current directory]",
-                default=".",
-            ).ask()
-        )
+        path = questionary.text(
+            "Please enter a path where the project will be "
+            "created [default: current directory]",
+            default=".",
+        ).ask()
 
     if args.no_prompt and not os.path.isdir(path):
         print_error_and_exit(f"Project init path '{path}' not found.")

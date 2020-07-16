@@ -2,6 +2,7 @@ from typing import Callable
 from _pytest.pytester import RunResult
 import pytest
 
+
 def test_cli_start(run: Callable[..., RunResult]):
     """
     Checks that a call to ``rasa --help`` does not take longer than 7 seconds.

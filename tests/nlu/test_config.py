@@ -51,7 +51,7 @@ def test_invalid_many_tokenizers_in_config():
             {
                 "pipeline": [
                     {"name": "WhitespaceTokenizer"},
-                    {"name": "ConveRTFeaturizer"}
+                    {"name": "ConveRTFeaturizer"},
                 ]
             },
             marks=[pytest.mark.linux, pytest.mark.darwin],

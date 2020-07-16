@@ -274,7 +274,9 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
 
 
 def pytest_runtest_setup(item):
-    supported_platforms = PLATFORMS.intersection(mark.name for mark in item.iter_markers())
+    supported_platforms = PLATFORMS.intersection(
+        mark.name for mark in item.iter_markers()
+    )
     plat = sys.platform
     if supported_platforms and plat not in supported_platforms:
         pytest.skip("cannot run on platform {}".format(plat))
