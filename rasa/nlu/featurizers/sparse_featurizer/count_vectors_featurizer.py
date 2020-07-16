@@ -219,7 +219,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
             return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
-        if not attribute in NAME_ATTRIBUTES:
+        if attribute not in NAME_ATTRIBUTES:
             return message.get(attribute).split()
         else:
             return []
