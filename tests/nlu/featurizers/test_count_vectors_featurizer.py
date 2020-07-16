@@ -408,7 +408,7 @@ def test_count_vectors_featurizer_train():
 
 @pytest.mark.parametrize(
     "sentence, action_name, action_text, action_name_features, response_features",
-    [("hello", "greet", None, [[1]], None), ("hello", "greet", "hi", None, [[1]])],
+    [("hello", "greet", None, [[1]], None), ("hello", "greet", "hi", [[1]], [[1]]), ("hello", "", "hi", None, [[1]])],
 )
 def test_count_vector_featurizer_action_attribute_featurization(
     sentence, action_name, action_text, action_name_features, response_features
@@ -456,7 +456,7 @@ def test_count_vector_featurizer_action_attribute_featurization(
 
 @pytest.mark.parametrize(
     "sentence, action_name, action_text, action_name_features, response_features",
-    [("hello", "greet", None, [[1]], None), ("hello", "greet", "hi", None, [[1]])],
+    [("hello", "greet", None, [[1]], None), ("hello", "greet", "hi", [[1]], [[1]]), ("hello", "", "hi", None, [[1]])],
 )
 def test_count_vector_featurizer_process_by_attribute(
     sentence, action_name, action_text, action_name_features, response_features

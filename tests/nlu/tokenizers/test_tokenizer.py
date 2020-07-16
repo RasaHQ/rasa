@@ -118,7 +118,7 @@ def test_process_tokenizer(text, expected_tokens, expected_indices):
     "text, expected_tokens", [("action_listen", ["action", "listen"])],
 )
 def test_process_tokenizer_action_name(text, expected_tokens):
-    tk = WhitespaceTokenizer()
+    tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
     message = Message(text)
     message.set(MESSAGE_ACTION_NAME, text)
@@ -134,7 +134,7 @@ def test_process_tokenizer_action_name(text, expected_tokens):
     "text, expected_tokens", [("I am hungry", ["I", "am", "hungry"])],
 )
 def test_process_tokenizer_action_test(text, expected_tokens):
-    tk = WhitespaceTokenizer()
+    tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
     message = Message(text)
     message.set(MESSAGE_ACTION_NAME, text)
@@ -166,7 +166,7 @@ def test_split_intent(text, expected_tokens):
     message = Message(text)
     message.set(INTENT, text)
 
-    assert [t.text for t in tk._split_intent(message)] == expected_tokens
+    assert [t.text for t in tk._split_name(message, INTENT)] == expected_tokens
 
 
 @pytest.mark.parametrize(
@@ -234,4 +234,4 @@ def test_split_action_name(text, expected_tokens):
     message = Message(text)
     message.set(MESSAGE_ACTION_NAME, text)
 
-    assert [t.text for t in tk._split_action(message)] == expected_tokens
+    assert [t.text for t in tk._split_name(message, MESSAGE_ACTION_NAME)] == expected_tokens
