@@ -73,17 +73,9 @@ jobs:
         make prepare-tests-windows
 
     - name: Test Code 🔍
-      if: matrix.os == 'ubuntu-latest'
       env:
         JOBS: 2
       run: make test
-
-    - name: Test Code (Windows) 🔍
-      if: matrix.os == 'windows-latest'
-      env:
-        JOBS: 2
-        PYTHONIOENCODING: "utf-8"
-      run: make test-windows
 
     - name: Send Coverage Report 📊
       if: matrix.python-version == 3.6
