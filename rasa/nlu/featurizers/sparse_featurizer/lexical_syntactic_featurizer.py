@@ -168,6 +168,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         import scipy.sparse
         # TODO: do I get it right that these features will still exist only for user text?  
 
+
         tokens = message.get(TOKENS_NAMES[TEXT])
         # this check is required because there might be training data examples without TEXT,
         # e.g., `Message("", {action_name: "action_listen"})`
