@@ -26,6 +26,7 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
     FEATURIZER_CLASS_ALIAS,
+    NAME_ATTRIBUTES,
 )
 
 logger = logging.getLogger(__name__)
@@ -218,7 +219,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
             return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
-        if not attribute == MESSAGE_ACTION_NAME or attribute == INTENT:
+        if not attribute in NAME_ATTRIBUTES:
             return message.get(attribute).split()
         else:
             return []
@@ -428,7 +429,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             sequence_features.append(seq_vec.tocoo())
 
-            if attribute in [TEXT, RESPONSE, ACTION_TEXT]:
+            if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 tokens_text = [" ".join(tokens)]
                 sentence_vec = self.vectorizers[attribute].transform(tokens_text)
                 sentence_vec.sort_indices()
