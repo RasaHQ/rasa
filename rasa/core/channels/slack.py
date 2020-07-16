@@ -109,10 +109,7 @@ class SlackBot(OutputChannel):
     ) -> None:
         json_message.setdefault("channel", self.slack_channel or recipient_id)
         json_message.setdefault("as_user", True)
-        if self.ts:
-            json_message.setdefault("thread_ts", self.ts)
-
-        await self.client.chat_postMessage(**json_message)
+        await self._post_message(**json_message)
 
 
 class SlackInput(InputChannel):
