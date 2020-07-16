@@ -9,7 +9,9 @@ TMP_DOCS_FOLDER=tmp-documentation
 TODAY=`date "+%Y%m%d"`
 # we build new versions only for majors
 PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.0\\.0$"
-MASTER_REF=refs/heads/new-docs-ci-build
+MASTER_REF=refs/heads/master
+# FIXME: this is a test for tags
+GITHUB_REF=refs/tags/2.0.0a1
 
 [[ ! $GITHUB_REF =~ $PATTERN_FOR_NEW_VERSION ]] \
 && [[ $GITHUB_REF != $MASTER_REF ]] \
