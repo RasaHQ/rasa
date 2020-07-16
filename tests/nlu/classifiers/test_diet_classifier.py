@@ -118,6 +118,8 @@ def test_check_labels_features_exist(messages, expected):
         ],
     ],
 )
+@pytest.mark.unix
+@pytest.mark.darwin
 async def test_train_persist_load_with_different_settings(
     pipeline, component_builder, tmpdir
 ):

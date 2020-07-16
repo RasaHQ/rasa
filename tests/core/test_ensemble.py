@@ -132,8 +132,8 @@ def test_policy_priority():
 def test_fallback_mapping_restart():
     domain = Domain.load("data/test_domains/default.yml")
     events = [
-        ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME),
-        utilities.user_uttered(USER_INTENT_RESTART, 1),
+        ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME, timestamp=1),
+        utilities.user_uttered(USER_INTENT_RESTART, 1, timestamp=2),
     ]
     tracker = DialogueStateTracker.from_events("test", events, [])
 
@@ -150,9 +150,9 @@ def test_fallback_mapping_restart():
         tracker, domain, RegexInterpreter()
     )
     max_confidence_index = result.index(max(result))
-    index_of_mapping_policy = 1
     next_action = domain.action_for_index(max_confidence_index, None)
 
+    index_of_mapping_policy = 1
     assert best_policy == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
     assert next_action.name() == ACTION_RESTART_NAME
 

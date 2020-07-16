@@ -39,13 +39,3 @@ def test_version_print_lines_unix(run: Callable[..., RunResult]):
     assert "Python Version" in output_text
     assert "Operating System" in output_text
     assert "Python Path" in output_text
-
-
-@pytest.mark.win32
-def test_version_print_lines_windows(run: Callable[..., RunResult]):
-    output = run("--version")
-    output_text = "".join(output.outlines)
-    assert "Rasa Version" in output_text
-    assert "Python Version" in output_text
-    assert "Operating System" in output_text
-    assert "Python Path" in output_text

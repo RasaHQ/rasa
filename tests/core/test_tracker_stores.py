@@ -571,10 +571,10 @@ def test_tracker_store_retrieve_with_session_started_events(
 ):
     tracker_store = tracker_store_type(default_domain, **tracker_store_kwargs)
     events = [
-        UserUttered("Hola", {"name": "greet"}),
-        BotUttered("Hi"),
-        SessionStarted(),
-        UserUttered("Ciao", {"name": "greet"}),
+        UserUttered("Hola", {"name": "greet"}, timestamp=1),
+        BotUttered("Hi", timestamp=2),
+        SessionStarted(timestamp=3),
+        UserUttered("Ciao", {"name": "greet"}, timestamp=4),
     ]
     sender_id = "test_sql_tracker_store_with_session_events"
     tracker = DialogueStateTracker.from_events(sender_id, events)
