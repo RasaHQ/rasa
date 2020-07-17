@@ -113,6 +113,11 @@ class TrainingDataImporter:
             config_path, domain_path, training_data_paths
         )
 
+        if isinstance(importer, E2EImporter):
+            # When we only train NLU then there is no need to enrich the data with
+            # E2E data from Core training data.
+            importer = importer.importer
+
         return NluDataImporter(importer)
 
     @staticmethod
@@ -282,12 +287,12 @@ class E2EImporter(TrainingDataImporter):
     """
 
     def __init__(self, importer: TrainingDataImporter) -> None:
-        self._importer = importer
+        self.importer = importer
         self._cached_stories: Optional[StoryGraph] = None
 
     async def get_domain(self) -> Domain:
         original, e2e_domain = await asyncio.gather(
-            self._importer.get_domain(), self._get_domain_with_e2e_actions()
+            self.importer.get_domain(), self._get_domain_with_e2e_actions()
         )
         return original.merge(e2e_domain)
 
@@ -317,18 +322,18 @@ class E2EImporter(TrainingDataImporter):
     ) -> StoryGraph:
         if not self._cached_stories:
             # Simple cache to avoid loading all of this multiple times
-            self._cached_stories = await self._importer.get_stories(
+            self._cached_stories = await self.importer.get_stories(
                 interpreter, template_variables, use_e2e, exclusion_percentage
             )
         return self._cached_stories
 
     async def get_config(self) -> Dict:
-        return await self._importer.get_config()
+        return await self.importer.get_config()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         training_datasets = [_additional_training_data_from_default_actions()]
         training_datasets += await asyncio.gather(
-            self._importer.get_nlu_data(language),
+            self.importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
         )
 

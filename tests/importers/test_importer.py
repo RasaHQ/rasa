@@ -97,9 +97,9 @@ def test_load_from_dict(
     )
 
     assert isinstance(actual, E2EImporter)
-    assert isinstance(actual._importer, CombinedDataImporter)
+    assert isinstance(actual.importer, CombinedDataImporter)
 
-    actual_importers = [i.__class__ for i in actual._importer._importers]
+    actual_importers = [i.__class__ for i in actual.importer._importers]
     assert actual_importers == expected
 
 
@@ -114,8 +114,8 @@ def test_load_from_config(tmpdir: Path):
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)
-    assert isinstance(importer._importer, CombinedDataImporter)
-    assert isinstance(importer._importer._importers[0], MultiProjectImporter)
+    assert isinstance(importer.importer, CombinedDataImporter)
+    assert isinstance(importer.importer._importers[0], MultiProjectImporter)
 
 
 async def test_nlu_only(project: Text):
@@ -126,6 +126,7 @@ async def test_nlu_only(project: Text):
     )
 
     assert isinstance(actual, NluDataImporter)
+    assert isinstance(actual._importer, CombinedDataImporter)
 
     stories = await actual.get_stories()
     assert stories.is_empty()
@@ -173,7 +174,7 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
 
     # The `E2EImporter` correctly wraps the underlying `CombinedDataImporter`
     assert isinstance(importer, E2EImporter)
-    importer_without_e2e = importer._importer
+    importer_without_e2e = importer.importer
 
     stories = StoryGraph(
         [
@@ -230,7 +231,7 @@ async def test_import_nlu_training_data_with_default_actions(project: Text):
     )
 
     assert isinstance(importer, E2EImporter)
-    importer_without_e2e = importer._importer
+    importer_without_e2e = importer.importer
 
     # Check additional NLU training data from domain was added
     nlu_data = await importer.get_nlu_data()
