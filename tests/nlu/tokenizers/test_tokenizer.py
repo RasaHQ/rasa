@@ -70,7 +70,7 @@ def test_train_tokenizer_e2e_actions(text, expected_tokens, expected_indices):
 
     message = Message(text)
     message.set(ACTION_TEXT, text)
-    message.set(MESSAGE_ACTION_NAME, text)
+    message.set(ACTION_NAME, text)
 
     training_data = TrainingData()
     training_data.training_examples = [message]
@@ -93,7 +93,7 @@ def test_train_tokenizer_action_name(text, expected_tokens, expected_indices):
     tk = WhitespaceTokenizer()
 
     message = Message(text)
-    message.set(MESSAGE_ACTION_NAME, text)
+    message.set(ACTION_NAME, text)
 
     training_data = TrainingData()
     training_data.training_examples = [message]
@@ -101,7 +101,7 @@ def test_train_tokenizer_action_name(text, expected_tokens, expected_indices):
     tk.train(training_data)
 
     # check action_name attribute
-    tokens = training_data.training_examples[0].get(TOKENS_NAMES[MESSAGE_ACTION_NAME])
+    tokens = training_data.training_examples[0].get(TOKENS_NAMES[ACTION_NAME])
 
     assert [t.text for t in tokens] == [text]
 
