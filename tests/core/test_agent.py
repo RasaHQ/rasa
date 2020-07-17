@@ -63,8 +63,8 @@ def model_server(
 
     if USE_UVLOOP:
         return Loop().run_until_complete(sanic_client(app))
-    else:
-        return loop.run_until_complete(sanic_client(app))
+
+    return loop.run_until_complete(sanic_client(app))
 
 
 async def test_training_data_is_reproducible():
