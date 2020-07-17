@@ -200,7 +200,7 @@ class NluDataImporter(TrainingDataImporter):
         return await self._importer.get_config()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        return await self._importer.get_nlu_data(language, only_nlu=True)
+        return await self._importer.get_nlu_data(language)
 
 
 class CoreDataImporter(TrainingDataImporter):
@@ -334,8 +334,7 @@ class E2EImporter(TrainingDataImporter):
         return await self.importer.get_config()
 
     async def get_nlu_data(
-        self, language: Optional[Text] = "en", only_nlu: bool = False
-    ) -> TrainingData:
+        self, language: Optional[Text] = "en") -> TrainingData:
         training_datasets = [_additional_training_data_from_default_actions()]
 
         training_datasets += await asyncio.gather(
