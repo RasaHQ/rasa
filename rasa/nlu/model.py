@@ -8,8 +8,10 @@ import rasa.nlu
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
+from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
@@ -183,9 +185,12 @@ class Trainer:
             )
 
         # data gets modified internally during the training - hence the copy
-        working_data = copy.deepcopy(data)
+        working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
+            if isinstance(component, (EntityExtractor, IntentClassifier)):
+                working_data = working_data.without_empty_e2e_examples()
+
             logger.info(f"Starting to train component {component.name}")
             component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(working_data, self.config, **context)
