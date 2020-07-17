@@ -382,7 +382,6 @@ def _messages_from_action(event: ActionExecuted) -> Message:
         action_name=event.action_name, action_text=event.e2e_text or "",
     )
 
-
 def _additional_training_data_from_default_actions() -> TrainingData:
     from rasa.nlu.training_data import Message
     from rasa.core.actions import action
