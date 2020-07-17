@@ -5,7 +5,7 @@ ACTION_TEXT = "action_text"
 
 RESPONSE_KEY_ATTRIBUTE = "response_key"
 
-MESSAGE_ACTION_NAME = "action_name"
+ACTION_NAME = "action_name"
 MESSAGE_INTENT_NAME = "intent_name"
 
 ENTITIES = "entities"
@@ -39,10 +39,10 @@ TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClass
 
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
-MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE, MESSAGE_ACTION_NAME, ACTION_TEXT]
+MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE, ACTION_NAME, ACTION_TEXT]
 # the dense featurizable attributes are essentially text attributes
 DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE, ACTION_TEXT]
-NAME_ATTRIBUTES = [INTENT, MESSAGE_ACTION_NAME]
+NAME_ATTRIBUTES = [INTENT, ACTION_NAME]
 
 LANGUAGE_MODEL_DOCS = {
     TEXT: "text_language_model_doc",
@@ -59,7 +59,7 @@ TOKENS_NAMES = {
     TEXT: "text_tokens",
     INTENT: "intent_tokens",
     RESPONSE: "response_tokens",
-    MESSAGE_ACTION_NAME: "action_name_tokens",
+    ACTION_NAME: "action_name_tokens",
     ACTION_TEXT: "action_text_tokens",
 }
 

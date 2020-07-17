@@ -18,7 +18,6 @@ from rasa.nlu.constants import (
     TEXT,
     FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
-    MESSAGE_ACTION_NAME,
 )
 
 from rasa.nlu.model import Metadata
