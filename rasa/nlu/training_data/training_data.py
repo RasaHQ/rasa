@@ -17,6 +17,8 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     INTENT,
     ENTITIES,
+    MESSAGE_ACTION_NAME,
+    MESSAGE_INTENT_NAME,
 )
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
@@ -56,25 +58,36 @@ class TrainingData:
     def merge(self, *others: "TrainingData") -> "TrainingData":
         """Return merged instance of this data with other training data."""
 
+        others = [other for other in others if other]
+        merged = self.copy()
+
+        for o in others:
+            merged.training_examples.extend(deepcopy(o.training_examples))
+            merged.regex_features.extend(deepcopy(o.regex_features))
+            merged.lookup_tables.extend(deepcopy(o.lookup_tables))
+
+            for text, syn in o.entity_synonyms.items():
+                check_duplicate_synonym(
+                    merged.entity_synonyms, text, syn, "merging training data"
+                )
+
+            merged.entity_synonyms.update(o.entity_synonyms)
+            merged.nlg_stories.update(o.nlg_stories)
+
+        return TrainingData(
+            merged.training_examples,
+            merged.entity_synonyms,
+            merged.regex_features,
+            merged.lookup_tables,
+            merged.nlg_stories,
+        )
+
+    def copy(self) -> "TrainingData":
         training_examples = deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
         lookup_tables = deepcopy(self.lookup_tables)
         nlg_stories = deepcopy(self.nlg_stories)
-        others = [other for other in others if other]
-
-        for o in others:
-            training_examples.extend(deepcopy(o.training_examples))
-            regex_features.extend(deepcopy(o.regex_features))
-            lookup_tables.extend(deepcopy(o.lookup_tables))
-
-            for text, syn in o.entity_synonyms.items():
-                check_duplicate_synonym(
-                    entity_synonyms, text, syn, "merging training data"
-                )
-
-            entity_synonyms.update(o.entity_synonyms)
-            nlg_stories.update(o.nlg_stories)
 
         return TrainingData(
             training_examples,
@@ -502,9 +515,29 @@ class TrainingData:
         """Checks if any training data was loaded."""
 
         lists_to_check = [
-            self.training_examples,
+            self._training_examples_without_empty_e2e_examples(),
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
+
+    def without_empty_e2e_examples(self) -> "TrainingData":
+        """Removes training data examples from intent labels and action names which
+        were added for end-to-end training.
+
+        Returns:
+            Itself but without training examples which don't have a text or intent.
+        """
+        copied = self.copy()
+        copied.training_examples = self._training_examples_without_empty_e2e_examples()
+
+        return copied
+
+    def _training_examples_without_empty_e2e_examples(self) -> List[Message]:
+        return [
+            example
+            for example in self.training_examples
+            if not example.get(MESSAGE_ACTION_NAME)
+            and not example.get(MESSAGE_INTENT_NAME)
+        ]
