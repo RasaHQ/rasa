@@ -338,8 +338,8 @@ class DynamoTrackerStore(TrackerStore):
 
         dynamo = boto3.resource("dynamodb", region_name=self.region)
         try:
-            desc = self.client.describe_table(TableName=table_name)
-        except:
+            self.client.describe_table(TableName=table_name)
+        except self.client.exceptions.ResourceNotFoundException:
             table = dynamo.create_table(
                 TableName=self.table_name,
                 KeySchema=[
