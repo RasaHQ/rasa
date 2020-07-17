@@ -251,10 +251,9 @@ class MarkdownStoryReader(StoryReader):
         parse_data = await self.interpreter.parse(text)
 
         utterance = UserUttered(
-            text,
+            message_processed.text,
             parse_data.get("intent"),
             message_processed.get("entities"),
-            message=message_processed,
         )
         return utterance
 
