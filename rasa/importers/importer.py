@@ -220,7 +220,7 @@ class CoreDataImporter(TrainingDataImporter):
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         return await self._importer.get_stories(
-            interpreter, template_variables, use_e2e, exclusion_percentage, 
+            interpreter, template_variables, use_e2e, exclusion_percentage,
         )
 
     async def get_config(self) -> Dict:
@@ -333,14 +333,15 @@ class E2EImporter(TrainingDataImporter):
     async def get_config(self) -> Dict:
         return await self.importer.get_config()
 
-    async def get_nlu_data(self, language: Optional[Text] = "en", only_nlu: bool = False) -> TrainingData:
+    async def get_nlu_data(
+        self, language: Optional[Text] = "en", only_nlu: bool = False
+    ) -> TrainingData:
         training_datasets = [_additional_training_data_from_default_actions()]
 
         training_datasets += await asyncio.gather(
             self.importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
         )
-
 
         return reduce(
             lambda merged, other: merged.merge(other), training_datasets, TrainingData()
@@ -378,7 +379,13 @@ def _messages_from_user_utterance(event: UserUttered) -> Message:
 
 def _messages_from_action(event: ActionExecuted) -> Message:
     # we need to store the action text twice to be able to differentiate between user and bot text in NLU processing
-    return Message(event.e2e_text or "", data={MESSAGE_ACTION_NAME: event.action_name, ACTION_TEXT: event.e2e_text or ""})
+    return Message(
+        event.e2e_text or "",
+        data={
+            MESSAGE_ACTION_NAME: event.action_name,
+            ACTION_TEXT: event.e2e_text or "",
+        },
+    )
 
 
 def _additional_training_data_from_default_actions() -> TrainingData:
