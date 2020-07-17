@@ -26,12 +26,6 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy, Memoizati
 from rasa.utils.endpoints import EndpointConfig
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
-USE_UVLOOP = True
-try:
-    from uvloop.loop import Loop
-except ImportError:
-    USE_UVLOOP = False
-
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
     app = Sanic(__name__)
@@ -60,10 +54,6 @@ def model_server(
     loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_moodbot_path: Text
 ) -> TestClient:
     app = model_server_app(trained_moodbot_path, model_hash="somehash")
-
-    if USE_UVLOOP:
-        return Loop().run_until_complete(sanic_client(app))
-
     return loop.run_until_complete(sanic_client(app))
 
 
