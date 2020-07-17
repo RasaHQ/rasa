@@ -28,7 +28,7 @@ def rasa_nlu_data_schema() -> Dict[Text, Any]:
     training_example_schema = {
         "type": "object",
         "properties": {
-            "text": {"type": "string", "minLength": 1},
+            "text": {"type": "string"},
             "intent": {"type": "string"},
             "entities": {
                 "type": "array",
