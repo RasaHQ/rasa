@@ -333,8 +333,7 @@ class E2EImporter(TrainingDataImporter):
     async def get_config(self) -> Dict:
         return await self.importer.get_config()
 
-    async def get_nlu_data(
-        self, language: Optional[Text] = "en") -> TrainingData:
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         training_datasets = [_additional_training_data_from_default_actions()]
 
         training_datasets += await asyncio.gather(
