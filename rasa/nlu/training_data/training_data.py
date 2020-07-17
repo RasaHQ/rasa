@@ -17,7 +17,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     INTENT,
     ENTITIES,
-    MESSAGE_ACTION_NAME,
+    ACTION_NAME,
     MESSAGE_INTENT_NAME,
 )
 from rasa.nlu.training_data.message import Message
@@ -538,6 +538,6 @@ class TrainingData:
         return [
             example
             for example in self.training_examples
-            if not example.get(MESSAGE_ACTION_NAME)
+            if not example.get(ACTION_NAME)
             and not example.get(MESSAGE_INTENT_NAME)
         ]

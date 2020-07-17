@@ -4,7 +4,15 @@ import pytest
 
 
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.constants import TEXT, INTENT, RESPONSE, TOKENS_NAMES, MESSAGE_ACTION_NAME, ACTION_TEXT
+
+from rasa.nlu.constants import (
+    TEXT,
+    INTENT,
+    RESPONSE,
+    TOKENS_NAMES,
+    ACTION_NAME,
+    ACTION_TEXT,
+)
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
@@ -60,7 +68,7 @@ def test_train_tokenizer_e2e_actions(text, expected_tokens, expected_indices):
 
     message = Message(text)
     message.set(ACTION_TEXT, text)
-    message.set(MESSAGE_ACTION_NAME, text)
+    message.set(ACTION_NAME, text)
 
     training_data = TrainingData()
     training_data.training_examples = [message]
@@ -83,7 +91,7 @@ def test_train_tokenizer_action_name(text, expected_tokens, expected_indices):
     tk = WhitespaceTokenizer()
 
     message = Message(text)
-    message.set(MESSAGE_ACTION_NAME, text)
+    message.set(ACTION_NAME, text)
 
     training_data = TrainingData()
     training_data.training_examples = [message]
@@ -91,7 +99,7 @@ def test_train_tokenizer_action_name(text, expected_tokens, expected_indices):
     tk.train(training_data)
 
     # check action_name attribute
-    tokens = training_data.training_examples[0].get(TOKENS_NAMES[MESSAGE_ACTION_NAME])
+    tokens = training_data.training_examples[0].get(TOKENS_NAMES[ACTION_NAME])
 
     assert [t.text for t in tokens] == [text]
 
@@ -121,11 +129,11 @@ def test_process_tokenizer_action_name(text, expected_tokens):
     tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
     message = Message(text)
-    message.set(MESSAGE_ACTION_NAME, text)
+    message.set(ACTION_NAME, text)
 
-    tk.process(message, MESSAGE_ACTION_NAME)
+    tk.process(message, ACTION_NAME)
 
-    tokens = message.get(TOKENS_NAMES[MESSAGE_ACTION_NAME])
+    tokens = message.get(TOKENS_NAMES[ACTION_NAME])
 
     assert [t.text for t in tokens] == expected_tokens
 
@@ -137,7 +145,7 @@ def test_process_tokenizer_action_test(text, expected_tokens):
     tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
     message = Message(text)
-    message.set(MESSAGE_ACTION_NAME, text)
+    message.set(ACTION_NAME, text)
     message.set(ACTION_TEXT, text)
 
     tk.process(message, ACTION_TEXT)
@@ -146,8 +154,8 @@ def test_process_tokenizer_action_test(text, expected_tokens):
     assert [t.text for t in tokens] == expected_tokens
 
     message.set(ACTION_TEXT, "")
-    tk.process(message, MESSAGE_ACTION_NAME)
-    tokens = message.get(TOKENS_NAMES[MESSAGE_ACTION_NAME])
+    tk.process(message, ACTION_NAME)
+    tokens = message.get(TOKENS_NAMES[ACTION_NAME])
     assert [t.text for t in tokens] == [text]
 
 
@@ -232,8 +240,8 @@ def test_split_action_name(text, expected_tokens):
     tk = WhitespaceTokenizer(component_config)
 
     message = Message(text)
-    message.set(MESSAGE_ACTION_NAME, text)
+    message.set(ACTION_NAME, text)
 
     assert [
-        t.text for t in tk._split_name(message, MESSAGE_ACTION_NAME)
+        t.text for t in tk._split_name(message, ACTION_NAME)
     ] == expected_tokens
