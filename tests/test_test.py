@@ -171,11 +171,9 @@ async def test_e2e_warning_if_no_nlu_model(
     monkeypatch.setattr(Agent, "load", agent_load)
 
     test_core(trained_core_model, additional_arguments={"e2e": True})
-    # TODO: Where does trained core model come from? With swapped training it
-    #  seems to include NLU model.
 
-    # assert "No NLU model found. Using default" in capsys.readouterr().out
+    assert "No NLU model found. Using default" in capsys.readouterr().out
 
     agent_load.assert_called_once()
     _, _, kwargs = agent_load.mock_calls[0]
-    assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
+    assert isinstance(kwargs["interpreter"], RegexInterpreter)
