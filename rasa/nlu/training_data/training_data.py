@@ -550,6 +550,5 @@ class TrainingData:
         return [
             example
             for example in self.training_examples
-            if not example.get(ACTION_NAME)
-            and not example.get(MESSAGE_INTENT_NAME)
+            if not example.get(ACTION_NAME) and not example.get(MESSAGE_INTENT_NAME)
         ]
