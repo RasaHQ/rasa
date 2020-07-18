@@ -21,7 +21,7 @@ class KeywordIntentClassifier(IntentClassifier):
 
 
     The classifier takes a list of keywords and associated intents as an input.
-    A input sentence is checked for the keywords and the intent is returned.
+    An input sentence is checked for the keywords and the intent is returned.
 
     """
 

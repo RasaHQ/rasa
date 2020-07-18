@@ -1,12 +1,34 @@
-import typing
-from typing import Text, List, Optional, Union
+from typing import Text, List, Optional, Union, TYPE_CHECKING
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.domain import Domain
     from rasa.core.interpreter import NaturalLanguageInterpreter
     from rasa.core.trackers import DialogueStateTracker
     from rasa.core.training.structures import StoryGraph
     from rasa.importers.importer import TrainingDataImporter
+
+
+async def extract_rule_data(
+    resource_name: Text,
+    domain: "Domain",
+    interpreter: Optional["NaturalLanguageInterpreter"] = None,
+    use_e2e: bool = False,
+    exclusion_percentage: int = None,
+) -> "StoryGraph":
+    from rasa.core.interpreter import RegexInterpreter
+    from rasa.core.training import loading
+    from rasa.core.training.structures import StoryGraph
+
+    if not interpreter:
+        interpreter = RegexInterpreter()
+    story_steps = await loading.load_data_from_resource(
+        resource_name,
+        domain,
+        interpreter,
+        use_e2e=use_e2e,
+        exclusion_percentage=exclusion_percentage,
+    )
+    return StoryGraph(story_steps)
 
 
 async def extract_story_graph(
@@ -17,12 +39,12 @@ async def extract_story_graph(
     exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
     from rasa.core.interpreter import RegexInterpreter
-    from rasa.core.training.dsl import StoryFileReader
     from rasa.core.training.structures import StoryGraph
+    import rasa.core.training.loading as core_loading
 
     if not interpreter:
         interpreter = RegexInterpreter()
-    story_steps = await StoryFileReader.read_from_folder(
+    story_steps = await core_loading.load_data_from_resource(
         resource_name,
         domain,
         interpreter,

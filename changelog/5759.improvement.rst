@@ -1,0 +1,3 @@
+Move option ``case_sensitive`` from the tokenizers to the featurizers.
+- Remove the option from the ``WhitespaceTokenizer`` and ``ConveRTTokenizer``.
+- Add option ``case_sensitive`` to the ``RegexFeaturizer``.

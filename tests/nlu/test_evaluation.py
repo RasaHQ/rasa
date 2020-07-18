@@ -253,6 +253,21 @@ def test_determine_token_labels_with_extractors():
             ["CRFEntityExtractor"],
             0.87,
         ),
+        (
+            Token("pizza", 4),
+            [
+                {
+                    "start": 4,
+                    "end": 9,
+                    "value": "pizza",
+                    "entity": "food",
+                    "confidence_entity": 0.87,
+                    "extractor": "DIETClassifier",
+                }
+            ],
+            ["DIETClassifier"],
+            0.87,
+        ),
     ],
 )
 def test_get_entity_confidences(

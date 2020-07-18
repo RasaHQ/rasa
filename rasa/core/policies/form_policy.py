@@ -1,17 +1,17 @@
 import logging
-import typing
-from typing import List, Dict, Text, Optional
+from typing import List, Dict, Text, Optional, Any
 
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
+from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
 from rasa.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY
 
-if typing.TYPE_CHECKING:
-    from rasa.core.policies.ensemble import PolicyEnsemble
+from rasa.utils import common as common_utils
 
 
 logger = logging.getLogger(__name__)
@@ -35,23 +35,12 @@ class FormPolicy(MemoizationPolicy):
             featurizer=featurizer, priority=priority, max_history=2, lookup=lookup
         )
 
-    @classmethod
-    def validate_against_domain(
-        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
-    ) -> None:
-        if not domain:
-            return
-
-        has_form_policy = ensemble is not None and any(
-            isinstance(p, cls) for p in ensemble.policies
+        common_utils.raise_warning(
+            f"'{FormPolicy.__name__}' is deprecated and will be removed in "
+            "in the future. It is recommended to use the 'RulePolicy' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
         )
-        if domain.form_names and not has_form_policy:
-            raise InvalidDomain(
-                "You have defined a form action, but haven't added the "
-                "FormPolicy to your policy ensemble. Either remove all "
-                "forms from your domain or exclude the FormPolicy from your "
-                "policy configuration."
-            )
 
     @staticmethod
     def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
@@ -124,7 +113,7 @@ class FormPolicy(MemoizationPolicy):
 
         state_is_unhappy = (
             memorized_form is not None
-            and memorized_form == tracker.active_form.get("name")
+            and memorized_form == tracker.active_loop.get("name")
         )
 
         if state_is_unhappy:
@@ -137,27 +126,31 @@ class FormPolicy(MemoizationPolicy):
         return state_is_unhappy
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts the corresponding form action if there is an active form"""
         result = self._default_predictions(domain)
 
-        if tracker.active_form.get("name"):
+        if tracker.active_loop.get("name"):
             logger.debug(
-                "There is an active form '{}'".format(tracker.active_form["name"])
+                "There is an active form '{}'".format(tracker.active_loop["name"])
             )
             if tracker.latest_action_name == ACTION_LISTEN_NAME:
                 # predict form action after user utterance
 
-                if tracker.active_form.get("rejected"):
+                if tracker.active_loop.get("rejected"):
                     if self.state_is_unhappy(tracker, domain):
                         tracker.update(FormValidation(False))
                         return result
 
-                idx = domain.index_for_action(tracker.active_form["name"])
+                idx = domain.index_for_action(tracker.active_loop["name"])
                 result[idx] = 1.0
 
-            elif tracker.latest_action_name == tracker.active_form.get("name"):
+            elif tracker.latest_action_name == tracker.active_loop.get("name"):
                 # predict action_listen after form action
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
                 result[idx] = 1.0

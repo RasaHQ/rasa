@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 # performs entity extraction but those two classifiers don't
 ENTITY_PROCESSORS = {"EntitySynonymMapper", "ResponseSelector"}
 
-EXTRACTORS_WITH_CONFIDENCES = {"CRFEntityExtractor"}
+EXTRACTORS_WITH_CONFIDENCES = {"CRFEntityExtractor", "DIETClassifier"}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
@@ -151,7 +151,7 @@ def drop_intents_below_freq(
     keep_examples = [
         ex
         for ex in training_data.intent_examples
-        if training_data.examples_per_intent[ex.get(INTENT)] >= cutoff
+        if training_data.number_of_examples_per_intent[ex.get(INTENT)] >= cutoff
     ]
 
     return TrainingData(
@@ -450,7 +450,12 @@ def evaluate_response_selections(
             confusion_matrix_filename = os.path.join(
                 output_directory, confusion_matrix_filename
             )
-        _labels = [response_to_intent_target[label] for label in labels]
+        _labels = [
+            response_to_intent_target[label]
+            if label in response_to_intent_target
+            else f"'{label[:20]}...' (response not present in test data)"
+            for label in labels
+        ]
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
             classes=_labels,
@@ -1846,18 +1851,22 @@ def compare_nlu(
         for percentage in exclusion_percentages:
             percent_string = f"{percentage}%_exclusion"
 
-            _, train = train.train_test_split(percentage / 100)
+            _, train_included = train.train_test_split(percentage / 100)
             # only count for the first run and ignore the others
             if run == 0:
-                training_examples_per_run.append(len(train.training_examples))
+                training_examples_per_run.append(len(train_included.training_examples))
 
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, "train")
             train_nlu_split_path = os.path.join(train_split_path, TRAIN_DATA_FILE)
             train_nlg_split_path = os.path.join(train_split_path, NLG_DATA_FILE)
             io_utils.create_path(train_nlu_split_path)
-            io_utils.write_text_file(train.nlu_as_markdown(), train_nlu_split_path)
-            io_utils.write_text_file(train.nlg_as_markdown(), train_nlg_split_path)
+            io_utils.write_text_file(
+                train_included.nlu_as_markdown(), train_nlu_split_path
+            )
+            io_utils.write_text_file(
+                train_included.nlg_as_markdown(), train_nlg_split_path
+            )
 
             for nlu_config, model_name in zip(configs, model_names):
                 logger.info(

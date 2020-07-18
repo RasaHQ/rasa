@@ -417,7 +417,7 @@ class RasaModel(tf.keras.models.Model):
 
         idx = 0
         for k, signature in data_signature.items():
-            for is_sparse, shape in signature:
+            for is_sparse, feature_dimension in signature:
                 if is_sparse:
                     # explicitly substitute last dimension in shape with known
                     # static value
@@ -425,7 +425,7 @@ class RasaModel(tf.keras.models.Model):
                         tf.SparseTensor(
                             batch[idx],
                             batch[idx + 1],
-                            [batch[idx + 2][0], batch[idx + 2][1], shape[-1]],
+                            [batch[idx + 2][0], batch[idx + 2][1], feature_dimension],
                         )
                     )
                     idx += 3
