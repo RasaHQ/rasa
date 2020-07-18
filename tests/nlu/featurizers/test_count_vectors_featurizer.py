@@ -9,7 +9,7 @@ from rasa.nlu.constants import (
     TEXT,
     INTENT,
     RESPONSE,
-    MESSAGE_ACTION_NAME,
+    ACTION_NAME,
     ACTION_TEXT,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -422,14 +422,14 @@ def test_count_vector_featurizer_action_attribute_featurization(
 
     train_message = Message(sentence)
     # this is needed for a valid training example
-    train_message.set(MESSAGE_ACTION_NAME, action_name)
+    train_message.set(ACTION_NAME, action_name)
     train_message.set(ACTION_TEXT, action_text)
 
     # add a second example that has some response, so that the vocabulary for
     # response exists
     second_message = Message("hello")
     second_message.set(ACTION_TEXT, "hi")
-    second_message.set(MESSAGE_ACTION_NAME, "greet")
+    second_message.set(ACTION_NAME, "greet")
 
     data = TrainingData([train_message, second_message])
 
@@ -437,7 +437,7 @@ def test_count_vector_featurizer_action_attribute_featurization(
     ftr.train(data)
 
     action_name_seq_vecs, action_name_sen_vecs = train_message.get_sparse_features(
-        MESSAGE_ACTION_NAME, []
+        ACTION_NAME, []
     )
     response_seq_vecs, response_sen_vecs = train_message.get_sparse_features(
         ACTION_TEXT, []
@@ -475,7 +475,7 @@ def test_count_vector_featurizer_process_by_attribute(
     # add a second example that has some response, so that the vocabulary for
     # response exists
     train_message = Message("hello")
-    train_message.set(MESSAGE_ACTION_NAME, "greet")
+    train_message.set(ACTION_NAME, "greet")
 
     train_message1 = Message("hello")
     train_message1.set(ACTION_TEXT, "hi")
@@ -486,15 +486,15 @@ def test_count_vector_featurizer_process_by_attribute(
     ftr.train(data)
 
     test_message = Message(sentence)
-    test_message.set(MESSAGE_ACTION_NAME, action_name)
+    test_message.set(ACTION_NAME, action_name)
     test_message.set(ACTION_TEXT, action_text)
 
-    for attribute in [TEXT, MESSAGE_ACTION_NAME, ACTION_TEXT]:
+    for attribute in [TEXT, ACTION_NAME, ACTION_TEXT]:
         for module in [tk, ftr]:
             module.process(test_message, attribute=attribute)
 
     action_name_seq_vecs, action_name_sen_vecs = test_message.get_sparse_features(
-        MESSAGE_ACTION_NAME, []
+        ACTION_NAME, []
     )
 
     if action_name_features:
