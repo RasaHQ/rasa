@@ -5,17 +5,22 @@ set -Eeuo pipefail
 TODAY=`date "+%Y%m%d"`
 # we build new versions only for minors and majors
 PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.0$"
+PATTERN_FOR_PATCH_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.[1-9]+$"
 MASTER_REF=refs/heads/master
 
 [[ ! $GITHUB_REF =~ $PATTERN_FOR_NEW_VERSION ]] \
+&& [[ ! $GITHUB_REF =~ $PATTERN_FOR_PATCH_VERSION ]] \
 && [[ $GITHUB_REF != $MASTER_REF ]] \
-&& echo "Not on master or major version, skipping." \
+&& echo "Not on master or tagged version, skipping." \
 && exit 0
 
 NEW_VERSION=
-if [ "$GITHUB_REF" != $MASTER_REF ]
+EXISTING_VERSION=
+if [[ "$GITHUB_REF" =~ $PATTERN_FOR_NEW_VERSION ]]
 then
     NEW_VERSION=${GITHUB_REF/refs\/tags\//}
+elif [[ "$GITHUB_REF" =~ $PATTERN_FOR_PATCH_VERSION ]]
+    EXISTING_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.[0-9]+$/\1.\2.0/")
 fi
 
 # clone the $DOCS_BRANCH in a temp directory
@@ -40,6 +45,16 @@ then
     cd docs
     yarn run new-version $NEW_VERSION
     cd ..
+fi
+
+if [ ! -z "$EXISTING_VERSION" ]
+then
+    echo "Updating docs for existing version $EXISTING_VERSION..."
+    cd docs
+    cp -R docs/ versioned_docs/version-$EXISTING_VERSION/
+    # remove updates to the "next" version
+    git checkout docs/
+    git clean docs/
 fi
 
 if [ -z "$(git status --porcelain)" ]
