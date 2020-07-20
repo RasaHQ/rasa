@@ -1,18 +1,11 @@
 intents:
-- greet:
-    triggers: action_set_reminder
-- ask_remind_call:
-    triggers: action_set_reminder
-- ask_forget_reminders:
-    triggers: action_forget_reminders
-- bye:
-    triggers: utter_goodbye
-- ask_id:
-    triggers: action_tell_id
-- EXTERNAL_dry_plant:
-    triggers: action_warn_dry
-- EXTERNAL_reminder:
-    triggers: action_react_to_reminder
+- greet
+- ask_remind_call
+- ask_forget_reminders
+- bye
+- ask_id
+- EXTERNAL_dry_plant
+- EXTERNAL_reminder
 - EXT_reminder
 
 entities:
@@ -22,7 +15,6 @@ entities:
 responses:
   utter_what_can_do:
   - text: What can I do for you?
-
   utter_goodbye:
   - text: Bye
 
