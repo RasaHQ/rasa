@@ -69,6 +69,7 @@ jobs:
     - name: Build & Publish Docs 🏃‍♀️
       env:
         GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
+        TMP_DOCS_FOLDER: ~/tmp-documentation
       run: |
         eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
         echo "$GITHUB_DOCS_KEY" > "docs_key"
