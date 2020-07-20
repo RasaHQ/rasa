@@ -281,7 +281,7 @@ class RasaYAMLReader(TrainingDataReader):
             if not example.startswith(MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL):
                 raise_warning(
                     f"Issue found while processing '{self.filename}': "
-                    f"The item '{item}' has an example that doesn't start with a "
+                    f"The item '{item}' contains an example that doesn't start with a "
                     f"'{MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL}' symbol: "
                     f"{example}\n"
                     f"This training example will be skipped.",
