@@ -1,5 +1,12 @@
 const remarkSources = require('remark-sources');
 const remarkCollapse = require('remark-collapse');
+let versions = [];
+try {
+  versions = require('./versions.json');
+} catch (ex) {
+  // Nothing to do here, in dev mode, only
+  // one version of the doc is available
+}
 
 module.exports = {
   title: 'Rasa Open Source Documentation',
@@ -18,10 +25,30 @@ module.exports = {
       },
       links: [
         {
-          to: 'docs/',
-          activeBasePath: 'docs',
           label: 'Docs',
+          to: '/', // "fake" link
           position: 'left',
+          activeBaseRegex: `(?!next)`,
+          items: versions.length > 0 ? [
+            {
+              label: versions[0],
+              to: '/',
+              activeBaseRegex: `(?!${versions.join('|')}|next)`,
+            },
+            ...versions.slice(1).map((version) => ({
+              label: version,
+              to: `${version}/`,
+            })),
+            {
+              label: 'Master/Unreleased',
+              to: 'next/',
+              activeBaseRegex: `next`,
+            },
+          ] : [{
+              label: 'Master/Unreleased',
+              to: '/',
+              activeBaseRegex: `/`,
+            },],
         },
         {
           href: 'https://github.com/rasahq/rasa',
