@@ -28,16 +28,16 @@ module.exports = {
           label: 'Docs',
           to: '/', // "fake" link
           position: 'left',
-          activeBaseRegex: `(?!next)`,
           items: versions.length > 0 ? [
             {
               label: versions[0],
               to: '/',
-              activeBaseRegex: `(?!${versions.join('|')}|next)`,
+              activeBaseRegex: versions[0],
             },
             ...versions.slice(1).map((version) => ({
               label: version,
               to: `${version}/`,
+              activeBaseRegex: version,
             })),
             {
               label: 'Master/Unreleased',
