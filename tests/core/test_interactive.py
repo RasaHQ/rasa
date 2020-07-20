@@ -1,7 +1,7 @@
 import asyncio
 import json
 from collections import deque
-from typing import Text, List
+from typing import Text, List, Any, Dict
 
 import pytest
 import uuid
@@ -401,7 +401,9 @@ def test_as_md_message():
     ],
 )
 def test__merge_annotated_and_original_entities(
-    parse_original, parse_annotated, expected_entities
+    parse_original: Dict[Text, Any],
+    parse_annotated: Dict[Text, Any],
+    expected_entities: List[Dict[Text, Any]],
 ):
     entities = interactive._merge_annotated_and_original_entities(
         parse_annotated, parse_original
