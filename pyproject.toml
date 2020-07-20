@@ -1,5 +1,5 @@
 [build-system]
-requires = [ "poetry>=1.0.5",]
+requires = [ "poetry>=1.0.9",]
 build-backend = "poetry.masonry.api"
 
 [tool.black]
@@ -163,6 +163,7 @@ pep440-version-utils = "^0.3.0"
 spacy = [ "spacy",]
 convert = [ "tensorflow-text",]
 transformers = [ "transformers",]
+jieba = [ "jieba",]
 full = [ "spacy", "tensorflow-text", "transformers", "jieba",]
 gh-release-notes = [ "pypandoc", "github3.py",]
 

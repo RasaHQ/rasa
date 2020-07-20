@@ -110,11 +110,12 @@ jobs:
 
   test:
     name: Run Tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        os: [windows-latest]
+        python-version: [3.6]
 
     steps:
     - name: Checkout git repository 🕝
@@ -142,15 +143,25 @@ jobs:
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
-    - name: Install Dependencies 📦
+    - name: Install Dependencies (Linux) 📦
+      if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get -y install libpq-dev
         make install-full | tee .output
         if grep 'The lock file is not up to date' .output; then exit 1; fi
         make prepare-tests-ubuntu
 
+    - name: Install Dependencies (Windows) 📦
+      if: matrix.os == 'windows-latest'
+      run: |
+        make install-full-windows
+        make prepare-tests-windows
+
     - name: Test Code 🔍
-      run: JOBS=2 make test
+      env:
+        JOBS: 2
+        PYTHONIOENCODING: "utf-8"
+      run: make test
 
     - name: Send Coverage Report 📊
       if: matrix.python-version == 3.6
