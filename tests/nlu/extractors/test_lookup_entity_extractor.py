@@ -2,29 +2,10 @@ from typing import Any, Text, Dict, List
 
 import pytest
 
+from rasa.nlu.training_data import TrainingData
 from rasa.nlu.constants import ENTITIES
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.lookup_entity_extractor import LookupEntityExtractor
-from tests.nlu.utilities import write_tmp_file
-
-
-@pytest.mark.parametrize(
-    "component_config",
-    [
-        {},
-        {"lookup": None},
-        {"lookup": {}},
-        {
-            "lookup": {
-                "some-entity": "some/invalid/path.txt",
-                "some-other-entity": "some/other/invalid/path.txt",
-            }
-        },
-    ],
-)
-def test_raise_error_on_invalid_config(component_config: Dict[Text, Any]):
-    with pytest.raises(ValueError):
-        LookupEntityExtractor(component_config)
 
 
 @pytest.mark.parametrize(
@@ -32,7 +13,12 @@ def test_raise_error_on_invalid_config(component_config: Dict[Text, Any]):
     [
         (
             "Berlin and London are cities.",
-            {"city": ["Berlin", "Amsterdam", "New York", "London"]},
+            [
+                {
+                    "name": "city",
+                    "elements": ["Berlin", "Amsterdam", "New York", "London"],
+                }
+            ],
             [
                 {
                     "entity": "city",
@@ -52,10 +38,13 @@ def test_raise_error_on_invalid_config(component_config: Dict[Text, Any]):
         ),
         (
             "Sophie is visiting Thomas in Berlin.",
-            {
-                "city": ["Berlin", "Amsterdam", "New York", "London"],
-                "person": ["Max", "John", "Sophie", "Lisa"],
-            },
+            [
+                {
+                    "name": "city",
+                    "elements": ["Berlin", "Amsterdam", "New York", "London"],
+                },
+                {"name": "person", "elements": ["Max", "John", "Sophie", "Lisa"]},
+            ],
             [
                 {
                     "entity": "city",
@@ -75,25 +64,29 @@ def test_raise_error_on_invalid_config(component_config: Dict[Text, Any]):
         ),
         (
             "Rasa is great.",
-            {
-                "city": ["Berlin", "Amsterdam", "New York", "London"],
-                "person": ["Max", "John", "Sophie", "Lisa"],
-            },
+            [
+                {
+                    "name": "city",
+                    "elements": ["Berlin", "Amsterdam", "New York", "London"],
+                },
+                {"name": "person", "elements": ["Max", "John", "Sophie", "Lisa"]},
+            ],
             [],
         ),
     ],
 )
 def test_process(
-    text: Text, lookup: Dict[Text, List[Text]], expected_entities: List[Dict[Text, Any]]
+    text: Text,
+    lookup: List[Dict[Text, List[Text]]],
+    expected_entities: List[Dict[Text, Any]],
 ):
     message = Message(text)
 
-    lookup_table = {}
-    for entity, examples in lookup.items():
-        file_path = write_tmp_file(examples)
-        lookup_table[entity] = file_path
+    training_data = TrainingData()
+    training_data.lookup_tables = lookup
 
-    entity_extractor = LookupEntityExtractor({"lookup": lookup_table})
+    entity_extractor = LookupEntityExtractor()
+    entity_extractor.train(training_data)
     entity_extractor.process(message)
 
     entities = message.get(ENTITIES)
@@ -106,7 +99,12 @@ def test_process(
         (
             "berlin and London are cities.",
             False,
-            {"city": ["Berlin", "Amsterdam", "New York", "London"]},
+            [
+                {
+                    "name": "city",
+                    "elements": ["Berlin", "Amsterdam", "New York", "London"],
+                }
+            ],
             [
                 {
                     "entity": "city",
@@ -120,7 +118,12 @@ def test_process(
         (
             "berlin and London are cities.",
             True,
-            {"city": ["Berlin", "Amsterdam", "New York", "london"]},
+            [
+                {
+                    "name": "city",
+                    "elements": ["Berlin", "Amsterdam", "New York", "london"],
+                }
+            ],
             [
                 {
                     "entity": "city",
@@ -143,19 +146,15 @@ def test_process(
 def test_lowercase(
     text: Text,
     lowercase: bool,
-    lookup: Dict[Text, List[Text]],
+    lookup: List[Dict[Text, List[Text]]],
     expected_entities: List[Dict[Text, Any]],
 ):
     message = Message(text)
+    training_data = TrainingData()
+    training_data.lookup_tables = lookup
 
-    lookup_table = {}
-    for entity, examples in lookup.items():
-        file_path = write_tmp_file(examples)
-        lookup_table[entity] = file_path
-
-    entity_extractor = LookupEntityExtractor(
-        {"lookup": lookup_table, "lowercase": lowercase}
-    )
+    entity_extractor = LookupEntityExtractor({"lowercase": lowercase})
+    entity_extractor.train(training_data)
     entity_extractor.process(message)
 
     entities = message.get(ENTITIES)
@@ -166,11 +165,13 @@ def test_do_not_overwrite_any_entities():
     message = Message("Max lives in Berlin.")
     message.set(ENTITIES, [{"entity": "person", "value": "Max", "start": 0, "end": 3}])
 
-    lookup_table = {}
-    file_path = write_tmp_file(["London", "Berlin", "Amsterdam"])
-    lookup_table["city"] = file_path
+    training_data = TrainingData()
+    training_data.lookup_tables = [
+        {"name": "city", "elements": ["London", "Berlin", "Amsterdam"]}
+    ]
 
-    entity_extractor = LookupEntityExtractor({"lookup": lookup_table})
+    entity_extractor = LookupEntityExtractor()
+    entity_extractor.train(training_data)
     entity_extractor.process(message)
 
     entities = message.get(ENTITIES)
