@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-from tensorflow_addons.utils.types import TensorLike
 from typeguard import typechecked
 from typing import Tuple
 
@@ -14,7 +13,7 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
     """Computes the forward decoding in a linear-chain CRF."""
 
     @typechecked
-    def __init__(self, transition_params: TensorLike, **kwargs) -> None:
+    def __init__(self, transition_params: tf.Tensor, **kwargs) -> None:
         """Initialize the CrfDecodeForwardRnnCell.
 
         Args:
@@ -38,9 +37,7 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
     def build(self, input_shape):
         super().build(input_shape)
 
-    def call(
-        self, inputs: TensorLike, state: TensorLike
-    ) -> Tuple[tf.Tensor, tf.Tensor]:
+    def call(self, inputs: tf.Tensor, state: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
         """Build the CrfDecodeForwardRnnCell.
 
         Args:
@@ -70,10 +67,10 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
 
 
 def crf_decode_forward(
-    inputs: TensorLike,
-    state: TensorLike,
-    transition_params: TensorLike,
-    sequence_lengths: TensorLike,
+    inputs: tf.Tensor,
+    state: tf.Tensor,
+    transition_params: tf.Tensor,
+    sequence_lengths: tf.Tensor,
 ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes forward decoding in a linear-chain CRF.
 
@@ -98,7 +95,7 @@ def crf_decode_forward(
 
 
 def crf_decode_backward(
-    backpointers: TensorLike, scores: TensorLike, state: TensorLike
+    backpointers: tf.Tensor, scores: tf.Tensor, state: tf.Tensor
 ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes backward decoding in a linear-chain CRF.
 
@@ -115,7 +112,7 @@ def crf_decode_backward(
     backpointers = tf.transpose(backpointers, [1, 0, 2])
     scores = tf.transpose(scores, [1, 0, 2])
 
-    def _scan_fn(_state: TensorLike, _inputs: TensorLike) -> tf.Tensor:
+    def _scan_fn(_state: tf.Tensor, _inputs: tf.Tensor) -> tf.Tensor:
         _state = tf.cast(tf.squeeze(_state, axis=[1]), dtype=tf.int32)
         idxs = tf.stack([tf.range(tf.shape(_inputs)[0]), _state], axis=1)
         return tf.expand_dims(tf.gather_nd(_inputs, idxs), axis=-1)
@@ -130,7 +127,7 @@ def crf_decode_backward(
 
 
 def crf_decode(
-    potentials: TensorLike, transition_params: TensorLike, sequence_length: TensorLike
+    potentials: tf.Tensor, transition_params: tf.Tensor, sequence_length: tf.Tensor
 ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Decode the highest scoring sequence of tags.
 
