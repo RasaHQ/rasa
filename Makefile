@@ -81,6 +81,9 @@ test: clean
 	# OMP_NUM_THREADS can improve overral performance using one thread by process (on tensorflow), avoiding overload
 	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
 
+docs:
+	cd newdocs/ && poetry run yarn variables && yarn build
+
 livedocs:
 	cd newdocs/ && poetry run yarn start
 

@@ -104,10 +104,7 @@ jobs:
     - name: Test Docs 📃
       run: |
         poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
-        cd newdocs
-        poetry run yarn variables
-        yarn build
-        
+        make docs
 
   test:
     name: Run Tests
