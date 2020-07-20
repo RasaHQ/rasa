@@ -10,8 +10,16 @@ MULTILINE_INTENT_EXAMPLES = """
 nlu:
 - intent: intent_name
   examples: |
+     - how much CO2 will that use?
+     - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
+"""
+
+MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL = """
+nlu:
+- intent: intent_name
+  examples: |
      how much CO2 will that use?
-     how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
+     - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
 """
 
 INTENT_EXAMPLES_WITH_METADATA = """
@@ -57,6 +65,17 @@ def test_multiline_intent_is_parsed(example: Text):
     ) == training_data.training_examples[1].get(INTENT)
 
 
+def test_multiline_intent_example_is_skipped_when_no_leading_symbol():
+    parser = RasaYAMLReader()
+
+    with pytest.warns(None) as record:
+        training_data = parser.reads(MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL)
+
+    assert len(record)
+
+    assert len(training_data.training_examples) == 1
+
+
 @pytest.mark.parametrize(
     "example, expected_num_entities",
     [
@@ -97,7 +116,7 @@ def test_entity_is_extracted(example: Text, expected_num_entities: int):
 nlu:
 - intent: {intent_name}
   examples: |
-    {example}
+    - {example}
 """
 
     result = reader.reads(yaml_string)
@@ -113,8 +132,8 @@ def test_synonyms_are_parsed():
     nlu:
     - synonym: savings
       examples: |
-        pink pig
-        savings account
+        - pink pig
+        - savings account
     """
 
     parser = RasaYAMLReader()
@@ -133,9 +152,9 @@ def test_lookup_is_parsed():
     nlu:
     - lookup: {lookup_item_name}
       examples: |
-        Peso
-        Euro
-        Dollar
+        - Peso
+        - Euro
+        - Dollar
     """
 
     parser = RasaYAMLReader()
@@ -155,8 +174,8 @@ def test_regex_is_parsed():
     nlu:
     - regex: {regex_name}
       examples: |
-        {pattern_1}
-        {pattern_2}
+        - {pattern_1}
+        - {pattern_2}
     """
 
     parser = RasaYAMLReader()
