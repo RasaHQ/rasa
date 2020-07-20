@@ -221,6 +221,7 @@ world - ranging from databases to third-party APIs." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../2.0.0a1/core/actions/">2.0.0a1</a>
               <a href="../../../1.10.8/core/actions/">1.10.8</a>
               <a href="../../../1.10.7/core/actions/">1.10.7</a>
               <a href="../../../1.10.6/core/actions/">1.10.6</a>
@@ -231,22 +232,8 @@ world - ranging from databases to third-party APIs." />
               <a href="../../../1.10.1/core/actions/">1.10.1</a>
               <a href="../../../1.10.0/core/actions/">1.10.0</a>
               <a href="../../../1.9.7/core/actions/">1.9.7</a>
-              <a href="../../../1.9.6/core/actions/">1.9.6</a>
-              <a href="../../../1.9.5/core/actions/">1.9.5</a>
-              <a href="../../../1.9.4/core/actions/">1.9.4</a>
-              <a href="../../../1.9.3/core/actions/">1.9.3</a>
-              <a href="../../../1.9.2/core/actions/">1.9.2</a>
-              <a href="../../../1.9.1/core/actions/">1.9.1</a>
-              <a href="../../../1.9.0/core/actions/">1.9.0</a>
               <a href="../../../1.8.3/core/actions/">1.8.3</a>
-              <a href="../../../1.8.2/core/actions/">1.8.2</a>
-              <a href="../../../1.8.1/core/actions/">1.8.1</a>
-              <a href="../../../1.8.0/core/actions/">1.8.0</a>
               <a href="../../../1.7.4/core/actions/">1.7.4</a>
-              <a href="../../../1.7.3/core/actions/">1.7.3</a>
-              <a href="../../../1.7.2/core/actions/">1.7.2</a>
-              <a href="../../../1.7.1/core/actions/">1.7.1</a>
-              <a href="../../../1.7.0/core/actions/">1.7.0</a>
               <a href="../../../1.6.2/core/actions/">1.6.2</a>
               <a href="../../../1.5.3/core/actions/">1.5.3</a>
               <a href="../../../1.4.6/core/actions/">1.4.6</a>
@@ -426,9 +413,7 @@ back to the user with the <code class="docutils literal notranslate"><span class
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dispatcher</strong> – the dispatcher which is used to
 send messages back to the user. Use
-<code class="docutils literal notranslate"><span class="pre">dipatcher.utter_message()</span></code> or any other
-<code class="docutils literal notranslate"><span class="pre">rasa_sdk.executor.CollectingDispatcher</span></code>
-method.</p></li>
+<code class="docutils literal notranslate"><span class="pre">dispatcher.utter_message()</span></code> for sending messages.</p></li>
 <li><p><strong>tracker</strong> – the state tracker for the current
 user. You can access slot values using
 <code class="docutils literal notranslate"><span class="pre">tracker.get_slot(slot_name)</span></code>, the most recent user message
