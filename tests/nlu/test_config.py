@@ -46,12 +46,7 @@ def test_invalid_many_tokenizers_in_config():
 @pytest.mark.parametrize(
     "_config",
     [
-        {
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "SpacyFeaturizer"}
-            ]
-        },
+        {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyFeaturizer"}]},
         pytest.param(
             {
                 "pipeline": [
