@@ -14,7 +14,4 @@ pipeline:
   - name: "EntitySynonymMapper"
 
 policies:
-  - name: MemoizationPolicy
-  - name: TEDPolicy
-    max_history: 5
-    epochs: 100
+  - name: RulePolicy
