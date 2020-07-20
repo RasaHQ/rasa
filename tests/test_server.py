@@ -207,9 +207,13 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
     train_request.terminate()
 
 
-# due to unknown reasons this test can not be run in pycharm, it
-# results in segfaults...will skip in that case - test will still get run on CI
+# Due to unknown reasons this test can not be run in pycharm, it
+# results in segfaults...will skip in that case - test will still get run on CI.
+# It also doesn't run on Windows because of Process-related calls and an attempt
+# to start/terminate a process. We will investigate this case further later.
 @pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
+@pytest.mark.linux
+@pytest.mark.darwin
 def test_train_status_is_not_blocked_by_training(
     background_server: Process, shared_statuses: DictProxy, training_request: Process
 ):

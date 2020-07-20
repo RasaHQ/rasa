@@ -10,6 +10,8 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 
 
+@pytest.mark.linux
+@pytest.mark.darwin
 def test_convert_featurizer_process(component_builder):
     tokenizer = component_builder.create_component_from_class(ConveRTTokenizer)
     featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
@@ -33,6 +35,8 @@ def test_convert_featurizer_process(component_builder):
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
 
+@pytest.mark.linux
+@pytest.mark.darwin
 def test_convert_featurizer_train(component_builder):
     tokenizer = component_builder.create_component_from_class(ConveRTTokenizer)
     featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
@@ -83,6 +87,8 @@ def test_convert_featurizer_train(component_builder):
         ("ńöñàśçií", "ńöñàśçií"),
     ],
 )
+@pytest.mark.linux
+@pytest.mark.darwin
 def test_convert_featurizer_tokens_to_text(component_builder, sentence, expected_text):
     tokenizer = component_builder.create_component_from_class(ConveRTTokenizer)
     tokens = tokenizer.tokenize(Message(sentence), attribute=TEXT)

@@ -46,14 +46,30 @@ def test_invalid_many_tokenizers_in_config():
 @pytest.mark.parametrize(
     "_config",
     [
-        {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyFeaturizer"}]},
-        {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "ConveRTFeaturizer"}]},
         {
             "pipeline": [
-                {"name": "ConveRTTokenizer"},
-                {"name": "LanguageModelFeaturizer"},
+                {"name": "WhitespaceTokenizer"},
+                {"name": "SpacyFeaturizer"}
             ]
         },
+        pytest.param(
+            {
+                "pipeline": [
+                    {"name": "WhitespaceTokenizer"},
+                    {"name": "ConveRTFeaturizer"},
+                ]
+            },
+            marks=[pytest.mark.linux, pytest.mark.darwin],
+        ),
+        pytest.param(
+            {
+                "pipeline": [
+                    {"name": "ConveRTTokenizer"},
+                    {"name": "LanguageModelFeaturizer"},
+                ]
+            },
+            marks=[pytest.mark.linux, pytest.mark.darwin],
+        ),
     ],
 )
 def test_missing_required_component(_config):
