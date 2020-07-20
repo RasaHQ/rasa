@@ -20,6 +20,7 @@ if [[ "$GITHUB_REF" =~ $PATTERN_FOR_NEW_VERSION ]]
 then
     NEW_VERSION=${GITHUB_REF/refs\/tags\//}
 elif [[ "$GITHUB_REF" =~ $PATTERN_FOR_PATCH_VERSION ]]
+then
     EXISTING_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.[0-9]+$/\1.\2.0/")
 fi
 
