@@ -1239,8 +1239,8 @@ def _is_same_entity_annotation(entity, other) -> Any:
     return (
         entity["value"] == other["value"]
         and entity["entity"] == other["entity"]
-        and entity.get("group", None) == other.get("group", None)
-        and entity.get("role", None) == other.get("group", None)
+        and entity.get("group") == other.get("group")
+        and entity.get("role") == other.get("group")
     )
 
 
