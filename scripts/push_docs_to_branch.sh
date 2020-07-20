@@ -3,8 +3,8 @@
 set -Eeuo pipefail
 
 TODAY=`date "+%Y%m%d"`
-# we build new versions only for majors
-PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.0\\.0$"
+# we build new versions only for minors and majors
+PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.0$"
 MASTER_REF=refs/heads/master
 
 [[ ! $GITHUB_REF =~ $PATTERN_FOR_NEW_VERSION ]] \
