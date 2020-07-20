@@ -2,6 +2,7 @@ import json
 import os
 import re
 from typing import Any, Dict, List, Optional, Text
+from pathlib import Path
 
 import rasa.utils.io as io_utils
 
@@ -18,11 +19,11 @@ from rasa.nlu.constants import (
 )
 
 
-def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
+def relative_normpath(f: Optional[Text], path: Text) -> Optional[Path]:
     """Return the path of file relative to `path`."""
 
     if f is not None:
-        return os.path.normpath(os.path.relpath(f, path))
+        return Path(os.path.relpath(f, path))
     else:
         return None
 
