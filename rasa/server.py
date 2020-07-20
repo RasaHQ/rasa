@@ -34,7 +34,7 @@ from rasa.core.channels.channel import (
 from rasa.core.domain import InvalidDomain
 from rasa.core.events import Event
 from rasa.core.lock_store import LockStore
-from rasa.core.test import test
+from rasa.core import test
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
@@ -874,7 +874,7 @@ def create_app(
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = await test(stories, app.agent, e2e=use_e2e)
+            evaluation = await test.evaluate_stories(stories, app.agent, e2e=use_e2e)
             return response.json(evaluation)
         except Exception as e:
             logger.debug(traceback.format_exc())

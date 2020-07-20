@@ -8,7 +8,7 @@ import rasa.utils.io
 from rasa.core.test import (
     _generate_trackers,
     _collect_story_predictions,
-    test,
+    evaluate_stories,
     FAILED_STORIES_FILE,
     CONFUSION_MATRIX_STORIES_FILE,
     REPORT_STORIES_FILE,
@@ -36,7 +36,7 @@ async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
     report_path = str(tmpdir / REPORT_STORIES_FILE)
     confusion_matrix_path = str(tmpdir / CONFUSION_MATRIX_STORIES_FILE)
 
-    await test(
+    await evaluate_stories(
         stories=DEFAULT_STORIES_FILE,
         agent=default_agent,
         out_directory=str(tmpdir),
@@ -118,7 +118,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
 async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
-    await test(
+    await evaluate_stories(
         stories=E2E_STORY_FILE_UNKNOWN_ENTITY,
         agent=default_agent,
         out_directory=str(tmpdir),
