@@ -542,7 +542,7 @@ def _log_stories(
             f.write("\n\n")
 
 
-async def evaluate_stories(
+async def test(
     stories: Text,
     agent: "Agent",
     max_stories: Optional[int] = None,

@@ -277,9 +277,8 @@ def pytest_runtest_setup(item):
     supported_platforms = PLATFORMS.intersection(
         mark.name for mark in item.iter_markers()
     )
-    plat = sys.platform
-    if supported_platforms and plat not in supported_platforms:
-        pytest.skip("cannot run on platform {}".format(plat))
+    if supported_platforms and sys.platform not in supported_platforms:
+        pytest.skip("cannot run on platform {}".format(sys.platform))
 
 
 class MockExporter(Exporter):
