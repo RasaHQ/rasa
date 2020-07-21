@@ -2,7 +2,7 @@ const { readFileSync, writeFileSync } = require('fs');
 const { execSync } = require('child_process');
 const toml = require('toml');
 
-const VARIABLES_FILE_PATH = './src/variables.js';
+const VARIABLES_FILE_PATH = './docs/variables.json';
 const PYPROJECT_FILE_PATH = '../pyproject.toml';
 const COMMAND_RASA_SDK_VERSION =
     'python -c "from rasa_sdk import __version__ as rasa_sdk_version; print(rasa_sdk_version)"';
@@ -25,8 +25,7 @@ const writeVariablesFile = () => {
         null,
         JSON_SPACE_INDENT,
     );
-    const fileContent = `// ${DISCLAIMER}\n\nexport default ${variables};`;
-    writeFileSync(VARIABLES_FILE_PATH, fileContent);
+    writeFileSync(VARIABLES_FILE_PATH, variables);
 };
 
 console.info(`Computing docs variables and writing to ${VARIABLES_FILE_PATH}`);

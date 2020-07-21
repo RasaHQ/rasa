@@ -3,7 +3,6 @@ name: Publish Documentation
 on:
   push:
     branches:
-    - '[0-9]+.[0-9]+.x'
     - 'master'
     tags:
     - '**'
@@ -12,6 +11,10 @@ on:
 # - GITHUB_DOCS_KEY: generated locally, added to github repo (public key)
 #                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
 # - GITHUB_TOKEN: (default, from github actions)
+
+env:
+  DOCS_FOLDER: newdocs
+  DOCS_BRANCH: documentation
 
 jobs:
   docs:
@@ -27,6 +30,11 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.6
+
+    - name: Set up Node 12.x 🦙
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
 
     - name: Read Poetry Version 🔢
       run: |
@@ -45,20 +53,30 @@ jobs:
         key: ${{ runner.os }}-poetry-3.6-non-full-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-3.6-non-full
 
+    - name: Load Yarn Cached Packages ⬇
+      uses: actions/cache@v1
+      with:
+        path: newdocs/node_modules
+        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('newdocs/yarn.lock') }}
+        restore-keys: ${{ runner.os }}-yarn-12.x
+
     - name: Install Dependencies 📦
-      run: make install
+      run: make install install-docs
 
-    # FIXME: https://github.com/RasaHQ/rasa/issues/6166
-    # - name: Build & Publish Docs 🏃‍♀️
-    #   env:
-    #     GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
-    #   run: |
-    #     eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
-    #     echo "$GITHUB_DOCS_KEY" > "docs_key"
-    #     ssh-add docs_key
+    - name: Build Docs variables 🧶
+      run: cd $DOCS_FOLDER && poetry run yarn variables
 
-    #     git config --global user.email "builds@github-ci.com"
-    #     git config --global user.name "GitHub CI"
-    #     git remote set-url --push origin "git@github.com:${{github.repository}}"
+    - name: Build & Publish Docs 🏃‍♀️
+      env:
+        GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
+        TMP_DOCS_FOLDER: ~/tmp-documentation
+      run: |
+        eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
+        echo "$GITHUB_DOCS_KEY" > "docs_key"
+        ssh-add docs_key
 
-    #     poetry run sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
+        git config --global user.email "builds@github-ci.com"
+        git config --global user.name "GitHub CI"
+        git remote set-url --push origin "git@github.com:${{github.repository}}"
+
+        ./scripts/push_docs_to_branch.sh

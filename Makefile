@@ -23,8 +23,6 @@ help:
 	@echo "    test"
 	@echo "        Run pytest on tests/."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
-	@echo "    doctest"
-	@echo "        Run all doctests embedded in the documentation."
 	@echo "    livedocs"
 	@echo "        Build the docs locally."
 	@echo "    release"
@@ -48,6 +46,9 @@ install-mitie:
 
 install-full: install install-mitie
 	poetry install -E full
+
+install-docs:
+	cd newdocs/ && yarn install
 
 formatter:
 	poetry run black rasa tests
@@ -80,11 +81,11 @@ test: clean
 	# OMP_NUM_THREADS can improve overral performance using one thread by process (on tensorflow), avoiding overload
 	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
 
-doctest: clean
-	cd docs && poetry run make doctest
+docs:
+	cd newdocs/ && poetry run yarn variables && yarn build
 
 livedocs:
-	cd docs && poetry run make livehtml
+	cd newdocs/ && poetry run yarn start
 
 release:
 	poetry run python scripts/release.py

@@ -1,5 +1,12 @@
 const remarkSources = require('remark-sources');
 const remarkCollapse = require('remark-collapse');
+let versions = [];
+try {
+  versions = require('./versions.json');
+} catch (ex) {
+  // Nothing to do here, in dev mode, only
+  // one version of the doc is available
+}
 
 module.exports = {
   title: 'Rasa Open Source Documentation',
@@ -7,8 +14,8 @@ module.exports = {
   url: 'https://your-docusaurus-test-site.com',
   baseUrl: '/',
   favicon: 'img/favicon.ico',
-  organizationName: 'RasaHQ', // Usually your GitHub org/user name.
-  projectName: 'rasa', // Usually your repo name.
+  organizationName: 'RasaHQ',
+  projectName: 'rasa',
   themeConfig: {
     navbar: {
       title: 'Rasa Open Source',
@@ -18,10 +25,30 @@ module.exports = {
       },
       links: [
         {
-          to: 'docs/',
-          activeBasePath: 'docs',
           label: 'Docs',
+          to: '/', // "fake" link
           position: 'left',
+          items: versions.length > 0 ? [
+            {
+              label: versions[0],
+              to: '/',
+              activeBaseRegex: versions[0],
+            },
+            ...versions.slice(1).map((version) => ({
+              label: version,
+              to: `${version}/`,
+              activeBaseRegex: version,
+            })),
+            {
+              label: 'Master/Unreleased',
+              to: 'next/',
+              activeBaseRegex: `next`,
+            },
+          ] : [{
+              label: 'Master/Unreleased',
+              to: '/',
+              activeBaseRegex: `/`,
+            },],
         },
         {
           href: 'https://github.com/rasahq/rasa',
@@ -87,6 +114,8 @@ module.exports = {
         docs: {
           // It is recommended to set document id as docs home page (`docs/` path).
           homePageId: 'index',
+          // https://v2.docusaurus.io/docs/next/docs-introduction/#docs-only-mode
+          routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
           remarkPlugins: [[remarkCollapse, { test: '' }], remarkSources],
