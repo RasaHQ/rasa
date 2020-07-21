@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Text, Union
 
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
-from nlu.training_data import TrainingData
+from rasa.nlu.training_data import TrainingData
 
 
 def _convert_lookup_tables_to_regex(
