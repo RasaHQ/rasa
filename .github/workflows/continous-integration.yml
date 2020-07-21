@@ -114,7 +114,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        os: [windows-latest]
+        os: [ubuntu-latest]
         python-version: [3.6]
 
     steps:
