@@ -17,36 +17,7 @@ The script above runs all the validations on your files, except for story struct
 which is omitted unless you provide the `--max-history` argument. Here is the list of options to
 the script:
 
-```text
-usage: rasa data validate [-h] [-v] [-vv] [--quiet]
-                          [--max-history MAX_HISTORY] [--fail-on-warnings]
-                          [-d DOMAIN] [--data DATA]
-                          {stories} ...
-
-positional arguments:
-  {stories}
-    stories             Checks for inconsistencies in the story files.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --max-history MAX_HISTORY
-                        Number of turns taken into account for story structure
-                        validation. (default: None)
-  --fail-on-warnings    Fail validation on warnings and errors. If omitted
-                        only errors will result in a non zero exit code.
-                        (default: False)
-  -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file). (default: domain.yml)
-  --data DATA           Path to the file or directory containing Rasa data.
-                        (default: data)
-
-Python Logging Options:
-  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
-                        None)
-  -vv, --debug          Print lots of debugging statements. Sets logging level
-                        to DEBUG. (default: None)
-  --quiet               Be quiet! Sets logging level to WARNING. (default:
-                        None)
+```text [rasa data validate --help]
 ```
 
 By default the validator searches only for errors in the data (e.g. the same
