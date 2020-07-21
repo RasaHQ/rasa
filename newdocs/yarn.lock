@@ -7943,10 +7943,9 @@ remark-parse@8.0.2, remark-parse@^8.0.0:
     vfile-location "^3.0.0"
     xtend "^4.0.1"
 
-remark-sources@^1.0.0:
+remark-sources@RasaHQ/remark-sources#7236b62:
   version "1.0.0"
-  resolved "https://registry.yarnpkg.com/remark-sources/-/remark-sources-1.0.0.tgz#779737d56ecde4f33989e371bafcba85c9358a54"
-  integrity sha512-zbcrUAzpFkFAt69siCOiqWY+xgVMWcV4qUg0qNQtFONaLyM8jKiMV6ssz+oI8eqxJKb1qu62NpmKRr1vaBfK3Q==
+  resolved "https://codeload.github.com/RasaHQ/remark-sources/tar.gz/7236b627ec042f3a5d350b374615dbd1e821f5f5"
   dependencies:
     njct "^8.0.0"
     unist-util-visit-children "^1.1.3"
