@@ -320,7 +320,8 @@ DynamoTrackerStore
                 rasa run -m models --endpoints endpoints.yml
 
 :Parameters:
-    - ``table_name (default: ``states``): name of the DynamoDB table
+
+    - ``table_name`` (default: ``states``): name of the DynamoDB table
     - ``region`` (default: ``us-east-1``): name of the region associated with the client
 
 

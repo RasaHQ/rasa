@@ -79,7 +79,7 @@ async def train(
             training_data_endpoint, nlu_config.language
         )
     elif isinstance(data, TrainingDataImporter):
-        training_data = await data.get_nlu_data(nlu_config.data)
+        training_data = await data.get_nlu_data(nlu_config.language)
     else:
         training_data = load_data(data, nlu_config.language)
 
