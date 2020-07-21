@@ -96,7 +96,11 @@ class Message:
 
     @classmethod
     def build(
-        cls, text: Text, intent: Optional[Text] = None, entities=None, **kwargs
+        cls,
+        text: Text,
+        intent: Optional[Text] = None,
+        entities: List[Dict[Text, Any]] = None,
+        **kwargs,
     ) -> "Message":
         data = {}
         if intent:
