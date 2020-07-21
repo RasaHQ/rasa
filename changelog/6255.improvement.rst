@@ -1,0 +1,4 @@
+Rasa Open Source will no longer add ``responses`` to the ``actions`` section of the
+domain when persisting the domain as file. This addresses related problems in Rasa X
+when Integrated Version Control introduced big diffs due to the added utterances
+in the ``action`` section.
