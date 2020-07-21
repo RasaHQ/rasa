@@ -3,7 +3,6 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Text
 
-import rasa.nlu.utils as nlu_utils
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu.model import Metadata
@@ -50,6 +49,14 @@ class RegexEntityExtractor(EntityExtractor):
     ) -> None:
         self.patterns = pattern_utils.extract_patterns(training_data)
 
+    def process(self, message: Message, **kwargs: Any) -> None:
+        extracted_entities = self._extract_entities(message)
+        extracted_entities = self.add_extractor_name(extracted_entities)
+
+        message.set(
+            ENTITIES, message.get(ENTITIES, []) + extracted_entities, add_to_output=True
+        )
+
     def _extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Extract entities of the given type from the given user message."""
         entities = []
@@ -76,16 +83,6 @@ class RegexEntityExtractor(EntityExtractor):
 
         return entities
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        """Retrieve the text message, parse the entities."""
-
-        extracted_entities = self._extract_entities(message)
-        extracted_entities = self.add_extractor_name(extracted_entities)
-
-        message.set(
-            ENTITIES, message.get(ENTITIES, []) + extracted_entities, add_to_output=True
-        )
-
     @classmethod
     def load(
         cls,
@@ -108,8 +105,8 @@ class RegexEntityExtractor(EntityExtractor):
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
         Return the metadata necessary to load the model again."""
-        file_name = file_name + ".json"
+        file_name = f"{file_name}.json"
         regex_file = os.path.join(model_dir, file_name)
-        nlu_utils.write_json_to_file(regex_file, self.patterns, indent=4)
+        io_utils.dump_obj_as_json_to_file(regex_file, self.patterns)
 
         return {"file": file_name}

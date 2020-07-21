@@ -5,7 +5,7 @@ import pytest
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.constants import ENTITIES
 from rasa.nlu.training_data import Message
-from rasa.nlu.extractors.lookup_entity_extractor import RegexEntityExtractor
+from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 
 
 @pytest.mark.parametrize(
