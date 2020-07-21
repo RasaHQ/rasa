@@ -3,12 +3,14 @@ import logging
 import os
 from typing import Any, List, Text, Optional, Dict, Tuple
 
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 
 import rasa.utils.io
+from rasa.utils import common as common_utils
 
-from rasa.core import utils
 from rasa.core.domain import Domain
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
@@ -56,10 +58,18 @@ class FallbackPolicy(Policy):
         self.core_threshold = core_threshold
         self.fallback_action_name = fallback_action_name
 
+        common_utils.raise_warning(
+            f"'{self.__class__.__name__}' is deprecated and will be removed "
+            "in the future. It is recommended to use the 'RulePolicy' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
@@ -134,7 +144,11 @@ class FallbackPolicy(Policy):
         return result
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts a fallback action.
 

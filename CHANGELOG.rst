@@ -17,13 +17,84 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.8] - 2020-07-15
+^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6075 <https://github.com/rasahq/rasa/issues/6075>`_: Add 'Access-Control-Expose-Headers' for 'filename' header
+- `#6137 <https://github.com/rasahq/rasa/issues/6137>`_: Fixed a bug where an invalid language variable prevents rasa from finding training examples when importing Dialogflow data.
+
+
+[1.10.7] - 2020-07-07
+^^^^^^^^^^^^^^^^^^^^^
+
+Features
+--------
+- `#6150 <https://github.com/rasahq/rasa/issues/6150>`_: Add ``not_supported_language_list`` to component to be able to define languages that a component can NOT handle.
+
+  ``WhitespaceTokenizer`` is not able to process languages which are not separated by whitespace. ``WhitespaceTokenizer``
+  will throw an error if it is used with Chinese, Japanese, and Thai.
+
+Bugfixes
+--------
+- `#6150 <https://github.com/rasahq/rasa/issues/6150>`_: ``WhitespaceTokenizer`` only removes emoji if complete token matches emoji regex.
+
+
+[1.10.6] - 2020-07-06
+^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6143 <https://github.com/rasahq/rasa/issues/6143>`_: Prevent ``WhitespaceTokenizer`` from outputting empty list of tokens.
+
+
+[1.10.5] - 2020-07-02
+^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6119 <https://github.com/rasahq/rasa/issues/6119>`_: Explicitly remove all emojis which appear as unicode characters from the output of ``regex.sub`` inside ``WhitespaceTokenizer``.
+
+
+[1.10.4] - 2020-07-01
+^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5998 <https://github.com/rasahq/rasa/issues/5998>`_: ``WhitespaceTokenizer`` does not remove vowel signs in Hindi anymore.
+- `#6031 <https://github.com/rasahq/rasa/issues/6031>`_: Previously, specifying a lock store in the endpoint configuration with a type other than ``redis`` or ``in_memory``
+  would lead to an ``AttributeError: 'str' object has no attribute 'type'``. This bug is fixed now.
+- `#6032 <https://github.com/rasahq/rasa/issues/6032>`_: Fix ``Interpreter parsed an intent ...`` warning when using the ``/model/parse`` 
+  endpoint with an NLU-only model.
+- `#6042 <https://github.com/rasahq/rasa/issues/6042>`_: Convert entity values coming from any entity extractor to string during evaluation to avoid mismatches due to
+  different types.
+- `#6078 <https://github.com/rasahq/rasa/issues/6078>`_: The assistant will respond through the `webex` channel to any user (room) communicating to it. Before the bot responded only to a fixed ``roomId`` set in the ``credentials.yml`` config file.
+
+
+[1.10.3] - 2020-06-12
+^^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#3900 <https://github.com/rasahq/rasa/issues/3900>`_: Reduced duplicate logs and warnings when running ``rasa train``.
+
+Bugfixes
+--------
+- `#5972 <https://github.com/rasahq/rasa/issues/5972>`_: Remove the ``clean_up_entities`` method from the ``DIETClassifier`` and ``CRFEntityExtractor`` as it let to incorrect
+  entity predictions.
+- `#5976 <https://github.com/rasahq/rasa/issues/5976>`_: Fix server crashes that occurred when Rasa Open Source pulls a model from a
+  :ref:`model server <server_fetch_from_server>` and an exception was thrown during
+  model loading (such as a domain with invalid YAML).
+
+
 [1.10.2] - 2020-06-03
 ^^^^^^^^^^^^^^^^^^^^^
 
 Bugfixes
 --------
 - `#5521 <https://github.com/rasahq/rasa/issues/5521>`_: Responses used in ResponseSelector now support new lines with explicitly adding ``\n`` between them.
-- `#5758 <https://github.com/rasahq/rasa/issues/5758>`_: Fixed a bug in `rasa export <https://rasa.com/docs/rasa-x/installation-and-setup/existing-deployment/#migrate-conversations>`_ (:ref:`section_export`) which caused Rasa Open Source to only migrate conversation events from the last :ref:`session_config`.
+- `#5758 <https://github.com/rasahq/rasa/issues/5758>`_: Fixed a bug in `rasa export <https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment>`_ (:ref:`section_export`) which caused Rasa Open Source to only migrate conversation events from the last :ref:`session_config`.
 
 
 [1.10.1] - 2020-05-15

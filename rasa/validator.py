@@ -6,8 +6,8 @@ from rasa.core.training.generator import TrainingDataGenerator
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
-from rasa.core.training.dsl import UserUttered
-from rasa.core.training.dsl import ActionExecuted
+from rasa.core.events import UserUttered
+from rasa.core.events import ActionExecuted
 from rasa.core.constants import UTTER_PREFIX
 import rasa.core.training.story_conflict
 from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_ACTIONS
@@ -56,7 +56,7 @@ class Validator:
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
                 raise_warning(
-                    f"There is a message in the training data labelled with intent "
+                    f"There is a message in the training data labeled with intent "
                     f"'{intent}'. This intent is not listed in your domain. You "
                     f"should need to add that intent to your domain file!",
                     docs=DOCS_URL_DOMAINS,

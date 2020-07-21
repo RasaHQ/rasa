@@ -217,9 +217,9 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
 async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     tmpdir_factory: TempdirFactory,
 ):
-    from rasa.core.training.dsl import StoryFileReader
     from rasa.core.interpreter import RegexInterpreter
     from rasa.core.training.structures import StoryGraph
+    import rasa.core.training.loading as core_loading
 
     root = tmpdir_factory.mktemp("Parent Bot")
     config = {"imports": ["bots/Bot A"]}
@@ -250,8 +250,8 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
 
     selector = MultiProjectImporter(config_path)
 
-    expected_file_read = await StoryFileReader.read_from_files(
-        files=[e2e_story_test_file],
+    story_steps = await core_loading.load_data_from_resource(
+        resource=str(e2e_story_test_file),
         domain=Domain.empty(),
         interpreter=RegexInterpreter(),
         template_variables=None,
@@ -259,7 +259,7 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
         exclusion_percentage=None,
     )
 
-    expected = StoryGraph(expected_file_read)
+    expected = StoryGraph(story_steps)
 
     actual = await selector.get_stories(use_e2e=True)
 

@@ -27,7 +27,6 @@ from rasa.nlu.constants import (
 )
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
-import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +165,7 @@ class CRFEntityExtractor(EntityExtractor):
         self.check_correct_entity_annotations(training_data)
 
         if self.component_config[BILOU_FLAG]:
-            bilou_utils.apply_bilou_schema(training_data, include_cls_token=False)
+            bilou_utils.apply_bilou_schema(training_data)
 
         # only keep the CRFs for tags we actually have training data for
         self._update_crf_order(training_data)
@@ -205,7 +204,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.entity_taggers is None:
             return []
 
-        tokens = train_utils.tokens_without_cls(message)
+        tokens = message.get(TOKENS_NAMES[TEXT])
         crf_tokens = self._convert_to_crf_tokens(message)
 
         predictions = {}
@@ -466,7 +465,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _get_dense_features(self, message: Message) -> Optional[List]:
         """Convert dense features to python-crfsuite feature format."""
-        features = message.get_dense_features(
+        features, _ = message.get_dense_features(
             TEXT, self.component_config["featurizers"]
         )
 
@@ -498,7 +497,7 @@ class CRFEntityExtractor(EntityExtractor):
         """Take a message and convert it to crfsuite format."""
 
         crf_format = []
-        tokens = train_utils.tokens_without_cls(message)
+        tokens = message.get(TOKENS_NAMES[TEXT])
 
         text_dense_features = self._get_dense_features(message)
         tags = self._get_tags(message)
@@ -529,7 +528,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _get_tags(self, message: Message) -> Dict[Text, List[Text]]:
         """Get assigned entity tags of message."""
-        tokens = train_utils.tokens_without_cls(message)
+        tokens = message.get(TOKENS_NAMES[TEXT])
         tags = {}
 
         for tag_name in self.crf_order:

@@ -568,13 +568,15 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def slice_state_history(
-        states: List[Dict[Text, float]], slice_length: int
+        states: List[Dict[Text, float]], slice_length: Optional[int]
     ) -> List[Optional[Dict[Text, float]]]:
         """Slices states from the trackers history.
 
         If the slice is at the array borders, padding will be added to ensure
         the slice length.
         """
+        if slice_length is None:
+            return states
 
         slice_end = len(states)
         slice_start = max(0, slice_end - slice_length)
