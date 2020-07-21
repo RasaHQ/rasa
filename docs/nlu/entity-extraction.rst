@@ -23,8 +23,9 @@ Component                  Requires           Model           	        Notes
 ``EntitySynonymMapper``    existing entities  N/A                       maps known synonyms
 ``DIETClassifier``                            conditional random field
                                               on top of a transformer   good for training custom entities
-``LookupEntityExtractor``                     N/A                       extract entities using a lookup
-                                                                        table
+``RegexEntityExtractor``                      N/A                       extract entities using the lookup
+                                                                        tables and regexes defined in the
+                                                                        training data
 =========================  =================  ========================  =================================
 
 .. contents::

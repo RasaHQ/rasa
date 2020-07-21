@@ -469,6 +469,11 @@ RegexFeaturizer
     Regex features for entity extraction are currently only supported by the :ref:`CRFEntityExtractor` and the
     :ref:`diet-classifier` components!
 
+    .. note::
+        You cannot use the ``RegexFeaturizer`` and the :ref:`RegexEntityExtractor` in the same pipeline. You need to
+        decide whether you want to use the lookup tables and regexes to create features or to directly extract entities.
+        It is not possible to do both at the same time.
+
 :Configuration:
     Make the featurizer case insensitive by adding the ``case_sensitive: False`` option, the default being
     ``case_sensitive: True``.
@@ -952,20 +957,23 @@ EntitySynonymMapper
         below any entity extractors in the configuration file.
 
 
-.. _LookupEntityExtractor:
+.. _RegexEntityExtractor:
 
-LookupEntityExtractor
+RegexEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Extracts entities using a lookup table
+:Short: Extracts entities using the lookup tables and regexes defined in the training data
 :Outputs: ``entities``
 :Requires: Nothing
 :Description:
-    This component extract entities using a lookup table. You can define the lookup table in the configuration file.
-    You specify the entities that should be extracted and the respective lookup file.
-    Each line in the lookup file is a possible value of the entity.
-    The component checks if the user message contains a value from the file.
-    If a match is found, the value is extracted as entity.
+    This component extract entities using the lookup tables and regexes defined in the training data.
+    The component checks if the user message contains an entry of one of the lookup tables or matches one of the
+    regexes. If a match is found, the value is extracted as entity.
+
+    .. note::
+        You cannot use the :ref:`RegexFeaturizer` and the ``RegexEntityExtractor`` in the same pipeline. You need to
+        decide whether you want to use the lookup tables and regexes to create features or to directly extract entities.
+        It is not possible to do both at the same time.
 
 :Configuration:
     By default we convert the entries in the lookup file and the user message to lowercase before we check if there
@@ -975,10 +983,8 @@ LookupEntityExtractor
 
         pipeline:
         - name: LookupEntityExtractor
-          lookup:
-            city: /some/path/city.txt
-            person: /some/other/path/person.txt
           lowercase: True
+
 
 .. _CRFEntityExtractor:
 
