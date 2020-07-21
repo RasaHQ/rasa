@@ -3,10 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "yarn run variables && docusaurus start",
+    "start": "yarn run pre-build && docusaurus start",
+    "pre-build": "yarn run variables && yarn run program-outputs",
     "build": "docusaurus build",
     "new-version": "docusaurus docs:version",
-    "variables": "node compile_variables.js"
+    "variables": "node compile_variables.js",
+    "program-outputs": "node compile_program_outputs.js"
   },
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.56",

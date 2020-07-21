@@ -1,5 +1,7 @@
 const remarkSources = require('remark-sources');
 const remarkCollapse = require('remark-collapse');
+const { remarkProgramOutput } = require("./plugins/program_output");
+
 let versions = [];
 try {
   versions = require('./versions.json');
@@ -118,7 +120,7 @@ module.exports = {
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
-          remarkPlugins: [[remarkCollapse, { test: '' }], remarkSources],
+          remarkPlugins: [[remarkCollapse, { test: '' }], remarkSources, remarkProgramOutput],
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),

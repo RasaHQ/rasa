@@ -90,3 +90,4 @@ env
 .history
 newdocs/.docusaurus
 newdocs/docs/variables.json
+newdocs/docs/sources/
