@@ -118,7 +118,7 @@ function readCommandOutput(meta, { sourceDir }) {
 
 
 function commandToFilename(command) {
-    return command.replace(/[^a-z0-9\-]/gi, '_').toLowerCase() + '.txt';
+    return command.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.txt';
 }
 
 
