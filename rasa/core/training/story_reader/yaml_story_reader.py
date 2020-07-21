@@ -6,7 +6,7 @@ from ruamel.yaml.parser import ParserError
 
 import rasa.utils.common as common_utils
 import rasa.utils.io
-from rasa.constants import DOCS_URL_STORIES
+from rasa.constants import DOCS_URL_STORIES, DOCS_URL_RULES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, Form
@@ -186,8 +186,7 @@ class YAMLStoryReader(StoryReader):
 
     @staticmethod
     def _get_docs_link(is_rule_data: bool) -> Text:
-        # TODO: update docs link to point to rules
-        return "" if is_rule_data else DOCS_URL_STORIES
+        return DOCS_URL_RULES if is_rule_data else DOCS_URL_STORIES
 
     def _parse_user_utterance(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
         utterance = self._parse_raw_user_utterance(step, is_rule_data=is_rule_data)
