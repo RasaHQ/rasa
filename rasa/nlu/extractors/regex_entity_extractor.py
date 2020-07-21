@@ -99,8 +99,8 @@ class RegexEntityExtractor(EntityExtractor):
         if os.path.exists(regex_file):
             patterns = io_utils.read_json_file(regex_file)
             return RegexEntityExtractor(meta, patterns=patterns)
-        else:
-            return RegexEntityExtractor(meta)
+
+        return RegexEntityExtractor(meta)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
