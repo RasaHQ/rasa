@@ -698,7 +698,7 @@ def test_pushing_event(rasa_app: SanicTestClient, event: Event):
 def test_push_multiple_events(rasa_app: SanicTestClient):
     conversation_id = str(uuid.uuid1())
     id_len = len(conversation_id) // 2
-    conversation_id = conversation_id[:id_len] + "/+-_\\" + conversation_id[id_len:]
+    conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
     conversation = f"/conversations/{conversation_id}"
 
     events = [e.as_dict() for e in test_events]
