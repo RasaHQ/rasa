@@ -5,7 +5,7 @@ import json
 import logging
 import os
 from tqdm import tqdm
-from typing import Optional, Any, Dict, List, Text
+from typing import Optional, Any, Dict, List, Text, Set
 
 import rasa.utils.io
 
@@ -82,7 +82,7 @@ class MemoizationPolicy(Policy):
 
     def _add_states_to_lookup(
         self, trackers_as_states, trackers_as_actions, domain, online=False
-    ) -> None:
+    ) -> Optional[Set[Text]]:
         """Add states to lookup dict"""
         if not trackers_as_states:
             return
@@ -132,6 +132,8 @@ class MemoizationPolicy(Policy):
                 else:
                     self.lookup[feature_key] = feature_item
             pbar.set_postfix({"# examples": "{:d}".format(len(self.lookup))})
+
+        return ambiguous_feature_keys
 
     def _create_feature_key(self, states: List[Dict]) -> Text:
         from rasa.utils import io
