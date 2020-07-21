@@ -22,8 +22,9 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 logger = logging.getLogger(__name__)
 
 
-class LookupEntityExtractor(EntityExtractor):
-    """Searches for entities in the user's message using a lookup table."""
+class RegexEntityExtractor(EntityExtractor):
+    """Searches for entities in the user's message using the lookup tables and regexes
+    defined in the training data."""
 
     defaults = {
         # lower case the entity value from the lookup file and
@@ -36,7 +37,7 @@ class LookupEntityExtractor(EntityExtractor):
         component_config: Optional[Dict[Text, Any]] = None,
         patterns: Optional[List[Dict[Text, Text]]] = None,
     ):
-        super(LookupEntityExtractor, self).__init__(component_config)
+        super(RegexEntityExtractor, self).__init__(component_config)
 
         self.lowercase = self.component_config["lowercase"]
         self.patterns = patterns or []
@@ -91,18 +92,18 @@ class LookupEntityExtractor(EntityExtractor):
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
-        cached_component: Optional["LookupEntityExtractor"] = None,
+        cached_component: Optional["RegexEntityExtractor"] = None,
         **kwargs: Any,
-    ) -> "LookupEntityExtractor":
+    ) -> "RegexEntityExtractor":
 
         file_name = meta.get("file")
         regex_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(regex_file):
             patterns = io_utils.read_json_file(regex_file)
-            return LookupEntityExtractor(meta, patterns=patterns)
+            return RegexEntityExtractor(meta, patterns=patterns)
         else:
-            return LookupEntityExtractor(meta)
+            return RegexEntityExtractor(meta)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.

@@ -102,6 +102,32 @@ def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
         )
 
 
+def validate_only_one_regex_component_is_used(pipeline: List["Component"]) -> None:
+    """Validates that RegexEntityExtractor and RegexFeaturizer are not used at the
+    same time.
+
+    Args:
+        pipeline: the list of the :class:`rasa.nlu.components.Component`.
+    """
+
+    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+    from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
+
+    regex_featurizer_used = False
+    regex_entity_extractor_used = False
+    for component in pipeline:
+        if isinstance(component, RegexFeaturizer):
+            regex_featurizer_used = True
+        elif isinstance(component, RegexEntityExtractor):
+            regex_entity_extractor_used = True
+
+    if regex_featurizer_used and regex_entity_extractor_used:
+        raise InvalidConfigError(
+            "Your config contains a 'RegexFeaturizer' and a 'RegexEntityExtractor'. "
+            "You should just use one of those components."
+        )
+
+
 def _required_component_in_pipeline(
     required_component: Type["Component"], pipeline: List["Component"]
 ) -> bool:
@@ -179,6 +205,7 @@ def validate_pipeline(pipeline: List["Component"]) -> None:
     validate_empty_pipeline(pipeline)
     validate_only_one_tokenizer_is_used(pipeline)
     validate_required_components(pipeline)
+    validate_only_one_regex_component_is_used(pipeline)
 
 
 def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):

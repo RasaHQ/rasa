@@ -5,7 +5,7 @@ import pytest
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.constants import ENTITIES
 from rasa.nlu.training_data import Message
-from rasa.nlu.extractors.lookup_entity_extractor import LookupEntityExtractor
+from rasa.nlu.extractors.lookup_entity_extractor import RegexEntityExtractor
 
 
 @pytest.mark.parametrize(
@@ -85,7 +85,7 @@ def test_process(
     training_data = TrainingData()
     training_data.lookup_tables = lookup
 
-    entity_extractor = LookupEntityExtractor()
+    entity_extractor = RegexEntityExtractor()
     entity_extractor.train(training_data)
     entity_extractor.process(message)
 
@@ -153,7 +153,7 @@ def test_lowercase(
     training_data = TrainingData()
     training_data.lookup_tables = lookup
 
-    entity_extractor = LookupEntityExtractor({"lowercase": lowercase})
+    entity_extractor = RegexEntityExtractor({"lowercase": lowercase})
     entity_extractor.train(training_data)
     entity_extractor.process(message)
 
@@ -170,7 +170,7 @@ def test_do_not_overwrite_any_entities():
         {"name": "city", "elements": ["London", "Berlin", "Amsterdam"]}
     ]
 
-    entity_extractor = LookupEntityExtractor()
+    entity_extractor = RegexEntityExtractor()
     entity_extractor.train(training_data)
     entity_extractor.process(message)
 
