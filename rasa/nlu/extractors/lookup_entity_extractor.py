@@ -1,7 +1,12 @@
 import logging
+import os
+import re
 from typing import Any, Dict, List, Optional, Text
 
-import rasa.utils.common as common_utils
+import rasa.nlu.utils as nlu_utils
+import rasa.utils.io as io_utils
+import rasa.nlu.utils.pattern_utils as pattern_utils
+from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.constants import (
@@ -18,11 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class LookupEntityExtractor(EntityExtractor):
-    """
-    Searches for entities in the user's message from a list of examples.
-    Required Parameters:
-    @lookup -> dict
-    """
+    """Searches for entities in the user's message using a lookup table."""
 
     defaults = {
         # lower case the entity value from the lookup file and
@@ -30,11 +31,15 @@ class LookupEntityExtractor(EntityExtractor):
         "lowercase": True
     }
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        patterns: Optional[List[Dict[Text, Text]]] = None,
+    ):
         super(LookupEntityExtractor, self).__init__(component_config)
 
         self.lowercase = self.component_config["lowercase"]
-        self.lookup = {}
+        self.patterns = patterns or []
 
     def train(
         self,
@@ -42,45 +47,29 @@ class LookupEntityExtractor(EntityExtractor):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        if not training_data.lookup_tables:
-            common_utils.raise_warning("No lookup tables defined.")
-            return
+        self.patterns = pattern_utils.extract_patterns(training_data)
 
-        for table in training_data.lookup_tables:
-            self.lookup[table["name"]] = table["elements"]
-
-    def _parse_message(self, user_message: Text) -> List[Dict[Text, Any]]:
-        """Parse the given user message and extract the entities."""
-        entities = []
-
-        for entity, elements in self.lookup.items():
-            entities += self._extract_entities(user_message, entity, elements)
-
-        return entities
-
-    def _extract_entities(
-        self, user_message: Text, entity: Text, elements: List[Text]
-    ) -> List[Dict[Text, Any]]:
+    def _extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Extract entities of the given type from the given user message."""
         entities = []
-        _user_message = user_message
+
+        flags = 0  # default flag
         if self.lowercase:
-            _user_message = _user_message.lower()
+            flags = re.IGNORECASE
 
-        for example in elements:
-            example = example.strip()
-            if self.lowercase:
-                example = example.lower()
+        for pattern in self.patterns:
+            matches = re.finditer(pattern["pattern"], message.text, flags=flags)
+            matches = list(matches)
 
-            if example in _user_message:
-                start_index = _user_message.index(example)
-                end_index = start_index + len(example)
+            for match in matches:
+                start_index = match.start()
+                end_index = match.end()
                 entities.append(
                     {
-                        ENTITY_ATTRIBUTE_TYPE: entity,
+                        ENTITY_ATTRIBUTE_TYPE: pattern["name"],
                         ENTITY_ATTRIBUTE_START: start_index,
                         ENTITY_ATTRIBUTE_END: end_index,
-                        ENTITY_ATTRIBUTE_VALUE: user_message[start_index:end_index],
+                        ENTITY_ATTRIBUTE_VALUE: message.text[start_index:end_index],
                     }
                 )
 
@@ -89,9 +78,37 @@ class LookupEntityExtractor(EntityExtractor):
     def process(self, message: Message, **kwargs: Any) -> None:
         """Retrieve the text message, parse the entities."""
 
-        extracted_entities = self._parse_message(message.text)
+        extracted_entities = self._extract_entities(message)
         extracted_entities = self.add_extractor_name(extracted_entities)
 
         message.set(
             ENTITIES, message.get(ENTITIES, []) + extracted_entities, add_to_output=True
         )
+
+    @classmethod
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Optional[Text] = None,
+        model_metadata: Optional[Metadata] = None,
+        cached_component: Optional["LookupEntityExtractor"] = None,
+        **kwargs: Any,
+    ) -> "LookupEntityExtractor":
+
+        file_name = meta.get("file")
+        regex_file = os.path.join(model_dir, file_name)
+
+        if os.path.exists(regex_file):
+            patterns = io_utils.read_json_file(regex_file)
+            return LookupEntityExtractor(meta, patterns=patterns)
+        else:
+            return LookupEntityExtractor(meta)
+
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        """Persist this model into the passed directory.
+        Return the metadata necessary to load the model again."""
+        file_name = file_name + ".json"
+        regex_file = os.path.join(model_dir, file_name)
+        nlu_utils.write_json_to_file(regex_file, self.patterns, indent=4)
+
+        return {"file": file_name}

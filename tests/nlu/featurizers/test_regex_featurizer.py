@@ -132,7 +132,9 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
         {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
     ]
     ftr = RegexFeaturizer()
-    ftr.add_lookup_tables(lookups)
+    training_data = TrainingData()
+    training_data.lookup_tables = lookups
+    ftr.train(training_data)
 
     # adds tokens to the message
     component_config = {"name": "SpacyTokenizer"}
