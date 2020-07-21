@@ -83,55 +83,6 @@ class RulePolicy(MemoizationPolicy):
         return feature_str
 
     @staticmethod
-    def _features_in_state(features: List[Text], state: Dict[Text, float]) -> bool:
-
-        state_slots = defaultdict(set)
-        for s in state.keys():
-            if s.startswith("slot"):
-                state_slots[s[: s.rfind("_")]].add(s)
-
-        f_slots = defaultdict(set)
-        for f in features:
-            # TODO: this is a hack to make a rule know
-            #  that slot or form should not be set;
-            #  `_None` is added inside domain to indicate that
-            #  the feature should not be present
-            if f.endswith("_None"):
-                if any(f[: f.rfind("_")] in key for key in state.keys()):
-                    return False
-            elif f not in state:
-                return False
-            elif f.startswith("slot"):
-                f_slots[f[: f.rfind("_")]].add(f)
-
-        for k, v in f_slots.items():
-            if state_slots[k] != v:
-                return False
-
-        return True
-
-    def _rule_is_good(
-        self, rule_key: Text, turn_index: int, state: Dict[Text, float]
-    ) -> bool:
-        """Check if rule is satisfied with current state at turn."""
-
-        # turn_index goes back in time
-        rule_turns = list(reversed(rule_key.split("|")))
-
-        return bool(
-            # rule is shorter than current turn index
-            turn_index >= len(rule_turns)
-            # current rule and state turns are empty
-            or (not rule_turns[turn_index] and not state)
-            # check that current rule turn features are present in current state turn
-            or (
-                rule_turns[turn_index]
-                and state
-                and self._features_in_state(rule_turns[turn_index].split(), state)
-            )
-        )
-
-    @staticmethod
     def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
         found_forms = [
             state_name[len(ACTIVE_FORM_PREFIX) :]
@@ -172,7 +123,7 @@ class RulePolicy(MemoizationPolicy):
         return [action_before_listen, states[-1]]
 
     @staticmethod
-    def _clean_feature_keys(lookup, domain):
+    def _clean_feature_keys(lookup: Optional[Dict], domain: Domain) -> Optional[Dict]:
         # remove action_listens that were added after conditions
         updated_lookup = lookup.copy()
         for key in lookup.keys():
@@ -272,6 +223,55 @@ class RulePolicy(MemoizationPolicy):
         self.negative_lookup = self._clean_feature_keys(self.negative_lookup, domain)
 
         logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
+
+    @staticmethod
+    def _features_in_state(features: List[Text], state: Dict[Text, float]) -> bool:
+
+        state_slots = defaultdict(set)
+        for s in state.keys():
+            if s.startswith("slot"):
+                state_slots[s[: s.rfind("_")]].add(s)
+
+        f_slots = defaultdict(set)
+        for f in features:
+            # TODO: this is a hack to make a rule know
+            #  that slot or form should not be set;
+            #  `_None` is added inside domain to indicate that
+            #  the feature should not be present
+            if f.endswith("_None"):
+                if any(f[: f.rfind("_")] in key for key in state.keys()):
+                    return False
+            elif f not in state:
+                return False
+            elif f.startswith("slot"):
+                f_slots[f[: f.rfind("_")]].add(f)
+
+        for k, v in f_slots.items():
+            if state_slots[k] != v:
+                return False
+
+        return True
+
+    def _rule_is_good(
+        self, rule_key: Text, turn_index: int, state: Dict[Text, float]
+    ) -> bool:
+        """Check if rule is satisfied with current state at turn."""
+
+        # turn_index goes back in time
+        rule_turns = list(reversed(rule_key.split("|")))
+
+        return bool(
+            # rule is shorter than current turn index
+            turn_index >= len(rule_turns)
+            # current rule and state turns are empty
+            or (not rule_turns[turn_index] and not state)
+            # check that current rule turn features are present in current state turn
+            or (
+                rule_turns[turn_index]
+                and state
+                and self._features_in_state(rule_turns[turn_index].split(), state)
+            )
+        )
 
     def predict_action_probabilities(
         self,
@@ -409,7 +409,7 @@ class RulePolicy(MemoizationPolicy):
         rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
-    def load(cls, path: Text) -> "MemoizationPolicy":
+    def load(cls, path: Text) -> "RulePolicy":
 
         featurizer = TrackerFeaturizer.load(path)
         memorized_file = os.path.join(path, "memorized_turns.json")
