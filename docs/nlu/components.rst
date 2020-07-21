@@ -977,7 +977,7 @@ RegexEntityExtractor
 
 :Configuration:
     By default we convert the entries in the lookup file and the user message to lowercase before we check if there
-    is a match. You can disable this behaviour by setting ``lowercase: False``.
+    is a match. You can disable this behavior by setting ``lowercase: False``.
 
     .. code-block:: yaml
 
