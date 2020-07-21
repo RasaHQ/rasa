@@ -4,6 +4,7 @@ import numpy as np
 import scipy.sparse
 import typing
 
+from rasa.exceptions import RasaException
 from rasa.nlu.constants import (
     ENTITIES,
     INTENT,
@@ -126,14 +127,17 @@ class Message:
     @staticmethod
     def separate_intent_response_key(
         original_intent: Text,
-    ) -> Tuple[Optional[Text], Optional[Text]]:
+    ) -> Tuple[Text, Optional[Text]]:
 
         split_title = original_intent.split(RESPONSE_IDENTIFIER_DELIMITER)
         if len(split_title) == 2:
             return split_title[0], split_title[1]
         elif len(split_title) == 1:
             return split_title[0], None
-        return None, None
+
+        raise RasaException(
+            f"Intent name is invalid, it should not contain '{RESPONSE_IDENTIFIER_DELIMITER}'."
+        )
 
     def get_sparse_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
