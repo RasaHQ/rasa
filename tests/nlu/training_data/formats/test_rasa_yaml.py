@@ -3,16 +3,18 @@ from typing import Text
 import pytest
 from ruamel.yaml import YAMLError
 
+from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.nlu.constants import INTENT
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader
 
-MULTILINE_INTENT_EXAMPLES = """
-nlu:
-- intent: intent_name
-  examples: |
-     - how much CO2 will that use?
-     - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
-"""
+MULTILINE_INTENT_EXAMPLES = (
+    f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
+    f"nlu:\n"
+    f" - intent: intent_name\n"
+    f"   examples: |\n"
+    f"      - how much CO2 will that use?\n"
+    f'      - how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?'
+)
 
 MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL = """
 nlu:
@@ -22,18 +24,19 @@ nlu:
      - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
 """
 
-INTENT_EXAMPLES_WITH_METADATA = """
-nlu:
-- intent: intent_name
-  metadata:
-  examples:
-  - text: |
-      how much CO2 will that use?
-    metadata:
-      sentiment: positive
-  - text: |
-      how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
-"""
+INTENT_EXAMPLES_WITH_METADATA = (
+    f"version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'\n"
+    f"nlu:\n"
+    f" - intent: intent_name\n"
+    f"   metadata:\n"
+    f"   examples:\n"
+    f"    - text: |\n"
+    f"        how much CO2 will that use?\n"
+    f"      metadata:\n"
+    f"        sentiment: positive\n"
+    f"    - text: |\n"
+    f'        how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?'
+)
 
 
 def test_wrong_format_raises():
@@ -71,7 +74,8 @@ def test_multiline_intent_example_is_skipped_when_no_leading_symbol():
     with pytest.warns(None) as record:
         training_data = parser.reads(MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL)
 
-    assert len(record)
+    # one for missing leading symbol, one for missing version
+    assert len(record) == 2
 
     assert len(training_data.training_examples) == 1
 
