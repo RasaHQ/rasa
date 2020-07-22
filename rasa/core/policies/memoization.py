@@ -67,6 +67,15 @@ class MemoizationPolicy(Policy):
         max_history: Optional[int] = None,
         lookup: Optional[Dict] = None,
     ) -> None:
+        """Initialize the policy.
+
+        Args:
+            featurizer: tracker featurizer
+            priority: the priority of the policy
+            max_history: maximum history to take into account when featurizing trackers
+            lookup: a dictionary that stores featurized tracker states and
+                predicted actions for them
+        """
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
@@ -75,17 +84,22 @@ class MemoizationPolicy(Policy):
 
         self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}
-        self.is_enabled = True
-
-    def toggle(self, activate: bool) -> None:
-        self.is_enabled = activate
 
     def _create_lookup_from_states(
         self,
         trackers_as_states: List[List[Dict]],
         trackers_as_actions: List[List[Text]],
     ) -> Dict[Text, Text]:
-        """Add states to lookup dict"""
+        """Creates lookup dictionary from the tracker represented as states.
+
+        Args:
+            trackers_as_states: representation of the trackers as a list of states
+            trackers_as_actions: representation of the trackers as a list of actions
+
+        Returns:
+            lookup dictionary
+        """
+
         lookup = {}
 
         if not trackers_as_states:
@@ -144,8 +158,6 @@ class MemoizationPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-        """Trains the policy on given training trackers."""
-
         # only considers original trackers (no augmented ones)
         training_trackers = [
             t
@@ -197,24 +209,15 @@ class MemoizationPolicy(Policy):
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> List[float]:
-        """Predicts the next action the bot should take after seeing the tracker.
-
-        Returns the list of probabilities for the next actions.
-        If memorized action was found returns 1 for its index,
-        else returns 0 for all actions.
-        """
         result = self._default_predictions(domain)
-
-        if not self.is_enabled:
-            return result
 
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
         logger.debug(f"Current tracker state {states}")
-        recalled = self.recall(states, tracker, domain)
-        if recalled is not None:
-            logger.debug(f"There is a memorised next action '{recalled}'")
-            result = self._prediction_result(recalled, tracker, domain)
+        predicted_action_name = self.recall(states, tracker, domain)
+        if predicted_action_name is not None:
+            logger.debug(f"There is a memorised next action '{predicted_action_name}'")
+            result = self._prediction_result(predicted_action_name, tracker, domain)
         else:
             logger.debug("There is no memorised next action")
 
@@ -334,9 +337,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         domain: Domain,
     ) -> Optional[Text]:
 
-        recalled = self._recall_states(states)
-        if recalled is None:
+        predicted_action_name = self._recall_states(states)
+        if predicted_action_name is None:
             # let's try a different method to recall that tracker
             return self._recall_using_delorean(states, tracker, domain)
         else:
-            return recalled
+            return predicted_action_name
