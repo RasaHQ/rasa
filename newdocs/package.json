@@ -4,16 +4,18 @@
   "private": true,
   "scripts": {
     "start": "yarn run pre-build && docusaurus start",
-    "pre-build": "yarn run variables && yarn run program-outputs",
+    "pre-build": "yarn run variables && yarn run program-outputs && yarn run included-sources",
     "build": "docusaurus build",
     "new-version": "docusaurus docs:version",
     "variables": "node compile_variables.js",
-    "program-outputs": "node compile_program_outputs.js"
+    "program-outputs": "node compile_program_outputs.js",
+    "included-sources": "node compile_included_sources.js"
   },
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.56",
     "@docusaurus/preset-classic": "^2.0.0-alpha.56",
     "classnames": "^2.2.6",
+    "fs-extra": "^9.0.1",
     "globby": "^10.0.1",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
