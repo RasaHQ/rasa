@@ -91,3 +91,4 @@ env
 newdocs/.docusaurus
 newdocs/docs/variables.json
 newdocs/docs/sources/
+newdocs/docs/changelog.mdx

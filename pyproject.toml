@@ -28,7 +28,7 @@ url = "https://pypi.rasa.com/simple/"
 [tool.towncrier]
 package = "rasa"
 package_dir = "rasa"
-filename = "./newdocs/docs/changelog.mdx"
+filename = "CHANGELOG.mdx"
 directory = "./changelog"
 underlines = "   "
 title_format = "## [{version}] - {project_date}"

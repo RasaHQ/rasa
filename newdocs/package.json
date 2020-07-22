@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "start": "yarn run pre-build && docusaurus start",
-    "pre-build": "yarn run variables && yarn run program-outputs",
+    "pre-build": "yarn run copy-md-files && yarn run variables && yarn run program-outputs",
     "build": "docusaurus build",
     "new-version": "docusaurus docs:version",
     "variables": "node compile_variables.js",
-    "program-outputs": "node compile_program_outputs.js"
+    "program-outputs": "node compile_program_outputs.js",
+    "copy-md-files": "node copy_md_files.js"
   },
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.56",
