@@ -87,34 +87,15 @@ You need to define three methods:
 
 * `submit`: what to do at the end of the form, when all the slots have been filled.
 
-```python
-def name(self) -> Text:
-    """Unique identifier of the form"""
+Though not technically required for a minimal form, you will most likely need to define
+[slot mappings](/docs/core/forms#form-slot-mappings) in order to gather all of the information you need.
+Other methods like [validation methods](/docs/core/forms#form-validation) are optional.
 
-    return "restaurant_form"
-```
+Here is an example of what it looks like:
 
-```python
-@staticmethod
-def required_slots(tracker: Tracker) -> List[Text]:
-    """A list of required slots that the form has to fill"""
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="formbot-code"></a>
 
-    return ["cuisine", "num_people", "outdoor_seating", "preferences", "feedback"]
-```
-
-```python
-def submit(
-    self,
-    dispatcher: CollectingDispatcher,
-    tracker: Tracker,
-    domain: Dict[Text, Any],
-) -> List[Dict]:
-    """Define what the form has to do
-        after all required slots are filled"""
-
-    # utter submit template
-    dispatcher.utter_message(template="utter_submit")
-    return []
+```python (docs/sources/examples/formbot/actions.py)
 ```
 
 Once the form action gets called for the first time,
@@ -135,45 +116,22 @@ as your submit method.
 After the submit method is called, the form is deactivated,
 and other policies in your Core model will be used to predict the next action.
 
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="form-slot-mappings"></a>
+
 ## Custom slot mappings
 
 If you do not define slot mappings, slots will be only filled by entities
 with the same name as the slot that are picked up from the user input.
 Some slots, like `cuisine`, can be picked up using a single entity, but a
 `FormAction` can also support yes/no questions and free-text input.
+
 The `slot_mappings` method defines how to extract slot values from user responses.
 
-Here’s an example for the restaurant bot:
+In the [above example](/docs/core/forms#formbot-code), you can see how the form uses different
+slot mappings to collect entity information (cuisine), yes/no input (outdoor seating)
+and free text input (preferences).
 
-```python
-def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict]]]:
-    """A dictionary to map required slots to
-        - an extracted entity
-        - intent: value pairs
-        - a whole message
-        or a list of them, where a first match will be picked"""
-
-    return {
-        "cuisine": self.from_entity(entity="cuisine", not_intent="chitchat"),
-        "num_people": [
-            self.from_entity(
-                entity="number", intent=["inform", "request_restaurant"]
-            ),
-        ],
-        "outdoor_seating": [
-            self.from_entity(entity="seating"),
-            self.from_intent(intent="affirm", value=True),
-            self.from_intent(intent="deny", value=False),
-        ],
-        "preferences": [
-            self.from_intent(intent="deny", value="no additional preferences"),
-            self.from_text(not_intent="affirm"),
-        ],
-        "feedback": [self.from_entity(entity="feedback"), self.from_text()],
-    }
-```
-
-The predefined functions work as follows:
+The predefined functions for `slot_mappings` work as follows:
 
 * `self.from_entity(entity=entity_name, intent=intent_name, role=role_name, group=group_name)`
   will look for an entity called `entity_name` to fill a slot
@@ -198,6 +156,8 @@ The predefined functions work as follows:
 * If you want to allow a combination of these, provide them as a list as in the
   example above
 
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="form-validation"></a>
+
 ## Validating user input
 
 After extracting a slot value from user input, the form will try to validate the
@@ -212,44 +172,10 @@ extracted from the slot mappings. If you want to add custom validation, for
 example to check a value against a database, you can do this by writing a helper
 validation function with the name `validate_{slot-name}`.
 
-Here is an example , `validate_cuisine()`, which checks if the extracted cuisine slot
-belongs to a list of supported cuisines.
-
-```python
-    @staticmethod
-    def cuisine_db() -> List[Text]:
-        """Database of supported cuisines"""
-
-        return [
-            "caribbean",
-            "chinese",
-            "french",
-            "greek",
-            "indian",
-            "italian",
-            "mexican",
-        ]
-```
-
-```python
-    def validate_cuisine(
-        self,
-        value: Text,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> Dict[Text, Any]:
-        """Validate cuisine value."""
-
-        if value.lower() in self.cuisine_db():
-            # validation succeeded, set the value of the "cuisine" slot to value
-            return {"cuisine": value}
-        else:
-            dispatcher.utter_message(template="utter_wrong_cuisine")
-            # validation failed, set this slot to None, meaning the
-            # user will be asked for the slot again
-            return {"cuisine": None}
-```
+Here is an example of the same formbot from above, now using validation methods
+to check if user input is valid. For example, `validate_cuisine()` in the
+[formbot](/docs/core/forms#formbot-code) checks if the extracted cuisine slot belongs
+to a list of supported cuisines.
 
 As the helper validation functions return dictionaries of slot names and values
 to set, you can set more slots than just the one you are validating from inside
@@ -417,7 +343,7 @@ This is a great starting point, but
 you should give your bot to people to test **as soon as possible**. One of the guiding principles
 behind Rasa Core is:
 
-> Learning from real conversations is more important than designing hypothetical ones
+Learning from real conversations is more important than designing hypothetical ones
 
 So don’t try to cover every possibility in your hand-written stories before giving it to testers.
 Real user behavior will always surprise you!

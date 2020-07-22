@@ -96,7 +96,7 @@ A form *needs* to define three methods:
 
 Though not technically required for a minimal form, you will most likely need to define
 :ref:`slot mappings <form-slot-mappings>` in order to gather all of the information you need.
-Other methods like :ref:`validation methods <form validation>` are optional.
+Other methods like :ref:`validation methods <form-validation>` are optional.
 
 Here is an example of what it looks like:
 
