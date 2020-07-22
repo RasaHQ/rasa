@@ -136,7 +136,8 @@ class Message:
             return split_title[0], None
 
         raise RasaException(
-            f"Intent name is invalid, it should not contain '{RESPONSE_IDENTIFIER_DELIMITER}'."
+            f"Intent name '{original_intent}' is invalid, "
+            f"it cannot contain more than one '{RESPONSE_IDENTIFIER_DELIMITER}'."
         )
 
     def get_sparse_features(
