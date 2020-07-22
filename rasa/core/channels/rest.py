@@ -23,8 +23,8 @@ class RestInput(InputChannel):
     """A custom http input channel.
 
     This implementation is the basis for a custom implementation of a chat
-    frontend. You can customize this to send messages to Rasa Core and
-    retrieve responses from the agent."""
+    frontend. You can customize this to send messages to Rasa and
+    retrieve responses from the assistant."""
 
     @classmethod
     def name(cls) -> Text:
