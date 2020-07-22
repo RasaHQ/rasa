@@ -66,7 +66,7 @@ Synonyms will map extracted entities to the same name, for example mapping "my s
 However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms
 present so that Rasa can learn to pick them up.
 
-Lookup tables may be specified as plain text files containing newline-separated words or 
+Lookup tables may be specified as plain text files containing newline-separated words or
 phrases. Upon loading the training data, these files are used to generate
 case-insensitive regex patterns that are added to the regex features.
 
@@ -221,7 +221,7 @@ If you define entities as having the same value they will be treated as synonyms
 .. code-block:: md
 
     ## intent:search
-    - in the center of [NYC]{"entity": "city", "value": "New York City")
+    - in the center of [NYC]{"entity": "city", "value": "New York City"}
     - in the centre of [New York City](city)
 
 
