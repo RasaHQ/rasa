@@ -61,6 +61,8 @@ CONFIG_AUTOCONFIGURABLE_KEYS = ["policies", "pipeline"]
 
 MINIMUM_COMPATIBLE_VERSION = "1.11.0a3"
 
+LATEST_TRAINING_DATA_FORMAT_VERSION = "2.0"
+
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/global.yml")
 
 DEFAULT_LOG_LEVEL = "INFO"
