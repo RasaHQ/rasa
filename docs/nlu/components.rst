@@ -822,6 +822,8 @@ DIETClassifier
     You can find the detailed description of the :ref:`diet-classifier` under the section
     `Combined Entity Extractors and Intent Classifiers`.
 
+.. _EntityExtractors:
+
 Entity Extractors
 -----------------
 
@@ -909,7 +911,7 @@ EntitySynonymMapper
 
 :Short: Maps synonymous entity values to the same value.
 :Outputs: Modifies existing entities that previous entity extraction components found.
-:Requires: Nothing
+:Requires: An extractor from :ref:`EntityExtractors`
 :Description:
     If the training data contains defined synonyms, this component will make sure that detected entity values will
     be mapped to the same value. For example, if your training data contains the following examples:
