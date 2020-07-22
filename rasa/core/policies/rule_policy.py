@@ -35,7 +35,7 @@ DEFAULT_ACTION_MAPPINGS = {
 }
 
 RULES = "rules"
-NEGATIVE_RULES = "negative_rules"
+FORM_UNHAPPY_RULES = "negative_rules"
 NO_VALIDATION = "no_validation"
 DO_NOT_PREDICT_FORM_ACTION = "no_active_form"
 
