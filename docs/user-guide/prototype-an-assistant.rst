@@ -183,6 +183,10 @@ the button below:
     :endpoint: https://trainer-service.prototyping.rasa.com/trainings
     :method: POST
 
+Once your model has finished training, you can talk to your assistant:
+
+.. chat-block::
+
 
 8. What's next?
 ~~~~~~~~~~~~~~~

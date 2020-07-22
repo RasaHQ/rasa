@@ -40,6 +40,7 @@ extensions = [
     "rasabaster.ace",
     "rasabaster.train_button",
     "rasabaster.download_button",
+    "rasabaster.chat_block",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
