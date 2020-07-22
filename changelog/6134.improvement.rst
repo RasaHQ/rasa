@@ -1,0 +1,1 @@
+I log the number of examples per intent, with an attempt at making the output somewhat easy to read. 
