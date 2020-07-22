@@ -76,9 +76,9 @@ class ActionTellID(Action):
 
         conversation_id = tracker.sender_id
 
-        dispatcher.utter_message(f"The ID of this conversation is: {conversation_id}.")
+        dispatcher.utter_message(f"The ID of this conversation is '{conversation_id}'.")
         dispatcher.utter_message(
-            f"Trigger an intent with "
+            f"Trigger an intent with: \n"
             f'curl -H "Content-Type: application/json" '
             f'-X POST -d \'{{"name": "EXTERNAL_dry_plant", '
             f'"entities": {{"plant": "Orchid"}}}}\' '

@@ -1,21 +1,27 @@
-# This is a very simple callback server.
-# Running Rasa with this channel as the
-# connector will forward messages to this
-# server, which will print the bot's
-# responses to your console.
-
-from flask import Flask, jsonify, request
-
-app = Flask(__name__)
+from sanic import Sanic, response
+from sanic.request import Request
+from sanic.response import HTTPResponse
 
 
-@app.route("/bot", methods=["POST"])
-def print_response():
-    bot_response = request.json
-    print(bot_response.get("text"))
+def create_app() -> Sanic:
 
-    return {"status": "message sent"}
+    bot_app = Sanic(__name__, configure_logging=False)
+
+    @bot_app.post("/bot")
+    def print_response(request: Request) -> HTTPResponse:
+        """Print bot response to the console."""
+        bot_response = request.json.get("text")
+        print(f"\n{bot_response}")
+
+        body = {"status": "message sent"}
+        return response.json(body, status=200)
+
+    return bot_app
 
 
 if __name__ == "__main__":
-    app.run()
+    app = create_app()
+    port = 5000
+
+    print(f"Starting callback server on port {port}.")
+    app.run("0.0.0.0", port)
