@@ -368,7 +368,8 @@ class RulePolicy(MemoizationPolicy):
             )
             if predicted_listen_from_general_rule:
                 if NO_ACTIVE_FORM not in negative_recalled:
-                    # predict active_form
+                    # negative rules don't contain a key that corresponds to
+                    # the fact that active_form shouldn't be predicted
                     logger.debug(
                         f"Predicted form '{active_form_name}' by overwriting "
                         f"'{ACTION_LISTEN_NAME}' predicted by general rule."
