@@ -37,7 +37,7 @@ def create_github_release(slug: Text, token: Text, tag_name: Text, body: Text):
 def parse_changelog(tag_name: Text) -> Text:
     """Read the changelog and extract the most recently release entry."""
 
-    p = Path(__file__).parent.parent / "newdocs" / "docs" / "changelog.mdx"
+    p = Path(__file__).parent.parent / "CHANGELOG.mdx"
     changelog_lines = p.read_text(encoding="UTF-8").splitlines()
 
     title_regex = re.compile(r"##\s*\[(\d+\.\d+\.\d+)(\S*)\]\s*-\s*\d{4}-\d{2}-\d{2}")

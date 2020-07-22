@@ -39,8 +39,8 @@ jobs:
     - name: Run Swagger 🕵️‍♀️
       run: |
         npm install -g swagger-cli
-        swagger-cli validate docs/_static/spec/action-server.yml
-        swagger-cli validate docs/_static/spec/rasa.yml
+        swagger-cli validate docs/static/spec/action-server.yml
+        swagger-cli validate docs/static/spec/rasa.yml
 
   quality:
     name: Code Quality
@@ -80,8 +80,8 @@ jobs:
     - name: Load Yarn Cached Packages ⬇
       uses: actions/cache@v1
       with:
-        path: newdocs/node_modules
-        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('newdocs/yarn.lock') }}
+        path: docs/node_modules
+        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
         restore-keys: ${{ runner.os }}-yarn-12.x
 
     - name: Install Dependencies 📦

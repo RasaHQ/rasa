@@ -13,7 +13,7 @@ on:
 # - GITHUB_TOKEN: (default, from github actions)
 
 env:
-  DOCS_FOLDER: newdocs
+  DOCS_FOLDER: docs
   DOCS_BRANCH: documentation
 
 jobs:
@@ -56,15 +56,15 @@ jobs:
     - name: Load Yarn Cached Packages ⬇
       uses: actions/cache@v1
       with:
-        path: newdocs/node_modules
-        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('newdocs/yarn.lock') }}
+        path: docs/node_modules
+        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
         restore-keys: ${{ runner.os }}-yarn-12.x
 
     - name: Install Dependencies 📦
       run: make install install-docs
 
-    - name: Build Docs variables 🧶
-      run: cd $DOCS_FOLDER && poetry run yarn variables
+    - name: Pre-build Docs 🧶
+      run: cd $DOCS_FOLDER && poetry run yarn pre-build
 
     - name: Build & Publish Docs 🏃‍♀️
       env:

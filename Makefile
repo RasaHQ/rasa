@@ -1,4 +1,4 @@
-.PHONY: clean test lint init
+.PHONY: clean test lint init docs
 
 JOBS ?= 1
 
@@ -35,7 +35,8 @@ clean:
 	rm -rf build/
 	rm -rf .pytype/
 	rm -rf dist/
-	rm -rf docs/_build
+	rm -rf docs/build
+	rm -rf docs/.docusaurus
 
 install:
 	poetry run python -m pip install -U pip
@@ -48,7 +49,7 @@ install-full: install install-mitie
 	poetry install -E full
 
 install-docs:
-	cd newdocs/ && yarn install
+	cd docs/ && yarn install
 
 formatter:
 	poetry run black rasa tests
@@ -82,10 +83,10 @@ test: clean
 	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
 
 docs:
-	cd newdocs/ && poetry run yarn pre-build && yarn build
+	cd docs/ && poetry run yarn pre-build && yarn build
 
 livedocs:
-	cd newdocs/ && poetry run yarn start
+	cd docs/ && poetry run yarn start
 
 release:
 	poetry run python scripts/release.py
