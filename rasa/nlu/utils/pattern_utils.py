@@ -106,7 +106,7 @@ def _collect_regex_features(
 def extract_patterns(
     training_data: TrainingData,
     use_lookup_tables: bool = True,
-    use_regex_features: bool = True,
+    use_regexes: bool = True,
     use_only_entities: bool = False,
 ) -> List[Dict[Text, Text]]:
     """Extract a list of patterns from the training data.
@@ -118,7 +118,7 @@ def extract_patterns(
         training_data: The training data.
         use_only_entities: If True only lookup tables and regex features with a name
           equal to a entity are considered.
-        use_regex_features: Boolean indicating whether to use regex features or not.
+        use_regexes: Boolean indicating whether to use regex features or not.
         use_lookup_tables: Boolean indicating whether to use lookup tables or not.
 
     Returns:
@@ -129,7 +129,7 @@ def extract_patterns(
 
     patterns = []
 
-    if use_regex_features:
+    if use_regexes:
         patterns.extend(_collect_regex_features(training_data, use_only_entities))
     if use_lookup_tables:
         patterns.extend(

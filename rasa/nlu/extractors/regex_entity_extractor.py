@@ -54,7 +54,7 @@ class RegexEntityExtractor(EntityExtractor):
         self.patterns = pattern_utils.extract_patterns(
             training_data,
             use_lookup_tables=self.component_config["use_lookup_tables"],
-            use_regex_features=self.component_config["use_regex_features"],
+            use_regexes=self.component_config["use_regexes"],
             use_only_entities=True,
         )
 

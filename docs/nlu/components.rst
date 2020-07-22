@@ -481,7 +481,7 @@ RegexFeaturizer
           "case_sensitive": True
           # use lookup tables to generate features
           "use_lookup_tables": True
-          # use regex features to generate features
+          # use regexes to generate features
           "use_regexes": True
 
 .. _CountVectorsFeaturizer:
