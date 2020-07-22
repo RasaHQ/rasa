@@ -23,7 +23,6 @@ excluded_files:
   - "*.html"
   - "*.json"
   - "*.md"
-  - "CHANGELOG.rst"
   - "CODE_OF_CONDUCT.md"
   - "CONTRIBUTING.md"
   - "Dockerfile"

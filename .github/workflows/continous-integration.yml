@@ -254,9 +254,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
-        sudo apt-get update
-        sudo apt-get -y install pandoc
-        pip install -U github3.py pypandoc
+        pip install -U github3.py
         python3 scripts/publish_gh_release_notes.py
         ./scripts/ping_slack_about_package_release.sh
 

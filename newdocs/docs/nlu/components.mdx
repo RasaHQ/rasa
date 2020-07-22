@@ -1254,6 +1254,8 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   Combined Entity Extractors and Intent Classifiers.
 
 
+<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="entityextractors"></a>
+
 ## Entity Extractors
 
 Entity extractors extract entities, such as person names or locations, from the user message.
@@ -1397,7 +1399,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 * **Requires**
 
-  Nothing
+  An extractor from [Entity Extractors](/docs/nlu/components#entityextractors)
 
 
 
@@ -1443,6 +1445,12 @@ Entity extractors extract entities, such as person names or locations, from the 
   pipeline:
   - name: "EntitySynonymMapper"
   ```
+
+  :::note
+  When using the `EntitySynonymMapper` as part of an NLU pipeline, it will need to be placed
+  below any entity extractors in the configuration file.
+
+  :::
 
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="crfentityextractor"></a>
