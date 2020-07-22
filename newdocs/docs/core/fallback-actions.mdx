@@ -37,7 +37,7 @@ fallback, so that it will not influence the prediction of future actions.
 You can take a look at the source of the action below:
 
 - SKIPPED CLASS DOCUMENTATION -You can also create your own custom action to use as a fallback (see
-[custom actions](/docs/core/actions#custom-actions) for more info on custom actions). If you
+[custom actions](./actions#custom-actions) for more info on custom actions). If you
 do, make sure to pass the custom fallback action to `FallbackPolicy` inside
 your policy configuration file. For example:
 
@@ -103,7 +103,7 @@ Rasa Core provides the default implementations of
 The default implementation of `action_default_ask_rephrase` action utters
 the response `utter_ask_rephrase`, so be sure to specify this
 response in your domain file.
-The implementation of both actions can be overwritten with [custom actions](/docs/core/actions#custom-actions).
+The implementation of both actions can be overwritten with [custom actions](./actions#custom-actions).
 
 You can specify the core fallback action as well as the ultimate NLU
 fallback action as parameters to `TwoStageFallbackPolicy` in your

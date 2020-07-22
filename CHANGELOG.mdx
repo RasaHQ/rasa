@@ -78,7 +78,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   entity predictions.
 
 * [#5976](https://github.com/rasahq/rasa/issues/5976): Fix server crashes that occurred when Rasa Open Source pulls a model from a
-  [model server](/docs/user-guide/configuring-http-api#server-fetch-from-server) and an exception was thrown during
+  [model server](./user-guide/configuring-http-api#server-fetch-from-server) and an exception was thrown during
   model loading (such as a domain with invalid YAML).
 
 ## [1.10.2] - 2020-06-03
@@ -87,7 +87,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5521](https://github.com/rasahq/rasa/issues/5521): Responses used in ResponseSelector now support new lines with explicitly adding `\\n` between them.
 
-* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [rasa export](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment) ([Export Conversations to an Event Broker](/docs/user-guide/command-line-interface#section-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](/docs/core/domains#session-config).
+* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [rasa export](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment) ([Export Conversations to an Event Broker](./user-guide/command-line-interface#section-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./core/domains#session-config).
 
 ## [1.10.1] - 2020-05-15
 
@@ -127,15 +127,15 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   The group label can be used to group multiple entities together.
   For example, you could group different pizza orders, so that you know what toppings goes with which pizza and
   what size which pizza has.
-  For more details see [Entities Roles and Groups](/docs/nlu/entity-extraction#entities-roles-groups).
+  For more details see [Entities Roles and Groups](./nlu/entity-extraction#entities-roles-groups).
 
   To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
   We updated the tracker method `get_latest_entity_values` to take an optional role/group label.
   If you want to use a form, you can add the specific role/group label of interest to the slot mapping function
-  `from_entity` (see [Forms](/docs/core/forms)).
+  `from_entity` (see [Forms](./core/forms)).
 
   :::note
-  Composite entities are currently just supported by the [DIETClassifier](/docs/nlu/components#diet-classifier) and [CRFEntityExtractor](/docs/nlu/components#crfentityextractor).
+  Composite entities are currently just supported by the [DIETClassifier](./nlu/components#diet-classifier) and [CRFEntityExtractor](./nlu/components#crfentityextractor).
 
   :::
 
@@ -167,7 +167,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   execute the following command on the terminal of your choice:
   `sed -i -E 's/\\[([^)]+)\\]\\(([^)]+):([^)]+)\\)/[\\1]{"entity": "\\2", "value": "\\3"}/g' nlu.md`
 
-  For more information about the new data format see [Training Data Format](/docs/nlu/training-data-format).
+  For more information about the new data format see [Training Data Format](./nlu/training-data-format).
 
 ### Improvements
 
@@ -188,7 +188,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
   If you are using ResponseSelectors, they now produce similiar outputs during NLU evaluation. Misclassfied responses are listed in a “confused_with” attribute in the evaluation report. Similiarily, a confusion matrix of all responses is plotted.
 
-* [#5578](https://github.com/rasahq/rasa/issues/5578): Added `socketio` to the compatible channels for [Reminders and External Events](/docs/core/reminders-and-external-events).
+* [#5578](https://github.com/rasahq/rasa/issues/5578): Added `socketio` to the compatible channels for [Reminders and External Events](./core/reminders-and-external-events).
 
 * [#5595](https://github.com/rasahq/rasa/issues/5595): Update `POST /model/train` endpoint to accept retrieval action responses
   at the `responses` key of the JSON payload.
@@ -278,7 +278,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5533](https://github.com/rasahq/rasa/issues/5533): Support for
   [PostgreSQL schemas](https://www.postgresql.org/docs/11/ddl-schemas.html) in
-  [SQLTrackerStore](/docs/api/tracker-stores#sql-tracker-store). The `SQLTrackerStore`
+  [SQLTrackerStore](./api/tracker-stores#sql-tracker-store). The `SQLTrackerStore`
   accesses schemas defined by the `POSTGRESQL_SCHEMA` environment variable if
   connected to a PostgreSQL database.
 
@@ -323,7 +323,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Bugfixes
 
-* [#5492](https://github.com/rasahq/rasa/issues/5492): Fix an issue where the deprecated `queue` parameter for the [Pika Event Broker](/docs/api/event-brokers#event-brokers-pika)
+* [#5492](https://github.com/rasahq/rasa/issues/5492): Fix an issue where the deprecated `queue` parameter for the [Pika Event Broker](./api/event-brokers#event-brokers-pika)
   was ignored and Rasa Open Source published the events to the `rasa_core_events`
   queue instead. Note that this does not change the fact that the `queue` argument
   is deprecated in favor of the `queues` argument.
@@ -334,7 +334,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5006](https://github.com/rasahq/rasa/issues/5006): Channel `hangouts` for Rasa integration with Google Hangouts Chat is now supported out-of-the-box.
 
-* [#5389](https://github.com/rasahq/rasa/issues/5389): Add an optional path to a specific directory to download and cache the pre-trained model weights for [HFTransformersNLP](/docs/nlu/components#hftransformersnlp).
+* [#5389](https://github.com/rasahq/rasa/issues/5389): Add an optional path to a specific directory to download and cache the pre-trained model weights for [HFTransformersNLP](./nlu/components#hftransformersnlp).
 
 * [#5422](https://github.com/rasahq/rasa/issues/5422): Add options `tensorboard_log_directory` and `tensorboard_log_level` to `EmbeddingIntentClassifier`,
   `DIETClasifier`, `ResponseSelector`, `EmbeddingPolicy` and `TEDPolicy`.
@@ -360,7 +360,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   e.g. `faq/which_version` to the prediction, making it accessible
   from the tracker.
 
-* [#5258](https://github.com/rasahq/rasa/issues/5258): Added `PikaEventBroker` ([Pika Event Broker](/docs/api/event-brokers#event-brokers-pika)) support for publishing to
+* [#5258](https://github.com/rasahq/rasa/issues/5258): Added `PikaEventBroker` ([Pika Event Broker](./api/event-brokers#event-brokers-pika)) support for publishing to
   multiple queues. Messages are now published to a `fanout` exchange with name
   `rasa-exchange` (see
   [exchange-fanout](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout)
@@ -386,7 +386,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5446](https://github.com/rasahq/rasa/issues/5446): The endpoint `PUT /conversations/<conversation_id>/tracker/events` no longer
   adds session start events (to learn more about conversation sessions, please
-  see [Session configuration](/docs/core/domains#session-config)) in addition to the events which were sent in the request
+  see [Session configuration](./core/domains#session-config)) in addition to the events which were sent in the request
   payload. To achieve the old behavior send a
   `GET /conversations/<conversation_id>/tracker`
   request before appending events.
@@ -398,14 +398,14 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 ### Bugfixes
 
 * [#5205](https://github.com/rasahq/rasa/issues/5205): Fixed the bug when FormPolicy was overwriting MappingPolicy prediction (e.g. `/restart`).
-  Priorities for [Mapping Policy](/docs/core/policies#mapping-policy) and [Form Policy](/docs/core/policies#form-policy) are no longer linear:
+  Priorities for [Mapping Policy](./core/policies#mapping-policy) and [Form Policy](./core/policies#form-policy) are no longer linear:
   `FormPolicy` priority is 5, but its prediction is ignored if `MappingPolicy` is used for prediction.
 
 * [#5215](https://github.com/rasahq/rasa/issues/5215): Fixed issue related to storing Python `float` values as `decimal.Decimal` objects
   in DynamoDB tracker stores. All `decimal.Decimal` objects are now converted to
   `float` on tracker retrieval.
 
-  Added a new docs section on [DynamoTrackerStore](/docs/api/tracker-stores#tracker-stores-dynamo).
+  Added a new docs section on [DynamoTrackerStore](./api/tracker-stores#tracker-stores-dynamo).
 
 * [#5356](https://github.com/rasahq/rasa/issues/5356): Fixed bug where `FallbackPolicy` would always fall back if the fallback action is
   `action_listen`.
@@ -419,7 +419,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Improved Documentation
 
-* [#2237](https://github.com/rasahq/rasa/issues/2237): Restructure the “Evaluating models” documentation page and rename this page to [Testing Your Assistant](/docs/user-guide/testing-your-assistant).
+* [#2237](https://github.com/rasahq/rasa/issues/2237): Restructure the “Evaluating models” documentation page and rename this page to [Testing Your Assistant](./user-guide/testing-your-assistant).
 
 * [#5302](https://github.com/rasahq/rasa/issues/5302): Improved documentation on how to build and deploy an action server image for use on other servers such as Rasa X deployments.
 
@@ -459,7 +459,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   `1.8.0`. Since version `1.8.0` the Rasa SDK Docker images does not longer run as
   `root` user by default. For commands which require `root` user usage, you have to
   switch back to the `root` user in your Docker image as described in
-  [Building an Action Server Image](/docs/user-guide/how-to-deploy#building-an-action-server-image).
+  [Building an Action Server Image](./user-guide/how-to-deploy#building-an-action-server-image).
 
 * [#5402](https://github.com/RasaHQ/rasa/issues/5402): Made improvements to Building Assistants tutorial
 
@@ -493,7 +493,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#4088](https://github.com/rasahq/rasa/issues/4088): Add story structure validation functionality (e.g. rasa data validate stories –max-history 5).
 
-* [#5065](https://github.com/rasahq/rasa/issues/5065): Add [LexicalSyntacticFeaturizer](/docs/nlu/components#lexicalsyntacticfeaturizer) to sparse featurizers.
+* [#5065](https://github.com/rasahq/rasa/issues/5065): Add [LexicalSyntacticFeaturizer](./nlu/components#lexicalsyntacticfeaturizer) to sparse featurizers.
 
   `LexicalSyntacticFeaturizer` does the same featurization as the `CRFEntityExtractor`. We extracted the
   featurization into a separate component so that the features can be reused and featurization is independent from the
@@ -501,19 +501,19 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5187](https://github.com/rasahq/rasa/issues/5187): Integrate language models from HuggingFace’s [Transformers](https://github.com/huggingface/transformers) Library.
 
-  Add a new NLP component [HFTransformersNLP](/docs/nlu/components#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
+  Add a new NLP component [HFTransformersNLP](./nlu/components#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
   pre-trained model with the Transformers library as the backend.
-  Add [LanguageModelTokenizer](/docs/nlu/components#languagemodeltokenizer) and [LanguageModelFeaturizer](/docs/nlu/components#languagemodelfeaturizer) which use the information from
-  [HFTransformersNLP](/docs/nlu/components#hftransformersnlp) and sets them correctly for message object.
+  Add [LanguageModelTokenizer](./nlu/components#languagemodeltokenizer) and [LanguageModelFeaturizer](./nlu/components#languagemodelfeaturizer) which use the information from
+  [HFTransformersNLP](./nlu/components#hftransformersnlp) and sets them correctly for message object.
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
 * [#5225](https://github.com/rasahq/rasa/issues/5225): Added a new CLI command `rasa export` to publish tracker events from a persistent
-  tracker store using an event broker. See [Export Conversations to an Event Broker](/docs/user-guide/command-line-interface#section-export), [Tracker Stores](/docs/api/tracker-stores)
-  and [Event Brokers](/docs/api/event-brokers) for more details.
+  tracker store using an event broker. See [Export Conversations to an Event Broker](./user-guide/command-line-interface#section-export), [Tracker Stores](./api/tracker-stores)
+  and [Event Brokers](./api/event-brokers) for more details.
 
 * [#5230](https://github.com/rasahq/rasa/issues/5230): Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
 
-  Please refer to the [documentation](/docs/api/tensorflow_usage#tensorflow-usage) to understand
+  Please refer to the [documentation](./api/tensorflow_usage#tensorflow-usage) to understand
   which environment variables to set in what scenarios. A couple of examples are shown below as well:
 
   ```python
@@ -527,17 +527,17 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   TF_INTRA_OP_PARALLELISM_THREADS="2"
   ```
 
-* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](/docs/nlu/components#diet-classifier) and a new policy [TEDPolicy](/docs/core/policies#ted-policy).
+* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./nlu/components#diet-classifier) and a new policy [TEDPolicy](./core/policies#ted-policy).
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
-  recognition. You can read more about this component in our [documentation](/docs/nlu/components#diet-classifier).
+  recognition. You can read more about this component in our [documentation](./nlu/components#diet-classifier).
   The new component will replace the `EmbeddingIntentClassifier` and the
-  [CRFEntityExtractor](/docs/nlu/components#crfentityextractor) in the future.
+  [CRFEntityExtractor](./nlu/components#crfentityextractor) in the future.
   Those two components are deprecated from now on.
-  See [migration guide](/docs/migration-guide#migration-to-rasa-1-8) for details on how to
+  See [migration guide](./migration-guide#migration-to-rasa-1-8) for details on how to
   switch to the new component.
 
-  [TEDPolicy](/docs/core/policies#ted-policy) is the new name for [EmbeddingPolicy](/docs/core/policies#embedding-policy).
+  [TEDPolicy](./core/policies#ted-policy) is the new name for [EmbeddingPolicy](./core/policies#embedding-policy).
   `EmbeddingPolicy` is deprecated from now on.
   The functionality of `TEDPolicy` and `EmbeddingPolicy` is the same.
   Please update your configuration file to use the new name for the policy.
@@ -547,7 +547,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   To specify the pooling operation, set the option `pooling` for the `SpacyFeaturizer` or the `MitieFeaturizer`
   in your configuration file. The default pooling operation is `mean`. The mean pooling operation also does not take
   into account words, that do not have a word vector.
-  See our [documentation](/docs/nlu/components) for more details.
+  See our [documentation](./nlu/components) for more details.
 
 ### Improvements
 
@@ -567,7 +567,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#5117](https://github.com/rasahq/rasa/issues/5117): New command-line argument –conversation-id will be added and wiil give the ability to
   set specific conversation ID for each shell session, if not passed will be random.
 
-* [#5211](https://github.com/rasahq/rasa/issues/5211): Messages sent to the [Pika Event Broker](/docs/api/event-brokers#event-brokers-pika) are now persisted. This guarantees
+* [#5211](https://github.com/rasahq/rasa/issues/5211): Messages sent to the [Pika Event Broker](./api/event-brokers#event-brokers-pika) are now persisted. This guarantees
   the RabbitMQ will re-send previously received messages after a crash. Note that this
   does not help for the case where messages are sent to an unavailable RabbitMQ instance.
 
@@ -642,9 +642,9 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Bugfixes
 
-* [#5197](https://github.com/rasahq/rasa/issues/5197): Fixed incompatibility of Oracle with the [SQLTrackerStore](/docs/api/tracker-stores#sql-tracker-store), by using a `Sequence`
+* [#5197](https://github.com/rasahq/rasa/issues/5197): Fixed incompatibility of Oracle with the [SQLTrackerStore](./api/tracker-stores#sql-tracker-store), by using a `Sequence`
   for the primary key columns. This does not change anything for SQL databases other than Oracle.
-  If you are using Oracle, please create a sequence with the instructions in the [SQLTrackerStore](/docs/api/tracker-stores#sql-tracker-store) docs.
+  If you are using Oracle, please create a sequence with the instructions in the [SQLTrackerStore](./api/tracker-stores#sql-tracker-store) docs.
 
 ### Improved Documentation
 
@@ -722,7 +722,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   are `DucklingHTTPExtractor` and `SpacyEntityExtractor`.
 
 * [#4902](https://github.com/rasahq/rasa/issues/4902): The `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` now by default normalize confidence
-  levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](/docs/migration-guide#migration-to-rasa-1-7) for more details.
+  levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](./migration-guide#migration-to-rasa-1-7) for more details.
 
 * [#4964](https://github.com/rasahq/rasa/issues/4964): `ReminderCancelled` can now cancel multiple reminders if no name is given. It still cancels a single
   reminder if the reminder’s name is specified.
@@ -854,7 +854,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   See [https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor](https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor).
 
   Changed some featurizers to use sparse features, which should reduce memory usage with large amounts of training data significantly.
-  Read more: [Text Featurizers](/docs/nlu/components#text-featurizers) .
+  Read more: [Text Featurizers](./nlu/components#text-featurizers) .
 
   :::caution
   These changes break model compatibility. You will need to retrain your old models!

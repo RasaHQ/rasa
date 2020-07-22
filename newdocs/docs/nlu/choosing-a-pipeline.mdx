@@ -17,8 +17,8 @@ However, **any of the old terminology will still behave the same way as it did b
 :::caution
 We deprecated all existing pipeline templates (e.g. `supervised_embeddings`). Please list any
 components you want to use directly in the configuration file. See
-[How to Choose a Pipeline](/docs/nlu/choosing-a-pipeline#how-to-choose-a-pipeline) for recommended starting configurations, or
-[Pipeline Templates (deprecated)](/docs/nlu/choosing-a-pipeline#pipeline-templates) for more information.
+[How to Choose a Pipeline](./choosing-a-pipeline#how-to-choose-a-pipeline) for recommended starting configurations, or
+[Pipeline Templates (deprecated)](./choosing-a-pipeline#pipeline-templates) for more information.
 
 :::
 
@@ -97,12 +97,12 @@ pipeline:
     epochs: 100
 ```
 
-The pipeline contains the [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer) that provides pre-trained word embeddings of the user utterance.
+The pipeline contains the [ConveRTFeaturizer](./components#convertfeaturizer) that provides pre-trained word embeddings of the user utterance.
 Pre-trained word embeddings are helpful as they already encode some kind of linguistic knowledge.
 For example, if you have a sentence like “I want to buy apples” in your training data, and Rasa is asked to predict
 the intent for “get pears”, your model already knows that the words “apples” and “pears” are very similar.
 This is especially useful if you don’t have enough training data.
-The advantage of the [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer) is that it doesn’t treat each word of the user message independently, but
+The advantage of the [ConveRTFeaturizer](./components#convertfeaturizer) is that it doesn’t treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence.
 However, `ConveRT` is only available in English.
 
@@ -132,9 +132,9 @@ pipeline:
     epochs: 100
 ```
 
-It uses the [SpacyFeaturizer](/docs/nlu/components#spacyfeaturizer) instead of the [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer).
-[SpacyFeaturizer](/docs/nlu/components#spacyfeaturizer) provides pre-trained word embeddings from either GloVe or fastText in many different languages
-(see [Pre-trained Word Vectors](/docs/nlu/language-support#pretrained-word-vectors)).
+It uses the [SpacyFeaturizer](./components#spacyfeaturizer) instead of the [ConveRTFeaturizer](./components#convertfeaturizer).
+[SpacyFeaturizer](./components#spacyfeaturizer) provides pre-trained word embeddings from either GloVe or fastText in many different languages
+(see [Pre-trained Word Vectors](./language-support#pretrained-word-vectors)).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-non-english"></a>
 
@@ -164,31 +164,31 @@ pipeline:
 
 :::note
 We encourage everyone to define their own pipeline by listing the names of the components you want to use.
-You can find the details of each component in [Components](/docs/nlu/components).
-If you want to use custom components in your pipeline, see [Custom NLU Components](/docs/api/custom-nlu-components).
+You can find the details of each component in [Components](./components).
+If you want to use custom components in your pipeline, see [Custom NLU Components](../api/custom-nlu-components).
 
 :::
 
 ### Choosing the Right Components
 
 There are components for entity extraction, for intent classification, response selection,
-pre-processing, and others. You can learn more about any specific component on the [Components](/docs/nlu/components) page.
+pre-processing, and others. You can learn more about any specific component on the [Components](./components) page.
 If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out [Custom NLU Components](/docs/api/custom-nlu-components).
+do sentiment analysis, check out [Custom NLU Components](../api/custom-nlu-components).
 
 A pipeline usually consists of three main parts:
 
 #### Tokenization
 
-For tokenization of English input, we recommend the [ConveRTTokenizer](/docs/nlu/components#converttokenizer).
+For tokenization of English input, we recommend the [ConveRTTokenizer](./components#converttokenizer).
 You can process other whitespace-tokenized (words are separated by spaces) languages
-with the [WhitespaceTokenizer](/docs/nlu/components#whitespacetokenizer). If your language is not whitespace-tokenized, you should use a different tokenizer.
-We support a number of different [tokenizers](/docs/nlu/components#tokenizers), or you can
-create your own [custom tokenizer](/docs/api/custom-nlu-components).
+with the [WhitespaceTokenizer](./components#whitespacetokenizer). If your language is not whitespace-tokenized, you should use a different tokenizer.
+We support a number of different [tokenizers](./components#tokenizers), or you can
+create your own [custom tokenizer](../api/custom-nlu-components).
 
 :::note
 Some components further down the pipeline may require a specific tokenizer. You can find those requirements
-on the individual components in [Components](/docs/nlu/components). If a required component is missing inside the pipeline, an
+on the individual components in [Components](./components). If a required component is missing inside the pipeline, an
 error will be thrown.
 
 :::
@@ -208,24 +208,24 @@ The advantage of using pre-trained word embeddings in your pipeline is that if y
 words “apples” and “pears” are very similar. This is especially useful if you don’t have enough training data.
 We support a few components that provide pre-trained word embeddings:
 
-1. [MitieFeaturizer](/docs/nlu/components#mitiefeaturizer)
+1. [MitieFeaturizer](./components#mitiefeaturizer)
 
-2. [SpacyFeaturizer](/docs/nlu/components#spacyfeaturizer)
+2. [SpacyFeaturizer](./components#spacyfeaturizer)
 
-3. [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer)
+3. [ConveRTFeaturizer](./components#convertfeaturizer)
 
-4. [LanguageModelFeaturizer](/docs/nlu/components#languagemodelfeaturizer)
+4. [LanguageModelFeaturizer](./components#languagemodelfeaturizer)
 
-If your training data is in English, we recommend using the [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer).
-The advantage of the [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer) is that it doesn’t treat each word of the user message independently, but
+If your training data is in English, we recommend using the [ConveRTFeaturizer](./components#convertfeaturizer).
+The advantage of the [ConveRTFeaturizer](./components#convertfeaturizer) is that it doesn’t treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence. For example, if you
 have a training example, like: “Can I book a car?”, and Rasa is asked to predict the intent for “I need a ride from
 my place”, since the contextual vector representation for both examples are already very similar, the intent classified
 for both is highly likely to be the same. This is also useful if you don’t have enough training data.
 
-An alternative to [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer) is the [LanguageModelFeaturizer](/docs/nlu/components#languagemodelfeaturizer) which uses pre-trained language
+An alternative to [ConveRTFeaturizer](./components#convertfeaturizer) is the [LanguageModelFeaturizer](./components#languagemodelfeaturizer) which uses pre-trained language
 models such as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
-[HFTransformersNLP](/docs/nlu/components#hftransformersnlp) for a full list of supported language models.
+[HFTransformersNLP](./components#hftransformersnlp) for a full list of supported language models.
 
 If your training data is not in English you can also use a different variant of a language model which
 is pre-trained in the language specific to your training data.
@@ -234,7 +234,7 @@ A full list of different variants of
 these language models is available in the
 [official documentation of the Transformers library](https://huggingface.co/transformers/pretrained_models.html).
 
-[SpacyFeaturizer](/docs/nlu/components#spacyfeaturizer) also provides word embeddings in many different languages (see [Pre-trained Word Vectors](/docs/nlu/language-support#pretrained-word-vectors)),
+[SpacyFeaturizer](./components#spacyfeaturizer) also provides word embeddings in many different languages (see [Pre-trained Word Vectors](./language-support#pretrained-word-vectors)),
 so you can use this as another alternative, depending on the language of your training data.
 
 ##### Supervised Embeddings
@@ -243,29 +243,29 @@ If you don’t use any pre-trained word embeddings inside your pipeline, you are
 and can train your model to be more domain specific. For example, in general English, the word “balance” is closely
 related to “symmetry”, but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely
 related and you’d like your model to capture that.
-You should only use featurizers from the category [sparse featurizers](/docs/nlu/components#text-featurizers), such as
-[CountVectorsFeaturizer](/docs/nlu/components#countvectorsfeaturizer), [RegexFeaturizer](/docs/nlu/components#regexfeaturizer) or [LexicalSyntacticFeaturizer](/docs/nlu/components#lexicalsyntacticfeaturizer), if you don’t want to use
+You should only use featurizers from the category [sparse featurizers](./components#text-featurizers), such as
+[CountVectorsFeaturizer](./components#countvectorsfeaturizer), [RegexFeaturizer](./components#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components#lexicalsyntacticfeaturizer), if you don’t want to use
 pre-trained word embeddings.
 
 #### Entity Recognition / Intent Classification / Response Selectors
 
 Depending on your data you may want to only perform intent classification, entity recognition or response selection.
 Or you might want to combine multiple of those tasks.
-We support several components for each of the tasks. All of them are listed in [Components](/docs/nlu/components).
-We recommend using [DIETClassifier](/docs/nlu/components#diet-classifier) for intent classification and entity recognition
-and [ResponseSelector](/docs/nlu/components#response-selector) for response selection.
+We support several components for each of the tasks. All of them are listed in [Components](./components).
+We recommend using [DIETClassifier](./components#diet-classifier) for intent classification and entity recognition
+and [ResponseSelector](./components#response-selector) for response selection.
 
 By default all of these components consume all available features produced in the pipeline.
 However, sometimes it makes sense to restrict the features that are used by a specific component.
-For example, [ResponseSelector](/docs/nlu/components#response-selector) is likely to perform better if no features from the
-[RegexFeaturizer](/docs/nlu/components#regexfeaturizer) or [LexicalSyntacticFeaturizer](/docs/nlu/components#lexicalsyntacticfeaturizer) are used.
+For example, [ResponseSelector](./components#response-selector) is likely to perform better if no features from the
+[RegexFeaturizer](./components#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components#lexicalsyntacticfeaturizer) are used.
 To achieve that, you can do the following:
 Set an alias for every featurizer in your pipeline via the option `alias`.
 By default the alias is set the the full featurizer class name, for example, `RegexFeaturizer`.
-You can then specify, for example, on the [ResponseSelector](/docs/nlu/components#response-selector) via the option `featurizers` what features from
+You can then specify, for example, on the [ResponseSelector](./components#response-selector) via the option `featurizers` what features from
 which featurizers should be used.
 If you don’t set the option `featurizers` all available features will be used.
-To check which components have the option `featurizers` available, see [Components](/docs/nlu/components).
+To check which components have the option `featurizers` available, see [Components](./components).
 
 Here is an example configuration file where the `DIETClassifier` is using all available features and the
 `ResponseSelector` is just using the features from the `ConveRTFeaturizer` and the `CountVectorsFeaturizer`.
@@ -301,7 +301,7 @@ pipeline:
 You can use Rasa Open Source components to split intents into multiple labels. For example, you can predict
 multiple intents (`thank+goodbye`) or model hierarchical intent structure (`feedback+positive` being more similar
 to `feedback+negative` than `chitchat`).
-To do this, you need to use the [DIETClassifier](/docs/nlu/components#diet-classifier) in your pipeline.
+To do this, you need to use the [DIETClassifier](./components#diet-classifier) in your pipeline.
 You’ll also need to define these flags in whichever tokenizer you are using:
 
 * `intent_tokenization_flag`: Set it to `True`, so that intent labels are tokenized.
@@ -327,7 +327,7 @@ pipeline:
 ## Comparing Pipelines
 
 Rasa gives you the tools to compare the performance of multiple pipelines on your data directly.
-See [Comparing NLU Pipelines](/docs/user-guide/testing-your-assistant#comparing-nlu-pipelines) for more information.
+See [Comparing NLU Pipelines](../user-guide/testing-your-assistant#comparing-nlu-pipelines) for more information.
 
 :::note
 Intent classification is independent of entity extraction. So sometimes
@@ -461,7 +461,7 @@ pipeline:
 ```
 
 Pipeline templates are deprecated as of Rasa 1.8. To find sensible configurations to get started,
-check out [How to Choose a Pipeline](/docs/nlu/choosing-a-pipeline#how-to-choose-a-pipeline). For more information about a deprecated pipeline template,
+check out [How to Choose a Pipeline](./choosing-a-pipeline#how-to-choose-a-pipeline). For more information about a deprecated pipeline template,
 expand it below.
 
 <details><summary>`pretrained_embeddings_spacy`</summary>
@@ -473,7 +473,7 @@ The advantage of `pretrained_embeddings_spacy` pipeline is that if you have a tr
 already knows that the words “apples” and “pears” are very similar. This is especially useful
 if you don’t have enough training data.
 
-See [Pre-trained Word Vectors](/docs/nlu/language-support#pretrained-word-vectors) for more information about loading spacy language models.
+See [Pre-trained Word Vectors](./language-support#pretrained-word-vectors) for more information about loading spacy language models.
 To use the components and configure them separately:
 
 ```yaml
@@ -563,8 +563,8 @@ pipeline:
 ```
 
 So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
-can replace the `WhitespaceTokenizer` with your own tokenizer. We support a number of different [tokenizers](/docs/nlu/components#tokenizers),
-or you can [create your own](/docs/api/custom-nlu-components).
+can replace the `WhitespaceTokenizer` with your own tokenizer. We support a number of different [tokenizers](./components#tokenizers),
+or you can [create your own](../api/custom-nlu-components).
 
 The pipeline uses two instances of `CountVectorsFeaturizer`. The first one
 featurizes text based on words. The second one featurizes text based on character
@@ -585,7 +585,7 @@ of hundred examples.
 However, we do not recommend that you use it as mitie support is likely to be deprecated in a future release.
 
 To use the MITIE pipeline, you will have to train word vectors from a corpus. Instructions can be found
-[here](/docs/nlu/language-support#mitie). This will give you the file path to pass to the `model` parameter.
+[here](./language-support#mitie). This will give you the file path to pass to the `model` parameter.
 
 ```yaml
 language: "en"

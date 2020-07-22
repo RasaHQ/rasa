@@ -18,7 +18,7 @@ e.g. `[<entity text>](<entity name>)`, or by using the following syntax `[<entit
 Using the latter syntax, you can also assign synonyms, roles, or groups to an entity, e.g.
 `[<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}`.
 The keywords `role`, `group`, and `value` are optional in this notation.
-To understand what the labels `role` and `group` are for, see section [Entities Roles and Groups](/docs/nlu/entity-extraction#entities-roles-groups).
+To understand what the labels `role` and `group` are for, see section [Entities Roles and Groups](./entity-extraction#entities-roles-groups).
 
 ```md
 ## intent:check_balance
@@ -229,7 +229,7 @@ and end index of the entity, you can define a synonym. Whenever the same text wi
 synonym instead of the actual text in the message.
 
 To use the synonyms defined in your training data, you need to make sure the pipeline contains the
-`EntitySynonymMapper` component (see [Components](/docs/nlu/components)).
+`EntitySynonymMapper` component (see [Components](./components)).
 
 Alternatively, you can add an “entity_synonyms” array to define several synonyms to one entity value. Here is an
 example of that:

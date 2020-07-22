@@ -86,7 +86,7 @@ A restaurant assistant should understand `chinese` as a cuisine,
 but to a language-learning assistant it would mean something very different.
 The `CRFEntityExtractor` and the `DIETClassifier` component can learn custom entities in any language, given
 some training data.
-See [Training Data Format](/docs/nlu/training-data-format) for details on how to include entities in your training data.
+See [Training Data Format](./training-data-format) for details on how to include entities in your training data.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="entities-roles-groups"></a>
 
@@ -128,7 +128,7 @@ Give me a [small]{"entity": "size", "group": "1"} pizza with [mushrooms]{"entity
 a [large]{"entity": "size", "group": "2"} [pepperoni]{"entity": "topping", "group": "2"}
 ```
 
-See [Training Data Format](/docs/nlu/training-data-format) for details on how to define entities with roles and groups in your training data.
+See [Training Data Format](./training-data-format) for details on how to define entities with roles and groups in your training data.
 
 The entity object returned by the extractor will include the detected role/group label.
 
@@ -158,7 +158,7 @@ The entity object returned by the extractor will include the detected role/group
 ```
 
 :::note
-Composite entities are currently only supported by the [DIETClassifier](/docs/nlu/components#diet-classifier) and [CRFEntityExtractor](/docs/nlu/components#crfentityextractor).
+Composite entities are currently only supported by the [DIETClassifier](./components#diet-classifier) and [CRFEntityExtractor](./components#crfentityextractor).
 
 :::
 
@@ -169,7 +169,7 @@ For example, you should not only have example like `fly FROM x TO y`, but also i
 `fly TO y FROM x`.
 
 To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
-[Forms](/docs/core/forms) or use [Custom Actions](/docs/core/actions#custom-actions) to extract the corresponding entity directly from the tracker.
+[Forms](../core/forms) or use [Custom Actions](../core/actions#custom-actions) to extract the corresponding entity directly from the tracker.
 
 ## Extracting Places, Dates, People, Organizations
 
@@ -196,12 +196,12 @@ Duckling can also handle durations like “two hours”,
 amounts of money, distances, and ordinals.
 Fortunately, there is a duckling docker container ready to use,
 that you just need to spin up and connect to Rasa NLU
-(see [DucklingHTTPExtractor](/docs/nlu/components#ducklinghttpextractor)).
+(see [DucklingHTTPExtractor](./components#ducklinghttpextractor)).
 
 ## Regular Expressions (regex)
 
 You can use regular expressions to help the CRF model learn to recognize entities.
-In your training data (see [Training Data Format](/docs/nlu/training-data-format)) you can provide a list of regular expressions, each of which provides
+In your training data (see [Training Data Format](./training-data-format)) you can provide a list of regular expressions, each of which provides
 the `CRFEntityExtractor` with an extra binary feature, which says if the regex was found (1) or not (0).
 
 For example, the names of German streets often end in `strasse`. By adding this as a regex,

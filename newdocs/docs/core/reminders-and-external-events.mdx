@@ -35,7 +35,7 @@ Thus, we define an intent `ask_remind_call` with some NLU data,
 ```
 
 and connect this intent with a new custom action `action_set_reminder`.
-We could make this connection by providing training stories (recommended for more complex assistants), or using the [Mapping Policy](/docs/core/policies#mapping-policy).
+We could make this connection by providing training stories (recommended for more complex assistants), or using the [Mapping Policy](./policies#mapping-policy).
 
 The custom action `action_set_reminder` should schedule a reminder that, 5 seconds later, triggers an intent `EXTERNAL_reminder` with all the entities that the user provided in his/her last message (similar to an external event):
 
@@ -118,7 +118,7 @@ You have to test them with a
 :::note
 Proactively reaching out to the user is dependent on the abilities of a channel and
 hence not supported by every channel. If your channel does not support it, consider
-using the [CallbackInput](/docs/user-guide/connectors/your-own-website#callbackinput) channel to send messages to a [webhook](https://en.wikipedia.org/wiki/Webhook).
+using the [CallbackInput](../user-guide/connectors/your-own-website#callbackinput) channel to send messages to a [webhook](https://en.wikipedia.org/wiki/Webhook).
 
 :::
 
@@ -169,14 +169,14 @@ To do this, your Raspberry Pi needs to send a message to the [trigger_intent end
 As the name says, this injects a user intent (possibly with entities) into your conversation.
 So for Rasa it is almost as if you had entered a message that got classified with this intent and these entities.
 Rasa then needs to respond to this input with an action such as `action_warn_dry`.
-The easiest and most reliable way to connect this action with the intent is via the [Mapping Policy](/docs/core/policies#mapping-policy).
+The easiest and most reliable way to connect this action with the intent is via the [Mapping Policy](./policies#mapping-policy).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="getting-conversation-id"></a>
 
 ### Getting the Conversation ID
 
 The first thing we need is the Session ID of the conversation that your sensor should send a notification to.
-An easy way to get this is to define a custom action (see [Custom Actions](/docs/core/actions#custom-actions)) that displays the ID in the conversation.
+An easy way to get this is to define a custom action (see [Custom Actions](./actions#custom-actions)) that displays the ID in the conversation.
 For example:
 
 ```python
@@ -221,7 +221,7 @@ Now, when you ask “What is the ID of this conversation?”, the assistant repl
 conversation is: 38cc25d7e23e4dde800353751b7c2d3e”.
 
 If you want your assistant to link to the Raspberry Pi automatically, you will have to write a custom action that
-informs the Pi about the conversation id when your conversation starts (see [Customizing the session start action](/docs/api/rasa-sdk#custom-session-start)).
+informs the Pi about the conversation id when your conversation starts (see [Customizing the session start action](../api/rasa-sdk#custom-session-start)).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="responding-to-external-events"></a>
 

@@ -147,7 +147,7 @@ For example:
 <img alt="Memoization Policy Conversation" src="../../img/memoization_policy_convo.png" />
 
 While it’s good to test the bot interactively, we should also add end to end test cases that
-can later be included as part of a [CI/CD system](/docs/user-guide/setting-up-ci-cd). End-to-end [test conversations](/docs/user-guide/testing-your-assistant#end-to-end-testing)
+can later be included as part of a [CI/CD system](./setting-up-ci-cd). End-to-end [test conversations](./testing-your-assistant#end-to-end-testing)
 include NLU data, so that both components of Rasa can be tested. The file
 `tests/conversation_tests.md` contains example test conversations. Delete all the test conversations and replace
 them with some test conversations for your assistant so far:
@@ -190,8 +190,8 @@ an exception that stops the pipeline.
 
 ### Response Selectors
 
-The [ResponseSelector](/docs/nlu/components#response-selector) NLU component is designed to make it easier to handle dialogue
-elements like [Small Talk](/docs/dialogue-elements/small-talk) and FAQ messages in a simple manner. By using the ResponseSelector,
+The [ResponseSelector](../nlu/components#response-selector) NLU component is designed to make it easier to handle dialogue
+elements like [Small Talk](../dialogue-elements/small-talk) and FAQ messages in a simple manner. By using the ResponseSelector,
 you only need one story to handle all FAQs, instead of adding new stories every time you
 want to increase your bot’s scope.
 
@@ -319,7 +319,7 @@ You can read more in this [blog post](https://blog.rasa.com/response-retrieval-m
 [Retrieval Actions](https://rasa.com/docs/rasa/core/retrieval-actions/) page.
 
 Using the features we described in this tutorial, you can easily build a context-less assistant.
-When you’re ready to enhance your assistant with context, check out [Building a contextual assistant](/docs/user-guide/building-assistants#tutorial-contextual-assistants).
+When you’re ready to enhance your assistant with context, check out [Building a contextual assistant](./building-assistants#tutorial-contextual-assistants).
 
 :::note
 Here’s a minimal checklist of files we modified to build a basic FAQ assistant:
@@ -347,15 +347,15 @@ your bot to handle contextual conversations.
 
 In this tutorial we’re going to cover a variety of topics:
 
-* [Handling business logic](/docs/user-guide/building-assistants#handling-business-logic)
+* [Handling business logic](./building-assistants#handling-business-logic)
 
-* [Handling unexpected user input](/docs/user-guide/building-assistants#handling-unexpected-user-input)
+* [Handling unexpected user input](./building-assistants#handling-unexpected-user-input)
 
-* [Failing gracefully](/docs/user-guide/building-assistants#failing-gracefully)
+* [Failing gracefully](./building-assistants#failing-gracefully)
 
-* [More complex contextual conversations](/docs/user-guide/building-assistants#more-complex-contextual-conversations)
+* [More complex contextual conversations](./building-assistants#more-complex-contextual-conversations)
 
-Please make sure you’ve got all the data from the [Building a simple FAQ assistant](/docs/user-guide/building-assistants#build-faq-assistant) section before starting this part.
+Please make sure you’ve got all the data from the [Building a simple FAQ assistant](./building-assistants#build-faq-assistant) section before starting this part.
 You will need to make some adjustments to your configuration file, since we now need to pay attention to context:
 
 ```yaml
@@ -555,7 +555,7 @@ data to your NLU file:
 
 :::note
 Entities like `business_email` and `budget` would usually be handled by pretrained entity extractors
-(e.g. [DucklingHTTPExtractor](/docs/nlu/components#ducklinghttpextractor) or [SpacyEntityExtractor](/docs/nlu/components#spacyentityextractor)), but for this tutorial
+(e.g. [DucklingHTTPExtractor](../nlu/components#ducklinghttpextractor) or [SpacyEntityExtractor](../nlu/components#spacyentityextractor)), but for this tutorial
 we want to avoid any additional setup.
 
 :::
@@ -706,7 +706,7 @@ is a tool that can help you review conversations and make these types of decisio
 #### Generic interjections
 
 If you have generic interjections that should always have the same single response no
-matter the context, you can use the [Mapping Policy](/docs/core/policies#mapping-policy) to handle these. It will always
+matter the context, you can use the [Mapping Policy](../core/policies#mapping-policy) to handle these. It will always
 predict the same action for an intent, and when combined with a forgetting mechanism,
 you don’t need to write any stories either.
 

@@ -6,7 +6,7 @@ title: Components
 
 This is a reference of the configuration options for every built-in
 component in Rasa Open Source. If you want to build a custom component, check
-out [Custom NLU Components](/docs/api/custom-nlu-components).
+out [Custom NLU Components](../api/custom-nlu-components).
 
 ## Word Vector Sources
 
@@ -57,7 +57,7 @@ word vectors in your pipeline.
   ```
 
   For more information where to get that file from, head over to
-  [installing MITIE](/docs/user-guide/installation#install-mitie).
+  [installing MITIE](../user-guide/installation#install-mitie).
 
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="spacynlp"></a>
@@ -113,7 +113,7 @@ word vectors in your pipeline.
   ```
 
   For more information on how to download the spaCy models, head over to
-  [installing SpaCy](/docs/user-guide/installation#install-spacy).
+  [installing SpaCy](../user-guide/installation#install-spacy).
 
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="hftransformersnlp"></a>
@@ -143,7 +143,7 @@ word vectors in your pipeline.
 
   Initializes specified pre-trained language model from HuggingFace’s [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
   featurization to compute sequence and sentence level representations for each example in the training data.
-  Include [LanguageModelTokenizer](/docs/nlu/components#languagemodeltokenizer) and [LanguageModelFeaturizer](/docs/nlu/components#languagemodelfeaturizer) to utilize the output of this
+  Include [LanguageModelTokenizer](./components#languagemodeltokenizer) and [LanguageModelFeaturizer](./components#languagemodelfeaturizer) to utilize the output of this
   component for downstream NLU models.
 
   :::note
@@ -323,7 +323,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Requires**
 
-  [MitieNLP](/docs/nlu/components#mitienlp)
+  [MitieNLP](./components#mitienlp)
 
 
 
@@ -364,7 +364,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Requires**
 
-  [SpacyNLP](/docs/nlu/components#spacynlp)
+  [SpacyNLP](./components#spacynlp)
 
 
 
@@ -413,7 +413,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Description**
 
-  Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer) is used.
+  Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](./components#convertfeaturizer) is used.
 
   :::note
   Since `ConveRT` model is trained only on an English corpus of conversations, this tokenizer should only
@@ -461,14 +461,14 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Requires**
 
-  [HFTransformersNLP](/docs/nlu/components#hftransformersnlp)
+  [HFTransformersNLP](./components#hftransformersnlp)
 
 
 
 * **Description**
 
-  Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](/docs/nlu/components#hftransformersnlp) component.
-  Must be used whenever the [LanguageModelFeaturizer](/docs/nlu/components#languagemodelfeaturizer) is used.
+  Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components#hftransformersnlp) component.
+  Must be used whenever the [LanguageModelFeaturizer](./components#languagemodelfeaturizer) is used.
 
 
 
@@ -523,7 +523,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [MitieNLP](/docs/nlu/components#mitienlp)
+  [MitieNLP](./components#mitienlp)
 
 
 
@@ -580,7 +580,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [SpacyNLP](/docs/nlu/components#spacynlp)
+  [SpacyNLP](./components#spacynlp)
 
 
 
@@ -632,7 +632,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [ConveRTTokenizer](/docs/nlu/components#converttokenizer)
+  [ConveRTTokenizer](./components#converttokenizer)
 
 
 
@@ -688,7 +688,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [HFTransformersNLP](/docs/nlu/components#hftransformersnlp) and [LanguageModelTokenizer](/docs/nlu/components#languagemodeltokenizer)
+  [HFTransformersNLP](./components#hftransformersnlp) and [LanguageModelTokenizer](./components#languagemodeltokenizer)
 
 
 
@@ -701,7 +701,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 * **Description**
 
   Creates features for entity extraction, intent classification, and response selection.
-  Uses the pre-trained language model specified in upstream [HFTransformersNLP](/docs/nlu/components#hftransformersnlp) component to compute vector
+  Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components#hftransformersnlp) component to compute vector
   representations of input text.
 
   :::note
@@ -714,8 +714,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Configuration**
 
-  Include [HFTransformersNLP](/docs/nlu/components#hftransformersnlp) and [LanguageModelTokenizer](/docs/nlu/components#languagemodeltokenizer) components before this component. Use
-  [LanguageModelTokenizer](/docs/nlu/components#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
+  Include [HFTransformersNLP](./components#hftransformersnlp) and [LanguageModelTokenizer](./components#languagemodeltokenizer) components before this component. Use
+  [LanguageModelTokenizer](./components#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
 
   ```yaml
   pipeline:
@@ -760,8 +760,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   For each regex, a feature will be set marking whether this expression was found in the user message or not.
   All features will later be fed into an intent classifier / entity extractor to simplify classification (assuming
   the classifier has learned during the training phase, that this set feature indicates a certain intent / entity).
-  Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](/docs/nlu/components#crfentityextractor) and the
-  [DIETClassifier](/docs/nlu/components#diet-classifier) components!
+  Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](./components#crfentityextractor) and the
+  [DIETClassifier](./components#diet-classifier) components!
 
 
 
@@ -1067,7 +1067,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 * **Requires**
 
-  `tokens` for user message and [MitieNLP](/docs/nlu/components#mitienlp)
+  `tokens` for user message and [MitieNLP](./components#mitienlp)
 
 
 
@@ -1224,7 +1224,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   :::note
   This classifier is intended only for small projects or to get started. If
   you have few NLU training data, you can take a look at the recommended pipelines in
-  [Choosing a Pipeline](/docs/nlu/choosing-a-pipeline).
+  [Choosing a Pipeline](./choosing-a-pipeline).
 
   :::
 
@@ -1250,7 +1250,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 * **Description**
 
-  You can find the detailed description of the [DIETClassifier](/docs/nlu/components#diet-classifier) under the section
+  You can find the detailed description of the [DIETClassifier](./components#diet-classifier) under the section
   Combined Entity Extractors and Intent Classifiers.
 
 
@@ -1277,7 +1277,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 * **Requires**
 
-  [MitieNLP](/docs/nlu/components#mitienlp) and `tokens`
+  [MitieNLP](./components#mitienlp) and `tokens`
 
 
 
@@ -1338,7 +1338,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 * **Requires**
 
-  [SpacyNLP](/docs/nlu/components#spacynlp)
+  [SpacyNLP](./components#spacynlp)
 
 
 
@@ -1399,7 +1399,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 * **Requires**
 
-  An extractor from [Entity Extractors](/docs/nlu/components#entityextractors)
+  An extractor from [Entity Extractors](./components#entityextractors)
 
 
 
@@ -1684,7 +1684,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 * **Description**
 
-  You can find the detailed description of the [DIETClassifier](/docs/nlu/components#diet-classifier) under the section
+  You can find the detailed description of the [DIETClassifier](./components#diet-classifier) under the section
   Combined Entity Extractors and Intent Classifiers.
 
 
@@ -1736,14 +1736,14 @@ Selectors predict a bot response from a set of candidate responses.
 * **Description**
 
   Response Selector component can be used to build a response retrieval model to directly predict a bot response from
-  a set of candidate responses. The prediction of this model is used by [Retrieval Actions](/docs/core/retrieval-actions).
+  a set of candidate responses. The prediction of this model is used by [Retrieval Actions](../core/retrieval-actions).
   It embeds user inputs and response labels into the same space and follows the exact same
-  neural network architecture and optimization as the [DIETClassifier](/docs/nlu/components#diet-classifier).
+  neural network architecture and optimization as the [DIETClassifier](./components#diet-classifier).
 
   :::note
   If during prediction time a message contains **only** words unseen during training
   and no Out-Of-Vocabulary preprocessor was used, an empty response `None` is predicted with confidence
-  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](/docs/nlu/components#countvectorsfeaturizer) with a `word` analyzer
+  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](./components#countvectorsfeaturizer) with a `word` analyzer
   as featurizer. If you use the `char_wb` analyzer, you should always get a response with a confidence
   value `> 0.0`.
 
@@ -1753,7 +1753,7 @@ Selectors predict a bot response from a set of candidate responses.
 
 * **Configuration**
 
-  The algorithm includes almost all the hyperparameters that [DIETClassifier](/docs/nlu/components#diet-classifier) uses.
+  The algorithm includes almost all the hyperparameters that [DIETClassifier](./components#diet-classifier) uses.
   If you want to adapt your model, start by modifying the following parameters:
 
   * `epochs`:
@@ -2016,7 +2016,7 @@ Selectors predict a bot response from a set of candidate responses.
   :::note
   If during prediction time a message contains **only** words unseen during training
   and no Out-Of-Vocabulary preprocessor was used, an empty intent `None` is predicted with confidence
-  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](/docs/nlu/components#countvectorsfeaturizer) with a `word` analyzer
+  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](./components#countvectorsfeaturizer) with a `word` analyzer
   as featurizer. If you use the `char_wb` analyzer, you should always get an intent with a confidence
   value `> 0.0`.
 

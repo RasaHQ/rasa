@@ -9,7 +9,7 @@ You can use Rasa to build assistants in any language you want! Rasa’s
 This pipeline creates word embeddings from scratch with the data you provide.
 
 In addition, we also support pre-trained word embeddings such as spaCy. For information on
-what pipeline is best for your use case, check out [Choosing a Pipeline](/docs/nlu/choosing-a-pipeline).
+what pipeline is best for your use case, check out [Choosing a Pipeline](./choosing-a-pipeline).
 
 ## Training a Model in Any Language
 
@@ -21,9 +21,9 @@ on domain-specific data, such as those that require picking up on specific produ
 
 To train a Rasa model in your preferred language, define the
 `supervised_embeddings` pipeline as your pipeline in your `config.yml` or other configuration file
-via the instructions [here](/docs/nlu/choosing-a-pipeline#section-supervised-embeddings-pipeline).
+via the instructions [here](./choosing-a-pipeline#section-supervised-embeddings-pipeline).
 
-After you define the `supervised_embeddings` processing pipeline and generate some [NLU training data](/docs/nlu/training-data-format)
+After you define the `supervised_embeddings` processing pipeline and generate some [NLU training data](./training-data-format)
 in your chosen language, train the model with `rasa train nlu`. Once the training is finished, you can test your model’s
 language skills. See how your model interprets different input messages via:
 
@@ -47,7 +47,7 @@ as the word vectors are trained on large amounts of data such as Wikipedia.
 
 ### spaCy
 
-With the `pretrained_embeddings_spacy` [pipeline](/docs/nlu/choosing-a-pipeline#section-pretrained-embeddings-spacy-pipeline), you can use spaCy’s
+With the `pretrained_embeddings_spacy` [pipeline](./choosing-a-pipeline#section-pretrained-embeddings-spacy-pipeline), you can use spaCy’s
 [pre-trained language models](https://spacy.io/usage/models#languages) or load fastText vectors, which are available
 for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md). If you want
 to incorporate a custom model you’ve found into spaCy, check out their page on
@@ -59,7 +59,7 @@ by passing in your language identifier as the `language` option.
 
 ### MITIE
 
-You can also pre-train your own word vectors from a language corpus using [MITIE](/docs/nlu/choosing-a-pipeline#section-mitie-pipeline). To do so:
+You can also pre-train your own word vectors from a language corpus using [MITIE](./choosing-a-pipeline#section-mitie-pipeline). To do so:
 
 1. Get a clean language corpus (a Wikipedia dump works) as a set of text files.
 
@@ -68,7 +68,7 @@ You can also pre-train your own word vectors from a language corpus using [MITIE
    You’ll need something like 128GB of RAM for wordrep to run – yes, that’s a lot: try to extend your swap.
 
 3. Set the path of your new `total_word_feature_extractor.dat` as the `model` parameter in your
-   [configuration](/docs/nlu/choosing-a-pipeline#section-mitie-pipeline).
+   [configuration](./choosing-a-pipeline#section-mitie-pipeline).
 
 For a full example of how to train MITIE word vectors, check out
 [this blogpost](http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html)
