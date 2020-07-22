@@ -80,13 +80,16 @@ async def run(
 
 Note that this requires the `datetime` and `rasa_sdk.events` packages.
 
-Finally, we define another custom action `action_react_to_reminder` to dispatch the reminder’s message to
-the user, and link it to the `EXTERNAL_reminder` intent:
+Finally, we define another custom action `action_react_to_reminder` and link it to the `EXTERNAL_reminder` intent
+by writing a [Rule](./rules.mdx) for it:
 
 ```yaml
-intents:
-  - EXTERNAL_reminder:
-      triggers: action_react_to_reminder
+rules:
+- rule: Trigger `action_react_to_reminder` for `EXTERNAL_reminder`
+  steps:
+  - ...
+  - intent: EXTERNAL_reminder
+  - action: action_react_to_reminder
 ```
 
 This tells the model which action to take when the time is up on the reminder.
