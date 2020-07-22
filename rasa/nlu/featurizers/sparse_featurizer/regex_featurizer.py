@@ -35,9 +35,9 @@ class RegexFeaturizer(SparseFeaturizer):
     defaults = {
         # text will be processed with case sensitive as default
         "case_sensitive": True,
-        # use lookup tables to generate feature
+        # use lookup tables to generate features
         "use_lookup_tables": True,
-        # use regex features to generate fetaures
+        # use regex features to generate features
         "use_regex_features": True,
     }
 

@@ -1,4 +1,2 @@
 Add new entity extractor ``RegexEntityExtractor``. The entity extractor extracts entities using the lookup tables
-and regexes defined in the training data. You can either use the ``RegexEntityExtractor`` or the ``RegexFeaturizer``
-in your pipeline. If you use both components an error will be thrown.
-For more information see :ref:`RegexEntityExtractor`.
+and regexes defined in the training data. For more information see :ref:`RegexEntityExtractor`.

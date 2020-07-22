@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.utils.io as io_utils
+import rasa.utils.common as common_utils
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
@@ -41,7 +42,7 @@ class RegexEntityExtractor(EntityExtractor):
     ):
         super(RegexEntityExtractor, self).__init__(component_config)
 
-        self.lowercase = self.component_config["lowercase"]
+        self.case_sensitive = self.component_config["case_sensitive"]
         self.patterns = patterns or []
 
     def train(
@@ -57,7 +58,18 @@ class RegexEntityExtractor(EntityExtractor):
             use_only_entities=True,
         )
 
+        if not self.patterns:
+            common_utils.raise_warning(
+                "No lookup tables or regexes defined in the training data that have "
+                "a name equal to any entity in the training data. In order for this "
+                "component to work you need to define valid lookup tables or regexes "
+                "in the training data."
+            )
+
     def process(self, message: Message, **kwargs: Any) -> None:
+        if not self.patterns:
+            return
+
         extracted_entities = self._extract_entities(message)
         extracted_entities = self.add_extractor_name(extracted_entities)
 
@@ -70,7 +82,7 @@ class RegexEntityExtractor(EntityExtractor):
         entities = []
 
         flags = 0  # default flag
-        if self.lowercase:
+        if not self.case_sensitive:
             flags = re.IGNORECASE
 
         for pattern in self.patterns:

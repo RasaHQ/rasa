@@ -469,11 +469,6 @@ RegexFeaturizer
     Regex features for entity extraction are currently only supported by the :ref:`CRFEntityExtractor` and the
     :ref:`diet-classifier` components!
 
-    .. note::
-        You cannot use the ``RegexFeaturizer`` and the :ref:`RegexEntityExtractor` in the same pipeline. You need to
-        decide whether you want to use the lookup tables and regexes to create features or to directly extract entities.
-        It is not possible to do both at the same time.
-
 :Configuration:
     Make the featurizer case insensitive by adding the ``case_sensitive: False`` option, the default being
     ``case_sensitive: True``.
@@ -482,8 +477,12 @@ RegexFeaturizer
 
         pipeline:
         - name: "RegexFeaturizer"
-          # Text will be processed with case sensitive as default
+          # text will be processed with case sensitive as default
           "case_sensitive": True
+          # use lookup tables to generate features
+          "use_lookup_tables": True
+          # use regex features to generate features
+          "use_regex_features": True
 
 .. _CountVectorsFeaturizer:
 
@@ -970,20 +969,23 @@ RegexEntityExtractor
     The component checks if the user message contains an entry of one of the lookup tables or matches one of the
     regexes. If a match is found, the value is extracted as entity.
 
-    .. note::
-        You cannot use the :ref:`RegexFeaturizer` and the ``RegexEntityExtractor`` in the same pipeline. You need to
-        decide whether you want to use the lookup tables and regexes to create features or to directly extract entities.
-        It is not possible to do both at the same time.
+    This component only uses those regex features that have a name equal to one of the entities defined in the
+    training data. Make sure to annotate at least one example per entity.
 
 :Configuration:
-    By default we convert the entries in the lookup file and the user message to lowercase before we check if there
-    is a match. You can disable this behavior by setting ``lowercase: False``.
+    Make the entity extractor case sensitive by adding the ``case_sensitive: True`` option, the default being
+    ``case_sensitive: False``.
 
     .. code-block:: yaml
 
         pipeline:
         - name: RegexEntityExtractor
-          lowercase: True
+          # text will be processed with case insensitive as default
+          "case_sensitive": False
+          # use lookup tables to extract entities
+          "use_lookup_tables": True
+          # use regex features to extract entities
+          "use_regex_features": True
 
 
 .. _CRFEntityExtractor:

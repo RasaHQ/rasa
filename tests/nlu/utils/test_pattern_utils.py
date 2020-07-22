@@ -70,7 +70,7 @@ def test_extract_patterns(
         ("entity", {"name": "zipcode", "pattern": "[0-9]{5}"}, []),
     ],
 )
-def test_extract_patterns_use_only_entities(
+def test_extract_patterns_use_only_entities_regexes(
     entity: Text, regex_features: Dict[Text, Text], expected_patterns: Dict[Text, Text]
 ):
     training_data = TrainingData()
@@ -80,6 +80,36 @@ def test_extract_patterns_use_only_entities(
         ]
     if regex_features:
         training_data.regex_features = [regex_features]
+
+    actual_patterns = pattern_utils.extract_patterns(
+        training_data, use_only_entities=True
+    )
+
+    assert actual_patterns == expected_patterns
+
+
+@pytest.mark.parametrize(
+    "entity, lookup_tables, expected_patterns",
+    [
+        ("", {}, []),
+        (
+            "person",
+            {"name": "person", "elements": ["Max", "John"]},
+            [{"name": "person", "pattern": "(\\bMax\\b|\\bJohn\\b)"}],
+        ),
+        ("entity", {"name": "person", "elements": ["Max", "John"]}, []),
+    ],
+)
+def test_extract_patterns_use_only_entities_lookup_tables(
+    entity: Text, lookup_tables: Dict[Text, Text], expected_patterns: Dict[Text, Text]
+):
+    training_data = TrainingData()
+    if entity:
+        training_data.training_examples = [
+            Message("text", data={"entities": [{"entity": entity, "value": "text"}]})
+        ]
+    if lookup_tables:
+        training_data.lookup_tables = [lookup_tables]
 
     actual_patterns = pattern_utils.extract_patterns(
         training_data, use_only_entities=True

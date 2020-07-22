@@ -84,6 +84,13 @@ def test_process(
 
     training_data = TrainingData()
     training_data.lookup_tables = lookup
+    training_data.training_examples = [
+        Message("Hi Max!", data={"entities": [{"entity": "person", "value": "Max"}]}),
+        Message(
+            "I live in Berlin",
+            data={"entities": [{"entity": "city", "value": "Berlin"}]},
+        ),
+    ]
 
     entity_extractor = RegexEntityExtractor()
     entity_extractor.train(training_data)
@@ -94,11 +101,11 @@ def test_process(
 
 
 @pytest.mark.parametrize(
-    "text, lowercase, lookup, expected_entities",
+    "text, case_sensitive, lookup, expected_entities",
     [
         (
             "berlin and London are cities.",
-            False,
+            True,
             [
                 {
                     "name": "city",
@@ -117,7 +124,7 @@ def test_process(
         ),
         (
             "berlin and London are cities.",
-            True,
+            False,
             [
                 {
                     "name": "city",
@@ -145,15 +152,22 @@ def test_process(
 )
 def test_lowercase(
     text: Text,
-    lowercase: bool,
+    case_sensitive: bool,
     lookup: List[Dict[Text, List[Text]]],
     expected_entities: List[Dict[Text, Any]],
 ):
     message = Message(text)
     training_data = TrainingData()
     training_data.lookup_tables = lookup
+    training_data.training_examples = [
+        Message("Hi Max!", data={"entities": [{"entity": "person", "value": "Max"}]}),
+        Message(
+            "I live in Berlin",
+            data={"entities": [{"entity": "city", "value": "Berlin"}]},
+        ),
+    ]
 
-    entity_extractor = RegexEntityExtractor({"lowercase": lowercase})
+    entity_extractor = RegexEntityExtractor({"case_sensitive": case_sensitive})
     entity_extractor.train(training_data)
     entity_extractor.process(message)
 
@@ -166,6 +180,13 @@ def test_do_not_overwrite_any_entities():
     message.set(ENTITIES, [{"entity": "person", "value": "Max", "start": 0, "end": 3}])
 
     training_data = TrainingData()
+    training_data.training_examples = [
+        Message("Hi Max!", data={"entities": [{"entity": "person", "value": "Max"}]}),
+        Message(
+            "I live in Berlin",
+            data={"entities": [{"entity": "city", "value": "Berlin"}]},
+        ),
+    ]
     training_data.lookup_tables = [
         {"name": "city", "elements": ["London", "Berlin", "Amsterdam"]}
     ]
