@@ -107,22 +107,25 @@ class RulePolicy(MemoizationPolicy):
             - capture previous meaningful action before action_listen
             - ignore previous intent
         """
-        if states[0] is None:
-            action_before_listen = None
-        else:
-            action_before_listen = {
+
+        action_before_previous = None
+        # leave only last 2 dialogue turns
+        if len(states) > 2 and states[-2] is not None:
+            action_before_previous = {
                 state_name: prob
-                for state_name, prob in states[0].items()
+                for state_name, prob in states[-2].items()
                 if PREV_PREFIX in state_name and prob > 0
             }
+
         # add `prev_...` to show that it should not be a first turn
         indicator = PREV_PREFIX + RULE_SNIPPET_ACTION_NAME
-        if indicator not in action_before_listen.keys():
-            return [{indicator: 1}, action_before_listen, states[-1]]
-        return [action_before_listen, states[-1]]
+        if indicator not in action_before_previous and indicator not in states[-1]:
+            return [{indicator: 1}, action_before_previous, states[-1]]
+
+        return [action_before_previous, states[-1]]
 
     @staticmethod
-    def _clean_feature_keys(lookup: Optional[Dict]) -> Optional[Dict]:
+    def _clean_feature_keys(lookup: Dict[Text, Text]) -> Dict[Text, Text]:
         # remove action_listens that were added after conditions
         updated_lookup = lookup.copy()
         for key in lookup.keys():
@@ -158,8 +161,7 @@ class RulePolicy(MemoizationPolicy):
             # their form will be the same
             # because of `active_form_...` feature
             if active_form:
-                # leave only last 2 dialogue turns
-                states = self._modified_states(states[-2:])
+                states = self._modified_states(states)
                 feature_key = self._create_feature_key(states)
 
                 if (
