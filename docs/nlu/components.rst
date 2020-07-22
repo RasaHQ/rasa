@@ -982,7 +982,7 @@ RegexEntityExtractor
     .. code-block:: yaml
 
         pipeline:
-        - name: LookupEntityExtractor
+        - name: RegexEntityExtractor
           lowercase: True
 
 
