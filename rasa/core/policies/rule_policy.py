@@ -207,7 +207,6 @@ class RulePolicy(MemoizationPolicy):
                     self._prev_action_listen_in_state(states[-1])
                     and actions[0] == active_form
                 ):
-                    # use `-1` for now as an indicator for no validation
                     self.negative_lookup[feature_key] = NO_VALIDATION
                 elif (
                     # some action other than action_listen and active_form
@@ -216,10 +215,9 @@ class RulePolicy(MemoizationPolicy):
                     not self._prev_action_listen_in_state(states[-1])
                     and actions[0] not in {ACTION_LISTEN_NAME, active_form}
                 ):
-                    # use `-2` for now as an indicator for not predicting active form
                     self.negative_lookup[feature_key] = NO_ACTIVE_FORM
 
-        # TODO check that negative rules don't contradict positive ones
+        # negative rules are not anti-rules, they are auxiliary to actual rules
         self.negative_lookup = self._clean_feature_keys(self.negative_lookup, domain)
 
         logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
@@ -345,52 +343,58 @@ class RulePolicy(MemoizationPolicy):
                 filter(lambda _key: self._rule_is_good(_key, i, state), negative_keys)
             )
 
+        recalled = None
+        key = None
         if possible_keys:
-            # TODO rethink that
+            # TODO check that max is correct
             # if there are several rules,
             # it should mean that some rule is a subset of another rule
             key = max(possible_keys, key=len)
             recalled = self.lookup.get(key)
-            # there could be several negative rules
-            negative_recalled = [self.negative_lookup.get(key) for key in negative_keys]
 
-            if active_form_name:
-                # Check if a rule that predicted action_listen
-                # was applied inside the form.
-                # Rules might not explicitly switch back to the `Form`.
-                # Hence, we have to take care of that.
-                predicted_listen_from_general_rule = (
-                    recalled is not None
-                    and domain.action_names[recalled] == ACTION_LISTEN_NAME
-                    and f"active_form_{active_form_name}" not in key
-                )
+        # there could be several negative rules
+        negative_recalled = [self.negative_lookup.get(key) for key in negative_keys]
 
-                if predicted_listen_from_general_rule:
-                    if NO_ACTIVE_FORM in negative_recalled:
-                        # do not predict anything
-                        recalled = None
-                    else:
-                        logger.debug(f"Predicted form '{active_form_name}'.")
-                        result[domain.index_for_action(active_form_name)] = 1
-                        return result
+        if active_form_name:
+            # Check if a rule that predicted action_listen
+            # was applied inside the form.
+            # Rules might not explicitly switch back to the `Form`.
+            # Hence, we have to take care of that.
+            predicted_listen_from_general_rule = (
+                recalled is not None
+                and key is not None
+                and domain.action_names[recalled] == ACTION_LISTEN_NAME
+                and f"active_form_{active_form_name}" not in key
+            )
+            if predicted_listen_from_general_rule:
+                if NO_ACTIVE_FORM not in negative_recalled:
+                    # negative rules don't contain a key that corresponds to
+                    # the fact that active_form shouldn't be predicted
+                    logger.debug(
+                        f"Predicted form '{active_form_name}' by overwriting "
+                        f"'{ACTION_LISTEN_NAME}' predicted by general rule."
+                    )
+                    result[domain.index_for_action(active_form_name)] = 1
+                    return result
 
-                # Since rule snippets and stories inside the form contain
-                # only unhappy paths, notify the form that
-                # it was predicted after an answer to a different question and
-                # therefore it should not validate user input for requested slot
-                if NO_VALIDATION in negative_recalled:
-                    logger.debug("Added `FormValidation(False)` event.")
-                    tracker.update(FormValidation(False))
+                # do not predict anything
+                recalled = None
 
-            if recalled is not None:
-                logger.debug(
-                    f"There is a rule for next action "
-                    f"'{domain.action_names[recalled]}'."
-                )
+            # Since rule snippets and stories inside the form contain
+            # only unhappy paths, notify the form that
+            # it was predicted after an answer to a different question and
+            # therefore it should not validate user input for requested slot
+            if NO_VALIDATION in negative_recalled:
+                logger.debug("Added `FormValidation(False)` event.")
+                tracker.update(FormValidation(False))
 
-                result[recalled] = 1
-            else:
-                logger.debug("There is no applicable rule.")
+        if recalled is not None:
+            logger.debug(
+                f"There is a rule for next action '{domain.action_names[recalled]}'."
+            )
+            result[recalled] = 1
+        else:
+            logger.debug("There is no applicable rule.")
 
         return result
 
