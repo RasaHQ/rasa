@@ -285,7 +285,14 @@ class RulePolicy(MemoizationPolicy):
         ):
             return None
 
-        return DEFAULT_ACTION_MAPPINGS.get(tracker.latest_message.intent.get("name"))
+        default_action_name = DEFAULT_ACTION_MAPPINGS.get(
+            tracker.latest_message.intent.get("name")
+        )
+
+        if default_action_name:
+            logger.debug(f"Predicted default action '{default_action_name}'.")
+
+        return default_action_name
 
     @staticmethod
     def _predict_form_action(tracker: DialogueStateTracker) -> Optional[Text]:
