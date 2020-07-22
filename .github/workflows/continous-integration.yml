@@ -114,8 +114,8 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        os: [ubuntu-latest]
-        python-version: [3.6]
+        os: [windows-latest]
+        python-version: [3.7]
 
     steps:
     - name: Checkout git repository 🕝

@@ -1,5 +1,5 @@
 [build-system]
-requires = [ "poetry>=1.0.9",]
+requires = [ "poetry>=1.0.5",]
 build-backend = "poetry.masonry.api"
 
 [tool.black]
@@ -118,7 +118,7 @@ tensorflow_hub = "~0.8"
 tensorflow-addons = "~0.10"
 tensorflow-estimator = "~2.2"
 tensorflow-probability = "~0.10"
-setuptools = "^49.2.0"
+setuptools = ">=41.0.0"
 kafka-python = ">=1.4,<3.0"
 ujson = ">=1.35,<4.0"
 oauth2client = "4.1.3"
