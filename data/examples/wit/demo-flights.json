@@ -1,0 +1,84 @@
+{
+  "data" : [
+    {
+      "text" : "i want to go from berlin to tokyo tomorrow",
+      "entities" : [
+        {
+          "entity" : "location",
+          "value" : "\"berlin\"",
+          "role" : "from",
+          "start" : 18,
+          "end" : 24
+        },
+        {
+          "entity" : "intent",
+          "value" : "\"flight_booking\"",
+          "start" : 0,
+          "end" : 42
+        },
+        {
+          "entity" : "location",
+          "value" : "\"tokyo\"",
+          "role" : "to",
+          "start" : 28,
+          "end" : 33
+        },
+        {
+          "entity" : "datetime",
+          "value" : "\"2016-05-29T00:00:00.000-07:00\"",
+          "start" : 34,
+          "end" : 42
+        }
+      ]
+    },
+    {
+      "text" : "i'm looking for a flight from london to amsterdam next monday",
+      "entities" : [
+        {
+          "entity" : "location",
+          "value" : "\"london\"",
+          "role" : "from",
+          "start" : 30,
+          "end" : 36
+        },
+        {
+          "entity" : "location",
+          "value" : "\"amsterdam\"",
+          "role" : "to",
+          "start" : 40,
+          "end" : 49
+        },
+        {
+          "entity" : "datetime",
+          "value" : "\"2016-05-30T00:00:00.000-07:00\"",
+          "start" : 50,
+          "end" : 61
+        }
+      ]
+    },
+    {
+      "text" : "i want to fly to berlin",
+      "entities" : [
+        {
+          "entity" : "location",
+          "value" : "\"berlin\"",
+          "role" : "from",
+          "start" : 17,
+          "end" : 23
+        }
+      ]
+    },
+    {
+      "text" : "i want to fly from london",
+      "entities" : [
+        {
+          "entity" : "location",
+          "value" : "\"london\"",
+          "role" : "from",
+          "start" : 19,
+          "end" : 25
+        }
+      ]
+    }
+  ]
+}

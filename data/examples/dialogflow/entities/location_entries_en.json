@@ -1,0 +1,26 @@
+[
+  {
+    "value": "centre",
+    "synonyms": [
+      "centre"
+    ]
+  },
+  {
+    "value": "west",
+    "synonyms": [
+      "west"
+    ]
+  },
+  {
+    "value": "central",
+    "synonyms": [
+      "central"
+    ]
+  },
+  {
+    "value": "north",
+    "synonyms": [
+      "north"
+    ]
+  }
+]

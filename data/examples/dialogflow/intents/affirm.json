@@ -1,0 +1,33 @@
+{
+  "id": "c2e82a05-3980-4f74-b0d5-7ee0e1297284",
+  "name": "affirm",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "affectedContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "type": 0,
+          "lang": "es",
+          "speech": "Me alegro de ayudarte, compañero :)"
+        },
+        {
+          "type": 0,
+          "lang": "en",
+          "speech": "Glad I help you, mate :)"
+        }
+      ],
+      "defaultResponsePlatforms": {},
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "lastUpdate": 1507540481,
+  "fallbackIntent": false,
+  "events": []
+}

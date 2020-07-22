@@ -1,0 +1,32 @@
+usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]
+                        [--ssl-keyfile SSL_KEYFILE]
+                        [--ssl-certificate SSL_CERTIFICATE]
+                        [--ssl-password SSL_PASSWORD] [--auto-reload]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PORT, --port PORT  port to run the server at (default: 5055)
+  --cors [CORS [CORS ...]]
+                        enable CORS for the passed origin. Use * to whitelist
+                        all origins (default: None)
+  --actions ACTIONS     name of action package to be loaded (default: None)
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer. (default: None)
+  --auto-reload         Enable auto-reloading of modules containing Action
+                        subclasses. (default: False)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)

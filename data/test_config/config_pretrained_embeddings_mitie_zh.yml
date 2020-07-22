@@ -1,0 +1,11 @@
+language: "zh"
+
+pipeline:
+- name: "MitieNLP"
+  model: "data/total_word_feature_extractor_zh.dat"
+- name: "JiebaTokenizer"
+- name: "MitieEntityExtractor"
+- name: "EntitySynonymMapper"
+- name: "RegexFeaturizer"
+- name: "MitieFeaturizer"
+- name: "SklearnIntentClassifier"

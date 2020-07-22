@@ -1,0 +1,10 @@
+repos:
+-   repo: https://github.com/ambv/black
+    rev: stable
+    hooks:
+    - id: black
+-   repo: https://github.com/thlorenz/doctoc
+    rev: master
+    hooks:
+    -   id: doctoc
+        files: "CONTRIBUTING.md"

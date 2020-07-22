@@ -1,0 +1,4 @@
+event_broker:
+  db: ":memory:"
+  dialect: "sqlite"
+  type: "sql"

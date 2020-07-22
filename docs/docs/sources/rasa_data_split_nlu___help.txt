@@ -1,0 +1,24 @@
+usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
+                           [--training-fraction TRAINING_FRACTION]
+                           [--random-seed RANDOM_SEED] [--out OUT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
+                        data)
+  --training-fraction TRAINING_FRACTION
+                        Percentage of the data which should be in the training
+                        data. (default: 0.8)
+  --random-seed RANDOM_SEED
+                        Seed to generate the same train/test split. (default:
+                        None)
+  --out OUT             Directory where the split files should be stored.
+                        (default: train_test_split)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)

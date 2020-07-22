@@ -1,0 +1,12 @@
+## intent:affirm
+- yes
+- yep
+- yeah
+- indeed
+- that's right
+- ok
+- great
+- right, thank you
+- correct
+- great choice
+- sounds really good

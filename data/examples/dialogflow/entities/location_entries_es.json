@@ -1,0 +1,29 @@
+[
+  {
+    "value": "centro",
+    "synonyms": [
+      "centro",
+      "centrar"
+    ]
+  },
+  {
+    "value": "oeste",
+    "synonyms": [
+      "oeste",
+      "occidente"
+    ]
+  },
+  {
+    "value": "central",
+    "synonyms": [
+      "central",
+      "céntrico"
+    ]
+  },
+  {
+    "value": "norte",
+    "synonyms": [
+      "norte"
+    ]
+  }
+]

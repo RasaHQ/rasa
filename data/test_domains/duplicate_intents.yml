@@ -1,0 +1,27 @@
+intents:
+ - greet
+ - default
+ - goodbye
+ - default
+ - goodbye
+
+slots:
+  cuisine:
+    type: text
+  location:
+    type: text
+
+entities:
+ - name
+
+responses:
+  utter_greet:
+    - text: hey there!
+  utter_goodbye:
+    - text: goodbye :(
+  utter_default:
+    - text: default message
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

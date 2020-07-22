@@ -1,0 +1,6 @@
+language: "en"
+
+pipeline:
+  - name: ConveRTTokenizer
+  - name: ConveRTFeaturizer
+  - name: DIETClassifier

@@ -1,0 +1,20 @@
+language: "en"
+
+pipeline:
+  - name: SpacyNLP
+  - name: SpacyTokenizer
+  - name: SpacyFeaturizer
+  - name: RegexFeaturizer
+  - name: CRFEntityExtractor
+  - name: EntitySynonymMapper
+  - name: SklearnIntentClassifier
+
+# data contains the same md, as described in the training data section
+data: |
+  ## intent:affirm
+  - yes
+  - yep
+
+  ## intent:goodbye
+  - bye
+  - goodbye

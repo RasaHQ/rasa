@@ -1,0 +1,4 @@
+language: en
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "CRFEntityExtractor"
