@@ -21,7 +21,7 @@ def create_app() -> Sanic:
 
 if __name__ == "__main__":
     app = create_app()
-    port = 5000
+    port = 5034
 
     print(f"Starting callback server on port {port}.")
     app.run("0.0.0.0", port)
