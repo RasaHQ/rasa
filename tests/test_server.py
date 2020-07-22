@@ -737,23 +737,6 @@ def test_post_conversation_id_with_slash(rasa_app: SanicTestClient):
 
     # there is also an `ACTION_LISTEN` event at the start
     assert tracker.get("events") == events
-    conversation = f"/conversations/{conversation_id}"
-
-    events = [e.as_dict() for e in test_events]
-    _, response = rasa_app.post(
-        f"{conversation}/tracker/events",
-        json=events,
-        headers={"Content-Type": "application/json"},
-    )
-    assert response.json is not None
-    assert response.status == 200
-
-    _, tracker_response = rasa_app.get(f"/conversations/{conversation_id}/tracker")
-    tracker = tracker_response.json
-    assert tracker is not None
-
-    # there is also an `ACTION_LISTEN` event at the start
-    assert tracker.get("events") == events
 
 
 def test_put_tracker(rasa_app: SanicTestClient):
