@@ -8,9 +8,11 @@ from rasa.nlu.training_data import TrainingData
 def _convert_lookup_tables_to_regex(
     training_data: TrainingData, use_only_entities: bool = False
 ) -> List[Dict[Text, Text]]:
-    """Convert the lookup tables to regex patterns.
+    """Convert the lookup tables from the training data to regex patterns.
     Args:
-        lookup_tables: the lookup tables
+        training_data: The training data.
+        use_only_entities: If True only regex features with a name equal to a entity
+          are considered.
 
     Returns:
         A list of regex patterns.
@@ -81,6 +83,16 @@ def _read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
 def _collect_regex_features(
     training_data: TrainingData, use_only_entities: bool = False
 ) -> List[Dict[Text, Text]]:
+    """Get regex features from training data.
+
+    Args:
+        training_data: The training data
+        use_only_entities: If True only regex features with a name equal to a entity
+          are considered.
+
+    Returns:
+        Regex features.
+    """
     if not use_only_entities:
         return training_data.regex_features
 
@@ -104,6 +116,10 @@ def extract_patterns(
 
     Args:
         training_data: The training data.
+        use_only_entities: If True only lookup tables and regex features with a name
+          equal to a entity are considered.
+        use_regex_features: Boolean indicating whether to use regex features or not.
+        use_lookup_tables: Boolean indicating whether to use lookup tables or not.
 
     Returns:
         The list of regex patterns.
