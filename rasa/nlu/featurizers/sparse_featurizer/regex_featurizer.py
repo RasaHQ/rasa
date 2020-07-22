@@ -33,8 +33,12 @@ class RegexFeaturizer(SparseFeaturizer):
         return [Tokenizer]
 
     defaults = {
-        # Text will be processed with case sensitive as default
-        "case_sensitive": True
+        # text will be processed with case sensitive as default
+        "case_sensitive": True,
+        # use lookup tables to generate feature
+        "use_lookup_tables": True,
+        # use regex features to generate fetaures
+        "use_regex_features": True,
     }
 
     def __init__(
@@ -55,7 +59,11 @@ class RegexFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> None:
 
-        self.known_patterns = pattern_utils.extract_patterns(training_data)
+        self.known_patterns = pattern_utils.extract_patterns(
+            training_data,
+            use_lookup_tables=self.component_config["use_lookup_tables"],
+            use_regex_features=self.component_config["use_regex_features"],
+        )
 
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE]:

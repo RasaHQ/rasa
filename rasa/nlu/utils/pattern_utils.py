@@ -77,7 +77,25 @@ def _read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
     return elements_to_regex
 
 
-def extract_patterns(training_data: TrainingData) -> List[Dict[Text, Text]]:
+def _collect_regex_features(
+    training_data: TrainingData, use_only_entities: bool = False
+) -> List[Dict[Text, Text]]:
+    if not use_only_entities:
+        return training_data.regex_features
+
+    return [
+        regex
+        for regex in training_data.regex_features
+        if regex["name"] in training_data.entities
+    ]
+
+
+def extract_patterns(
+    training_data: TrainingData,
+    use_lookup_tables: bool = True,
+    use_regex_features: bool = True,
+    use_only_entities: bool = False,
+) -> List[Dict[Text, Text]]:
     """Extract a list of patterns from the training data.
 
     The patterns are constructed using the regex features and lookup tables defined
@@ -95,6 +113,11 @@ def extract_patterns(training_data: TrainingData) -> List[Dict[Text, Text]]:
         )
         return []
 
-    patterns = training_data.regex_features
-    patterns.extend(_convert_lookup_tables_to_regex(training_data.lookup_tables))
+    patterns = []
+
+    if use_regex_features:
+        patterns.extend(_collect_regex_features(training_data, use_only_entities))
+    if use_lookup_tables:
+        patterns.extend(_convert_lookup_tables_to_regex(training_data.lookup_tables))
+
     return patterns

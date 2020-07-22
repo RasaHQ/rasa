@@ -26,9 +26,12 @@ class RegexEntityExtractor(EntityExtractor):
     defined in the training data."""
 
     defaults = {
-        # lower case the entity value from the lookup file and
-        # user message while comparing them
-        "lowercase": True
+        # text will be processed with case insensitive as default
+        "case_sensitive": False,
+        # use lookup tables to extract entities
+        "use_lookup_tables": True,
+        # use regex features to extract entities
+        "use_regex_features": True,
     }
 
     def __init__(
@@ -47,7 +50,12 @@ class RegexEntityExtractor(EntityExtractor):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        self.patterns = pattern_utils.extract_patterns(training_data)
+        self.patterns = pattern_utils.extract_patterns(
+            training_data,
+            use_lookup_tables=self.component_config["use_lookup_tables"],
+            use_regex_features=self.component_config["use_regex_features"],
+            use_only_entities=True,
+        )
 
     def process(self, message: Message, **kwargs: Any) -> None:
         extracted_entities = self._extract_entities(message)
