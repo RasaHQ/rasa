@@ -35,7 +35,7 @@ clean:
 	rm -rf build/
 	rm -rf .pytype/
 	rm -rf dist/
-	rm -rf docs/_build
+	rm -rf docs/build
 
 install:
 	poetry run python -m pip install -U pip

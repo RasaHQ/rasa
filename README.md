@@ -258,12 +258,11 @@ make types
 
 ### Deploying documentation updates
 
-We use `sphinx-versioning` to build docs for tagged versions and for the master branch.
-The static site that gets built is pushed to the `docs` branch of this repo, which doesn't contain
-any code, only the site.
+We use `Docusaurus v2` to build docs for tagged versions and for the master branch.
+The static site that gets built is pushed to the `documentation` branch of this repo.
 
-We host the site on netlify. On master branch builds (see `.github/workflows/documentation.yml`), we push the built docs to the `docs`
-branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
+We host the site on netlify. On master branch builds (see `.github/workflows/documentation.yml`), we push the built docs to
+the `documentation` branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
 
 
 ## License
