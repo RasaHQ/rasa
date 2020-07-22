@@ -28,7 +28,7 @@ async function getIncludedSources(options) {
     options = { ...defaultOptions, ...options };
     const { docsDir, include, sourceDir, pathPrefix } = options;
     const cleanedSourceDir = sourceDir.replace('./', '');
-    const includedSourceRe =`\`\`\`[a-z]+ \\(${cleanedSourceDir}/([^\\]]+)\\)\n\`\`\``;
+    const includedSourceRe =`\`\`\`[a-z]+ \\(${cleanedSourceDir}/([^\\]\\s]+)\\)\n\`\`\``;
 
     // first, gather all the docs files
     const docsFiles = await globby(include, {
