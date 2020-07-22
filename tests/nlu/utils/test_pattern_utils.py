@@ -3,7 +3,7 @@ from typing import Dict, List, Text
 import pytest
 
 import rasa.nlu.utils.pattern_utils as pattern_utils
-from nlu.training_data import Message
+from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
 
 
@@ -163,7 +163,7 @@ def test_extract_patterns_use_only_lookup_tables_or_regex_features(
     actual_patterns = pattern_utils.extract_patterns(
         training_data,
         use_lookup_tables=use_lookup_tables,
-        use_regex_features=use_regex_features,
+        use_regexes=use_regex_features,
     )
 
     assert actual_patterns == expected_patterns
