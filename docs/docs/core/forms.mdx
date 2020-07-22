@@ -88,8 +88,8 @@ You need to define three methods:
 * `submit`: what to do at the end of the form, when all the slots have been filled.
 
 Though not technically required for a minimal form, you will most likely need to define
-[slot mappings](/docs/core/forms#form-slot-mappings) in order to gather all of the information you need.
-Other methods like [validation methods](/docs/core/forms#form-validation) are optional.
+[slot mappings](#form-slot-mappings) in order to gather all of the information you need.
+Other methods like [validation methods](#form-validation) are optional.
 
 Here is an example of what it looks like:
 
@@ -127,7 +127,7 @@ Some slots, like `cuisine`, can be picked up using a single entity, but a
 
 The `slot_mappings` method defines how to extract slot values from user responses.
 
-In the [above example](/docs/core/forms#formbot-code), you can see how the form uses different
+In the [above example](#formbot-code), you can see how the form uses different
 slot mappings to collect entity information (cuisine), yes/no input (outdoor seating)
 and free text input (preferences).
 
@@ -174,7 +174,7 @@ validation function with the name `validate_{slot-name}`.
 
 Here is an example of the same formbot from above, now using validation methods
 to check if user input is valid. For example, `validate_cuisine()` in the
-[formbot](/docs/core/forms#formbot-code) checks if the extracted cuisine slot belongs
+[formbot](#formbot-code) checks if the extracted cuisine slot belongs
 to a list of supported cuisines.
 
 As the helper validation functions return dictionaries of slot names and values
