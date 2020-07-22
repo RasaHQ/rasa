@@ -482,7 +482,7 @@ RegexFeaturizer
           # use lookup tables to generate features
           "use_lookup_tables": True
           # use regex features to generate features
-          "use_regex_features": True
+          "use_regexes": True
 
 .. _CountVectorsFeaturizer:
 
