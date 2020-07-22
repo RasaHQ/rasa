@@ -81,7 +81,7 @@ rasa.db-wal
 env
 .dir-locals.el
 .history
-newdocs/.docusaurus
-newdocs/docs/variables.json
-newdocs/docs/sources/
-newdocs/docs/changelog.mdx
+docs/.docusaurus
+docs/docs/variables.json
+docs/docs/sources/
+docs/docs/changelog.mdx

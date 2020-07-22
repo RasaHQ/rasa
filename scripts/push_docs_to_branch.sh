@@ -31,14 +31,7 @@ fi
 git clone --depth=1 --branch=$DOCS_BRANCH git@github.com:$GITHUB_REPOSITORY.git $TMP_DOCS_FOLDER
 
 echo "Updating the docs..."
-# FIXME: remove the next 2 lines when we do the move
-mv docs olddocs
-mv newdocs docs
 cp -R `ls -A | grep -v "^\.git$"` $TMP_DOCS_FOLDER/
-# FIXME: remove the next 3 lines when we do the move
-rm -rf $TMP_DOCS_FOLDER/olddocs
-mv docs newdocs
-mv olddocs docs
 
 
 cd $TMP_DOCS_FOLDER
