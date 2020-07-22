@@ -63,8 +63,8 @@ jobs:
     - name: Install Dependencies 📦
       run: make install install-docs
 
-    - name: Build Docs variables 🧶
-      run: cd $DOCS_FOLDER && poetry run yarn variables
+    - name: Pre-build Docs 🧶
+      run: cd $DOCS_FOLDER && poetry run yarn pre-build
 
     - name: Build & Publish Docs 🏃‍♀️
       env:
