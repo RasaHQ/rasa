@@ -30,45 +30,12 @@ components you want to use directly in the configuration file. See
 
 If your training data is in English, a good starting point is the following pipeline:
 
-```yaml
-language: "en"
-
-pipeline:
-  - name: ConveRTTokenizer
-  - name: ConveRTFeaturizer
-  - name: RegexFeaturizer
-  - name: LexicalSyntacticFeaturizer
-  - name: CountVectorsFeaturizer
-  - name: CountVectorsFeaturizer
-    analyzer: "char_wb"
-    min_ngram: 1
-    max_ngram: 4
-  - name: DIETClassifier
-    epochs: 100
-  - name: EntitySynonymMapper
-  - name: ResponseSelector
-    epochs: 100
+```yaml (docs/sources/data/configs_for_docs/default_english_config.yml)
 ```
 
 If your training data is not in English, start with the following pipeline:
 
-```yaml
-language: "fr"  # your two-letter language code
-
-pipeline:
-  - name: WhitespaceTokenizer
-  - name: RegexFeaturizer
-  - name: LexicalSyntacticFeaturizer
-  - name: CountVectorsFeaturizer
-  - name: CountVectorsFeaturizer
-    analyzer: "char_wb"
-    min_ngram: 1
-    max_ngram: 4
-  - name: DIETClassifier
-    epochs: 100
-  - name: EntitySynonymMapper
-  - name: ResponseSelector
-    epochs: 100
+```yaml (docs/sources/data/configs_for_docs/default_config.yml)
 ```
 
 ### A Longer Answer
@@ -77,24 +44,7 @@ pipeline:
 
 We recommend using following pipeline, if your training data is in English:
 
-```yaml
-language: "en"
-
-pipeline:
-  - name: ConveRTTokenizer
-  - name: ConveRTFeaturizer
-  - name: RegexFeaturizer
-  - name: LexicalSyntacticFeaturizer
-  - name: CountVectorsFeaturizer
-  - name: CountVectorsFeaturizer
-    analyzer: "char_wb"
-    min_ngram: 1
-    max_ngram: 4
-  - name: DIETClassifier
-    epochs: 100
-  - name: EntitySynonymMapper
-  - name: ResponseSelector
-    epochs: 100
+```yaml (docs/sources/data/configs_for_docs/default_english_config.yml)
 ```
 
 The pipeline contains the [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer) that provides pre-trained word embeddings of the user utterance.
@@ -111,25 +61,7 @@ However, `ConveRT` is only available in English.
 If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
 the following pipeline:
 
-```yaml
-language: "fr"  # your two-letter language code
-
-pipeline:
-  - name: SpacyNLP
-  - name: SpacyTokenizer
-  - name: SpacyFeaturizer
-  - name: RegexFeaturizer
-  - name: LexicalSyntacticFeaturizer
-  - name: CountVectorsFeaturizer
-  - name: CountVectorsFeaturizer
-    analyzer: "char_wb"
-    min_ngram: 1
-    max_ngram: 4
-  - name: DIETClassifier
-    epochs: 100
-  - name: EntitySynonymMapper
-  - name: ResponseSelector
-    epochs: 100
+```yaml (docs/sources/data/configs_for_docs/default_spacy_config.yml)
 ```
 
 It uses the [SpacyFeaturizer](/docs/nlu/components#spacyfeaturizer) instead of the [ConveRTFeaturizer](/docs/nlu/components#convertfeaturizer).
@@ -143,23 +75,7 @@ and can train your model to be more domain specific.
 If there are no word embeddings for your language or you have very domain specific terminology,
 we recommend using the following pipeline:
 
-```yaml
-language: "fr"  # your two-letter language code
-
-pipeline:
-  - name: WhitespaceTokenizer
-  - name: RegexFeaturizer
-  - name: LexicalSyntacticFeaturizer
-  - name: CountVectorsFeaturizer
-  - name: CountVectorsFeaturizer
-    analyzer: "char_wb"
-    min_ngram: 1
-    max_ngram: 4
-  - name: DIETClassifier
-    epochs: 100
-  - name: EntitySynonymMapper
-  - name: ResponseSelector
-    epochs: 100
+```yaml (docs/sources/data/configs_for_docs/default_config.yml)
 ```
 
 :::note
@@ -270,30 +186,7 @@ To check which components have the option `featurizers` available, see [Componen
 Here is an example configuration file where the `DIETClassifier` is using all available features and the
 `ResponseSelector` is just using the features from the `ConveRTFeaturizer` and the `CountVectorsFeaturizer`.
 
-```yaml
-language: "en"
-
-pipeline:
-  - name: ConveRTTokenizer
-  - name: ConveRTFeaturizer
-    alias: "convert"
-  - name: RegexFeaturizer
-    alias: "regex"
-  - name: LexicalSyntacticFeaturizer
-    alias: "lexical-syntactic"
-  - name: CountVectorsFeaturizer
-    alias: "cvf-word"
-  - name: CountVectorsFeaturizer
-    alias: "cvf-char"
-    analyzer: "char_wb"
-    min_ngram: 1
-    max_ngram: 4
-  - name: DIETClassifier
-    epochs: 100
-  - name: EntitySynonymMapper
-  - name: ResponseSelector
-    featurizers: ["convert", "cvf-word"]
-    epochs: 100
+```yaml (docs/sources/data/configs_for_docs/config_featurizers.yml)
 ```
 
 ### Multi-Intent Classification
@@ -476,18 +369,7 @@ if you don’t have enough training data.
 See [Pre-trained Word Vectors](/docs/nlu/language-support#pretrained-word-vectors) for more information about loading spacy language models.
 To use the components and configure them separately:
 
-```yaml
-language: "en"
-
-pipeline:
-- name: "SpacyNLP"
-- name: "SpacyTokenizer"
-- name: "SpacyFeaturizer"
-- name: "RegexFeaturizer"
-- name: "CRFEntityExtractor"
-- name: "EntitySynonymMapper"
-
-- name: "SklearnIntentClassifier"
+```yaml (docs/sources/data/configs_for_docs/pretrained_embeddings_spacy_config.yml)
 ```
 
 </details>
@@ -519,13 +401,7 @@ platforms.
 
 To use the components and configure them separately:
 
-```yaml
-language: "en"
-
-pipeline:
-- name: "ConveRTTokenizer"
-- name: "ConveRTFeaturizer"
-- name: "DIETClassifier"
+```yaml (docs/sources/data/configs_for_docs/pretrained_embeddings_convert_config.yml)
 ```
 
 </details>
@@ -546,20 +422,7 @@ The `supervised_embeddings` pipeline supports any language that can be whitespac
 whitespace for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are
 the default components that make up the `supervised_embeddings` pipeline:
 
-```yaml
-language: "en"
-
-pipeline:
-- name: "WhitespaceTokenizer"
-- name: "RegexFeaturizer"
-- name: "CRFEntityExtractor"
-- name: "EntitySynonymMapper"
-- name: "CountVectorsFeaturizer"
-- name: "CountVectorsFeaturizer"
-  analyzer: "char_wb"
-  min_ngram: 1
-  max_ngram: 4
-- name: "DIETClassifier"
+```yaml (docs/sources/data/configs_for_docs/supervised_embeddings_config.yml)
 ```
 
 So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
@@ -587,34 +450,13 @@ However, we do not recommend that you use it as mitie support is likely to be de
 To use the MITIE pipeline, you will have to train word vectors from a corpus. Instructions can be found
 [here](/docs/nlu/language-support#mitie). This will give you the file path to pass to the `model` parameter.
 
-```yaml
-language: "en"
-
-pipeline:
-- name: "MitieNLP"
-  model: "data/total_word_feature_extractor.dat"
-- name: "MitieTokenizer"
-- name: "MitieEntityExtractor"
-- name: "EntitySynonymMapper"
-- name: "RegexFeaturizer"
-- name: "MitieFeaturizer"
-- name: "SklearnIntentClassifier"
+```yaml (docs/sources/data/configs_for_docs/pretrained_embeddings_mitie_config_1.yml)
 ```
 
 Another version of this pipeline uses MITIE’s featurizer and also its multi-class classifier.
 Training can be quite slow, so this is not recommended for large datasets.
 
-```yaml
-language: "en"
-
-pipeline:
-- name: "MitieNLP"
-  model: "data/total_word_feature_extractor.dat"
-- name: "MitieTokenizer"
-- name: "MitieEntityExtractor"
-- name: "EntitySynonymMapper"
-- name: "RegexFeaturizer"
-- name: "MitieIntentClassifier"
+```yaml (docs/sources/data/configs_for_docs/pretrained_embeddings_mitie_config_2.yml)
 ```
 
 </details>
