@@ -9,7 +9,6 @@ from sanic.testing import SanicTestClient
 
 from typing import Iterator, Callable
 
-import pytest
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
 from sanic import Sanic
