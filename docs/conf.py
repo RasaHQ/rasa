@@ -346,7 +346,8 @@ extlinks = {"gh-code": (f"https://github.com/RasaHQ/rasa/tree/{release}/%s", "gi
 # Sphinxcontrib configuration
 scv_priority = "tags"
 scv_show_banner = True
-scv_banner_greatest_tag = True
+# scv_banner_greatest_tag = True
+scv_banner_main_ref = "1.10.8"
 scv_sort = ("semver",)
 scv_whitelist_branches = (re.compile("^master$"),)
 # scv_whitelist_tags = ('None',)
@@ -366,7 +367,8 @@ scv_whitelist_tags = (
     re.compile(r"^1\.1\.8$"),
     re.compile(r"^1\.0\.9$"),
 )
-scv_greatest_tag = True
+# scv_greatest_tag = True
+scv_root_ref = "1.10.8"
 
 # type classes for nitpicky to ignore
 nitpick_ignore = [
