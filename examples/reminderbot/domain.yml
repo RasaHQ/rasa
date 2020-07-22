@@ -24,5 +24,3 @@ actions:
 - action_react_to_reminder
 - action_tell_id
 - action_warn_dry
-- utter_what_can_do
-- utter_goodbye
