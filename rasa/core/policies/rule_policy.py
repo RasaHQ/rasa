@@ -82,13 +82,16 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
-        found_forms = [
-            state_name[len(ACTIVE_FORM_PREFIX) :]
-            for state_name, prob in state.items()
-            if ACTIVE_FORM_PREFIX in state_name
-            and state_name != ACTIVE_FORM_PREFIX + "None"
-            and prob > 0
-        ]
+                found_forms = next(
+            (
+                state_name[len(ACTIVE_FORM_PREFIX) :]
+                for state_name, prob in state.items()
+                if ACTIVE_FORM_PREFIX in state_name
+                and state_name != ACTIVE_FORM_PREFIX + "None"
+                and prob > 0
+            ),
+            None,
+        )
         # by construction there is only one active form
         return found_forms[0] if found_forms else None
 
