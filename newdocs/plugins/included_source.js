@@ -1,4 +1,16 @@
 /**
+    This plugin gives us the ability to include source files
+    in a code-block in the docs, by using the following
+    syntax:
+
+        ```python (docs/sources/path/to/file.py)
+        ```
+
+    To make it work, you need to prefix the source file by `docs/sources/`.
+
+    It relies on `remark-source` and on a pre-build phase,
+    before docusaurus is started (or built). It allows us to support separate
+    versions of the docs (and of the program outputs).
 */
 const fs = require('fs-extra');
 const globby = require('globby');
