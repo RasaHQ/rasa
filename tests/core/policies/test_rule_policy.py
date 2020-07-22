@@ -11,11 +11,11 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
     ACTION_BACK_NAME,
     ACTION_SESSION_START_NAME,
+    RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.constants import (
     REQUESTED_SLOT,
-    RULE_SNIPPET_ACTION_NAME,
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
