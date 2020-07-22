@@ -207,7 +207,6 @@ class RulePolicy(MemoizationPolicy):
                     self._prev_action_listen_in_state(states[-1])
                     and actions[0] == active_form
                 ):
-                    # use `-1` for now as an indicator for no validation
                     self.negative_lookup[feature_key] = NO_VALIDATION
                 elif (
                     # some action other than action_listen and active_form
@@ -216,10 +215,9 @@ class RulePolicy(MemoizationPolicy):
                     not self._prev_action_listen_in_state(states[-1])
                     and actions[0] not in {ACTION_LISTEN_NAME, active_form}
                 ):
-                    # use `-2` for now as an indicator for not predicting active form
                     self.negative_lookup[feature_key] = NO_ACTIVE_FORM
 
-        # TODO check that negative rules don't contradict positive ones
+        # negative rules are not anti-rules, they are auxiliary to actual rules
         self.negative_lookup = self._clean_feature_keys(self.negative_lookup, domain)
 
         logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
@@ -348,7 +346,7 @@ class RulePolicy(MemoizationPolicy):
         recalled = None
         key = None
         if possible_keys:
-            # TODO rethink that
+            # TODO check that max is correct
             # if there are several rules,
             # it should mean that some rule is a subset of another rule
             key = max(possible_keys, key=len)
