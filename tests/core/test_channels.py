@@ -869,7 +869,7 @@ async def test_slackbot_send_text():
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 def test_channel_inheritance():
-    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels import RestInput
     from rasa.core.channels.rasa_chat import RasaChatInput
 
     rasa_input = RasaChatInput("https://example.com")
@@ -925,7 +925,7 @@ def test_newsline_strip():
 
 def test_register_channel_without_route():
     """Check we properly connect the input channel blueprint if route is None"""
-    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels import RestInput
     import rasa.core
 
     input_channel = RestInput()
@@ -938,7 +938,7 @@ def test_register_channel_without_route():
 
 
 def test_channel_registration_with_absolute_url_prefix_overwrites_route():
-    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels import RestInput
     import rasa.core
 
     input_channel = RestInput()
@@ -967,7 +967,7 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     ],
 )
 def test_extract_input_channel(test_input, expected):
-    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels import RestInput
 
     input_channel = RestInput()
 

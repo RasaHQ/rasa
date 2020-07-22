@@ -18,8 +18,7 @@ from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
-from rasa.core.channels import channel
-from rasa.core.channels.channel import RestInput
+from rasa.core.channels import channel, RestInput
 from rasa.core.domain import SessionConfig
 from rasa.core.events import UserUttered
 from rasa.core.exporter import Exporter
