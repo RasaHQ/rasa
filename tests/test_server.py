@@ -697,8 +697,46 @@ def test_pushing_event(rasa_app: SanicTestClient, event: Event):
 
 def test_push_multiple_events(rasa_app: SanicTestClient):
     conversation_id = str(uuid.uuid1())
+    conversation = f"/conversations/{conversation_id}"
+
+    events = [e.as_dict() for e in test_events]
+    _, response = rasa_app.post(
+        f"{conversation}/tracker/events",
+        json=events,
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.json is not None
+    assert response.status == 200
+
+    _, tracker_response = rasa_app.get(f"/conversations/{conversation_id}/tracker")
+    tracker = tracker_response.json
+    assert tracker is not None
+
+    # there is also an `ACTION_LISTEN` event at the start
+    assert tracker.get("events") == events
+
+
+def test_post_conversation_id_with_slash(rasa_app: SanicTestClient):
+    conversation_id = str(uuid.uuid1())
     id_len = len(conversation_id) // 2
     conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
+    conversation = f"/conversations/{conversation_id}"
+
+    events = [e.as_dict() for e in test_events]
+    _, response = rasa_app.post(
+        f"{conversation}/tracker/events",
+        json=events,
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.json is not None
+    assert response.status == 200
+
+    _, tracker_response = rasa_app.get(f"/conversations/{conversation_id}/tracker")
+    tracker = tracker_response.json
+    assert tracker is not None
+
+    # there is also an `ACTION_LISTEN` event at the start
+    assert tracker.get("events") == events
     conversation = f"/conversations/{conversation_id}"
 
     events = [e.as_dict() for e in test_events]
