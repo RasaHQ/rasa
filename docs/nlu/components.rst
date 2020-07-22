@@ -963,7 +963,7 @@ EntitySynonymMapper
 RegexEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Extracts entities using the lookup tables and regexes defined in the training data
+:Short: Extracts entities using the lookup tables and/or regexes defined in the training data
 :Outputs: ``entities``
 :Requires: Nothing
 :Description:
