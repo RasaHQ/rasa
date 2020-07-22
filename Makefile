@@ -82,7 +82,7 @@ test: clean
 	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
 
 docs:
-	cd newdocs/ && poetry run yarn variables && yarn build
+	cd newdocs/ && poetry run yarn pre-build && yarn build
 
 livedocs:
 	cd newdocs/ && poetry run yarn start

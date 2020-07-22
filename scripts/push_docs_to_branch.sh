@@ -8,6 +8,7 @@ PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.0$"
 PATTERN_FOR_PATCH_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.[1-9]+$"
 MASTER_REF=refs/heads/master
 VARIABLES_JSON=docs/docs/variables.json
+SOURCES_FILES=docs/docs/sources/
 
 [[ ! $GITHUB_REF =~ $PATTERN_FOR_NEW_VERSION ]] \
 && [[ ! $GITHUB_REF =~ $PATTERN_FOR_PATCH_VERSION ]] \
@@ -65,7 +66,7 @@ then
 else
     echo "Pushing changes to git..."
     git add .
-    git add --force $VARIABLES_JSON
+    git add --force $VARIABLES_JSON $SOURCES_FILES
     git commit -am "AUTO docusaurus $TODAY"
     git fetch --unshallow
     git push origin $DOCS_BRANCH
