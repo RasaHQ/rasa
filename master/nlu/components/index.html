@@ -1260,7 +1260,7 @@ you have few NLU training data, you can take a look at the recommended pipelines
 </div>
 </div>
 <div class="section" id="entity-extractors">
-<h2><a class="toc-backref" href="#id48">Entity Extractors</a><a class="headerlink" href="#entity-extractors" title="Permalink to this headline">¶</a></h2>
+<span id="entityextractors"></span><h2><a class="toc-backref" href="#id48">Entity Extractors</a><a class="headerlink" href="#entity-extractors" title="Permalink to this headline">¶</a></h2>
 <p>Entity extractors extract entities, such as person names or locations, from the user message.</p>
 <div class="section" id="mitieentityextractor">
 <h3><a class="toc-backref" href="#id49">MitieEntityExtractor</a><a class="headerlink" href="#mitieentityextractor" title="Permalink to this headline">¶</a></h3>
@@ -1360,7 +1360,7 @@ Leaving the dimensions option unspecified will extract all available dimensions.
 <dd class="field-even"><p>Modifies existing entities that previous entity extraction components found.</p>
 </dd>
 <dt class="field-odd">Requires</dt>
-<dd class="field-odd"><p>Nothing</p>
+<dd class="field-odd"><p>An extractor from <a class="reference internal" href="#entityextractors"><span class="std std-ref">Entity Extractors</span></a></p>
 </dd>
 <dt class="field-even">Description</dt>
 <dd class="field-even"><p>If the training data contains defined synonyms, this component will make sure that detected entity values will
