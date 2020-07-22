@@ -300,7 +300,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         return mcfly_tracker
 
-    def _recall_using_delorean(self, old_states, tracker, domain) -> Optional[int]:
+    def _recall_using_delorean(self, old_states, tracker, domain) -> Optional[Text]:
         """Recursively go to the past to correctly forget slots,
             and then back to the future to recall."""
 
@@ -332,7 +332,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         states: List[Dict[Text, float]],
         tracker: DialogueStateTracker,
         domain: Domain,
-    ) -> Optional[int]:
+    ) -> Optional[Text]:
 
         recalled = self._recall_states(states)
         if recalled is None:
