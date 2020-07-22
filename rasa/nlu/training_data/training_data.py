@@ -486,9 +486,9 @@ class TrainingData:
             f"Number of intent examples: {len(self.intent_examples)} "
             f"({len(self.intents)} distinct intents)"
             '\n'
-            
-            f"{newline.join(number_of_examples_for_each_intent)}"        
-        )
+        )   
+        logger.debug(f"{newline.join(number_of_examples_for_each_intent)}")       
+        
         if self.intents:
             logger.info(f"  Found intents: {list_to_str(self.intents)}")
         logger.info(
