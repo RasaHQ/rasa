@@ -88,24 +88,21 @@ include ``slot{}`` events to show these slots being set. In that case, the
 easiest way to create valid stories is to use :ref:`interactive-learning`.
 
 In the story above, ``restaurant_form`` is the name of our form action.
-Here is an example of what it looks like.
-You need to define three methods:
+A form *needs* to define three methods:
 
 - ``name``: the name of this action
 - ``required_slots``: a list of slots that need to be filled for the ``submit`` method to work.
 - ``submit``: what to do at the end of the form, when all the slots have been filled.
 
-.. literalinclude:: ../../examples/formbot/actions.py
-   :dedent: 4
-   :pyobject: RestaurantForm.name
+Though not technically required for a minimal form, you will most likely need to define
+:ref:`slot mappings <form-slot-mappings>` in order to gather all of the information you need.
+Other methods like :ref:`validation methods <form validation>` are optional.
+
+Here is an example of what it looks like:
+
+.. _formbot-code:
 
 .. literalinclude:: ../../examples/formbot/actions.py
-   :dedent: 4
-   :pyobject: RestaurantForm.required_slots
-
-.. literalinclude:: ../../examples/formbot/actions.py
-   :dedent: 4
-   :pyobject: RestaurantForm.submit
 
 Once the form action gets called for the first time,
 the form gets activated and the ``FormPolicy`` jumps in.
@@ -125,6 +122,8 @@ as your submit method.
 After the submit method is called, the form is deactivated,
 and other policies in your Core model will be used to predict the next action.
 
+.. _form-slot-mappings:
+
 Custom slot mappings
 --------------------
 
@@ -132,15 +131,14 @@ If you do not define slot mappings, slots will be only filled by entities
 with the same name as the slot that are picked up from the user input.
 Some slots, like ``cuisine``, can be picked up using a single entity, but a
 ``FormAction`` can also support yes/no questions and free-text input.
+
 The ``slot_mappings`` method defines how to extract slot values from user responses.
 
-Here's an example for the restaurant bot:
+In the :ref:`above example <formbot-code>`, you can see how the form uses different
+slot mappings to collect entity information (cuisine), yes/no input (outdoor seating)
+and free text input (preferences).
 
-.. literalinclude:: ../../examples/formbot/actions.py
-   :dedent: 4
-   :pyobject: RestaurantForm.slot_mappings
-
-The predefined functions work as follows:
+The predefined functions for ``slot_mappings`` work as follows:
 
 - ``self.from_entity(entity=entity_name, intent=intent_name, role=role_name, group=group_name)``
   will look for an entity called ``entity_name`` to fill a slot
@@ -161,6 +159,7 @@ The predefined functions work as follows:
 - If you want to allow a combination of these, provide them as a list as in the
   example above
 
+.. _form-validation:
 
 Validating user input
 ---------------------
@@ -177,14 +176,10 @@ extracted from the slot mappings. If you want to add custom validation, for
 example to check a value against a database, you can do this by writing a helper
 validation function with the name ``validate_{slot-name}``.
 
-Here is an example , ``validate_cuisine()``, which checks if the extracted cuisine slot
-belongs to a list of supported cuisines.
-
-.. literalinclude:: ../../examples/formbot/actions.py
-   :pyobject: RestaurantForm.cuisine_db
-
-.. literalinclude:: ../../examples/formbot/actions.py
-   :pyobject: RestaurantForm.validate_cuisine
+Here is an example of the same formbot from above, now using validation methods
+to check if user input is valid. For example, ``validate_cuisine()`` in the
+:ref:`formbot <formbot-code>` checks if the extracted cuisine slot belongs
+to a list of supported cuisines.
 
 As the helper validation functions return dictionaries of slot names and values
 to set, you can set more slots than just the one you are validating from inside
