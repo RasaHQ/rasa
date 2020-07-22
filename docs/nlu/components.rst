@@ -986,8 +986,8 @@ RegexEntityExtractor
           "case_sensitive": False
           # use lookup tables to extract entities
           "use_lookup_tables": True
-          # use regex features to extract entities
-          "use_regex_features": True
+          # use regexes to extract entities
+          "use_regexes": True
 
 
 .. _CRFEntityExtractor:
