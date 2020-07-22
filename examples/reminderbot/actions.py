@@ -76,17 +76,14 @@ class ActionTellID(Action):
 
         conversation_id = tracker.sender_id
 
-        dispatcher.utter_message(
-            f"The ID of this conversation is: " f"{conversation_id}."
-        )
-
+        dispatcher.utter_message(f"The ID of this conversation is: {conversation_id}.")
         dispatcher.utter_message(
             f"Trigger an intent with "
             f'curl -H "Content-Type: application/json" '
             f'-X POST -d \'{{"name": "EXTERNAL_dry_plant", '
             f'"entities": {{"plant": "Orchid"}}}}\' '
-            f"http://localhost:5005/conversations/{conversation_id}/"
-            f"trigger_intent"
+            f'"http://localhost:5005/conversations/{conversation_id}'
+            f'/trigger_intent?output_channel=latest"'
         )
 
         return []
