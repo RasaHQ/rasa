@@ -7943,9 +7943,9 @@ remark-parse@8.0.2, remark-parse@^8.0.0:
     vfile-location "^3.0.0"
     xtend "^4.0.1"
 
-remark-sources@RasaHQ/remark-sources#7236b62:
+remark-sources@RasaHQ/remark-sources#19255f0:
   version "1.0.0"
-  resolved "https://codeload.github.com/RasaHQ/remark-sources/tar.gz/7236b627ec042f3a5d350b374615dbd1e821f5f5"
+  resolved "https://codeload.github.com/RasaHQ/remark-sources/tar.gz/19255f0964045af1d8c67c0b9a9ae4802cb94467"
   dependencies:
     njct "^8.0.0"
     unist-util-visit-children "^1.1.3"
