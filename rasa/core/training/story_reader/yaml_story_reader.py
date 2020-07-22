@@ -72,6 +72,13 @@ class YAMLStoryReader(StoryReader):
         Returns:
             The parsed stories or rules.
         """
+        from rasa.validator import Validator
+
+        if not Validator.validate_training_data_format_version(
+            parsed_content, self.source_name
+        ):
+            return []
+
         stories = parsed_content.get(KEY_STORIES, [])
         self._parse_data(stories, is_rule_data=False)
 

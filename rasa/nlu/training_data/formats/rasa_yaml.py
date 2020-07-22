@@ -51,8 +51,14 @@ class RasaYAMLReader(TrainingDataReader):
             New `TrainingData` object with parsed training data.
         """
         from rasa.nlu.training_data import TrainingData
+        from rasa.validator import Validator
 
         yaml_content = io_utils.read_yaml(string)
+
+        if not Validator.validate_training_data_format_version(
+            yaml_content, self.filename
+        ):
+            return TrainingData()
 
         for key, value in yaml_content.items():  # pytype: disable=attribute-error
             if key == KEY_NLU:
