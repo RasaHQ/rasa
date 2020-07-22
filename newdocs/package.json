@@ -9,7 +9,8 @@
     "new-version": "docusaurus docs:version",
     "variables": "node compile_variables.js",
     "program-outputs": "node compile_program_outputs.js",
-    "included-sources": "node compile_included_sources.js"
+    "included-sources": "node compile_included_sources.js",
+    "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}"
   },
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.56",
