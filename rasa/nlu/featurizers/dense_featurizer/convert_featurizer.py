@@ -1,17 +1,23 @@
 import logging
 
-from tensorflow_core.python.training.tracking.tracking import AutoTrackable
 from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
 from tqdm import tqdm
 
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer
-from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.nlu.constants import (
+    TEXT,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    FEATURIZER_CLASS_ALIAS,
+    FEATURE_TYPE_SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
+    TOKENS_NAMES,
+)
 import numpy as np
 import tensorflow as tf
 
@@ -54,7 +60,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
     def _compute_features(
         self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, np.ndarray]:
 
         sentence_encodings = self._compute_sentence_encodings(
             batch_examples, module, attribute
@@ -65,7 +71,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
             number_of_tokens_in_sentence,
         ) = self._compute_sequence_encodings(batch_examples, module, attribute)
 
-        return self._combine_encodings(
+        return self._get_features(
             sentence_encodings, sequence_encodings, number_of_tokens_in_sentence
         )
 
@@ -85,8 +91,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
     ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
-            train_utils.tokens_without_cls(example, attribute)
-            for example in batch_examples
+            example.get(TOKENS_NAMES[attribute]) for example in batch_examples
         ]
 
         number_of_tokens_in_sentence = [
@@ -107,35 +112,26 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         return token_features, number_of_tokens_in_sentence
 
-    def _combine_encodings(
-        self,
+    @staticmethod
+    def _get_features(
         sentence_encodings: np.ndarray,
         sequence_encodings: np.ndarray,
         number_of_tokens_in_sentence: List[int],
-    ) -> np.ndarray:
-        """Combine the sequence encodings with the sentence encodings.
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Get the sequence and sentence features."""
 
-        Append the sentence encoding to the end of the sequence encodings (position
-        of CLS token)."""
-
-        final_embeddings = []
+        sentence_embeddings = []
+        sequence_embeddings = []
 
         for index in range(len(number_of_tokens_in_sentence)):
             sequence_length = number_of_tokens_in_sentence[index]
             sequence_encoding = sequence_encodings[index][:sequence_length]
             sentence_encoding = sentence_encodings[index]
 
-            # tile sequence encoding to duplicate as sentence encodings have size
-            # 1024 and sequence encodings only have a dimensionality of 512
-            sequence_encoding = np.tile(sequence_encoding, (1, 2))
-            # add sentence encoding to the end (position of cls token)
-            sequence_encoding = np.concatenate(
-                [sequence_encoding, sentence_encoding], axis=0
-            )
+            sequence_embeddings.append(sequence_encoding)
+            sentence_embeddings.append(sentence_encoding)
 
-            final_embeddings.append(sequence_encoding)
-
-        return np.array(final_embeddings)
+        return np.array(sequence_embeddings), np.array(sentence_embeddings)
 
     @staticmethod
     def _tokens_to_text(list_of_tokens: List[List[Token]]) -> List[Text]:
@@ -143,7 +139,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         Add a whitespace between two tokens if the end value of the first tokens is
         not the same as the end value of the second token."""
-
         texts = []
         for tokens in list_of_tokens:
             text = ""
@@ -175,7 +170,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
         tf_hub_module: Any = None,
         **kwargs: Any,
     ) -> None:
-
         if config is not None and config.language != "en":
             common_utils.raise_warning(
                 f"Since ``ConveRT`` model is trained only on an english "
@@ -205,25 +199,47 @@ class ConveRTFeaturizer(DenseFeaturizer):
                 # Collect batch examples
                 batch_examples = non_empty_examples[batch_start_index:batch_end_index]
 
-                batch_features = self._compute_features(
-                    batch_examples, tf_hub_module, attribute
-                )
+                (
+                    batch_sequence_features,
+                    batch_sentence_features,
+                ) = self._compute_features(batch_examples, tf_hub_module, attribute)
 
-                for index, ex in enumerate(batch_examples):
-                    ex.set(
-                        DENSE_FEATURE_NAMES[attribute],
-                        self._combine_with_existing_dense_features(
-                            ex, batch_features[index], DENSE_FEATURE_NAMES[attribute]
-                        ),
-                    )
+                self._set_features(
+                    batch_examples,
+                    batch_sequence_features,
+                    batch_sentence_features,
+                    attribute,
+                )
 
     def process(
         self, message: Message, *, tf_hub_module: Any = None, **kwargs: Any
     ) -> None:
-        features = self._compute_features([message], tf_hub_module)[0]
-        message.set(
-            DENSE_FEATURE_NAMES[TEXT],
-            self._combine_with_existing_dense_features(
-                message, features, DENSE_FEATURE_NAMES[TEXT]
-            ),
+        sequence_features, sentence_features = self._compute_features(
+            [message], tf_hub_module
         )
+
+        self._set_features([message], sequence_features, sentence_features, TEXT)
+
+    def _set_features(
+        self,
+        examples: List[Message],
+        sequence_features: np.ndarray,
+        sentence_features: np.ndarray,
+        attribute: Text,
+    ) -> None:
+        for index, example in enumerate(examples):
+            _sequence_features = Features(
+                sequence_features[index],
+                FEATURE_TYPE_SEQUENCE,
+                attribute,
+                self.component_config[FEATURIZER_CLASS_ALIAS],
+            )
+            example.add_features(_sequence_features)
+
+            _sentence_features = Features(
+                sentence_features[index],
+                FEATURE_TYPE_SENTENCE,
+                attribute,
+                self.component_config[FEATURIZER_CLASS_ALIAS],
+            )
+            example.add_features(_sentence_features)

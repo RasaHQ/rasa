@@ -23,7 +23,7 @@ Some people call this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a
 
     Rasa X provides a UI for interactive learning, and you can use any user conversation
     as a starting point. See
-    `Talking to Your Assistant <https://rasa.com/docs/rasa-x/user-guide/enable-workflows#talking-to-your-assistant/>`_
+    `Talk to Your Bot <https://rasa.com/docs/rasa-x/user-guide/share-assistant/#talk-to-your-bot>`_
     in the Rasa X docs.
 
 .. contents::
@@ -120,7 +120,7 @@ possibilities (depending on the training run, it might also be correct):
       concerts: None, venues: None
 
     ------
-    ? The bot wants to run 'action_show_concert_reviews', correct?  No
+    ? The bot wants to run 'action_show_venue_reviews', correct?  No
 
 
 Now we type ``n``, because it chose the wrong action, and we get a new
@@ -219,7 +219,7 @@ Every time the user responds with something *other* than the requested slot or
 any of the required slots,
 you will be asked whether you want the form action to try and extract a slot
 from the user's message when returning to the form. This is best explained with
-and example:
+an example:
 
 .. code-block:: text
 

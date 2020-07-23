@@ -67,5 +67,5 @@ def test_convert_tokenizer_number_of_sub_tokens(
     tk.train(TrainingData([message]))
 
     assert [
-        t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])[:-1]
+        t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
     ] == expected_number_of_sub_tokens

@@ -1,0 +1,40 @@
+You can now define what kind of features should be used by what component (see :ref:`choosing-a-pipeline`).
+
+You can set an alias via the option ``alias`` for every featurizer in your pipeline.
+The ``alias`` can be anything, by default it is set to the full featurizer class name.
+You can then specify, for example, on the :ref:`diet-classifier` what features from which featurizers should be used.
+If you don't set the option ``featurizers`` all available features will be used.
+This is also the default behavior.
+Check :ref:`components` to see what components have the option ``featurizers`` available.
+
+Here is an example pipeline that shows the new option.
+We define an alias for all featurizers in the pipeline.
+All features will be used in the ``DIETClassifier``.
+However, the ``ResponseSelector`` only takes the features from the ``ConveRTFeaturizer`` and the
+``CountVectorsFeaturizer`` (word level).
+
+.. code-block:: none
+
+    pipeline:
+    - name: ConveRTTokenizer
+    - name: ConveRTFeaturizer
+      alias: "convert"
+    - name: CountVectorsFeaturizer
+      alias: "cvf_word"
+    - name: CountVectorsFeaturizer
+      alias: "cvf_char"
+      analyzer: char_wb
+      min_ngram: 1
+      max_ngram: 4
+    - name: RegexFeaturizer
+      alias: "regex"
+    - name: LexicalSyntacticFeaturizer
+      alias: "lsf"
+    - name: DIETClassifier:
+    - name: ResponseSelector
+      epochs: 50
+      featurizers: ["convert", "cvf_word"]
+    - name: EntitySynonymMapper
+
+.. warning::
+    This change is model-breaking. Please retrain your models.

@@ -60,9 +60,9 @@ exactly. Instead it will return the trained synonym.
 
 .. note::
 
-    The ``confidence`` will be set by the ``CRFEntityExtractor`` component. The
+    The ``confidence`` will be set by the ``CRFEntityExtractor`` and the ``DIETClassifier`` component. The
     ``DucklingHTTPExtractor`` will always return ``1``. The ``SpacyEntityExtractor`` extractor
-    and ``DIETClassifier`` do not provide this information and return ``null``.
+    does not provide this information and returns ``null``.
 
 
 Some extractors, like ``duckling``, may include additional information. For example:
@@ -185,10 +185,10 @@ To fill slots from entities with a specific role/group, you need to either defin
 :ref:`forms` or use :ref:`custom-actions` to extract the corresponding entity directly from the tracker.
 
 
-Extracting Places, Dates, People, Organisations
+Extracting Places, Dates, People, Organizations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-spaCy has excellent pre-trained named-entity recognisers for a few different languages.
+spaCy has excellent pre-trained named-entity recognizers for a few different languages.
 You can test them out in this
 `interactive demo <https://explosion.ai/demos/displacy-ent>`_.
 We don't recommend that you try to train your own NER using spaCy,

@@ -220,7 +220,7 @@ def _get_continuation_command(exporter: "Exporter", timestamp: float) -> Text:
 
     """
     # build CLI command command based on supplied timestamp and options
-    command = f"rasa export"
+    command = "rasa export"
 
     if exporter.endpoints_path is not None:
         command += f" --endpoints {exporter.endpoints_path}"

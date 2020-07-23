@@ -1,11 +1,9 @@
 import pytest
 
-from typing import Tuple
 from rasa.nlu import registry, train
 from rasa.nlu.components import find_unavailable_packages
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Metadata
-from tests.nlu import utilities
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)

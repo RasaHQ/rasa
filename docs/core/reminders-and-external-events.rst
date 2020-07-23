@@ -75,7 +75,7 @@ But here we want to make use of the fact that the reminder can carry entities, a
 
   Reminders currently (Rasa 1.8) don't work in `rasa shell`.
   You have to test them with a
-  `running Rasa X server <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ instead.
+  `running Rasa X server <https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/>`_ instead.
 
 .. note::
 
@@ -109,7 +109,7 @@ External Events
 ---------------
 
 Let's say you want to send a message from some other device to change the course of an ongoing conversation.
-For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favourite
+For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favorite
 plant needs watering, and your assistant should then relay this message to you.
 
 To do this, your Raspberry Pi needs to send a message to the `trigger_intent endpoint <../../api/http-api/#operation/triggerConversationIntent>`_ of your conversation.

@@ -9,6 +9,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
@@ -40,15 +41,10 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.utils.common import class_from_module_path, raise_warning
-from rasa.utils.tensorflow.constants import (
-    INTENT_CLASSIFICATION,
-    ENTITY_RECOGNITION,
-    NUM_TRANSFORMER_LAYERS,
-)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
-    from rasa.nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
+    from rasa.nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +82,7 @@ component_classes = [
     MitieIntentClassifier,
     KeywordIntentClassifier,
     DIETClassifier,
+    FallbackClassifier,
     # selectors
     ResponseSelector,
 ]

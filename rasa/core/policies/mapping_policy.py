@@ -4,8 +4,9 @@ import os
 import typing
 from typing import Any, List, Text, Optional
 
-from rasa.constants import DOCS_URL_POLICIES
+from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 import rasa.utils.io
+from rasa.utils import common as common_utils
 
 from rasa.core.actions.action import (
     ACTION_BACK_NAME,
@@ -20,6 +21,7 @@ from rasa.core.constants import (
 )
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
@@ -49,6 +51,13 @@ class MappingPolicy(Policy):
 
         super().__init__(priority=priority)
 
+        common_utils.raise_warning(
+            f"'{MappingPolicy.__name__}' is deprecated and will be removed in "
+            "the future. It is recommended to use the 'RulePolicy' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
     @classmethod
     def validate_against_domain(
         cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
@@ -77,6 +86,7 @@ class MappingPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
@@ -84,7 +94,11 @@ class MappingPolicy(Policy):
         pass
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts the assigned action.
 

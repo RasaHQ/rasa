@@ -50,10 +50,12 @@ class NLGMarkdownReader(TrainingDataReader):
                         story_intent = None
 
                 elif line.startswith("-"):
-                    # reach a assistant's utterance
+                    # reach an assistant's utterance
 
                     # utterance might have '-' itself, so joining them back if any
                     utterance = "-".join(line.split("- ")[1:])
+                    # utterance might contain escaped newlines that we want to unescape
+                    utterance = utterance.replace("\\n", "\n")
                     story_bot_utterances.append(utterance)
 
                 elif line.startswith("*"):

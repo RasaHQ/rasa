@@ -16,7 +16,6 @@ TF_HUB_MODULE_URL = "http://models.poly-ai.com/convert/v1/model.tar.gz"
 
 class ConveRTTokenizer(WhitespaceTokenizer):
     """Tokenizer using ConveRT model.
-
     Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
     model from TFHub and computes sub-word tokens for dense
     featurizable attributes of each message object.
@@ -27,8 +26,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # Text will be tokenized with case sensitive as default
-        "case_sensitive": True,
+        # Regular expression to detect tokens
+        "token_pattern": None,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -58,7 +57,6 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenize the text using the ConveRT model.
-
         ConveRT adds a special char in front of (some) words and splits words into
         sub-words. To ensure the entity start and end values matches the token values,
         tokenize the text first using the whitespace tokenizer. If individual tokens
@@ -84,7 +82,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         return tokens_out
 
-    def _clean_tokens(self, tokens: List[bytes]):
+    @staticmethod
+    def _clean_tokens(tokens: List[bytes]) -> List[Text]:
         """Encode tokens and remove special char added by ConveRT."""
 
         tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
