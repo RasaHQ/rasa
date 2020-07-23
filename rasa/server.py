@@ -491,12 +491,14 @@ def create_app(
             async with app.agent.lock_store.lock(conversation_id):
                 processor = app.agent.create_processor()
                 tracker = processor.get_tracker(conversation_id)
+                output_channel = _get_output_channel(request, tracker)
                 _validate_tracker(tracker, conversation_id)
 
                 events = _get_events_from_request_body(request)
 
                 for event in events:
                     tracker.update(event, app.agent.domain)
+                await processor._send_bot_messages(events, tracker, output_channel)
                 app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
