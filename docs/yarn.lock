@@ -8511,12 +8511,13 @@ remark-parse@8.0.2, remark-parse@^8.0.0:
     vfile-location "^3.0.0"
     xtend "^4.0.1"
 
-remark-sources@RasaHQ/remark-sources#19255f0:
-  version "1.0.0"
-  resolved "https://codeload.github.com/RasaHQ/remark-sources/tar.gz/19255f0964045af1d8c67c0b9a9ae4802cb94467"
+remark-sources@^1.0.1:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/remark-sources/-/remark-sources-1.0.3.tgz#932b7a42c4d32d04325181fb16a109dffa37c3d7"
+  integrity sha512-ecw4s6aD0VffjJFxwCrgcOnX1DcXVYCPuwMv8PCAw6y7vJhkPcEDq+GLLYl0yABlmJeDD1r6bcXLHDgr6vcAPA==
   dependencies:
     njct "^8.0.0"
-    unist-util-visit-children "^1.1.3"
+    unist-util-visit-children "^1.1.4"
 
 remark-squeeze-paragraphs@4.0.0:
   version "4.0.0"
@@ -9941,7 +9942,7 @@ unist-util-stringify-position@^2.0.0:
   dependencies:
     "@types/unist" "^2.0.2"
 
-unist-util-visit-children@^1.1.3:
+unist-util-visit-children@^1.1.3, unist-util-visit-children@^1.1.4:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/unist-util-visit-children/-/unist-util-visit-children-1.1.4.tgz#e8a087e58a33a2815f76ea1901c15dec2cb4b432"
   integrity sha512-sA/nXwYRCQVRwZU2/tQWUqJ9JSFM1X3x7JIOsIgSzrFHcfVt6NkzDtKzyxg2cZWkCwGF9CO8x4QNZRJRMK8FeQ==
