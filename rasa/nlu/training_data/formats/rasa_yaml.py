@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Text, Any, List, Dict, Tuple, TYPE_CHECKING, Union, Optional
+from typing import Text, Any, List, Dict, Tuple, TYPE_CHECKING, Union, Iterator
 
 from ruamel.yaml import YAMLError
 
@@ -27,6 +27,8 @@ KEY_LOOKUP = "lookup"
 KEY_LOOKUP_EXAMPLES = "examples"
 KEY_METADATA = "metadata"
 
+MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL = "-"
+
 
 class RasaYAMLReader(TrainingDataReader):
     """Reads YAML training data and creates a TrainingData object."""
@@ -49,8 +51,14 @@ class RasaYAMLReader(TrainingDataReader):
             New `TrainingData` object with parsed training data.
         """
         from rasa.nlu.training_data import TrainingData
+        from rasa.validator import Validator
 
         yaml_content = io_utils.read_yaml(string)
+
+        if not Validator.validate_training_data_format_version(
+            yaml_content, self.filename
+        ):
+            return TrainingData()
 
         for key, value in yaml_content.items():  # pytype: disable=attribute-error
             if key == KEY_NLU:
@@ -140,7 +148,7 @@ class RasaYAMLReader(TrainingDataReader):
             ]
         # pytype: enable=attribute-error
         elif isinstance(examples, str):
-            example_strings = examples.splitlines()
+            example_strings = self._parse_multiline_example(intent, examples)
         else:
             raise_warning(
                 f"Unexpected block found in '{self.filename}' "
@@ -199,7 +207,7 @@ class RasaYAMLReader(TrainingDataReader):
             )
             return
 
-        for example in examples.splitlines():
+        for example in self._parse_multiline_example(synonym_name, examples):
             synonyms_parser.add_synonym(example, synonym_name, self.entity_synonyms)
 
     def _parse_regex(self, nlu_item: Dict[Text, Any]) -> None:
@@ -233,7 +241,7 @@ class RasaYAMLReader(TrainingDataReader):
             )
             return
 
-        for example in examples.splitlines():
+        for example in self._parse_multiline_example(regex_name, examples):
             self.regex_features.append({"name": regex_name, "pattern": example})
 
     def _parse_lookup(self, nlu_item: Dict[Text, Any]):
@@ -269,10 +277,24 @@ class RasaYAMLReader(TrainingDataReader):
             )
             return
 
-        for example in examples.splitlines():
+        for example in self._parse_multiline_example(lookup_item_name, examples):
             lookup_tables_parser.add_item_to_lookup_tables(
                 lookup_item_name, example, self.lookup_tables
             )
+
+    def _parse_multiline_example(self, item: Text, examples: Text) -> Iterator[Text]:
+        for example in examples.splitlines():
+            if not example.startswith(MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL):
+                raise_warning(
+                    f"Issue found while processing '{self.filename}': "
+                    f"The item '{item}' contains an example that doesn't start with a "
+                    f"'{MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL}' symbol: "
+                    f"{example}\n"
+                    f"This training example will be skipped.",
+                    docs=DOCS_URL_TRAINING_DATA_NLU,
+                )
+                continue
+            yield example[1:].strip()
 
     @staticmethod
     def is_yaml_nlu_file(filename: Text) -> bool:

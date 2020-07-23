@@ -3,29 +3,40 @@ from typing import Text
 import pytest
 from ruamel.yaml import YAMLError
 
+from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.nlu.constants import INTENT
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader
 
-MULTILINE_INTENT_EXAMPLES = """
+MULTILINE_INTENT_EXAMPLES = (
+    f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
+    f"nlu:\n"
+    f" - intent: intent_name\n"
+    f"   examples: |\n"
+    f"      - how much CO2 will that use?\n"
+    f'      - how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?'
+)
+
+MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL = """
 nlu:
 - intent: intent_name
   examples: |
      how much CO2 will that use?
-     how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
+     - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
 """
 
-INTENT_EXAMPLES_WITH_METADATA = """
-nlu:
-- intent: intent_name
-  metadata:
-  examples:
-  - text: |
-      how much CO2 will that use?
-    metadata:
-      sentiment: positive
-  - text: |
-      how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
-"""
+INTENT_EXAMPLES_WITH_METADATA = (
+    f"version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'\n"
+    f"nlu:\n"
+    f" - intent: intent_name\n"
+    f"   metadata:\n"
+    f"   examples:\n"
+    f"    - text: |\n"
+    f"        how much CO2 will that use?\n"
+    f"      metadata:\n"
+    f"        sentiment: positive\n"
+    f"    - text: |\n"
+    f'        how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?'
+)
 
 
 def test_wrong_format_raises():
@@ -55,6 +66,18 @@ def test_multiline_intent_is_parsed(example: Text):
     assert training_data.training_examples[0].get(
         INTENT
     ) == training_data.training_examples[1].get(INTENT)
+
+
+def test_multiline_intent_example_is_skipped_when_no_leading_symbol():
+    parser = RasaYAMLReader()
+
+    with pytest.warns(None) as record:
+        training_data = parser.reads(MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL)
+
+    # one for missing leading symbol, one for missing version
+    assert len(record) == 2
+
+    assert len(training_data.training_examples) == 1
 
 
 @pytest.mark.parametrize(
@@ -97,7 +120,7 @@ def test_entity_is_extracted(example: Text, expected_num_entities: int):
 nlu:
 - intent: {intent_name}
   examples: |
-    {example}
+    - {example}
 """
 
     result = reader.reads(yaml_string)
@@ -113,8 +136,8 @@ def test_synonyms_are_parsed():
     nlu:
     - synonym: savings
       examples: |
-        pink pig
-        savings account
+        - pink pig
+        - savings account
     """
 
     parser = RasaYAMLReader()
@@ -133,9 +156,9 @@ def test_lookup_is_parsed():
     nlu:
     - lookup: {lookup_item_name}
       examples: |
-        Peso
-        Euro
-        Dollar
+        - Peso
+        - Euro
+        - Dollar
     """
 
     parser = RasaYAMLReader()
@@ -155,8 +178,8 @@ def test_regex_is_parsed():
     nlu:
     - regex: {regex_name}
       examples: |
-        {pattern_1}
-        {pattern_2}
+        - {pattern_1}
+        - {pattern_2}
     """
 
     parser = RasaYAMLReader()
