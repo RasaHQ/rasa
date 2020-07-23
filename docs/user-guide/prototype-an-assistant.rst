@@ -152,7 +152,7 @@ replace the last three responses with the response you used in your stories abov
     responses:
        utter_greet:
            - text: |
-               Hallo! How can I help you?
+               Hallo! How can I help you??
            - text: |
                hi!
        utter_ask_email:
@@ -180,7 +180,7 @@ To train your bot on the NLU data, stories and responses you’ve just defined, 
 the button below:
 
 .. train-button::
-    :endpoint: https://trainer-service.prototyping.rasa.com/trainings
+    :endpoint: https://trainer-service-pr56.prototyping.rasa.com/trainings
     :method: POST
 
 Once your model has finished training, you can talk to your assistant:
