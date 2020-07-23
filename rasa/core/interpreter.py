@@ -37,7 +37,12 @@ class NaturalLanguageInterpreter:
         if isinstance(obj, NaturalLanguageInterpreter):
             return obj
         elif isinstance(obj, str) and os.path.exists(obj):
-            return RasaNLUInterpreter(model_directory=obj)
+            from rasa.nlu.model import UnsupportedModelError
+            try:
+                return RasaNLUInterpreter(model_directory=obj)
+            except UnsupportedModelError as e:
+                logger.warning(e.message)
+                return RegexInterpreter()
         elif isinstance(obj, str) and not os.path.exists(obj):
             # user passed in a string, but file does not exist
             logger.warning(

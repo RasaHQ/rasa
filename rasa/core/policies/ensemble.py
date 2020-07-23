@@ -318,11 +318,15 @@ class PolicyEnsemble:
             )
 
     @classmethod
-    def load(cls, path: Text) -> "PolicyEnsemble":
+    def load(cls, path: Text) -> Optional["PolicyEnsemble"]:
         """Loads policy and domain specification from storage"""
 
         metadata = cls.load_metadata(path)
-        cls.ensure_model_compatibility(metadata)
+        try:
+            cls.ensure_model_compatibility(metadata)
+        except UnsupportedDialogueModelError as e:
+            logger.warning(e.message)
+            return None
         policies = []
         for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = registry.policy_from_module_path(policy_name)
