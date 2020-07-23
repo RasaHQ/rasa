@@ -85,9 +85,7 @@ def _load_interpreter(
         The NLU interpreter.
     """
     if nlu_path:
-        from rasa.core.interpreter import RasaNLUInterpreter
-
-        return RasaNLUInterpreter(model_directory=nlu_path)
+        return NaturalLanguageInterpreter.create(nlu_path)
 
     return agent.interpreter or RegexInterpreter()
 
