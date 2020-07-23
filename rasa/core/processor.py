@@ -471,7 +471,7 @@ class MessageProcessor:
             )
         else:
             parse_data = await self.interpreter.parse(
-                message.text, message.message_id, tracker
+                message.text, message.message_id, tracker, metadata=message.metadata,
             )
 
         logger.debug(
