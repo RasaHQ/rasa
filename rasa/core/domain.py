@@ -143,16 +143,21 @@ class Domain:
 
     @classmethod
     def from_file(cls, path: Text) -> "Domain":
-        return cls.from_yaml(rasa.utils.io.read_file(path))
+        return cls.from_yaml(rasa.utils.io.read_file(path), path)
 
     @classmethod
-    def from_yaml(cls, yaml: Text) -> "Domain":
+    def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
+        from rasa.validator import Validator
+
         try:
             validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
         except InvalidYamlFileError as e:
             raise InvalidDomain(str(e))
 
         data = rasa.utils.io.read_yaml(yaml)
+        if not Validator.validate_training_data_format_version(data, original_filename):
+            return Domain.empty()
+
         return cls.from_dict(data)
 
     @classmethod
