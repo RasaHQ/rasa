@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 def get_persistor(name: Text) -> Optional["Persistor"]:
     """Returns an instance of the requested persistor.
 
-    Currently, `aws`, `gcs` and `azure` are supported"""
+    Currently, `aws`, `gcs`, `azure` and 'aliyun oss' are supported"""
 
     if name == "aws":
         return AWSPersistor(
@@ -26,6 +26,19 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
             os.environ.get("AZURE_CONTAINER"),
             os.environ.get("AZURE_ACCOUNT_NAME"),
             os.environ.get("AZURE_ACCOUNT_KEY"),
+        )
+
+    if name == "ali_oss":
+        from ali_persistor import OssPersistor
+        return OssPersistor(
+            access_key_id=os.environ.get("ALI_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("ALI_ACCESS_KEY_SECRET"),
+            sts_role_arn=os.environ.get("ALI_STS_ROLE_ARN"),
+            region_id=os.environ.get("ALI_REGION_ID"),
+            endpoint=os.environ.get("ALI_ENDPOINT"),
+            bucket_name=os.environ.get("ALI_BUCKET_NAME"),
+            bucket_path=os.environ.get("ALI_BUCKET_PATH"),
+            local_path=os.environ.get("ALI_LOCAL_PATH"),
         )
 
     return None
