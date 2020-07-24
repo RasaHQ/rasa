@@ -305,7 +305,7 @@ class RulePolicy(MemoizationPolicy):
             )
         )
 
-    def _get_possible_kes(
+    def _get_possible_keys(
         self, lookup: Dict[Text, Text], states: List[Dict[Text, float]]
     ) -> Set[Text]:
         possible_keys = set(lookup.keys())
@@ -372,7 +372,7 @@ class RulePolicy(MemoizationPolicy):
 
         logger.debug(f"Current tracker state: {states}")
 
-        rule_keys = self._get_possible_kes(self.lookup[RULES], states)
+        rule_keys = self._get_possible_keys(self.lookup[RULES], states)
         predicted_action_name = None
         best_rule_key = ""
         if rule_keys:
@@ -385,7 +385,7 @@ class RulePolicy(MemoizationPolicy):
         active_form_name = tracker.active_form_name()
         if active_form_name:
             # find rules for unhappy path of the form
-            form_unhappy_keys = self._get_possible_kes(
+            form_unhappy_keys = self._get_possible_keys(
                 self.lookup[RULES_FOR_FORM_UNHAPPY_PATH], states
             )
             # there could be several unhappy path conditions
