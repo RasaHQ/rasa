@@ -1,6 +1,7 @@
 import os
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Type
 
+from rasa.nlu.components import Component
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
@@ -13,6 +14,10 @@ from rasa.utils.common import raise_warning
 
 
 class EntitySynonymMapper(EntityExtractor):
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [EntityExtractor]
+
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
