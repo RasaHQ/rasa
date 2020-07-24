@@ -2165,7 +2165,7 @@ sanic = ">=19.12.2,<20.0.0"
 sanic-cors = ">=0.10.0b1,<0.11.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "A configurable sidebar-enabled Sphinx theme"
 name = "rasabaster"
 optional = false
@@ -2177,7 +2177,6 @@ version = "0.7.28"
 
 [package.source]
 reference = "rasa-pypi"
-type = "legacy"
 url = "https://pypi.rasa.com/simple"
 
 [[package]]

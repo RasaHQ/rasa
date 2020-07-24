@@ -114,8 +114,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        # TODO: re-add 3.8
-        python-version: [3.6, 3.7] #, 3.8]
+        python-version: [3.6, 3.7, 3.8]
 
     steps:
     - name: Checkout git repository 🕝

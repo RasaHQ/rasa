@@ -124,7 +124,6 @@ ujson = ">=1.35,<4.0"
 oauth2client = "4.1.3"
 regex = "~2020.6"
 joblib = "^0.15.1"
-rasabaster = "^0.7.28"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
