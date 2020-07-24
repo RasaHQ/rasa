@@ -351,11 +351,27 @@ a:hover {
   -webkit-border-radius: 8px;
   -moz-border-radius: 8px;
   border-radius: 8px;
-  padding:12px;
-  font-size:15px;
+  padding: 12px;
+  font-size: 15px;
   border: 1px solid transparent;
-  cursor:pointer;
-  font-weight:600;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.1s;
+}
+
+.button:disabled,
+.button[disabled] {
+  background: #CCCCCC;
+  cursor: default;
+}
+
+.train__spinner {
+  margin-left: 8px;
+  display: inline-block;
+}
+
+.train__spinner--hidden {
+  display: none !important;
 }
 
 .btn-ghost {
@@ -721,6 +737,13 @@ pre, tt, code {
     -moz-border-radius: 4px;
     border-radius: 4px;
     font-weight:500;
+}
+
+.ace_editor {
+    background-color: #F7F8F9;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
 }
 
 .hll {
@@ -1303,6 +1326,12 @@ input.jp-Stdin-input:focus {
 #rasa-platform-everything-you-need-to-run-the-rasa-stack-in-the-enterprise > a.reference.internal.image-reference > img {
     margin-top: 40px;
     margin-bottom: 50px;
+}
+
+#rasa-chat-block {
+    height: 600px;
+    border: 1px solid #E8E8E8;
+    border-radius: 4px;
 }
 
 .copyable {
