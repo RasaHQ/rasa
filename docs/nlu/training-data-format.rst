@@ -66,7 +66,7 @@ Synonyms will map extracted entities to the same name, for example mapping "my s
 However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms
 present so that Rasa can learn to pick them up.
 
-Lookup tables may be specified as plain text files containing newline-separated words or 
+Lookup tables may be specified as plain text files containing newline-separated words or
 phrases. Upon loading the training data, these files are used to generate
 case-insensitive regex patterns that are added to the regex features.
 
@@ -139,33 +139,49 @@ That way you can map synonyms, or misspellings, to the same ``value``.
 
 Regular Expression Features
 ---------------------------
-Regular expressions can be used to support the intent classification and entity extraction. For example, if your entity
-has a deterministic structure (like a zipcode or an email address), you can use a regular expression to ease detection
-of that entity. For the zipcode example it might look like this:
+Regular expressions can be used in two different ways:
+
+1. They can be used to support the intent classification and entity extraction when using the :ref:`RegexFeaturizer`
+component in the pipeline.
+
+2. They can be used to directly extract entities from a user messages when using the :ref:`RegexEntityExtractor`
+component in the pipeline.
+
+For example, if your entity has a deterministic structure (like a zipcode or an email address), you can use a regular
+expression to ease detection of that entity (using the :ref:`RegexFeaturizer`) or to directly extract the entities from
+the user message (using the :ref:`RegexEntityExtractor`). For the zipcode example it might look like this:
 
 .. code-block:: md
 
     ## regex:zipcode
     - [0-9]{5}
 
+In case you are using the regular expressions for the :ref:`RegexFeaturizer` the name of the regular expression does
+not matter. If does not define the entity nor the intent, it is just a human readable description for you to remember
+what this regex is used for and is the title of the corresponding pattern feature.
+If you want to use the :ref:`RegexFeaturizer` you can also use the regex features to improve the intent
+classification performance, for example, by defining a greet clause:
+
+.. code-block:: md
+
     ## regex:greet
     - hey[^\\s]*
 
-The name doesn't define the entity nor the intent, it is just a human readable description for you to remember what
-this regex is used for and is the title of the corresponding pattern feature. As you can see in the above example, you
-can also use the regex features to improve the intent
-classification performance.
+If you are using the regular expressions to directly extract entities using the :ref:`RegexEntityExtractor`, the name
+of the regular expression should match the name of the entity you want to extract.
 
-Try to create your regular expressions in a way that they match as few words as possible. E.g. using ``hey[^\s]*``
+Try to create your regular expressions in a way that they match as few words as possible. E.g. using ``hey[^\\s]*``
 instead of ``hey.*``, as the later one might match the whole message whereas the first one only matches a single word.
 
-Regex features for entity extraction are currently only supported by the ``CRFEntityExtractor`` component! Hence, other
-entity extractors, like ``MitieEntityExtractor`` or ``SpacyEntityExtractor`` won't use the generated features and their
+When using the :ref:`RegexFeaturizer`, the regex features for entity extraction are currently only supported by the
+``CRFEntityExtractor`` and the ``DIETClassifier`` component! Hence, other entity extractors, like
+``MitieEntityExtractor`` or ``SpacyEntityExtractor`` won't use the generated features and their
 presence will not improve entity recognition for these extractors. Currently, all intent classifiers make use of
 available regex features.
 
 .. note::
-    Regex features don't define entities nor intents! They simply provide patterns to help the classifier
+    Regex features only define entities when used in combination with the :ref:`RegexEntityExtractor`. Otherwise they
+    don't define entities nor intents! They simply provide patterns to help the classifier
     recognize entities and related intents. Hence, you still need to provide intent & entity examples as part of your
     training data!
 
@@ -191,16 +207,15 @@ And can be loaded and used as shown here:
     - How about some [mapo tofu](plates)
 
 When lookup tables are supplied in training data, the contents are combined
-into a large, case-insensitive regex pattern that looks for exact matches in
+into a large regex pattern that looks for exact matches in
 the training examples. These regexes match over multiple tokens, so
 ``lettuce wrap`` would match ``get me a lettuce wrap ASAP`` as ``[0 0 0 1 1 0]``.
 These regexes are processed identically to the regular regex patterns
 directly specified in the training data.
 
 .. note::
-    For lookup tables to be effective, there must be a few examples of matches in your training data. Otherwise the
-    model will not learn to use the lookup table match features.
-
+    If you are using lookup tables in combination with :ref:`RegexFeaturizer`, there must be a few examples of matches
+    in your training data. Otherwise the model will not learn to use the lookup table match features.
 
 .. warning::
     You have to be careful when you add data to the lookup table.
@@ -221,7 +236,7 @@ If you define entities as having the same value they will be treated as synonyms
 .. code-block:: md
 
     ## intent:search
-    - in the center of [NYC]{"entity": "city", "value": "New York City")
+    - in the center of [NYC]{"entity": "city", "value": "New York City"}
     - in the centre of [New York City](city)
 
 

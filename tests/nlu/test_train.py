@@ -63,7 +63,11 @@ def pipelines_for_tests():
         (
             "en",
             as_pipeline(
-                "MitieNLP", "MitieTokenizer", "MitieFeaturizer", "MitieIntentClassifier"
+                "MitieNLP",
+                "MitieTokenizer",
+                "MitieFeaturizer",
+                "MitieIntentClassifier",
+                "RegexEntityExtractor",
             ),
         ),
         (
@@ -72,6 +76,7 @@ def pipelines_for_tests():
                 "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
             ),
         ),
+        ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
     ]
 
 

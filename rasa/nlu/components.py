@@ -238,21 +238,23 @@ def validate_required_components_from_data(
             )
 
     if data.regex_features and not any_components_in_pipeline(
-        ["RegexFeaturizer"], pipeline
+        ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
         raise_warning(
             "You have defined training data with regexes, but "
-            "your NLU pipeline does not include a 'RegexFeaturizer'. "
-            "To featurize regexes, include a 'RegexFeaturizer' in your pipeline."
+            "your NLU pipeline does not include a 'RegexFeaturizer' or a "
+            "'RegexEntityExtractor'. To use regexes, include either a "
+            "'RegexFeaturizer' or a 'RegexEntityExtractor' in your pipeline."
         )
 
     if data.lookup_tables and not any_components_in_pipeline(
-        ["RegexFeaturizer"], pipeline
+        ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
         raise_warning(
             "You have defined training data consisting of lookup tables, but "
-            "your NLU pipeline does not include a 'RegexFeaturizer'. "
-            "To featurize lookup tables, add a 'RegexFeaturizer' to your pipeline."
+            "your NLU pipeline does not include a 'RegexFeaturizer' or a "
+            "'RegexEntityExtractor'. To use lookup tables, include either a "
+            "'RegexFeaturizer' or a 'RegexEntityExtractor' in your pipeline."
         )
 
     if data.lookup_tables:
@@ -392,7 +394,13 @@ class Component(metaclass=ComponentMetaclass):
     # This attribute is designed for instance method: `can_handle_language`.
     # Default value is None which means it can handle all languages.
     # This is an important feature for backwards compatibility of components.
-    language_list = None
+    supported_language_list = None
+
+    # Defines what language(s) this component can NOT handle.
+    # This attribute is designed for instance method: `can_handle_language`.
+    # Default value is None which means it can handle all languages.
+    # This is an important feature for backwards compatibility of components.
+    not_supported_language_list = None
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
@@ -648,10 +656,16 @@ class Component(metaclass=ComponentMetaclass):
         """
 
         # if language_list is set to `None` it means: support all languages
-        if language is None or cls.language_list is None:
+        if language is None or (
+            cls.supported_language_list is None
+            and cls.not_supported_language_list is None
+        ):
             return True
 
-        return language in cls.language_list
+        language_list = cls.supported_language_list or []
+        not_supported_language_list = cls.not_supported_language_list or []
+
+        return language in language_list or language not in not_supported_language_list
 
 
 C = typing.TypeVar("C", bound=Component)

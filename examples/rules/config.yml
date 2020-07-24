@@ -1,0 +1,22 @@
+language: en
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+    token_pattern: (?u)\b\w+\b
+  - name: DucklingHTTPExtractor
+    url: http://localhost:8000
+    dimensions:
+      - number
+  - name: DIETClassifier
+    epochs: 100
+  - name: EntitySynonymMapper
+  - name: FallbackClassifier
+    # If the highest ranked intent has a confidence lower than the threshold than
+    # the NLU pipeline predicts an intent `nlu_fallback` which you can then use in
+    # stories / rules to implement an appropriate fallback.
+    threshold: 0.5
+
+policies:
+  - name: RulePolicy

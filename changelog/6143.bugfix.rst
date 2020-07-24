@@ -1,0 +1,1 @@
+Prevent ``WhitespaceTokenizer`` from outputting empty list of tokens.
