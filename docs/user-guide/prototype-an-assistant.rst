@@ -3,18 +3,19 @@ Prototype an Assistant
 
 .. edit-link::
 
-Get started with Rasa Open source and learn how to create an assistant from scratch!
+Get started with Rasa Open Source and learn how to create an assistant from scratch!
 
-This page explains the basics of building an assistant with Rasa and shows the structure of a Rasa project.
-You can test it out right here without installing anything. You can also install Rasa and follow along in your command line.
+This page explains the basics of building an assistant with Rasa Open Source and shows the structure of a Rasa project.
+You can test it out right here without installing anything. You can also install
+:ref:`install Rasa Open Source <installation>` and follow along in your command line.
 
 
 1. Define a basic user goal
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To prototype an assistant, start with a single `user goal <glossary>`_
-that your assistant will handle. You can create a prototype using the user goal we have chosen
-"subscribing to a newsletter", or you can come up with your own. If you choose your own user goal,
+To prototype an assistant, start with a single :ref:`user goal <glossary>`
+that your assistant will handle. You can create a prototype with the "subscribing to a newsletter" user goal
+we have chosen, or you can come up with your own. If you choose your own user goal,
 you can create a prototype that handles your goal by following the instructions to change each
 section throughout the tutorial.
 
@@ -22,8 +23,8 @@ section throughout the tutorial.
 2. Create some NLU data
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-`NLU <glossary>`_ data provides examples of what users might say to your assistant and what they mean by it.
-`Intent <glossary>`_  refers to what the user means with a specific message.
+:ref:`NLU <glossary>` data provides examples of what users might say to your assistant and what they mean by it.
+:ref:`Intent <glossary>`  refers to what the user means with a specific message.
 Your assistant can only learn to recognize intents for which it has seen examples, so we need to provide some data.
 
 Add examples for your user-goal specific intents in the format shown below.
@@ -65,9 +66,9 @@ you can also add or change examples for any of the other intents.
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 For most user goals, the bot will need to collect some information from the user to fulfill their request.
-To do so, we define a `form <glossary>`_. You can change the name of the form to reflect your user goal.
-Add to or replace the "email" item in the list below to reflect the information the bot needs
-to collect for your user goal. Leave the "type" field the same for any items you add.
+To do so, we define a :ref:`form <glossary>`. You can change the name of the form to reflect your user goal.
+Add to or replace the ``email`` item in the list below to reflect the information the bot needs
+to collect for your user goal. Leave the ``type`` field the same for any items you add.
 
 .. code-editor::
     :language: yaml
@@ -77,14 +78,14 @@ to collect for your user goal. Leave the "type" field the same for any items you
 
     forms:
     - newsletter_form:
-       email:
-       - type: from_text
+        email:
+        - type: from_text
 
 
 4. Write a rule
 ~~~~~~~~~~~~~~~
 
-Rules are conversation snippets that should always precede in exactly the same way. The ellipsis in the
+Rules are conversation snippets that should always proceed in exactly the same way. The ellipsis in the
 first step of the rule tells the bot that regardless of what precedes, the next steps should always
 follow one another. Update the rule below for running the form you defined above.
 
@@ -107,9 +108,9 @@ follow one another. Update the rule below for running the form you defined above
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Stories are example conversations of how your assistant should handle a user’s intent in context.
-The first stories you write should follow the `happy path <glossary>` for your user goal.
+The first stories you write should follow the :ref:`happy path <glossary>` for your user goal.
 
-A story contains one or more blocks of (user) intent and (bot) `actions <glossary>`_ or `responses <glossary>`_.
+A story contains one or more blocks of (user) intent and (bot) :ref:`actions <glossary>` or :ref:`responses <glossary>`.
 The form you defined above is one kind of action; responses are just bot messages.
 Give intuitive names to your responses starting with ``utter_`` for now; you’ll define what they return later.
 
@@ -152,9 +153,9 @@ replace the last three responses with the response you used in your stories abov
     responses:
        utter_greet:
            - text: |
-               Hallo! How can I help you?
+               Hello! How can I help you?
            - text: |
-               hi!
+               Hi!
        utter_ask_email:
            - text: |
                What is your email address?
