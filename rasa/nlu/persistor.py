@@ -30,6 +30,7 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
 
     if name == "ali_oss":
         from ali_persistor import OssPersistor
+
         return OssPersistor(
             access_key_id=os.environ.get("ALI_ACCESS_KEY_ID"),
             access_key_secret=os.environ.get("ALI_ACCESS_KEY_SECRET"),
@@ -186,7 +187,7 @@ class AWSPersistor(Persistor):
 class GCSPersistor(Persistor):
     """Store models on Google Cloud Storage.
 
-     Fetches them when needed, instead of storing them on the local disk."""
+    Fetches them when needed, instead of storing them on the local disk."""
 
     def __init__(self, bucket_name: Text) -> None:
         from google.cloud import storage
