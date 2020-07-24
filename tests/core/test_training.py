@@ -141,10 +141,7 @@ async def test_training_script_with_restart_stories(stories_file: Text, tmp_path
 
 def configs_for_random_seed_test() -> List[Text]:
     # define the configs for the random_seed tests
-    return [
-        "data/test_config/ted_random_seed.yaml",
-        "data/test_config/embedding_random_seed.yaml",
-    ]
+    return ["data/test_config/ted_random_seed.yaml"]
 
 
 @pytest.mark.parametrize("config_file", configs_for_random_seed_test())
