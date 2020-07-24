@@ -419,29 +419,40 @@ That way you can map synonyms, or misspellings, to the same <code class="docutil
 </div>
 <div class="section" id="regular-expression-features">
 <h3><a class="toc-backref" href="#id9">Regular Expression Features</a><a class="headerlink" href="#regular-expression-features" title="Permalink to this headline">¶</a></h3>
-<p>Regular expressions can be used to support the intent classification and entity extraction. For example, if your entity
-has a deterministic structure (like a zipcode or an email address), you can use a regular expression to ease detection
-of that entity. For the zipcode example it might look like this:</p>
+<p>Regular expressions can be used in two different ways:</p>
+<p>1. They can be used to support the intent classification and entity extraction when using the <a class="reference internal" href="../components/#regexfeaturizer"><span class="std std-ref">RegexFeaturizer</span></a>
+component in the pipeline.</p>
+<p>2. They can be used to directly extract entities from a user messages when using the <a class="reference internal" href="../components/#regexentityextractor"><span class="std std-ref">RegexEntityExtractor</span></a>
+component in the pipeline.</p>
+<p>For example, if your entity has a deterministic structure (like a zipcode or an email address), you can use a regular
+expression to ease detection of that entity (using the <a class="reference internal" href="../components/#regexfeaturizer"><span class="std std-ref">RegexFeaturizer</span></a>) or to directly extract the entities from
+the user message (using the <a class="reference internal" href="../components/#regexentityextractor"><span class="std std-ref">RegexEntityExtractor</span></a>). For the zipcode example it might look like this:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> regex:zipcode
 <span class="k">-</span> [0-9]{5}
-
-<span class="gu">##</span> regex:greet
+</pre></div>
+</div>
+<p>In case you are using the regular expressions for the <a class="reference internal" href="../components/#regexfeaturizer"><span class="std std-ref">RegexFeaturizer</span></a> the name of the regular expression does
+not matter. If does not define the entity nor the intent, it is just a human readable description for you to remember
+what this regex is used for and is the title of the corresponding pattern feature.
+If you want to use the <a class="reference internal" href="../components/#regexfeaturizer"><span class="std std-ref">RegexFeaturizer</span></a> you can also use the regex features to improve the intent
+classification performance, for example, by defining a greet clause:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> regex:greet
 <span class="k">-</span> hey[^\\s]*
 </pre></div>
 </div>
-<p>The name doesn’t define the entity nor the intent, it is just a human readable description for you to remember what
-this regex is used for and is the title of the corresponding pattern feature. As you can see in the above example, you
-can also use the regex features to improve the intent
-classification performance.</p>
-<p>Try to create your regular expressions in a way that they match as few words as possible. E.g. using <code class="docutils literal notranslate"><span class="pre">hey[^\s]*</span></code>
+<p>If you are using the regular expressions to directly extract entities using the <a class="reference internal" href="../components/#regexentityextractor"><span class="std std-ref">RegexEntityExtractor</span></a>, the name
+of the regular expression should match the name of the entity you want to extract.</p>
+<p>Try to create your regular expressions in a way that they match as few words as possible. E.g. using <code class="docutils literal notranslate"><span class="pre">hey[^\\s]*</span></code>
 instead of <code class="docutils literal notranslate"><span class="pre">hey.*</span></code>, as the later one might match the whole message whereas the first one only matches a single word.</p>
-<p>Regex features for entity extraction are currently only supported by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component! Hence, other
-entity extractors, like <code class="docutils literal notranslate"><span class="pre">MitieEntityExtractor</span></code> or <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> won’t use the generated features and their
+<p>When using the <a class="reference internal" href="../components/#regexfeaturizer"><span class="std std-ref">RegexFeaturizer</span></a>, the regex features for entity extraction are currently only supported by the
+<code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> and the <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> component! Hence, other entity extractors, like
+<code class="docutils literal notranslate"><span class="pre">MitieEntityExtractor</span></code> or <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> won’t use the generated features and their
 presence will not improve entity recognition for these extractors. Currently, all intent classifiers make use of
 available regex features.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Regex features don’t define entities nor intents! They simply provide patterns to help the classifier
+<p>Regex features only define entities when used in combination with the <a class="reference internal" href="../components/#regexentityextractor"><span class="std std-ref">RegexEntityExtractor</span></a>. Otherwise they
+don’t define entities nor intents! They simply provide patterns to help the classifier
 recognize entities and related intents. Hence, you still need to provide intent &amp; entity examples as part of your
 training data!</p>
 </div>
@@ -468,15 +479,15 @@ data/test/lookup_tables/plates.txt
 </pre></div>
 </div>
 <p>When lookup tables are supplied in training data, the contents are combined
-into a large, case-insensitive regex pattern that looks for exact matches in
+into a large regex pattern that looks for exact matches in
 the training examples. These regexes match over multiple tokens, so
 <code class="docutils literal notranslate"><span class="pre">lettuce</span> <span class="pre">wrap</span></code> would match <code class="docutils literal notranslate"><span class="pre">get</span> <span class="pre">me</span> <span class="pre">a</span> <span class="pre">lettuce</span> <span class="pre">wrap</span> <span class="pre">ASAP</span></code> as <code class="docutils literal notranslate"><span class="pre">[0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">1</span> <span class="pre">1</span> <span class="pre">0]</span></code>.
 These regexes are processed identically to the regular regex patterns
 directly specified in the training data.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For lookup tables to be effective, there must be a few examples of matches in your training data. Otherwise the
-model will not learn to use the lookup table match features.</p>
+<p>If you are using lookup tables in combination with <a class="reference internal" href="../components/#regexfeaturizer"><span class="std std-ref">RegexFeaturizer</span></a>, there must be a few examples of matches
+in your training data. Otherwise the model will not learn to use the lookup table match features.</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
