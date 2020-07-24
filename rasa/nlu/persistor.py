@@ -28,7 +28,7 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
             os.environ.get("AZURE_ACCOUNT_KEY"),
         )
 
-    if name == "ali_oss":
+    if name == "ali-oss":
         from ali_persistor import OssPersistor
 
         return OssPersistor(
