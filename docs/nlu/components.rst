@@ -477,8 +477,12 @@ RegexFeaturizer
 
         pipeline:
         - name: "RegexFeaturizer"
-          # Text will be processed with case sensitive as default
+          # text will be processed with case sensitive as default
           "case_sensitive": True
+          # use lookup tables to generate features
+          "use_lookup_tables": True
+          # use regexes to generate features
+          "use_regexes": True
 
 .. _CountVectorsFeaturizer:
 
@@ -952,6 +956,39 @@ EntitySynonymMapper
 
         When using the ``EntitySynonymMapper`` as part of an NLU pipeline, it will need to be placed
         below any entity extractors in the configuration file.
+
+
+.. _RegexEntityExtractor:
+
+RegexEntityExtractor
+~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Extracts entities using the lookup tables and/or regexes defined in the training data
+:Outputs: ``entities``
+:Requires: Nothing
+:Description:
+    This component extract entities using the lookup tables and regexes defined in the training data.
+    The component checks if the user message contains an entry of one of the lookup tables or matches one of the
+    regexes. If a match is found, the value is extracted as entity.
+
+    This component only uses those regex features that have a name equal to one of the entities defined in the
+    training data. Make sure to annotate at least one example per entity.
+
+:Configuration:
+    Make the entity extractor case sensitive by adding the ``case_sensitive: True`` option, the default being
+    ``case_sensitive: False``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: RegexEntityExtractor
+          # text will be processed with case insensitive as default
+          "case_sensitive": False
+          # use lookup tables to extract entities
+          "use_lookup_tables": True
+          # use regexes to extract entities
+          "use_regexes": True
+
 
 .. _CRFEntityExtractor:
 
