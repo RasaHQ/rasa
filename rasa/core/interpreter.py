@@ -38,6 +38,7 @@ class NaturalLanguageInterpreter:
             return obj
         elif isinstance(obj, str) and os.path.exists(obj):
             from rasa.nlu.model import UnsupportedModelError
+
             try:
                 return RasaNLUInterpreter(model_directory=obj)
             except UnsupportedModelError as e:
