@@ -195,6 +195,7 @@ Once your model has finished training, you can talk to your assistant:
 
 You can download this project and build on it to create a more advanced assistant.
 In your downloaded project, you’ll notice several files that were configured for you that you didn’t edit on this page.
-To learn more about configs, domains and actions, refer to the advanced tutorials.
+Check out other docs pages to learn more about :ref:`domains`, :ref:`actions`,
+and your config's :ref:`pipeline <choosing-a-pipeline>` and :ref:`policies`.
 
 .. download-button::
