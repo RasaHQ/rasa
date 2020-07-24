@@ -154,10 +154,12 @@ paths:
       description: >-
         Appends one or multiple new events to the tracker state of the conversation.
         Any existing events will be kept and the new events will be
-        appended, updating the existing state.
+        appended, updating the existing state. Any BotUttered event will be 
+        forwarded to the channel specified in the ``output_channel`` parameter.
       parameters:
       - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
+      - $ref: '#/components/parameters/output_channel'
       requestBody:
         required: true
         content:
