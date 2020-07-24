@@ -477,8 +477,8 @@ class TrainingData:
 
     def print_stats(self) -> None:
         number_of_examples_for_each_intent = []
-        for key, value in self.number_of_examples_per_intent.items():
-            number_of_examples_for_each_intent.append(f"intent: {key}, training examples: {value}   ")
+        for intent_name, example_count in self.number_of_examples_per_intent.items():
+            number_of_examples_for_each_intent.append(f"intent: {intent_name}, training examples: {example_count}   ")
         newline = "\n"        
         
         logger.info("Training data stats:")

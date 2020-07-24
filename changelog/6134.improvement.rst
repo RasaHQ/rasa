@@ -1,1 +1,1 @@
-I log the number of examples per intent, with an attempt at making the output somewhat easy to read. 
+Log the number of examples per intent during training. Logging can be enabled using ``rasa train --debug``.
