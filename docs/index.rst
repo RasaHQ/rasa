@@ -25,6 +25,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    user-guide/installation
    user-guide/rasa-tutorial
    user-guide/building-assistants
+   user-guide/prototype-an-assistant
    user-guide/command-line-interface
    user-guide/architecture
    user-guide/messaging-and-voice-channels
