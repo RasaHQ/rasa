@@ -154,14 +154,13 @@ class RegexInterpreter(NaturalLanguageInterpreter):
     ) -> Dict[Text, Any]:
         """Parse a text message."""
 
-        return self.synchronous_parse(text, message_id, tracker, metadata)
+        return self.synchronous_parse(text, message_id, tracker)
 
     def synchronous_parse(
         self,
         text: Text,
         message_id: Optional[Text] = None,
         tracker: DialogueStateTracker = None,
-        metadata: Optional[Dict] = None,
     ) -> Dict[Text, Any]:
         """Parse a text message."""
 
