@@ -170,7 +170,8 @@ replace the last three responses with the response you used in your stories abov
     For this prototype, we have only defined responses, meaning the only thing the assistant does is respond with a
     predefined message. Custom actions, however, can be defined to do whatever you’d like.
     For example, for the user goal of subscribing to a newsletter, you could create a custom action
-    that adds the user’s email to a database. You can see an example of this in `Sara's action code <action code>`_.
+    that adds the user’s email to a database. You can see an example of this
+    in `Sara's action code <https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py>`_.
 
 
 7. Train and run
