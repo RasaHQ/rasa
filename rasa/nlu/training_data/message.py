@@ -4,6 +4,7 @@ import numpy as np
 import scipy.sparse
 import typing
 
+from rasa.exceptions import RasaException
 from rasa.nlu.constants import (
     ENTITIES,
     INTENT,
@@ -95,11 +96,18 @@ class Message:
         return hash((self.text, str(ordered(self.data))))
 
     @classmethod
-    def build(cls, text, intent=None, entities=None, **kwargs) -> "Message":
+    def build(
+        cls,
+        text: Text,
+        intent: Optional[Text] = None,
+        entities: List[Dict[Text, Any]] = None,
+        **kwargs,
+    ) -> "Message":
         data = {}
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(intent)
-            data[INTENT] = split_intent
+            if split_intent:
+                data[INTENT] = split_intent
             if response_key:
                 data[RESPONSE_KEY_ATTRIBUTE] = response_key
         if entities:
@@ -117,13 +125,20 @@ class Message:
         return f"{intent}{response_key_suffix}"
 
     @staticmethod
-    def separate_intent_response_key(original_intent) -> Optional[Tuple[Any, Any]]:
+    def separate_intent_response_key(
+        original_intent: Text,
+    ) -> Tuple[Text, Optional[Text]]:
 
         split_title = original_intent.split(RESPONSE_IDENTIFIER_DELIMITER)
         if len(split_title) == 2:
             return split_title[0], split_title[1]
         elif len(split_title) == 1:
             return split_title[0], None
+
+        raise RasaException(
+            f"Intent name '{original_intent}' is invalid, "
+            f"it cannot contain more than one '{RESPONSE_IDENTIFIER_DELIMITER}'."
+        )
 
     def get_sparse_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
