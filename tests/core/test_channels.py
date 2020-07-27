@@ -552,7 +552,7 @@ def test_slack_metadata():
     metadata = input_channel.get_metadata(request=r)
     assert metadata["out_channel"] == channel
     assert metadata["users"] == authed_users
-    assert metadata["ts"] == ts
+    assert metadata["thread_id"] == ts
 
 
 def test_slack_form_metadata():
@@ -600,7 +600,7 @@ def test_slack_form_metadata():
     metadata = input_channel.get_metadata(request=r)
     assert metadata["out_channel"] == channel
     assert metadata["users"] == authed_user
-    assert metadata["ts"] == ts
+    assert metadata["thread_id"] == ts
 
 
 def test_slack_metadata_missing_keys():
@@ -645,7 +645,7 @@ def test_slack_metadata_missing_keys():
     metadata = input_channel.get_metadata(request=r)
     assert metadata["users"] is None
     assert metadata["out_channel"] == channel
-    assert metadata["ts"] == ts
+    assert metadata["thread_id"] == ts
 
 
 def test_slack_form_metadata_missing_keys():
@@ -689,7 +689,7 @@ def test_slack_form_metadata_missing_keys():
     metadata = input_channel.get_metadata(request=r)
     assert metadata["users"] is None
     assert metadata["out_channel"] == channel
-    assert metadata["ts"] == ts
+    assert metadata["thread_id"] == ts
 
 
 def test_slack_no_metadata():
@@ -845,7 +845,7 @@ def test_slackbot_init_two_parameter():
 def test_slackbot_init_three_parameter():
     from rasa.core.channels.slack import SlackBot
 
-    bot = SlackBot("DummyToken", "General", ts="DummyThread")
+    bot = SlackBot("DummyToken", "General", thread_id="DummyThread")
     assert bot.client.token == "DummyToken"
     assert bot.slack_channel == "General"
     assert bot.ts == "DummyThread"
@@ -892,7 +892,7 @@ async def test_slackbot_send_attachment_only_threaded():
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
-        bot = SlackBot("DummyToken", "General", ts="DummyThread")
+        bot = SlackBot("DummyToken", "General", thread_id="DummyThread")
         attachment = SLACK_TEST_ATTACHMENT
 
         await bot.send_attachment("ID", attachment)
@@ -952,7 +952,7 @@ async def test_slackbot_send_attachment_with_text_threaded():
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
-        bot = SlackBot("DummyToken", "General", ts="DummyThread")
+        bot = SlackBot("DummyToken", "General", thread_id="DummyThread")
         attachment = SLACK_TEST_ATTACHMENT
         attachment["text"] = "Here is the summary:"
 
@@ -1012,7 +1012,7 @@ async def test_slackbot_send_image_url_threaded():
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
-        bot = SlackBot("DummyToken", "General", ts="DummyThread")
+        bot = SlackBot("DummyToken", "General", thread_id="DummyThread")
         url = "http://www.rasa.net"
         await bot.send_image_url("ID", url)
 
@@ -1070,7 +1070,7 @@ async def test_slackbot_send_text_threaded():
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
-        bot = SlackBot("DummyToken", "General", ts="DummyThread")
+        bot = SlackBot("DummyToken", "General", thread_id="DummyThread")
         await bot.send_text_message("ID", "my message")
 
         r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
@@ -1143,7 +1143,7 @@ async def test_slackbot_send_text_with_buttons_threaded():
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
-        bot = SlackBot("DummyToken", "General", ts="DummyThread")
+        bot = SlackBot("DummyToken", "General", thread_id="DummyThread")
         buttons = [{"title": "title", "payload": "payload"}]
 
         await bot.send_text_with_buttons("ID", "my message", buttons)
@@ -1215,7 +1215,7 @@ async def test_slackbot_send_custom_json_threaded():
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
-        bot = SlackBot("DummyToken", "General", ts="DummyThread")
+        bot = SlackBot("DummyToken", "General", thread_id="DummyThread")
         await bot.send_custom_json("ID", {"test_key": "test_value"})
 
         r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
