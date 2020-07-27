@@ -69,7 +69,7 @@ module.exports = {
         },
         {
           type: 'category',
-          label: 'Architecture',
+          label: 'Architecture', // name still confusing with architecture page elsewhere
           items: [
             'tracker-stores',
             'event-brokers',
@@ -80,13 +80,28 @@ module.exports = {
         },
       ],
     },
+        {
+      type: 'category',
+      label: 'Reference',
+      items: [
+        'architecture',
+        'command-line-interface',
+        'http-api',
+        {
+          type: 'category',
+          label: 'Versioning',
+          items: [
+            'changelog',
+            'migration-guide',
+          ],
+        },
+      ],
+    },
     {
       type: 'category',
       label: 'Old Content',
       items: [
         'building-assistants',
-        'command-line-interface',
-        'architecture',
         'messaging-and-voice-channels',
         'testing-your-assistant',
         'setting-up-ci-cd',
@@ -108,7 +123,6 @@ module.exports = {
         'fallback-actions',
         'knowledge-bases',
         'action-server',
-        'http-api',
         'jupyter-notebooks',
         'agent',
         'rasa-sdk',
@@ -117,8 +131,6 @@ module.exports = {
         'training-data-importers',
         'core-featurization',
         'tensorflow_usage',
-        'migration-guide',
-        'changelog',
         'glossary',
         ]
     },
