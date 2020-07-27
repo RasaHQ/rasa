@@ -14,13 +14,23 @@ module.exports = {
     },
     {
       type: 'category',
+      label: 'Best Practices',
+      collapsed: false,
+      items: [
+        'cdd',
+        'generating-nlu-data',
+        'writing-stories',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Preparing For Production',
       collapsed: false,
       items: [
         'testing-your-assistant',
         'setting-up-ci-cd',
         'how-to-deploy',
-        'messaging-and-voice-channels',m
+        'messaging-and-voice-channels',
       ],
     },
     {
