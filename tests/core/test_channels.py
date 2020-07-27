@@ -848,7 +848,7 @@ def test_slackbot_init_three_parameter():
     bot = SlackBot("DummyToken", "General", thread_id="DummyThread")
     assert bot.client.token == "DummyToken"
     assert bot.slack_channel == "General"
-    assert bot.ts == "DummyThread"
+    assert bot.thread_id == "DummyThread"
 
 
 # Use monkeypatch for sending attachments, images and plain text.
