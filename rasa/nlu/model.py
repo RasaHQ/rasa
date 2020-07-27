@@ -17,7 +17,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
-from rasa.nlu.constants import ACTION_NAME, ACTION_TEXT, MESSAGE_INTENT_NAME
+from rasa.nlu.constants import ACTION_NAME, ACTION_TEXT, INTENT_NAME
 
 MODEL_NAME_PREFIX = "nlu_"
 

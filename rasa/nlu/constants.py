@@ -6,7 +6,7 @@ ACTION_TEXT = "action_text"
 RESPONSE_KEY_ATTRIBUTE = "response_key"
 
 ACTION_NAME = "action_name"
-MESSAGE_INTENT_NAME = "intent_name"
+INTENT_NAME = "intent_name"
 
 ENTITIES = "entities"
 BILOU_ENTITIES = "bilou_entities"
