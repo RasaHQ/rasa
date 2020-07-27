@@ -13,6 +13,26 @@ module.exports = {
     },
     {
       type: 'category',
+      label: 'NLU',
+      items: [
+        'training-data-format',
+        {
+          type: 'category',
+          label: 'Components',
+          items: [
+            'components/language-models',
+            'components/tokenizers',
+            'components/featurizers',
+            'components/intent-classifiers',
+            'components/entity-extractors',
+            'components/selectors',
+            'components/custom-components',
+          ],
+    },
+      ],
+    },
+    {
+      type: 'category',
       label: 'Old Content',
       items: [
         'building-assistants',
@@ -27,10 +47,8 @@ module.exports = {
         'cloud-storage',
         'about-nlu',
         'using-nlu-only',
-        'training-data-format',
         'language-support',
         'choosing-a-pipeline',
-        'components',
         'entity-extraction',
         'about-core',
         'stories',
