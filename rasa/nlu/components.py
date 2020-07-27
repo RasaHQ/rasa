@@ -238,21 +238,23 @@ def validate_required_components_from_data(
             )
 
     if data.regex_features and not any_components_in_pipeline(
-        ["RegexFeaturizer"], pipeline
+        ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
         raise_warning(
             "You have defined training data with regexes, but "
-            "your NLU pipeline does not include a 'RegexFeaturizer'. "
-            "To featurize regexes, include a 'RegexFeaturizer' in your pipeline."
+            "your NLU pipeline does not include a 'RegexFeaturizer' or a "
+            "'RegexEntityExtractor'. To use regexes, include either a "
+            "'RegexFeaturizer' or a 'RegexEntityExtractor' in your pipeline."
         )
 
     if data.lookup_tables and not any_components_in_pipeline(
-        ["RegexFeaturizer"], pipeline
+        ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
         raise_warning(
             "You have defined training data consisting of lookup tables, but "
-            "your NLU pipeline does not include a 'RegexFeaturizer'. "
-            "To featurize lookup tables, add a 'RegexFeaturizer' to your pipeline."
+            "your NLU pipeline does not include a 'RegexFeaturizer' or a "
+            "'RegexEntityExtractor'. To use lookup tables, include either a "
+            "'RegexFeaturizer' or a 'RegexEntityExtractor' in your pipeline."
         )
 
     if data.lookup_tables:

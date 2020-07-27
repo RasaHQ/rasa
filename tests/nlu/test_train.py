@@ -63,7 +63,11 @@ def pipelines_for_tests():
         (
             "en",
             as_pipeline(
-                "MitieNLP", "MitieTokenizer", "MitieFeaturizer", "MitieIntentClassifier"
+                "MitieNLP",
+                "MitieTokenizer",
+                "MitieFeaturizer",
+                "MitieIntentClassifier",
+                "RegexEntityExtractor",
             ),
         ),
         (
