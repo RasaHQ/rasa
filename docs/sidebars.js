@@ -3,6 +3,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Getting Started',
+      collapsed: false,
       items: [
         'index',
         'prototype-an-assistant',
@@ -14,6 +15,7 @@ module.exports = {
     {
       type: 'category',
       label: 'NLU',
+      collapsed: false,
       items: [
         'training-data-format',
         {
@@ -34,6 +36,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Dialogue Management',
+      collapsed: false,
       items: [
         'stories',
         'domains',
@@ -85,6 +88,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Rasa SDK',
+      collapsed: false,
       items: [
         {
           type: 'category',
@@ -108,6 +112,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Reference',
+      collapsed: false,
       items: [
         'architecture',
         'command-line-interface',
