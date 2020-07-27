@@ -25,7 +25,7 @@ module.exports = {
         alt: 'Rasa',
         src: 'https://rasa.com/static/60e441f8eadef13bea0cc790c8cf188b/rasa-logo.svg',
       },
-      links: [
+      items: [
         {
           label: 'Docs',
           to: '/', // "fake" link
