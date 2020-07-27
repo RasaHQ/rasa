@@ -14,6 +14,17 @@ module.exports = {
     },
     {
       type: 'category',
+      label: 'Preparing For Production',
+      collapsed: false,
+      items: [
+        'testing-your-assistant',
+        'setting-up-ci-cd',
+        'how-to-deploy',
+        'messaging-and-voice-channels',m
+      ],
+    },
+    {
+      type: 'category',
       label: 'NLU',
       collapsed: false,
       items: [
@@ -132,12 +143,8 @@ module.exports = {
       label: 'Old Content',
       items: [
         'building-assistants',
-        'messaging-and-voice-channels',
-        'testing-your-assistant',
-        'setting-up-ci-cd',
         'validate-files',
         'configuring-http-api',
-        'how-to-deploy',
         'about-nlu',
         'using-nlu-only',
         'language-support',
