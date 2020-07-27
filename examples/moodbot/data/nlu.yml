@@ -32,6 +32,7 @@ nlu:
 - intent: affirm
   examples: |
     - yes
+    - y
     - indeed
     - of course
     - that sounds good
@@ -40,6 +41,7 @@ nlu:
 - intent: deny
   examples: |
     - no
+    - n
     - never
     - I don't think so
     - don't like that
