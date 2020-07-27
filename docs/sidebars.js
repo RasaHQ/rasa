@@ -39,6 +39,7 @@ module.exports = {
       label: 'Preparing For Production',
       collapsed: false,
       items: [
+        'tuning-your-model',
         'testing-your-assistant',
         'setting-up-ci-cd',
         'how-to-deploy',
@@ -177,15 +178,12 @@ module.exports = {
         'configuring-http-api',
         'using-nlu-only',
         'language-support',
-        'choosing-a-pipeline',
         'entity-extraction',
         'slots',
         'interactive-learning',
         'fallback-actions',
         'rasa-sdk',
         'training-data-importers',
-        'core-featurization',
-        'tensorflow_usage',
         ]
     },
   ],
