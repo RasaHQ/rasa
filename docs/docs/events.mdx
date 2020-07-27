@@ -12,3 +12,9 @@ the events that make it back to rasa (for example if you
 write your own SDK)
 
 All of that info can be found here: [https://github.com/RasaHQ/rasa-sdk/blob/master/rasa_sdk/events.py](https://github.com/RasaHQ/rasa-sdk/blob/master/rasa_sdk/events.py)
+
+An action’s `run()` method returns a list of events. For more information on
+the different types of events, see [Events](./events). There is an example of a `SlotSet` event
+[above](./rasa-sdk#custom-action-example). The action itself will automatically be added to the
+tracker as an `ActionExecuted` event. If the action should not trigger any
+other events, it should return an empty list.

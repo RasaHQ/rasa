@@ -45,18 +45,29 @@ major inconsistencies in your domain file, NLU data, or story data.
 rasa data validate --fail-on-warnings --max-history <max_history>
 ```
 
-If data validation results in errors, training a model will also fail. By
-including the `--fail-on-warnings` flag, validation will also fail on
-warnings about problems that won’t prevent training a model, but might indicate
-messy data, such as actions listed in the domain that aren’t used in any
-stories.
+By default the validator searches only for errors in the data (e.g. the same
+example being listed as an example for two intents), but does not report other
+minor issues (such as unused intents, utterances that are not listed as
+actions) that won’t prevent training a model, but might indicate
+messy data.
 
-Data validation includes [story structure validation](./validate-files#test-story-files-for-conflicts).
+If data validation results in errors, training a model will also fail, so it's
+always good to run this check before training a model. By including the 
+`--fail-on-warnings` flag, this step will also fail on those warnings indicating minor issues.
+
+Data validation also includes story structure validation.
 Story validation checks if you have any
 stories where different bot actions follow from the same dialogue history.
 Conflicts between stories will prevent a model from learning the correct
 pattern for a dialogue. Set the `--max-history` parameter to the value of `max_history` for the
 memoization policy in your `config.yml`. If you haven’t set one, use the default of `5`.
+
+:::caution
+The `rasa data validate stories` command assumes that all your **story names are unique**.
+If your stories are in the Markdown format, you may find duplicate names with a command like
+`grep -h "##" data/\*.md | uniq -c | grep "^[^1]"`.
+
+:::
 
 ### Train a Model
 
