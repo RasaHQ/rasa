@@ -18,7 +18,6 @@ from rasa.core.channels.rasa_chat import (
     CONVERSATION_ID_KEY,
     INTERACTIVE_LEARNING_PERMISSION,
 )
-from rasa.constants import SLACK_TEST_ATTACHMENT
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
@@ -29,6 +28,37 @@ from tests.utilities import json_of_latest_request, latest_request
 
 logger = logging.getLogger(__name__)
 
+SLACK_TEST_ATTACHMENT = {
+    "fallback": "Financial Advisor Summary",
+    "color": "#36a64f",
+    "author_name": "ABE",
+    "title": "Financial Advisor Summary",
+    "title_link": "http://tenfactorialrocks.com",
+    "image_url": "https://r.com/cancel/r12",
+    "thumb_url": "https://r.com/cancel/r12",
+    "actions": [
+        {
+            "type": "button",
+            "text": "\ud83d\udcc8 Dashboard",
+            "url": "https://r.com/cancel/r12",
+            "style": "primary",
+        },
+        {
+            "type": "button",
+            "text": "\ud83d\udccb Download XL",
+            "url": "https://r.com/cancel/r12",
+            "style": "danger",
+        },
+        {
+            "type": "button",
+            "text": "\ud83d\udce7 E-Mail",
+            "url": "https://r.com/cancel/r12",
+            "style": "danger",
+        },
+    ],
+    "footer": "Powered by 1010rocks",
+    "ts": 1531889719,
+}
 
 def fake_sanic_run(*args, **kwargs):
     """Used to replace `run` method of a Sanic server to avoid hanging."""

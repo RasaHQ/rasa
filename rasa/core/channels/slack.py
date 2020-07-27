@@ -24,11 +24,11 @@ class SlackBot(OutputChannel):
         self,
         token: Text,
         slack_channel: Optional[Text] = None,
-        ts: Optional[Text] = None,
+        thread_id: Optional[Text] = None,
     ) -> None:
 
         self.slack_channel = slack_channel
-        self.ts = ts
+        self.thread_id = thread_id
         self.client = WebClient(token, run_async=True)
         super().__init__()
 
@@ -37,8 +37,8 @@ class SlackBot(OutputChannel):
         return "".join([b.get("title", "") for b in buttons])
 
     async def _post_message(self, **kwargs: Any):
-        if self.ts:
-            await self.client.chat_postMessage(**kwargs, thread_ts=self.ts)
+        if self.thread_id:
+            await self.client.chat_postMessage(**kwargs, thread_ts=self.thread_id)
         else:
             await self.client.chat_postMessage(**kwargs)
 
@@ -317,17 +317,17 @@ class SlackInput(InputChannel):
         if metadata is not None:
             output_channel = metadata.get("out_channel")
             if self.use_threads:
-                ts = metadata.get("ts")
+                thread_id = metadata.get("thread_id")
             else:
-                ts = None
+                thread_id = None
         else:
             output_channel = None
-            ts = None
+            thread_id = None
 
         try:
             user_msg = UserMessage(
                 text,
-                self.get_output_channel(output_channel, ts),
+                self.get_output_channel(output_channel, thread_id),
                 sender_id,
                 input_channel=self.name(),
                 metadata=metadata,
@@ -351,25 +351,29 @@ class SlackInput(InputChannel):
             and users that have installed the bot.
         """
         content_type = request.headers.get("content-type")
+
+        # Slack API sends either a JSON-encoded or a URL-encoded body depending on the content
         if content_type == "application/json":
+            # if JSON-encoded message is received
             slack_event = request.json
             event = slack_event.get("event", {})
-            ts = event.get("thread_ts", event.get("ts"))
+            thread_id = event.get("thread_ts", event.get("ts"))
 
             return {
                 "out_channel": event.get("channel"),
-                "ts": ts,
+                "thread_id": thread_id,
                 "users": slack_event.get("authed_users"),
             }
 
         if content_type == "application/x-www-form-urlencoded":
+            # if URL-encoded message is received
             output = request.form
             payload = json.loads(output["payload"][0])
             message = payload.get("message", {})
-            ts = message.get("thread_ts", message.get("ts"))
+            thread_id = message.get("thread_ts", message.get("ts"))
             return {
                 "out_channel": payload.get("channel", {}).get("id"),
-                "ts": ts,
+                "thread_id": thread_id,
                 "users": payload.get("user", {}).get("id"),
             }
 
@@ -387,7 +391,10 @@ class SlackInput(InputChannel):
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request) -> HTTPResponse:
             content_type = request.headers.get("content-type")
+            # Slack API sends either a JSON-encoded or a URL-encoded body depending on the content
+
             if content_type == "application/json":
+                # if JSON-encoded message is received
                 output = request.json
                 event = output.get("event", {})
                 user_message = event.get("text", "")
@@ -415,6 +422,7 @@ class SlackInput(InputChannel):
                     )
 
             elif content_type == "application/x-www-form-urlencoded":
+                # if URL-encoded message is received
                 output = request.form
                 payload = json.loads(output["payload"][0])
 
@@ -445,10 +453,10 @@ class SlackInput(InputChannel):
         )
 
     def get_output_channel(
-        self, channel: Optional[Text] = None, ts: Optional[Text] = None
+        self, channel: Optional[Text] = None, thread_id: Optional[Text] = None
     ) -> OutputChannel:
         channel = channel or self.slack_channel
-        return SlackBot(self.slack_token, channel, ts)
+        return SlackBot(self.slack_token, channel, thread_id)
 
     def set_output_channel(self, channel: Text) -> None:
         self.slack_channel = channel
