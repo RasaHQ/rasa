@@ -48,7 +48,9 @@ module.exports = {
           type: 'category',
           label: 'Actions',
           items: [
-            'actions',
+            'retrieval-actions',
+            'forms',
+            'reminders-and-external-events',
           ],
         },
         {
@@ -80,7 +82,30 @@ module.exports = {
         },
       ],
     },
+    {
+      type: 'category',
+      label: 'Rasa SDK',
+      items: [
         {
+          type: 'category',
+          label: 'Custom Actions',
+          items: [
+            'actions',
+            'knowledge-bases',
+          ],
+        },
+        'tracker',
+        'events',
+        {
+          type: 'category',
+          label: 'Reference',
+          items: [
+            'action-server',
+          ],
+        },
+      ],
+    },
+    {
       type: 'category',
       label: 'Reference',
       items: [
@@ -115,19 +140,12 @@ module.exports = {
         'entity-extraction',
         'about-core',
         'responses',
-        'reminders-and-external-events',
         'slots',
-        'forms',
-        'retrieval-actions',
         'interactive-learning',
         'fallback-actions',
-        'knowledge-bases',
-        'action-server',
         'jupyter-notebooks',
         'agent',
         'rasa-sdk',
-        'events',
-        'tracker',
         'training-data-importers',
         'core-featurization',
         'tensorflow_usage',
