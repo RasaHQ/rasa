@@ -24,6 +24,18 @@ module.exports = {
     },
     {
       type: 'category',
+      label: 'Conversation Patterns',
+      collapsed: false,
+      items: [
+        'chitchat-faqs',
+        'business-logic',
+        'fallback-handoff',
+        'unexpected-input',
+        'contextual-conversations',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Preparing For Production',
       collapsed: false,
       items: [
@@ -31,6 +43,14 @@ module.exports = {
         'setting-up-ci-cd',
         'how-to-deploy',
         'messaging-and-voice-channels',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Reference',
+      collapsed: false,
+      items: [
+        'glossary',
       ],
     },
     {
@@ -52,14 +72,6 @@ module.exports = {
             'components/custom-nlu-components',
           ],
         },
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Reference',
-      collapsed: false,
-      items: [
-        'glossary',
       ],
     },
     {
@@ -161,7 +173,6 @@ module.exports = {
       type: 'category',
       label: 'Old Content',
       items: [
-        'building-assistants',
         'configuring-http-api',
         'using-nlu-only',
         'language-support',
