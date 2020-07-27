@@ -25,7 +25,7 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
     FEATURIZER_CLASS_ALIAS,
-    NAME_ATTRIBUTES,
+    ACTION_NAME,
 )
 
 logger = logging.getLogger(__name__)
@@ -218,7 +218,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
             return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
-        if attribute not in NAME_ATTRIBUTES:
+        if attribute not in [INTENT, ACTION_NAME]:
             return message.get(attribute).split()
         else:
             return []
@@ -226,7 +226,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
         """Apply processing and cleaning steps to text"""
 
-        if attribute == INTENT:
+        if attribute in [INTENT, ACTION_NAME]:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
