@@ -46,6 +46,14 @@ module.exports = {
     },
     {
       type: 'category',
+      label: 'Reference',
+      collapsed: false,
+      items: [
+        'glossary',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Dialogue Management',
       collapsed: false,
       items: [
@@ -128,6 +136,7 @@ module.exports = {
         'architecture',
         'command-line-interface',
         'http-api',
+        'jupyter-notebooks',
         {
           type: 'category',
           label: 'Versioning',
@@ -155,13 +164,11 @@ module.exports = {
         'slots',
         'interactive-learning',
         'fallback-actions',
-        'jupyter-notebooks',
         'agent',
         'rasa-sdk',
         'training-data-importers',
         'core-featurization',
         'tensorflow_usage',
-        'glossary',
         ]
     },
   ],
