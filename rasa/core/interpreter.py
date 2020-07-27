@@ -293,10 +293,10 @@ def _create_from_endpoint_config(
     elif endpoint_config.type is None or endpoint_config.type.lower() == "http":
         return RasaNLUHttpInterpreter(endpoint_config=endpoint_config)
     else:
-        return _load_from_module_string(endpoint_config)
+        return _load_from_module_name_in_endpoint_config(endpoint_config)
 
 
-def _load_from_module_string(
+def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig,
 ) -> "NaturalLanguageInterpreter":
     """Instantiate an event channel based on its class name."""
