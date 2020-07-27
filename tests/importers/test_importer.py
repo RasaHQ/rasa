@@ -284,6 +284,9 @@ async def test_adding_e2e_actions_to_domain(project: Text):
                     ActionExecuted(
                         additional_actions[1], e2e_text=additional_actions[1]
                     ),
+                    ActionExecuted(
+                        additional_actions[1], e2e_text=additional_actions[1]
+                    ),
                 ]
             ),
         ]

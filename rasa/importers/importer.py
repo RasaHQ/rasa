@@ -302,15 +302,17 @@ class E2EImporter(TrainingDataImporter):
 
         stories = await self.get_stories()
 
-        additional_e2e_action_names = []
+        additional_e2e_action_names = set()
         for story_step in stories.story_steps:
-            additional_e2e_action_names += [
-                event.action_name
-                for event in story_step.events
-                if isinstance(event, ActionExecuted) and event.e2e_text
-            ]
+            additional_e2e_action_names.update(
+                [
+                    event.e2e_text
+                    for event in story_step.events
+                    if isinstance(event, ActionExecuted) and event.e2e_text
+                ]
+            )
 
-        additional_e2e_action_names = list(set(additional_e2e_action_names))
+        additional_e2e_action_names = list(additional_e2e_action_names)
 
         return Domain(
             [], [], [], {}, action_names=additional_e2e_action_names, forms=[]
