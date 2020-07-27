@@ -8,6 +8,7 @@ module.exports = {
         'installation',
         'rasa-tutorial',
         'building-assistants',
+        'migrate-from',
         'command-line-interface',
         'architecture',
         'messaging-and-voice-channels',
@@ -71,16 +72,6 @@ module.exports = {
         'tensorflow_usage',
         'migration-guide',
         'changelog',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Migrate from (beta)',
-      items: [
-        'migrate-from/google-dialogflow-to-rasa',
-        'migrate-from/facebook-wit-ai-to-rasa',
-        'migrate-from/microsoft-luis-to-rasa',
-        'migrate-from/ibm-watson-to-rasa',
       ],
     },
     {
