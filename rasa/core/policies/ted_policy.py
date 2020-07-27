@@ -262,7 +262,7 @@ class TEDPolicy(Policy):
         Y = np.array([])
 
         if data_Y is not None:
-            label_ids = self._label_ids_for_Y(data_Y)
+            label_ids = np.squeeze(data_Y, axis=-1)
             Y = self._label_features_for_Y(label_ids)
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
