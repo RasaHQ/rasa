@@ -333,6 +333,7 @@ with <code class="docutils literal notranslate"><span class="pre">xoxb</span></c
   <span class="nt">slack_retry_reason_header</span><span class="p">:</span> <span class="s">&quot;x-slack-retry-reason&quot;</span>  <span class="c1"># Slack HTTP header name indicating reason that slack send retry request. This configuration is optional.</span>
   <span class="nt">slack_retry_number_header</span><span class="p">:</span> <span class="s">&quot;x-slack-retry-num&quot;</span>  <span class="c1"># Slack HTTP header name indicating the attempt number. This configuration is optional.</span>
   <span class="nt">errors_ignore_retry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>  <span class="c1"># Any error codes given by Slack included in this list will be ignored. Error codes are listed `here &lt;https://api.slack.com/events-api#errors&gt;`_.</span>
+  <span class="nt">use_threads</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>  <span class="c1"># If set to True, bot responses will appear as a threaded message in Slack. This configuration is optional and set to False by default.</span>
 </pre></div>
 </div>
 <p>The endpoint for receiving slack messages is

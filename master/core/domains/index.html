@@ -493,7 +493,28 @@ output payloads that will only work in certain channels.</p>
   <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;Which</span><span class="nv"> </span><span class="s">game</span><span class="nv"> </span><span class="s">would</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">like</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">play?&quot;</span>
     <span class="nt">channel</span><span class="p">:</span> <span class="s">&quot;slack&quot;</span>
     <span class="nt">custom</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="c1"># payload for Slack dropdown menu to choose a game</span>
+      <span class="nt">blocks</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">actions</span>
+        <span class="nt">elements</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">button</span>
+          <span class="nt">text</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">plain_text</span>
+            <span class="nt">emoji</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+            <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;Chess</span><span class="nv"> </span><span class="s">:crown:&quot;</span>
+          <span class="nt">value</span><span class="p">:</span> <span class="s">&#39;/inform{&quot;game&quot;:</span><span class="nv"> </span><span class="s">&quot;chess&quot;}&#39;</span>
+        <span class="p p-Indicator">-</span> <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">button</span>
+          <span class="nt">text</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">plain_text</span>
+            <span class="nt">emoji</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+            <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;Checkers</span><span class="nv"> </span><span class="s">:checkered_flag:&quot;</span>
+          <span class="nt">value</span><span class="p">:</span> <span class="s">&#39;/inform{&quot;game&quot;:</span><span class="nv"> </span><span class="s">&quot;checkers&quot;}&#39;</span>
+        <span class="p p-Indicator">-</span> <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">button</span>
+          <span class="nt">text</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">plain_text</span>
+            <span class="nt">emoji</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+            <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;Fortnite</span><span class="nv"> </span><span class="s">:european_castle:&quot;</span>
+          <span class="nt">value</span><span class="p">:</span> <span class="s">&#39;/inform{&quot;game&quot;:</span><span class="nv"> </span><span class="s">&quot;fortnite&quot;}&#39;</span>
+          <span class="nt">style</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">danger</span>
   <span class="p p-Indicator">-</span> <span class="nt">text</span><span class="p">:</span> <span class="s">&quot;Which</span><span class="nv"> </span><span class="s">game</span><span class="nv"> </span><span class="s">would</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">like</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">play?&quot;</span>
     <span class="nt">buttons</span><span class="p">:</span>
     <span class="p p-Indicator">-</span> <span class="nt">title</span><span class="p">:</span> <span class="s">&quot;Chess&quot;</span>
