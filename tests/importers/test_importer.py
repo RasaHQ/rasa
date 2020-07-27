@@ -217,7 +217,7 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
         Message("", data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: ""}),
         Message("how are you doing?", data={MESSAGE_INTENT_NAME: "greet_from_stories"}),
         Message(
-            "Hi Joey.",
+            "",
             data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: "Hi Joey.",},
         ),
     ]
