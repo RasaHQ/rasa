@@ -168,7 +168,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         import scipy.sparse
 
         tokens = message.get(TOKENS_NAMES[TEXT])
-        # this check is required because there might be training data examples without TEXT, 
+        # this check is required because there might be training data examples without TEXT,
         # e.g., `Message("", {action_name: "action_listen"})`
         if tokens:
 
