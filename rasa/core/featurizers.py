@@ -41,17 +41,6 @@ class SingleStateFeaturizer:
         )
 
     @staticmethod
-    def action_as_one_hot(action: Text, domain: Domain) -> np.ndarray:
-        """Encode system action as one-hot vector."""
-
-        if action is None:
-            return np.ones(domain.num_actions, dtype=int) * -1
-
-        y = np.zeros(domain.num_actions, dtype=int)
-        y[domain.index_for_action(action)] = 1
-        return y
-
-    @staticmethod
     def action_as_index(action: Text, domain: Domain) -> np.ndarray:
         """Encode system action as one-hot vector."""
 
