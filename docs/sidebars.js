@@ -92,6 +92,7 @@ module.exports = {
           type: 'category',
           label: 'Actions',
           items: [
+            'responses',
             'retrieval-actions',
             'forms',
             'reminders-and-external-events',
@@ -178,7 +179,6 @@ module.exports = {
         'language-support',
         'choosing-a-pipeline',
         'entity-extraction',
-        'responses',
         'slots',
         'interactive-learning',
         'fallback-actions',

@@ -4,277 +4,24 @@ sidebar_label: Domains
 title: Domains
 ---
 
-The `Domain` defines the universe in which your assistant operates.
-It specifies the `intents`, `entities`, `slots`, and `actions`
-your bot should know about. Optionally, it can also include `responses`
-for the things your bot can say.
+TODO: make sure all available options are documented for each parameter. also rewrite this whole page.
 
-## An example of a Domain
+The `Domain` defines the universe in which your assistant operates.
+It specifies the `intents`, `entities`, `slots`, `responses` and `actions`
+your bot should know about. It also defines a `session_config` to configure
+conversation sessions. 
 
 As an example, the domain created by `rasa init` has the following yaml definition:
+TODO: use an example with all of the pieces! e.g. formbot? 
 
 ```yml (docs/sources/rasa/cli/initial_project/domain.yml)
 ```
 
-**What does this mean?**
+## Intents
 
-Your NLU model will define the `intents` and `entities` that you
-need to include in the domain. The `entities` section lists all entities
-extracted by any [entity extractor](../nlu/entity-extraction) in your
-NLU pipeline.
+TODO: intro info about intents
 
-For example:
-
-```yaml
-entities:
-   - PERSON          # entity extracted by SpacyEntityExtractor
-   - time            # entity extracted by DucklingHTTPExtractor
-   - membership_type # custom entity extracted by CRFEntityExtractor
-   - priority        # custom entity extracted by CRFEntityExtractor
-```
-
-[Slots](./slots) hold information you want to keep track of during a conversation.
-A categorical slot called `risk_level` would be
-defined like this:
-
-```yaml
-slots:
-   risk_level:
-      type: categorical
-      values:
-      - low
-      - medium
-      - high
-```
-
-[Here](./slots#slot-classes) you can find the full list of slot types defined by
-Rasa Core, along with syntax for including them in your domain file.
-
-[Actions](./actions) are the things your bot can actually do.
-For example, an action could:
-
-* respond to a user,
-
-* make an external API call,
-
-* query a database, or
-
-* just about anything!
-
-## Custom Actions and Slots
-
-To reference slots in your domain, you need to reference them by
-their **module path**. To reference custom actions, use their **name**.
-For example, if you have a module called `my_actions` containing
-a class `MyAwesomeAction`, and module `my_slots` containing
-`MyAwesomeSlot`, you would add these lines to the domain file:
-
-```yaml
-actions:
-  - my_custom_action
-  ...
-
-slots:
-  - my_slots.MyAwesomeSlot
-```
-
-The `name` function of `MyAwesomeAction` needs to return
-`my_custom_action` in this example (for more details,
-see [Custom Actions](./actions#custom-actions)).
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="domain-responses"></a>
-
-## Responses
-
-Responses are messages the bot will send back to the user. There are
-two ways to use these responses:
-
-1. If the name of the response starts with `utter_`, the response can
-   directly be used as an action. You would add the response
-   to the domain:
-
-   ```yaml
-   responses:
-     utter_greet:
-     - text: "Hey! How are you?"
-   ```
-
-   Afterwards, you can use the response as an action in the
-   stories:
-
-   ```story
-   ## greet the user
-   * intent_greet
-     - utter_greet
-   ```
-
-   When `utter_greet` is run as an action, it will send the message from
-   the response back to the user.
-
-2. You can use the responses to generate response messages from your
-   custom actions using the dispatcher:
-   `dispatcher.utter_message(template="utter_greet")`.
-   This allows you to separate the logic of generating
-   the messages from the actual copy. In your custom action code, you can
-   send a message based on the response like this:
-
-   ```python
-   from rasa_sdk.actions import Action
-
-   class ActionGreet(Action):
-     def name(self):
-         return 'action_greet'
-
-     def run(self, dispatcher, tracker, domain):
-         dispatcher.utter_message(template="utter_greet")
-         return []
-   ```
-
-## Images and Buttons
-
-Responses defined in a domain’s yaml file can contain images and
-buttons as well:
-
-```yaml
-responses:
-  utter_greet:
-  - text: "Hey! How are you?"
-    buttons:
-    - title: "great"
-      payload: "great"
-    - title: "super sad"
-      payload: "super sad"
-  utter_cheer_up:
-  - text: "Here is something to cheer you up:"
-    image: "https://i.imgur.com/nGF1K8f.jpg"
-```
-
-:::note
-Please keep in mind that it is up to the implementation of the output
-channel on how to display the defined buttons. The command line, for
-example, can’t display buttons or images, but tries to mimic them by
-printing the options.
-
-:::
-
-## Custom Output Payloads
-
-You can also send any arbitrary output to the output channel using the
-`custom:` key. Note that since the domain is in yaml format, the json
-payload should first be converted to yaml format.
-
-For example, although date pickers are not a defined parameter in responses
-because they are not supported by most channels, a Slack date picker
-can be sent like so:
-
-```yaml
-responses:
-  utter_take_bet:
-  - custom:
-      blocks:
-      - type: section
-        text:
-          text: "Make a bet on when the world will end:"
-          type: mrkdwn
-        accessory:
-          type: datepicker
-          initial_date: '2019-05-21'
-          placeholder:
-            type: plain_text
-            text: Select a date
-```
-
-## Channel-Specific Responses
-
-For each response, you can have multiple **response variations** (see [Variations](./domains#variations)).
-If you have certain response variations that you would like sent only to specific
-channels, you can specify this with the `channel:` key. The value should match
-the name defined in the `name()` method of the channel’s `OutputChannel`
-class. Channel-specific responses are especially useful if creating custom
-output payloads that will only work in certain channels.
-
-```yaml
-responses:
-  utter_ask_game:
-  - text: "Which game would you like to play?"
-    channel: "slack"
-    custom:
-      - # payload for Slack dropdown menu to choose a game
-  - text: "Which game would you like to play?"
-    buttons:
-    - title: "Chess"
-      payload: '/inform{"game": "chess"}'
-    - title: "Checkers"
-      payload: '/inform{"game": "checkers"}'
-    - title: "Fortnite"
-      payload: '/inform{"game": "fortnite"}'
-```
-
-Each time your bot looks for responses, it will first check to see if there
-are any channel-specific response variations for the connected channel. If there are, it
-will choose **only** from these response variations. If no channel-specific response variations are
-found, it will choose from any response variations that do not have a defined `channel`.
-Therefore, it is good practice to always have at least one response variation for each
-response that has no `channel` specified so that your bot can respond in all
-environments, including in the shell and in interactive learning.
-
-## Variables
-
-You can also use **variables** in your responses to insert information
-collected during the dialogue. You can either do that in your custom python
-code or by using the automatic slot filling mechanism. For example, if you
-have a response like this:
-
-```yaml
-responses:
-  utter_greet:
-  - text: "Hey, {name}. How are you?"
-```
-
-Rasa will automatically fill that variable with a value found in a slot called
-`name`.
-
-In custom code, you can retrieve a response by using:
-
-```python
-from rasa_sdk.actions import Action
-
-class ActionCustom(Action):
-   def name(self):
-      return "action_custom"
-
-   def run(self, dispatcher, tracker, domain):
-      # send utter default response to user
-      dispatcher.utter_message(template="utter_default")
-      # ... other code
-      return []
-```
-
-If the response contains variables denoted with `{my_variable}`
-you can supply values for the fields by passing them as keyword
-arguments to `utter_message`:
-
-```python
-dispatcher.utter_message(template="utter_greet", my_variable="my text")
-```
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="variations"></a>
-
-## Variations
-
-If you want to randomly vary the response sent to the user, you can list
-multiple **response variations** and Rasa will randomly pick one of them, e.g.:
-
-```yaml
-responses:
-  utter_greeting:
-  - text: "Hey, {name}. How are you?"
-  - text: "Hey, {name}. How is your day going?"
-```
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="use-entities"></a>
-
-## Ignoring entities for certain intents
+### Ignoring entities for certain intents
 
 If you want all entities to be ignored for certain intents, you can
 add the `use_entities: []` parameter to the intent in your domain
@@ -312,7 +59,323 @@ suggest you make the slots with the same name of type `unfeaturized`.
 
 :::
 
+## Entities
+
+The `entities` section lists all entities
+extracted by any [entity extractor](../nlu/entity-extraction) in your
+NLU pipeline.
+
+For example:
+
+```yaml
+entities:
+   - PERSON          # entity extracted by SpacyEntityExtractor
+   - time            # entity extracted by DucklingHTTPExtractor
+   - membership_type # custom entity extracted by CRFEntityExtractor
+   - priority        # custom entity extracted by CRFEntityExtractor
+```
+
+## Slots 
+
+[Slots](./slots) hold information you want to keep track of during a conversation.
+A categorical slot called `risk_level` would be
+defined like this:
+
+```yaml
+slots:
+   risk_level:
+      type: categorical
+      values:
+      - low
+      - medium
+      - high
+```
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="slot-classes"></a>
+
+### Slot Types
+
+Make this a nice table instead
+
+#### Text Slot
+
+* **Option**
+
+  `text`
+
+* **Use For**
+
+  User preferences where you only care whether or not they’ve
+  been specified.
+
+
+
+* **Example**
+
+  ```yaml
+  slots:
+     cuisine:
+        type: text
+  ```
+
+
+
+* **Description**
+
+  Results in the feature of the slot being set to `1` if any value is set.
+  Otherwise the feature will be set to `0` (no value is set).
+
+
+#### Boolean Slot
+
+
+* **Option**
+
+  `bool`
+
+* **Use For**
+
+  True or False
+
+
+
+* **Example**
+
+  ```yaml
+  slots:
+     is_authenticated:
+        type: bool
+  ```
+
+
+
+* **Description**
+
+  Checks if slot is set and if True
+
+
+#### Categorical Slot
+
+* **Option**
+
+  `categorical`
+
+* **Use For**
+
+  Slots which can take one of N values
+
+
+
+* **Example**
+
+  ```yaml
+  slots:
+     risk_level:
+        type: categorical
+        values:
+        - low
+        - medium
+        - high
+  ```
+
+
+
+* **Description**
+
+  Creates a one-hot encoding describing which of the `values` matched.
+  A default value `__other__` is automatically added to the user-defined
+  values. All values encountered which are not explicitly defined in the
+  domain are mapped to `__other__` for featurization. The value
+  `__other__` should not be used as a user-defined value; if it is, it
+  will still behave as the default to which all unseen values are mapped.
+
+
+#### Float Slot
+
+
+* **Option**
+
+  `float`
+
+* **Use For**
+
+  Continuous values
+
+
+
+* **Example**
+
+  ```yaml
+  slots:
+     temperature:
+        type: float
+        min_value: -100.0
+        max_value:  100.0
+  ```
+
+
+
+* **Defaults**
+
+  `max_value=1.0`, `min_value=0.0`
+
+
+
+* **Description**
+
+  All values below `min_value` will be treated as `min_value`, the same
+  happens for values above `max_value`. Hence, if `max_value` is set to
+  `1`, there is no difference between the slot values `2` and `3.5` in
+  terms of featurization (e.g. both values will influence the dialogue in
+  the same way and the model can not learn to differentiate between them).
+
+
+#### List Slot
+
+
+* **Option**
+
+  `list`
+
+* **Use For**
+
+  Lists of values
+
+
+
+* **Example**
+
+  ```yaml
+  slots:
+     shopping_items:
+        type: list
+  ```
+
+
+
+* **Description**
+
+  The feature of this slot is set to `1` if a value with a list is set,
+  where the list is not empty. If no value is set, or the empty list is the
+  set value, the feature will be `0`. The **length of the list stored in
+  the slot does not influence the dialogue**.
+
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="unfeaturized-slot"></a>
+
+#### Unfeaturized Slot
+
+* **Option**
+
+  `unfeaturized`
+
+* **Use For**
+
+  Data you want to store which shouldn’t influence the dialogue flow
+
+
+
+* **Example**
+
+  ```yaml
+  slots:
+     internal_user_id:
+        type: unfeaturized
+  ```
+
+
+
+* **Description**
+
+  There will not be any featurization of this slot, hence its value does
+  not influence the dialogue flow and is ignored when predicting the next
+  action the bot should run.
+
+
+#### Custom Slot Types
+
+Maybe your restaurant booking system can only handle bookings
+for up to 6 people. In this case you want the *value* of the
+slot to influence the next selected action (and not just whether
+it’s been specified). You can do this by defining a custom slot class.
+
+In the code below, we define a slot class called `NumberOfPeopleSlot`.
+The featurization defines how the value of this slot gets converted to a vector
+to our machine learning model can deal with.
+Our slot has three possible “values”, which we can represent with
+a vector of length `2`.
+
+|        |                |
+|--------|----------------|
+|`(0,0)` |not yet set     |
+|`(1,0)` |between 1 and 6 |
+|`(0,1)` |more than 6     |
+
+```python
+from rasa.core.slots import Slot
+
+class NumberOfPeopleSlot(Slot):
+
+    def feature_dimensionality(self):
+        return 2
+
+    def as_feature(self):
+        r = [0.0] * self.feature_dimensionality()
+        if self.value:
+            if self.value <= 6:
+                r[0] = 1.0
+            else:
+                r[1] = 1.0
+        return r
+```
+
+Now we also need some training stories, so that Rasa Core
+can learn from these how to handle the different situations:
+
+```story
+# story1
+...
+* inform{"people": "3"}
+  - action_book_table
+...
+# story2
+* inform{"people": "9"}
+  - action_explain_table_limit
+```
+
+
+
+
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="domain-responses"></a>
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="use-entities"></a>
+
+
+## Responses
+
+Responses are actions that simply send a message to a user without running any custom code or 
+returning events. These responses can be defined directly in the domain file and can include
+rich content such as buttons and attachments. For more information on responses,
+see [Responses]((../responses)) 
+
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="session-config"></a>
+
+## Actions
+
+[Actions](./actions) are the things your bot can actually do.
+For example, an action could:
+
+* respond to a user,
+
+* make an external API call,
+
+* query a database, or
+
+* just about anything!
+
+All custom actions should be listed in your domain, except responses which need not be listed 
+under `actions:` as they are already listed under `responses:`.
 
 ## Session configuration
 
