@@ -53,16 +53,6 @@ module.exports = {
     },
     {
       type: 'category',
-      label: 'Conversation Design',
-      items: [
-        'dialogue-elements/dialogue-elements',
-        'dialogue-elements/small-talk',
-        'dialogue-elements/completing-tasks',
-        'dialogue-elements/guiding-users',
-      ],
-    },
-    {
-      type: 'category',
       label: 'API Reference',
       items: [
         'action-server',
