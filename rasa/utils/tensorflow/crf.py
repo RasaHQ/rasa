@@ -16,7 +16,7 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
     # TODO: the way transition params are initialised in Windows doesn't pass the type check for TensorLike.
     # I'll look into it later.
     @typechecked
-    def __init__(self, transition_params, **kwargs) -> None:
+    def __init__(self, transition_params: TensorLike, **kwargs) -> None:
         """Initialize the CrfDecodeForwardRnnCell.
 
         Args:
