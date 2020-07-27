@@ -13,7 +13,7 @@ module.exports = {
     },
     {
       type: 'category',
-      label: 'User Guide',
+      label: 'Old Content',
       items: [
         'building-assistants',
         'command-line-interface',
@@ -25,12 +25,6 @@ module.exports = {
         'configuring-http-api',
         'how-to-deploy',
         'cloud-storage',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'NLU',
-      items: [
         'about-nlu',
         'using-nlu-only',
         'training-data-format',
@@ -38,12 +32,6 @@ module.exports = {
         'choosing-a-pipeline',
         'components',
         'entity-extraction',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Core',
-      items: [
         'about-core',
         'stories',
         'domains',
@@ -57,12 +45,6 @@ module.exports = {
         'interactive-learning',
         'fallback-actions',
         'knowledge-bases',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'API Reference',
-      items: [
         'action-server',
         'http-api',
         'jupyter-notebooks',
@@ -79,12 +61,8 @@ module.exports = {
         'tensorflow_usage',
         'migration-guide',
         'changelog',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Reference',
-      items: ['glossary'],
+        'glossary',
+        ]
     },
   ],
 };
