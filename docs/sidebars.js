@@ -2,13 +2,20 @@ module.exports = {
   someSidebar: [
     {
       type: 'category',
-      label: 'User Guide',
+      label: 'Getting Started',
       items: [
         'index',
+        'prototype-an-assistant',
         'installation',
-        'rasa-tutorial',
-        'building-assistants',
+        'cheatsheet',
         'migrate-from',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'User Guide',
+      items: [
+        'building-assistants',
         'command-line-interface',
         'architecture',
         'messaging-and-voice-channels',
