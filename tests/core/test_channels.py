@@ -60,6 +60,7 @@ SLACK_TEST_ATTACHMENT = {
     "ts": 1531889719,
 }
 
+
 def fake_sanic_run(*args, **kwargs):
     """Used to replace `run` method of a Sanic server to avoid hanging."""
     logger.info("Rabatnic: Take this and find Sanic! I want him here by supper time.")
