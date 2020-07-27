@@ -165,7 +165,7 @@ class SlackInput(InputChannel):
                 included in this list will be ignored.
                 Error codes are listed
                 `here <https://api.slack.com/events-api#errors>`_.
-            use_threads: If enabled, your Bot will send responses in Slack as a threaded message.
+            use_threads: If set to True, your bot will send responses in Slack as a threaded message.
                 Responses will appear as a normal Slack message if set to False.
 
         """
