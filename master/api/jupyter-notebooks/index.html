@@ -330,11 +330,12 @@ print(model_path)</pre>
 <div class="section" id="chat-with-your-assistant">
 <h2>Chat with your assistant<a class="headerlink" href="#chat-with-your-assistant" title="Permalink to this headline">¶</a></h2>
 <p>To start chatting to an assistant, call the <code class="docutils literal notranslate"><span class="pre">chat</span></code> function, passing
-in the path to your saved model:</p>
+in the path to your saved model. If you do not have custom actions you can set <cite>endpoints = None</cite> or omit it:</p>
 
 
   <pre data-executable>from rasa.jupyter import chat
-chat(model_path)</pre>
+endpoints = "endpoints.yml"
+chat(model_path, endpoints)</pre>
 </div>
 <div class="section" id="evaluate-your-model-against-test-data">
 <h2>Evaluate your model against test data<a class="headerlink" href="#evaluate-your-model-against-test-data" title="Permalink to this headline">¶</a></h2>
