@@ -1,10 +1,4 @@
 rules:
-
-- rule: Say hello anytime the user says hello
-  steps:
-  - ...
-  - intent: greet
-  - action: utter_greet
   
 - rule: Say goodbye anytime the user says goodbye
   steps:
