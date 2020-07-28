@@ -326,10 +326,12 @@ id, right click on the channel choose Copy Link and the id will be the last comp
 <li><p>Use the entry for <code class="docutils literal notranslate"><span class="pre">Bot</span> <span class="pre">User</span> <span class="pre">OAuth</span> <span class="pre">Access</span> <span class="pre">Token</span></code> in the
 “OAuth &amp; Permissions” tab as your <code class="docutils literal notranslate"><span class="pre">slack_token</span></code>. It should start
 with <code class="docutils literal notranslate"><span class="pre">xoxb</span></code>.</p></li>
+<li><p>Optional: You can add a <code class="docutils literal notranslate"><span class="pre">proxy</span></code> through which to route outgoing traffic to the Slack API. Only HTTP proxies are currently supported.</p></li>
 </ul>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">slack</span><span class="p">:</span>
   <span class="nt">slack_token</span><span class="p">:</span> <span class="s">&quot;xoxb-286425452756-safjasdf7sl38KLls&quot;</span>
   <span class="nt">slack_channel</span><span class="p">:</span> <span class="s">&quot;C011GR5D33F&quot;</span>
+  <span class="nt">proxy</span><span class="p">:</span> <span class="s">&quot;http://myProxy.online&quot;</span> <span class="c1"># Proxy Server to route your traffic through. This configuration is optional.</span>
   <span class="nt">slack_retry_reason_header</span><span class="p">:</span> <span class="s">&quot;x-slack-retry-reason&quot;</span>  <span class="c1"># Slack HTTP header name indicating reason that slack send retry request. This configuration is optional.</span>
   <span class="nt">slack_retry_number_header</span><span class="p">:</span> <span class="s">&quot;x-slack-retry-num&quot;</span>  <span class="c1"># Slack HTTP header name indicating the attempt number. This configuration is optional.</span>
   <span class="nt">errors_ignore_retry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>  <span class="c1"># Any error codes given by Slack included in this list will be ignored. Error codes are listed `here &lt;https://api.slack.com/events-api#errors&gt;`_.</span>
