@@ -10,7 +10,7 @@ def interpolate_text(template: Text, values: Dict[Text, Text]) -> Text:
 
     Transform template tags from "{tag_name}" to "{0[tag_name]}" as described here:
     https://stackoverflow.com/questions/7934620/python-dots-in-the-name-of-variable-in-a-format-string#comment9695339_7934969
-    Block list characters, making sure not to allow:
+    Block characters, making sure not to allow:
     (a) newline in slot name
     (b) { or } in slot name
 
