@@ -1,1 +1,1 @@
-adds support for proxy use in slack channel
+Add support for proxy use in :ref:`slack` input channel.
