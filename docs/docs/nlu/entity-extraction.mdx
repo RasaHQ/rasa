@@ -8,14 +8,15 @@ Entity extraction involves parsing user messages for required pieces of informat
 provides entity extractors for custom entities as well as pre-trained ones like dates and locations.
 Here is a summary of the available extractors and what they are used for:
 
-|       Component        |     Requires     |                      Model                      |              Notes               |
-|------------------------|------------------|-------------------------------------------------|----------------------------------|
-|`CRFEntityExtractor`    |sklearn-crfsuite  |conditional random field                         |good for training custom entities |
-|`SpacyEntityExtractor`  |spaCy             |averaged perceptron                              |provides pre-trained entities     |
-|`DucklingHTTPExtractor` |running duckling  |context-free grammar                             |provides pre-trained entities     |
-|`MitieEntityExtractor`  |MITIE             |structured SVM                                   |good for training custom entities |
-|`EntitySynonymMapper`   |existing entities |N/A                                              |maps known synonyms               |
-|`DIETClassifier`        |                  |conditional random field on top of a transformer |good for training custom entities |
+|       Component        |     Requires     |                      Model                      |              Notes                   |
+|------------------------|------------------|-------------------------------------------------|--------------------------------------|
+|`CRFEntityExtractor`    |sklearn-crfsuite  |conditional random field                         |good for training custom entities     |
+|`SpacyEntityExtractor`  |spaCy             |averaged perceptron                              |provides pre-trained entities         |
+|`DucklingHTTPExtractor` |running duckling  |context-free grammar                             |provides pre-trained entities         |
+|`MitieEntityExtractor`  |MITIE             |structured SVM                                   |good for training custom entities     |
+|`EntitySynonymMapper`   |existing entities |N/A                                              |maps known synonyms                   |
+|`DIETClassifier`        |                  |conditional random field on top of a transformer |good for training custom entities     |
+|`RegexEntityExtractor`  |                  |N/A                                              |extract entities using the lookup table and regexes defined in the training data |
 
 ## The “entity” Object
 
