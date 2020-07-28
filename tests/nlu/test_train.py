@@ -60,9 +60,18 @@ def pipelines_for_tests():
             ),
         ),
         (
-            "en",
-            as_pipeline("ConveRTTokenizer", "ConveRTFeaturizer", "DIETClassifier"),
+            "zh",
+            as_pipeline(
+                "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
+            ),
         ),
+        ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
+    ]
+
+
+def pipelines_for_non_windows_tests():
+    return [
+        ("en", as_pipeline("ConveRTTokenizer", "ConveRTFeaturizer", "DIETClassifier")),
         (
             "en",
             as_pipeline(
@@ -73,16 +82,6 @@ def pipelines_for_tests():
                 "RegexEntityExtractor",
             ),
         ),
-        (
-            "zh",
-            as_pipeline(
-                "MitieNLP",
-                "JiebaTokenizer",
-                "MitieFeaturizer",
-                "MitieEntityExtractor",
-            ),
-        ),
-        ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
     ]
 
 
@@ -118,6 +117,15 @@ async def test_train_persist_load_parse(language, pipeline, component_builder, t
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
+@pytest.mark.linux
+@pytest.mark.darwin
+async def test_train_persist_load_parse_non_windows(
+    language, pipeline, component_builder, tmpdir
+):
+    await test_train_persist_load_parse(language, pipeline, component_builder, tmpdir)
+
+
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 def test_train_model_without_data(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
@@ -132,6 +140,15 @@ def test_train_model_without_data(language, pipeline, component_builder, tmpdir)
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
+@pytest.mark.linux
+@pytest.mark.darwin
+def test_train_model_without_data_non_windows(
+    language, pipeline, component_builder, tmpdir
+):
+    test_train_model_without_data(language, pipeline, component_builder, tmpdir)
+
+
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 def test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
@@ -143,6 +160,15 @@ def test_load_and_persist_without_train(language, pipeline, component_builder, t
 
     assert loaded.pipeline
     assert loaded.parse("Rasa is great!") is not None
+
+
+@pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
+@pytest.mark.linux
+@pytest.mark.darwin
+def test_load_and_persist_without_train_non_windows(
+    language, pipeline, component_builder, tmpdir
+):
+    test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir)
 
 
 async def test_train_model_empty_pipeline(component_builder):
