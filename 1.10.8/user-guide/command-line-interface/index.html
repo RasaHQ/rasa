@@ -52,6 +52,8 @@
   <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
   <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
   <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
   <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
   
     <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
@@ -70,12 +72,6 @@
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-
-<div class="announcement-banner" data-cookie-id="docsAnnouncementBannerDismissed">
-  New episodes of the Rasa Masterclass are out now!
-  <a href="https://www.youtube.com/watch?v=rlAQWbhwqLA&list=PL75e0qA87dlHQny7z43NduZHPo6qd-cRc" target="_blank">Watch Now</a>
-  <button class="announcement-banner__close">✕</button>
-</div>
 
 <div class="nav-top">
   <div class="nav-container">
@@ -222,6 +218,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../2.0.0a1/user-guide/command-line-interface/">2.0.0a1</a>
               <a href="../../../1.10.8/user-guide/command-line-interface/">1.10.8</a>
               <a href="../../../1.10.7/user-guide/command-line-interface/">1.10.7</a>
               <a href="../../../1.10.6/user-guide/command-line-interface/">1.10.6</a>
@@ -232,27 +229,17 @@
               <a href="../../../1.10.1/user-guide/command-line-interface/">1.10.1</a>
               <a href="../../../1.10.0/user-guide/command-line-interface/">1.10.0</a>
               <a href="../../../1.9.7/user-guide/command-line-interface/">1.9.7</a>
-              <a href="../../../1.9.6/user-guide/command-line-interface/">1.9.6</a>
-              <a href="../../../1.9.5/user-guide/command-line-interface/">1.9.5</a>
-              <a href="../../../1.9.4/user-guide/command-line-interface/">1.9.4</a>
-              <a href="../../../1.9.3/user-guide/command-line-interface/">1.9.3</a>
-              <a href="../../../1.9.2/user-guide/command-line-interface/">1.9.2</a>
-              <a href="../../../1.9.1/user-guide/command-line-interface/">1.9.1</a>
-              <a href="../../../1.9.0/user-guide/command-line-interface/">1.9.0</a>
               <a href="../../../1.8.3/user-guide/command-line-interface/">1.8.3</a>
-              <a href="../../../1.8.2/user-guide/command-line-interface/">1.8.2</a>
-              <a href="../../../1.8.1/user-guide/command-line-interface/">1.8.1</a>
-              <a href="../../../1.8.0/user-guide/command-line-interface/">1.8.0</a>
               <a href="../../../1.7.4/user-guide/command-line-interface/">1.7.4</a>
-              <a href="../../../1.7.3/user-guide/command-line-interface/">1.7.3</a>
-              <a href="../../../1.7.2/user-guide/command-line-interface/">1.7.2</a>
-              <a href="../../../1.7.1/user-guide/command-line-interface/">1.7.1</a>
-              <a href="../../../1.7.0/user-guide/command-line-interface/">1.7.0</a>
               <a href="../../../1.6.2/user-guide/command-line-interface/">1.6.2</a>
               <a href="../../../1.5.3/user-guide/command-line-interface/">1.5.3</a>
               <a href="../../../1.4.6/user-guide/command-line-interface/">1.4.6</a>
               <a href="../../../1.3.10/user-guide/command-line-interface/">1.3.10</a>
               <a href="../../../1.2.9/user-guide/command-line-interface/">1.2.9</a>
+          </div>
+          <p>branches</p>
+          <div class="dropdown-content">
+              <a href="../../../master/user-guide/command-line-interface/">master</a>
           </div>
       </div>
     </div>
@@ -399,6 +386,7 @@ using <code class="docutils literal notranslate"><span class="pre">--fixed-model
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
+                  [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force]
                   {core,nlu} ...
@@ -417,7 +405,10 @@ optional arguments:
                         The policy and NLU pipeline configuration of your bot.
                         (default: config.yml)
   -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file). (default: domain.yml)
+                        Domain specification. This can be a single YAML file,
+                        or a directory that contains several files with domain
+                        specifications in it. The content of these files will
+                        be read and merged together. (default: domain.yml)
   --out OUT             Directory where your models should be stored.
                         (default: models)
   --augmentation AUGMENTATION
@@ -427,6 +418,9 @@ optional arguments:
                         their connections between story blocks in a file
                         called `story_blocks_connections.html`. (default:
                         False)
+  --num-threads NUM_THREADS
+                        Maximum amount of threads to use when training.
+                        (default: 1)
   --fixed-model-name FIXED_MODEL_NAME
                         If set, the name of the model file/directory will be
                         set to the given name. (default: None)
@@ -463,7 +457,7 @@ train a new Rasa model with the data located in <code class="docutils literal no
 <code class="docutils literal notranslate"><span class="pre">--data</span></code> flag. After training the initial model, the interactive learning session starts.
 Training will be skipped if the training data and config haven’t changed.</p>
 <p>The full list of arguments that can be set for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> is:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-p PORT] [-m MODEL]
                         [--data DATA [DATA ...]] [--skip-visualization]
                         [--conversation-id CONVERSATION_ID]
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
@@ -487,6 +481,7 @@ optional arguments:
   --e2e                 Save story files in e2e format. In this format user
                         messages will be included in the stories. (default:
                         False)
+  -p PORT, --port PORT  Port to run the server at. (default: 5005)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
@@ -499,7 +494,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: 46d003b466b94910a4ad235338d2e4bb)
+                        generated. (default: 7eddd405a9b0452c843cdac60aa98964)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
@@ -517,7 +512,10 @@ Train Arguments:
                         The policy and NLU pipeline configuration of your bot.
                         (default: config.yml)
   -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file). (default: domain.yml)
+                        Domain specification. This can be a single YAML file,
+                        or a directory that contains several files with domain
+                        specifications in it. The content of these files will
+                        be read and merged together. (default: domain.yml)
   --out OUT             Directory where your models should be stored.
                         (default: models)
   --augmentation AUGMENTATION
@@ -578,7 +576,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        796f5de7a0494dbebae524d29ad3c5f4)
+                        11ef64737f684b30b75694426302b885)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
@@ -802,7 +800,10 @@ somewhere else, you can specify their location with <code class="docutils litera
 optional arguments:
   -h, --help            show this help message and exit
   -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file). (default: domain.yml)
+                        Domain specification. This can be a single YAML file,
+                        or a directory that contains several files with domain
+                        specifications in it. The content of these files will
+                        be read and merged together. (default: domain.yml)
   -s STORIES, --stories STORIES
                         File or folder containing your training stories.
                         (default: data)
@@ -840,11 +841,10 @@ Check out more details in <a class="reference internal" href="../testing-your-as
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
                  [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
-                 [--evaluate-model-directory] [-u NLU] [--out OUT]
-                 [--successes] [--no-errors] [--histogram HISTOGRAM]
-                 [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
-                 [--cross-validation] [-f FOLDS] [-r RUNS]
-                 [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
+                 [--evaluate-model-directory] [-u NLU]
+                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
+                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
+                 [--successes] [--no-errors] [--out OUT]
                  {core,nlu} ...
 
 positional arguments:
@@ -858,6 +858,13 @@ optional arguments:
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
                         directory. (default: models)
+  --no-plot             Don&#39;t render evaluation plots. (default: False)
+  --successes           If set successful predictions will be written to a
+                        file. (default: False)
+  --no-errors           If set incorrect predictions will NOT be written to a
+                        file. (default: False)
+  --out OUT             Output path for any files created during the
+                        evaluation. (default: results)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
@@ -892,24 +899,12 @@ Core Test Arguments:
 NLU Test Arguments:
   -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
                         data)
-  --out OUT             Output path for any files created during the
-                        evaluation. (default: results)
-  --successes           If set successful predictions (intent and entities)
-                        will be written to a file. (default: False)
-  --no-errors           If set incorrect predictions (intent and entities)
-                        will NOT be written to a file. (default: False)
-  --histogram HISTOGRAM
-                        Output path for the confidence histogram. (default:
-                        hist.png)
-  --confmat CONFMAT     Output path for the confusion matrix plot. (default:
-                        confmat.png)
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                         Model configuration file. If a single file is passed
                         and cross validation mode is chosen, cross-validation
                         is performed, if multiple configs or a folder of
                         configs are passed, models will be trained and
                         compared directly. (default: None)
-  --no-plot             Don&#39;t render evaluation plots (default: False)
 </pre></div>
 </div>
 </div>
@@ -1219,6 +1214,174 @@ JWT Authentication:
       console.log(e);
     });
 
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
   </script>
 
   <!-- Dismissable announcement banner -->
