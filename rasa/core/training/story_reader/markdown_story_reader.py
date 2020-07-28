@@ -31,9 +31,7 @@ class MarkdownStoryReader(StoryReader):
 
         try:
             # TODO: Hack by Genie for Windows
-            with open(
-                filename, "r", encoding=io_utils.DEFAULT_ENCODING
-            ) as f:
+            with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
                 lines = f.readlines()
 
             return await self._process_lines(lines)
