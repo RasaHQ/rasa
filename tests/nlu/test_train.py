@@ -59,37 +59,28 @@ def pipelines_for_tests():
                 "DIETClassifier",
             ),
         ),
-        pytest.param(
-            (
-                "en",
-                as_pipeline("ConveRTTokenizer", "ConveRTFeaturizer", "DIETClassifier"),
-            ),
-            marks=[pytest.mark.linux, pytest.mark.darwin],
+        (
+            "en",
+            as_pipeline("ConveRTTokenizer", "ConveRTFeaturizer", "DIETClassifier"),
         ),
-        pytest.param(
-            (
-                "en",
-                as_pipeline(
-                    "MitieNLP",
-                    "MitieTokenizer",
-                    "MitieFeaturizer",
-                    "MitieIntentClassifier",
-                    "RegexEntityExtractor",
-                ),
+        (
+            "en",
+            as_pipeline(
+                "MitieNLP",
+                "MitieTokenizer",
+                "MitieFeaturizer",
+                "MitieIntentClassifier",
+                "RegexEntityExtractor",
             ),
-            marks=[pytest.mark.linux, pytest.mark.darwin],
         ),
-        pytest.param(
-            (
-                "zh",
-                as_pipeline(
-                    "MitieNLP",
-                    "JiebaTokenizer",
-                    "MitieFeaturizer",
-                    "MitieEntityExtractor",
-                ),
+        (
+            "zh",
+            as_pipeline(
+                "MitieNLP",
+                "JiebaTokenizer",
+                "MitieFeaturizer",
+                "MitieEntityExtractor",
             ),
-            marks=[pytest.mark.linux, pytest.mark.darwin],
         ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
     ]
