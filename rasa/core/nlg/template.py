@@ -4,10 +4,8 @@ import logging
 from rasa.core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
 
-from rasa.core.nlg import interpolator
-from rasa.core.nlg.generator import (
-    NaturalLanguageGenerator,
-)  # pytype: disable=pyi-error
+from rasa.core.nlg import interpolator  # pytype: disable=pyi-error
+from rasa.core.nlg.generator import NaturalLanguageGenerator
 
 logger = logging.getLogger(__name__)
 
