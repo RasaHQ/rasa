@@ -33,6 +33,7 @@ def test_data_convert_help(run: Callable[..., RunResult]):
 
 @pytest.mark.linux
 @pytest.mark.darwin
+@pytest.mark.windows
 def test_version_print_lines(run: Callable[..., RunResult]):
     output = run("--version")
     output_text = "".join(output.outlines)

@@ -41,7 +41,7 @@ from tests.core.conftest import (
     INCORRECT_NLU_DATA,
 )
 
-PLATFORMS = set("darwin linux win32".split())
+PLATFORMS = {"darwin", "linux", "win32"}
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -273,12 +273,12 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
     )
 
 
-def pytest_runtest_setup(item):
+def pytest_runtest_setup(item: pytest.Item) -> None:
     supported_platforms = PLATFORMS.intersection(
         mark.name for mark in item.iter_markers()
     )
     if supported_platforms and sys.platform not in supported_platforms:
-        pytest.skip("cannot run on platform {}".format(sys.platform))
+        pytest.skip(f"cannot run on platform {sys.platform}")
 
 
 class MockExporter(Exporter):
