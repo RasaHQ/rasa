@@ -5,6 +5,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Any
+import copy
 
 import rasa.utils.io
 from rasa.core import utils
@@ -270,18 +271,14 @@ class TrackerFeaturizer:
         self.state_featurizer = state_featurizer
         self.use_intent_probabilities = use_intent_probabilities
 
-    def collect_slots(self, tracker):
-        current_nonnone_slots = {}
-        for key, slot in tracker.slots.items():
-            if slot is not None:
-                for i, slot_value in enumerate(slot.as_feature()):
-                    if slot_value != 0:
-                        slot_id = f"slot_{key}_{i}"
-                        current_nonnone_slots[slot_id] = slot_value
-        return current_nonnone_slots
+    def _get_slots(self, prev_tracker, event):
 
-    def _create_states_e2e(self, tracker):
-        import copy
+        current_slots = copy.deepcopy(prev_tracker.current_slot_values())
+        if isinstance(event, SlotSet):
+            current_slots.update(event.as_dict_core())
+        return current_slots
+
+    def _create_states_e2e(self, tracker: DialogueStateTracker, domain: Domain):
 
         prev_tracker = None
         states = []
@@ -295,15 +292,12 @@ class TrackerFeaturizer:
                     elif isinstance(event, ActionExecuted):
                         state_dict["prev_action"] = event.as_dict_core()
                     elif isinstance(event, Form):
-                        if event.name:
-                            state_dict["form"] = event.as_dict()
-                    elif isinstance(event, SlotSet):
-                        if state_dict.get("slots"):
-                            state_dict["slots"].append(event.as_dict_core())
-                        else:
-                            state_dict["slots"] = [event.as_dict_core()]
+                        # TODO: fix this!!! 
+                        state_dict["form"] = event.as_dict()
+                    state_dict["slots"] = self._get_slots(prev_tracker, event)
             else:
                 state_dict = {}
+            states.append(state_dict)
             prev_tracker = copy.deepcopy(tr)
         return states
 
@@ -607,7 +601,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         states: List[Dict[Text, float]], slice_length: Optional[int]
     ) -> List[Optional[Dict[Text, float]]]:
         """Slices states from the trackers history.
-
         If the slice is at the array borders, padding will be added to ensure
         the slice length.
         """
@@ -615,17 +608,45 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             return states
 
         slice_end = len(states)
-        slice_start = max(0, slice_end - slice_length)
-        padding = [None] * max(0, slice_length - slice_end)
+        if slice_length == None:
+            slice_start = 0
+        else:
+            slice_start = max(0, slice_end - slice_length)
         # noinspection PyTypeChecker
-        state_features = padding + states[slice_start:]
+        state_features = states[slice_start:]
         return state_features
 
     @staticmethod
     def _hash_example(states, action) -> int:
         """Hash states for efficient deduplication."""
 
-        frozen_states = tuple(s if s is None else frozenset(s.items()) for s in states)
+        states_to_hash = []
+        # TODO: add forms
+        for s in states:
+            # make everything hashable
+            state = []
+            for attribute, value in s.items():       
+                if attribute == "user":
+                    if value.get("intent"):
+                        intent = value.get("intent")
+                        state.append(f"user_{intent}")
+                    else:
+                        text = value.get("text")
+                        state.append(f"user_{text}")
+                    state += value.get("entities")
+                elif attribute == "prev_action":
+                    if value.get("action_name"):
+                        action_name = value.get("action_name")
+                        state.append(f"action_{action_name}")
+                    else:
+                        text = value.get("text")
+                        state.append(f"action_{text}")
+                elif attribute == "slots":
+                    slots = [' '.join([str(slot_name), str(slot_value)]) for slot_name, slot_value in value.items() if slot_value]
+                    state+=slots
+            states_to_hash.append(frozenset(state))
+        frozen_states = tuple(states_to_hash)
+
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))
 
@@ -651,8 +672,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         )
         pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
         for tracker in pbar:
-            states = self._create_states(tracker, domain, True)
-            states1 = self._create_states_e2e(tracker)
+            states = self._create_states_e2e(tracker, domain)
 
             idx = 0
             for event in tracker.applied_events():
@@ -667,7 +687,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
                         if self.remove_duplicates:
                             hashed = self._hash_example(
-                                sliced_states, event.action_name
+                                sliced_states, event.action_name or event.e2e_text
                             )
 
                             # only continue with tracker_states that created a
@@ -675,10 +695,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                             if hashed not in hashed_examples:
                                 hashed_examples.add(hashed)
                                 trackers_as_states.append(sliced_states)
-                                trackers_as_actions.append([event.action_name])
+                                trackers_as_actions.append([event])
                         else:
                             trackers_as_states.append(sliced_states)
-                            trackers_as_actions.append([event.action_name])
+                            trackers_as_actions.append([event])
 
                         pbar.set_postfix(
                             {"# actions": "{:d}".format(len(trackers_as_actions))}
