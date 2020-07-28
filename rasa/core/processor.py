@@ -6,7 +6,11 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 
-from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_DOMAINS
+from rasa.constants import (
+    DOCS_URL_POLICIES,
+    DOCS_URL_DOMAINS,
+    DEFAULT_NLU_FALLBACK_INTENT_NAME,
+)
 from rasa.core import jobs
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -25,6 +29,7 @@ from rasa.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_SESSION_START,
     UTTER_PREFIX,
+    REQUESTED_SLOT,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -36,7 +41,6 @@ from rasa.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
-    SessionStarted,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -59,6 +63,7 @@ DEFAULT_INTENTS = [
     USER_INTENT_BACK,
     USER_INTENT_OUT_OF_SCOPE,
     USER_INTENT_SESSION_START,
+    DEFAULT_NLU_FALLBACK_INTENT_NAME,
 ]
 
 
@@ -172,14 +177,12 @@ class MessageProcessor:
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
 
-            if metadata:
-                tracker.events.append(SessionStarted(metadata=metadata))
-
             await self._run_action(
                 action=self._get_action(ACTION_SESSION_START_NAME),
                 tracker=tracker,
                 output_channel=output_channel,
                 nlg=self.nlg,
+                metadata=metadata,
             )
 
     async def get_tracker_with_session_start(
@@ -642,11 +645,22 @@ class MessageProcessor:
                         scheduler.remove_job(scheduled_job.id)
 
     async def _run_action(
-        self, action, tracker, output_channel, nlg, policy=None, confidence=None
+        self,
+        action,
+        tracker,
+        output_channel,
+        nlg,
+        policy=None,
+        confidence=None,
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> bool:
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
+            # Here we set optional metadata to the ActionSessionStart, which will then
+            # be passed to the SessionStart event. Otherwise the metadata will be lost.
+            if action.name() == ACTION_SESSION_START_NAME:
+                action.metadata = metadata
             events = await action.run(output_channel, nlg, tracker, self.domain)
         except ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
@@ -689,7 +703,7 @@ class MessageProcessor:
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)
                 if s and s.has_features():
-                    if e.key == "requested_slot" and tracker.active_form:
+                    if e.key == REQUESTED_SLOT and tracker.active_loop:
                         pass
                     else:
                         raise_warning(
@@ -800,5 +814,5 @@ class MessageProcessor:
                 )
 
         return self.policy_ensemble.probabilities_using_best_policy(
-            tracker, self.domain
+            tracker, self.domain, self.interpreter
         )

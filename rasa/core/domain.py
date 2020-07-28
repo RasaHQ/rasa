@@ -7,6 +7,8 @@ import typing
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Union
 
+from ruamel.yaml import YAMLError
+
 import rasa.core.constants
 from rasa.utils.common import (
     raise_warning,
@@ -19,6 +21,7 @@ from rasa.constants import (
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
     DOMAIN_SCHEMA_FILE,
     DOCS_URL_DOMAINS,
+    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
 )
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
@@ -47,6 +50,23 @@ USED_ENTITIES_KEY = "used_entities"
 USE_ENTITIES_KEY = "use_entities"
 IGNORE_ENTITIES_KEY = "ignore_entities"
 
+KEY_SLOTS = "slots"
+KEY_INTENTS = "intents"
+KEY_ENTITIES = "entities"
+KEY_RESPONSES = "responses"
+KEY_ACTIONS = "actions"
+KEY_FORMS = "forms"
+
+ALL_DOMAIN_KEYS = [
+    KEY_SLOTS,
+    KEY_FORMS,
+    KEY_ACTIONS,
+    KEY_ENTITIES,
+    KEY_INTENTS,
+    KEY_RESPONSES,
+]
+
+
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
 
@@ -69,7 +89,10 @@ class SessionConfig(NamedTuple):
     @staticmethod
     def default() -> "SessionConfig":
         # TODO: 2.0, reconsider how to apply sessions to old projects
-        return SessionConfig(0, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION)
+        return SessionConfig(
+            DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
+            DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+        )
 
     def are_sessions_enabled(self) -> bool:
         return self.session_expiration_time > 0
@@ -120,21 +143,26 @@ class Domain:
 
     @classmethod
     def from_file(cls, path: Text) -> "Domain":
-        return cls.from_yaml(rasa.utils.io.read_file(path))
+        return cls.from_yaml(rasa.utils.io.read_file(path), path)
 
     @classmethod
-    def from_yaml(cls, yaml: Text) -> "Domain":
+    def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
+        from rasa.validator import Validator
+
         try:
             validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
         except InvalidYamlFileError as e:
             raise InvalidDomain(str(e))
 
         data = rasa.utils.io.read_yaml(yaml)
+        if not Validator.validate_training_data_format_version(data, original_filename):
+            return Domain.empty()
+
         return cls.from_dict(data)
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
-        utter_templates = cls.collect_templates(data.get("responses", {}))
+        utter_templates = cls.collect_templates(data.get(KEY_RESPONSES, {}))
         if "templates" in data:
             raise_warning(
                 "Your domain file contains the key: 'templates'. This has been "
@@ -146,54 +174,45 @@ class Domain:
             )
             utter_templates = cls.collect_templates(data.get("templates", {}))
 
-        slots = cls.collect_slots(data.get("slots", {}))
+        slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
-        intents = data.get("intents", {})
+        intents = data.get(KEY_INTENTS, {})
 
         return cls(
             intents,
-            data.get("entities", []),
+            data.get(KEY_ENTITIES, []),
             slots,
             utter_templates,
-            data.get("actions", []),
-            data.get("forms", []),
+            data.get(KEY_ACTIONS, []),
+            data.get(KEY_FORMS, []),
             session_config=session_config,
             **additional_arguments,
         )
 
     @staticmethod
     def _get_session_config(session_config: Dict) -> SessionConfig:
-        session_expiration_time = session_config.get(SESSION_EXPIRATION_TIME_KEY)
+        session_expiration_time_min = session_config.get(SESSION_EXPIRATION_TIME_KEY)
 
         # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
-        if session_expiration_time is None:
-            raise_warning(
-                "No tracker session configuration was found in the loaded domain. "
-                "Domains without a session config will automatically receive a "
-                "session expiration time of 60 minutes in Rasa version 2.0 if not "
-                "configured otherwise.",
-                FutureWarning,
-                docs=DOCS_URL_DOMAINS + "#session-configuration",
-            )
-            session_expiration_time = 0
+        if session_expiration_time_min is None:
+            session_expiration_time_min = DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 
         carry_over_slots = session_config.get(
             CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
         )
 
-        return SessionConfig(session_expiration_time, carry_over_slots)
+        return SessionConfig(session_expiration_time_min, carry_over_slots)
 
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
-        from rasa import data
 
         domain = Domain.empty()
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
-                if data.is_domain_file(full_path):
+                if Domain.is_domain_file(full_path):
                     other = Domain.from_file(full_path)
                     domain = other.merge(domain)
 
@@ -227,6 +246,16 @@ class Domain:
         def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
             return sorted(list(set(l1 + l2)))
 
+        def merge_lists_of_dicts(
+            dict_list1: List[Dict],
+            dict_list2: List[Dict],
+            override_existing_values: bool = False,
+        ) -> List[Dict]:
+            dict1 = {list(i.keys())[0]: i for i in dict_list1}
+            dict2 = {list(i.keys())[0]: i for i in dict_list2}
+            merged_dicts = merge_dicts(dict1, dict2, override_existing_values)
+            return list(merged_dicts.values())
+
         if override:
             config = domain_dict["config"]
             for key, val in config.items():  # pytype: disable=attribute-error
@@ -235,21 +264,22 @@ class Domain:
         if override or self.session_config == SessionConfig.default():
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
-        # intents is list of dicts
-        intents_1 = {list(i.keys())[0]: i for i in combined["intents"]}
-        intents_2 = {list(i.keys())[0]: i for i in domain_dict["intents"]}
-        merged_intents = merge_dicts(intents_1, intents_2, override)
-        combined["intents"] = list(merged_intents.values())
+        combined[KEY_INTENTS] = merge_lists_of_dicts(
+            combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
+        )
+        combined[KEY_FORMS] = merge_lists_of_dicts(
+            combined[KEY_FORMS], domain_dict[KEY_FORMS], override
+        )
 
         # remove existing forms from new actions
-        for form in combined["forms"]:
-            if form in domain_dict["actions"]:
-                domain_dict["actions"].remove(form)
+        for form in combined[KEY_FORMS]:
+            if form in domain_dict[KEY_ACTIONS]:
+                domain_dict[KEY_ACTIONS].remove(form)
 
-        for key in ["entities", "actions", "forms"]:
+        for key in [KEY_ENTITIES, KEY_ACTIONS]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
-        for key in ["responses", "slots"]:
+        for key in [KEY_RESPONSES, KEY_SLOTS]:
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
         return self.__class__.from_dict(combined)
@@ -368,29 +398,29 @@ class Domain:
             validated_variations = []
             if template_variations is None:
                 raise InvalidDomain(
-                    "Utterance '{}' does not have any defined templates.".format(
+                    "Response '{}' does not have any defined variations.".format(
                         template_key
                     )
                 )
 
             for t in template_variations:
 
-                # templates should be a dict with options
+                # responses should be a dict with options
                 if isinstance(t, str):
                     raise_warning(
-                        f"Templates should not be strings anymore. "
-                        f"Utterance template '{template_key}' should contain "
+                        f"Responses should not be strings anymore. "
+                        f"Response '{template_key}' should contain "
                         f"either a '- text: ' or a '- custom: ' "
-                        f"attribute to be a proper template.",
+                        f"attribute to be a proper response.",
                         FutureWarning,
-                        docs=DOCS_URL_DOMAINS + "#utterance-templates",
+                        docs=DOCS_URL_DOMAINS + "#responses",
                     )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(
-                        f"Utter template '{template_key}' needs to contain either "
+                        f"Response '{template_key}' needs to contain either "
                         f"'- text: ' or '- custom: ' attribute to be a proper "
-                        f"template."
+                        f"response."
                     )
                 else:
                     validated_variations.append(t)
@@ -405,14 +435,23 @@ class Domain:
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
-        form_names: List[Text],
+        forms: List[Union[Text, Dict]],
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
-        self.form_names = form_names
+
+        # Forms used to be a list of form names. Now they can also contain
+        # `SlotMapping`s
+        if not forms or (forms and isinstance(forms[0], str)):
+            self.form_names = forms
+            self.forms: List[Dict] = [{form_name: {}} for form_name in forms]
+        elif isinstance(forms[0], dict):
+            self.forms: List[Dict] = forms
+            self.form_names = [list(f.keys())[0] for f in forms]
+
         self.slots = slots
         self.templates = templates
         self.session_config = session_config
@@ -422,7 +461,8 @@ class Domain:
 
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-            action.combine_user_with_default_actions(self.user_actions) + form_names
+            action.combine_user_with_default_actions(self.user_actions)
+            + self.form_names
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -431,8 +471,8 @@ class Domain:
     def __hash__(self) -> int:
 
         self_as_dict = self.as_dict()
-        self_as_dict["intents"] = sort_list_of_dicts_by_first_key(
-            self_as_dict["intents"]
+        self_as_dict[KEY_INTENTS] = sort_list_of_dicts_by_first_key(
+            self_as_dict[KEY_INTENTS]
         )
         self_as_string = json.dumps(self_as_dict, sort_keys=True)
         text_hash = utils.get_text_hash(self_as_string)
@@ -509,8 +549,15 @@ class Domain:
         if action_name not in self.action_names:
             self._raise_action_not_found_exception(action_name)
 
+        should_use_form_action = (
+            action_name in self.form_names and self.slot_mapping_for_form(action_name)
+        )
+
         return action.action_from_name(
-            action_name, action_endpoint, self.user_actions_and_forms
+            action_name,
+            action_endpoint,
+            self.user_actions_and_forms,
+            should_use_form_action,
         )
 
     def action_for_index(
@@ -638,10 +685,17 @@ class Domain:
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
             if slot is not None:
-                for i, slot_value in enumerate(slot.as_feature()):
-                    if slot_value != 0:
-                        slot_id = f"slot_{key}_{i}"
-                        state_dict[slot_id] = slot_value
+                if slot.value == "None" and slot.as_feature():
+                    # TODO: this is a hack to make a rule know
+                    #  that slot or form should not be set
+                    #  but only if the slot is featurized
+                    slot_id = f"slot_{key}_None"
+                    state_dict[slot_id] = 1
+                else:
+                    for i, slot_value in enumerate(slot.as_feature()):
+                        if slot_value != 0:
+                            slot_id = f"slot_{key}_{i}"
+                            state_dict[slot_id] = slot_value
 
         if "intent_ranking" in latest_message.parse_data:
             for intent in latest_message.parse_data["intent_ranking"]:
@@ -685,7 +739,7 @@ class Domain:
     @staticmethod
     def get_active_form(tracker: "DialogueStateTracker") -> Dict[Text, float]:
         """Turn tracker's active form into a state name."""
-        form = tracker.active_form.get("name")
+        form = tracker.active_loop.get("name")
         if form is not None:
             return {ACTIVE_FORM_PREFIX + form: 1.0}
         else:
@@ -774,19 +828,21 @@ class Domain:
                 SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
             },
-            "intents": self._transform_intents_for_file(),
-            "entities": self.entities,
-            "slots": self._slot_definitions(),
-            "responses": self.templates,
-            "actions": self.user_actions,  # class names of the actions
-            "forms": self.form_names,
+            KEY_INTENTS: self._transform_intents_for_file(),
+            KEY_ENTITIES: self.entities,
+            KEY_SLOTS: self._slot_definitions(),
+            KEY_RESPONSES: self.templates,
+            KEY_ACTIONS: self.user_actions,  # class names of the actions
+            KEY_FORMS: self.forms,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:
         """Write domain to a file."""
 
         domain_data = self.as_dict()
-        utils.dump_obj_as_yaml_to_file(filename, domain_data)
+        utils.dump_obj_as_yaml_to_file(
+            filename, domain_data, should_preserve_key_order=True
+        )
 
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
@@ -827,16 +883,16 @@ class Domain:
         """
         domain_data = self.as_dict()
 
-        for idx, intent_info in enumerate(domain_data["intents"]):
+        for idx, intent_info in enumerate(domain_data[KEY_INTENTS]):
             for name, intent in intent_info.items():
                 if intent.get(USE_ENTITIES_KEY) is True:
                     del intent[USE_ENTITIES_KEY]
                 if not intent.get(IGNORE_ENTITIES_KEY):
                     intent.pop(IGNORE_ENTITIES_KEY, None)
                 if len(intent) == 0:
-                    domain_data["intents"][idx] = name
+                    domain_data[KEY_INTENTS][idx] = name
 
-        for slot in domain_data["slots"].values():  # pytype: disable=attribute-error
+        for slot in domain_data[KEY_SLOTS].values():  # pytype: disable=attribute-error
             if slot["initial_value"] is None:
                 del slot["initial_value"]
             if slot["auto_fill"]:
@@ -858,7 +914,9 @@ class Domain:
         """Write cleaned domain to a file."""
 
         cleaned_domain_data = self.cleaned_domain()
-        utils.dump_obj_as_yaml_to_file(filename, cleaned_domain_data)
+        utils.dump_obj_as_yaml_to_file(
+            filename, cleaned_domain_data, should_preserve_key_order=True
+        )
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
@@ -1040,9 +1098,9 @@ class Domain:
             raise InvalidDomain(
                 get_exception_message(
                     [
-                        (duplicate_actions, "actions"),
-                        (duplicate_slots, "slots"),
-                        (duplicate_entities, "entities"),
+                        (duplicate_actions, KEY_ACTIONS),
+                        (duplicate_slots, KEY_SLOTS),
+                        (duplicate_entities, KEY_ENTITIES),
                     ],
                     incorrect_mappings,
                 )
@@ -1062,17 +1120,60 @@ class Domain:
         if missing_templates:
             for template in missing_templates:
                 raise_warning(
-                    f"Utterance '{template}' is listed as an "
-                    f"action in the domain file, but there is "
-                    f"no matching utterance template. Please "
+                    f"Action '{template}' is listed as a "
+                    f"response action in the domain file, but there is "
+                    f"no matching response defined. Please "
                     f"check your domain.",
-                    docs=DOCS_URL_DOMAINS + "#utterance-templates",
+                    docs=DOCS_URL_DOMAINS + "#responses",
                 )
 
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
 
         return self.as_dict() == Domain.empty().as_dict()
+
+    @staticmethod
+    def is_domain_file(filename: Text) -> bool:
+        """Checks whether the given file path is a Rasa domain file.
+
+        Args:
+            filename: Path of the file which should be checked.
+
+        Returns:
+            `True` if it's a domain file, otherwise `False`.
+        """
+        from rasa.data import YAML_FILE_EXTENSIONS
+
+        if not Path(filename).suffix in YAML_FILE_EXTENSIONS:
+            return False
+        try:
+            content = rasa.utils.io.read_yaml_file(filename)
+            if any(key in content for key in ALL_DOMAIN_KEYS):
+                return True
+        except YAMLError:
+            pass
+
+        return False
+
+    def slot_mapping_for_form(self, form_name: Text) -> Dict:
+        """Retrieve the slot mappings for a form which are defined in the domain.
+
+        Options:
+        - an extracted entity
+        - intent: value pairs
+        - trigger_intent: value pairs
+        - a whole message
+        or a list of them, where the first match will be picked
+
+        Args:
+            form_name: The name of the form.
+
+        Returns:
+            The slot mapping or an empty dictionary in case no mapping was found.
+        """
+        return next(
+            (form[form_name] for form in self.forms if form_name in form.keys()), {}
+        )
 
 
 class TemplateDomain(Domain):

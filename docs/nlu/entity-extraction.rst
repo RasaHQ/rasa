@@ -23,6 +23,9 @@ Component                  Requires           Model           	        Notes
 ``EntitySynonymMapper``    existing entities  N/A                       maps known synonyms
 ``DIETClassifier``                            conditional random field
                                               on top of a transformer   good for training custom entities
+``RegexEntityExtractor``                      N/A                       extract entities using the lookup
+                                                                        tables and regexes defined in the
+                                                                        training data
 =========================  =================  ========================  =================================
 
 .. contents::
@@ -60,9 +63,9 @@ exactly. Instead it will return the trained synonym.
 
 .. note::
 
-    The ``confidence`` will be set by the ``CRFEntityExtractor`` component. The
+    The ``confidence`` will be set by the ``CRFEntityExtractor`` and the ``DIETClassifier`` component. The
     ``DucklingHTTPExtractor`` will always return ``1``. The ``SpacyEntityExtractor`` extractor
-    and ``DIETClassifier`` do not provide this information and return ``null``.
+    does not provide this information and returns ``null``.
 
 
 Some extractors, like ``duckling``, may include additional information. For example:
@@ -190,7 +193,7 @@ Extracting Places, Dates, People, Organizations
 
 spaCy has excellent pre-trained named-entity recognizers for a few different languages.
 You can test them out in this
-`interactive demo <https://demos.explosion.ai/displacy-ent/>`_.
+`interactive demo <https://explosion.ai/demos/displacy-ent>`_.
 We don't recommend that you try to train your own NER using spaCy,
 unless you have a lot of data and know what you are doing.
 Note that some spaCy models are highly case-sensitive.

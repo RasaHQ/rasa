@@ -196,10 +196,11 @@ Requests to the server need to contain a valid JWT token in
 the ``Authorization`` header that is signed using this secret
 and the ``HS256`` algorithm.
 
-The user must have ``username`` and ``role`` attributes.
+The token's payload must contain an object under the ``user`` key,
+which in turn must contain the ``username`` and ``role`` attributes.
 If the ``role`` is ``admin``, all endpoints are accessible.
 If the ``role`` is ``user``, endpoints with a ``sender_id`` parameter are only accessible
-if the ``sender_id`` matches the user's ``username``.
+if the ``sender_id`` matches the payload's ``username`` property.
 
 .. code-block:: bash
 
@@ -220,6 +221,19 @@ Your requests should have set a proper JWT header:
                      "Gl8eZFVfKXA6jhncgRn-I"
 
 
+The following is an example payload for a JWT token:
+
+.. code-block:: json
+
+      {
+          "user": {
+              "username": "<sender_id>",
+              "role": "user"
+          }
+      }
+
+
+To create and encode the token, you can use tools such as the `JWT Debugger <https://jwt.io/>`_, or a Python module such as `PyJWT <https://pyjwt.readthedocs.io/en/latest/>`_.
 
 
 Endpoint Configuration

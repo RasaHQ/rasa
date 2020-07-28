@@ -238,21 +238,23 @@ def validate_required_components_from_data(
             )
 
     if data.regex_features and not any_components_in_pipeline(
-        ["RegexFeaturizer"], pipeline
+        ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
         raise_warning(
             "You have defined training data with regexes, but "
-            "your NLU pipeline does not include a 'RegexFeaturizer'. "
-            "To featurize regexes, include a 'RegexFeaturizer' in your pipeline."
+            "your NLU pipeline does not include a 'RegexFeaturizer' or a "
+            "'RegexEntityExtractor'. To use regexes, include either a "
+            "'RegexFeaturizer' or a 'RegexEntityExtractor' in your pipeline."
         )
 
     if data.lookup_tables and not any_components_in_pipeline(
-        ["RegexFeaturizer"], pipeline
+        ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
         raise_warning(
             "You have defined training data consisting of lookup tables, but "
-            "your NLU pipeline does not include a 'RegexFeaturizer'. "
-            "To featurize lookup tables, add a 'RegexFeaturizer' to your pipeline."
+            "your NLU pipeline does not include a 'RegexFeaturizer' or a "
+            "'RegexEntityExtractor'. To use lookup tables, include either a "
+            "'RegexFeaturizer' or a 'RegexEntityExtractor' in your pipeline."
         )
 
     if data.lookup_tables:
@@ -666,6 +668,9 @@ class Component(metaclass=ComponentMetaclass):
         return language in language_list or language not in not_supported_language_list
 
 
+C = typing.TypeVar("C", bound=Component)
+
+
 class ComponentBuilder:
     """Creates trainers and interpreters based on configurations.
 
@@ -786,3 +791,12 @@ class ComponentBuilder:
                 f"Failed to create component '{component_config['name']}'. "
                 f"Error: {e}"
             )
+
+    def create_component_from_class(self, component_class: Type[C], **cfg: Any) -> C:
+        """Create a component based on a class and a configuration.
+
+        Mainly used to make use of caching when instantiating component classes."""
+
+        component_config = {"name": component_class.name}
+
+        return self.create_component(component_config, RasaNLUModelConfig(cfg))

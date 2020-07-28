@@ -11,11 +11,12 @@ import rasa.utils.io
 from rasa.cli.utils import print_success, create_output_path
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
-    CONFIG_MANDATORY_KEYS_CORE,
-    CONFIG_MANDATORY_KEYS_NLU,
-    CONFIG_MANDATORY_KEYS,
+    CONFIG_KEYS_CORE,
+    CONFIG_KEYS_NLU,
+    CONFIG_KEYS,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
+    DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
 
 from rasa.core.utils import get_dict_hash
@@ -88,7 +89,7 @@ class FingerprintComparisonResult:
         Args:
             nlu: `True` if the NLU model should be retrained.
             core: `True` if the Core model should be retrained.
-            nlg: `True` if the templates in the domain should be updated.
+            nlg: `True` if the responses in the domain should be updated.
             force_training: `True` if a training of all parts is forced.
         """
         self.nlu = nlu
@@ -107,7 +108,7 @@ class FingerprintComparisonResult:
         return self.force_training or self.core
 
     def should_retrain_nlg(self) -> bool:
-        """Check if the templates have to be updated."""
+        """Check if the responses have to be updated."""
 
         return self.should_retrain_core() or self.nlg
 
@@ -213,7 +214,7 @@ def get_model_subdirectories(
 
     """
     core_path = os.path.join(unpacked_model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
-    nlu_path = os.path.join(unpacked_model_path, "nlu")
+    nlu_path = os.path.join(unpacked_model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
 
     if not os.path.isdir(core_path):
         core_path = None
@@ -286,21 +287,19 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     nlu_data = await file_importer.get_nlu_data()
 
     domain_dict = domain.as_dict()
-    templates = domain_dict.pop("responses")
+    responses = domain_dict.pop("responses")
     domain_without_nlg = Domain.from_dict(domain_dict)
 
     return {
-        FINGERPRINT_CONFIG_KEY: _get_hash_of_config(
-            config, exclude_keys=CONFIG_MANDATORY_KEYS
-        ),
+        FINGERPRINT_CONFIG_KEY: _get_hash_of_config(config, exclude_keys=CONFIG_KEYS),
         FINGERPRINT_CONFIG_CORE_KEY: _get_hash_of_config(
-            config, include_keys=CONFIG_MANDATORY_KEYS_CORE
+            config, include_keys=CONFIG_KEYS_CORE
         ),
         FINGERPRINT_CONFIG_NLU_KEY: _get_hash_of_config(
-            config, include_keys=CONFIG_MANDATORY_KEYS_NLU
+            config, include_keys=CONFIG_KEYS_NLU
         ),
         FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: hash(domain_without_nlg),
-        FINGERPRINT_NLG_KEY: get_dict_hash(templates),
+        FINGERPRINT_NLG_KEY: get_dict_hash(responses),
         FINGERPRINT_NLU_DATA_KEY: hash(nlu_data),
         FINGERPRINT_STORIES_KEY: hash(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),

@@ -11,6 +11,7 @@ import rasa.utils.io
 from rasa.core import training, restore
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.agent import Agent
+from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.domain import Domain
 from rasa.core.events import (
     SlotSet,
@@ -20,6 +21,10 @@ from rasa.core.events import (
     ActionReverted,
     UserUtteranceReverted,
     SessionStarted,
+    Event,
+    Form,
+    ActionExecutionRejected,
+    BotUttered,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
@@ -145,7 +150,7 @@ async def test_tracker_write_to_story(tmpdir, moodbot_domain: Domain):
 async def test_tracker_state_regression_without_bot_utterance(default_agent: Agent):
     sender_id = "test_tracker_state_regression_without_bot_utterance"
     for i in range(0, 2):
-        await default_agent.handle_message("/greet", sender_id=sender_id)
+        await default_agent.handle_text("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # Ensures that the tracker has changed between the utterances
@@ -163,7 +168,7 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent: Age
 async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent):
     sender_id = "test_tracker_state_regression_with_bot_utterance"
     for i in range(0, 2):
-        await default_agent.handle_message("/greet", sender_id=sender_id)
+        await default_agent.handle_text("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     expected = [
@@ -186,7 +191,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
 async def test_bot_utterance_comes_after_action_event(default_agent):
     sender_id = "test_bot_utterance_comes_after_action_event"
 
-    await default_agent.handle_message("/greet", sender_id=sender_id)
+    await default_agent.handle_text("/greet", sender_id=sender_id)
 
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
@@ -588,8 +593,8 @@ def test_session_started_not_part_of_applied_events(default_agent: Agent):
 async def test_tracker_dump_e2e_story(default_agent):
     sender_id = "test_tracker_dump_e2e_story"
 
-    await default_agent.handle_message("/greet", sender_id=sender_id)
-    await default_agent.handle_message("/goodbye", sender_id=sender_id)
+    await default_agent.handle_text("/greet", sender_id=sender_id)
+    await default_agent.handle_text("/goodbye", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     story = tracker.export_stories(e2e=True)
@@ -687,3 +692,355 @@ def test_tracker_without_slots(key, value, caplog):
         v = tracker.get_slot(key)
         assert v == value
     assert len(caplog.records) == 0
+
+
+@pytest.mark.parametrize(
+    "events, expected_applied_events",
+    [
+        (
+            [
+                # Form gets triggered.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("fill_whole_form"),
+                # Form executes and fills slots.
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet("slot1", "value"),
+                SlotSet("slot2", "value2"),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("fill_whole_form"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet("slot1", "value"),
+                SlotSet("slot2", "value2"),
+            ],
+        ),
+        (
+            [
+                # Form gets triggered.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("fill_whole_form"),
+                # Form executes and fills all slots right away. Form finishes.
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet("slot1", "value"),
+                SlotSet("slot2", "value2"),
+                Form(None),
+                # Form is done. Regular conversation continues.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("intent outside form"),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("fill_whole_form"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet("slot1", "value"),
+                SlotSet("slot2", "value2"),
+                Form(None),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("intent outside form"),
+            ],
+        ),
+        (
+            [
+                # Form gets triggered.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                # Form executes and requests slot.
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                # User fills slot.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("bye"),
+                # Form deactivates after all slots are finished.
+                ActionExecuted("loop"),
+                SlotSet("slot", "value"),
+                Form(None),
+                SlotSet(REQUESTED_SLOT, None),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                SlotSet("slot", "value"),
+                Form(None),
+                SlotSet(REQUESTED_SLOT, None),
+            ],
+        ),
+        (
+            [
+                # Form was executed before and finished.
+                ActionExecuted("loop"),
+                Form(None),
+                # Form gets triggered again (for whatever reason)..
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                # Form executes and requests slot.
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                # User fills slot.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("bye"),
+                # Form deactivates after all slots are finished.
+                ActionExecuted("loop"),
+                SlotSet("slot", "value"),
+                Form(None),
+                SlotSet(REQUESTED_SLOT, None),
+            ],
+            [
+                ActionExecuted("loop"),
+                Form(None),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                SlotSet("slot", "value"),
+                Form(None),
+                SlotSet(REQUESTED_SLOT, None),
+            ],
+        ),
+        (
+            [
+                user_uttered("trigger form"),
+                ActionExecuted("form"),
+                Form("form"),
+                SlotSet(REQUESTED_SLOT, "some slot"),
+                BotUttered("ask slot"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("fill requested slots"),
+                SlotSet("some slot", "value"),
+                ActionExecuted("form"),
+                SlotSet("some slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                Form(None),
+            ],
+            [
+                user_uttered("trigger form"),
+                ActionExecuted("form"),
+                Form("form"),
+                SlotSet(REQUESTED_SLOT, "some slot"),
+                BotUttered("ask slot"),
+                SlotSet("some slot", "value"),
+                SlotSet("some slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                Form(None),
+            ],
+        ),
+    ],
+)
+def test_applied_events_with_loop_happy_path(
+    events: List[Event], expected_applied_events: List[Event]
+):
+    tracker = DialogueStateTracker.from_events("👋", events)
+    applied = tracker.applied_events()
+
+    assert applied == expected_applied_events
+
+
+@pytest.mark.parametrize(
+    "events, expected_applied_events",
+    [
+        (
+            [
+                # Form is triggered and requests slot.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                # User sends chitchat instead of answering form.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                # Form rejected execution.
+                ActionExecutionRejected("loop"),
+                # Action which deals with unhappy path.
+                ActionExecuted("handling chitchat"),
+                # We immediately return to form after executing an action to handle it.
+                ActionExecuted("loop"),
+                # Form happy path continues until all slots are filled.
+                SlotSet(REQUESTED_SLOT, "bla"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("fill slots"),
+                ActionExecuted("loop"),
+                SlotSet("slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                Form(None),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                ActionExecutionRejected("loop"),
+                ActionExecuted("handling chitchat"),
+                ActionExecuted("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                SlotSet("slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                Form(None),
+            ],
+        ),
+        (
+            [
+                # Form gets triggered and requests slots.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                # User sends chitchat instead of answering form.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                # Form rejected execution.
+                ActionExecutionRejected("loop"),
+                # Unhappy path kicks in.
+                ActionExecuted("ask if continue"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                # User decides to fill form eventually.
+                user_uttered("I want to continue with form"),
+                ActionExecuted("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("fill slots"),
+                ActionExecuted("loop"),
+                SlotSet("slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                Form(None),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                ActionExecutionRejected("loop"),
+                ActionExecuted("ask if continue"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("I want to continue with form"),
+                ActionExecuted("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                SlotSet("slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                Form(None),
+            ],
+        ),
+        (
+            [
+                # Form gets triggered and requests slots.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                # User sends chitchat instead of answering form.
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                # Form rejected execution.
+                ActionExecutionRejected("loop"),
+                # Unhappy path kicks in.
+                ActionExecuted("ask if continue"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                # User wants to quit form.
+                user_uttered("Stop the form"),
+                ActionExecuted("some action"),
+                Form(None),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("outside the form"),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                ActionExecutionRejected("loop"),
+                ActionExecuted("ask if continue"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("Stop the form"),
+                ActionExecuted("some action"),
+                Form(None),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("outside the form"),
+            ],
+        ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                # Different action than form action after chitchat.
+                # This indicates we are in an unhappy path.
+                ActionExecuted("handle_chitchat"),
+                ActionExecuted("loop"),
+                Form("loop"),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                SlotSet(REQUESTED_SLOT, "bla"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                # Different action than form action after chitchat.
+                # This indicates we are in an unhappy path.
+                ActionExecuted("handle_chitchat"),
+                ActionExecuted("loop"),
+                Form("loop"),
+            ],
+        ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                ActionExecuted("handle_chitchat"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("affirm"),
+                ActionExecuted("loop"),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted("loop"),
+                Form("loop"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                # Different action than form action indicates unhappy path
+                ActionExecuted("handle_chitchat"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("affirm"),
+                ActionExecuted("loop"),
+            ],
+        ),
+    ],
+)
+def test_applied_events_with_loop_unhappy_path(
+    events: List[Event], expected_applied_events: List[Event]
+):
+    tracker = DialogueStateTracker.from_events("👋", events)
+    applied = tracker.applied_events()
+
+    assert applied == expected_applied_events
