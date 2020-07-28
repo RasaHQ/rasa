@@ -94,9 +94,6 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 
 
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-@pytest.mark.linux
-@pytest.mark.darwin
-@pytest.mark.windows
 async def test_train_persist_load_parse(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
@@ -116,8 +113,6 @@ async def test_train_persist_load_parse(language, pipeline, component_builder, t
 
 
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-@pytest.mark.linux
-@pytest.mark.darwin
 def test_train_model_without_data(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
@@ -132,8 +127,6 @@ def test_train_model_without_data(language, pipeline, component_builder, tmpdir)
 
 
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-@pytest.mark.linux
-@pytest.mark.darwin
 def test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
 
