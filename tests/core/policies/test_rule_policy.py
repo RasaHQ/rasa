@@ -11,11 +11,11 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
     ACTION_BACK_NAME,
     ACTION_SESSION_START_NAME,
+    RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.constants import (
     REQUESTED_SLOT,
-    RULE_SNIPPET_ACTION_NAME,
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
@@ -27,6 +27,7 @@ from rasa.core.events import (
     Form,
     SlotSet,
     ActionExecutionRejected,
+    FormValidation,
 )
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -44,14 +45,10 @@ GREET_RULE = DialogueStateTracker.from_events(
         # Greet is a FAQ here and gets triggered in any context
         UserUttered("haha", {"name": GREET_INTENT_NAME}),
         ActionExecuted(UTTER_GREET_ACTION),
+        ActionExecuted(ACTION_LISTEN_NAME),
     ],
 )
 GREET_RULE.is_rule_tracker = True
-
-
-def test_rule_policy_has_max_history_none():
-    policy = RulePolicy()
-    assert policy.featurizer.max_history is None
 
 
 def _form_submit_rule(
@@ -96,6 +93,11 @@ def _form_activation_rule(
     )
 
 
+def test_rule_policy_has_max_history_none():
+    policy = RulePolicy()
+    assert policy.featurizer.max_history is None
+
+
 def test_faq_rule():
     domain = Domain.from_yaml(
         f"""
@@ -108,8 +110,13 @@ actions:
 
     policy = RulePolicy()
     policy.train([GREET_RULE], domain, RegexInterpreter())
+    # remove first ... action and utter_greet and last action_listen from greet rule
     new_conversation = DialogueStateTracker.from_events(
-        "bla2", GREET_RULE.applied_events()[1:-1]
+        "simple greet",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+        ],
     )
     action_probabilities = policy.predict_action_probabilities(new_conversation, domain)
 
@@ -355,7 +362,60 @@ async def test_form_unhappy_path():
     assert_predicted_action(action_probabilities, domain, UTTER_GREET_ACTION)
 
 
-async def test_form_unhappy_path_triggering_form_again():
+async def test_form_unhappy_path_from_general_rule():
+    form_name = "some_form"
+
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - some-action
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+        - {form_name}
+    """
+    )
+
+    policy = RulePolicy()
+    # RulePolicy should memorize that unhappy_rule overrides GREET_RULE
+    policy.train([GREET_RULE], domain, RegexInterpreter())
+
+    # Check that RulePolicy predicts action to handle unhappy path
+    conversation_events = [
+        ActionExecuted(form_name),
+        Form(form_name),
+        SlotSet(REQUESTED_SLOT, "some value"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": GREET_INTENT_NAME}),
+        ActionExecutionRejected(form_name),
+    ]
+
+    action_probabilities = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+    )
+    # check that general rule action is predicted
+    assert_predicted_action(action_probabilities, domain, UTTER_GREET_ACTION)
+
+    # Check that RulePolicy triggers form again after handling unhappy path
+    conversation_events.append(ActionExecuted(UTTER_GREET_ACTION))
+    action_probabilities = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+    )
+    # check that action_listen from general rule is overwritten by form action
+    assert_predicted_action(action_probabilities, domain, form_name)
+
+
+async def test_form_unhappy_path_from_in_form_rule():
     form_name = "some_form"
     handle_rejection_action_name = "utter_handle_rejection"
 
@@ -385,8 +445,8 @@ async def test_form_unhappy_path_triggering_form_again():
             SlotSet(REQUESTED_SLOT, "bla"),
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
-            # When a user says "hi", and the form is unhappy, we want to run a specific
-            # action
+            # When a user says "hi", and the form is unhappy,
+            # we want to run a specific action
             UserUttered("haha", {"name": GREET_INTENT_NAME}),
             ActionExecuted(handle_rejection_action_name),
             ActionExecuted(form_name),
@@ -396,7 +456,8 @@ async def test_form_unhappy_path_triggering_form_again():
     )
 
     policy = RulePolicy()
-    policy.train([unhappy_rule], domain, RegexInterpreter())
+    # RulePolicy should memorize that unhappy_rule overrides GREET_RULE
+    policy.train([GREET_RULE, unhappy_rule], domain, RegexInterpreter())
 
     # Check that RulePolicy predicts action to handle unhappy path
     conversation_events = [
@@ -425,6 +486,230 @@ async def test_form_unhappy_path_triggering_form_again():
         domain,
     )
     assert_predicted_action(action_probabilities, domain, form_name)
+
+
+async def test_form_unhappy_path_from_story():
+    form_name = "some_form"
+    handle_rejection_action_name = "utter_handle_rejection"
+
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - {handle_rejection_action_name}
+        - some-action
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+        - {form_name}
+    """
+    )
+
+    unhappy_story = TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            # We are in an active form
+            ActionExecuted(form_name),
+            Form(form_name),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(UTTER_GREET_ACTION),
+            # After our bot says "hi", we want to run a specific action
+            ActionExecuted(handle_rejection_action_name),
+            ActionExecuted(form_name),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    policy = RulePolicy()
+    policy.train([GREET_RULE, unhappy_story], domain, RegexInterpreter())
+
+    # Check that RulePolicy predicts action to handle unhappy path
+    conversation_events = [
+        ActionExecuted(form_name),
+        Form(form_name),
+        SlotSet(REQUESTED_SLOT, "some value"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": GREET_INTENT_NAME}),
+        ActionExecutionRejected(form_name),
+    ]
+
+    action_probabilities = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+    )
+    assert_predicted_action(action_probabilities, domain, UTTER_GREET_ACTION)
+
+    # Check that RulePolicy doesn't trigger form or action_listen
+    # after handling unhappy path
+    conversation_events.append(ActionExecuted(handle_rejection_action_name))
+    action_probabilities = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+    )
+    assert max(action_probabilities) == 0
+
+
+async def test_form_unhappy_path_no_validation_from_rule():
+    form_name = "some_form"
+    handle_rejection_action_name = "utter_handle_rejection"
+
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - {handle_rejection_action_name}
+        - some-action
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+        - {form_name}
+    """
+    )
+
+    unhappy_rule = TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            # We are in an active form
+            Form(form_name),
+            SlotSet(REQUESTED_SLOT, "bla"),
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # When a user says "hi", and the form is unhappy,
+            # we want to run a specific action
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(handle_rejection_action_name),
+            # Next user utterance is an answer to the previous question
+            # and shouldn't be validated by the form
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(form_name),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    policy = RulePolicy()
+    # RulePolicy should memorize that unhappy_rule overrides GREET_RULE
+    policy.train([GREET_RULE, unhappy_rule], domain, RegexInterpreter())
+
+    # Check that RulePolicy predicts action to handle unhappy path
+    conversation_events = [
+        ActionExecuted(form_name),
+        Form(form_name),
+        SlotSet(REQUESTED_SLOT, "some value"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": GREET_INTENT_NAME}),
+        ActionExecutionRejected(form_name),
+    ]
+
+    action_probabilities = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+    )
+    assert_predicted_action(action_probabilities, domain, handle_rejection_action_name)
+
+    # Check that RulePolicy predicts action_listen
+    conversation_events.append(ActionExecuted(handle_rejection_action_name))
+    action_probabilities = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+    )
+    assert_predicted_action(action_probabilities, domain, ACTION_LISTEN_NAME)
+
+    # Check that RulePolicy triggers form again after handling unhappy path
+    conversation_events.append(ActionExecuted(ACTION_LISTEN_NAME))
+    tracker = DialogueStateTracker.from_events(
+        "casd", evts=conversation_events, slots=domain.slots
+    )
+    action_probabilities = policy.predict_action_probabilities(tracker, domain,)
+    assert_predicted_action(action_probabilities, domain, form_name)
+    # check that RulePolicy added FormValidation False event based on the training rule
+    assert tracker.events[-1] == FormValidation(False)
+
+
+async def test_form_unhappy_path_no_validation_from_story():
+    form_name = "some_form"
+    handle_rejection_action_name = "utter_handle_rejection"
+
+    domain = Domain.from_yaml(
+        f"""
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        - {handle_rejection_action_name}
+        - some-action
+        slots:
+          {REQUESTED_SLOT}:
+            type: unfeaturized
+        forms:
+        - {form_name}
+    """
+    )
+
+    unhappy_story = TrackerWithCachedStates.from_events(
+        "bla",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            # We are in an active form
+            ActionExecuted(form_name),
+            Form(form_name),
+            # When a user says "hi", and the form is unhappy,
+            # we want to run a specific action
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(handle_rejection_action_name),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # Next user utterance is an answer to the previous question
+            # and shouldn't be validated by the form
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(form_name),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    policy = RulePolicy()
+    policy.train([unhappy_story], domain, RegexInterpreter())
+
+    # Check that RulePolicy predicts no validation to handle unhappy path
+    conversation_events = [
+        ActionExecuted(form_name),
+        Form(form_name),
+        SlotSet(REQUESTED_SLOT, "some value"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": GREET_INTENT_NAME}),
+        ActionExecutionRejected(form_name),
+        ActionExecuted(handle_rejection_action_name),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", {"name": GREET_INTENT_NAME}),
+    ]
+
+    tracker = DialogueStateTracker.from_events(
+        "casd", evts=conversation_events, slots=domain.slots
+    )
+    action_probabilities = policy.predict_action_probabilities(tracker, domain,)
+    # there is no rule for next action
+    assert max(action_probabilities) == 0
+    # check that RulePolicy added FormValidation False event based on the training story
+    assert tracker.events[-1] == FormValidation(False)
 
 
 async def test_form_unhappy_path_without_rule():
