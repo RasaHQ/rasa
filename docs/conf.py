@@ -13,12 +13,15 @@ linkcheck_ignore = [
 ]
 linkcheck_retries = 2
 linkcheck_timeout = 5
+sphinx_tabs_valid_builders = ['linkcheck']
+
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx_autodoc_typehints",
@@ -36,6 +39,10 @@ extensions = [
     "rasabaster.editlink",
     "rasabaster.runnable",
     "rasabaster.conversations",
+    "rasabaster.ace",
+    "rasabaster.train_button",
+    "rasabaster.download_button",
+    "rasabaster.chat_block",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -347,7 +354,7 @@ extlinks = {"gh-code": (f"https://github.com/RasaHQ/rasa/tree/{release}/%s", "gi
 scv_priority = "tags"
 scv_show_banner = True
 # scv_banner_greatest_tag = True
-scv_banner_main_ref = '1.10.8'
+scv_banner_main_ref = "1.10.8"
 scv_sort = ("semver",)
 scv_whitelist_branches = (re.compile("^master$"),)
 # scv_whitelist_tags = ('None',)
@@ -416,13 +423,13 @@ nitpick_ignore = [
 
 
 def setup(sphinx):
-    sphinx.add_stylesheet("css/custom.css")
+    sphinx.add_css_file("css/custom.css")
 
     try:
         utils_path = os.path.abspath(os.path.join(__file__, "..", "utils"))
         sys.path.insert(0, utils_path)
         from StoryLexer import StoryLexer
 
-        sphinx.add_lexer("story", StoryLexer())
+        sphinx.add_lexer("story", StoryLexer)
     except ImportError:
         print("No Story Lexer :( Sad times!")
