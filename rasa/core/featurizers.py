@@ -10,7 +10,7 @@ import rasa.utils.io
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
-from rasa.core.events import ActionExecuted
+from rasa.core.events import ActionExecuted, UserUttered, Form, SlotSet
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
@@ -269,6 +269,43 @@ class TrackerFeaturizer:
 
         self.state_featurizer = state_featurizer
         self.use_intent_probabilities = use_intent_probabilities
+
+    def collect_slots(self, tracker):
+        current_nonnone_slots = {}
+        for key, slot in tracker.slots.items():
+            if slot is not None:
+                for i, slot_value in enumerate(slot.as_feature()):
+                    if slot_value != 0:
+                        slot_id = f"slot_{key}_{i}"
+                        current_nonnone_slots[slot_id] = slot_value
+        return current_nonnone_slots
+
+    def _create_states_e2e(self, tracker):
+        import copy
+
+        prev_tracker = None
+        states = []
+        for tr in tracker.generate_all_prior_trackers():
+            if prev_tracker:
+                state = tr.applied_events()[len(prev_tracker.applied_events()) :]
+                state_dict = {}
+                for event in state:
+                    if isinstance(event, UserUttered):
+                        state_dict["user"] = event.as_dict_core()
+                    elif isinstance(event, ActionExecuted):
+                        state_dict["prev_action"] = event.as_dict_core()
+                    elif isinstance(event, Form):
+                        if event.name:
+                            state_dict["form"] = event.as_dict()
+                    elif isinstance(event, SlotSet):
+                        if state_dict.get("slots"):
+                            state_dict["slots"].append(event.as_dict_core())
+                        else:
+                            state_dict["slots"] = [event.as_dict_core()]
+            else:
+                state_dict = {}
+            prev_tracker = copy.deepcopy(tr)
+        return states
 
     def _create_states(
         self,
@@ -615,10 +652,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
         for tracker in pbar:
             states = self._create_states(tracker, domain, True)
+            states1 = self._create_states_e2e(tracker)
 
             idx = 0
             for event in tracker.applied_events():
                 if isinstance(event, ActionExecuted):
+
                     if not event.unpredictable:
                         # only actions which can be
                         # predicted at a stories start
