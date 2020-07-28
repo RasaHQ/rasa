@@ -302,7 +302,8 @@ class UserUttered(Event):
         return _dict
 
     def as_dict_core(self) -> Dict[Text, Text]:
-        return {'text': self.text, 'intent': self.intent_name, "entities": self.entities}
+        entities = [entity.get("entity") for entity in self.entities]
+        return {'text': self.text, 'intent': self.intent_name, "entities": entities}
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -503,7 +504,7 @@ class SlotSet(Event):
         return d
 
     def as_dict_core(self) -> Dict[Text, Any]:
-        return {"name": self.key, "value": self.value}
+        return {self.key: self.value}
         
 
     @classmethod
