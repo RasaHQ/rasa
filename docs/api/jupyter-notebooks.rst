@@ -84,14 +84,14 @@ Chat with your assistant
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 To start chatting to an assistant, call the ``chat`` function, passing
-in the path to your saved model:
+in the path to your saved model. If you do not have custom actions you can set `endpoints = None` or omit it:
 
 
 .. runnable::
 
    from rasa.jupyter import chat
-   chat(model_path)
-
+   endpoints = "endpoints.yml"
+   chat(model_path, endpoints)
 
 
 Evaluate your model against test data

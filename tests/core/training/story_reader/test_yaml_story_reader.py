@@ -2,6 +2,7 @@ from typing import Text
 
 import pytest
 
+from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
 from rasa.core.domain import Domain
 from rasa.core.training import loading
@@ -104,7 +105,7 @@ async def test_is_yaml_file(file: Text, is_yaml_file: bool):
 async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/intent_with_leading_slash.yml"
 
-    with pytest.warns(UserWarning):
+    with pytest.warns(UserWarning) as record:
         tracker = await training.load_data(
             yaml_file,
             default_domain,
@@ -112,6 +113,9 @@ async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
             tracker_limit=1000,
             remove_duplicates=False,
         )
+
+    # one for leading slash, one for missing version
+    assert len(record) == 2
 
     assert tracker[0].latest_message == UserUttered("simple", {"name": "simple"})
 
@@ -200,17 +204,21 @@ async def test_warning_if_intent_not_in_domain(default_domain: Domain):
     reader = YAMLStoryReader(RegexInterpreter(), default_domain)
     yaml_content = io_utils.read_yaml(stories)
 
-    with pytest.warns(UserWarning):
+    with pytest.warns(UserWarning) as record:
         reader.read_from_parsed_yaml(yaml_content)
+
+    # one for missing intent, one for missing version
+    assert len(record) == 2
 
 
 async def test_no_warning_if_intent_in_domain(default_domain: Domain):
-    stories = """
-    stories:
-    - story: I am fine 💥
-      steps:
-      - intent: greet
-    """
+    stories = (
+        f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
+        f"stories:\n"
+        f"- story: I am fine 💥\n"
+        f"  steps:\n"
+        f"  - intent: greet"
+    )
 
     reader = YAMLStoryReader(RegexInterpreter(), default_domain)
     yaml_content = io_utils.read_yaml(stories)
@@ -218,4 +226,4 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
 
-    assert len(record) == 0
+    assert not len(record)
