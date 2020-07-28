@@ -31,6 +31,8 @@ def test_data_convert_help(run: Callable[..., RunResult]):
         assert output.outlines[i] == line
 
 
+@pytest.mark.linux
+@pytest.mark.darwin
 def test_version_print_lines(run: Callable[..., RunResult]):
     output = run("--version")
     output_text = "".join(output.outlines)

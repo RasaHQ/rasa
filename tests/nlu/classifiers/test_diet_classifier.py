@@ -101,16 +101,19 @@ def test_check_labels_features_exist(messages, expected):
 @pytest.mark.parametrize(
     "pipeline",
     [
-        [
-            {
-                "name": "ConveRTTokenizer",
-                "intent_tokenization_flag": True,
-                "intent_split_symbol": "+",
-            },
-            {"name": "CountVectorsFeaturizer"},
-            {"name": "ConveRTFeaturizer"},
-            {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
-        ],
+        pytest.param(
+            [
+                {
+                    "name": "ConveRTTokenizer",
+                    "intent_tokenization_flag": True,
+                    "intent_split_symbol": "+",
+                },
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "ConveRTFeaturizer"},
+                {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
+            ],
+            marks=[pytest.mark.linux, pytest.mark.darwin],
+        ),
         [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
