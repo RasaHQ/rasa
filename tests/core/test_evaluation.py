@@ -8,7 +8,7 @@ import rasa.utils.io
 from rasa.core.test import (
     _generate_trackers,
     _collect_story_predictions,
-    evaluate_stories,
+    test as evaluate_stories,
     FAILED_STORIES_FILE,
     CONFUSION_MATRIX_STORIES_FILE,
     REPORT_STORIES_FILE,
