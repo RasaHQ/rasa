@@ -1265,8 +1265,8 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 * **Short**
 
-  Classifies a message with an intent ``nlu_fallback`` if the NLU intent classification
-  scores were ambiguous.
+  Classifies a message with the intent `nlu_fallback` if the NLU intent classification
+  scores are ambiguous.
 
 * **Outputs**
 
@@ -1274,7 +1274,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 * **Requires**
 
-  ``intent`` and``intent_ranking`` output from a previous [Intent Classifier](./components.mdx#intent-classifiers)
+  `intent` and `intent_ranking` output from a previous [Intent Classifier](./components.mdx#intent-classifiers)
 
 * **Output-Example**
 
@@ -1305,11 +1305,11 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 * **Description**
 
-    The `FallbackClassifier` classifies a user message with an intent `nlu_fallback`
+    The `FallbackClassifier` classifies a user message with the intent `nlu_fallback`
     in case the previous [Intent Classifier](./components.mdx#intent-classifiers) wasn't
     able to classify an intent with a confidence greater or equal than the `threshold`
-    of the `FallbackClassifier`. In addition it can also predict the fallback intent in
-    case the confidence scores of the two top ranked intents are closer than the the
+    of the `FallbackClassifier`. It can also predict the fallback intent in the
+    case when the confidence scores of the two top ranked intents are closer than the the
     `ambiguity_threshold`.
 
     You can use the `FallbackClassifier` to implement a
@@ -1321,7 +1321,6 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
     - rule: Ask the user to rephrase in case of low NLU confidence
       steps:
-      - ...
       - intent: nlu_fallback
       - action: utter_please_rephrase
     ```
