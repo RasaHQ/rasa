@@ -33,7 +33,7 @@ Add examples for your user-goal specific intents in the format shown below.
 You can delete the `subscribe` and `inform` intents if you’re not using them;
 you can also add or change examples for any of the other intents.
 
-```yaml live noResult name="nlu"
+```yaml live noResult name=nlu
 nlu:
 - intent: greet
   examples: |
@@ -67,7 +67,7 @@ To do so, we define a [form](../glossary.mdx#form). You can change the name of t
 Add to or replace the `email` item in the list below to reflect the information the bot needs
 to collect for your user goal. Leave the `type` field the same for any items you add.
 
-```yaml live noResult name="forms"
+```yaml live noResult name=forms
 forms:
 - newsletter_form:
     email:
@@ -80,7 +80,7 @@ Rules are conversation snippets that should always proceed in exactly the same w
 first step of the rule tells the bot that regardless of what precedes, the next steps should always
 follow one another. Update the rule below for running the form you defined above.
 
-```yaml live noResult name="rules"
+```yaml live noResult name=rules
 rules:
  - rule: activate subscribe form
    steps:
@@ -102,7 +102,7 @@ Give intuitive names to your responses starting with `utter_` for now; you’ll 
 Using the general template of the story we have shown you below, write a story or two that serve
 the user goal you have chosen. You can include the steps from your form rule wherever appropriate.
 
-```yaml live noResult name="stories"
+```yaml live noResult name=stories
 stories:
  - story: greet and subscribe
    steps:
@@ -125,7 +125,7 @@ will be chosen at random whenever that response is predicted.
 You can add or change text for any of the responses below. If you’re using your own user goal,
 replace the last three responses with the response you used in your stories above.
 
-```yaml live noResult name="responses"
+```yaml live noResult name=responses
 responses:
    utter_greet:
        - text: |
