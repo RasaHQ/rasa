@@ -1067,7 +1067,7 @@ class ActionExecuted(Event):
         return {'action_name': self.action_name, 'text': self.e2e_text}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        tracker.set_latest_action_name(self.action_name)
+        tracker.set_latest_action(self.as_dict_core())
         tracker.clear_followup_action()
 
 
