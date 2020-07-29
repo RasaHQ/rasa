@@ -1,15 +1,19 @@
 import React from 'react';
 import Button from '@site/src/components/button';
+import PrototyperContext from './context';
 
 
-// https://trainer-service.prototyping.rasa.com/trainings
+const TrainButton = (props) => {
+    const prototyperContext = React.useContext(PrototyperContext);
 
-const TrainButton = (props) => (
-  <Button
-    {...props}
-  >
-    Train
-  </Button>
-);
+    return (
+      <Button
+        onClick={prototyperContext.trainModel}
+        {...props}
+      >
+        Train
+      </Button>
+    );
+}
 
 export default TrainButton;
