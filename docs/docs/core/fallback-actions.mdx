@@ -9,26 +9,26 @@ Sometimes you want to revert to a fallback action, such as replying,
 `"Sorry, I didn't understand that"`. You can handle fallback cases by adding appropriate
 rules. Rasa Open Source comes with two default implementations for handling these
 fallbacks.
-In addition you can also use [Custom Actions](./actions.mdx#custom-actions) to implement
-custom procedures.
+In addition, you can also use [Custom Actions](./actions.mdx#custom-actions) to run any
+custom code.
 
 ## Handling Low NLU Confidence
 
 Although Rasa's [Intent Classifier](../nlu/components.mdx#intent-classifiers) will
 generalize to unseen messages, some
-messages might still receive a low classification confidence.
-In order to handle messages which have low confidence, we recommend to add the
+messages might receive a low classification confidence.
+To handle messages with low confidence, we recommend adding the
 [FallbackClassifier](../nlu/components.mdx#fallback-classifier) to your NLU pipeline.
 The [FallbackClassifier](../nlu/components.mdx#fallback-classifier) will
-predict an intent ``nlu_fallback`` whenever no other intent prediction crosses
+predict an intent `nlu_fallback` when all other intent predictions fall below
 the configured confidence threshold.
 
 ### Writing Stories / Rules for Messages with Low Confidence
 
-When you added the [FallbackClassifier](../nlu/components.mdx#fallback-classifier)  to
+When you add the [FallbackClassifier](../nlu/components.mdx#fallback-classifier)  to
 your NLU pipeline, you can treat
-messages with low classification confidence just as any other intent. The following
-[Rule](./rules.mdx) will ask the user to rephrase whenever they send a message which is
+messages with low classification confidence as any other intent. The following
+[Rule](./rules.mdx) will ask the user to rephrase when they send a message that is
 classified with low confidence:
 
 ```yaml
@@ -52,17 +52,17 @@ by trying to disambiguate the user input.
 
 #### Requirements
 
-* Please add the [RulePolicy](./policies.mdx#rule-policy) to your policy configuration
+* Add the [RulePolicy](./policies.mdx#rule-policy) to your policy configuration
   before using the `Two-Stage-Fallback`
-* Before using the `Two-Stage-Fallback` you have to make sure to add the
+* Before using the `Two-Stage-Fallback`, make sure to add the
   `out_of_scope` intent to your [Domain](./domains.mdx).
   When users send messages with
-  an intent `out_of_scope` during the fallback (e.g. by pressing a button),
+  the intent `out_of_scope` during the fallback (e.g. by pressing a button),
   Rasa Open Source will know that the users denied the given intent suggestions.
 
 #### Usage
 
-- If a NLU prediction has a low confidence score, the user is asked to affirm
+- If an NLU prediction has a low confidence score, the user is asked to affirm
   the classification of the intent.  (Default action:
   `action_default_ask_affirmation`)
 
@@ -83,22 +83,22 @@ by trying to disambiguate the user input.
 
     - If they affirm by sending a message with high NLU confidence (e.g. by pressing
       a button), the story continues as if the user had this intent from the beginning.
-    - If the user denies by sending a message with the intent ``out_of_scope``, the
-      original intent is classified as the specifies ``deny_suggestion_intent_name``,
+    - If the user denies by sending a message with the intent `out_of_scope`, the
+      original intent is classified as the specifies `deny_suggestion_intent_name`,
       and an ultimate fallback action `fallback_nlu_action_name` is
       triggered (e.g. a handoff to a human).
 
 Rasa Open Source provides default implementations for
 `action_default_ask_affirmation` and `action_default_ask_rephrase`.
-The default implementation of `action_default_ask_rephrase` action utters
-the response `utter_ask_rephrase`, so please make sure to specify this
+The default implementation of `action_default_ask_rephrase` utters
+the response `utter_ask_rephrase`, so make sure to specify this
 response in your domain file.
 The implementation of both actions can be overwritten with
 [Custom Actions](./actions.mdx#custom-actions).
 
 To use the `Two-Stage-Fallback` for messages with low NLU confidence, add the
 following [Rules](./rules.mdx) to your training data. This rule will make sure that the
-`Two-Stage-Fallback` will be activated whenever the user send a message which receives
+`Two-Stage-Fallback` will be activated whenever a message is received with
 low classification confidence.
 
 ```yaml
@@ -114,20 +114,20 @@ rules:
 
 ## Handling Low Core Confidence
 
-Similar as users might send unexpected messages,
-it is also possible that their behavior might lead them down unknown conversation paths.
+As users might send unexpected messages,
+it is possible that their behavior will lead them down unknown conversation paths.
 Rasa's machine learning policies such as the [TED Policy](./policies.mdx#ted-policy)
 are optimized to handle these unknown paths.
 
 To handle cases where even the machine learning policies can't predict the
-next action with confidence, make sure to add the
+next action with high confidence, make sure to add the
 [RulePolicy](./policies.mdx#rule-policy) to your
 policy configuration. The [RulePolicy](./policies.mdx#rule-policy) will predict a
-default action if no [Policy](./policies.mdx) has a prediction for the next
-action of the assistant which crosses a configurable threshold.
+default action if no [Policy](./policies.mdx) has a next action prediction with
+confidence above a configurable threshold.
 
-You can configure the action which is run in case low of Core confidence as well as
-the threshold for this as follows:
+You can configure the action that is run in case low of Core confidence as well as
+the corresponding confidence threshold as follows:
 
 ```yaml
 policies:
@@ -139,7 +139,7 @@ policies:
   fallback_action_name: "action_default_fallback"
 ```
 
-`action_default_fallback` is a default action in Rasa Open Source which sends the
+`action_default_fallback` is a default action in Rasa Open Source that sends the
 `utter_default` response to the user. Make sure to specify
 the `utter_default` in your domain file. It will also revert back to the
 state of the conversation before the user message that caused the
