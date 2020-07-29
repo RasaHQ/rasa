@@ -10,7 +10,7 @@ description: Find out how to use Rasa's HTTP API to integrate Rasa with your bac
 :::note
 The instructions below are relevant for configuring how a model is run
 within a Docker container or for testing the HTTP API locally. If you
-want to deploy your assistant to users, see [Deploying Your Rasa Assistant](./how-to-deploy#deploying-your-rasa-assistant).
+want to deploy your assistant to users, see [Deploying Your Rasa Assistant](./how-to-deploy.mdx#deploying-your-rasa-assistant).
 
 :::
 
@@ -21,7 +21,7 @@ trained Rasa model with:
 rasa run -m models --enable-api --log-file out.log
 ```
 
-All the endpoints this API exposes are documented in [HTTP API](../api/http-api).
+All the endpoints this API exposes are documented in [HTTP API](../api/http-api.mdx).
 
 The different parameters are:
 
@@ -33,9 +33,9 @@ The different parameters are:
 
 Rasa can load your model in three different ways:
 
-1. Fetch the model from a server (see [Fetching Models from a Server](./configuring-http-api#server-fetch-from-server)), or
+1. Fetch the model from a server (see [Fetching Models from a Server](./configuring-http-api.mdx#server-fetch-from-server)), or
 
-2. Fetch the model from a remote storage (see [Cloud Storage](./cloud-storage)).
+2. Fetch the model from a remote storage (see [Cloud Storage](./cloud-storage.mdx)).
 
 3. Load the model specified via `-m` from your local storage system,
 
@@ -44,13 +44,13 @@ storage system if no model server and no remote storage were configured.
 
 :::caution
 Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
-by enabling an authentication method: [Security Considerations](./configuring-http-api#server-security).
+by enabling an authentication method: [Security Considerations](./configuring-http-api.mdx#server-security).
 
 :::
 
 :::note
 If you are using custom actions, make sure your action server is
-running (see [Start an Action Server](./command-line-interface#run-action-server)). If your actions are running
+running (see [Start an Action Server](./command-line-interface.mdx#run-action-server)). If your actions are running
 on a different machine, or you aren’t using the Rasa SDK, make sure
 to update your `endpoints.yml` file.
 
@@ -70,7 +70,7 @@ recommended that you set the number of workers to the number of available CPU co
 (check out the
 [Sanic docs](https://sanic.readthedocs.io/en/latest/sanic/deploying.html#workers)
 for more details). This will only work in combination with the
-`RedisLockStore` (see [Lock Stores](../api/lock-stores)).
+`RedisLockStore` (see [Lock Stores](../api/lock-stores.mdx)).
 
 :::
 
@@ -130,7 +130,7 @@ rasa run -m 20190506-100418.tar.gz --enable-api --log-file out.log --remote-stor
 ```
 
 The model will be downloaded and stored in a temporary directory on your local storage system.
-For more information see [Cloud Storage](./cloud-storage).
+For more information see [Cloud Storage](./cloud-storage.mdx).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-ssl"></a>
 
@@ -250,9 +250,9 @@ These placeholders are then replaced by the value of the environment variable.
 ### Connecting a Tracker Store
 
 To configure a tracker store within your endpoint configuration,
-see [Tracker Stores](../api/tracker-stores).
+see [Tracker Stores](../api/tracker-stores.mdx).
 
 ### Connecting an Event Broker
 
 To configure an event broker within your endpoint configuration,
-see [Event Brokers](../api/event-brokers).
+see [Event Brokers](../api/event-brokers.mdx).

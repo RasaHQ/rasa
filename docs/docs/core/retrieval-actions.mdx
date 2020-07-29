@@ -23,7 +23,7 @@ actions for handling single turn interactions.
 
 ## About
 
-Retrieval actions are designed to make it simpler to work with [Small Talk](../dialogue-elements/small-talk) and [Simple Questions](../dialogue-elements/completing-tasks#simple-questions) .
+Retrieval actions are designed to make it simpler to work with [Small Talk](../dialogue-elements/small-talk.mdx) and [Simple Questions](../dialogue-elements/completing-tasks.mdx#simple-questions) .
 For example, if your assistant can handle 100 FAQs and 50 different small talk intents, you can use a single retrieval
 action to cover all of these.
 From a dialogue perspective, these single-turn exchanges can all be treated equally, so this simplifies your stories.
@@ -50,7 +50,7 @@ You can cover all of these with a single story where the above intents are group
    - respond_chitchat
 ```
 
-A retrieval action uses the output of a [ResponseSelector](../nlu/components#response-selector) component from NLU which learns a
+A retrieval action uses the output of a [ResponseSelector](../nlu/components.mdx#response-selector) component from NLU which learns a
 retrieval model to predict the correct response from a list of candidate responses given a user message text.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="retrieval-training-data"></a>
@@ -107,7 +107,7 @@ use it in the name of your intents.
 
 ## Config File
 
-You need to include the [ResponseSelector](../nlu/components#response-selector) component in your config. The component needs a tokenizer, a featurizer and an
+You need to include the [ResponseSelector](../nlu/components.mdx#response-selector) component in your config. The component needs a tokenizer, a featurizer and an
 intent classifier to operate on the user message before it can predict a response and hence these
 components should be placed before `ResponseSelector` in the NLU configuration. An example:
 
@@ -138,10 +138,10 @@ actions:
 ```
 
 A simple way to ensure that the retrieval action is predicted after the chitchat
-intent is to use the [Mapping Policy](./policies#mapping-policy).
+intent is to use the [Mapping Policy](./policies.mdx#mapping-policy).
 However, you can also include this action in your stories.
 For example, if you want to repeat a question after handling chitchat
-(see [Unhappy Paths](../dialogue-elements/completing-tasks#unhappy-paths) )
+(see [Unhappy Paths](../dialogue-elements/completing-tasks.mdx#unhappy-paths) )
 
 ```story
 ## interruption

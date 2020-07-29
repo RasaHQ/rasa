@@ -9,7 +9,7 @@ import variables from '../../variables.json';
 
 If you don’t have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
 on your local machine. If you already have a model you’re satisfied with, see
-[Deploying Your Rasa Assistant](../how-to-deploy#deploying-your-rasa-assistant) to learn how to deploy your model.
+[Deploying Your Rasa Assistant](../how-to-deploy.mdx#deploying-your-rasa-assistant) to learn how to deploy your model.
 
 ## Installing Docker
 
@@ -26,7 +26,7 @@ See [Docker Installation](https://docs.docker.com/install/) for details.
 
 ## Setting up your Rasa Project
 
-Just like in the [tutorial](../rasa-tutorial), you’ll use the `rasa init` command to create a project.
+Just like in the [tutorial](../rasa-tutorial.mdx), you’ll use the `rasa init` command to create a project.
 The only difference is that you’ll be running Rasa inside a Docker container, using
 the image `rasa/rasa`. To initialize your project, run:
 
@@ -133,7 +133,7 @@ as you like without worrying about missing dependencies. The plain `{version}` t
 dependencies you need to run the default pipeline created by `rasa init`.
 
 To keep images as small as possible, we also publish different tags of the `rasa/rasa` image
-with different dependencies installed. See [Choosing a Pipeline](../../nlu/choosing-a-pipeline) for more dependency information
+with different dependencies installed. See [Choosing a Pipeline](../../nlu/choosing-a-pipeline.mdx) for more dependency information
 specific to your pipeline. For example, if you are using components with pre-trained word vectors from spaCy or
 MITIE, you should choose the corresponding tag.
 
@@ -162,7 +162,7 @@ environment variable `PYTHONPATH=$PYTHONPATH:<directory of your module>`.
 
 ### Adding Custom Actions
 
-To create more sophisticated assistants, you will want to use [Custom Actions](../../core/actions#custom-actions).
+To create more sophisticated assistants, you will want to use [Custom Actions](../../core/actions.mdx#custom-actions).
 Continuing the example from above, you might want to add an action which tells
 the user a joke to cheer them up.
 
@@ -273,5 +273,5 @@ docker rm action-server
 
 Work on your bot until you have a minimum viable assistant that can handle your happy paths. After
 that, you’ll want to deploy your model to get feedback from real test users. To do so, you can deploy the
-model you created with Rasa X via one of our [recommended deployment methods](../how-to-deploy#recommended-deployment-methods).
-Or, you can do a [Rasa-only deployment in Docker Compose](./deploying-in-docker-compose#deploying-rasa-in-docker-compose).
+model you created with Rasa X via one of our [recommended deployment methods](../how-to-deploy.mdx#recommended-deployment-methods).
+Or, you can do a [Rasa-only deployment in Docker Compose](./deploying-in-docker-compose.mdx#deploying-rasa-in-docker-compose).

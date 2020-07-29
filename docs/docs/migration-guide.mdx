@@ -43,10 +43,10 @@ model before trying to use it with this improved version.
 
 ### General
 
-* The [TED Policy](./core/policies#ted-policy) replaced the `keras_policy` as recommended machine
+* The [TED Policy](./core/policies.mdx#ted-policy) replaced the `keras_policy` as recommended machine
   learning policy. New projects generated with `rasa init` will automatically use
   this policy. In case you want to change your existing model configuration to use the
-  [TED Policy](./core/policies#ted-policy) add this to the `policies` section in your `config.yml`
+  [TED Policy](./core/policies.mdx#ted-policy) add this to the `policies` section in your `config.yml`
   and remove potentially existing `KerasPolicy` entries:
 
   ```yaml
@@ -59,14 +59,14 @@ model before trying to use it with this improved version.
 
   The given snippet specifies default values for the parameters `max_history` and
   `epochs`. `max_history` is particularly important and strongly depends on your stories.
-  Please see the docs of the [TED Policy](./core/policies#ted-policy) if you want to customize them.
+  Please see the docs of the [TED Policy](./core/policies.mdx#ted-policy) if you want to customize them.
 
 * All pre-defined pipeline templates are deprecated. **Any templates you use will be
   mapped to the new configuration, but the underlying architecture is the same**.
-  Take a look at [Choosing a Pipeline](./nlu/choosing-a-pipeline) to decide on what components you should use
+  Take a look at [Choosing a Pipeline](./nlu/choosing-a-pipeline.mdx) to decide on what components you should use
   in your configuration file.
 
-* The [Embedding Policy](./core/policies#embedding-policy) was renamed to [TED Policy](./core/policies#ted-policy). The functionality of the policy stayed the same.
+* The [Embedding Policy](./core/policies.mdx#embedding-policy) was renamed to [TED Policy](./core/policies.mdx#ted-policy). The functionality of the policy stayed the same.
   Please update your configuration files to use `TEDPolicy` instead of `EmbeddingPolicy`.
 
 * Most of the model options for `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` got
@@ -97,7 +97,7 @@ model before trying to use it with this improved version.
   Old configuration options will be mapped to the new names, and a warning will be thrown.
   However, these will be deprecated in a future release.
 
-* The Embedding Intent Classifier is now deprecated and will be replaced by [DIETClassifier](./nlu/components#diet-classifier)
+* The Embedding Intent Classifier is now deprecated and will be replaced by [DIETClassifier](./nlu/components.mdx#diet-classifier)
   in the future.
   `DIETClassfier` performs intent classification as well as entity recognition.
   If you want to get the same model behavior as the current `EmbeddingIntentClassifier`, you can use
@@ -118,7 +118,7 @@ model before trying to use it with this improved version.
     # ... any other parameters
   ```
 
-  See [DIETClassifier](./nlu/components#diet-classifier) for more information about the new component.
+  See [DIETClassifier](./nlu/components.mdx#diet-classifier) for more information about the new component.
   Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, the
   behavior is unchanged from previous versions.
 
@@ -155,14 +155,14 @@ model before trying to use it with this improved version.
   ```
 
   `CRFEntityExtractor` featurizes user messages on its own, it does not depend on any featurizer.
-  We extracted the featurization from the component into the new featurizer [LexicalSyntacticFeaturizer](./nlu/components#lexicalsyntacticfeaturizer). Thus,
+  We extracted the featurization from the component into the new featurizer [LexicalSyntacticFeaturizer](./nlu/components.mdx#lexicalsyntacticfeaturizer). Thus,
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
-  [DIETClassifier](./nlu/components#diet-classifier).
+  [DIETClassifier](./nlu/components.mdx#diet-classifier).
   Specifying `CRFEntityExtractor` in the configuration maps to the above component definition, the behavior
   is unchanged from previous versions.
 
 * If your pipeline contains `CRFEntityExtractor` and `EmbeddingIntentClassifier` you can substitute both
-  components with [DIETClassifier](./nlu/components#diet-classifier). You can use the following pipeline for that:
+  components with [DIETClassifier](./nlu/components.mdx#diet-classifier). You can use the following pipeline for that:
 
   ```yaml
   pipeline:
@@ -198,7 +198,7 @@ model before trying to use it with this improved version.
 
 * By default, the `EmbeddingIntentClassifier`, `EmbeddingPolicy`, and `ResponseSelector` will
   now normalize the top 10 confidence results if the `loss_type` is `"softmax"` (which has been
-  default since 1.3, see [Rasa 1.2 to Rasa 1.3](./migration-guide#migration-to-rasa-1-3)). This is configurable via the `ranking_length`
+  default since 1.3, see [Rasa 1.2 to Rasa 1.3](./migration-guide.mdx#migration-to-rasa-1-3)). This is configurable via the `ranking_length`
   configuration parameter; to turn off normalization to match the previous behavior, set `ranking_length: 0`.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-3"></a>
@@ -214,9 +214,9 @@ model before trying to use it with this improved version.
 
 ### General
 
-* Default parameters of `EmbeddingIntentClassifier` are changed. See [Components](./nlu/components) for details.
+* Default parameters of `EmbeddingIntentClassifier` are changed. See [Components](./nlu/components.mdx) for details.
   Architecture implementation is changed as well, so **old trained models cannot be loaded**.
-  Default parameters and architecture for `EmbeddingPolicy` are changed. See [Policies](./core/policies) for details.
+  Default parameters and architecture for `EmbeddingPolicy` are changed. See [Policies](./core/policies.mdx) for details.
   It uses transformer instead of lstm. **Old trained models cannot be loaded**.
   They use `inner` similarity and `softmax` loss by default instead of
   `cosine` similarity and `margin` loss (can be set in config file).
@@ -229,7 +229,7 @@ model before trying to use it with this improved version.
 * Default `max_history` for `EmbeddingPolicy` is `None` which means it’ll use
   the `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to
   some finite value in order to use `MaxHistoryTrackerFeaturizer`
-  for **faster training**. See [Featurization of Conversations](./api/core-featurization#featurization-conversations) for details.
+  for **faster training**. See [Featurization of Conversations](./api/core-featurization.mdx#featurization-conversations) for details.
   We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
   (e.g. `"batch_size": [32, 64]`)
 
@@ -266,7 +266,7 @@ model before trying to use it with this improved version.
   Some changes in commands reflect the combined training and running of NLU and Core models, but NLU and Core can still
   be trained and used individually. If you attempt to run one of the old scripts in `rasa.core` or `rasa.nlu`,
   an error is thrown that points you to the command you
-  should use instead. See all the new commands at [Command Line Interface](./user-guide/command-line-interface).
+  should use instead. See all the new commands at [Command Line Interface](./user-guide/command-line-interface.mdx).
 
 * If you have written a custom output channel, all `send_` methods subclassed
   from the `OutputChannel` class need to take an additional `\*\*kwargs`
@@ -286,7 +286,7 @@ model before trying to use it with this improved version.
   Any underscores (`_`) in arguments have been replaced with dashes (`-`).
   For example: `--max_history` has been changed to `--max-history`. You can
   see all of the script parameters in the `--help` output of the commands
-  in the [Command Line Interface](./user-guide/command-line-interface).
+  in the [Command Line Interface](./user-guide/command-line-interface.mdx).
 
 * The `--num_threads` parameter was removed from the `run` command. The
   server will always run single-threaded, but will now run asynchronously. If you want to

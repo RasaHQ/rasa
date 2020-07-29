@@ -15,7 +15,7 @@ The command line interface (CLI) gives you easy-to-remember commands for common 
 |`rasa train`            |Trains a model using your NLU data and stories, saves trained model in `./models`.                                                        |
 |`rasa interactive`      |Starts an interactive learning session to create new training data by chatting.                                                           |
 |`rasa shell`            |Loads your trained model and lets you talk to your assistant on the command line.                                                         |
-|`rasa run`              |Starts a Rasa server with your trained model. See the [Configuring the HTTP API](./configuring-http-api) docs for details. |
+|`rasa run`              |Starts a Rasa server with your trained model. See the [Configuring the HTTP API](./configuring-http-api.mdx) docs for details. |
 |`rasa run actions`      |Starts an action server using the Rasa SDK.                                                                                               |
 |`rasa visualize`        |Visualizes stories.                                                                                                                       |
 |`rasa test`             |Tests a trained Rasa model using your test NLU data and stories.                                                                          |
@@ -132,7 +132,7 @@ rasa shell --debug
 In order to see the typical greetings and/or session start behavior you might see
 in an external channel, you will need to explicitly send `/session_start`
 as the first message. Otherwise, the session start behavior will begin as described in
-[Session configuration](../core/domains#session-config).
+[Session configuration](../core/domains.mdx#session-config).
 
 :::
 
@@ -154,8 +154,8 @@ The following arguments can be used to configure your Rasa server:
 ```text [rasa run --help]
 ```
 
-For more information on the additional parameters, see [Configuring the HTTP API](./configuring-http-api).
-See the Rasa [HTTP API](../api/http-api) docs for detailed documentation of all the endpoints.
+For more information on the additional parameters, see [Configuring the HTTP API](./configuring-http-api.mdx).
+See the Rasa [HTTP API](../api/http-api.mdx) docs for detailed documentation of all the endpoints.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="run-action-server"></a>
 
@@ -197,7 +197,7 @@ rasa test
 ```
 
 Specify the model to test using `--model`.
-Check out more details in [Evaluating an NLU Model](./testing-your-assistant#nlu-evaluation) and [Evaluating a Core Model](./testing-your-assistant#core-evaluation).
+Check out more details in [Evaluating an NLU Model](./testing-your-assistant.mdx#nlu-evaluation) and [Evaluating a Core Model](./testing-your-assistant.mdx#core-evaluation).
 
 The following arguments are available for `rasa test`:
 

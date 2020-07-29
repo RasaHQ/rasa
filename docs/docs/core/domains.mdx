@@ -21,7 +21,7 @@ As an example, the domain created by `rasa init` has the following yaml definiti
 
 Your NLU model will define the `intents` and `entities` that you
 need to include in the domain. The `entities` section lists all entities
-extracted by any [entity extractor](../nlu/entity-extraction) in your
+extracted by any [entity extractor](../nlu/entity-extraction.mdx) in your
 NLU pipeline.
 
 For example:
@@ -34,7 +34,7 @@ entities:
    - priority        # custom entity extracted by CRFEntityExtractor
 ```
 
-[Slots](./slots) hold information you want to keep track of during a conversation.
+[Slots](./slots.mdx) hold information you want to keep track of during a conversation.
 A categorical slot called `risk_level` would be
 defined like this:
 
@@ -48,10 +48,10 @@ slots:
       - high
 ```
 
-[Here](./slots#slot-classes) you can find the full list of slot types defined by
+[Here](./slots.mdx#slot-classes) you can find the full list of slot types defined by
 Rasa Core, along with syntax for including them in your domain file.
 
-[Actions](./actions) are the things your bot can actually do.
+[Actions](./actions.mdx) are the things your bot can actually do.
 For example, an action could:
 
 * respond to a user,
@@ -81,7 +81,7 @@ slots:
 
 The `name` function of `MyAwesomeAction` needs to return
 `my_custom_action` in this example (for more details,
-see [Custom Actions](./actions#custom-actions)).
+see [Custom Actions](./actions.mdx#custom-actions)).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="domain-responses"></a>
 
@@ -187,7 +187,7 @@ responses:
 
 ## Channel-Specific Responses
 
-For each response, you can have multiple **response variations** (see [Variations](./domains#variations)).
+For each response, you can have multiple **response variations** (see [Variations](./domains.mdx#variations)).
 If you have certain response variations that you would like sent only to specific
 channels, you can specify this with the `channel:` key. The value should match
 the name defined in the `name()` method of the channel’s `OutputChannel`
@@ -373,6 +373,6 @@ implementation moves all existing slots into the new session. Note that all
 conversations begin with an `action_session_start`. Overriding this action could
 for instance be used to initialize the tracker with slots from an external API
 call, or to start the conversation with a bot message. The docs on
-[Customizing the session start action](../api/rasa-sdk#custom-session-start) shows you how to do that.
+[Customizing the session start action](../api/rasa-sdk.mdx#custom-session-start) shows you how to do that.
 
 :::

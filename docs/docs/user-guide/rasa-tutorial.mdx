@@ -8,9 +8,9 @@ description: This tutorial will show you the different parts needed to build a c
 This page explains the basics of building an assistant with Rasa and
 shows the structure of a Rasa project. You can test it out right here without
 installing anything.
-You can also [install Rasa](./installation) and follow along in your command line.
+You can also [install Rasa](./installation.mdx) and follow along in your command line.
 
-The [Glossary](../glossary) contains an overview of the most common terms you’ll see in the Rasa documentation.
+The [Glossary](../glossary.mdx) contains an overview of the most common terms you’ll see in the Rasa documentation.
 
 In this tutorial, you will build a simple, friendly assistant which will ask how you’re doing
 and send you a fun picture to cheer you up if you are sad.
@@ -65,7 +65,7 @@ cat data/nlu.md
 The lines starting with `##` define the names of your `intents`, which
 are groups of messages with the same meaning. Rasa’s job will be to
 predict the correct intent when your users send new, unseen messages to
-your assistant. You can find all the details of the data format in [Training Data Format](../nlu/training-data-format).
+your assistant. You can find all the details of the data format in [Training Data Format](../nlu/training-data-format.mdx).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="model-configuration"></a>
 
@@ -74,7 +74,7 @@ your assistant. You can find all the details of the data format in [Training Dat
 The configuration file defines the NLU and Core components that your model
 will use. In this example, your NLU model will use the
 `supervised_embeddings` pipeline. You can learn about the different NLU pipelines
-[here](../nlu/choosing-a-pipeline).
+[here](../nlu/choosing-a-pipeline.mdx).
 
 Let’s take a look at your model configuration file.
 
@@ -82,7 +82,7 @@ Let’s take a look at your model configuration file.
 cat config.yml
 ```
 The `language` and `pipeline` keys specify how the NLU model should be built.
-The `policies` key defines the [policies](../core/policies) that the Core model will use.
+The `policies` key defines the [policies](../core/policies.mdx) that the Core model will use.
 
 ## 4. Write Your First Stories
 
@@ -104,7 +104,7 @@ This is how it looks as a story:
    - utter_greet
 ```
 
-You can see the full details in [Stories](../core/stories).
+You can see the full details in [Stories](../core/stories.mdx).
 
 Lines that start with `-` are actions taken by the assistant.
 In this tutorial, all of our actions are messages sent back to the user,
@@ -118,7 +118,7 @@ cat data/stories.md
 ```
 ## 5. Define a Domain
 
-The next thing we need to do is define a [Domain](../core/domains).
+The next thing we need to do is define a [Domain](../core/domains.mdx).
 The domain defines the universe your assistant lives in: what user inputs it
 should expect to get, what actions it should be able to predict, how to
 respond, and what information to store.
@@ -141,7 +141,7 @@ Rasa Core’s job is to choose the right action to execute at each step
 of the conversation. In this case, our actions simply send a message to the user.
 These simple utterance actions are the `actions` in the domain that start
 with `utter_`. The assistant will respond with a message based on a response
-from the `responses` section. See [Custom Actions](../core/actions#custom-actions)
+from the `responses` section. See [Custom Actions](../core/actions.mdx#custom-actions)
 to build actions that do more than just send a message.
 
 ## 6. Train a Model
@@ -171,7 +171,7 @@ rasa test
 
 echo "Finished running tests."
 ```
-See [Testing Your Assistant](./testing-your-assistant) to learn more about how to evaluate your model as you improve it.
+See [Testing Your Assistant](./testing-your-assistant.mdx) to learn more about how to evaluate your model as you improve it.
 
 ## 8. Talk to Your Assistant
 
@@ -191,15 +191,15 @@ rasa shell
 Now that you’ve built your first Rasa bot it’s time to learn about
 some more advanced Rasa features.
 
-* Learn how to implement business logic using [forms](../core/forms)
+* Learn how to implement business logic using [forms](../core/forms.mdx)
 
-* Learn how to integrate other APIs using [custom actions](../core/actions)
+* Learn how to integrate other APIs using [custom actions](../core/actions.mdx)
 
-* Learn how to connect your bot to different [messaging apps](./messaging-and-voice-channels)
+* Learn how to connect your bot to different [messaging apps](./messaging-and-voice-channels.mdx)
 
-* Learn about customizing the [components](../nlu/components) in your NLU pipeline
+* Learn about customizing the [components](../nlu/components.mdx) in your NLU pipeline
 
-* Read about custom and built-in [entities](../nlu/entity-extraction)
+* Read about custom and built-in [entities](../nlu/entity-extraction.mdx)
 
 You can also use Rasa X to collect more conversations
 and improve your assistant:
