@@ -52,7 +52,7 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi, chatBlockSelec
     };
 
     const trainModel = () => {
-        // traing the model, resetting the chatblock
+        // train the model, resetting the chatblock
         if (pollingIntervalId) {
             updateChatBlock();
             clearInterval(pollingIntervalId);
