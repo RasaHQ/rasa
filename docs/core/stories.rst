@@ -28,7 +28,42 @@ This is a guide to the story data format.
 Format
 ------
 
+With Rasa Open Source 2.0 release we've introduced a YAML format as unified and the most extendable way to manage the training data.
+With YAML users are free to distribute training data among any number of YAML files.
+
+Rasa Open Source YAML format file should specify the `version` key in order to be parsed correctly:
+
+- Training data files with no "version" specified will be considered to have the "latest" format version.
+- Training data files with a version greater that currently used Rasa Open Source will be skipped.
+
+
 Here's an example of a dialogue in the Rasa story format:
+
+In YAML format:
+.. code-block:: yaml
+
+    version: "2.0"
+    stories:
+    - story: greet + location/price + cuisine + num people  # name of the story - just for debugging
+      steps:
+      - intent: greet
+      - action: action_ask_howcanhelp
+      - intent: inform
+        entities:
+        - location: "rome"
+        - price: "cheap"  # user utterance
+      - action: action_on_it
+      - action: action_ask_cuisine
+      - intent: inform
+        entities:
+        - cuisine: "spanish"
+      - action: action_ask_numpeople  # action that the bot should execute
+      - intent: inform
+        entities:
+        - people: "six"
+      - action: action_ack_dosearch
+
+Or in Markdown format:
 
 .. code-block:: story
 
@@ -149,6 +184,39 @@ are easier to read and write. Here is an example story file which
 contains checkpoints (note that you can attach more than one checkpoint
 at a time):
 
+In YAML format:
+.. code-block:: yaml
+
+    version: "2.0"
+    stories:
+    - story: first story
+      steps:
+      - intent: greet
+      - action: action_ask_user_question
+      - checkpoint: check_asked_question
+
+    - story: user affirms question
+      steps:
+      - checkpoint: check_asked_question
+      - intent: affirm
+      - action: action_handle_affirmation
+      - checkpoint: check_handled_affirmation
+
+    - story: user denies question
+      steps:
+      - checkpoint: check_asked_question
+      - intent: deny
+      - action: action_handle_denial
+      - checkpoint: check_handled_denial
+
+    - story: user leaves
+      steps:
+      - checkpoint: check_handled_denial
+      - checkpoint: check_handled_affirmation
+      - intent: goodbye
+      - action: utter_goodbye
+
+Or in Markdown format:
 .. code-block:: story
 
     ## first story
@@ -190,7 +258,20 @@ the user to confirm something, and you want to treat the ``affirm``
 and ``thankyou`` intents in the same way. The story below will be
 converted into two stories at training time:
 
+In YAML format:
+.. code-block:: yaml
 
+    version: "2.0"
+    stories:
+    - story: story
+      steps:
+      - action: utter_ask_confirm
+      - or:
+        - intent: affirm
+        - intent: thankyou
+      - action: action_handle_affirmation
+
+Or in Markdown format:
 .. code-block:: story
 
     ## story

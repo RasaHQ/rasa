@@ -15,9 +15,99 @@ Data Formats
 ~~~~~~~~~~~~
 
 
-You can provide training data as Markdown or as JSON, as a single file or as a directory containing multiple files.
-Note that Markdown is usually easier to work with.
+You can provide training data as YAML, Markdown or as JSON, as a single file or as a directory containing multiple files.
 
+
+YAML Format
+---------------
+With Rasa Open Source 2.0 release we've introduced a YAML format as unified and the most extendable way to manage the training data.
+With YAML users are free to distribute training data among any number of YAML files.
+
+Rasa Open Source YAML format file should specify the `version` key in order to be parsed correctly:
+
+- Training data files with no "version" specified will be considered to have the "latest" format version.
+- Training data files with a version greater that currently used Rasa Open Source will be skipped.
+
+NLU training data section starts with `nlu` key. According to the YAML specification, a single YAML file can have only one `nlu` key in it.
+Training examples are grouped by intent, and entities are annotated by using the following syntax ``[<entity-text>]{"entity": "<entity name>"}``.
+You can also assign synonyms, roles, or groups to an entity, e.g.
+``[<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}``.
+The keywords ``role``, ``group``, and ``value`` are optional in this notation.
+To understand what the labels ``role`` and ``group`` are for, see section :ref:`entities-roles-groups`.
+
+The training examples are specified with an `examples` key. It must have either:
+
+- (multi) string value, which each training example starting on a new line with a `-` symbol.
+- Sublist dictionary with individual training data examples.
+
+See the example below:
+
+.. code-block:: yaml
+    version: "2.0"
+    nlu:
+    - intent: greet
+      metadata:
+        sentiment: neutral
+      # Multiline examples, each line is a separate training example.
+      examples: |
+        - hey
+        - hello
+
+    - intent: check_balance
+      examples:
+        # The individual training example
+        - text: |
+            what is my balance
+          # Arbitrary metadata
+          metadata:
+            sentiment: neutral
+        - text: |
+            how much do I have on my [savings](source_account)
+          metadata:
+            any_key: any_value
+
+    - synonym: savings
+      examples: |
+        - pink pig
+
+    - regex: zipcode
+      examples: |
+        - [0-9]{5}
+
+    - lookup: additional_currencies
+      examples: |
+        - Peso
+        - Euro
+        - Dollar
+
+Note the arbitrary `metadata` key inside `examples` sub-dictionaries. Rasa Open Source parser will not read it's value and you can use it to store any relevant information.
+
+The training data for Rasa NLU is structured into different parts:
+
+- common examples
+- synonyms
+- regex features and
+- lookup tables
+
+While common examples is the only part that is mandatory, including the others will help the NLU model
+learn the domain with fewer examples and also help it be more confident of its predictions.
+
+Synonyms will map extracted entities to the same name, for example mapping "my savings account" to simply "savings".
+However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms
+present so that Rasa Open Source can learn to pick them up.
+
+Lookup tables are inline, their elements are included in the same file.
+If a lookup table gets too large, it can be moved to a separate file (like any other component of 2.0 format).
+
+.. note::
+    The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU
+    model by providing additional features to the machine learning algorithm during training. Therefore, it must not be
+    assumed that having a single example would be enough for the model to robustly identify intents and/or entities
+    across all variants of that example.
+
+.. note::
+    ``/`` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not
+    to use it in the name of your intents.
 
 Markdown Format
 ---------------
