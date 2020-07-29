@@ -11,11 +11,7 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
 )
-from rasa.core.domain import (
-    USED_ENTITIES_KEY,
-    USE_ENTITIES_KEY,
-    IGNORE_ENTITIES_KEY,
-)
+from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -236,8 +232,47 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
         Domain.load(domain_path)
 
 
+def test_domain_to_dict():
+    test_yaml = """
+    actions:
+    - action_save_world
+    config:
+      store_entities_as_slots: true
+    entities: []
+    forms: []
+    intents: []
+    responses:
+      utter_greet:
+      - text: hey there!
+    session_config:
+      carry_over_slots_to_new_session: true
+      session_expiration_time: 60
+    slots: {}"""
+
+    domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
+
+    assert domain_as_dict == {
+        "actions": ["action_save_world"],
+        "config": {"store_entities_as_slots": True},
+        "entities": [],
+        "forms": [],
+        "intents": [],
+        "responses": {"utter_greet": [{"text": "hey there!"}]},
+        "session_config": {
+            "carry_over_slots_to_new_session": True,
+            "session_expiration_time": 60,
+        },
+        "slots": {},
+    }
+
+
 def test_domain_to_yaml():
-    test_yaml = """config:
+    test_yaml = """
+%YAML 1.2
+---
+actions:
+- action_save_world
+config:
   store_entities_as_slots: true
 entities: []
 forms: []
@@ -251,10 +286,10 @@ session_config:
 slots: {}"""
 
     domain = Domain.from_yaml(test_yaml)
-    # python 3 and 2 are different here, python 3 will have a leading set
-    # of --- at the beginning of the yml
-    assert domain.as_yaml().strip().endswith(test_yaml.strip())
-    assert Domain.from_yaml(domain.as_yaml()) is not None
+
+    actual_yaml = domain.as_yaml()
+
+    assert actual_yaml.strip() == test_yaml.strip()
 
 
 def test_domain_to_yaml_deprecated_templates():
@@ -406,7 +441,7 @@ session_config:
             ],
             ["entity", "other", "third"],
             {
-                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"],},
+                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"]},
                 "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
@@ -417,7 +452,7 @@ session_config:
             ],
             ["entity", "other", "third"],
             {
-                "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye",},
+                "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye"},
                 "goodbye": {USED_ENTITIES_KEY: []},
             },
         ),
@@ -641,7 +676,6 @@ def test_clean_domain_for_file():
             "utter_goodbye": [{"text": "goodbye :("}],
             "utter_default": [{"text": "default message"}],
         },
-        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
         "session_config": {
             "carry_over_slots_to_new_session": True,
             "session_expiration_time": 0,
@@ -765,10 +799,7 @@ def test_are_sessions_enabled(session_config: SessionConfig, enabled: bool):
 
 
 def test_domain_utterance_actions_deprecated_templates():
-    new_yaml = """actions:
-- utter_greet
-- utter_goodbye
-config:
+    new_yaml = """config:
   store_entities_as_slots: true
 entities: []
 forms: []

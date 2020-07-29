@@ -417,6 +417,8 @@ class Domain:
         self.templates = templates
         self.session_config = session_config
 
+        self._custom_actions = action_names
+
         # only includes custom actions and utterance actions
         self.user_actions = action.combine_with_templates(action_names, templates)
 
@@ -778,7 +780,7 @@ class Domain:
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "responses": self.templates,
-            "actions": self.user_actions,  # class names of the actions
+            "actions": self._custom_actions,
             "forms": self.form_names,
         }
 
