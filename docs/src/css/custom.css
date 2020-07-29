@@ -23,3 +23,13 @@
   margin: 0 calc(-1 * var(--ifm-pre-padding));
   padding: 0 var(--ifm-pre-padding);
 }
+
+/**
+  FIXME: should be next to component, but at the moment it's loaded minified.
+  Once we can use `rasa-ui` outside of `rasa-x`, we can fix this.
+*/
+#rasa-chat-block {
+  height: 600px;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+}

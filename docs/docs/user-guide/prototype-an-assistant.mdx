@@ -3,8 +3,7 @@ id: prototype-an-assistant
 sidebar_label: 'Prototype an Assistant'
 title: 'Prototype an Assistant'
 ---
-import Prototyper, { DownloadButton, TrainButton } from '@site/src/components/prototyper';
-
+import Prototyper, { Chat, DownloadButton, TrainButton } from '@site/src/components/prototyper';
 
 Get started with Rasa Open Source and learn how to create an assistant from scratch!
 
@@ -15,6 +14,7 @@ You can test it out right here without installing anything. You can also install
 <Prototyper
   startPrototyperApi="https://trainer-service.prototyping.rasa.com/startPrototyping"
   trainModelApi="https://trainer-service.prototyping.rasa.com/trainings"
+  chatBlockSelector="#rasa-chat-block"
 >
 
 ## 1. Define a basic user goal
@@ -164,7 +164,7 @@ the button below:
 
 Once your model has finished training, you can talk to your assistant:
 
-.. chat-block::
+<div id="rasa-chat-block"></div>
 
 
 ## 8. What's next?
