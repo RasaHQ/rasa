@@ -29,7 +29,7 @@ steps:
     ```
     The model will be stored in the `/models` directory as a zipped file.
 
-2. Run an instance of [duckling](https://rasa.com/docs/rasa/nlu/components/#ducklinghttpextractor)
+2. Run an instance of [duckling](https://rasa.com/docs/rasa/nlu/components/#ducklingentityextractor)
    on port 8000 by either running the docker command
    ```
    docker run -p 8000:8000 rasa/duckling
