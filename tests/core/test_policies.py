@@ -503,7 +503,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
-            assert recalled == default_domain.index_for_action(actions[0])
+            assert recalled == actions[0]
 
         nums = np.random.randn(default_domain.num_states)
         random_states = [{f: num for f, num in zip(default_domain.input_states, nums)}]
@@ -935,28 +935,28 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
     "policy,supported_data",
     [
         (TEDPolicy, SupportedData.ML_DATA),
-        (RulePolicy, SupportedData.RULE_DATA),
-        (FallbackPolicy, SupportedData.ML_DATA),
+        (RulePolicy, SupportedData.ML_AND_RULE_DATA),
+        (MemoizationPolicy, SupportedData.ML_DATA),
     ],
 )
 def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
     assert policy.supported_data() == supported_data
 
 
-class RuleAndMLPolicy(Policy):
+class OnlyRulePolicy(Policy):
     """Test policy that supports both rule-based and ML-based training data."""
 
     @staticmethod
     def supported_data() -> SupportedData:
-        return SupportedData.ML_AND_RULE_DATA
+        return SupportedData.RULE_DATA
 
 
 @pytest.mark.parametrize(
     "policy,n_rule_trackers,n_ml_trackers",
     [
-        (FallbackPolicy(), 0, 3),
-        (RulePolicy(), 2, 0),
-        (RuleAndMLPolicy, 2, 3),  # policy can be passed as a `type` as well
+        (TEDPolicy(), 0, 3),
+        (RulePolicy(), 2, 3),
+        (OnlyRulePolicy, 2, 0),  # policy can be passed as a `type` as well
     ],
 )
 def test_get_training_trackers_for_policy(

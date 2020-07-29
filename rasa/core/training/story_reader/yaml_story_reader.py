@@ -7,7 +7,8 @@ from ruamel.yaml.parser import ParserError
 import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.constants import DOCS_URL_STORIES
-from rasa.core.constants import INTENT_MESSAGE_PREFIX, RULE_SNIPPET_ACTION_NAME
+from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, Form
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
@@ -71,6 +72,13 @@ class YAMLStoryReader(StoryReader):
         Returns:
             The parsed stories or rules.
         """
+        from rasa.validator import Validator
+
+        if not Validator.validate_training_data_format_version(
+            parsed_content, self.source_name
+        ):
+            return []
+
         stories = parsed_content.get(KEY_STORIES, [])
         self._parse_data(stories, is_rule_data=False)
 
