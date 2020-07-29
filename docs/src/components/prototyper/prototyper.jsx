@@ -1,6 +1,7 @@
 import React from 'react';
 
 import ThemeContext from '@theme/theme-context';
+import { isProductionBuild, uuidv4 } from '@site/src/utils';
 import PrototyperContext from './context';
 
 // FIXME: spinner states
@@ -11,8 +12,7 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi}) => {
     const [trainingData, setTrainingData] = React.useState({});
 
     const onLiveCodeStart = (name, value) => {
-        // FIXME: tracking id + no tracking in dev?
-        setTrackingId("the-hash");
+        setTrackingId(isProductionBuild() ? uuidv4() : "the-hash");
         setTrainingData((prevTrainingData) => ({...prevTrainingData, [name]: value}));
     };
 
@@ -48,8 +48,7 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi}) => {
             .then(data => {
                 setProjectDownloadUrl(data.project_download_url);
                 // if (result['rasa_service_url']) {
-                //     const conversationId = uuidv4();
-                //     startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+                //     startFetchingTracker(result['rasa_service_url'], chatBlockId, trackingId);
                 //   }
             });
     };
