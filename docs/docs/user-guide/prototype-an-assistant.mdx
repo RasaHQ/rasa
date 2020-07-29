@@ -3,6 +3,8 @@ id: prototype-an-assistant
 sidebar_label: 'Prototype an Assistant'
 title: 'Prototype an Assistant'
 ---
+import { DownloadButton, TrainButton } from '@site/src/components/prototyper';
+
 
 Get started with Rasa Open Source and learn how to create an assistant from scratch!
 
@@ -159,9 +161,7 @@ Rasa has a command line interface that allows you to train and run your bot from
 To train your bot on the NLU data, stories and responses you’ve just defined, run `rasa train` using
 the button below:
 
-.. train-button::
-    :endpoint: https://trainer-service.prototyping.rasa.com/trainings
-    :method: POST
+<TrainButton />
 
 Once your model has finished training, you can talk to your assistant:
 
@@ -175,4 +175,4 @@ In your downloaded project, you’ll notice several files that were configured f
 Check out other docs pages to learn more about [domains](../core/domains.mdx), [actions](../core/actions.mdx),
 and your config's [pipeline](../nlu/choosing-a-pipeline.mdx) and [policies](../core/policies.mdx).
 
-.. download-button::
+<DownloadButton />
