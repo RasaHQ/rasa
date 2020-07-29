@@ -24,6 +24,7 @@ rules:
     - action: restaurant_form
     - form: restaurant_form
     - form: null
+    - action: utter_submit
     - action: utter_slots_values
 
   - rule: Chitchat
