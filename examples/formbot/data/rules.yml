@@ -1,33 +1,33 @@
 rules:
   - rule: Greet user
     steps:
-    - ...
-    - intent: greet
-    - action: utter_greet
+      - ...
+      - intent: greet
+      - action: utter_greet
 
   - rule: Thank you
     steps:
-    - ...
-    - intent: thankyou
-    - action: utter_noworries
+      - ...
+      - intent: thankyou
+      - action: utter_noworries
 
   - rule: Bot challenge
     steps:
-    - ...
-    - intent: bot_challenge
-    - action: utter_iamabot
+      - ...
+      - intent: bot_challenge
+      - action: utter_iamabot
 
   - rule: Request restaurant form
     steps:
-    - ...
-    - intent: request_restaurant
-    - action: restaurant_form
-    - form: restaurant_form
-    - form: null
-    - action: utter_slots_values
+      - ...
+      - intent: request_restaurant
+      - action: restaurant_form
+      - form: restaurant_form
+      - form: null
+      - action: utter_slots_values
 
   - rule: Chitchat
     steps:
-    - ...
-    - intent: chitchat
-    - action: utter_chitchat
+      - ...
+      - intent: chitchat
+      - action: utter_chitchat
