@@ -32,6 +32,7 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
     SLOT_LISTED_ITEMS,
+    USER, PREVIOUS_ACTION, FORM, SLOTS
 )
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
@@ -612,7 +613,7 @@ class Domain:
         """Returns all available slot state strings."""
 
         return [
-            f"slot_{s.name}_{i}"
+            f"{s.name}_{i}"
             for s in self.slots
             for i in range(0, s.feature_dimensionality())
         ]
@@ -622,26 +623,26 @@ class Domain:
     def prev_action_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return [PREV_PREFIX + a for a in self.action_names]
+        return self.action_names
 
     # noinspection PyTypeChecker
     @lazy_property
     def intent_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return [f"intent_{i}" for i in self.intents]
+        return self.intents
 
     # noinspection PyTypeChecker
     @lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return [f"entity_{e}" for e in self.entities]
+        return self.entities
 
     # noinspection PyTypeChecker
     @lazy_property
     def form_states(self) -> List[Text]:
-        return [f"active_form_{f}" for f in self.form_names]
+        return self.form_names
 
     def index_of_state(self, state_name: Text) -> Optional[int]:
         """Provide the index of a state."""
@@ -672,40 +673,32 @@ class Domain:
         # be ignored for the current intent
         latest_message = tracker.latest_message
 
-        if not latest_message:
+        if not latest_message.text and not latest_message.intent_name:
             return state_dict
 
-        intent_name = latest_message.intent.get("name")
+        state_dict[USER] = latest_message.as_dict_core()
 
-        if intent_name:
-            for entity_name in self._get_featurized_entities(latest_message):
-                key = f"entity_{entity_name}"
-                state_dict[key] = 1.0
+        if latest_message.intent_name or latest_message.text:
+            entities = tuple([entity_name for entity_name in self._get_featurized_entities(latest_message)])
+            state_dict[USER]["entities"] = entities
 
         # Set all set slots with the featurization of the stored value
+        slots = []
         for key, slot in tracker.slots.items():
             if slot is not None:
                 if slot.value == "None" and slot.as_feature():
                     # TODO: this is a hack to make a rule know
                     #  that slot or form should not be set
                     #  but only if the slot is featurized
-                    slot_id = f"slot_{key}_None"
-                    state_dict[slot_id] = 1
+                    slot_id = f"{key}_None"
+                    slots.append(slot_id)
                 else:
                     for i, slot_value in enumerate(slot.as_feature()):
                         if slot_value != 0:
-                            slot_id = f"slot_{key}_{i}"
-                            state_dict[slot_id] = slot_value
+                            slot_id = f"{key}_{i}"
+                            slots.append(slot_id)
 
-        if "intent_ranking" in latest_message.parse_data:
-            for intent in latest_message.parse_data["intent_ranking"]:
-                if intent.get("name"):
-                    intent_id = "intent_{}".format(intent["name"])
-                    state_dict[intent_id] = intent["confidence"]
-
-        elif intent_name:
-            intent_id = "intent_{}".format(latest_message.intent["name"])
-            state_dict[intent_id] = latest_message.intent.get("confidence", 1.0)
+        state_dict[SLOTS] = tuple(slots)
 
         return state_dict
 
@@ -725,12 +718,12 @@ class Domain:
         self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, float]:
         """Turn the previous taken action into a state name."""
+        latest_action = tracker.latest_action
 
-        latest_action = tracker.latest_action_name
         if latest_action:
-            prev_action_name = PREV_PREFIX + latest_action
+            prev_action_name = latest_action.get("action_name") or latest_action.get("text")
             if prev_action_name in self.input_state_map:
-                return {prev_action_name: 1.0}
+                return {PREVIOUS_ACTION: latest_action}
             else:
                 return {}
         else:
@@ -741,7 +734,7 @@ class Domain:
         """Turn tracker's active form into a state name."""
         form = tracker.active_loop.get("name")
         if form is not None:
-            return {ACTIVE_FORM_PREFIX + form: 1.0}
+            return {FORM: {"name": form}}
         else:
             return {}
 

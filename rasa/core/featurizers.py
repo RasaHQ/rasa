@@ -4,8 +4,9 @@ import logging
 import numpy as np
 import os
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Any
+from typing import Tuple, List, Optional, Dict, Text, Any, Union
 import copy
+from collections import deque
 
 import rasa.utils.io
 from rasa.core import utils
@@ -15,6 +16,8 @@ from rasa.core.events import ActionExecuted, UserUttered, Form, SlotSet
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
+from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.core.constants import USER, PREVIOUS_ACTION, FORM, SLOTS
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +35,7 @@ class SingleStateFeaturizer:
 
         pass
 
-    def encode(self, state: Dict[Text, float]) -> np.ndarray:
+    def encode(self, state: Dict[Text, float], interpreter: Optional[NaturalLanguageInterpreter]) -> np.ndarray:
         """Encode user input."""
 
         raise NotImplementedError(
@@ -77,7 +80,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         self.num_features = domain.num_states
         self.input_state_map = domain.input_state_map
 
-    def encode(self, state: Dict[Text, float]) -> np.ndarray:
+    def encode(self, state: Dict[Text, float], interpreter: Optional[NaturalLanguageInterpreter]) -> np.ndarray:
         """Returns a binary vector indicating which features are active.
 
         Given a dictionary of states (e.g. 'intent_greet',
@@ -201,7 +204,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
             len(self.user_vocab) + len(self.slot_labels) + len(self.bot_vocab)
         )
 
-    def encode(self, state: Dict[Text, float]) -> np.ndarray:
+    def encode(self, state: Dict[Text, float], interpreter: Optional[NaturalLanguageInterpreter]) -> np.ndarray:
         """Returns a binary vector indicating which tokens are present."""
 
         if not self.num_features:
@@ -258,6 +261,19 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                 encoded_all_actions[idx, self.bot_vocab[t]] = 1
         return encoded_all_actions
 
+class E2ESingleStateFeaturizer(SingleStateFeaturizer):
+    def __init__(self) -> None:
+
+        super().__init__()
+        self.output_shapes = {}
+
+    def prepare_from_domain(self, domain: Domain) -> None:
+        self.slot_states = domain.slot_states + domain.form_states
+        self.entities = domain.entities
+
+    # def encode(self, state: Dict[Text, float], interpreter: Optional[NaturalLanguageInterpreter]):
+        
+
 
 class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
@@ -271,34 +287,9 @@ class TrackerFeaturizer:
         self.state_featurizer = state_featurizer
         self.use_intent_probabilities = use_intent_probabilities
 
-    def _get_slots(self, prev_tracker, event):
-
-        current_slots = copy.deepcopy(prev_tracker.current_slot_values())
-        if isinstance(event, SlotSet):
-            current_slots.update(event.as_dict_core())
-        return current_slots
-
-    def _create_states_e2e(self, tracker: DialogueStateTracker, domain: Domain):
-
-        prev_tracker = None
-        states = []
-        for tr in tracker.generate_all_prior_trackers():
-            if prev_tracker:
-                state = tr.applied_events()[len(prev_tracker.applied_events()) :]
-                state_dict = {}
-                for event in state:
-                    if isinstance(event, UserUttered):
-                        state_dict["user"] = event.as_dict_core()
-                    elif isinstance(event, ActionExecuted):
-                        state_dict["prev_action"] = event.as_dict_core()
-                    elif isinstance(event, Form):
-                        # TODO: fix this!!! 
-                        state_dict["form"] = event.as_dict()
-                    state_dict["slots"] = self._get_slots(prev_tracker, event)
-            else:
-                state_dict = {}
-            states.append(state_dict)
-            prev_tracker = copy.deepcopy(tr)
+    def _unfreeze_states(self, states: deque) -> Dict[Text, Dict[Text, Union[Text, Tuple]]]:
+        states = [dict(state) for state in states]
+        states = [{key: dict(state[key]) if not key == SLOTS else tuple(state[key]) for key in state.keys()} for state in states]
         return states
 
     def _create_states(
@@ -316,35 +307,7 @@ class TrackerFeaturizer:
 
         states = tracker.past_states(domain)
 
-        # during training we encounter only 1 or 0
-        if not self.use_intent_probabilities and not is_binary_training:
-            bin_states = []
-            for state in states:
-                # copy state dict to preserve internal order of keys
-                bin_state = dict(state)
-                best_intent = None
-                best_intent_prob = -1.0
-                for state_name, prob in state:
-                    if state_name.startswith("intent_"):
-                        if prob > best_intent_prob:
-                            # finding the maximum confidence intent
-                            if best_intent is not None:
-                                # delete previous best intent
-                                del bin_state[best_intent]
-                            best_intent = state_name
-                            best_intent_prob = prob
-                        else:
-                            # delete other intents
-                            del bin_state[state_name]
-
-                if best_intent is not None:
-                    # set the confidence of best intent to 1.0
-                    bin_state[best_intent] = 1.0
-
-                bin_states.append(bin_state)
-            return bin_states
-        else:
-            return [dict(state) for state in states]
+        return self._unfreeze_states(states)
 
     def _pad_states(self, states: List[Any]) -> List[Any]:
         """Pads states."""
@@ -352,7 +315,7 @@ class TrackerFeaturizer:
         return states
 
     def _featurize_states(
-        self, trackers_as_states: List[List[Dict[Text, float]]]
+        self, trackers_as_states: List[List[Dict[Text, float]]], interpreter: NaturalLanguageInterpreter
     ) -> Tuple[np.ndarray, List[int]]:
         """Create X."""
 
@@ -370,7 +333,7 @@ class TrackerFeaturizer:
                 tracker_states = self._pad_states(tracker_states)
 
             story_features = [
-                self.state_featurizer.encode(state) for state in tracker_states
+                self.state_featurizer.encode(state, interpreter) for state in tracker_states
             ]
 
             features.append(story_features)
@@ -416,7 +379,7 @@ class TrackerFeaturizer:
         )
 
     def featurize_trackers(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self, trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> DialogueTrainingData:
         """Create training data."""
 
@@ -432,8 +395,10 @@ class TrackerFeaturizer:
             trackers, domain
         )
 
+        print(self.state_featurizer)
+
         # noinspection PyPep8Naming
-        X, true_lengths = self._featurize_states(trackers_as_states)
+        X, true_lengths = self._featurize_states(trackers_as_states, interpreter)
         y = self._featurize_labels(trackers_as_actions, domain)
 
         return DialogueTrainingData(X, y, true_lengths)
@@ -530,7 +495,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         )
         pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
         for tracker in pbar:
-            states = self._create_states(tracker, domain, is_binary_training=True)
+            states = self._create_states(tracker, domain)
 
             delete_first_state = False
             actions = []
@@ -539,7 +504,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                     if not event.unpredictable:
                         # only actions which can be
                         # predicted at a stories start
-                        actions.append(event.action_name)
+                        actions.append(event)
                     else:
                         # unpredictable actions can be
                         # only the first in the story
@@ -617,36 +582,14 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return state_features
 
     @staticmethod
+    def freeze_state(state):
+        frozen_state = frozenset({key: frozenset(state[key].items()) if isinstance(state[key], Dict) else frozenset(state[key])  for key in state.keys()}.items())
+        return frozen_state
+
+    @staticmethod
     def _hash_example(states, action) -> int:
         """Hash states for efficient deduplication."""
-
-        states_to_hash = []
-        # TODO: add forms
-        for s in states:
-            # make everything hashable
-            state = []
-            for attribute, value in s.items():       
-                if attribute == "user":
-                    if value.get("intent"):
-                        intent = value.get("intent")
-                        state.append(f"user_{intent}")
-                    else:
-                        text = value.get("text")
-                        state.append(f"user_{text}")
-                    state += value.get("entities")
-                elif attribute == "prev_action":
-                    if value.get("action_name"):
-                        action_name = value.get("action_name")
-                        state.append(f"action_{action_name}")
-                    else:
-                        text = value.get("text")
-                        state.append(f"action_{text}")
-                elif attribute == "slots":
-                    slots = [' '.join([str(slot_name), str(slot_value)]) for slot_name, slot_value in value.items() if slot_value]
-                    state+=slots
-            states_to_hash.append(frozenset(state))
-        frozen_states = tuple(states_to_hash)
-
+        frozen_states = tuple(s if s is None else MaxHistoryTrackerFeaturizer.freeze_state(s) for s in states)
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))
 
@@ -654,7 +597,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[Optional[Dict[Text, float]]]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions.
-
         Training data is padded up to the max_history with -1.
         """
 
@@ -672,12 +614,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         )
         pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
         for tracker in pbar:
-            states = self._create_states_e2e(tracker, domain)
+            states = self._create_states(tracker, domain, True)
 
             idx = 0
             for event in tracker.applied_events():
                 if isinstance(event, ActionExecuted):
-
                     if not event.unpredictable:
                         # only actions which can be
                         # predicted at a stories start
@@ -687,7 +628,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
                         if self.remove_duplicates:
                             hashed = self._hash_example(
-                                sliced_states, event.action_name or event.e2e_text
+                                sliced_states, event.action_name
                             )
 
                             # only continue with tracker_states that created a
@@ -695,10 +636,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                             if hashed not in hashed_examples:
                                 hashed_examples.add(hashed)
                                 trackers_as_states.append(sliced_states)
-                                trackers_as_actions.append([event])
+                                trackers_as_actions.append([event.action_name or event.e2e_text])
                         else:
                             trackers_as_states.append(sliced_states)
-                            trackers_as_actions.append([event])
+                            trackers_as_actions.append([event.action_name or event.e2e_text])
 
                         pbar.set_postfix(
                             {"# actions": "{:d}".format(len(trackers_as_actions))}
