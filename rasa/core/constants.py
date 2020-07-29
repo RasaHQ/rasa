@@ -73,3 +73,8 @@ POSTGRESQL_SCHEMA = "POSTGRESQL_SCHEMA"
 # Names of the environment variables defining PostgreSQL pool size and max overflow
 POSTGRESQL_POOL_SIZE = "SQL_POOL_SIZE"
 POSTGRESQL_MAX_OVERFLOW = "SQL_MAX_OVERFLOW"
+
+USER = "user"
+PREVIOUS_ACTION = "prev_action"
+FORM = "form"
+SLOTS = "slots"

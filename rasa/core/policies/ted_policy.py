@@ -16,6 +16,7 @@ from rasa.core.featurizers import (
     FullDialogueTrackerFeaturizer,
     LabelTokenizerSingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
+    E2ESingleStateFeaturizer,
 )
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
@@ -184,10 +185,10 @@ class TEDPolicy(Policy):
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         if max_history is None:
-            return FullDialogueTrackerFeaturizer(LabelTokenizerSingleStateFeaturizer())
+            return FullDialogueTrackerFeaturizer(E2ESingleStateFeaturizer())
         else:
             return MaxHistoryTrackerFeaturizer(
-                LabelTokenizerSingleStateFeaturizer(), max_history=max_history
+                E2ESingleStateFeaturizer(), max_history=max_history
             )
 
     def __init__(
@@ -295,7 +296,7 @@ class TEDPolicy(Policy):
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
+        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
 
         self._label_data = self._create_label_data(domain)
 

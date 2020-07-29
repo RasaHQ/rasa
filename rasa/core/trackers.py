@@ -152,7 +152,7 @@ class DialogueStateTracker:
         self._paused = False
         # A deterministically scheduled action to be executed next
         self.followup_action = ACTION_LISTEN_NAME
-        self.latest_action_name = None
+        self.latest_action = None
         # Stores the most recent message sent by the user
         self.latest_message = None
         self.latest_bot_utterance = None
@@ -185,7 +185,7 @@ class DialogueStateTracker:
             "latest_input_channel": self.get_latest_input_channel(),
             # TODO: Should we add a `active_loop` key and provide both keys for a while?
             "active_form": self.active_loop,
-            "latest_action_name": self.latest_action_name,
+            "latest_action": self.latest_action,
         }
 
     def _events_for_verbosity(
@@ -227,15 +227,15 @@ class DialogueStateTracker:
         if action_name == self.active_loop.get("name"):
             self.active_loop["rejected"] = True
 
-    def set_latest_action_name(self, action_name: Text) -> None:
+    def set_latest_action(self, action: Dict[Text, Text]) -> None:
         """Set latest action name
             and reset form validation and rejection parameters
         """
-        self.latest_action_name = action_name
+        self.latest_action = action
         if self.active_loop.get("name"):
             # reset form validation if some form is active
             self.active_loop["validate"] = True
-        if action_name == self.active_loop.get("name"):
+        if action.get("action_name") == self.active_loop.get("name"):
             # reset form rejection if it was predicted again
             self.active_loop["rejected"] = False
 
@@ -597,7 +597,7 @@ class DialogueStateTracker:
 
         self._reset_slots()
         self._paused = False
-        self.latest_action_name = None
+        self.latest_action = None
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
