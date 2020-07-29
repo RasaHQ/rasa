@@ -16,7 +16,15 @@ const Prototyper = ({children, startPrototyperApi}) => {
             // track the start here
             setHasStarted(true);
             fetch(startPrototyperApi, {
-                method: 'POST'
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    // FIXME: tracking id
+                    tracking_id: 'the-hash',
+                    editor: 'main',
+                })
             });
         }
     };
