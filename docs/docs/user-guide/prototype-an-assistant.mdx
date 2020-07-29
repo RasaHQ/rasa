@@ -30,33 +30,30 @@ Add examples for your user-goal specific intents in the format shown below.
 You can delete the `subscribe` and `inform` intents if you’re not using them;
 you can also add or change examples for any of the other intents.
 
-.. code-editor::
-    :language: yaml
-    :id: nlu
-    :height: 400
-    :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping
+<!-- :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping -->
+```yaml live
+nlu:
+- intent: greet
+  examples: |
+       Hi
+       Hey!
+       Hallo
+       Good day
+       Good morning
 
-    nlu:
-    - intent: greet
-      examples: |
-           Hi
-           Hey!
-           Hallo
-           Good day
-           Good morning
+- intent: subscribe
+  examples: |
+       I want to get the newsletter
+       Can you send me the newsletter?
+       Can you sign me up for the newsletter?
 
-    - intent: subscribe
-      examples: |
-           I want to get the newsletter
-           Can you send me the newsletter?
-           Can you sign me up for the newsletter?
-
-    - intent: inform
-      examples: |
-           My email is example@example.com
-           random@example.com
-           Please send it to anything@example.com
-           Email is something@example.com
+- intent: inform
+  examples: |
+       My email is example@example.com
+       random@example.com
+       Please send it to anything@example.com
+       Email is something@example.com
+```
 
 [Read about best practices for NLU](../nlu/training-data-format.mdx)
 
@@ -68,17 +65,13 @@ To do so, we define a [form](../glossary.mdx#form). You can change the name of t
 Add to or replace the `email` item in the list below to reflect the information the bot needs
 to collect for your user goal. Leave the `type` field the same for any items you add.
 
-.. code-editor::
-    :language: yaml
-    :id: forms
-    :height: 150
-    :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping
-
-    forms:
-    - newsletter_form:
-        email:
-        - type: from_text
-
+<!-- :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping -->
+```yaml live
+forms:
+- newsletter_form:
+    email:
+    - type: from_text
+```
 
 ## 4. Write a rule
 
@@ -86,20 +79,16 @@ Rules are conversation snippets that should always proceed in exactly the same w
 first step of the rule tells the bot that regardless of what precedes, the next steps should always
 follow one another. Update the rule below for running the form you defined above.
 
-.. code-editor::
-    :language: yaml
-    :id: rules
-    :height: 200
-    :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping
-
-    rules:
-     - rule: activate subscribe form
-       steps:
-       - ...
-       - intent: subscribe
-       - action: newsletter_form
-       - form: newsletter_form
-
+<!-- :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping -->
+```yaml live
+rules:
+ - rule: activate subscribe form
+   steps:
+   - ...
+   - intent: subscribe
+   - action: newsletter_form
+   - form: newsletter_form
+```
 
 ## 5. Write some stories
 
@@ -113,20 +102,17 @@ Give intuitive names to your responses starting with `utter_` for now; you’ll 
 Using the general template of the story we have shown you below, write a story or two that serve
 the user goal you have chosen. You can include the steps from your form rule wherever appropriate.
 
-.. code-editor::
-    :language: yaml
-    :id: stories
-    :height: 250
-    :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping
-
-    stories:
-     - story: greet and subscribe
-       steps:
-       - intent: greet
-       - action: utter_greet
-       - intent: subscribe
-       - action: newsletter_form
-       - form: newsletter_form
+<!-- :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping -->
+```yaml live
+stories:
+ - story: greet and subscribe
+   steps:
+   - intent: greet
+   - action: utter_greet
+   - intent: subscribe
+   - action: newsletter_form
+   - form: newsletter_form
+```
 
 [Read about best practices for writing stories](../core/stories.mdx)
 
@@ -140,26 +126,23 @@ will be chosen at random whenever that response is predicted.
 You can add or change text for any of the responses below. If you’re using your own user goal,
 replace the last three responses with the response you used in your stories above.
 
-.. code-editor::
-    :language: yaml
-    :id: responses
-    :height: 300
-    :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping
-
-    responses:
-       utter_greet:
-           - text: |
-               Hello! How can I help you?
-           - text: |
-               Hi!
-       utter_ask_email:
-           - text: |
-               What is your email address?
-       utter_subscribed:
-           - text: |
-               I’ve subscribed {email} to the newsletter!
-           - text: |
-               You’ve been subscribed, the newsletter will be sent to {email}.
+<!-- :tracking_endpoint: https://trainer-service.prototyping.rasa.com/startPrototyping -->
+```yaml live
+responses:
+   utter_greet:
+       - text: |
+           Hello! How can I help you?
+       - text: |
+           Hi!
+   utter_ask_email:
+       - text: |
+           What is your email address?
+   utter_subscribed:
+       - text: |
+           I’ve subscribed {email} to the newsletter!
+       - text: |
+           You’ve been subscribed, the newsletter will be sent to {email}.
+```
 
 :::note
 For this prototype, we have only defined responses, meaning the only thing the assistant does is respond with a
