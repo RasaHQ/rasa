@@ -70,6 +70,12 @@ def pipelines_for_tests():
 
 
 def pipelines_for_non_windows_tests():
+    # these templates really are just for testing
+
+    # because some of the components are not available on Windows, we specify pipelines
+    # containing them separately
+
+    # first is language followed by list of components
     return [
         ("en", as_pipeline("ConveRTTokenizer", "ConveRTFeaturizer", "DIETClassifier")),
         (
@@ -90,7 +96,8 @@ def test_all_components_are_in_at_least_one_test_pipeline():
     test the train-persist-load-use cycle. Ensures that
     really all components are in there."""
 
-    all_components = [c["name"] for _, p in pipelines_for_tests() for c in p]
+    all_pipelines = pipelines_for_tests() + pipelines_for_non_windows_tests()
+    all_components = [c["name"] for _, p in all_pipelines for c in p]
 
     for cls in registry.component_classes:
         assert (
