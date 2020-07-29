@@ -1431,18 +1431,6 @@
     react-router-dom "^5.1.2"
     react-toggle "^4.1.1"
 
-"@docusaurus/theme-live-codeblock@^2.0.0-alpha.39":
-  version "2.0.0-alpha.39"
-  resolved "https://registry.yarnpkg.com/@docusaurus/theme-live-codeblock/-/theme-live-codeblock-2.0.0-alpha.39.tgz#4ffdd5fc8271840641a091dd2adcc9e2c2a423a1"
-  integrity sha512-Z0Eru2QhAuZOSuHuygzjCv2pryIIxI7XC568KG5rtFn11ichtDaLwJkmo14KDPdlcpeF3g4ObTkCaHxOVhaeUA==
-  dependencies:
-    "@philpl/buble" "^0.19.7"
-    classnames "^2.2.6"
-    clipboard "^2.0.4"
-    parse-numeric-range "^0.0.2"
-    prism-react-renderer "^1.0.2"
-    react-live "^2.2.1"
-
 "@docusaurus/theme-search-algolia@^2.0.0-alpha.59":
   version "2.0.0-alpha.59"
   resolved "https://registry.yarnpkg.com/@docusaurus/theme-search-algolia/-/theme-search-algolia-2.0.0-alpha.59.tgz#b5cf1ad06800d604a7e4cd73169e673f59ed45a9"
@@ -1701,21 +1689,6 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.3"
     fastq "^1.6.0"
-
-"@philpl/buble@^0.19.7":
-  version "0.19.7"
-  resolved "https://registry.yarnpkg.com/@philpl/buble/-/buble-0.19.7.tgz#27231e6391393793b64bc1c982fc7b593198b893"
-  integrity sha512-wKTA2DxAGEW+QffRQvOhRQ0VBiYU2h2p8Yc1oBNlqSKws48/8faxqKNIuub0q4iuyTuLwtB8EkwiKwhlfV1PBA==
-  dependencies:
-    acorn "^6.1.1"
-    acorn-class-fields "^0.2.1"
-    acorn-dynamic-import "^4.0.0"
-    acorn-jsx "^5.0.1"
-    chalk "^2.4.2"
-    magic-string "^0.25.2"
-    minimist "^1.2.0"
-    os-homedir "^1.0.1"
-    regexpu-core "^4.5.4"
 
 "@sindresorhus/is@^0.14.0":
   version "0.14.0"
@@ -2103,27 +2076,12 @@ accepts@~1.3.4, accepts@~1.3.5, accepts@~1.3.7:
     mime-types "~2.1.24"
     negotiator "0.6.2"
 
-acorn-class-fields@^0.2.1:
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/acorn-class-fields/-/acorn-class-fields-0.2.1.tgz#748058bceeb0ef25164bbc671993984083f5a085"
-  integrity sha512-US/kqTe0H8M4LN9izoL+eykVAitE68YMuYZ3sHn3i1fjniqR7oQ3SPvuMK/VT1kjOQHrx5Q88b90TtOKgAv2hQ==
-
-acorn-dynamic-import@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/acorn-dynamic-import/-/acorn-dynamic-import-4.0.0.tgz#482210140582a36b83c3e342e1cfebcaa9240948"
-  integrity sha512-d3OEjQV4ROpoflsnUA8HozoIR504TFxNivYEUi6uwz0IYhBkTDXGuWlNdMtybRt3nqVx/L6XqMt0FxkXuWKZhw==
-
-acorn-jsx@^5.0.1:
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/acorn-jsx/-/acorn-jsx-5.2.0.tgz#4c66069173d6fdd68ed85239fc256226182b2ebe"
-  integrity sha512-HiUX/+K2YpkpJ+SzBffkM/AQ2YE03S0U1kjTLVpoJdhZMOWy8qvXVN9JdLqv2QsaQ6MPYQIuNmwD8zOiYUofLQ==
-
 acorn-walk@^7.1.1:
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/acorn-walk/-/acorn-walk-7.2.0.tgz#0de889a601203909b0fbe07b8938dc21d2e967bc"
   integrity sha512-OPdCF6GsMIP+Az+aWfAAOEt2/+iVDKE7oy6lJ098aoe59oAmK76qV6Gw60SbZ8jHuG2wH058GF4pLFbYamYrVA==
 
-acorn@^6.1.1, acorn@^6.4.1:
+acorn@^6.4.1:
   version "6.4.1"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-6.4.1.tgz#531e58ba3f51b9dacb9a6646ca4debf5b14ca474"
   integrity sha512-ZVA9k326Nwrj3Cj9jlh3wGFutC2ZornPNARZwsNYqQYgN0EsV2d53w5RN/co65Ohn4sUAUtb1rSUAOD6XN9idA==
@@ -3179,7 +3137,7 @@ cli-width@^3.0.0:
   resolved "https://registry.yarnpkg.com/cli-width/-/cli-width-3.0.0.tgz#a2f48437a2caa9a22436e794bf071ec9e61cedf6"
   integrity sha512-FxqpkPPwu1HjuN93Omfm4h8uIanXofW0RxVEW3k5RKx+mJJYSthzNhp32Kzxxy3YAEZ/Dc/EWN1vZRY0+kOhbw==
 
-clipboard@^2.0.0, clipboard@^2.0.4:
+clipboard@^2.0.0:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/clipboard/-/clipboard-2.0.6.tgz#52921296eec0fdf77ead1749421b21c968647376"
   integrity sha512-g5zbiixBRk/wyKakSwCKd7vQXDjFnAMGHoEyBogG/bw9kTD9GvdAvaoRR1ALcEzt3pVKxZR0pViekPMIS0QyGg==
@@ -6593,7 +6551,7 @@ lunr@2.3.8:
   resolved "https://registry.yarnpkg.com/lunr/-/lunr-2.3.8.tgz#a8b89c31f30b5a044b97d2d28e2da191b6ba2072"
   integrity sha512-oxMeX/Y35PNFuZoHp+jUj5OSEmLCaIH4KTFJh7a93cHBoFmpw2IoPs22VIz7vyO2YUnx2Tn9dzIwO2P/4quIRg==
 
-magic-string@^0.25.1, magic-string@^0.25.2:
+magic-string@^0.25.1:
   version "0.25.7"
   resolved "https://registry.yarnpkg.com/magic-string/-/magic-string-0.25.7.tgz#3f497d6fd34c669c6798dcb821f2ef31f5445051"
   integrity sha512-4CrMT5DOHTDk4HYDlzmwu4FVCcIYI8gauveasrdCu2IKIFOJ3f0v/8MDGJCDL9oD2ppz/Av1b0Nj345H9M+XIA==
@@ -8506,7 +8464,7 @@ pretty-time@^1.1.0:
   resolved "https://registry.yarnpkg.com/pretty-time/-/pretty-time-1.1.0.tgz#ffb7429afabb8535c346a34e41873adf3d74dd0e"
   integrity sha512-28iF6xPQrP8Oa6uxE6a1biz+lWeTOAPKggvjB8HAs6nVMKZwf5bG++632Dx614hIWgUPkgivRfG+a8uAXGTIbA==
 
-prism-react-renderer@^1.0.1, prism-react-renderer@^1.0.2, prism-react-renderer@^1.1.0:
+prism-react-renderer@^1.0.1, prism-react-renderer@^1.1.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/prism-react-renderer/-/prism-react-renderer-1.1.1.tgz#1c1be61b1eb9446a146ca7a50b7bcf36f2a70a44"
   integrity sha512-MgMhSdHuHymNRqD6KM3eGS0PNqgK9q4QF5P0yoQQvpB6jNjeSAi3jcSAz0Sua/t9fa4xDOMar9HJbLa08gl9ug==
@@ -8783,7 +8741,7 @@ react-is@^16.6.0, react-is@^16.7.0, react-is@^16.8.1:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
   integrity sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==
 
-react-live@^2.2.1:
+react-live@^2.2.2:
   version "2.2.2"
   resolved "https://registry.yarnpkg.com/react-live/-/react-live-2.2.2.tgz#834edf1c11204e49fa7468166316b2e70da1a6b0"
   integrity sha512-kJYAzKnPsR4oXleAX9lLsJA330BhTmSWHhr3ienZA2E/0eFDRodGl3I7sge8pp1vjc2K5Aaz73KpFUnV7Lq/DQ==
@@ -9012,7 +8970,7 @@ regexp.prototype.flags@^1.2.0:
     define-properties "^1.1.3"
     es-abstract "^1.17.0-next.1"
 
-regexpu-core@^4.2.0, regexpu-core@^4.5.4, regexpu-core@^4.7.0:
+regexpu-core@^4.2.0, regexpu-core@^4.7.0:
   version "4.7.0"
   resolved "https://registry.yarnpkg.com/regexpu-core/-/regexpu-core-4.7.0.tgz#fcbf458c50431b0bb7b45d6967b8192d91f3d938"
   integrity sha512-TQ4KXRnIn6tz6tjnrXEkD/sshygKH/j5KzK86X8MkeHyZ8qst/LZ89j3X4/8HEIfHANTFIP/AbXakeRhWIl5YQ==
