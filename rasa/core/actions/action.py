@@ -15,7 +15,6 @@ from rasa.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     UTTER_PREFIX,
     RESPOND_PREFIX,
-    RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
@@ -63,6 +62,8 @@ ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
 
 ACTION_BACK_NAME = "action_back"
 
+RULE_SNIPPET_ACTION_NAME = "..."
+
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
@@ -95,8 +96,9 @@ def combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
     # implicitly assume that e.g. "action_listen" is always at location
     # 0 in this array. to keep it that way, we remove the duplicate
     # action names from the users list instead of the defaults
-    unique_user_actions = [a for a in user_actions if a not in default_action_names()]
-    return default_action_names() + unique_user_actions
+    defaults = default_action_names()
+    unique_user_actions = [a for a in user_actions if a not in defaults]
+    return defaults + unique_user_actions
 
 
 def combine_with_templates(

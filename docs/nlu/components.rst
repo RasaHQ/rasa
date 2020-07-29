@@ -138,7 +138,7 @@ HFTransformersNLP
             model_name: "bert"
             # Pre-Trained weights to be loaded
             model_weights: "bert-base-uncased"
-            
+
             # An optional path to a specific directory to download and cache the pre-trained model weights.
             # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
             cache_dir: null
@@ -477,8 +477,12 @@ RegexFeaturizer
 
         pipeline:
         - name: "RegexFeaturizer"
-          # Text will be processed with case sensitive as default
+          # text will be processed with case sensitive as default
           "case_sensitive": True
+          # use lookup tables to generate features
+          "use_lookup_tables": True
+          # use regexes to generate features
+          "use_regexes": True
 
 .. _CountVectorsFeaturizer:
 
@@ -818,6 +822,8 @@ DIETClassifier
     You can find the detailed description of the :ref:`diet-classifier` under the section
     `Combined Entity Extractors and Intent Classifiers`.
 
+.. _EntityExtractors:
+
 Entity Extractors
 -----------------
 
@@ -905,7 +911,7 @@ EntitySynonymMapper
 
 :Short: Maps synonymous entity values to the same value.
 :Outputs: Modifies existing entities that previous entity extraction components found.
-:Requires: Nothing
+:Requires: An extractor from :ref:`EntityExtractors`
 :Description:
     If the training data contains defined synonyms, this component will make sure that detected entity values will
     be mapped to the same value. For example, if your training data contains the following examples:
@@ -945,6 +951,44 @@ EntitySynonymMapper
 
         pipeline:
         - name: "EntitySynonymMapper"
+
+    .. note::
+
+        When using the ``EntitySynonymMapper`` as part of an NLU pipeline, it will need to be placed
+        below any entity extractors in the configuration file.
+
+
+.. _RegexEntityExtractor:
+
+RegexEntityExtractor
+~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Extracts entities using the lookup tables and/or regexes defined in the training data
+:Outputs: ``entities``
+:Requires: Nothing
+:Description:
+    This component extract entities using the lookup tables and regexes defined in the training data.
+    The component checks if the user message contains an entry of one of the lookup tables or matches one of the
+    regexes. If a match is found, the value is extracted as entity.
+
+    This component only uses those regex features that have a name equal to one of the entities defined in the
+    training data. Make sure to annotate at least one example per entity.
+
+:Configuration:
+    Make the entity extractor case sensitive by adding the ``case_sensitive: True`` option, the default being
+    ``case_sensitive: False``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: RegexEntityExtractor
+          # text will be processed with case insensitive as default
+          "case_sensitive": False
+          # use lookup tables to extract entities
+          "use_lookup_tables": True
+          # use regexes to extract entities
+          "use_regexes": True
+
 
 .. _CRFEntityExtractor:
 
@@ -1047,10 +1091,10 @@ CRFEntityExtractor
           "featurizers": []
 
     .. note::
-        If POS features are used (``pos`` or ``pos2`), you need to have ``SpacyTokenizer`` in your pipeline.
+        If POS features are used (``pos`` or ``pos2``), you need to have ``SpacyTokenizer`` in your pipeline.
 
     .. note::
-        If "``pattern` features are used, you need to have ``RegexFeaturizer`` in your pipeline.
+        If ``pattern`` features are used, you need to have ``RegexFeaturizer`` in your pipeline.
 
 .. _DucklingHTTPExtractor:
 

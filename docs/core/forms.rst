@@ -354,7 +354,7 @@ kinds of logic into your forms.
 Debugging
 ---------
 
-The first thing to try is to run your bot with the ``debug`` flag, see :ref:`command-line-interface` for details.
+The first thing to try is to run your bot with the ``--debug`` flag, see :ref:`command-line-interface` for details.
 If you are just getting started, you probably only have a few hand-written stories.
 This is a great starting point, but
 you should give your bot to people to test **as soon as possible**. One of the guiding principles
