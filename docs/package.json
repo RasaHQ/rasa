@@ -16,6 +16,7 @@
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.59",
     "@docusaurus/preset-classic": "^2.0.0-alpha.59",
+    "@philpl/buble": "^0.19.7",
     "classnames": "^2.2.6",
     "clsx": "^1.1.1",
     "core-js": "^3.6.5",
