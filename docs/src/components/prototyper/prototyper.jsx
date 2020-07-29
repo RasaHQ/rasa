@@ -11,7 +11,6 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi}) => {
     const [trainingData, setTrainingData] = React.useState({});
 
     const onLiveCodeStart = (name, value) => {
-        console.info("onLiveCodeStart", name);
         // FIXME: tracking id + no tracking in dev?
         setTrackingId("the-hash");
         setTrainingData((prevTrainingData) => ({...prevTrainingData, [name]: value}));
@@ -37,7 +36,6 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi}) => {
     };
 
     const trainModel = () => {
-        console.info("trainingData", trainingData);
         fetch(trainModelApi, {
             method: 'POST',
             headers: {
