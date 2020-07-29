@@ -2,7 +2,7 @@ import asyncio
 import json
 from collections import deque
 from pathlib import Path
-from typing import Text, List
+from typing import Any, Dict, List, Text
 
 import pytest
 import uuid
@@ -225,42 +225,192 @@ def test_as_md_message():
     assert md == "Hello there [rasa](name)."
 
 
-def test_entity_annotation_merge_with_original():
-    parse_original = {
-        "text": "Hello there rasa, it's me, paula.",
-        "entities": [
+@pytest.mark.parametrize(
+    "parse_original, parse_annotated, expected_entities",
+    [
+        (
             {
-                "start": 12,
-                "end": 16,
-                "entity": "name1",
-                "value": "rasa",
-                "extractor": "batman",
-            }
-        ],
-        "intent": {"name": "greeting", "confidence": 0.9},
-    }
-    parse_annotated = {
-        "text": "Hello there rasa, it's me, paula.",
-        "entities": [
-            {"start": 12, "end": 16, "entity": "name1", "value": "rasa"},
-            {"start": 26, "end": 31, "entity": "name2", "value": "paula"},
-        ],
-        "intent": {"name": "greeting", "confidence": 0.9},
-    }
-
+                "text": "Hello there rasa, it's me, paula.",
+                "entities": [
+                    {
+                        "start": 12,
+                        "end": 16,
+                        "entity": "name1",
+                        "value": "rasa",
+                        "extractor": "batman",
+                    }
+                ],
+                "intent": {"name": "greeting", "confidence": 0.9},
+            },
+            {
+                "text": "Hello there rasa, it's me, paula.",
+                "entities": [
+                    {"start": 12, "end": 16, "entity": "name1", "value": "rasa"},
+                    {"start": 26, "end": 31, "entity": "name2", "value": "paula"},
+                ],
+                "intent": {"name": "greeting", "confidence": 0.9},
+            },
+            [
+                {
+                    "start": 12,
+                    "end": 16,
+                    "entity": "name1",
+                    "value": "rasa",
+                    "extractor": "batman",
+                },
+                {"start": 26, "end": 31, "entity": "name2", "value": "paula"},
+            ],
+        ),
+        (
+            {
+                "text": "I am flying from Berlin to London.",
+                "entities": [
+                    {
+                        "start": 17,
+                        "end": 23,
+                        "entity": "location",
+                        "role": "from",
+                        "value": "Berlin",
+                        "extractor": "DIETClassifier",
+                    }
+                ],
+                "intent": {"name": "inform", "confidence": 0.9},
+            },
+            {
+                "text": "I am flying from Berlin to London.",
+                "entities": [
+                    {
+                        "start": 17,
+                        "end": 23,
+                        "entity": "location",
+                        "value": "Berlin",
+                        "role": "from",
+                    },
+                    {
+                        "start": 27,
+                        "end": 33,
+                        "entity": "location",
+                        "value": "London",
+                        "role": "to",
+                    },
+                ],
+                "intent": {"name": "inform", "confidence": 0.9},
+            },
+            [
+                {
+                    "start": 17,
+                    "end": 23,
+                    "entity": "location",
+                    "value": "Berlin",
+                    "role": "from",
+                },
+                {
+                    "start": 27,
+                    "end": 33,
+                    "entity": "location",
+                    "value": "London",
+                    "role": "to",
+                },
+            ],
+        ),
+        (
+            {
+                "text": "A large pepperoni and a small mushroom.",
+                "entities": [
+                    {
+                        "start": 2,
+                        "end": 7,
+                        "entity": "size",
+                        "group": "1",
+                        "value": "large",
+                        "extractor": "DIETClassifier",
+                    },
+                    {
+                        "start": 24,
+                        "end": 29,
+                        "entity": "size",
+                        "value": "small",
+                        "extractor": "DIETClassifier",
+                    },
+                ],
+                "intent": {"name": "inform", "confidence": 0.9},
+            },
+            {
+                "text": "A large pepperoni and a small mushroom.",
+                "entities": [
+                    {
+                        "start": 2,
+                        "end": 7,
+                        "entity": "size",
+                        "group": "1",
+                        "value": "large",
+                    },
+                    {
+                        "start": 8,
+                        "end": 17,
+                        "entity": "toppings",
+                        "group": "1",
+                        "value": "pepperoni",
+                    },
+                    {
+                        "start": 30,
+                        "end": 38,
+                        "entity": "toppings",
+                        "group": "1",
+                        "value": "mushroom",
+                    },
+                    {
+                        "start": 24,
+                        "end": 29,
+                        "entity": "size",
+                        "group": "2",
+                        "value": "small",
+                    },
+                ],
+                "intent": {"name": "inform", "confidence": 0.9},
+            },
+            [
+                {
+                    "start": 2,
+                    "end": 7,
+                    "entity": "size",
+                    "group": "1",
+                    "value": "large",
+                },
+                {
+                    "start": 8,
+                    "end": 17,
+                    "entity": "toppings",
+                    "group": "1",
+                    "value": "pepperoni",
+                },
+                {
+                    "start": 30,
+                    "end": 38,
+                    "entity": "toppings",
+                    "group": "1",
+                    "value": "mushroom",
+                },
+                {
+                    "start": 24,
+                    "end": 29,
+                    "entity": "size",
+                    "group": "2",
+                    "value": "small",
+                },
+            ],
+        ),
+    ],
+)
+def test__merge_annotated_and_original_entities(
+    parse_original: Dict[Text, Any],
+    parse_annotated: Dict[Text, Any],
+    expected_entities: List[Dict[Text, Any]],
+):
     entities = interactive._merge_annotated_and_original_entities(
         parse_annotated, parse_original
     )
-    assert entities == [
-        {
-            "start": 12,
-            "end": 16,
-            "entity": "name1",
-            "value": "rasa",
-            "extractor": "batman",
-        },
-        {"start": 26, "end": 31, "entity": "name2", "value": "paula"},
-    ]
+    assert entities == expected_entities
 
 
 def test_validate_user_message():
