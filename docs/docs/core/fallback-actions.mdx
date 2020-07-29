@@ -35,7 +35,6 @@ classified with low confidence:
 rules:
 - rule: Ask the user to rephrase whenever they send a message with low NLU confidence
   steps:
-  - ...
   - intent: nlu_fallback
   - action: utter_please_rephrase
 ```
@@ -97,16 +96,14 @@ The implementation of both actions can be overwritten with
 [Custom Actions](./actions.mdx#custom-actions).
 
 To use the `Two-Stage-Fallback` for messages with low NLU confidence, add the
-following [Rules](./rules.mdx) to your training data. This rule will make sure that the
+following [Rule](./rules.mdx) to your training data. This rule will make sure that the
 `Two-Stage-Fallback` will be activated whenever a message is received with
 low classification confidence.
 
 ```yaml
 rules:
-
 - rule: Implementation of the Two-Stage-Fallback
   steps:
-  - ...
   - intent: nlu_fallback
   - action: two_stage_fallback
   - form: two_stage_fallback
@@ -121,8 +118,8 @@ are optimized to handle these unknown paths.
 
 To handle cases where even the machine learning policies can't predict the
 next action with high confidence, make sure to add the
-[RulePolicy](./policies.mdx#rule-policy) to your
-policy configuration. The [RulePolicy](./policies.mdx#rule-policy) will predict a
+[Rule Policy](./policies.mdx#rule-policy) to your
+policy configuration. The [Rule Policy](./policies.mdx#rule-policy) will predict a
 default action if no [Policy](./policies.mdx) has a next action prediction with
 confidence above a configurable threshold.
 

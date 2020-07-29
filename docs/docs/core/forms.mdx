@@ -43,17 +43,17 @@ forms:
       entity: age
 ```
 
-Once the form action gets called for the first time, the form gets activated and it will
-start asking the user for the next slot which is not yet filled. It does this by
+Once the form action gets called for the first time, the form gets activated and will
+prompt the user for the next required slot value. It does this by
 looking for a [response](./responses.mdx) called
 `utter_ask_{slot_name}`. Make sure to define these responses in your domain file for
 each required slot.
 
 ### Activating a Form
 
-To activate a form you need to add a [Stories](./stories.mdx) or [Rules](./rules.mdx)
-which describes when the assistant should run the form. In case a certain intent
-triggers a form you can for example use the following rule:
+To activate a form you need to add a [Story](./stories.mdx) or [Rule](./rules.mdx),
+which describes when the assistant should run the form. In the case a specific intent
+triggering a form, you can for example use the following rule:
 
 ```yaml
 - rule: Activate form
@@ -66,25 +66,25 @@ triggers a form you can for example use the following rule:
 
 :::note
 The `form: your_form` step indicates that the form should be activated after
-``your_form`` was run.
+`your_form` was run.
 :::
 
 ### Deactivating a Form
 
 A form will automatically deactivate itself once all required slots are filled.
 You can describe your assistant's behavior for the end of a form with a rule or a story.
-If you don't add an applicable story or rule, the assistant will listen for the next
-user message after the form is finished.
+If you don't add an applicable story or rule, the assistant will automatically listen
+for the next user message after the form is finished.
 The following example runs the utterance `utter_all_slots_filled` as soon as the form
 `your_form` filled all required slots.
 
 ```yaml
 - rule: Submit form
-  steps:
+  condition:
   # Condition that form is active.
   - form: your_form
-  - ...
-  # Condition that form was deactivated
+  steps:
+  # Form is deactivated
   - action: your_form
   - form: null
   - slot: requested_slot
@@ -94,7 +94,7 @@ The following example runs the utterance `utter_all_slots_filled` as soon as the
 ```
 
 Users might want to break out of a form early. Please see
-[Writing Stories / Rules for Unhappy Form Paths](./forms.mdx#section-unhappy) how to
+[Writing Stories / Rules for Unhappy Form Paths](./forms.mdx#section-unhappy) on how to
 write stories or rules for this case.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="form-slot-mappings"></a>
@@ -109,9 +109,11 @@ to extract the required information.
 #### from_entity
 
 The `from_entity` mapping fills slots based on extracted entities.
-It will look for an entity called entity_name` to fill a slot `slot_name`
-regardless of user intent if `intent_name` is None` else only if the users intent
-is `intent_name`. If `role_name` and/or `group_name` are provided, the role/group
+It will look for an entity called `entity_name` to fill a slot `slot_name`.
+If `intent_name` is `None`, the slot will be filled regardless of intent name.
+Otherwise, the slot will only be filled if the user's intent is `intent_name`.
+
+If `role_name` and/or `group_name` are provided, the role/group
 label of the entity also needs to match the given values. The slot mapping will not
 apply if the intent of the message is `excluded_intent`. Note that you can
 also define lists of intents for the parameters `intent` and `not_intent`.
@@ -131,10 +133,11 @@ forms:
 #### from_text
 
 The `from_text` mapping will use the text of the next user utterance to fill the slot
-`slot_name` regardless of user intent if `intent_name` is `None` else only if
-user intent is `intent_name`. The slot mapping will not
-apply if the intent of the message is `excluded_intent`. Note that you can
-also define lists of intents for the parameters `intent` and `not_intent`.
+`slot_name`. If `intent_name` is `None`, the slot will be filled regardless of intent name.
+Otherwise, the slot will only be filled if the user's intent is `intent_name`.
+
+The slot mapping will not apply if the intent of the message is `excluded_intent`.
+Note that you can define lists of intents for the parameters `intent` and `not_intent`.
 
 ```yaml
 forms:
@@ -154,7 +157,7 @@ also define lists of intents for the parameters `intent` and `not_intent`.
 
 :::note
 The slot mapping will not apply during the initial activation of the form. To fill
-a slot based on the intent which activated the form use the ``from_trigger_intent``
+a slot based on the intent that activated the form, use the `from_trigger_intent`
 mapping
 :::
 
@@ -351,7 +354,7 @@ class ValidateSlots(Action):
 
 ### Requesting Extra Slots
 
-If you have frequent changes to the required slots and don't want to retrain your
+If you make frequent changes to the required slots and don't want to retrain your
 assistant when your form changes, you can also use a
 [Custom Action](./actions.mdx#custom-actions) `validate_{form_name}` to define
 which slots should be requested. Rasa Open Source will run your custom action whenever
@@ -395,8 +398,8 @@ class ValidateSlots(Action):
 The slot `requested_slot` is automatically added to the domain as an
 unfeaturized slot. If you want to make it featurized, you need to add it
 to your domain file as a categorical slot. You might want to do this if you
-want to handle your unhappy paths differently depending on what slot is
-currently being asked from the user. For example, say your users respond
+want to handle your unhappy paths differently, depending on what slot is
+currently being asked from the user. For example, if your users respond
 to one of the bot's questions with another question, like *why do you need to know that?*
 The response to this `explain` intent depends on where we are in the story.
 In the restaurant case, your stories would look something like this:
@@ -434,9 +437,9 @@ on how to use interactive learning with forms.
 
 ### Using a Custom Action to Ask For the Next Slot
 
-As soon as the form determined which slot has to be filled next by the user, it will
+As soon as the form determines which slot has to be filled next by the user, it will
 execute the action `utter_ask_{slot_name}` to ask the user to provide the necessary
-input. If a regular utterance is not enough, you can also provide a custom action
+information. If a regular utterance is not enough, you can also use a custom action
 `action_ask_{slot_name}` to ask for the next slot.
 
 ```python
@@ -461,7 +464,7 @@ class AskForSlotAction(Action):
 
 ## Debugging
 
-The first thing to try is to run your bot with the `--debug` flag, see
+The first thing to try is running your bot with the `--debug` flag, see
 [Command Line Interface](../user-guide/command-line-interface.mdx) for details.
 If you are just getting started, you probably only have a few hand-written stories.
 This is a great starting point, but
