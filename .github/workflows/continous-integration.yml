@@ -114,8 +114,8 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        os: [windows-latest]
-        python-version: [3.7]
+        os: [windows-latest, windows-latest]
+        python-version: [3.6, 3.7, 3.8]
 
     steps:
     - name: Checkout git repository 🕝
