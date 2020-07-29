@@ -32,7 +32,7 @@ how you can migrate from one version to another.
 
 ### Rule Policy
 
-With the introduction of [Rules](./core/rules.mdx) the following policies were
+With the introduction of [Rules](./core/rules.mdx), the following policies are
 deprecated:
 
 - [Mapping Policy](./core/policies.mdx#mapping-policy)
@@ -54,7 +54,7 @@ intents:
      triggers: action_is_bot
 ```
 
-This would become the following rule:
+This becomes the following rule:
 
 ```yaml
 rules:
@@ -69,7 +69,7 @@ rules:
 
 #### Migrating from the Fallback Policy
 
-If you previously used the [Fallback Policy](./core/policies.mdx#fallback-policy), then the following model
+If you previously used the [Fallback Policy](./core/policies.mdx#fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
 ```yaml
@@ -97,7 +97,7 @@ pipeline:
     ambiguity_threshold: 0.1
 ```
 
-In addition you need to add a [Rule](./core/rules.mdx) to specify which action to run
+In addition, you need to add a [Rule](./core/rules.mdx) to specify which action to run
 in case of low NLU confidence:
 
 ```yaml
@@ -105,7 +105,6 @@ rules:
 
 - rule: Ask the user to rephrase whenever they send a message with low NLU confidence
   steps:
-  - ...
   - intent: nlu_fallback
   - action: utter_please_rephrase
 ```
@@ -118,7 +117,7 @@ information.
 #### Migrating from the Two-Stage-Fallback Policy
 
 If you previously used the
-[Two-Stage-Fallback Policy](./core/policies.mdx#two-stage-fallback-policy), then the following model
+[Two-Stage-Fallback Policy](./core/policies.mdx#two-stage-fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
 ```yaml
@@ -154,7 +153,6 @@ messages with low NLU confidence.
 ```yaml
 - rule: Implementation of the TwoStageFallbackPolicy
   steps:
-  - ...
   # This intent is automatically triggered by the `FallbackClassifier` in the NLU
   # pipeline in case the intent confidence was below the specified threshold.
   - intent: nlu_fallback
@@ -174,8 +172,8 @@ information.
 
 #### FormPolicy
 
-As of Rasa Open Source 2.0 the logic for [Forms](./core/forms.mdx) was moved from the
-Rasa SDK to Rasa Open Source to ease implementations of custom action libraries.
+As of Rasa Open Source 2.0 the logic for [Forms](./core/forms.mdx) has been moved from the
+Rasa SDK to Rasa Open Source to simplify implementations of custom action libraries.
 This means that you no longer need to use the `FormAction` when implementing custom
 actions with the Python SDK. Instead you can use a regular `Action` to validate and
 request slots.
@@ -265,10 +263,10 @@ form.
 ```yaml
 rules:
 - rule: Submit form
-  steps:
+  condition:
   # Condition that form is active.
   - form: restaurant_form
-  - ...
+  steps:
   - action: restaurant_form
   - form: null
   - slot: requested_slot
