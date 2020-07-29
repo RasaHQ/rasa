@@ -17,6 +17,21 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.9] - 2020-07-29
+^^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#6255 <https://github.com/rasahq/rasa/issues/6255>`_: Rasa Open Source will no longer add ``responses`` to the ``actions`` section of the
+  domain when persisting the domain as a file. This addresses related problems in Rasa X
+  when Integrated Version Control introduced big diffs due to the added utterances
+  in the ``actions`` section.
+
+Bugfixes
+--------
+- `#6160 <https://github.com/rasahq/rasa/issues/6160>`_: Consider entity roles/groups during interactive learning.
+
+
 [1.10.8] - 2020-07-15
 ^^^^^^^^^^^^^^^^^^^^^
 
