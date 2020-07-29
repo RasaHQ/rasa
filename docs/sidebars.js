@@ -3,6 +3,7 @@ module.exports = {
     {
       type: 'category',
       label: 'User Guide',
+      collapsed: false,
       items: [
         'index',
         'user-guide/installation',
@@ -22,6 +23,7 @@ module.exports = {
     {
       type: 'category',
       label: 'NLU',
+      collapsed: false,
       items: [
         'nlu/about',
         'nlu/using-nlu-only',
@@ -35,6 +37,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Core',
+      collapsed: false,
       items: [
         'core/about',
         'core/stories',
@@ -54,6 +57,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Conversation Design',
+      collapsed: false,
       items: [
         'dialogue-elements/dialogue-elements',
         'dialogue-elements/small-talk',
@@ -64,6 +68,7 @@ module.exports = {
     {
       type: 'category',
       label: 'API Reference',
+      collapsed: false,
       items: [
         'api/action-server',
         'api/http-api',
@@ -86,6 +91,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Migrate from (beta)',
+      collapsed: false,
       items: [
         'migrate-from/google-dialogflow-to-rasa',
         'migrate-from/facebook-wit-ai-to-rasa',
@@ -96,6 +102,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Reference',
+      collapsed: false,
       items: ['glossary'],
     },
   ],

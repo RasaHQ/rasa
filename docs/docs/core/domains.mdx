@@ -2,6 +2,7 @@
 id: domains
 sidebar_label: Domains
 title: Domains
+description: Define intents, entities, slots and actions in Rasa to build contextual AI Assistants and chatbots using open source bot framework Rasa.
 ---
 
 The `Domain` defines the universe in which your assistant operates.
@@ -13,7 +14,7 @@ for the things your bot can say.
 
 As an example, the domain created by `rasa init` has the following yaml definition:
 
-```yml (../rasa/cli/initial_project/domain.yml)
+```yml (docs/sources/rasa/cli/initial_project/domain.yml)
 ```
 
 **What does this mean?**
@@ -199,7 +200,28 @@ responses:
   - text: "Which game would you like to play?"
     channel: "slack"
     custom:
-      - # payload for Slack dropdown menu to choose a game
+        blocks:
+        - type: actions
+          elements:
+          - type: button
+            text:
+              type: plain_text
+              emoji: true
+              text: "Chess :crown:"
+            value: '/inform{"game": "chess"}'
+          - type: button
+            text:
+              type: plain_text
+              emoji: true
+              text: "Checkers :checkered_flag:"
+            value: '/inform{"game": "checkers"}'
+          - type: button
+            text:
+              type: plain_text
+              emoji: true
+              text: "Fortnite :european_castle:"
+            value: '/inform{"game": "fortnite"}'
+            style: danger
   - text: "Which game would you like to play?"
     buttons:
     - title: "Chess"

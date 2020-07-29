@@ -22,6 +22,7 @@ excluded_files:
   - "*.yaml"
   - "*.html"
   - "*.json"
+  - "*.lock"
   - "*.md"
   - "CHANGELOG.mdx"
   - "CODE_OF_CONDUCT.md"
@@ -32,7 +33,6 @@ excluded_files:
   - "NOTICE"
   - "README.md"
   - "cloudbuild.yaml"
-  - "poetry.lock"
   - "pyproject.toml"
   - "secrets.tar.enc"
   - "setup.cfg"
@@ -70,6 +70,7 @@ excluded_words:
   - daksh
   - db's
   - deque
+  - docusaurus
   - non-latin
   - deduplicate
   - deduplication
