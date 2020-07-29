@@ -1,49 +1,49 @@
 nlu:
   - intent: greet
     examples: |
-      hey
-      hello
-      hi
-      good morning
-      good evening
-      hey there
+      - hey
+      - hello
+      - hi
+      - good morning
+      - good evening
+      - hey there
 
   - intent: bye
     examples: |
-      bye
-      good bye
-      ciao
-      see you
-      see ya
+      - bye
+      - good bye
+      - ciao
+      - see you
+      - see ya
 
   - intent: ask_remind_call
     examples: |
-      remind me to call [John]{"entity":"name"}
-      remind me to call [Lis]{"entity":"name"}
-      remind me to call [Albert]{"entity":"name"}
-      remind me to call [Susan]{"entity":"name"}
-      later I have to call [Alan]{"entity":"name"}
-      later I have to call [Jessie]{"entity":"name"}
-      later I have to call [Alex]{"entity":"name"}
-      Please, remind me to call [vova]{"entity":"name"}
-      please remind me to call [tanja]{"entity":"name"}
-      I must not forget to call [santa]{"entity":"name"}
-      I must not forget to call [Daksh]{"entity":"name"}
-      I must not forget to call [Juste]{"entity":"name"}
+      - remind me to call [John]{"entity":"name"}
+      - remind me to call [Lis]{"entity":"name"}
+      - remind me to call [Albert]{"entity":"name"}
+      - remind me to call [Susan]{"entity":"name"}
+      - later I have to call [Alan]{"entity":"name"}
+      - later I have to call [Jessie]{"entity":"name"}
+      - later I have to call [Alex]{"entity":"name"}
+      - Please, remind me to call [vova]{"entity":"name"}
+      - please remind me to call [tanja]{"entity":"name"}
+      - I must not forget to call [santa]{"entity":"name"}
+      - I must not forget to call [Daksh]{"entity":"name"}
+      - I must not forget to call [Juste]{"entity":"name"}
   
   - intent: ask_id
     examples: |
-      what's the conversation id?
-      id
-      What is the ID of this conversation?
-      How do I send a POST request to this conversation?
+      - what's the conversation id?
+      - id
+      - What is the ID of this conversation?
+      - How do I send a POST request to this conversation?
   
   - intent: ask_forget_reminders
     examples: |
-      forget about it
-      don't remind me!
-      Forget about the reminder
-      do not remind me
-      do not remind me!
-      Forget reminding me
-      Forget reminding me!
+      - forget about it
+      - don't remind me!
+      - Forget about the reminder
+      - do not remind me
+      - do not remind me!
+      - Forget reminding me
+      - Forget reminding me!
