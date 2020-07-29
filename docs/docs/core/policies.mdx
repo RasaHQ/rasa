@@ -13,7 +13,7 @@ The `rasa.core.policies.Policy` class decides which action to take
 at every step in the conversation.
 
 There are different policies to choose from, and you can include
-multiple policies in a single [`rasa.core.agent.Agent`](../api/agent#rasa.core.agent.Agent).
+multiple policies in a single [`rasa.core.agent.Agent`](../api/agent.mdx#rasa.core.agent.Agent).
 
 :::note
 Per default a maximum of 10 next actions can be predicted
@@ -58,7 +58,7 @@ in the policy configuration yaml file.
 :::note
 Only the `MaxHistoryTrackerFeaturizer` uses a max history,
 whereas the `FullDialogueTrackerFeaturizer` always looks at
-the full conversation history. See [Featurization of Conversations](../api/core-featurization#featurization-conversations) for details.
+the full conversation history. See [Featurization of Conversations](../api/core-featurization.mdx#featurization-conversations) for details.
 
 :::
 
@@ -161,7 +161,7 @@ Doing so can lead to unexpected and undesired bot behavior.
 ## Embedding Policy
 
 :::caution
-`EmbeddingPolicy` was renamed to `TEDPolicy`. Please use [TED Policy](./policies#ted-policy) instead of `EmbeddingPolicy`
+`EmbeddingPolicy` was renamed to `TEDPolicy`. Please use [TED Policy](./policies.mdx#ted-policy) instead of `EmbeddingPolicy`
 in your policy configuration. The functionality of the policy stayed the same.
 
 :::
@@ -189,7 +189,7 @@ following steps:
   This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
 
 It is recommended to use `state_featurizer=LabelTokenizerSingleStateFeaturizer(...)`
-(see [Featurization of Conversations](../api/core-featurization#featurization-conversations) for details).
+(see [Featurization of Conversations](../api/core-featurization.mdx#featurization-conversations) for details).
 
 **Configuration:**
 
@@ -240,7 +240,7 @@ be trained only for `1` epoch.
 :::caution
 Default `max_history` for this policy is `None` which means it’ll use the
 `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to some finite value in order to
-use `MaxHistoryTrackerFeaturizer` for **faster training**. See [Featurization of Conversations](../api/core-featurization#featurization-conversations) for
+use `MaxHistoryTrackerFeaturizer` for **faster training**. See [Featurization of Conversations](../api/core-featurization.mdx#featurization-conversations) for
 details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
 (e.g. `"batch_size": [32, 64]`)
 
@@ -458,7 +458,7 @@ data as well.
 
 ## Fallback Policy
 
-The `FallbackPolicy` invokes a [fallback action](./fallback-actions) if at least one of the following occurs:
+The `FallbackPolicy` invokes a [fallback action](./fallback-actions.mdx) if at least one of the following occurs:
 
 1. The intent recognition has a confidence below `nlu_threshold`.
 
@@ -486,7 +486,7 @@ policies:
 |`nlu_threshold`        |Min confidence needed to accept an NLU prediction                                                                                               |
 |`ambiguity_threshold`  |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.                                      |
 |`core_threshold`       |Min confidence needed to accept an action prediction from Rasa Core                                                                             |
-|`fallback_action_name` |Name of the [fallback action](./fallback-actions) to be called if the confidence of intent or action is below the respective threshold |
+|`fallback_action_name` |Name of the [fallback action](./fallback-actions.mdx) to be called if the confidence of intent or action is below the respective threshold |
 
 You can also configure the `FallbackPolicy` in your python code:
 
@@ -563,8 +563,8 @@ policies:
 |`nlu_threshold`               |Min confidence needed to accept an NLU prediction                                                                                                                                                                    |
 |`ambiguity_threshold`         |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.                                                                                                           |
 |`core_threshold`              |Min confidence needed to accept an action prediction from Rasa Core                                                                                                                                                  |
-|`fallback_core_action_name`   |Name of the [fallback action](./fallback-actions) to be called if the confidence of Rasa Core action prediction is below the `core_threshold`. This action is to propose the recognized intents             |
-|`fallback_nlu_action_name`    |Name of the [fallback action](./fallback-actions) to be called if the confidence of Rasa NLU intent classification is below the `nlu_threshold`. This action is called when the user denies the second time |
+|`fallback_core_action_name`   |Name of the [fallback action](./fallback-actions.mdx) to be called if the confidence of Rasa Core action prediction is below the `core_threshold`. This action is to propose the recognized intents             |
+|`fallback_nlu_action_name`    |Name of the [fallback action](./fallback-actions.mdx) to be called if the confidence of Rasa NLU intent classification is below the `nlu_threshold`. This action is called when the user denies the second time |
 |`deny_suggestion_intent_name` |The name of the intent which is used to detect that the user denies the suggested intents                                                                                                                            |
 
 :::note
@@ -580,4 +580,4 @@ You can include either the `FallbackPolicy` or the
 The `FormPolicy` is an extension of the `MemoizationPolicy` which
 handles the filling of forms. Once a `FormAction` is called, the
 `FormPolicy` will continually predict the `FormAction` until all required
-slots in the form are filled. For more information, see [Forms](./forms).
+slots in the form are filled. For more information, see [Forms](./forms.mdx).

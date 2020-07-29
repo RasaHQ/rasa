@@ -90,7 +90,7 @@ users choose a color by clicking a button, the button payloads might
 be `/choose{"color": "blue"}` and `/choose{"color": "red"}`.
 
 You can specify this in your domain file like this:
-(see details in [Domains](./domains))
+(see details in [Domains](./domains.mdx))
 
 ```yaml
 utter_ask_color:
@@ -104,12 +104,12 @@ utter_ask_color:
 
 ### Slots Set by Actions
 
-The second option is to set slots by returning events in [custom actions](./actions#custom-actions).
+The second option is to set slots by returning events in [custom actions](./actions.mdx#custom-actions).
 In this case, your stories need to include the slots.
 For example, you have a custom action to fetch a user’s profile, and
 you have a `categorical` slot called `account_type`.
 When the `fetch_profile` action is run, it returns a
-[`rasa.core.events.SlotSet`](../api/events#rasa.core.events.SlotSet) event:
+[`rasa.core.events.SlotSet`](../api/events.mdx#rasa.core.events.SlotSet) event:
 
 ```yaml
 slots:
@@ -156,7 +156,7 @@ take (in this case, `utter_welcome_premium` or `utter_welcome_basic`).
 :::note
 It is **very easy** to forget about slots if you are writing
 stories by hand. We strongly recommend that you build up these
-stories using [Interactive Learning with Forms](./interactive-learning#section-interactive-learning-forms) rather than writing them.
+stories using [Interactive Learning with Forms](./interactive-learning.mdx#section-interactive-learning-forms) rather than writing them.
 
 :::
 

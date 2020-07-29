@@ -64,7 +64,7 @@ happy paths.
 In this story the user intent is `request_restaurant`, which is followed by
 the form action `restaurant_form`. With `form{"name": "restaurant_form"}` the
 form is activated and with `form{"name": null}` the form is deactivated again.
-As shown in the section [Handling unhappy paths](./forms#section-unhappy) the bot can execute any kind of
+As shown in the section [Handling unhappy paths](./forms.mdx#section-unhappy) the bot can execute any kind of
 actions outside the form while the form is still active. On the “happy path”,
 where the user is cooperating well and the system understands the user input correctly,
 the form is filling all requested slots without interruption.
@@ -74,9 +74,9 @@ If a user starts the conversation with
 I’d like a vegetarian Chinese restaurant for 8 people, then they won’t be
 asked about the `cuisine` and `num_people` slots.
 
-Note that for this story to work, your slots should be [unfeaturized](./slots#unfeaturized-slot). If any of these slots are featurized, your story needs to
+Note that for this story to work, your slots should be [unfeaturized](./slots.mdx#unfeaturized-slot). If any of these slots are featurized, your story needs to
 include `slot{}` events to show these slots being set. In that case, the
-easiest way to create valid stories is to use [Interactive Learning](./interactive-learning).
+easiest way to create valid stories is to use [Interactive Learning](./interactive-learning.mdx).
 
 In the story above, `restaurant_form` is the name of our form action.
 Here is an example of what it looks like.
@@ -102,7 +102,7 @@ Here is an example of what it looks like:
 Once the form action gets called for the first time,
 the form gets activated and the `FormPolicy` jumps in.
 The `FormPolicy` is extremely simple and just always predicts the form action.
-See [Handling unhappy paths](./forms#section-unhappy) for how to work with unexpected user input.
+See [Handling unhappy paths](./forms.mdx#section-unhappy) for how to work with unexpected user input.
 
 Every time the form action gets called, it will ask the user for the next slot in
 `required_slots` which is not already set.
@@ -264,7 +264,7 @@ look as follows:
 
 It is **strongly** recommended that you build these stories using interactive learning.
 If you write these stories by hand you will likely miss important things.
-Please read [Interactive Learning with Forms](./interactive-learning#section-interactive-learning-forms)
+Please read [Interactive Learning with Forms](./interactive-learning.mdx#section-interactive-learning-forms)
 on how to use interactive learning with forms.
 
 ## The requested_slot slot
@@ -306,7 +306,7 @@ In the restaurant case, your stories would look something like this:
 
 Again, it is **strongly** recommended that you use interactive
 learning to build these stories.
-Please read [Interactive Learning with Forms](./interactive-learning#section-interactive-learning-forms)
+Please read [Interactive Learning with Forms](./interactive-learning.mdx#section-interactive-learning-forms)
 on how to use interactive learning with forms.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="conditional-logic"></a>
@@ -338,7 +338,7 @@ kinds of logic into your forms.
 
 ## Debugging
 
-The first thing to try is to run your bot with the `--debug` flag, see [Command Line Interface](../user-guide/command-line-interface) for details.
+The first thing to try is to run your bot with the `--debug` flag, see [Command Line Interface](../user-guide/command-line-interface.mdx) for details.
 If you are just getting started, you probably only have a few hand-written stories.
 This is a great starting point, but
 you should give your bot to people to test **as soon as possible**. One of the guiding principles
