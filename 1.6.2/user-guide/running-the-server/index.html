@@ -56,6 +56,8 @@ with your backend components." />
   <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
   <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
   <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
   <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
   
     <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
@@ -70,12 +72,6 @@ with your backend components." />
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-
-<div class="announcement-banner" data-cookie-id="docsAnnouncementBannerDismissed">
-  New episodes of the Rasa Masterclass are out now!
-  <a href="https://www.youtube.com/watch?v=rlAQWbhwqLA&list=PL75e0qA87dlHQny7z43NduZHPo6qd-cRc" target="_blank">Watch Now</a>
-  <button class="announcement-banner__close">✕</button>
-</div>
 
 <div class="nav-top">
   <div class="nav-container">
@@ -218,6 +214,7 @@ with your backend components." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../2.0.0a1/index/">2.0.0a1</a>
               <a href="../../../1.10.8/index/">1.10.8</a>
               <a href="../../../1.10.7/index/">1.10.7</a>
               <a href="../../../1.10.6/index/">1.10.6</a>
@@ -228,27 +225,17 @@ with your backend components." />
               <a href="../../../1.10.1/index/">1.10.1</a>
               <a href="../../../1.10.0/index/">1.10.0</a>
               <a href="../../../1.9.7/index/">1.9.7</a>
-              <a href="../../../1.9.6/index/">1.9.6</a>
-              <a href="../../../1.9.5/index/">1.9.5</a>
-              <a href="../../../1.9.4/index/">1.9.4</a>
-              <a href="../../../1.9.3/index/">1.9.3</a>
-              <a href="../../../1.9.2/index/">1.9.2</a>
-              <a href="../../../1.9.1/index/">1.9.1</a>
-              <a href="../../../1.9.0/index/">1.9.0</a>
               <a href="../../../1.8.3/index/">1.8.3</a>
-              <a href="../../../1.8.2/index/">1.8.2</a>
-              <a href="../../../1.8.1/index/">1.8.1</a>
-              <a href="../../../1.8.0/index/">1.8.0</a>
               <a href="../../../1.7.4/index/">1.7.4</a>
-              <a href="../../../1.7.3/index/">1.7.3</a>
-              <a href="../../../1.7.2/index/">1.7.2</a>
-              <a href="../../../1.7.1/user-guide/running-the-server/">1.7.1</a>
-              <a href="../../../1.7.0/user-guide/running-the-server/">1.7.0</a>
               <a href="../../../1.6.2/user-guide/running-the-server/">1.6.2</a>
               <a href="../../../1.5.3/user-guide/running-the-server/">1.5.3</a>
               <a href="../../../1.4.6/user-guide/running-the-server/">1.4.6</a>
               <a href="../../../1.3.10/user-guide/running-the-server/">1.3.10</a>
               <a href="../../../1.2.9/user-guide/running-the-server/">1.2.9</a>
+          </div>
+          <p>branches</p>
+          <div class="dropdown-content">
+              <a href="../../../master/index/">master</a>
           </div>
       </div>
     </div>
@@ -559,6 +546,176 @@ see <a class="reference internal" href="../../api/event-brokers/#event-brokers">
       console.log(e);
     });
 
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
   </script>
 
   <!-- Dismissable announcement banner -->
