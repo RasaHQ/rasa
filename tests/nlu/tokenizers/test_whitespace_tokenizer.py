@@ -135,7 +135,6 @@ def test_whitespace_training(supervised_embeddings_config):
         ),
     ]
 
-
     component_config = {"case_sensitive": False, "intent_tokenization_flag": True}
     tk = WhitespaceTokenizer(component_config)
 
