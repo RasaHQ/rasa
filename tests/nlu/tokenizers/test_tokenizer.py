@@ -226,6 +226,7 @@ def test_apply_token_pattern(
         assert actual_token.start == expected_token.start
         assert actual_token.end == expected_token.end
 
+
 @pytest.mark.parametrize(
     "text, expected_tokens",
     [
