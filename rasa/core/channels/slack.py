@@ -25,11 +25,13 @@ class SlackBot(OutputChannel):
         token: Text,
         slack_channel: Optional[Text] = None,
         thread_id: Optional[Text] = None,
+        proxy: Optional[Text] = None,
     ) -> None:
 
         self.slack_channel = slack_channel
         self.thread_id = thread_id
-        self.client = WebClient(token, run_async=True)
+        self.proxy = proxy
+        self.client = WebClient(token, run_async=True, proxy=proxy)
         super().__init__()
 
     @staticmethod
@@ -128,6 +130,7 @@ class SlackInput(InputChannel):
         return cls(
             credentials.get("slack_token"),
             credentials.get("slack_channel"),
+            credentials.get("proxy"),
             credentials.get("slack_retry_reason_header", "x-slack-retry-reason"),
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
             credentials.get("errors_ignore_retry", None),
@@ -139,6 +142,7 @@ class SlackInput(InputChannel):
         self,
         slack_token: Text,
         slack_channel: Optional[Text] = None,
+        proxy: Optional[Text] = None,
         slack_retry_reason_header: Optional[Text] = None,
         slack_retry_number_header: Optional[Text] = None,
         errors_ignore_retry: Optional[List[Text]] = None,
@@ -159,6 +163,7 @@ class SlackInput(InputChannel):
                 the bot posts, or channel name (e.g. '#bot-test')
                 If not set, messages will be sent back
                 to the "App" DM channel of your bot's name.
+            proxy: A Proxy Server to route your traffic through
             slack_retry_reason_header: Slack HTTP header name indicating reason that slack send retry request.
             slack_retry_number_header: Slack HTTP header name indicating the attempt number
             errors_ignore_retry: Any error codes given by Slack
@@ -171,6 +176,7 @@ class SlackInput(InputChannel):
         """
         self.slack_token = slack_token
         self.slack_channel = slack_channel
+        self.proxy = proxy
         self.errors_ignore_retry = errors_ignore_retry or ("http_timeout",)
         self.retry_reason_header = slack_retry_reason_header
         self.retry_num_header = slack_retry_number_header
@@ -456,7 +462,7 @@ class SlackInput(InputChannel):
         self, channel: Optional[Text] = None, thread_id: Optional[Text] = None
     ) -> OutputChannel:
         channel = channel or self.slack_channel
-        return SlackBot(self.slack_token, channel, thread_id)
+        return SlackBot(self.slack_token, channel, thread_id, self.proxy)
 
     def set_output_channel(self, channel: Text) -> None:
         self.slack_channel = channel
