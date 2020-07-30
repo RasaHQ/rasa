@@ -310,7 +310,7 @@ class E2EImporter(TrainingDataImporter):
             ]
 
         return Domain(
-            [], [], [], {}, action_names=additional_e2e_action_names, form_names=[]
+            [], [], [], {}, action_names=additional_e2e_action_names, forms=[]
         )
 
     async def get_stories(
