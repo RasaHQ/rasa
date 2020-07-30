@@ -7,7 +7,7 @@ module.exports = {
       items: [
         'index',
         'user-guide/installation',
-        'user-guide/rasa-tutorial',
+        'user-guide/prototype-an-assistant',
         'user-guide/building-assistants',
         'user-guide/command-line-interface',
         'user-guide/architecture',
