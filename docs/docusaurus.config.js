@@ -15,7 +15,8 @@ module.exports = {
   title: 'Rasa Open Source Documentation',
   tagline: 'The tagline of my site',
   url: 'https://your-docusaurus-test-site.com',
-  baseUrl: '/',
+  // FIXME: when deploying this for real, change to '/docs/rasa/'
+  baseUrl: '/docs/rasa/next/',
   favicon: 'img/favicon.ico',
   organizationName: 'RasaHQ',
   projectName: 'rasa',
