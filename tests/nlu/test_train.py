@@ -7,13 +7,14 @@ from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.training_data import TrainingData
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.nlu.conftest import DEFAULT_DATA_PATH
+from typing import Any, Dict, List, Tuple, Text
 
 
 def as_pipeline(*components):
     return [{"name": c, EPOCHS: 1} for c in components]
 
 
-def pipelines_for_tests():
+def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
     # these templates really are just for testing
     # every component should be in here so train-persist-load-use cycle can be
     # tested they still need to be in a useful order - hence we can not simply
@@ -69,7 +70,7 @@ def pipelines_for_tests():
     ]
 
 
-def pipelines_for_non_windows_tests():
+def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
     # these templates really are just for testing
 
     # because some of the components are not available on Windows, we specify pipelines

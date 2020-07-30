@@ -21,11 +21,9 @@ from rasa.nlu.constants import (
 
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Path]:
     """Return the path of file relative to `path`."""
-
     if f is not None:
         return Path(os.path.relpath(f, path))
-    else:
-        return None
+    return None
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:

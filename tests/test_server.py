@@ -210,7 +210,8 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
 # Due to unknown reasons this test can not be run in pycharm, it
 # results in segfaults...will skip in that case - test will still get run on CI.
 # It also doesn't run on Windows because of Process-related calls and an attempt
-# to start/terminate a process. We will investigate this case further later.
+# to start/terminate a process. We will investigate this case further later:
+# https://github.com/RasaHQ/rasa/issues/6302
 @pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
 @pytest.mark.linux
 @pytest.mark.darwin
