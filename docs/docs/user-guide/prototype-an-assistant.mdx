@@ -3,6 +3,7 @@ id: prototype-an-assistant
 sidebar_label: 'Prototype an Assistant'
 title: 'Prototype an Assistant'
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import Prototyper, { Chat, DownloadButton, TrainButton } from '@site/src/components/prototyper';
 
 Get started with Rasa Open Source and learn how to create an assistant from scratch!
@@ -15,6 +16,7 @@ You can test it out right here without installing anything. You can also install
   startPrototyperApi="https://trainer-service.prototyping.rasa.com/startPrototyping"
   trainModelApi="https://trainer-service.prototyping.rasa.com/trainings"
   chatBlockSelector="#rasa-chat-block"
+  chatBlockScriptUrl={useBaseUrl("js/rasa-chatblock.min.js")}
 >
 
 ## 1. Define a basic user goal
