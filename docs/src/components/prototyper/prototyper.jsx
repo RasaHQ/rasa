@@ -1,9 +1,8 @@
 import React from 'react';
 
+import ExecutionEnvironment from '@docusaurus/ExecutionEnvironment';
 import ThemeContext from '@theme/theme-context';
 import { isProductionBuild, uuidv4 } from '@site/src/utils';
-// FIXME: once we can use `rasa-ui` outside of `rasa-x`, we can fix this.
-import ChatBlock from '@site/static/js/rasa-chatblock.min.js';
 import PrototyperContext from './context';
 
 const jsonHeaders = {
@@ -12,8 +11,8 @@ const jsonHeaders = {
 };
 const trackerPollingInterval = 2000;
 
-// FIXME: spinner states
-const Prototyper = ({children, startPrototyperApi, trainModelApi, chatBlockSelector}) => {
+
+const Prototyper = ({children, startPrototyperApi, trainModelApi, chatBlockSelector, chatBlockScriptUrl}) => {
     const [trackingId, setTrackingId] = React.useState(null);
     const [hasStarted, setHasStarted] = React.useState(false);
     const [projectDownloadUrl, setProjectDownloadUrl] = React.useState(null);
@@ -22,9 +21,19 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi, chatBlockSelec
     const [hasTrained, setHasTrained] = React.useState(false);
     const [isTraining, setIsTraining] = React.useState(false);
 
+    // FIXME: once we can use `rasa-ui` outside of `rasa-x`, we can remove this
+    const insertChatBlockScript = () => {
+        if (ExecutionEnvironment.canUseDOM) {
+            const scriptElement = document.createElement('script');
+            scriptElement.src = chatBlockScriptUrl;
+            document.body.appendChild(scriptElement);
+        }
+    };
+
     // update tracking id when component is mounting
     React.useEffect(() => {
         setTrackingId(isProductionBuild() ? uuidv4() : "the-hash");
+        insertChatBlockScript();
     }, []);
     // initialize the chatblock once we have a tracking id
     React.useEffect(() => {
@@ -85,14 +94,21 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi, chatBlockSelec
     };
 
     const updateChatBlock = (baseUrl = "", tracker = {}) => {
-        ChatBlock.init({
-            onSendMessage: (message) => {
-              sendMessage(baseUrl, message);
-            },
-            username: trackingId,
-            tracker,
-            selector: chatBlockSelector,
-        });
+        if (ExecutionEnvironment.canUseDOM) {
+            if (!window.ChatBlock) {
+                // FIXME: once we can use `rasa-ui` outside of `rasa-x`, we can remove this
+                setTimeout(() => updateChatBlock(baseUrl, tracker), 500);
+            } else {
+                window.ChatBlock.default.init({
+                    onSendMessage: (message) => {
+                      sendMessage(baseUrl, message);
+                    },
+                    username: trackingId,
+                    tracker,
+                    selector: chatBlockSelector,
+                });
+            }
+        }
     };
 
     const fetchTracker = (baseUrl) => {
