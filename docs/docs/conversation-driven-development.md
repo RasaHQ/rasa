@@ -1,0 +1,77 @@
+# Conversation Driven Development
+
+## What is CDD?
+
+Conversation-Driven Development (CDD) is the process of listening to your users and using those insights to improve your AI assistant. It is the overarching best practice approach for chatbot development. 
+
+ \
+	Developing great AI assistants is challenging because users will always say something you didn’t anticipate. The principle behind CDD is that in every conversation users are telling you—in their own words—exactly what they want. By practicing CDD at every stage of bot development, you orient your assistant towards real user language and behaviour.
+
+CDD includes the following actions:
+
+
+
+*   **Share** your assistant with users as soon as possible
+*   **Review** conversations on a regular basis
+*   **Annotate** messages and use them as NLU training data
+*   **Test** that your assistant always behaves as you expect
+*   **Track** when your assistant fails and measure its performance over time
+*   **Fix** how your assistant handles unsuccessful conversations
+
+CDD is not a linear process; you’ll circle back to the same actions over and over as you develop and improve your bot.   \
+
+
+Read more about these actions and the concept of CDD [here](https://blog.rasa.com/conversation-driven-development-a-better-approach-to-building-ai-assistants/). 
+
+You can also check out [Rasa X](x), a purpose-built tool for CDD. 
+
+
+## CDD in early stages of development
+
+If you’re at the earliest stage of bot development, it might seem like CDD has no role to play - after all, you have no conversations yet! However, there are CDD actions you can take at the very beginning of bot development:
+
+
+
+1. See the best practices for [NLU](http://s) and [Stories](http://s) for details on applying CDD in these areas.
+2. Give your bot with test users early on. 
+
+    CDD is all about listening to your users, so the earlier you find some, the better. 
+
+
+    Test users can be anyone who doesn’t already know how your bot works from the inside. People on the bot development team should not be test users, since they know exactly what the bot can and can’t do. Don’t overinstruct your test users; they should have only as much knowledge of the bot’s domain as your end users will have.
+
+3. Set up a CI/CD pipeline
+
+    CDD leads to frequent, smaller updates to your bot as you gather insights from bot conversations. [Setting up a CI/CD ](http://s)pipeline early on in development will enable you to act quickly on what you see in conversations
+
+
+At this stage, you can [install Rasa X in local mode](http://x) to make it easier to share your bot with test users, collect conversations, and apply NLU and Story best practices based on the conversations you collect.
+
+
+## CDD with a bot in production 
+
+Once your bot is in production, you’ll have more conversations to gain insights from. 
+
+
+*   **Review**: Look in conversations for what users are really asking for.
+
+    Your test users had at least some instruction about what the bot was intended to do; real users often either have no idea, or ignore instructions given to them. You can’t cater to every unexpected user behaviour, but you can try to address the main friction points you notice. Here are some things you could consider looking for
+
+    *   Look at conversations where an “out_of_scope” intent or fallback behaviour occurred. These could indicate a potential new skill, or just a misclassified user utterance.
+    *   Look for user frustration, such as requests for transfer to a human.
+
+*   **Annotate**: Continue to follow [best practices for NLU](http://s) as you add new user utterances from real conversations to your training data. Be careful not to overfit your NLU model to utterances like those already in your training data. This can happen when you continuously add user utterances that were already predicted correctly and with high confidence to your training data.  To avoid overfitting and help your model generalize to more diverse user utterances, add only user utterances that the model is predicting incorrectly or with low confidence. 
+
+*   **Test:** Add successful user conversations to your test conversations. Doing this consistently will help ensure you don’t introduce regressions as you make other fixes to your bot. 
+
+*   **Track:** Look for clues to success and failure to help you track your bot’s performance
+
+    Some metrics are external to your bot. For example, if you are building a bot to relieve demand on a customer service call center, one metric for success could be the reduction in traffic to the call center. 
+
+
+    Others you can get directly from conversations, such as whether a user reaches a certain action that represents achieving the user goal.
+
+
+    Automatically tracked metrics are by nature proxy metrics; the only way to get a true measure of success would be to individually review and rate every single conversation with your bot. While this clearly isn’t realistic, just keep in mind that no metric is a perfect representation of your bot’s performance.
+
+*   **Fix:** Continue to follow [best practices for Stories](http://s) as you expand and improve your bot’s skills. Let user demand guide which skills you add and which fixes you make. Make smaller changes frequently rather than making big changes only once in a while. This will help you gauge the effectiveness of changes you’re making, since you’ll get user feedback more frequently. Your [CI/CD pipeline ](http://c) should allow you to do so with confidence.
