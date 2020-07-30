@@ -33,3 +33,9 @@
   border: 1px solid #e8e8e8;
   border-radius: 4px;
 }
+/**
+  FIXME: far from perfect but not as ugly as before
+*/
+h4.css-1m1icag {
+  font-family: var(--ifm-font-family-base);
+}
