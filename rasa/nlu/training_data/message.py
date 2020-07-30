@@ -73,8 +73,8 @@ class Message:
         data = {}
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(
-                intent
-            )  # pytype: disable=attribute-error
+                intent  # pytype: disable=attribute-error
+            )
             data[INTENT] = split_intent
             if response_key:
                 data[RESPONSE_KEY_ATTRIBUTE] = response_key
