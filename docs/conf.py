@@ -13,6 +13,8 @@ linkcheck_ignore = [
 ]
 linkcheck_retries = 2
 linkcheck_timeout = 5
+sphinx_tabs_valid_builders = ['linkcheck']
+
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
 
@@ -421,13 +423,13 @@ nitpick_ignore = [
 
 
 def setup(sphinx):
-    sphinx.add_stylesheet("css/custom.css")
+    sphinx.add_css_file("css/custom.css")
 
     try:
         utils_path = os.path.abspath(os.path.join(__file__, "..", "utils"))
         sys.path.insert(0, utils_path)
         from StoryLexer import StoryLexer
 
-        sphinx.add_lexer("story", StoryLexer())
+        sphinx.add_lexer("story", StoryLexer)
     except ImportError:
         print("No Story Lexer :( Sad times!")
