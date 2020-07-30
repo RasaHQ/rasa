@@ -159,9 +159,7 @@ def test_core(
 
     from rasa.core.test import test
 
-    kwargs = utils.minimal_kwargs(
-        additional_arguments, test, ["stories", "agent"]
-    )
+    kwargs = utils.minimal_kwargs(additional_arguments, test, ["stories", "agent"])
 
     _test_core(stories, _agent, output, **kwargs)
 

@@ -32,7 +32,9 @@ def test_data_convert_help(run: Callable[..., RunResult]):
         assert output.outlines[i] == line
 
 
-@pytest.mark.xfail(sys.platform == "win32", reason="--version doesn't print anything on Windows")
+@pytest.mark.xfail(
+    sys.platform == "win32", reason="--version doesn't print anything on Windows"
+)
 def test_version_print_lines(run: Callable[..., RunResult]):
     output = run("--version")
     output_text = "".join(output.outlines)
