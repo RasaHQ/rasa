@@ -225,18 +225,10 @@ class MarkdownStoryReader(StoryReader):
     async def _parse_message(self, message: Text, line_num: int) -> UserUttered:
 
         parse_data = await RegexInterpreter().parse(message)
-
-        if parse_data.get("intent"):
-            utterance = UserUttered(
-                None, parse_data.get("intent"), parse_data.get("entities"), parse_data
-            )
-        else:
-            utterance = UserUttered(
-                message,
-                parse_data.get("intent"),
-                parse_data.get("entities"),
-                parse_data,
-            )
+        utterance = UserUttered(
+            message, parse_data.get("intent"), parse_data.get("entities"), parse_data
+        )
+        
         intent_name = utterance.intent.get("name")
         if self.domain and intent_name not in self.domain.intents:
             raise_warning(
@@ -253,7 +245,6 @@ class MarkdownStoryReader(StoryReader):
         from rasa.nlu.training_data.formats.markdown import MarkdownReader
 
         message_processed = MarkdownReader().parse_training_example(text)
-        parse_data = await self.interpreter.parse(text)
 
         utterance = UserUttered(
             message_processed.text, None, message_processed.get("entities"),
