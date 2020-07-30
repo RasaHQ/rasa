@@ -347,7 +347,7 @@ We could make this connection by providing training stories (recommended for mor
 <p>Note that this requires the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa_sdk.events</span></code> packages.</p>
 <p>Finally, we define another custom action <code class="docutils literal notranslate"><span class="pre">action_react_to_reminder</span></code> and link it to the <code class="docutils literal notranslate"><span class="pre">EXTERNAL_reminder</span></code> intent:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="k">-</span> EXTERNAL_reminder:
-  triggers: action_react_to_reminder
+    triggers: action_react_to_reminder
 </pre></div>
 </div>
 <p>where the <code class="docutils literal notranslate"><span class="pre">action_react_to_reminder</span></code> is</p>
