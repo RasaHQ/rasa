@@ -9,6 +9,8 @@ const TrainButton = (props) => {
     return (
       <Button
         onClick={prototyperContext.trainModel}
+        disabled={!!prototyperContext.isTraining}
+        loading={!!prototyperContext.isTraining}
         {...props}
       >
         Train

@@ -9,6 +9,7 @@ const DownloadButton = (props) => {
     return (
       <Button
         onClick={prototyperContext.downloadProject}
+        disabled={!prototyperContext.hasTrained || !!prototyperContext.isTraining}
         {...props}
       >
         Download project

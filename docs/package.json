@@ -16,6 +16,9 @@
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.59",
     "@docusaurus/preset-classic": "^2.0.0-alpha.59",
+    "@fortawesome/fontawesome-svg-core": "^1.2.30",
+    "@fortawesome/free-solid-svg-icons": "^5.14.0",
+    "@fortawesome/react-fontawesome": "^0.1.11",
     "@philpl/buble": "^0.19.7",
     "classnames": "^2.2.6",
     "clsx": "^1.1.1",

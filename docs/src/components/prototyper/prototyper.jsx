@@ -19,8 +19,10 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi, chatBlockSelec
     const [projectDownloadUrl, setProjectDownloadUrl] = React.useState(null);
     const [trainingData, setTrainingData] = React.useState({});
     const [pollingIntervalId, setPollingIntervalId] = React.useState(null);
+    const [hasTrained, setHasTrained] = React.useState(false);
+    const [isTraining, setIsTraining] = React.useState(false);
 
-    // update tracking id when component mounted
+    // update tracking id when component is mounting
     React.useEffect(() => {
         setTrackingId(isProductionBuild() ? uuidv4() : "the-hash");
     }, []);
@@ -52,6 +54,7 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi, chatBlockSelec
     };
 
     const trainModel = () => {
+        setIsTraining(true);
         // train the model, resetting the chatblock
         if (pollingIntervalId) {
             updateChatBlock();
@@ -66,11 +69,13 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi, chatBlockSelec
         })
             .then(response => response.json())
             .then(data => {
+                setHasTrained(true);
                 setProjectDownloadUrl(data.project_download_url);
                 if (data.rasa_service_url) {
                     startFetchingTracker(data.rasa_service_url);
                 }
-            });
+            }).
+            finally(() => setIsTraining(false));
     };
 
     const downloadProject = () => {
@@ -124,7 +129,7 @@ const Prototyper = ({children, startPrototyperApi, trainModelApi, chatBlockSelec
 
     return (
       <ThemeContext.Provider value={{onLiveCodeChange, onLiveCodeStart}}>
-        <PrototyperContext.Provider value={{ trainModel, downloadProject }}>
+        <PrototyperContext.Provider value={{ trainModel, downloadProject, hasTrained, isTraining }}>
             {children}
         </PrototyperContext.Provider>
       </ThemeContext.Provider>
