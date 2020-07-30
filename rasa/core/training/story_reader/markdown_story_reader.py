@@ -228,7 +228,7 @@ class MarkdownStoryReader(StoryReader):
         utterance = UserUttered(
             message, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
-        
+
         intent_name = utterance.intent.get("name")
         if self.domain and intent_name not in self.domain.intents:
             raise_warning(
