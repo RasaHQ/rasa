@@ -19,7 +19,7 @@ from rasa.core.constants import (
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
 )
 
-from rasa.nlu.constants import TEXT
+from rasa.nlu.constants import INTENT, TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -304,7 +304,7 @@ class UserUttered(Event):
 
     def as_dict_core(self) -> Dict[Text, Text]:
         entities = [entity.get("entity") for entity in self.entities]
-        return {'text': self.text, 'intent': self.intent_name, "entities": entities}
+        return {TEXT: self.text, INTENT: self.intent_name, ENTITIES: entities}
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -503,9 +503,6 @@ class SlotSet(Event):
         d = super().as_dict()
         d.update({"name": self.key, "value": self.value})
         return d
-
-    def as_dict_core(self) -> Dict[Text, Any]:
-        return {self.key: self.value}
         
 
     @classmethod
@@ -1064,7 +1061,7 @@ class ActionExecuted(Event):
         return d
 
     def as_dict_core(self) -> Dict[Text, Text]:
-        return {'action_name': self.action_name, 'text': self.e2e_text}
+        return {ACTION_NAME: self.action_name, ACTION_TEXT: self.e2e_text}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.set_latest_action(self.as_dict_core())

@@ -13,6 +13,8 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.utils.common import raise_warning, class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
+from rasa.nlu.constants import TEXT
+from rasa.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -273,8 +275,16 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
+
         result = self.interpreter.parse(text)
 
+        return result
+
+    def synchronous_parse_message(self, message: Message, attribute: Text):
+        if self.lazy_init and self.interpreter is None:
+            self._load_interpreter()
+
+        result = self.interpreter.parse_message(message, attribute)
         return result
 
     def _load_interpreter(self) -> None:

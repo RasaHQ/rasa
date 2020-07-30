@@ -118,7 +118,7 @@ class MappingPolicy(Policy):
         else:
             action = domain.intent_properties.get(intent, {}).get("triggers")
 
-        if tracker.latest_action_name == ACTION_LISTEN_NAME:
+        if tracker.latest_action.get("action_name") == ACTION_LISTEN_NAME:
             # predict mapped action
             if action:
                 idx = domain.index_for_action(action)
@@ -138,7 +138,7 @@ class MappingPolicy(Policy):
                     " action '{}' in the domain."
                     "".format(intent, action)
                 )
-        elif tracker.latest_action_name == action and action is not None:
+        elif tracker.latest_action.get("action_name") == action and action is not None:
             # predict next action_listen after mapped action
             latest_action = tracker.get_last_event_for(ActionExecuted)
             assert latest_action.action_name == action
