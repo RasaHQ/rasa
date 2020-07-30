@@ -721,7 +721,7 @@ class Domain:
         latest_action = tracker.latest_action
 
         if latest_action:
-            prev_action_name = latest_action.get("action_name") or latest_action.get("text")
+            prev_action_name = latest_action.get("action_name") or latest_action.get("action_text")
             if prev_action_name in self.input_state_map:
                 return {PREVIOUS_ACTION: latest_action}
             else:

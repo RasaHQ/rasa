@@ -200,11 +200,15 @@ class DialogueStateTracker:
 
         return None
 
+    def _freeze_current_state(self, state) -> frozenset:
+        frozen_state = frozenset({key: frozenset(state[key].items()) if isinstance(state[key], Dict) else frozenset(state[key])  for key in state.keys()}.items())
+        return frozen_state
+
     def past_states(self, domain) -> deque:
         """Generate the past states of this tracker based on the history."""
 
         generated_states = domain.states_for_tracker_history(self)
-        return deque(frozenset(s.items()) for s in generated_states)
+        return deque(self._freeze_current_state(s) for s in generated_states)
 
     def change_form_to(self, form_name: Text) -> None:
         """Activate or deactivate a form"""
