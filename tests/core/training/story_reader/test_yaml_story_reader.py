@@ -229,6 +229,7 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
 
     assert not len(record)
 
+
 async def test_parsing_of_e2e_stories(default_domain: Domain):
     yaml_file = "data/test_yaml_stories/stories_hybrid_e2e.yml"
     tracker = await training.load_data(
