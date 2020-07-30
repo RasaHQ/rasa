@@ -147,12 +147,12 @@ def test_whitespace_training(supervised_embeddings_config):
     assert examples[0].data.get(TOKENS_NAMES[TEXT])[4].text == "do"
     assert examples[1].data.get(TOKENS_NAMES[TEXT])[0].text == "I"
     assert examples[1].data.get(TOKENS_NAMES[TEXT])[1].text == "want"
-    assert examples[1].data.get(TOKENS_NAMES[TEXT])[2].text == "tacos"
+    assert examples[1].data.get(TOKENS_NAMES[TEXT])[2].text == "Tacos"
     assert examples[2].data.get(TOKENS_NAMES[ACTION_NAME])[0].text == "action"
     assert examples[2].data.get(TOKENS_NAMES[ACTION_NAME])[1].text == "restart"
     assert examples[2].data.get(TOKENS_NAMES[TEXT])[0].text == "action_restart"
     assert examples[2].data.get(TOKENS_NAMES[ACTION_TEXT]) is None
-    assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[0].text == "where"
+    assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[0].text == "Where"
     assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[1].text == "are"
     assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[2].text == "you"
     assert examples[3].data.get(TOKENS_NAMES[ACTION_TEXT])[3].text == "going"
@@ -193,7 +193,7 @@ def test_whitespace_processing_with_attribute(supervised_embeddings_config):
         },
     )
     expected_tokens_intent = ["restaurant_search"]
-    expected_tokens_text = ["any", "mexican", "restaurant", "will", "do"]
+    expected_tokens_text = ["Any", "Mexican", "restaurant", "will", "do"]
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
     tk.process(message, INTENT)
@@ -207,7 +207,7 @@ def test_whitespace_processing_with_attribute(supervised_embeddings_config):
         "Where are you going?",
         {ACTION_NAME: "Where are you going?", ACTION_TEXT: "Where are you going?",},
     )
-    expected_action_tokens_text = ["where", "are", "you", "going"]
+    expected_action_tokens_text = ["Where", "are", "you", "going"]
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
     tk.process(message, ACTION_TEXT)
