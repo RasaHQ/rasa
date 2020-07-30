@@ -403,6 +403,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     ) -> Tuple[
         List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
     ]:
+        if not self.vectorizers.get(attribute):
+            return [None], [None]
+
         sequence_features = []
         sentence_features = []
 

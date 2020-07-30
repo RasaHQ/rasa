@@ -223,13 +223,17 @@ class MarkdownStoryReader(StoryReader):
         self.current_step_builder.add_user_messages(parsed_messages)
 
     async def _parse_message(self, message: Text, line_num: int) -> UserUttered:
-        if message.startswith(INTENT_MESSAGE_PREFIX):
-            parse_data = await RegexInterpreter().parse(message)
+        
+        parse_data = await RegexInterpreter().parse(message)
+        
+        if parse_data.get("intent"):
+            utterance = UserUttered(
+                None, parse_data.get("intent"), parse_data.get("entities"), parse_data
+            )
         else:
-            parse_data = await self.interpreter.parse(message)
-        utterance = UserUttered(
-            message, parse_data.get("intent"), parse_data.get("entities"), parse_data
-        )
+            utterance = UserUttered(
+                message, parse_data.get("intent"), parse_data.get("entities"), parse_data
+            )
         intent_name = utterance.intent.get("name")
         if self.domain and intent_name not in self.domain.intents:
             raise_warning(
@@ -250,7 +254,7 @@ class MarkdownStoryReader(StoryReader):
 
         utterance = UserUttered(
             message_processed.text,
-            parse_data.get("intent"),
+            None,
             message_processed.get("entities"),
         )
         return utterance
