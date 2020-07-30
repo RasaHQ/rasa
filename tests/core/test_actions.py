@@ -15,6 +15,7 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_SESSION_START_NAME,
+    RULE_SNIPPET_ACTION_NAME,
     ActionBack,
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
@@ -43,7 +44,7 @@ from rasa.core.events import (
     UserUttered,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
-from rasa.core.constants import USER_INTENT_SESSION_START, RULE_SNIPPET_ACTION_NAME
+from rasa.core.constants import USER_INTENT_SESSION_START
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
