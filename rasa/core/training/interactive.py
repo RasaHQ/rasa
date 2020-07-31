@@ -32,6 +32,7 @@ from rasa.core.constants import (
     REQUESTED_SLOT,
     UTTER_PREFIX,
 )
+from rasa.nlu.constants import TEXT
 from rasa.core.domain import Domain
 import rasa.core.events
 from rasa.core.events import (
