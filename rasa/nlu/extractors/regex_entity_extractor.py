@@ -98,7 +98,9 @@ class RegexEntityExtractor(EntityExtractor):
                         ENTITY_ATTRIBUTE_TYPE: pattern["name"],
                         ENTITY_ATTRIBUTE_START: start_index,
                         ENTITY_ATTRIBUTE_END: end_index,
-                        ENTITY_ATTRIBUTE_VALUE: message.get(TEXT)[start_index:end_index],
+                        ENTITY_ATTRIBUTE_VALUE: message.get(TEXT)[
+                            start_index:end_index
+                        ],
                     }
                 )
 
