@@ -308,7 +308,7 @@ async def test_validate_slots(
         assert events == expected_events
 
 
-async def test_validate_slots_with_other_action_after_user_utterance():
+async def test_validate_slots_on_activation_with_other_action_after_user_utterance():
     form_name = "my form"
     slot_name = "num_people"
     slot_value = "hi"

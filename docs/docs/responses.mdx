@@ -95,7 +95,7 @@ responses:
     image: "https://i.imgur.com/nGF1K8f.jpg"
 ```
 
-It's common to use buttons as a shortcut to bypass NLU. 
+It's common to use buttons as a shortcut to bypass NLU.
 Rasa Open Source will send messages starting with a `/` to the
 `RegexInterpreter`, which expects NLU input in the same format
 as in story files, e.g. `/intent{entities}`. For example, if you let
@@ -149,7 +149,7 @@ responses:
 
 ### Channel-Specific Responses
 
-For each response, you can have multiple **response variations** (see [Variations](./domains#variations)).
+For each response, you can have multiple **response variations** (see [Variations](./domains.mdx#variations)).
 If you have certain response variations that you would like sent only to specific
 channels, you can specify this with the `channel:` key. The value should match
 the name defined in the `name()` method of the channel’s `OutputChannel`
@@ -162,7 +162,28 @@ responses:
   - text: "Which game would you like to play?"
     channel: "slack"
     custom:
-      - # payload for Slack dropdown menu to choose a game
+        blocks:
+        - type: actions
+          elements:
+          - type: button
+            text:
+              type: plain_text
+              emoji: true
+              text: "Chess :crown:"
+            value: '/inform{"game": "chess"}'
+          - type: button
+            text:
+              type: plain_text
+              emoji: true
+              text: "Checkers :checkered_flag:"
+            value: '/inform{"game": "checkers"}'
+          - type: button
+            text:
+              type: plain_text
+              emoji: true
+              text: "Fortnite :european_castle:"
+            value: '/inform{"game": "fortnite"}'
+            style: danger
   - text: "Which game would you like to play?"
     buttons:
     - title: "Chess"

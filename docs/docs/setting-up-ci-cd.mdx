@@ -2,6 +2,7 @@
 id: setting-up-ci-cd
 sidebar_label: Setting up CI/CD
 title: Setting up CI/CD
+description: Set up a CI/CD pipeline to ensure that iterative improvements to your assistant are tested and deployed with minimum manual effort
 ---
 
 Even though developing a contextual assistant is different from developing traditional
@@ -38,7 +39,7 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 
 ### Validate Data and Stories
 
-[Data validation](./validate-files) verifies that there are no mistakes or
+[Data validation](./validate-files.mdx) verifies that there are no mistakes or
 major inconsistencies in your domain file, NLU data, or story data.
 
 ```bash
@@ -52,7 +53,7 @@ actions) that won’t prevent training a model, but might indicate
 messy data.
 
 If data validation results in errors, training a model will also fail, so it's
-always good to run this check before training a model. By including the 
+always good to run this check before training a model. By including the
 `--fail-on-warnings` flag, this step will also fail on those warnings indicating minor issues.
 
 Data validation also includes story structure validation.
@@ -77,14 +78,14 @@ rasa train
 
 Training a model verifies that your NLU pipeline and policy configurations are
 valid and trainable, and it provides a model to use for test conversations.
-If it passes the CI tests, then you can also [upload the trained model](./setting-up-ci-cd#uploading-a-model)
+If it passes the CI tests, then you can also [upload the trained model](./setting-up-ci-cd.mdx#uploading-a-model)
 to your server as part of the continuous deployment process .
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="test-the-assistant"></a>
 
 ### Test the Assistant
 
-Testing your trained model on [test conversations](./testing-your-assistant#end-to-end-testing) is the best way to have confidence in how your assistant
+Testing your trained model on [test conversations](./testing-your-assistant.mdx#end-to-end-testing) is the best way to have confidence in how your assistant
 will act in certain situations. These stories, written in a modified story
 format, allow you to provide entire conversations and test that, given this
 user input, your model will behave in the expected manner. This is especially
@@ -105,13 +106,13 @@ to be representative of the true distribution of real conversations.
 Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests).
 
 Note: End-to-end testing does **not** execute your action code. You will need to
-[test your action code](./setting-up-ci-cd#testing-action-code) in a seperate step.
+[test your action code](./setting-up-ci-cd.mdx#testing-action-code) in a seperate step.
 
 ### Compare NLU Performance
 
 If you’ve made significant changes to your NLU training data (e.g.
 splitting an intent into two intents or adding a lot of training examples), you should run a
-[full NLU evaluation](./testing-your-assistant#nlu-evaluation). You’ll want to compare
+[full NLU evaluation](./testing-your-assistant.mdx#nlu-evaluation). You’ll want to compare
 the performance of the NLU model without your changes to an NLU model with your
 changes.
 
@@ -122,7 +123,7 @@ rasa test nlu --cross-validation
 ```
 
 You could also train a model on a training set and testing it on a test set. If you use the train-test
-set approach, it is best to [shuffle and split your data](./command-line-interface#train-test-split) using `rasa data split` as part of this CI step, as
+set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#train-test-split) using `rasa data split` as part of this CI step, as
 opposed to using a static NLU test set, which can easily become outdated.
 
 Because this test doesn’t result in a pass/fail exit code, it’s best to make
@@ -155,7 +156,7 @@ succeeded.
 
 ### Deploy your Rasa Model
 
-If you ran [end-to-end tests](./setting-up-ci-cd#test-the-assistant) in your CI pipeline,
+If you ran [end-to-end tests](./setting-up-ci-cd.mdx#test-the-assistant) in your CI pipeline,
 you’ll already have a trained model. You can set up your CD pipeline to upload the trained model to your
 Rasa server if the CI results are satisfactory. For example, to upload a model to Rasa X:
 
@@ -179,7 +180,7 @@ actions that don’t exist in the pre-update action server.
 ### Deploy your Action Server
 
 You can automate
-[building and uploading a new image for your action server](./how-to-deploy#building-an-action-server-image),
+[building and uploading a new image for your action server](./how-to-deploy.mdx#building-an-action-server-image),
 to an image repository for each
 update to your action code. As noted above, you should be careful with
 automatically deploying a new image tag to production if the action server

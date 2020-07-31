@@ -9,10 +9,10 @@ TODO: make sure all available options are documented for each parameter. also re
 The `Domain` defines the universe in which your assistant operates.
 It specifies the `intents`, `entities`, `slots`, `responses` and `actions`
 your bot should know about. It also defines a `session_config` to configure
-conversation sessions. 
+conversation sessions.
 
 As an example, the domain created by `rasa init` has the following yaml definition:
-TODO: use an example with all of the pieces! e.g. formbot? 
+TODO: use an example with all of the pieces! e.g. formbot?
 
 ```yml (docs/sources/rasa/cli/initial_project/domain.yml)
 ```
@@ -77,7 +77,7 @@ entities:
    - priority        # custom entity extracted by CRFEntityExtractor
 ```
 
-## Slots 
+## Slots
 
 Slots are your bot’s memory. They act as a key-value store
 which can be used to store information the user provided (e.g their home city)
@@ -99,7 +99,7 @@ of the conversation, use an `unfeaturized` slot.
 If the value itself is important, use the [slot type](./slot-types) that
 fits the type of behavior you want in your stories.
 
-Define your slot in your domain according to its slot type, following one 
+Define your slot in your domain according to its slot type, following one
 of the examples below.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="slot-classes"></a>
@@ -395,10 +395,10 @@ slots:
 
 ## Responses
 
-Responses are actions that simply send a message to a user without running any custom code or 
+Responses are actions that simply send a message to a user without running any custom code or
 returning events. These responses can be defined directly in the domain file and can include
 rich content such as buttons and attachments. For more information on responses,
-see [Responses]((../responses)) 
+see [Responses]((../responses))
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="session-config"></a>
 
@@ -415,7 +415,7 @@ For example, an action could:
 
 * just about anything!
 
-All custom actions should be listed in your domain, except responses which need not be listed 
+All custom actions should be listed in your domain, except responses which need not be listed
 under `actions:` as they are already listed under `responses:`.
 
 ## Session configuration

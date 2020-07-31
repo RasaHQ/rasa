@@ -18,6 +18,7 @@ from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizer,
 )
@@ -69,6 +70,7 @@ component_classes = [
     CRFEntityExtractor,
     DucklingHTTPExtractor,
     EntitySynonymMapper,
+    RegexEntityExtractor,
     # featurizers
     SpacyFeaturizer,
     MitieFeaturizer,

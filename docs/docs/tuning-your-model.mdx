@@ -3,6 +3,7 @@ id: tuning-your-model
 sidebar_label: Tuning Your Model
 title: Tuning Your Model
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="how-to-choose-a-pipeline"></a>
 
@@ -21,12 +22,12 @@ We recommend using following pipeline, if your training data is in English:
 ```yaml (docs/sources/data/configs_for_docs/default_english_config.yml)
 ```
 
-The pipeline contains the [ConveRTFeaturizer](./components#convertfeaturizer) that provides pre-trained word embeddings of the user utterance.
+The pipeline contains the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) that provides pre-trained word embeddings of the user utterance.
 Pre-trained word embeddings are helpful as they already encode some kind of linguistic knowledge.
 For example, if you have a sentence like “I want to buy apples” in your training data, and Rasa is asked to predict
 the intent for “get pears”, your model already knows that the words “apples” and “pears” are very similar.
 This is especially useful if you don’t have enough training data.
-The advantage of the [ConveRTFeaturizer](./components#convertfeaturizer) is that it doesn’t treat each word of the user message independently, but
+The advantage of the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is that it doesn’t treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence.
 However, `ConveRT` is only available in English.
 
@@ -38,9 +39,9 @@ the following pipeline:
 ```yaml (docs/sources/data/configs_for_docs/default_spacy_config.yml)
 ```
 
-It uses the [SpacyFeaturizer](./components#spacyfeaturizer) instead of the [ConveRTFeaturizer](./components#convertfeaturizer).
-[SpacyFeaturizer](./components#spacyfeaturizer) provides pre-trained word embeddings from either GloVe or fastText in many different languages
-(see [Pre-trained Word Vectors](./language-support#pretrained-word-vectors)).
+It uses the [SpacyFeaturizer](./components.mdx#spacyfeaturizer) instead of the [ConveRTFeaturizer](./components.mdx#convertfeaturizer).
+[SpacyFeaturizer](./components.mdx#spacyfeaturizer) provides pre-trained word embeddings from either GloVe or fastText in many different languages
+(see [Pre-trained Word Vectors](./language-support.mdx#pretrained-word-vectors)).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-non-english"></a>
 
@@ -54,8 +55,8 @@ we recommend using the following pipeline:
 
 :::note
 We encourage everyone to define their own pipeline by listing the names of the components you want to use.
-You can find the details of each component in [Components](./components).
-If you want to use custom components in your pipeline, see [Custom NLU Components](../api/custom-nlu-components).
+You can find the details of each component in [Components](./components.mdx).
+If you want to use custom components in your pipeline, see [Custom NLU Components](../api/custom-nlu-components.mdx).
 
 :::
 
@@ -182,23 +183,23 @@ You need to provide enough data for both intents and entities.
 ## Choosing the Right Components
 
 There are components for entity extraction, for intent classification, response selection,
-pre-processing, and others. You can learn more about any specific component on the [Components](./components) page.
+pre-processing, and others. You can learn more about any specific component on the [Components](./components.mdx) page.
 If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out [Custom NLU Components](../api/custom-nlu-components).
+do sentiment analysis, check out [Custom NLU Components](../api/custom-nlu-components.mdx).
 
 A pipeline usually consists of three main parts:
 
 ### Tokenization
 
-For tokenization of English input, we recommend the [ConveRTTokenizer](./components#converttokenizer).
+For tokenization of English input, we recommend the [ConveRTTokenizer](./components.mdx#converttokenizer).
 You can process other whitespace-tokenized (words are separated by spaces) languages
-with the [WhitespaceTokenizer](./components#whitespacetokenizer). If your language is not whitespace-tokenized, you should use a different tokenizer.
-We support a number of different [tokenizers](./components#tokenizers), or you can
-create your own [custom tokenizer](../api/custom-nlu-components).
+with the [WhitespaceTokenizer](./components.mdx#whitespacetokenizer). If your language is not whitespace-tokenized, you should use a different tokenizer.
+We support a number of different [tokenizers](./components.mdx#tokenizers), or you can
+create your own [custom tokenizer](../api/custom-nlu-components.mdx).
 
 :::note
 Some components further down the pipeline may require a specific tokenizer. You can find those requirements
-on the individual components in [Components](./components). If a required component is missing inside the pipeline, an
+on the individual components in [Components](./components.mdx). If a required component is missing inside the pipeline, an
 error will be thrown.
 
 :::
@@ -218,24 +219,24 @@ The advantage of using pre-trained word embeddings in your pipeline is that if y
 words “apples” and “pears” are very similar. This is especially useful if you don’t have enough training data.
 We support a few components that provide pre-trained word embeddings:
 
-1. [MitieFeaturizer](./components#mitiefeaturizer)
+1. [MitieFeaturizer](./components.mdx#mitiefeaturizer)
 
-2. [SpacyFeaturizer](./components#spacyfeaturizer)
+2. [SpacyFeaturizer](./components.mdx#spacyfeaturizer)
 
-3. [ConveRTFeaturizer](./components#convertfeaturizer)
+3. [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
 
-4. [LanguageModelFeaturizer](./components#languagemodelfeaturizer)
+4. [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
 
-If your training data is in English, we recommend using the [ConveRTFeaturizer](./components#convertfeaturizer).
-The advantage of the [ConveRTFeaturizer](./components#convertfeaturizer) is that it doesn’t treat each word of the user message independently, but
+If your training data is in English, we recommend using the [ConveRTFeaturizer](./components.mdx#convertfeaturizer).
+The advantage of the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is that it doesn’t treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence. For example, if you
 have a training example, like: “Can I book a car?”, and Rasa is asked to predict the intent for “I need a ride from
 my place”, since the contextual vector representation for both examples are already very similar, the intent classified
 for both is highly likely to be the same. This is also useful if you don’t have enough training data.
 
-An alternative to [ConveRTFeaturizer](./components#convertfeaturizer) is the [LanguageModelFeaturizer](./components#languagemodelfeaturizer) which uses pre-trained language
+An alternative to [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which uses pre-trained language
 models such as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
-[HFTransformersNLP](./components#hftransformersnlp) for a full list of supported language models.
+[HFTransformersNLP](./components.mdx#hftransformersnlp) for a full list of supported language models.
 
 If your training data is not in English you can also use a different variant of a language model which
 is pre-trained in the language specific to your training data.
@@ -244,7 +245,7 @@ A full list of different variants of
 these language models is available in the
 [official documentation of the Transformers library](https://huggingface.co/transformers/pretrained_models.html).
 
-[SpacyFeaturizer](./components#spacyfeaturizer) also provides word embeddings in many different languages (see [Pre-trained Word Vectors](./language-support#pretrained-word-vectors)),
+[SpacyFeaturizer](./components.mdx#spacyfeaturizer) also provides word embeddings in many different languages (see [Pre-trained Word Vectors](./language-support.mdx#pretrained-word-vectors)),
 so you can use this as another alternative, depending on the language of your training data.
 
 #### Supervised Embeddings
@@ -253,29 +254,29 @@ If you don’t use any pre-trained word embeddings inside your pipeline, you are
 and can train your model to be more domain specific. For example, in general English, the word “balance” is closely
 related to “symmetry”, but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely
 related and you’d like your model to capture that.
-You should only use featurizers from the category [sparse featurizers](./components#text-featurizers), such as
-[CountVectorsFeaturizer](./components#countvectorsfeaturizer), [RegexFeaturizer](./components#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components#lexicalsyntacticfeaturizer), if you don’t want to use
+You should only use featurizers from the category [sparse featurizers](./components.mdx#text-featurizers), such as
+[CountVectorsFeaturizer](./components.mdx#countvectorsfeaturizer), [RegexFeaturizer](./components.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components.mdx#lexicalsyntacticfeaturizer), if you don’t want to use
 pre-trained word embeddings.
 
 ### Intent Classification / Response Selectors
 
 Depending on your data you may want to only perform intent classification, entity recognition or response selection.
 Or you might want to combine multiple of those tasks.
-We support several components for each of the tasks. All of them are listed in [Components](./components).
-We recommend using [DIETClassifier](./components#diet-classifier) for intent classification and entity recognition
-and [ResponseSelector](./components#response-selector) for response selection.
+We support several components for each of the tasks. All of them are listed in [Components](./components.mdx).
+We recommend using [DIETClassifier](./components.mdx#diet-classifier) for intent classification and entity recognition
+and [ResponseSelector](./components.mdx#response-selector) for response selection.
 
 By default all of these components consume all available features produced in the pipeline.
 However, sometimes it makes sense to restrict the features that are used by a specific component.
-For example, [ResponseSelector](./components#response-selector) is likely to perform better if no features from the
-[RegexFeaturizer](./components#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components#lexicalsyntacticfeaturizer) are used.
+For example, [ResponseSelector](./components.mdx#response-selector) is likely to perform better if no features from the
+[RegexFeaturizer](./components.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components.mdx#lexicalsyntacticfeaturizer) are used.
 To achieve that, you can do the following:
 Set an alias for every featurizer in your pipeline via the option `alias`.
 By default the alias is set the the full featurizer class name, for example, `RegexFeaturizer`.
-You can then specify, for example, on the [ResponseSelector](./components#response-selector) via the option `featurizers` what features from
+You can then specify, for example, on the [ResponseSelector](./components.mdx#response-selector) via the option `featurizers` what features from
 which featurizers should be used.
 If you don’t set the option `featurizers` all available features will be used.
-To check which components have the option `featurizers` available, see [Components](./components).
+To check which components have the option `featurizers` available, see [Components](./components.mdx).
 
 Here is an example configuration file where the `DIETClassifier` is using all available features and the
 `ResponseSelector` is just using the features from the `ConveRTFeaturizer` and the `CountVectorsFeaturizer`.
@@ -283,7 +284,7 @@ Here is an example configuration file where the `DIETClassifier` is using all av
 ```yaml (docs/sources/data/configs_for_docs/config_featurizers.yml)
 ```
 
-### Entity Extraction 
+### Entity Extraction
 
 Entity extraction involves parsing user messages for required pieces of information. Rasa Open Source
 provides entity extractors for custom entities as well as pre-trained ones like dates and locations.

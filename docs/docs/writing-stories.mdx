@@ -3,6 +3,7 @@ id: writing-stories
 sidebar_label: Writing Stories
 title: Writing Stories
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 ## Interactive Learning
 
@@ -33,7 +34,7 @@ rasa interactive \
   --endpoints endpoints.yml
 ```
 
-The first command starts the action server (see [Custom Actions](./actions#custom-actions)).
+The first command starts the action server (see [Custom Actions](./actions.mdx#custom-actions)).
 
 The second command starts interactive learning mode.
 
@@ -158,7 +159,7 @@ When you use interactive learning to generate stories containing a form,
 the conversation steps handled by the form
 get a `form:` prefix. This tells Rasa Core to ignore these steps when training
 your other policies. There is nothing special you have to do here, all of the form’s
-happy paths are still covered by the basic story given in [Forms](./forms).
+happy paths are still covered by the basic story given in [Forms](./forms.mdx).
 
 Here is an example:
 

@@ -2,10 +2,11 @@
 id: reminders-and-external-events
 sidebar_label: Reminders and External Events
 title: Reminders and External Events
+description: Learn how to use external events and schedule reminders.
 ---
 
 The `ReminderScheduled` event and the
-[trigger_intent endpoint](../../api/http-api/#operation/triggerConversationIntent) let your assistant remind you
+[trigger_intent endpoint](/api/http-api.mdx#operation/triggerConversationIntent) let your assistant remind you
 about things after a given period of time, or to respond to external events (other applications, sensors, etc.).
 [ReminderBot](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md)
 is a full example assistant that implements these features.
@@ -46,7 +47,7 @@ Thus, we define an intent `ask_remind_call` with some NLU data,
 
 and connect this intent with a new custom action `action_set_reminder`.
 We could make this connection by providing training stories (recommended for more complex assistants),
-or using the [Mapping Policy](./policies#mapping-policy).
+or using the [Mapping Policy](./policies.mdx#mapping-policy).
 
 The custom action `action_set_reminder` should schedule a reminder that, 5 seconds later,
 triggers an intent `EXTERNAL_reminder` with all the entities that the user provided
@@ -125,11 +126,11 @@ For example, some moisture-sensor attached to a Raspberry Pi should inform your 
 plant needs watering, and your assistant should then relay this message to you.
 
 To do this, your Raspberry Pi needs to send a message to the
-[trigger_intent endpoint](../../api/http-api/#operation/triggerConversationIntent) of your conversation.
+[trigger_intent endpoint](/api/http-api.mdx#operation/triggerConversationIntent) of your conversation.
 As the name says, this injects a user intent (possibly with entities) into your conversation.
 So for Rasa it is almost as if you had entered a message that got classified with this intent and these entities.
 Rasa then needs to respond to this input with an action such as `action_warn_dry`.
-The easiest and most reliable way to connect this action with the intent is via the [Mapping Policy](./policies#mapping-policy).
+The easiest and most reliable way to connect this action with the intent is via the [Mapping Policy](./policies.mdx#mapping-policy).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="responding-to-external-events"></a>
 

@@ -2,20 +2,26 @@
 id: google-dialogflow-to-rasa
 sidebar_label: Rasa as open source alternative to Google Dialogflow - Migration Guide
 title: Rasa as open source alternative to Google Dialogflow - Migration Guide
+description: Open source alternative to Google Dialogflow for conversational bots and NLP
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
-Let's get started with migrating your application from Dialogflow to Rasa (you can find a more detailed 
+Let's get started with migrating your application from Dialogflow to Rasa (you can find a more detailed
 tutorial <a className="reference external" href="http://blog.rasa.com/how-to-migrate-your-existing-google-dialogflow-assistant-to-rasa/" target="_blank">here</a>):
 
 ## Step 1: Export your data from Dialogflow
 
 Navigate to your agent’s settings by clicking the gear icon.
 
-<img alt="Dialogflow Export" src="../../img/dialogflow_export.png" width="240" />
+
+
+<img alt="Dialogflow Export" src={useBaseUrl("/img/dialogflow_export.png")} width="240" />
 
 Click on the ‘Export and Import’ tab and click on the ‘Export as ZIP’ button.
 
-<img alt="Dialogflow Export 2" src="../../img/dialogflow_export_2.png" width="675" />
+
+
+<img alt="Dialogflow Export 2" src={useBaseUrl("/img/dialogflow_export_2.png")} width="675" />
 
 This will download a file with a `.zip` extension. Unzip this file to create a folder.
 
@@ -80,6 +86,6 @@ You can also leave it out to get the result in the usual Rasa format.
 ## Terminology:
 
 The words `intent`, `entity`, and `utterance` have the same meaning in Rasa as they do in Dialogflow.
-In Dialogflow, there is a concept called `Fulfillment`. In Rasa we call this a [Custom Action](../core/actions/#custom-actions).
+In Dialogflow, there is a concept called `Fulfillment`. In Rasa we call this a [Custom Action](../core/actions/.mdx#custom-actions).
 
 Join the [Rasa Community Forum](https://forum.rasa.com/) and let us know how your migration went!
