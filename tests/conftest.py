@@ -274,11 +274,8 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
 
 
 def pytest_runtest_setup(item: pytest.Item) -> None:
-    supported_platforms = PLATFORMS.intersection(
-        mark.name for mark in item.iter_markers()
-    )
-    if supported_platforms and sys.platform not in supported_platforms:
-        pytest.skip(f"cannot run on platform {sys.platform}")
+    if "skip_on_windows" in item.iter_markers() and sys.platform == "win32":
+        pytest.skip(f"cannot run on Windows")
 
 
 class MockExporter(Exporter):

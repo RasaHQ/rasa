@@ -98,30 +98,7 @@ def test_check_labels_features_exist(messages, expected):
     assert classifier._check_labels_features_exist(messages, attribute) == expected
 
 
-@pytest.mark.parametrize(
-    "pipeline",
-    [
-        pytest.param(
-            [
-                {
-                    "name": "ConveRTTokenizer",
-                    "intent_tokenization_flag": True,
-                    "intent_split_symbol": "+",
-                },
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "ConveRTFeaturizer"},
-                {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
-            ],
-            marks=[pytest.mark.linux, pytest.mark.darwin],
-        ),
-        [
-            {"name": "WhitespaceTokenizer"},
-            {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
-        ],
-    ],
-)
-async def test_train_persist_load_with_different_settings(
+async def _train_persist_load_with_different_settings(
     pipeline, component_builder, tmpdir
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
@@ -140,6 +117,32 @@ async def test_train_persist_load_with_different_settings(
 
     assert loaded.pipeline
     assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
+
+
+@pytest.mark.skip_on_windows
+async def test_train_persist_load_with_different_settings_non_windows(
+    component_builder, tmpdir
+):
+    pipeline = [
+        {
+            "name": "ConveRTTokenizer",
+            "intent_tokenization_flag": True,
+            "intent_split_symbol": "+",
+        },
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "ConveRTFeaturizer"},
+        {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
+    ]
+    await _train_persist_load_with_different_settings(pipeline, component_builder, tmpdir)
+
+
+async def test_train_persist_load_with_different_settings(component_builder, tmpdir):
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
+    ]
+    await _train_persist_load_with_different_settings(pipeline, component_builder, tmpdir)
 
 
 async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):

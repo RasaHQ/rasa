@@ -213,8 +213,7 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
 # to start/terminate a process. We will investigate this case further later:
 # https://github.com/RasaHQ/rasa/issues/6302
 @pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
-@pytest.mark.linux
-@pytest.mark.darwin
+@pytest.mark.skip_on_windows
 def test_train_status_is_not_blocked_by_training(
     background_server: Process, shared_statuses: DictProxy, training_request: Process
 ):

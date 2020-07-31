@@ -54,7 +54,6 @@ def test_invalid_many_tokenizers_in_config():
                     {"name": "ConveRTFeaturizer"},
                 ]
             },
-            marks=[pytest.mark.linux, pytest.mark.darwin],
         ),
         pytest.param(
             {
@@ -63,10 +62,10 @@ def test_invalid_many_tokenizers_in_config():
                     {"name": "LanguageModelFeaturizer"},
                 ]
             },
-            marks=[pytest.mark.linux, pytest.mark.darwin],
         ),
     ],
 )
+@pytest.mark.skip_on_windows
 def test_missing_required_component(_config):
     with pytest.raises(config.InvalidConfigError) as execinfo:
         Trainer(config.RasaNLUModelConfig(_config))
