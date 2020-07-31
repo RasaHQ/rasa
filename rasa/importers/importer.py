@@ -378,7 +378,8 @@ def _messages_from_user_utterance(event: UserUttered) -> Message:
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
-    return Message(data={ACTION_NAME: event.action_name, ACTION_TEXT: event.e2e_text or "",},
+    return Message(
+        data={ACTION_NAME: event.action_name, ACTION_TEXT: event.e2e_text or "",},
     )
 
 
