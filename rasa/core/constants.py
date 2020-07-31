@@ -17,6 +17,7 @@ DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
 REQUESTED_SLOT = "requested_slot"
+SHOULD_NOT_BE_SET = "should_not_be_set"
 
 # slots for knowledge base
 SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"

@@ -14,6 +14,7 @@ from typing import (
     Deque,
     Iterable,
     Union,
+    Tuple,
 )
 
 from rasa.nlu.constants import (
@@ -200,7 +201,8 @@ class DialogueStateTracker:
 
         return None
 
-    def _freeze_current_state(self, state) -> frozenset:
+    @staticmethod
+    def freeze_current_state(state) -> frozenset:
         frozen_state = frozenset(
             {
                 key: frozenset(state[key].items())
@@ -215,7 +217,7 @@ class DialogueStateTracker:
         """Generate the past states of this tracker based on the history."""
 
         generated_states = domain.states_for_tracker_history(self)
-        return deque(self._freeze_current_state(s) for s in generated_states)
+        return deque(self.freeze_current_state(s) for s in generated_states)
 
     def change_form_to(self, form_name: Text) -> None:
         """Activate or deactivate a form"""
@@ -608,7 +610,7 @@ class DialogueStateTracker:
 
         self._reset_slots()
         self._paused = False
-        self.latest_action = None
+        self.latest_action = {}
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
