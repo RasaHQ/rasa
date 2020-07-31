@@ -155,6 +155,17 @@ To start a server running your Rasa model, run:
 ```bash
 rasa run
 ```
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-ssl"></a>
+
+By default the Rasa server is using HTTP for its communication. To secure the communication with
+SSL and run the server on HTTPS, you need to provide a valid certificate and the corresponding
+private key file. You can specify these files as part of the `rasa run` command. 
+If you encrypted your keyfile with a password during creation, 
+you need to add the `--ssl-password` as well. 
+
+```bash
+rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key --ssl-password mypassword
+```
 
 The following arguments can be used to configure your Rasa server:
 

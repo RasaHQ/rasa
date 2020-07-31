@@ -166,7 +166,7 @@ module.exports = {
       items: [
         'architecture',
         'command-line-interface',
-        'http-api',
+        'using-http-api',
         'jupyter-notebooks',
         {
           type: 'category',
@@ -182,7 +182,6 @@ module.exports = {
       type: 'category',
       label: 'Old Content',
       items: [
-        'configuring-http-api',
         'rasa-sdk',
         ]
     },
