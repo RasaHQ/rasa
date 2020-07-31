@@ -391,6 +391,8 @@ class Interpreter:
 
     def parse_message(self, message: Message, attribute: Text = TEXT) -> Message:
         for component in self.pipeline:
-            if isinstance(component, Featurizer) or isinstance(component, tokenizer.Tokenizer):
+            if isinstance(component, Featurizer) or isinstance(
+                component, tokenizer.Tokenizer
+            ):
                 component.process(message, attribute, **self.context)
         return message
