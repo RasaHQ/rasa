@@ -37,13 +37,15 @@ LOOKUP = "lookup"
 AVAILABLE_SECTIONS = [INTENT, SYNONYM, REGEX, LOOKUP]
 MARKDOWN_SECTION_MARKERS = [f"## {s}:" for s in AVAILABLE_SECTIONS]
 
-item_regex = re.compile(r"\s*[-*+]\s*(.+)")
+item_regex = re.compile(r"\s*[-*+]\s*((?:.+\s*)*)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
 
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
+UNESCAPE_DCT = {espaced_char: char for char, espaced_char in ESCAPE_DCT.items()}
 
 ESCAPE = re.compile(r"[\b\f\n\r\t]")
+UNESCAPE = re.compile(r"\\[bfnrt]")
 
 
 def encode_string(s: Text) -> Text:
@@ -53,6 +55,15 @@ def encode_string(s: Text) -> Text:
         return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
 
     return ESCAPE.sub(replace, s)
+
+
+def decode_string(s: Text) -> Text:
+    """Return a decoded python string."""
+
+    def replace(match: Match) -> Text:
+        return UNESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
+
+    return UNESCAPE.sub(replace, s)
 
 
 logger = logging.getLogger(__name__)
@@ -78,7 +89,7 @@ class MarkdownReader(TrainingDataReader):
 
         s = self._strip_comments(s)
         for line in s.splitlines():
-            line = line.strip()
+            line = decode_string(line.strip())
             header = self._find_section_header(line)
             if header:
                 self._set_current_section(header[0], header[1])
