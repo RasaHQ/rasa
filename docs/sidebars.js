@@ -3,7 +3,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Getting Started',
-      collapsed: false,
+      collapsed: true,
       items: [
         'index',
         'prototype-an-assistant',
@@ -15,7 +15,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Best Practices',
-      collapsed: false,
+      collapsed: true,
       items: [
         'cdd',
         'generating-nlu-data',
@@ -25,7 +25,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Conversation Patterns',
-      collapsed: false,
+      collapsed: true,
       items: [
         'chitchat-faqs',
         'business-logic',
@@ -37,7 +37,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Preparing For Production',
-      collapsed: false,
+      collapsed: true,
       items: [
         'tuning-your-model',
         'testing-your-assistant',
@@ -49,7 +49,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Reference',
-      collapsed: false,
+      collapsed: true,
       items: [
         'glossary',
       ],
@@ -184,7 +184,6 @@ module.exports = {
       items: [
         'configuring-http-api',
         'using-nlu-only',
-        'entity-extraction',
         'slots',
         'interactive-learning',
         'rasa-sdk',

@@ -4,9 +4,9 @@ sidebar_label: Entity Extractors
 title: Entity Extractors
 ---
 
-<a aria-hidden="true" tabindex="-1" class="anchor enhancedAnchor" id="entityextractors"></a>
 
 Entity extractors extract entities, such as person names or locations, from the user message.
+
 
 ## MitieEntityExtractor
 
@@ -112,8 +112,14 @@ Entity extractors extract entities, such as person names or locations, from the 
   Using spaCy this component predicts the entities of a message. spaCy uses a statistical BILOU transition model.
   As of now, this component can only use the spaCy builtin entity extraction models and can not be retrained.
   This extractor does not provide any confidence scores.
+  
+  You can test out spaCy's entity extraction models in this [interactive demo](https://explosion.ai/demos/displacy-ent).
+  Note that some spaCy models are highly case-sensitive.
 
+:::note
+The `SpacyEntityExtractor` extractor does not provide a `confidence` level and will always return `null`.
 
+:::
 
 * **Configuration**
 
@@ -128,77 +134,6 @@ Entity extractors extract entities, such as person names or locations, from the 
     # dimensions to extract
     dimensions: ["PERSON", "LOC", "ORG", "PRODUCT"]
   ```
-
-
-## EntitySynonymMapper
-
-
-* **Short**
-
-  Maps synonymous entity values to the same value.
-
-
-
-* **Outputs**
-
-  Modifies existing entities that previous entity extraction components found.
-
-
-
-* **Requires**
-
-  An extractor from [Entity Extractors](./components#entityextractors)
-
-
-
-* **Description**
-
-  If the training data contains defined synonyms, this component will make sure that detected entity values will
-  be mapped to the same value. For example, if your training data contains the following examples:
-
-  ```json
-  [
-      {
-        "text": "I moved to New York City",
-        "intent": "inform_relocation",
-        "entities": [{
-          "value": "nyc",
-          "start": 11,
-          "end": 24,
-          "entity": "city",
-        }]
-      },
-      {
-        "text": "I got a new flat in NYC.",
-        "intent": "inform_relocation",
-        "entities": [{
-          "value": "nyc",
-          "start": 20,
-          "end": 23,
-          "entity": "city",
-        }]
-      }
-  ]
-  ```
-
-  This component will allow you to map the entities `New York City` and `NYC` to `nyc`. The entity
-  extraction will return `nyc` even though the message contains `NYC`. When this component changes an
-  existing entity, it appends itself to the processor list of this entity.
-
-
-
-* **Configuration**
-
-  ```yaml
-  pipeline:
-  - name: "EntitySynonymMapper"
-  ```
-
-  :::note
-  When using the `EntitySynonymMapper` as part of an NLU pipeline, it will need to be placed
-  below any entity extractors in the configuration file.
-
-  :::
 
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="crfentityextractor"></a>
@@ -248,6 +183,16 @@ Entity extractors extract entities, such as person names or locations, from the 
   and the states are entity classes. Features of the words (capitalization, POS tagging,
   etc.) give probabilities to certain entity classes, as are transitions between
   neighbouring entity tags: the most likely set of tags is then calculated and returned.
+  
+  
+  If you want to pass custom features, such as pre-trained word embeddings, to `CRFEntityExtractor`, you can
+  add any dense featurizer to the pipeline before the `CRFEntityExtractor`.
+  `CRFEntityExtractor` automatically finds the additional dense features and checks if the dense features are an
+  iterable of `len(tokens)`, where each entry is a vector.
+  A warning will be shown in case the check fails.
+  However, `CRFEntityExtractor` will continue to train just without the additional custom features.
+  In case dense features are present, `CRFEntityExtractor` will pass the dense features to `sklearn_crfsuite`
+  and use them for training.
 
 
 
@@ -392,6 +337,8 @@ Entity extractors extract entities, such as person names or locations, from the 
   situation, your application would have to decide which entity type is be the correct one.
   The extractor will always return 1.0 as a confidence, as it is a rule
   based system.
+  
+  The list of supported languages can be found [here](https://github.com/facebook/duckling/tree/master/Duckling/Dimensions).
 
 
 
@@ -435,3 +382,74 @@ Entity extractors extract entities, such as person names or locations, from the 
   You can find the detailed description of the [DIETClassifier](./components#diet-classifier) under the section
   Intent Classifiers.
 
+
+
+## EntitySynonymMapper
+
+
+* **Short**
+
+  Maps synonymous entity values to the same value.
+
+
+
+* **Outputs**
+
+  Modifies existing entities that previous entity extraction components found.
+
+
+
+* **Requires**
+
+  An extractor from [Entity Extractors](./components#entityextractors)
+
+
+
+* **Description**
+
+  If the training data contains defined synonyms, this component will make sure that detected entity values will
+  be mapped to the same value. For example, if your training data contains the following examples:
+
+  ```json
+  [
+      {
+        "text": "I moved to New York City",
+        "intent": "inform_relocation",
+        "entities": [{
+          "value": "nyc",
+          "start": 11,
+          "end": 24,
+          "entity": "city",
+        }]
+      },
+      {
+        "text": "I got a new flat in NYC.",
+        "intent": "inform_relocation",
+        "entities": [{
+          "value": "nyc",
+          "start": 20,
+          "end": 23,
+          "entity": "city",
+        }]
+      }
+  ]
+  ```
+
+  This component will allow you to map the entities `New York City` and `NYC` to `nyc`. The entity
+  extraction will return `nyc` even though the message contains `NYC`. When this component changes an
+  existing entity, it appends itself to the processor list of this entity.
+
+
+
+* **Configuration**
+
+  ```yaml
+  pipeline:
+  - name: "EntitySynonymMapper"
+  ```
+
+  :::note
+  When using the `EntitySynonymMapper` as part of an NLU pipeline, it will need to be placed
+  below any entity extractors in the configuration file.
+
+  :::
