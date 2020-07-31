@@ -183,7 +183,6 @@ module.exports = {
       label: 'Old Content',
       items: [
         'configuring-http-api',
-        'using-nlu-only',
         'interactive-learning',
         'rasa-sdk',
         ]
