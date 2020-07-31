@@ -177,7 +177,7 @@ class DucklingHTTPExtractor(EntityExtractor):
 
         if self._url() is not None:
             reference_time = self._reference_time_from_message(message)
-            matches = self._duckling_parse(message.text, reference_time)
+            matches = self._duckling_parse(message.get(TEXT), reference_time)
             all_extracted = convert_duckling_format_to_rasa(matches)
             dimensions = self.component_config["dimensions"]
             extracted = DucklingHTTPExtractor.filter_irrelevant_entities(

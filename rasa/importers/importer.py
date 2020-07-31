@@ -374,12 +374,11 @@ def _message_from_conversation_event(event: Event) -> Optional[Message]:
 
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
-    return Message(event.text, data={INTENT_NAME: event.intent_name})
+    return Message(data={INTENT_NAME: event.intent_name, TEXT: event.text})
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
-    return Message(
-        "", data={ACTION_NAME: event.action_name, ACTION_TEXT: event.e2e_text or "",},
+    return Message(data={ACTION_NAME: event.action_name, ACTION_TEXT: event.e2e_text or "",},
     )
 
 
@@ -388,7 +387,7 @@ def _additional_training_data_from_default_actions() -> TrainingData:
     from rasa.core.actions import action
 
     additional_messages_from_default_actions = [
-        Message("", data={ACTION_NAME: action_name})
+        Message(data={ACTION_NAME: action_name})
         for action_name in action.default_action_names()
     ]
 
