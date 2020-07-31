@@ -64,7 +64,7 @@ def md_format_message(text, intent, entities) -> Text:
     deserialised_entities = deserialise_entities(entities)
     return MarkdownWriter.generate_message_md(
         {
-            "text": message_from_md.text,
+            "text": message_from_md.get(TEXT),
             "intent": intent,
             "entities": deserialised_entities,
         }
@@ -301,7 +301,7 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_dict_core(self) -> Dict[Text, Text]:
+    def as_dict_core(self) -> Dict[Text, Union[Text, List[Text]]]:
         entities = [entity.get("entity") for entity in self.entities]
         if self.intent_name:
             return {TEXT: None, INTENT: self.intent_name, ENTITIES: entities}
