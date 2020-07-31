@@ -160,7 +160,7 @@ module.exports = {
       items: [
         'architecture',
         'command-line-interface',
-        'using-http-api',
+        'http-api',
         'jupyter-notebooks',
         {
           type: 'category',
