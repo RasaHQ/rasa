@@ -5,3 +5,4 @@
   from = "/docs/rasa/next/*"
   to = "/:splat"
   status = 200
+  force = true
