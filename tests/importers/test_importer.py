@@ -214,10 +214,9 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
     # Check if the NLU training data was added correctly from the story training data
     expected_additional_messages = [
         Message("greet_from_stories", data={INTENT_NAME: "greet_from_stories"}),
-        Message("", data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: ""}),
+        Message(data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: ""}),
         Message("how are you doing?", data={INTENT_NAME: None}),
         Message(
-            "",
             data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: "Hi Joey.",},
         ),
     ]
@@ -247,7 +246,7 @@ async def test_import_nlu_training_data_with_default_actions(project: Text):
 
     extended_training_data = await importer.get_nlu_data()
     assert all(
-        Message("", data={ACTION_NAME: action_name})
+        Message(data={ACTION_NAME: action_name})
         in extended_training_data.training_examples
         for action_name in action.default_action_names()
     )

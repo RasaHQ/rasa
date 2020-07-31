@@ -32,6 +32,7 @@ class Message:
         **kwargs,
     ) -> None:
         import copy
+
         self.time = time
         self.data = copy.deepcopy(data) if data else {}
         if text is not None:
