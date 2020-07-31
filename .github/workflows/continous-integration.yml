@@ -163,9 +163,9 @@ jobs:
       # C++ Build Tools are not installed on their machines). In this case, python-crc32c
       # should use a pure Python implementation of CFFI but Google made a mistake with
       # the order of arguments in their code, and their solution doesn't work.
-      # This PR fixes the issue but it's not merged yet: 
+      # This PR fixes the issue but it's not merged yet:
       # https://github.com/googleapis/python-crc32c/pull/27
-      if: matrix.os != 'windows-latest' || matrix.version != '3.8'
+      if: matrix.os != 'windows-latest' || matrix.python-version != '3.8'
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
