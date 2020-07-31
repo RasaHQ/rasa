@@ -4,25 +4,16 @@ sidebar_label: Responses
 title: Responses
 ---
 
-If you want your assistant to respond to user messages, you need to manage
-these responses. In the training data for your bot,
-your stories, you specify the actions your bot
-should execute. These actions
-can use responses to send messages back to the user.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="in-domain-responses"></a>
+Responses are the simplest type of action, which utter a response you define in your
+domain file, starting with `utter_`:
 
-## Defining Responses
-
-Responses are defined in your domain file.
-This file then contains references to all your custom actions,
-available entities, slots and intents.
-
-```yaml (docs/sources/data/test_domains/default_with_slots.yml)
+```yaml
+responses:
+  utter_my_message:
+    - text: "This is what I want my action to say!"
 ```
 
-In this example domain file, the section `responses` contains the
-responses the assistant uses to send messages to the user.
 
 :::note
 If you want to change the text, or any other part of the bots response,
@@ -31,10 +22,15 @@ you need to retrain the assistant before these changes will be picked up.
 :::
 
 
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="in-domain-responses"></a>
+
+
+## Using Responses
+
 Responses are messages the bot will send back to the user. There are
 two ways to use these responses:
 
-1. If the name of the response starts with `utter_`, the response can
+1. So long as the name of the response starts with `utter_`, the response can
    directly be used as an action. You would add the response
    to the domain:
 
@@ -75,7 +71,12 @@ two ways to use these responses:
          return []
    ```
 
-## Images and Buttons
+## Rich Responses
+
+A response can be as simple as some text, or can include variation, visual
+and interactive components, and more.
+
+### Images and Buttons
 
 Responses defined in a domain’s yaml file can contain images and
 buttons as well:
@@ -119,7 +120,7 @@ printing the options.
 
 :::
 
-## Custom Output Payloads
+### Custom Output Payloads
 
 You can also send any arbitrary output to the output channel using the
 `custom:` key. Note that since the domain is in yaml format, the json
@@ -146,7 +147,7 @@ responses:
             text: Select a date
 ```
 
-## Channel-Specific Responses
+### Channel-Specific Responses
 
 For each response, you can have multiple **response variations** (see [Variations](./domains#variations)).
 If you have certain response variations that you would like sent only to specific
@@ -180,7 +181,7 @@ Therefore, it is good practice to always have at least one response variation fo
 response that has no `channel` specified so that your bot can respond in all
 environments, including in the shell and in interactive learning.
 
-## Variables
+### Variables
 
 You can also use **variables** in your responses to insert information
 collected during the dialogue. You can either do that in your custom python
@@ -222,7 +223,7 @@ dispatcher.utter_message(template="utter_greet", my_variable="my text")
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="variations"></a>
 
-## Response Variations
+### Response Variations
 
 If you want to randomly vary the response sent to the user, you can list
 multiple **response variations** and Rasa will randomly pick one of them, e.g.:

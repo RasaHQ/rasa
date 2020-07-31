@@ -1,8 +1,10 @@
 ---
-id: tracker
-sidebar_label: Tracker
-title: Tracker
+id: tracker-dispatcher
+sidebar_label: Tracker & Dispatcher
+title: Tracker & Dispatcher
 ---
+
+## Tracker
 
 The `rasa_sdk.Tracker` lets you access the bot’s memory in your custom
 actions. You can get information about past events and the current state of the
@@ -24,10 +26,11 @@ The following are available as attributes of a `Tracker` object:
 
 * `latest_action_name` - The name of the last action the bot executed.
 
+### Tracker Methods
+
 The available methods from the `Tracker` are:
 
-
-#### Tracker.current_state
+#### `Tracker.current_state`
 Tracker.current_state**:
 Return the current tracker state as an object.
 
@@ -38,7 +41,7 @@ Return the current tracker state as an object.
 
 
 
-#### Tracker.is_paused
+#### `Tracker.is_paused`
 Tracker.is_paused**:
 State whether the tracker is currently paused.
 
@@ -49,7 +52,7 @@ State whether the tracker is currently paused.
 
 
 
-#### Tracker.get_latest_entity_values
+#### `Tracker.get_latest_entity_values`
 Tracker.get_latest_entity_valuesentity_type, entity_role=None, entity_group=None**:
 Get entity values found for the passed entity type and optional role and
 group in latest message.
@@ -81,7 +84,7 @@ If no entity is found None is the default result.
 
 
 
-#### Tracker.get_latest_input_channel
+#### `Tracker.get_latest_input_channel`
 Tracker.get_latest_input_channel**:
 Get the name of the input_channel of the latest UserUttered event
 
@@ -92,7 +95,7 @@ Get the name of the input_channel of the latest UserUttered event
 
 
 
-#### Tracker.events_after_latest_restart
+#### `Tracker.events_after_latest_restart`
 Tracker.events_after_latest_restart**:
 Return a list of events after the most recent restart.
 
@@ -103,7 +106,7 @@ Return a list of events after the most recent restart.
 
 
 
-#### Tracker.get_slot
+#### `Tracker.get_slot`
 Tracker.get_slotkey**:
 Retrieves the value of a slot.
 
@@ -112,3 +115,18 @@ Retrieves the value of a slot.
 
   `Optional`[`Any`]
 
+
+
+## Dispatcher
+
+Details of the `dispatcher.utter_message()` method:
+
+
+#### CollectingDispatcher.utter_message
+CollectingDispatcher.utter_messagetext=None, image=None, json_message=None, template=None, attachment=None, buttons=None, elements=None, \*\*kwargs**:
+“Send a text to the output channel
+
+
+* **Return type**
+
+  `None`

@@ -107,3 +107,10 @@ The endpoint then needs to respond with the generated response:
 ```
 
 Rasa will then use this response and sent it back to the user.
+
+:::note
+If you use an external NLG service, you don’t need to specify the
+responses in the domain, but you still need to add the utterance names
+to the actions list of the domain.
+
+:::

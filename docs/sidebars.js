@@ -140,6 +140,7 @@ module.exports = {
       label: 'Rasa SDK',
       collapsed: false,
       items: [
+        'running-action-server',
         {
           type: 'category',
           label: 'Custom Actions',
@@ -148,15 +149,8 @@ module.exports = {
             'knowledge-bases',
           ],
         },
-        'tracker',
+        'tracker-dispatcher',
         'events',
-        {
-          type: 'category',
-          label: 'Reference',
-          items: [
-            'action-server',
-          ],
-        },
       ],
     },
     {
@@ -177,13 +171,6 @@ module.exports = {
           ],
         },
       ],
-    },
-    {
-      type: 'category',
-      label: 'Old Content',
-      items: [
-        'rasa-sdk',
-        ]
     },
   ],
 };
