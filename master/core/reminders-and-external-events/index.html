@@ -449,17 +449,14 @@ For example:</p>
 
         <span class="n">conversation_id</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">sender_id</span>
 
+        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The ID of this conversation is &#39;</span><span class="si">{</span><span class="n">conversation_id</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
         <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The ID of this conversation is: &quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">conversation_id</span><span class="si">}</span><span class="s2">.&quot;</span>
-        <span class="p">)</span>
-
-        <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Trigger an intent with &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Trigger an intent with: </span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="sa">f</span><span class="s1">&#39;curl -H &quot;Content-Type: application/json&quot; &#39;</span>
             <span class="sa">f</span><span class="s1">&#39;-X POST -d </span><span class="se">\&#39;{{</span><span class="s1">&quot;name&quot;: &quot;EXTERNAL_dry_plant&quot;, &#39;</span>
             <span class="sa">f</span><span class="s1">&#39;&quot;entities&quot;: </span><span class="se">{{</span><span class="s1">&quot;plant&quot;: &quot;Orchid&quot;</span><span class="se">}}}}\&#39;</span><span class="s1"> &#39;</span>
-            <span class="sa">f</span><span class="s2">&quot;http://localhost:5005/conversations/</span><span class="si">{</span><span class="n">conversation_id</span><span class="si">}</span><span class="s2">/&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;trigger_intent&quot;</span>
+            <span class="sa">f</span><span class="s1">&#39;&quot;http://localhost:5005/conversations/</span><span class="si">{</span><span class="n">conversation_id</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;/trigger_intent?output_channel=latest&quot;&#39;</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="p">[]</span>
