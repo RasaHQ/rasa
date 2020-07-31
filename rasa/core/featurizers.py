@@ -58,8 +58,7 @@ class SingleStateFeaturizer:
         if action is None:
             return -1
 
-        y = domain.index_for_action(action)
-        return y
+        return domain.index_for_action(action)
 
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
         """Create matrix with all actions from domain encoded in rows."""
@@ -473,13 +472,12 @@ class TrackerFeaturizer:
     def _unfreeze_states(
         self, states: deque
     ) -> Dict[Text, Dict[Text, Union[Text, Tuple]]]:
-        states = [dict(state) for state in states]
         states = [
             {
                 key: dict(state[key]) if not key == SLOTS else tuple(state[key])
                 for key in state.keys()
             }
-            for state in states
+            for state in dict(states)
         ]
         return states
 
@@ -810,9 +808,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         If the slice is at the array borders, padding will be added to ensure
         the slice length.
         """
-        if slice_length is None:
-            return states
-
         slice_end = len(states)
         if slice_length == None:
             slice_start = 0
