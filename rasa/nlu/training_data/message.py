@@ -33,7 +33,7 @@ class Message:
     ) -> None:
         self.time = time
         self.data = data if data else {}
-        self.data = self.data.update({TEXT: text}) if text else self.data
+        self.data.update({TEXT: text}) if text else self.data
         self.features = features if features else []
 
         self.data.update(**kwargs)
