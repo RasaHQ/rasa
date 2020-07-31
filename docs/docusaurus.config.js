@@ -19,8 +19,6 @@ module.exports = {
   favicon: 'img/favicon.ico',
   organizationName: 'RasaHQ',
   projectName: 'rasa',
-  // FIXME: remove in alpha.60, https://github.com/facebook/docusaurus/issues/3136
-  onBrokenLinks: 'log',
   themeConfig: {
     navbar: {
       title: 'Rasa Open Source',

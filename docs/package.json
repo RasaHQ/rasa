@@ -14,8 +14,8 @@
     "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-alpha.59",
-    "@docusaurus/preset-classic": "^2.0.0-alpha.59",
+    "@docusaurus/core": "^2.0.0-alpha.60",
+    "@docusaurus/preset-classic": "^2.0.0-alpha.60",
     "classnames": "^2.2.6",
     "fs-extra": "^9.0.1",
     "globby": "^10.0.1",
