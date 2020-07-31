@@ -228,11 +228,11 @@ def test_train_test_split_with_random_seed(filepaths):
 
     td_train_1, td_test_1 = td.train_test_split(train_frac=0.8, random_seed=1)
     td_train_2, td_test_2 = td.train_test_split(train_frac=0.8, random_seed=1)
-    train_1_intent_examples = [e.text for e in td_train_1.intent_examples]
-    train_2_intent_examples = [e.text for e in td_train_2.intent_examples]
+    train_1_intent_examples = [e.get(TEXT) for e in td_train_1.intent_examples]
+    train_2_intent_examples = [e.get(TEXT) for e in td_train_2.intent_examples]
 
-    test_1_intent_examples = [e.text for e in td_test_1.intent_examples]
-    test_2_intent_examples = [e.text for e in td_test_2.intent_examples]
+    test_1_intent_examples = [e.get(TEXT) for e in td_test_1.intent_examples]
+    test_2_intent_examples = [e.get(TEXT) for e in td_test_2.intent_examples]
 
     assert train_1_intent_examples == train_2_intent_examples
     assert test_1_intent_examples == test_2_intent_examples
@@ -298,7 +298,9 @@ def test_repeated_entities(tmp_path):
     entities = example.get("entities")
     assert len(entities) == 1
     tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    start, end = MitieEntityExtractor.find_entity(
+        entities[0], example.get(TEXT), tokens
+    )
     assert start == 9
     assert end == 10
 
@@ -331,7 +333,9 @@ def test_multiword_entities(tmp_path):
     entities = example.get("entities")
     assert len(entities) == 1
     tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    start, end = MitieEntityExtractor.find_entity(
+        entities[0], example.get(TEXT), tokens
+    )
     assert start == 4
     assert end == 7
 

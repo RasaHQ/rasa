@@ -101,7 +101,7 @@ class EntityExtractor(Component):
             data[ENTITIES] = entities
             filtered.append(
                 Message(
-                    text=message.text,
+                    text=message.get(TEXT),
                     data=data,
                     output_properties=message.output_properties,
                     time=message.time,
@@ -309,7 +309,7 @@ class EntityExtractor(Component):
                     or entity_end not in token_end_positions
                 ):
                     common_utils.raise_warning(
-                        f"Misaligned entity annotation in message '{example.text}' "
+                        f"Misaligned entity annotation in message '{example.get(TEXT)}' "
                         f"with intent '{example.get(INTENT)}'. Make sure the start and "
                         f"end values of entities in the training data match the token "
                         f"boundaries (e.g. entities don't include trailing whitespaces "

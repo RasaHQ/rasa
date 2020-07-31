@@ -32,6 +32,7 @@ from rasa.core.constants import (
     REQUESTED_SLOT,
     UTTER_PREFIX,
 )
+from rasa.nlu.constants import TEXT
 from rasa.core.domain import Domain
 import rasa.core.events
 from rasa.core.events import (
@@ -793,7 +794,7 @@ def _filter_messages(msgs: List[Message]) -> List[Message]:
 
     filtered_messages = []
     for msg in msgs:
-        if not msg.text.startswith(INTENT_MESSAGE_PREFIX):
+        if not msg.get(TEXT).startswith(INTENT_MESSAGE_PREFIX):
             filtered_messages.append(msg)
     return filtered_messages
 

@@ -7,7 +7,7 @@ from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, UserUttered, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
-from rasa.nlu.constants import ACTION_NAME, INTENT_NAME, ACTION_TEXT
+from rasa.nlu.constants import ACTION_NAME, INTENT_NAME, ACTION_TEXT, TEXT
 from rasa.nlu.training_data import TrainingData, Message
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
@@ -374,12 +374,12 @@ def _message_from_conversation_event(event: Event) -> Optional[Message]:
 
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
-    return Message(event.text, data={INTENT_NAME: event.intent_name})
+    return Message(data={INTENT_NAME: event.intent_name, TEXT: event.text})
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
     return Message(
-        "", data={ACTION_NAME: event.action_name, ACTION_TEXT: event.e2e_text or "",},
+        data={ACTION_NAME: event.action_name, ACTION_TEXT: event.e2e_text or "",},
     )
 
 
@@ -388,7 +388,7 @@ def _additional_training_data_from_default_actions() -> TrainingData:
     from rasa.core.actions import action
 
     additional_messages_from_default_actions = [
-        Message("", data={ACTION_NAME: action_name})
+        Message(data={ACTION_NAME: action_name})
         for action_name in action.default_action_names()
     ]
 
