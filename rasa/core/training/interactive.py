@@ -243,7 +243,7 @@ def format_bot_output(message: BotUttered) -> Text:
     """Format a bot response to be displayed in the history table."""
 
     # First, add text to output
-    output = message.get(TEXT) or ""
+    output = message.text or ""
 
     # Then, append all additional items
     data = message.data or {}
