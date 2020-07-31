@@ -279,6 +279,7 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), nlu_data, TrainingData()
         )
 
+
 class E2EImporter(TrainingDataImporter):
     """Importer which
     - enhances the NLU training data with actions / user messages from the stories.
@@ -380,6 +381,7 @@ def _messages_from_action(event: ActionExecuted) -> Message:
     return Message(
         "", data={ACTION_NAME: event.action_name, ACTION_TEXT: event.e2e_text or "",},
     )
+
 
 def _additional_training_data_from_default_actions() -> TrainingData:
     from rasa.nlu.training_data import Message

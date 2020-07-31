@@ -503,5 +503,3 @@ def test_count_vector_featurizer_process_by_attribute(
     else:
         assert action_name_seq_vecs is None
         assert action_name_sen_vecs is None
-
-
