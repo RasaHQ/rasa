@@ -4,27 +4,6 @@ sidebar_label: Configuring the HTTP API
 title: Configuring the HTTP API
 ---
 
-## Using Rasa’s HTTP API
-
-You can run a simple HTTP server that handles requests using your
-trained Rasa model with:
-
-```bash
-rasa run -m models --enable-api --log-file out.log
-```
-
-All the endpoints this API exposes are documented in [HTTP API](../api/http-api).
-
-The different parameters are:
-
-* `-m`: the path to the folder containing your Rasa model,
-
-* `--enable-api`: enable this additional API, and
-
-* `--log-file`: the path to the log file.
-
-
-
 :::caution
 Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
 by enabling an authentication method: [Security Considerations](./configuring-http-api#server-security).

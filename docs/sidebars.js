@@ -183,7 +183,6 @@ module.exports = {
       label: 'Old Content',
       items: [
         'configuring-http-api',
-        'interactive-learning',
         'rasa-sdk',
         ]
     },
