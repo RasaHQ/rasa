@@ -133,7 +133,9 @@ async def test_train_persist_load_with_different_settings_non_windows(
         {"name": "ConveRTFeaturizer"},
         {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
     ]
-    await _train_persist_load_with_different_settings(pipeline, component_builder, tmpdir)
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir
+    )
 
 
 async def test_train_persist_load_with_different_settings(component_builder, tmpdir):
@@ -142,7 +144,9 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
         {"name": "CountVectorsFeaturizer"},
         {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
     ]
-    await _train_persist_load_with_different_settings(pipeline, component_builder, tmpdir)
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir
+    )
 
 
 async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
