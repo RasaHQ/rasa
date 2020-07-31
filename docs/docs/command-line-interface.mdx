@@ -100,6 +100,14 @@ train a new Rasa model with the data located in `data/` if no other directory wa
 `--data` flag. After training the initial model, the interactive learning session starts.
 Training will be skipped if the training data and config haven’t changed.
 
+During the interactive learning, Rasa will plot the current conversation
+and a few similar conversations from the training data to help you
+keep track of where you are. You can view the visualization at 
+[http://localhost:5005/visualization.html](http://localhost:5005/visualization.html)
+as soon as you’ve started interactive learning.
+This plotting can take some time; to skip the visualization, run `rasa interactive --skip-visualization`.
+
+
 The full list of arguments that can be set for `rasa interactive` is:
 
 ```text [rasa interactive --help]

@@ -81,7 +81,7 @@ module.exports = {
       collapsed: false,
       items: [
         'stories',
-        'domains',
+        'domain',
         {
           type: 'category',
           label: 'Policies',
