@@ -56,37 +56,43 @@ module.exports = {
     },
     {
       type: 'category',
-      label: 'NLU',
+      label: 'Rasa Open Source',
       collapsed: false,
       items: [
-        'training-data-format',
         {
           type: 'category',
-          label: 'Components',
+          label: 'Training Data',
           items: [
-            'components/language-models',
-            'components/tokenizers',
-            'components/featurizers',
-            'components/intent-classifiers',
-            'components/entity-extractors',
-            'components/selectors',
-            'components/custom-nlu-components',
+            'training-data-format',
+            'stories',
           ],
         },
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Dialogue Management',
-      collapsed: false,
-      items: [
-        'stories',
         'domain',
         {
           type: 'category',
-          label: 'Policies',
+          label: 'Config',
           items: [
-            'policies',
+            {
+              type: 'category',
+              label: 'Pipeline Components',
+              items: [
+                'components/language-models',
+                'components/tokenizers',
+                'components/featurizers',
+                'components/intent-classifiers',
+                'components/entity-extractors',
+                'components/selectors',
+                'components/custom-nlu-components',
+              ],
+            },
+            {
+              type: 'category',
+              label: 'Policies',
+              items: [
+                'policies',
+              ],
+            },
+            'training-data-importers',
           ],
         },
         {
@@ -182,7 +188,6 @@ module.exports = {
         'slots',
         'interactive-learning',
         'rasa-sdk',
-        'training-data-importers',
         ]
     },
   ],
