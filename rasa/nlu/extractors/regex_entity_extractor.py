@@ -86,7 +86,7 @@ class RegexEntityExtractor(EntityExtractor):
             flags = re.IGNORECASE
 
         for pattern in self.patterns:
-            matches = re.finditer(pattern["pattern"], message.text, flags=flags)
+            matches = re.finditer(pattern["pattern"], message.get(TEXT), flags=flags)
             matches = list(matches)
 
             for match in matches:
@@ -97,7 +97,7 @@ class RegexEntityExtractor(EntityExtractor):
                         ENTITY_ATTRIBUTE_TYPE: pattern["name"],
                         ENTITY_ATTRIBUTE_START: start_index,
                         ENTITY_ATTRIBUTE_END: end_index,
-                        ENTITY_ATTRIBUTE_VALUE: message.text[start_index:end_index],
+                        ENTITY_ATTRIBUTE_VALUE: message.get(TEXT)[start_index:end_index],
                     }
                 )
 

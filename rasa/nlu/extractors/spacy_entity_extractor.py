@@ -30,7 +30,7 @@ class SpacyEntityExtractor(EntityExtractor):
         # can't use the existing doc here (spacy_doc on the message)
         # because tokens are lower cased which is bad for NER
         spacy_nlp = kwargs.get("spacy_nlp", None)
-        doc = spacy_nlp(message.text)
+        doc = spacy_nlp(message.get(TEXT))
         all_extracted = self.add_extractor_name(self.extract_entities(doc))
         dimensions = self.component_config["dimensions"]
         extracted = SpacyEntityExtractor.filter_irrelevant_entities(

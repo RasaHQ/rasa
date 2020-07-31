@@ -1303,7 +1303,7 @@ def get_eval_data(
     should_eval_entities = is_entity_extractor_present(interpreter)
 
     for example in tqdm(test_data.training_examples):
-        result = interpreter.parse(example.text, only_output_properties=False)
+        result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
             intent_prediction = result.get(INTENT, {}) or {}

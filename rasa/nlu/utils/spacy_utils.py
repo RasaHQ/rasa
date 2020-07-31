@@ -227,9 +227,9 @@ class SpacyNLP(Component):
                     # in preprocess method
                     example.set(SPACY_DOCS[attribute], example_attribute_doc)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
 
-        message.set(SPACY_DOCS[TEXT], self.doc_for_text(message.text))
+        message.set(SPACY_DOCS[attribute], self.doc_for_text(message.get(attribute)))
 
     @classmethod
     def load(

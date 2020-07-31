@@ -126,7 +126,7 @@ class RegexFeaturizer(SparseFeaturizer):
         sentence_features = np.zeros([1, len(self.known_patterns)])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
-            matches = re.finditer(pattern["pattern"], message.text, flags=flags)
+            matches = re.finditer(pattern["pattern"], message.get(TEXT), flags=flags)
             matches = list(matches)
 
             for token_index, t in enumerate(tokens):
