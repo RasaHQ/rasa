@@ -504,7 +504,6 @@ class SlotSet(Event):
         d = super().as_dict()
         d.update({"name": self.key, "value": self.value})
         return d
-        
 
     @classmethod
     def _from_parameters(cls, parameters) -> "SlotSet":

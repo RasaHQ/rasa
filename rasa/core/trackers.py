@@ -201,7 +201,14 @@ class DialogueStateTracker:
         return None
 
     def _freeze_current_state(self, state) -> frozenset:
-        frozen_state = frozenset({key: frozenset(state[key].items()) if isinstance(state[key], Dict) else frozenset(state[key])  for key in state.keys()}.items())
+        frozen_state = frozenset(
+            {
+                key: frozenset(state[key].items())
+                if isinstance(state[key], Dict)
+                else frozenset(state[key])
+                for key in state.keys()
+            }.items()
+        )
         return frozen_state
 
     def past_states(self, domain) -> deque:

@@ -32,7 +32,10 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
     SLOT_LISTED_ITEMS,
-    USER, PREVIOUS_ACTION, FORM, SLOTS
+    USER,
+    PREVIOUS_ACTION,
+    FORM,
+    SLOTS,
 )
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
@@ -679,7 +682,12 @@ class Domain:
         state_dict[USER] = latest_message.as_dict_core()
 
         if latest_message.intent_name or latest_message.text:
-            entities = tuple([entity_name for entity_name in self._get_featurized_entities(latest_message)])
+            entities = tuple(
+                [
+                    entity_name
+                    for entity_name in self._get_featurized_entities(latest_message)
+                ]
+            )
             state_dict[USER]["entities"] = entities
 
         # Set all set slots with the featurization of the stored value
@@ -721,7 +729,9 @@ class Domain:
         latest_action = tracker.latest_action
 
         if latest_action:
-            prev_action_name = latest_action.get("action_name") or latest_action.get("action_text")
+            prev_action_name = latest_action.get("action_name") or latest_action.get(
+                "action_text"
+            )
             if prev_action_name in self.input_state_map:
                 return {PREVIOUS_ACTION: latest_action}
             else:
