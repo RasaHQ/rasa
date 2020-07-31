@@ -242,7 +242,7 @@ def format_bot_output(message: BotUttered) -> Text:
     """Format a bot response to be displayed in the history table."""
 
     # First, add text to output
-    output = message.text or ""
+    output = message.get(TEXT) or ""
 
     # Then, append all additional items
     data = message.data or {}
@@ -793,7 +793,7 @@ def _filter_messages(msgs: List[Message]) -> List[Message]:
 
     filtered_messages = []
     for msg in msgs:
-        if not msg.text.startswith(INTENT_MESSAGE_PREFIX):
+        if not msg.get(TEXT).startswith(INTENT_MESSAGE_PREFIX):
             filtered_messages.append(msg)
     return filtered_messages
 
