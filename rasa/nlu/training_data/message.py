@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
 class Message:
     def __init__(
         self,
-        text: Optional[Text],
+        text: Optional[Text] = None,
         data: Optional[Dict[Text, Any]] = None,
         output_properties: Optional[Set] = None,
         time: Optional[Text] = None,
@@ -108,7 +108,7 @@ class Message:
                 data[RESPONSE_KEY_ATTRIBUTE] = response_key
         if entities:
             data[ENTITIES] = entities
-        return cls(data.update({TEXT: text}), **kwargs)
+        return cls(text, data, **kwargs)
 
     def get_combined_intent_response_key(self) -> Text:
         """Get intent as it appears in training data"""

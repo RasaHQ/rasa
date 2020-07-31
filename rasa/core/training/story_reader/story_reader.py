@@ -7,6 +7,7 @@ from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.training.story_reader.story_step_builder import StoryStepBuilder
 from rasa.core.training.structures import StoryStep
+from rasa.nlu.constants import TEXT
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +58,12 @@ class StoryReader:
             from rasa.nlu.training_data.formats.markdown import MarkdownReader
 
             action_as_message = MarkdownReader().parse_e2e_training_example(event_name)
-            parameters["name"] = action_as_message.text
+            parameters["name"] = action_as_message.get(TEXT)
 
             if is_e2e:
                 # TODO: This is somewhat hacky and needs be cleaned up in YAML
                 #  implementation
-                parameters["e2e_text"] = action_as_message.text
+                parameters["e2e_text"] = action_as_message.get(TEXT)
                 parameters["name"] = ""
 
         parsed_events = Event.from_story_string(
