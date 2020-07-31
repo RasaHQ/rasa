@@ -237,17 +237,14 @@ class TEDPolicy(Policy):
 
     def _features_for_full_dialog_featurizer(self, features, label_ids) -> np.ndarray:
         return np.stack(
-                    [
-                        np.stack(
-                            [features[label_idx] for label_idx in seq_label_ids]
-                        )
-                        for seq_label_ids in label_ids
-                    ]
-                )
+            [
+                np.stack([features[label_idx] for label_idx in seq_label_ids])
+                for seq_label_ids in label_ids
+            ]
+        )
 
     def _features_for_max_history_featurizer(self, features, label_ids) -> np.ndarray:
         return np.stack([features[label_idx] for label_idx in label_ids])
-
 
     # noinspection PyPep8Naming
     def _label_features_for_Y(self, label_ids: np.ndarray) -> np.ndarray:
@@ -260,15 +257,21 @@ class TEDPolicy(Policy):
         """
 
         label_features = self._label_data.get(LABEL_FEATURES)
-        label_features_action_names = self._label_data.get(f"{LABEL_FEATURES}_{ACTION_NAME}")
+        label_features_action_names = self._label_data.get(
+            f"{LABEL_FEATURES}_{ACTION_NAME}"
+        )
 
         is_full_dialogue_featurizer_used = len(label_ids.shape) == 2
-        
+
         if label_features_action_names:
             if is_full_dialogue_featurizer_used:
-                Y_action_name = self._features_for_full_dialog_featurizer(label_features_action_names[0], label_ids)
+                Y_action_name = self._features_for_full_dialog_featurizer(
+                    label_features_action_names[0], label_ids
+                )
             else:
-                Y_action_name = self._features_for_max_history_featurizer(label_features_action_names[0], label_ids)
+                Y_action_name = self._features_for_max_history_featurizer(
+                    label_features_action_names[0], label_ids
+                )
         else:
             Y_action_name = np.array([])
 
@@ -276,24 +279,40 @@ class TEDPolicy(Policy):
             # we have both sparse and dense features for action text
             if len(label_features) == 2:
                 if is_full_dialogue_featurizer_used:
-                    Y_sparse = self._features_for_full_dialog_featurizer(label_features[0], label_ids)
-                    Y_dense = self._features_for_full_dialog_featurizer(label_features[1], label_ids)
+                    Y_sparse = self._features_for_full_dialog_featurizer(
+                        label_features[0], label_ids
+                    )
+                    Y_dense = self._features_for_full_dialog_featurizer(
+                        label_features[1], label_ids
+                    )
                 else:
-                    Y_sparse = self._features_for_max_history_featurizer(label_features[0], label_ids)
-                    Y_dense = self._features_for_max_history_featurizer(label_features[1], label_ids)
+                    Y_sparse = self._features_for_max_history_featurizer(
+                        label_features[0], label_ids
+                    )
+                    Y_dense = self._features_for_max_history_featurizer(
+                        label_features[1], label_ids
+                    )
             else:
-            # we only have sparse or dense features for action text 
+                # we only have sparse or dense features for action text
                 if isinstance(label_features[0][0], np.ndarray):
                     Y_sparse = np.array([])
                     if is_full_dialogue_featurizer_used:
-                        Y_dense = self._features_for_full_dialog_featurizer(label_features[0], label_ids)
+                        Y_dense = self._features_for_full_dialog_featurizer(
+                            label_features[0], label_ids
+                        )
                     else:
-                        Y_dense = self._features_for_max_history_featurizer(label_features[0], label_ids)
+                        Y_dense = self._features_for_max_history_featurizer(
+                            label_features[0], label_ids
+                        )
                 else:
                     if is_full_dialogue_featurizer_used:
-                        Y_sparse = self._features_for_full_dialog_featurizer(label_features[0], label_ids)
+                        Y_sparse = self._features_for_full_dialog_featurizer(
+                            label_features[0], label_ids
+                        )
                     else:
-                        Y_sparse = self._features_for_max_history_featurizer(label_features[0], label_ids)
+                        Y_sparse = self._features_for_max_history_featurizer(
+                            label_features[0], label_ids
+                        )
                     Y_dense = np.array([])
 
         else:
@@ -333,12 +352,17 @@ class TEDPolicy(Policy):
         return text_state_sparse, text_state_dense, name_state, if_text_state
 
     def _process_entities(self, features: np.ndarray):
-        state_entities = np.array([entities for entities in features if not entities is None])
+        state_entities = np.array(
+            [entities for entities in features if not entities is None]
+        )
         return state_entities
 
     # noinspection PyPep8Naming
     def _create_model_data(
-        self, data_X: np.ndarray, dialog_lengths: Optional[np.ndarray] = None, data_Y: Optional[np.ndarray] = None
+        self,
+        data_X: np.ndarray,
+        dialog_lengths: Optional[np.ndarray] = None,
+        data_Y: Optional[np.ndarray] = None,
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData."""
 
@@ -353,7 +377,7 @@ class TEDPolicy(Policy):
             label_ids = np.expand_dims(label_ids, -1)
 
         model_data = RasaModelData(label_key=LABEL_IDS)
-        
+
         X_user_sparse = []
         X_user_dense = []
         X_intent = []
@@ -365,8 +389,18 @@ class TEDPolicy(Policy):
         X_entities = []
 
         for dial in data_X:
-            state_user_sparse, state_user_dense, state_intent, state_user_if_text = self._process_per_dialog_features(dial[:, :4])
-            state_action_sparse, state_action_dense, state_action_name, state_action_if_text = self._process_per_dialog_features(dial[:, 4:8])
+            (
+                state_user_sparse,
+                state_user_dense,
+                state_intent,
+                state_user_if_text,
+            ) = self._process_per_dialog_features(dial[:, :4])
+            (
+                state_action_sparse,
+                state_action_dense,
+                state_action_name,
+                state_action_if_text,
+            ) = self._process_per_dialog_features(dial[:, 4:8])
             state_entites = self._process_entities(dial[:, 8])
 
             X_user_sparse.append(state_user_sparse)
@@ -379,14 +413,26 @@ class TEDPolicy(Policy):
             X_action_if_text.append(state_action_if_text)
             X_entities.append(state_entites)
 
-        model_data.add_features(f"{DIALOGUE_FEATURES}_user", [np.array(X_user_sparse), np.array(X_user_dense)])
+        model_data.add_features(
+            f"{DIALOGUE_FEATURES}_user",
+            [np.array(X_user_sparse), np.array(X_user_dense)],
+        )
         model_data.add_features(f"{DIALOGUE_FEATURES}_entities", [np.array(X_entities)])
         model_data.add_features(f"{DIALOGUE_FEATURES}_user_name", [np.array(X_intent)])
-        model_data.add_features(f"{DIALOGUE_FEATURES}_action", [np.array(X_action_sparse), np.array(X_action_dense)])
-        model_data.add_features(f"{DIALOGUE_FEATURES}_action_name", [np.array(X_action_name)])
-        model_data.add_features(f"{DIALOGUE_FEATURES}_action_if_text", [np.array(X_action_if_text)])
-        model_data.add_features(f"{DIALOGUE_FEATURES}_user_if_text", [np.array(X_user_if_text)])
-    
+        model_data.add_features(
+            f"{DIALOGUE_FEATURES}_action",
+            [np.array(X_action_sparse), np.array(X_action_dense)],
+        )
+        model_data.add_features(
+            f"{DIALOGUE_FEATURES}_action_name", [np.array(X_action_name)]
+        )
+        model_data.add_features(
+            f"{DIALOGUE_FEATURES}_action_if_text", [np.array(X_action_if_text)]
+        )
+        model_data.add_features(
+            f"{DIALOGUE_FEATURES}_user_if_text", [np.array(X_user_if_text)]
+        )
+
         model_data.add_features(LABEL_FEATURES, [Y_sparse, Y_dense])
         model_data.add_features(f"{LABEL_FEATURES}_action_name", [Y_action_name])
         model_data.add_features(LABEL_IDS, [label_ids])
@@ -394,8 +440,6 @@ class TEDPolicy(Policy):
         if dialog_lengths is not None:
             model_data.add_features("dialog_lengths", [dialog_lengths])
         return model_data
-
-
 
         return model_data
 
@@ -418,14 +462,17 @@ class TEDPolicy(Policy):
 
         return [sparse_features_text, dense_features_text, features_action_name]
 
-    def _create_label_data(self, domain: Domain, interpreter: NaturalLanguageInterpreter) -> RasaModelData:
+    def _create_label_data(
+        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+    ) -> RasaModelData:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        labels_idx_examples = state_featurizer.create_encoded_all_actions(domain, interpreter)
+        labels_idx_examples = state_featurizer.create_encoded_all_actions(
+            domain, interpreter
+        )
         labels_idx_examples = sorted(labels_idx_examples, key=lambda x: x[0])
         labels_example = [example for (_, example) in labels_idx_examples]
         label_features = self._collect_label_features(labels_example)
-
 
         label_data = RasaModelData()
         label_data.add_features(LABEL_FEATURES, label_features[:2])
@@ -445,12 +492,16 @@ class TEDPolicy(Policy):
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
+        training_data = self.featurize_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
 
         self._label_data = self._create_label_data(domain, interpreter)
 
         # extract actual training data to feed to model
-        model_data = self._create_model_data(training_data.X, np.array(training_data.true_length), training_data.y)
+        model_data = self._create_model_data(
+            training_data.X, np.array(training_data.true_length), training_data.y
+        )
         if model_data.is_empty():
             logger.error(
                 f"Can not train '{self.__class__.__name__}'. No data was provided. "
@@ -652,18 +703,27 @@ class TED(RasaModel):
         self._prepare_layers()
 
     def _check_data(self) -> None:
-        if f"{DIALOGUE_FEATURES}_user" not in self.data_signature and f"{DIALOGUE_FEATURES}_user_name" not in self.data_signature:
+        if (
+            f"{DIALOGUE_FEATURES}_user" not in self.data_signature
+            and f"{DIALOGUE_FEATURES}_user_name" not in self.data_signature
+        ):
             raise ValueError(
                 f"No user features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
 
-        if f"{DIALOGUE_FEATURES}_action" not in self.data_signature and f"{DIALOGUE_FEATURES}_action_name" not in self.data_signature:
+        if (
+            f"{DIALOGUE_FEATURES}_action" not in self.data_signature
+            and f"{DIALOGUE_FEATURES}_action_name" not in self.data_signature
+        ):
             raise ValueError(
                 f"No action features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
-        if LABEL_FEATURES not in self.data_signature and f"{LABEL_FEATURES}_action_name" not in self.data_signature:
+        if (
+            LABEL_FEATURES not in self.data_signature
+            and f"{LABEL_FEATURES}_action_name" not in self.data_signature
+        ):
             raise ValueError(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
@@ -712,7 +772,9 @@ class TED(RasaModel):
         )
 
         for feature_name in self.data_signature.keys():
-            if feature_name.startswith(DIALOGUE_FEATURES) or feature_name.startswith(LABEL_FEATURES):
+            if feature_name.startswith(DIALOGUE_FEATURES) or feature_name.startswith(
+                LABEL_FEATURES
+            ):
                 self._prepare_sparse_dense_layers(
                     self.data_signature[feature_name],
                     feature_name,
@@ -720,15 +782,16 @@ class TED(RasaModel):
                     100,
                 )
 
-            if feature_name.startswith(DIALOGUE_FEATURES) and not feature_name.endswith("if_text"):
+            if feature_name.startswith(DIALOGUE_FEATURES) and not feature_name.endswith(
+                "if_text"
+            ):
                 self._tf_layers[f"ffnn.{feature_name}"] = layers.Ffnn(
                     self.config[HIDDEN_LAYERS_SIZES][f"{DIALOGUE}_inputs"],
                     self.config[DROP_RATE_DIALOGUE],
                     self.config[REGULARIZATION_CONSTANT],
                     self.config[WEIGHT_SPARSITY],
                     layer_name_suffix=feature_name,
-                    )
-
+                )
 
         self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
@@ -797,7 +860,9 @@ class TED(RasaModel):
         all_labels = []
         for key in self.tf_label_data.keys():
             if key.startswith(LABEL_FEATURES):
-                all_labels.append(self._combine_sparse_dense_features(self.tf_label_data[key], key))
+                all_labels.append(
+                    self._combine_sparse_dense_features(self.tf_label_data[key], key)
+                )
 
         all_labels = tf.concat(all_labels, axis=-1)
         all_labels = tf.squeeze(all_labels, axis=1)
@@ -854,20 +919,30 @@ class TED(RasaModel):
         feats_to_combine = [f"{DIALOGUE_FEATURES}_user", f"{DIALOGUE_FEATURES}_action"]
         for feature in feats_to_combine:
             if not batch[feature] == []:
-                text_features = self._combine_sparse_dense_features(batch[feature], feature)
+                text_features = self._combine_sparse_dense_features(
+                    batch[feature], feature
+                )
                 text_features = self._tf_layers[f"ffnn.{feature}"](text_features)
-                mask = tf.cast(tf.math.equal(batch[f"{feature}_if_text"], 1), tf.float32)
+                mask = tf.cast(
+                    tf.math.equal(batch[f"{feature}_if_text"], 1), tf.float32
+                )
                 text_features = text_features * mask
             if not batch[f"{feature}_name"] == []:
-                name_features = self._combine_sparse_dense_features(batch[f"{feature}_name"], f"{feature}_name")
+                name_features = self._combine_sparse_dense_features(
+                    batch[f"{feature}_name"], f"{feature}_name"
+                )
                 name_features = self._tf_layers[f"ffnn.{feature}_name"](name_features)
-                mask = tf.cast(tf.math.equal(batch[f"{feature}_if_text"], -1), tf.float32)
+                mask = tf.cast(
+                    tf.math.equal(batch[f"{feature}_if_text"], -1), tf.float32
+                )
                 name_features = name_features * mask
-            
+
             if not text_features is None and not name_features is None:
                 batch_features.append(text_features + name_features)
             else:
-                batch_features.append(text_features if not text_features is None else name_features)
+                batch_features.append(
+                    text_features if not text_features is None else name_features
+                )
 
         if not batch[f"{DIALOGUE_FEATURES}_entities"] == []:
             batch_features.append(batch[f"{DIALOGUE_FEATURES}_entities"])

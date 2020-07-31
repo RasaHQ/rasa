@@ -254,4 +254,3 @@ def test_split_action_name(text: Text, expected_tokens: List[Text]):
     message.set(ACTION_NAME, text)
 
     assert [t.text for t in tk._split_name(message, ACTION_NAME)] == expected_tokens
-
