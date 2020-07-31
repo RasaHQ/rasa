@@ -3,3 +3,125 @@ id: generating-nlu-data
 sidebar_label: Generating NLU Data
 title: Generating NLU Data
 ---
+
+NLU is a component in Rasa Open-Source for performing intent classification, entity extraction, and response retrieval.
+
+NLU will take in a sentence such as "I am looking for a French restaurant in the center of town" and return structured data like:
+
+```json
+{
+  "intent" : "search_restaurant",
+  "entities" : {
+    "cuisine" : "French",
+    "location" : "center"
+  }
+}
+```
+
+Building NLU models is hard, and building ones that are production-ready is even harder. Here are some tips for designing your NLU training data and pipeline to get the most out of your bot.
+
+
+## Conversation-Driven Development for NLU
+
+Conversation-Driven Development (CDD) means letting real user conversations guide your development. For building a great NLU model, this means:
+
+
+### Gather real data (vs. generating synthetic data)
+When it comes to building out NLU training data, developers often rely on text generation tools to quickly increase the number of training examples. While this approach can be time-saving, it makes NLU models prone to overfit data that is not representative of things a real user would say.
+
+
+To avoid such a problem, it is always a good idea to collect as much real user data as possible to use as training data. Even though your bot will make mistakes initially, this process of training & evaluation on user data will enable your model to generalize much more effectively in real-world scenarios.
+
+### Share with test users early (vs. only trying it out yourself)
+
+In order to gather real data, you’re going to need real user messages. This means sharing your bot with test users outside the development team early on. See [these guidelines](./cdd) for more details.
+
+
+## Avoiding Intent Confusion
+
+Intents should be designed to be as distinct as possible so that the model is able to make predictions correctly
+
+
+Entities can be used to perform conditional logic for a given intent
+
+
+A common mistake developers make is creating separate intents when entities can be used as the differentiating factor.
+An example of this is when designing intents centered around the user providing information. A simple solution would be to create separate intents depending on what information is provided, e.g. inform_name, inform_address, inform_email, when all of these intents should actually be grouped as a single inform intent with several possible entity values.
+
+
+Extracted entity values can be used to affect the conversation flow using categorical slots:
+Code snippet:
+
+```story
+- inform
+    - slot{pet_type: "dog"}
+    - utter_dogs_are_cool
+
+- inform
+   - slot{pet_type: "cat"}
+   - utter_cats_are_cool_too
+```
+
+## Extracting Entities
+
+### Using Synonyms Wisely
+
+Adding synonyms to the training data is useful for mapping certain entity values to a single normalized entity
+
+Synonyms, however, are not meant for improving your model's entity recognition and has no effect on NLU performance
+
+
+A good use case for synonyms is when normalizing entities belonging to distinct groups. For example, in an assistant that asks users what insurance policies they're interested in, they might respond with "my truck," "a car," or "I drive a batmobile." It would be a good idea to map truck, car, and batmobile to the normalized value auto so that the processing logic will only need to account for a narrow set of possibilities (see [Entity Synonyms](./nlu/training-data-format/#entity-synonyms)).
+
+
+### Lookup Tables
+Lookup tables are lists of entities that get featurized at training time and passed into the NLU model itself.
+
+
+Lookup tables are not used to perform match-based entity recognition, but rather are supplied to the NLU model as training data. Examples of useful applications of lookup tables are flavors of ice cream, brands of bottled water, and even sock length styles (see [Lookup Tables](./nlu/training-data-format/#lookup-tables)).
+
+
+### Regexes
+
+Regexes are useful for performing entity extraction on structured patterns such as 5 digits in US zip codes. Regex patterns are used to generate features for the NLU model to learn, not as a method of direct entity matching (see [Regular Expression Features](./nlu/training-data-format/#regular-expression-features)).
+
+
+### Pre-trained Entity Extractors
+Common entities such as names, addresses, and cities require a large amount of training data for an NLU model to generalize effectively.
+
+
+When possible, take advantage of pre-trained entity extractors to reduce the effort of creating a large dataset.
+
+
+Rasa provides two great options for pre-trained extraction: SpacyEntityExtractor and DucklingEntityExtractor. Both have been pre-trained on a large corpus of data and can make your life a whole lot easier.
+
+
+## Handling Edge Cases
+
+### Misspellings
+
+Coming across misspellings is inevitable and your bot needs an effective way to handle this. Keep in mind that the goal is not to correct misspellings, but to correctly identify intents and entities. For this reason, while a spellchecker may seem like an obvious solution, adjusting your featurizers and training data is often sufficient to account for misspellings.
+Adding a character-level featurizer provides an effective defense against spelling errors by accounting for parts of words, instead of only whole words. You can add character level featurization to your pipeline by using the `char_wb` analyzer for the `CountVectorsFeaturizer`, for example:
+
+```yaml
+- name: CountVectorsFeaturizer
+  analyze: char_wb
+  min_ngram: 1
+  max_ngram: 4
+```
+
+In addition to character level featurization, you can add common misspellings to your training data.
+
+
+### Defining an Out-of-scope Intent
+
+It is always a good idea to define an out_of_scope intent in your bot to capture any user messages outside of your bot's domain. When an out_of_scope intent is identified, you can respond with messages such as "I'm not sure how to handle that, here are some things you can ask me.." to gracefully guide the user towards a supported skill.
+
+
+## Shipping Updates
+
+Treat your data like code. In the same way that you would never ship code updates without reviews, updates to your training data should be carefully reviewed because of the significant influence it can have on your model's performance.
+
+Use version control systems such as Github and Bitbucket to track changes to your data and rollback updates when necessary.
+
+Be sure to build tests for your NLU models to evaluate performance as training data and hyper-parameters change. Automate these tests in a CI pipeline such as Jenkins or Git Workflow to streamline your development process and ensure that only high-quality updates are shipped.
