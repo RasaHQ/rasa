@@ -102,6 +102,7 @@ follow one another. Update the rule below for running the form you defined above
        - intent: subscribe
        - action: newsletter_form
        - form: newsletter_form
+       - action: utter_subscribed
 
 
 5. Write some stories
@@ -131,6 +132,7 @@ the user goal you have chosen. You can include the steps from your form rule whe
        - intent: subscribe
        - action: newsletter_form
        - form: newsletter_form
+       - action: utter_subscribed
 
 :ref:`Read about best practices for writing stories <stories>`
 
