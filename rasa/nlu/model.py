@@ -12,8 +12,8 @@ from rasa.nlu.classifiers.classifier import (  # pytype: disable=pyi-error
     IntentClassifier,
 )
 from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
-from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.featurizers.featurizer import Featurizer  # pytype: disable=pyi-error
+from rasa.nlu.tokenizers.tokenizer import Tokenizer  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 from rasa.nlu.persistor import Persistor
