@@ -4,5 +4,5 @@
 [[redirects]]
   from = "/docs/rasa/next/*"
   to = "/:splat"
-  status = 200
+  status = 301
   force = true
