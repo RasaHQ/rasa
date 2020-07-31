@@ -12,7 +12,7 @@ import scipy.sparse
 import rasa.utils.io
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, Domain
+from rasa.core.domain import PREV_PREFIX, Domain, STATE
 from rasa.core.events import ActionExecuted, UserUttered, Form, SlotSet
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
@@ -52,7 +52,7 @@ class SingleStateFeaturizer:
         )
 
     @staticmethod
-    def action_as_index(action: Text, domain: Domain) -> np.ndarray:
+    def action_as_index(action: Text, domain: Domain) -> int:
         """Encode system action as one-hot vector."""
 
         if action is None:
@@ -469,24 +469,15 @@ class TrackerFeaturizer:
         self.state_featurizer = state_featurizer
         self.use_intent_probabilities = use_intent_probabilities
 
-    def _unfreeze_states(
-        self, states: deque
-    ) -> Dict[Text, Dict[Text, Union[Text, Tuple]]]:
-        states = [
-            {
-                key: dict(state[key]) if not key == SLOTS else tuple(state[key])
-                for key in state.keys()
-            }
-            for state in dict(states)
+    @staticmethod
+    def _unfreeze_states(states: deque,) -> List[STATE]:
+        return [
+            {key: dict(value) for key, value in dict(state).items()} for state in states
         ]
-        return states
 
     def _create_states(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        is_binary_training: bool = False,
-    ) -> List[Dict[Text, float]]:
+        self, tracker: DialogueStateTracker, domain: Domain,
+    ) -> List[STATE]:
         """Create states: a list of dictionaries.
 
         If use_intent_probabilities is False (default behaviour),
@@ -718,7 +709,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[Dict]], List[List[Text]]]:
+    ) -> Tuple[List[List[STATE]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions.
 
         Training data is padded up to the length of the longest dialogue with -1.
@@ -769,7 +760,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[Dict[Text, float]]]:
+    ) -> List[List[STATE]]:
         """Transforms list of trackers to lists of states for prediction."""
 
         trackers_as_states = [
@@ -786,8 +777,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the max_history with -1.
     """
 
-    MAX_HISTORY_DEFAULT = 5
-
     def __init__(
         self,
         state_featurizer: Optional[SingleStateFeaturizer] = None,
@@ -797,51 +786,41 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     ) -> None:
 
         super().__init__(state_featurizer, use_intent_probabilities)
-        self.max_history = max_history or self.MAX_HISTORY_DEFAULT
+        self.max_history = max_history
         self.remove_duplicates = remove_duplicates
 
     @staticmethod
     def slice_state_history(
-        states: List[Dict[Text, float]], slice_length: Optional[int]
-    ) -> List[Optional[Dict[Text, float]]]:
+        states: List[Dict[Text, Dict[Text, Union[Text, Tuple[float]]]]],
+        slice_length: Optional[int],
+    ) -> List[Dict[Text, Dict[Text, Union[Text, Tuple[float]]]]]:
         """Slices states from the trackers history.
         If the slice is at the array borders, padding will be added to ensure
         the slice length.
         """
         slice_end = len(states)
-        if slice_length == None:
+        if slice_length is None:
             slice_start = 0
         else:
             slice_start = max(0, slice_end - slice_length)
-        # noinspection PyTypeChecker
+
         state_features = states[slice_start:]
         return state_features
 
     @staticmethod
-    def freeze_state(state):
-        frozen_state = frozenset(
-            {
-                key: frozenset(state[key].items())
-                if isinstance(state[key], Dict)
-                else frozenset(state[key])
-                for key in state.keys()
-            }.items()
-        )
-        return frozen_state
-
-    @staticmethod
-    def _hash_example(states, action) -> int:
+    def _hash_example(
+        states: List[STATE], action: Text, tracker: DialogueStateTracker,
+    ) -> int:
         """Hash states for efficient deduplication."""
         frozen_states = tuple(
-            s if s is None else MaxHistoryTrackerFeaturizer.freeze_state(s)
-            for s in states
+            s if s is None else tracker.freeze_current_state(s) for s in states
         )
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[Optional[Dict[Text, float]]]], List[List[Text]]]:
+    ) -> Tuple[List[List[STATE]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions.
         Training data is padded up to the max_history with -1.
         """
@@ -860,7 +839,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         )
         pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
         for tracker in pbar:
-            states = self._create_states(tracker, domain, True)
+            states = self._create_states(tracker, domain)
 
             idx = 0
             for event in tracker.applied_events():
@@ -875,7 +854,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         if not sliced_states == [{}]:
                             if self.remove_duplicates:
                                 hashed = self._hash_example(
-                                    sliced_states, event.action_name
+                                    sliced_states, event.action_name, tracker
                                 )
 
                                 # only continue with tracker_states that created a
@@ -903,7 +882,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[Dict[Text, float]]]:
+    ) -> List[List[STATE]]:
         """Transforms list of trackers to lists of states for prediction."""
 
         trackers_as_states = [

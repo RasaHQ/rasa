@@ -36,6 +36,7 @@ from rasa.core.constants import (
     PREVIOUS_ACTION,
     FORM,
     SLOTS,
+    SHOULD_NOT_BE_SET,
 )
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
@@ -70,6 +71,7 @@ ALL_DOMAIN_KEYS = [
     KEY_RESPONSES,
 ]
 
+STATE = Dict[Text, Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]]
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -669,44 +671,28 @@ class Domain:
             + self.form_states
         )
 
-    def get_parsing_states(self, tracker: "DialogueStateTracker") -> Dict[Text, float]:
+    def _get_user_states(
+        self, tracker: "DialogueStateTracker"
+    ) -> Dict[Text, Dict[Text, Union[Text, Tuple[Text]]]]:
         state_dict = {}
 
         # Set all found entities with the state value 1.0, unless they should
         # be ignored for the current intent
         latest_message = tracker.latest_message
 
-        if not latest_message.text and not latest_message.intent_name:
+        if not latest_message or latest_message == UserUttered.empty():
             return state_dict
 
         state_dict[USER] = latest_message.as_dict_core()
 
-        if latest_message.intent_name or latest_message.text:
-            entities = tuple(
-                [
-                    entity_name
-                    for entity_name in self._get_featurized_entities(latest_message)
-                ]
-            )
-            state_dict[USER]["entities"] = entities
-
-        # Set all set slots with the featurization of the stored value
-        slots = []
-        for key, slot in tracker.slots.items():
-            if slot is not None:
-                if slot.value == "None" and slot.as_feature():
-                    # TODO: this is a hack to make a rule know
-                    #  that slot or form should not be set
-                    #  but only if the slot is featurized
-                    slot_id = f"{key}_None"
-                    slots.append(slot_id)
-                else:
-                    for i, slot_value in enumerate(slot.as_feature()):
-                        if slot_value != 0:
-                            slot_id = f"{key}_{i}"
-                            slots.append(slot_id)
-
-        state_dict[SLOTS] = tuple(slots)
+        # filter entities based on intent config
+        entities = tuple(
+            [
+                entity_name
+                for entity_name in self._get_featurized_entities(latest_message)
+            ]
+        )
+        state_dict[USER]["entities"] = entities
 
         return state_dict
 
@@ -714,17 +700,34 @@ class Domain:
         intent_name = latest_message.intent.get("name")
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
-        entity_names = {
+        entity_names = set(
             entity["entity"] for entity in entities if "entity" in entity.keys()
-        }
+        )
 
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
         return entity_names.intersection(wanted_entities)
 
-    def get_prev_action_states(
+    @staticmethod
+    def _get_slots_states(
+        tracker: "DialogueStateTracker",
+    ) -> Dict[Text, Dict[Text, Union[Text, Tuple[float]]]]:
+        # Set all set slots with the featurization of the stored value
+        slots = {}
+        for key, slot in tracker.slots.items():
+            if slot is not None and slot.as_feature():
+                if slot.value == SHOULD_NOT_BE_SET:
+                    slots[key] = SHOULD_NOT_BE_SET
+                else:
+                    slots[key] = tuple(slot.as_feature())
+        if slots:
+            return {SLOTS: slots}
+
+        return {}
+
+    def _get_prev_action_states(
         self, tracker: "DialogueStateTracker"
-    ) -> Dict[Text, float]:
+    ) -> Dict[Text, Dict[Text, Text]]:
         """Turn the previous taken action into a state name."""
         latest_action = tracker.latest_action
 
@@ -740,7 +743,9 @@ class Domain:
             return {}
 
     @staticmethod
-    def get_active_form(tracker: "DialogueStateTracker") -> Dict[Text, float]:
+    def _get_active_form(
+        tracker: "DialogueStateTracker",
+    ) -> Dict[Text, Dict[Text, Text]]:
         """Turn tracker's active form into a state name."""
         form = tracker.active_loop.get("name")
         if form is not None:
@@ -748,16 +753,17 @@ class Domain:
         else:
             return {}
 
-    def get_active_states(self, tracker: "DialogueStateTracker") -> Dict[Text, float]:
+    def get_active_states(self, tracker: "DialogueStateTracker") -> STATE:
         """Return a bag of active states from the tracker state."""
-        state_dict = self.get_parsing_states(tracker)
-        state_dict.update(self.get_prev_action_states(tracker))
-        state_dict.update(self.get_active_form(tracker))
+        state_dict = self._get_user_states(tracker)
+        state_dict.update(self._get_slots_states(tracker))
+        state_dict.update(self._get_prev_action_states(tracker))
+        state_dict.update(self._get_active_form(tracker))
         return state_dict
 
     def states_for_tracker_history(
         self, tracker: "DialogueStateTracker"
-    ) -> List[Dict[Text, float]]:
+    ) -> List[STATE]:
         """Array of states for each state of the trackers history."""
         return [
             self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()

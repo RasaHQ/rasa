@@ -301,7 +301,7 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_dict_core(self) -> Dict[Text, Text]:
+    def as_dict_core(self) -> Dict[Text, Union[Text, List[Text]]]:
         entities = [entity.get("entity") for entity in self.entities]
         if self.intent_name:
             return {TEXT: None, INTENT: self.intent_name, ENTITIES: entities}
