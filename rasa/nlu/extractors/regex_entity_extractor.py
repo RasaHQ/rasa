@@ -15,6 +15,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_END,
+    TEXT,
 )
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor

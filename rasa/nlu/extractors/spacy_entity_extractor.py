@@ -1,7 +1,7 @@
 import typing
 from typing import Any, Dict, List, Text, Optional, Type
 
-from rasa.nlu.constants import ENTITIES
+from rasa.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
