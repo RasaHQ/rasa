@@ -13,7 +13,7 @@ from rasa.nlu.classifiers.classifier import (  # pytype: disable=pyi-error
 )
 from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
 from rasa.nlu.featurizers.featurizer import Featurizer  # pytype: disable=pyi-error
-from rasa.nlu.tokenizers.tokenizer import Tokenizer  # pytype: disable=pyi-error
+from rasa.nlu.tokenizers import tokenizer  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 from rasa.nlu.persistor import Persistor
@@ -391,6 +391,6 @@ class Interpreter:
 
     def parse_message(self, message: Message, attribute: Text = TEXT) -> Message:
         for component in self.pipeline:
-            if isinstance(component, Featurizer) or isinstance(component, Tokenizer):
+            if isinstance(component, Featurizer) or isinstance(component, tokenizer.Tokenizer):
                 component.process(message, attribute, **self.context)
         return message
