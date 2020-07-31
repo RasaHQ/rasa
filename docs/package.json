@@ -14,8 +14,8 @@
     "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-alpha.59",
-    "@docusaurus/preset-classic": "^2.0.0-alpha.59",
+    "@docusaurus/core": "^2.0.0-alpha.60",
+    "@docusaurus/preset-classic": "^2.0.0-alpha.60",
     "@fortawesome/fontawesome-svg-core": "^1.2.30",
     "@fortawesome/free-solid-svg-icons": "^5.14.0",
     "@fortawesome/react-fontawesome": "^0.1.11",

@@ -4,6 +4,7 @@ sidebar_label: Choosing a Pipeline
 title: Choosing a Pipeline
 description: Set up a pipeline of components.
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 In Rasa Open Source, incoming messages are processed by a sequence of components.
 These components are executed one after another in a so-called processing `pipeline` defined in your `config.yml`.
@@ -315,7 +316,7 @@ The image below shows the call order during the training of this pipeline:
 
 
 
-<img alt="image" src="../../img/component_lifecycle.png" />
+<img alt="image" src={useBaseUrl("/img/component_lifecycle.png")} />
 
 Before the first component is created using the `create` function, a so
 called `context` is created (which is nothing more than a python dict).
