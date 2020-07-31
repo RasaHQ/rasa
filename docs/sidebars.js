@@ -3,7 +3,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Getting Started',
-      collapsed: true,
+      collapsed: false,
       items: [
         'index',
         'prototype-an-assistant',
@@ -15,7 +15,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Best Practices',
-      collapsed: true,
+      collapsed: false,
       items: [
         'cdd',
         'generating-nlu-data',
@@ -25,7 +25,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Conversation Patterns',
-      collapsed: true,
+      collapsed: false,
       items: [
         'chitchat-faqs',
         'business-logic',
@@ -37,7 +37,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Preparing For Production',
-      collapsed: true,
+      collapsed: false,
       items: [
         'tuning-your-model',
         'testing-your-assistant',
@@ -49,7 +49,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Reference',
-      collapsed: true,
+      collapsed: false,
       items: [
         'glossary',
       ],
@@ -151,6 +151,7 @@ module.exports = {
         },
         'tracker-dispatcher',
         'events',
+        'rasa-sdk-changelog'
       ],
     },
     {
@@ -162,14 +163,15 @@ module.exports = {
         'command-line-interface',
         'http-api',
         'jupyter-notebooks',
-        {
-          type: 'category',
-          label: 'Versioning',
-          items: [
-            'changelog',
-            'migration-guide',
-          ],
-        },
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Versioning',
+      collapsed: false,
+      items: [
+        'changelog',
+        'migration-guide',
       ],
     },
   ],
