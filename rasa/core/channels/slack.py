@@ -323,7 +323,7 @@ class SlackInput(InputChannel):
         if metadata is not None:
             output_channel = metadata.get("out_channel")
             if self.use_threads:
-                thread_id = metadata.get("ts")
+                thread_id = metadata.get("thread_id")
             else:
                 thread_id = None
         else:
