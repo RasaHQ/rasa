@@ -184,7 +184,6 @@ module.exports = {
       items: [
         'configuring-http-api',
         'using-nlu-only',
-        'slots',
         'interactive-learning',
         'rasa-sdk',
         ]

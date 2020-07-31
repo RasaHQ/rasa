@@ -94,6 +94,23 @@ responses:
     image: "https://i.imgur.com/nGF1K8f.jpg"
 ```
 
+It's common to use buttons as a shortcut to bypass NLU. 
+Rasa Open Source will send messages starting with a `/` to the
+`RegexInterpreter`, which expects NLU input in the same format
+as in story files, e.g. `/intent{entities}`. For example, if you let
+users choose a color by clicking a button, the button payloads may look like:
+
+```yaml
+utter_ask_color:
+- text: "what color would you like?"
+  buttons:
+  - title: "blue"
+    payload: '/choose{"color": "blue"}'
+  - title: "red"
+    payload: '/choose{"color": "red"}'
+```
+
+
 :::note
 Please keep in mind that it is up to the implementation of the output
 channel on how to display the defined buttons. The command line, for
