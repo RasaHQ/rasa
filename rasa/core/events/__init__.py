@@ -224,7 +224,6 @@ class UserUttered(Event):
         self.entities = entities if entities else []
         self.input_channel = input_channel
         self.message_id = message_id
-        self.message = message if message else None
 
         super().__init__(timestamp, metadata)
 
@@ -304,7 +303,10 @@ class UserUttered(Event):
 
     def as_dict_core(self) -> Dict[Text, Text]:
         entities = [entity.get("entity") for entity in self.entities]
-        return {TEXT: self.text, INTENT: self.intent_name, ENTITIES: entities}
+        if self.intent_name:
+            return {TEXT: None, INTENT: self.intent_name, ENTITIES: entities}
+        else:
+            return {TEXT: self.text, INTENT: None, ENTITIES: entities}
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
