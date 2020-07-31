@@ -17,6 +17,7 @@ from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
 from rasa.data import MARKDOWN_FILE_EXTENSION
 from rasa.utils.common import raise_warning
+from rasa.nlu.constants import TEXT
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +216,7 @@ class MarkdownStoryReader(StoryReader):
         parsed_messages = []
         for m in e2e_messages:
             message = e2e_reader._parse_item(m)
-            parsed = await self._parse_message(message.text, line_num)
+            parsed = await self._parse_message(message.get(TEXT), line_num)
 
             parsed.parse_data["true_intent"] = message.data["true_intent"]
             parsed.parse_data["true_entities"] = message.data.get("entities") or []

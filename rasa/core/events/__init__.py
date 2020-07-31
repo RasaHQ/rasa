@@ -18,6 +18,7 @@ from rasa.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
 )
+from rasa.nlu.constants import TEXT
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -62,7 +63,7 @@ def md_format_message(text, intent, entities) -> Text:
     deserialised_entities = deserialise_entities(entities)
     return MarkdownWriter.generate_message_md(
         {
-            "text": message_from_md.text,
+            "text": message_from_md.get(TEXT),
             "intent": intent,
             "entities": deserialised_entities,
         }
