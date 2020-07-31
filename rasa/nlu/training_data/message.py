@@ -33,7 +33,7 @@ class Message:
     ) -> None:
         self.time = time
         self.data = data if data else {}
-        if text:
+        if text is not None:
             self.data.update({TEXT: text})
         self.features = features if features else []
 
