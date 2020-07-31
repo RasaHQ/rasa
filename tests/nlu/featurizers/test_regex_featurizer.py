@@ -1,3 +1,5 @@
+from typing import Text, List, Any
+
 import numpy as np
 import pytest
 
@@ -130,7 +132,9 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
         {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
     ]
     ftr = RegexFeaturizer()
-    ftr.add_lookup_tables(lookups)
+    training_data = TrainingData()
+    training_data.lookup_tables = lookups
+    ftr.train(training_data)
 
     # adds tokens to the message
     component_config = {"name": "SpacyTokenizer"}
@@ -222,3 +226,38 @@ def test_regex_featurizer_train():
 
     assert seq_vecs is None
     assert sen_vec is None
+
+
+@pytest.mark.parametrize(
+    "sentence, sequence_vector, sentence_vector, case_sensitive",
+    [
+        ("Hey How are you today", [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], True),
+        ("Hey How are you today", [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], False),
+        ("Hey 456 How are you", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0], True),
+        ("Hey 456 How are you", [0.0, 1.0, 0.0], [1.0, 1.0, 0.0], False),
+    ],
+)
+def test_regex_featurizer_case_sensitive(
+    sentence: Text,
+    sequence_vector: List[float],
+    sentence_vector: List[float],
+    case_sensitive: bool,
+    spacy_nlp: Any,
+):
+
+    patterns = [
+        {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
+        {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
+        {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
+    ]
+    ftr = RegexFeaturizer({"case_sensitive": case_sensitive}, known_patterns=patterns)
+
+    # adds tokens to the message
+    tokenizer = SpacyTokenizer()
+    message = Message(sentence)
+    message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
+    tokenizer.process(message)
+
+    sequence_featrures, sentence_features = ftr._features_for_patterns(message, TEXT)
+    assert np.allclose(sequence_featrures.toarray()[0], sequence_vector, atol=1e-10)
+    assert np.allclose(sentence_features.toarray()[-1], sentence_vector, atol=1e-10)

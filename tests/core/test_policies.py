@@ -1,3 +1,4 @@
+from typing import Type
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -24,10 +25,12 @@ from rasa.core.featurizers import (
     FullDialogueTrackerFeaturizer,
 )
 from rasa.core.interpreter import RegexInterpreter
+from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.policy import SupportedData, Policy
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
@@ -500,7 +503,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
-            assert recalled == default_domain.index_for_action(actions[0])
+            assert recalled == actions[0]
 
         nums = np.random.randn(default_domain.num_states)
         random_states = [{f: num for f, num in zip(default_domain.input_states, nums)}]
@@ -545,7 +548,7 @@ class TestFormPolicy(TestMemoizationPolicy):
         p = FormPolicy(priority=priority)
         return p
 
-    async def test_memorise(self, trained_policy, default_domain):
+    async def test_memorise(self, trained_policy: FormPolicy, default_domain: Domain):
         domain = Domain.load("data/test_domains/form.yml")
         trackers = await training.load_data("data/test_stories/stories_form.md", domain)
         trained_policy.train(trackers, domain, RegexInterpreter())
@@ -926,3 +929,60 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         next_action = self._get_next_action(trained_policy, events, default_domain)
 
         assert next_action == ACTION_LISTEN_NAME
+
+
+@pytest.mark.parametrize(
+    "policy,supported_data",
+    [
+        (TEDPolicy, SupportedData.ML_DATA),
+        (RulePolicy, SupportedData.ML_AND_RULE_DATA),
+        (MemoizationPolicy, SupportedData.ML_DATA),
+    ],
+)
+def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
+    assert policy.supported_data() == supported_data
+
+
+class OnlyRulePolicy(Policy):
+    """Test policy that supports both rule-based and ML-based training data."""
+
+    @staticmethod
+    def supported_data() -> SupportedData:
+        return SupportedData.RULE_DATA
+
+
+@pytest.mark.parametrize(
+    "policy,n_rule_trackers,n_ml_trackers",
+    [
+        (TEDPolicy(), 0, 3),
+        (RulePolicy(), 2, 3),
+        (OnlyRulePolicy, 2, 0),  # policy can be passed as a `type` as well
+    ],
+)
+def test_get_training_trackers_for_policy(
+    policy: Policy, n_rule_trackers: int, n_ml_trackers
+):
+    # create five trackers (two rule-based and three ML trackers)
+    trackers = [
+        DialogueStateTracker("id1", slots=[], is_rule_tracker=True),
+        DialogueStateTracker("id2", slots=[], is_rule_tracker=False),
+        DialogueStateTracker("id3", slots=[], is_rule_tracker=False),
+        DialogueStateTracker("id4", slots=[], is_rule_tracker=True),
+        DialogueStateTracker("id5", slots=[], is_rule_tracker=False),
+    ]
+
+    trackers = SupportedData.trackers_for_policy(policy, trackers)
+
+    rule_trackers = [tracker for tracker in trackers if tracker.is_rule_tracker]
+    ml_trackers = [tracker for tracker in trackers if not tracker.is_rule_tracker]
+
+    assert len(rule_trackers) == n_rule_trackers
+    assert len(ml_trackers) == n_ml_trackers
+
+
+@pytest.mark.parametrize(
+    "policy", [FormPolicy, MappingPolicy, FallbackPolicy, TwoStageFallbackPolicy]
+)
+def test_deprecation_warnings_for_old_rule_like_policies(policy: Type[Policy]):
+    with pytest.warns(FutureWarning):
+        policy(None)

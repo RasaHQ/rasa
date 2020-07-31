@@ -1,9 +1,9 @@
 import logging
-import typing
 from typing import List, Dict, Text, Optional, Any
 
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
+from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
 from rasa.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -11,8 +11,7 @@ from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY
 
-if typing.TYPE_CHECKING:
-    from rasa.core.policies.ensemble import PolicyEnsemble
+from rasa.utils import common as common_utils
 
 
 logger = logging.getLogger(__name__)
@@ -36,23 +35,12 @@ class FormPolicy(MemoizationPolicy):
             featurizer=featurizer, priority=priority, max_history=2, lookup=lookup
         )
 
-    @classmethod
-    def validate_against_domain(
-        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
-    ) -> None:
-        if not domain:
-            return
-
-        has_form_policy = ensemble is not None and any(
-            isinstance(p, cls) for p in ensemble.policies
+        common_utils.raise_warning(
+            f"'{FormPolicy.__name__}' is deprecated and will be removed in "
+            "in the future. It is recommended to use the 'RulePolicy' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
         )
-        if domain.form_names and not has_form_policy:
-            raise InvalidDomain(
-                "You have defined a form action, but haven't added the "
-                "FormPolicy to your policy ensemble. Either remove all "
-                "forms from your domain or exclude the FormPolicy from your "
-                "policy configuration."
-            )
 
     @staticmethod
     def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
@@ -90,10 +78,13 @@ class FormPolicy(MemoizationPolicy):
 
         return [action_before_listen, states[-1]]
 
-    def _add_states_to_lookup(
-        self, trackers_as_states, trackers_as_actions, domain, online=False
-    ):
+    def _create_lookup_from_states(
+        self,
+        trackers_as_states: List[List[Dict]],
+        trackers_as_actions: List[List[Text]],
+    ) -> Dict[Text, Text]:
         """Add states to lookup dict"""
+        lookup = {}
         for states in trackers_as_states:
             active_form = self._get_active_form_name(states[-1])
             if active_form and self._prev_action_listen_in_state(states[-1]):
@@ -103,14 +94,15 @@ class FormPolicy(MemoizationPolicy):
                 # even if there are two identical feature keys
                 # their form will be the same
                 # because of `active_form_...` feature
-                self.lookup[feature_key] = active_form
+                lookup[feature_key] = active_form
+        return lookup
 
     def recall(
         self,
         states: List[Dict[Text, float]],
         tracker: DialogueStateTracker,
         domain: Domain,
-    ) -> Optional[int]:
+    ) -> Optional[Text]:
         # modify the states
         return self._recall_states(self._modified_states(states))
 
@@ -125,7 +117,7 @@ class FormPolicy(MemoizationPolicy):
 
         state_is_unhappy = (
             memorized_form is not None
-            and memorized_form == tracker.active_form.get("name")
+            and memorized_form == tracker.active_loop.get("name")
         )
 
         if state_is_unhappy:
@@ -147,25 +139,26 @@ class FormPolicy(MemoizationPolicy):
         """Predicts the corresponding form action if there is an active form"""
         result = self._default_predictions(domain)
 
-        if tracker.active_form.get("name"):
+        if tracker.active_loop.get("name"):
             logger.debug(
-                "There is an active form '{}'".format(tracker.active_form["name"])
+                "There is an active form '{}'".format(tracker.active_loop["name"])
             )
             if tracker.latest_action_name == ACTION_LISTEN_NAME:
                 # predict form action after user utterance
 
-                if tracker.active_form.get("rejected"):
+                if tracker.active_loop.get("rejected"):
                     if self.state_is_unhappy(tracker, domain):
                         tracker.update(FormValidation(False))
                         return result
 
-                idx = domain.index_for_action(tracker.active_form["name"])
-                result[idx] = 1.0
+                result = self._prediction_result(
+                    tracker.active_loop["name"], tracker, domain
+                )
 
-            elif tracker.latest_action_name == tracker.active_form.get("name"):
+            elif tracker.latest_action_name == tracker.active_loop.get("name"):
                 # predict action_listen after form action
-                idx = domain.index_for_action(ACTION_LISTEN_NAME)
-                result[idx] = 1.0
+                result = self._prediction_result(ACTION_LISTEN_NAME, tracker, domain)
+
         else:
             logger.debug("There is no active form")
 

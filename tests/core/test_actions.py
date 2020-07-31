@@ -15,6 +15,7 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_SESSION_START_NAME,
+    RULE_SNIPPET_ACTION_NAME,
     ActionBack,
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
@@ -27,6 +28,8 @@ from rasa.core.actions.action import (
     RemoteAction,
     ActionSessionStart,
 )
+from rasa.core.actions.forms import FormAction
+from rasa.core.actions.two_stage_fallback import ACTION_TWO_STAGE_FALLBACK_NAME
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain, SessionConfig
 from rasa.core.events import (
@@ -108,12 +111,12 @@ def test_domain_action_instantiation():
         slots=[],
         templates={},
         action_names=["my_module.ActionTest", "utter_test", "respond_test"],
-        form_names=[],
+        forms=[],
     )
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 12
+    assert len(instantiated_actions) == 14
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -122,10 +125,12 @@ def test_domain_action_instantiation():
     assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
     assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
     assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
-    assert instantiated_actions[8].name() == ACTION_BACK_NAME
-    assert instantiated_actions[9].name() == "my_module.ActionTest"
-    assert instantiated_actions[10].name() == "utter_test"
-    assert instantiated_actions[11].name() == "respond_test"
+    assert instantiated_actions[8].name() == ACTION_TWO_STAGE_FALLBACK_NAME
+    assert instantiated_actions[9].name() == ACTION_BACK_NAME
+    assert instantiated_actions[10].name() == RULE_SNIPPET_ACTION_NAME
+    assert instantiated_actions[11].name() == "my_module.ActionTest"
+    assert instantiated_actions[12].name() == "utter_test"
+    assert instantiated_actions[13].name() == "respond_test"
 
 
 async def test_remote_action_runs(
@@ -665,3 +670,48 @@ async def test_action_default_ask_rephrase(
             "can you rephrase that?", metadata={"template_name": "utter_ask_rephrase"}
         )
     ]
+
+
+def test_get_form_action():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+    forms:
+    - {form_action_name}:
+        my_slot:
+        - type: from_text
+    """
+    )
+
+    actual = domain.action_for_name(form_action_name, None)
+    assert isinstance(actual, FormAction)
+
+
+def test_get_form_action_without_slot_mapping():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+    forms:
+    - {form_action_name}
+    """
+    )
+
+    actual = domain.action_for_name(form_action_name, None)
+    assert isinstance(actual, RemoteAction)
+
+
+def test_get_form_action_if_not_in_forms():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        """
+    actions:
+    - my_action
+    """
+    )
+
+    with pytest.raises(NameError):
+        assert not domain.action_for_name(form_action_name, None)

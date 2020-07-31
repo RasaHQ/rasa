@@ -4,12 +4,12 @@ build-backend = "poetry.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py36", "py37", "py38" ]
+target-version = [ "py36", "py37", "py38",]
 exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "1.11.0a3"
+version = "2.0.0a1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -93,7 +93,7 @@ pika = "~1.1.0"
 jsonschema = "~3.2"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2021.0"
-rasa-sdk = "^1.10.0"
+rasa-sdk = "^2.0.0a1"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
 sanic = "^19.12.2"
@@ -155,8 +155,8 @@ sphinxcontrib-httpdomain = "==1.7.0"
 sphinxcontrib-websupport = "^1.1.0"
 sphinxcontrib-trio = "==1.1.2"
 sphinx-tabs = "~1.1.13"
-sphinx-autodoc-typehints = "==1.10.3"
-rasabaster = "^0.7.23"
+sphinx-autodoc-typehints = "==1.11.0"
+rasabaster = "^0.7.29"
 pep440-version-utils = "^0.3.0"
 
 [tool.poetry.extras]

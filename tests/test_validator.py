@@ -1,5 +1,9 @@
+from pep440_version_utils import Version
+
 import pytest
-from rasa.validator import Validator
+
+from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.validator import Validator, KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.importers.rasa import RasaFileImporter
 from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
@@ -114,19 +118,16 @@ async def test_early_exit_on_invalid_domain():
     with pytest.warns(UserWarning) as record:
         validator = await Validator.from_importer(importer)
     validator.verify_domain_validity()
-    assert len(record) == 2
-    assert (
-        f"Loading domain from '{domain_path}' failed. Using empty domain. "
-        "Error: 'Intents are not unique! Found multiple intents with name(s) "
-        "['default', 'goodbye']. Either rename or remove the duplicate ones.'"
-        in record[0].message.args[0]
-    )
+
+    # two for non-unique domains, two for missing version
+    assert len(record) == 4
     assert (
         f"Loading domain from '{domain_path}' failed. Using empty domain. "
         "Error: 'Intents are not unique! Found multiple intents with name(s) "
         "['default', 'goodbye']. Either rename or remove the duplicate ones.'"
         in record[1].message.args[0]
     )
+    assert record[1].message.args[0] == record[3].message.args[0]
 
 
 async def test_verify_there_is_not_example_repetition_in_intents():
@@ -136,3 +137,39 @@ async def test_verify_there_is_not_example_repetition_in_intents():
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_example_repetition_in_intents(False)
+
+
+async def test_future_training_data_format_version_not_compatible():
+
+    next_minor = str(Version(LATEST_TRAINING_DATA_FORMAT_VERSION).next_minor())
+
+    incompatible_version = {KEY_TRAINING_DATA_FORMAT_VERSION: next_minor}
+
+    with pytest.warns(UserWarning):
+        assert not Validator.validate_training_data_format_version(
+            incompatible_version, ""
+        )
+
+
+async def test_compatible_training_data_format_version():
+
+    prev_major = str(Version("1.0"))
+
+    compatible_version_1 = {KEY_TRAINING_DATA_FORMAT_VERSION: prev_major}
+    compatible_version_2 = {
+        KEY_TRAINING_DATA_FORMAT_VERSION: LATEST_TRAINING_DATA_FORMAT_VERSION
+    }
+
+    for version in [compatible_version_1, compatible_version_2]:
+        with pytest.warns(None):
+            assert Validator.validate_training_data_format_version(version, "")
+
+
+async def test_invalid_training_data_format_version_warns():
+
+    invalid_version_1 = {KEY_TRAINING_DATA_FORMAT_VERSION: 2.0}
+    invalid_version_2 = {KEY_TRAINING_DATA_FORMAT_VERSION: "Rasa"}
+
+    for version in [invalid_version_1, invalid_version_2]:
+        with pytest.warns(UserWarning):
+            assert Validator.validate_training_data_format_version(version, "")

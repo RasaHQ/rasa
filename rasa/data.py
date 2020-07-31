@@ -107,7 +107,8 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
     nlu_data_files = set()
 
     for root, _, files in os.walk(directory, followlinks=True):
-        # we sort the files here to ensure consistent order for repeatable training results
+        # we sort the files here to ensure consistent order for repeatable training
+        # results
         for f in sorted(files):
             full_path = os.path.join(root, f)
 
@@ -146,11 +147,6 @@ def is_nlu_file(file_path: Text) -> bool:
 
 
 def is_story_file(file_path: Text) -> bool:
-    from rasa.core.training.story_reader.markdown_story_reader import (
-        MarkdownStoryReader,
-    )
-    from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
-
     """Checks if a file is a Rasa story file.
 
     Args:
@@ -159,9 +155,16 @@ def is_story_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file, otherwise `False`.
     """
-    return YAMLStoryReader.is_yaml_story_file(
-        file_path
-    ) or MarkdownStoryReader.is_markdown_story_file(file_path)
+    from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
+
+    if YAMLStoryReader.is_yaml_story_file(file_path):
+        return True
+
+    from rasa.core.training.story_reader.markdown_story_reader import (
+        MarkdownStoryReader,
+    )
+
+    return MarkdownStoryReader.is_markdown_story_file(file_path)
 
 
 def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
@@ -183,21 +186,6 @@ def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
         and is_story_file(file_path)
         and not is_nlu_file(file_path)
     )
-
-
-def is_domain_file(file_path: Text) -> bool:
-    """Checks whether the given file path is a Rasa domain file.
-
-    Args:
-        file_path: Path of the file which should be checked.
-
-    Returns:
-        `True` if it's a domain file, otherwise `False`.
-    """
-
-    file_name = os.path.basename(file_path)
-
-    return file_name in ["domain.yml", "domain.yaml"]
 
 
 def is_config_file(file_path: Text) -> bool:

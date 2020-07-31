@@ -578,9 +578,9 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
     serialised_domain = await retrieve_domain(endpoint)
     domain = Domain.from_dict(serialised_domain)
 
-    await _write_stories_to_file(story_path, events, domain)
-    await _write_nlu_to_file(nlu_path, events)
-    await _write_domain_to_file(domain_path, events, domain)
+    _write_stories_to_file(story_path, events, domain)
+    _write_nlu_to_file(nlu_path, events)
+    _write_domain_to_file(domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
@@ -759,7 +759,7 @@ def _collect_actions(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
     return [evt for evt in events if evt.get("event") == ActionExecuted.type_name]
 
 
-async def _write_stories_to_file(
+def _write_stories_to_file(
     export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the conversation_id to the file paths."""
@@ -798,9 +798,7 @@ def _filter_messages(msgs: List[Message]) -> List[Message]:
     return filtered_messages
 
 
-async def _write_nlu_to_file(
-    export_nlu_path: Text, events: List[Dict[Text, Any]]
-) -> None:
+def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> None:
     """Write the nlu data of the conversation_id to the file paths."""
     from rasa.nlu.training_data import TrainingData
 
@@ -856,7 +854,7 @@ def _intents_from_messages(messages: List[Message]) -> Set[Text]:
     return distinct_intents
 
 
-async def _write_domain_to_file(
+def _write_domain_to_file(
     domain_path: Text, events: List[Dict[Text, Any]], old_domain: Domain
 ) -> None:
     """Write an updated domain file to the file path."""
@@ -869,7 +867,12 @@ async def _write_domain_to_file(
 
     # TODO for now there is no way to distinguish between action and form
     collected_actions = list(
-        {e["name"] for e in actions if e["name"] not in default_action_names()}
+        {
+            e["name"]
+            for e in actions
+            if e["name"] not in default_action_names()
+            and e["name"] not in old_domain.form_names
+        }
     )
 
     new_domain = Domain(
@@ -878,7 +881,7 @@ async def _write_domain_to_file(
         slots=[],
         templates=templates,
         action_names=collected_actions,
-        form_names=[],
+        forms=[],
     )
 
     old_domain.merge(new_domain).persist_clean(domain_path)
@@ -1233,8 +1236,13 @@ def _merge_annotated_and_original_entities(
     return entities
 
 
-def _is_same_entity_annotation(entity, other) -> Any:
-    return entity["value"] == other["value"] and entity["entity"] == other["entity"]
+def _is_same_entity_annotation(entity: Dict[Text, Any], other: Dict[Text, Any]) -> bool:
+    return (
+        entity["value"] == other["value"]
+        and entity["entity"] == other["entity"]
+        and entity.get("group") == other.get("group")
+        and entity.get("role") == other.get("group")
+    )
 
 
 async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -> None:

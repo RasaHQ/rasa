@@ -57,7 +57,7 @@ Finally, we define another custom action ``action_react_to_reminder`` and link i
 .. code-block:: md
 
   - EXTERNAL_reminder:
-    triggers: action_react_to_reminder
+      triggers: action_react_to_reminder
 
 where the ``action_react_to_reminder`` is
 
@@ -75,7 +75,7 @@ But here we want to make use of the fact that the reminder can carry entities, a
 
   Reminders currently (Rasa 1.8) don't work in `rasa shell`.
   You have to test them with a
-  `running Rasa X server <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ instead.
+  `running Rasa X server <https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/>`_ instead.
 
 .. note::
 

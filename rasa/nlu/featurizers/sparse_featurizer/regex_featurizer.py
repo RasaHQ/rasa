@@ -7,7 +7,7 @@ import numpy as np
 import scipy.sparse
 
 import rasa.utils.io
-import rasa.utils.io
+import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
@@ -32,6 +32,15 @@ class RegexFeaturizer(SparseFeaturizer):
     def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
 
+    defaults = {
+        # text will be processed with case sensitive as default
+        "case_sensitive": True,
+        # use lookup tables to generate features
+        "use_lookup_tables": True,
+        # use regexes to generate features
+        "use_regexes": True,
+    }
+
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
@@ -41,9 +50,7 @@ class RegexFeaturizer(SparseFeaturizer):
         super().__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
-
-    def add_lookup_tables(self, lookup_tables: List[Dict[Text, Union[Text, List]]]):
-        self.known_patterns.extend(self._lookup_table_regexes(lookup_tables))
+        self.case_sensitive = self.component_config["case_sensitive"]
 
     def train(
         self,
@@ -52,9 +59,11 @@ class RegexFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> None:
 
-        self.known_patterns = training_data.regex_features
-
-        self.add_lookup_tables(training_data.lookup_tables)
+        self.known_patterns = pattern_utils.extract_patterns(
+            training_data,
+            use_lookup_tables=self.component_config["use_lookup_tables"],
+            use_regexes=self.component_config["use_regexes"],
+        )
 
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE]:
@@ -87,18 +96,6 @@ class RegexFeaturizer(SparseFeaturizer):
                 )
                 message.add_features(final_sentence_features)
 
-    def _lookup_table_regexes(
-        self, lookup_tables: List[Dict[Text, Any]]
-    ) -> List[Dict[Text, Text]]:
-        """appends the regex features from the lookup tables to self.known_patterns"""
-
-        patterns = []
-        for table in lookup_tables:
-            regex_pattern = self._generate_lookup_regex(table)
-            lookup_regex = {"name": table["name"], "pattern": regex_pattern}
-            patterns.append(lookup_regex)
-        return patterns
-
     def _features_for_patterns(
         self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.coo_matrix], Optional[scipy.sparse.coo_matrix]]:
@@ -118,13 +115,17 @@ class RegexFeaturizer(SparseFeaturizer):
             # nothing to featurize
             return None, None
 
+        flags = 0  # default flag
+        if not self.case_sensitive:
+            flags = re.IGNORECASE
+
         sequence_length = len(tokens)
 
         sequence_features = np.zeros([sequence_length, len(self.known_patterns)])
         sentence_features = np.zeros([1, len(self.known_patterns)])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
-            matches = re.finditer(pattern["pattern"], message.text)
+            matches = re.finditer(pattern["pattern"], message.text, flags=flags)
             matches = list(matches)
 
             for token_index, t in enumerate(tokens):
@@ -145,40 +146,6 @@ class RegexFeaturizer(SparseFeaturizer):
             scipy.sparse.coo_matrix(sequence_features),
             scipy.sparse.coo_matrix(sentence_features),
         )
-
-    def _generate_lookup_regex(
-        self, lookup_table: Dict[Text, Union[Text, List[Text]]]
-    ) -> Text:
-        """creates a regex out of the contents of a lookup table file"""
-        lookup_elements = lookup_table["elements"]
-        elements_to_regex = []
-
-        # if it's a list, it should be the elements directly
-        if isinstance(lookup_elements, list):
-            elements_to_regex = lookup_elements
-        # otherwise it's a file path.
-        else:
-
-            try:
-                f = open(lookup_elements, "r", encoding=rasa.utils.io.DEFAULT_ENCODING)
-            except OSError:
-                raise ValueError(
-                    f"Could not load lookup table {lookup_elements}. "
-                    f"Please make sure you've provided the correct path."
-                )
-
-            with f:
-                for line in f:
-                    new_element = line.strip()
-                    if new_element:
-                        elements_to_regex.append(new_element)
-
-        # sanitize the regex, escape special characters
-        elements_sanitized = [re.escape(e) for e in elements_to_regex]
-
-        # regex matching elements with word boundaries on either side
-        regex_string = "(?i)(\\b" + "\\b|\\b".join(elements_sanitized) + "\\b)"
-        return regex_string
 
     @classmethod
     def load(
