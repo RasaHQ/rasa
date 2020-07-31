@@ -24,6 +24,7 @@ if typing.TYPE_CHECKING:
 class Message:
     def __init__(
         self,
+        text: Optional[Text],
         data: Optional[Dict[Text, Any]] = None,
         output_properties: Optional[Set] = None,
         time: Optional[Text] = None,
@@ -32,6 +33,7 @@ class Message:
     ) -> None:
         self.time = time
         self.data = data if data else {}
+        self.data = self.data.update({TEXT: text}) if text else self.data
         self.features = features if features else []
 
         self.data.update(**kwargs)
