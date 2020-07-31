@@ -49,7 +49,7 @@ class Slot:
         # TODO: FUTURE this needs to be implemented - slots are not reset yet
         return self._value_reset_delay
 
-    def as_feature(self) -> NoReturn:
+    def as_feature(self) -> List[float]:
         raise NotImplementedError(
             "Each slot type needs to specify how its "
             "value can be converted to a feature. Slot "
