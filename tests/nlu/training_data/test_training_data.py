@@ -298,7 +298,9 @@ def test_repeated_entities(tmp_path):
     entities = example.get("entities")
     assert len(entities) == 1
     tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-    start, end = MitieEntityExtractor.find_entity(entities[0], example.get(TEXT), tokens)
+    start, end = MitieEntityExtractor.find_entity(
+        entities[0], example.get(TEXT), tokens
+    )
     assert start == 9
     assert end == 10
 
@@ -331,7 +333,9 @@ def test_multiword_entities(tmp_path):
     entities = example.get("entities")
     assert len(entities) == 1
     tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-    start, end = MitieEntityExtractor.find_entity(entities[0], example.get(TEXT), tokens)
+    start, end = MitieEntityExtractor.find_entity(
+        entities[0], example.get(TEXT), tokens
+    )
     assert start == 4
     assert end == 7
 
