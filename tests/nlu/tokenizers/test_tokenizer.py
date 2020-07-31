@@ -108,51 +108,6 @@ def test_train_tokenizer_action_name(text, expected_tokens, expected_indices):
     "text, expected_tokens, expected_indices",
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
-def test_train_tokenizer_e2e_actions(text, expected_tokens, expected_indices):
-    tk = WhitespaceTokenizer()
-
-    message = Message(text)
-    message.set(ACTION_TEXT, text)
-    message.set(ACTION_NAME, text)
-
-    training_data = TrainingData()
-    training_data.training_examples = [message]
-
-    tk.train(training_data)
-
-    for attribute in [ACTION_TEXT, TEXT]:
-        tokens = training_data.training_examples[0].get(TOKENS_NAMES[attribute])
-
-        assert [t.text for t in tokens] == expected_tokens
-        assert [t.start for t in tokens] == [i[0] for i in expected_indices]
-        assert [t.end for t in tokens] == [i[1] for i in expected_indices]
-
-
-@pytest.mark.parametrize(
-    "text, expected_tokens, expected_indices",
-    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
-)
-def test_train_tokenizer_action_name(text, expected_tokens, expected_indices):
-    tk = WhitespaceTokenizer()
-
-    message = Message(text)
-    message.set(ACTION_NAME, text)
-
-    training_data = TrainingData()
-    training_data.training_examples = [message]
-
-    tk.train(training_data)
-
-    # check action_name attribute
-    tokens = training_data.training_examples[0].get(TOKENS_NAMES[ACTION_NAME])
-
-    assert [t.text for t in tokens] == [text]
-
-
-@pytest.mark.parametrize(
-    "text, expected_tokens, expected_indices",
-    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
-)
 def test_process_tokenizer(text, expected_tokens, expected_indices):
     tk = WhitespaceTokenizer()
 
