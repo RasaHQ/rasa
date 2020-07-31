@@ -1,0 +1,1 @@
+Fixed bug with Slack metadata thread id, changing it from 'ts' to 'thread_id'
