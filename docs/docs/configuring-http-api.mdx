@@ -6,13 +6,6 @@ title: Configuring the HTTP API
 
 ## Using Rasa’s HTTP API
 
-:::note
-The instructions below are relevant for configuring how a model is run
-within a Docker container or for testing the HTTP API locally. If you
-want to deploy your assistant to users, see [Deploying Your Rasa Assistant](./how-to-deploy#deploying-your-rasa-assistant).
-
-:::
-
 You can run a simple HTTP server that handles requests using your
 trained Rasa model with:
 
@@ -30,28 +23,11 @@ The different parameters are:
 
 * `--log-file`: the path to the log file.
 
-Rasa can load your model in three different ways:
 
-1. Fetch the model from a server (see [Fetching Models from a Server](./configuring-http-api#server-fetch-from-server)), or
-
-2. Fetch the model from a remote storage (see [Cloud Storage](./cloud-storage)).
-
-3. Load the model specified via `-m` from your local storage system,
-
-Rasa tries to load a model in the above mentioned order, i.e. it only tries to load your model from your local
-storage system if no model server and no remote storage were configured.
 
 :::caution
 Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
 by enabling an authentication method: [Security Considerations](./configuring-http-api#server-security).
-
-:::
-
-:::note
-If you are using custom actions, make sure your action server is
-running (see [Start an Action Server](./command-line-interface#run-action-server)). If your actions are running
-on a different machine, or you aren’t using the Rasa SDK, make sure
-to update your `endpoints.yml` file.
 
 :::
 
@@ -73,63 +49,7 @@ for more details). This will only work in combination with the
 
 :::
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-fetch-from-server"></a>
 
-### Fetching Models from a Server
-
-You can configure the HTTP server to fetch models from another URL:
-
-```bash
-rasa run --enable-api --log-file out.log --endpoints my_endpoints.yml
-```
-
-The model server is specified in the endpoint configuration
-(`my_endpoints.yml`), where you specify the server URL Rasa
-regularly queries for zipped Rasa models:
-
-```yaml
-models:
-  url: http://my-server.com/models/default@latest
-  wait_time_between_pulls: 10   # [optional](default: 100)
-```
-
-:::note
-If you want to pull the model just once from the server, set
-`wait_time_between_pulls` to `None`.
-
-:::
-
-:::note
-Your model server must provide zipped Rasa models, and have
-`{"ETag": <model_hash_string>}` as one of its headers. Rasa will
-only download a new model if this model hash has changed.
-
-:::
-
-Rasa sends requests to your model server with an `If-None-Match`
-header that contains the current model hash. If your model server can
-provide a model with a different hash from the one you sent, it should send it
-in as a zip file with an `ETag` header containing the new hash. If not, Rasa
-expects an empty response with a `204` or `304` status code.
-
-An example request Rasa might make to your model server looks like this:
-
-```bash
-$ curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default@latest
-```
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-fetch-from-remote-storage"></a>
-
-### Fetching Models from a Remote Storage
-
-You can also configure the Rasa server to fetch your model from a remote storage:
-
-```bash
-rasa run -m 20190506-100418.tar.gz --enable-api --log-file out.log --remote-storage aws
-```
-
-The model will be downloaded and stored in a temporary directory on your local storage system.
-For more information see [Cloud Storage](./cloud-storage).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-ssl"></a>
 
@@ -224,34 +144,3 @@ The following is an example payload for a JWT token:
 ```
 
 To create and encode the token, you can use tools such as the [JWT Debugger](https://jwt.io/), or a Python module such as [PyJWT](https://pyjwt.readthedocs.io/en/latest/).
-
-## Endpoint Configuration
-
-To connect Rasa to other endpoints, you can specify an endpoint
-configuration within a YAML file.
-Then run Rasa with the flag
-`--endpoints <path to endpoint configuration.yml>`.
-
-For example:
-
-```bash
-rasa run \
-    --m <Rasa model> \
-    --endpoints <path to endpoint configuration>.yml
-```
-
-:::note
-You can use environment variables within configuration files by specifying them with `${name of environment variable}`.
-These placeholders are then replaced by the value of the environment variable.
-
-:::
-
-### Connecting a Tracker Store
-
-To configure a tracker store within your endpoint configuration,
-see [Tracker Stores](../api/tracker-stores).
-
-### Connecting an Event Broker
-
-To configure an event broker within your endpoint configuration,
-see [Event Brokers](../api/event-brokers).

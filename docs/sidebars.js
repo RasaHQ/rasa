@@ -121,9 +121,9 @@ module.exports = {
           items: [
             'tracker-stores',
             'event-brokers',
+            'model-storage',
             'lock-stores',
             'nlg',
-            'cloud-storage',
           ],
         },
       ],
