@@ -34,7 +34,8 @@
   border-radius: 4px;
 }
 /**
-  FIXME: far from perfect but not as ugly as before
+  FIXME: fixes a font issue on the chat block initial screen,
+  far from perfect but not as ugly as before
 */
 h4.css-1m1icag {
   font-family: var(--ifm-font-family-base);
