@@ -178,7 +178,6 @@ module.exports = {
       items: [
         'configuring-http-api',
         'using-nlu-only',
-        'language-support',
         'entity-extraction',
         'slots',
         'interactive-learning',
