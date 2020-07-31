@@ -66,6 +66,13 @@ USER 1001
 # Create a volume for temporary data
 VOLUME /tmp
 
+# New Relic environment variables
+ARG NEW_RELIC_LICENSE_KEY
+ARG NEW_RELIC_APP_NAME
+
+ENV NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+ENV NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME}
+
 # change shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
