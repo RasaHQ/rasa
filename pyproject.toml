@@ -163,7 +163,6 @@ pep440-version-utils = "^0.3.0"
 spacy = [ "spacy",]
 convert = [ "tensorflow-text",]
 transformers = [ "transformers",]
-jieba = [ "jieba",]
 full = [ "spacy", "tensorflow-text", "transformers", "jieba",]
 gh-release-notes = [ "pypandoc", "github3.py",]
 

@@ -273,7 +273,7 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
 
 def pytest_runtest_setup(item) -> None:
     if "skip_on_windows" in [mark.name for mark in item.iter_markers()] and sys.platform == "win32":
-        pytest.skip(f"cannot run on Windows")
+        pytest.skip("cannot run on Windows")
 
 
 class MockExporter(Exporter):
