@@ -4,6 +4,7 @@ sidebar_label: Rasa as open source alternative to Google Dialogflow - Migration 
 title: Rasa as open source alternative to Google Dialogflow - Migration Guide
 description: Open source alternative to Google Dialogflow for conversational bots and NLP
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 This guide shows you how to migrate your application built with Google Dialogflow to Rasa. Here are a few reasons why we see developers switching:
 
@@ -15,19 +16,21 @@ This guide shows you how to migrate your application built with Google Dialogflo
 
 In addition, our open source tools allow developers to build contextual AI assistants and manage dialogues with machine learning instead of rules - learn more in <a className="reference external" href="http://blog.rasa.com/a-new-approach-to-conversational-software/" target="_blank">this blog post</a>.
 <br />
-<br />Let's get started with migrating your application from Dialogflow to Rasa (you can find a more detailed tutorial <a className="reference external" href="http://blog.rasa.com/how-to-migrate-your-existing-google-dialogflow-assistant-to-rasa/" target="_blank">here</a>):## Step 1: Export your data from Dialogflow
+<br />Let's get started with migrating your application from Dialogflow to Rasa (you can find a more detailed tutorial <a className="reference external" href="http://blog.rasa.com/how-to-migrate-your-existing-google-dialogflow-assistant-to-rasa/" target="_blank">here</a>):
+
+## Step 1: Export your data from Dialogflow
 
 Navigate to your agent’s settings by clicking the gear icon.
 
 
 
-<img alt="Dialogflow Export" src="../../img/dialogflow_export.png" width="240" />
+<img alt="Dialogflow Export" src={useBaseUrl("/img/dialogflow_export.png")} width="240" />
 
 Click on the ‘Export and Import’ tab and click on the ‘Export as ZIP’ button.
 
 
 
-<img alt="Dialogflow Export 2" src="../../img/dialogflow_export_2.png" width="675" />
+<img alt="Dialogflow Export 2" src={useBaseUrl("/img/dialogflow_export_2.png")} width="675" />
 
 This will download a file with a `.zip` extension. Unzip this file to create a folder.
 
