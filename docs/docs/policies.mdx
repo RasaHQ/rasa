@@ -459,7 +459,7 @@ data as well.
 
 ## Fallback Policy
 
-The `FallbackPolicy` invokes a [fallback action](./fallback-actions) if at least one of the following occurs:
+The `FallbackPolicy` invokes a fallback action if at least one of the following occurs:
 
 1. The intent recognition has a confidence below `nlu_threshold`.
 
@@ -488,6 +488,11 @@ policies:
 |`ambiguity_threshold`  |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.                                      |
 |`core_threshold`       |Min confidence needed to accept an action prediction from Rasa Core                                                                             |
 |`fallback_action_name` |Name of the [fallback action](./fallback-actions) to be called if the confidence of intent or action is below the respective threshold |
+
+`action_default_fallback` is a default action in Rasa Core which sends the
+`utter_default` response to the user (you will have to define this response
+in the `responses:` section of your domain file). You can also choose your 
+`fallback_action_name` to be one of your custom actions.
 
 You can also configure the `FallbackPolicy` in your python code:
 
@@ -543,17 +548,25 @@ by trying to disambiguate the user input.
       `deny_suggestion_intent_name`, and an ultimate fallback action
       is triggered (e.g. a handoff to a human).
 
-**Configuration:**
+### Configuration
 
-To use the `TwoStageFallbackPolicy`, include the following in your
-policy configuration.
+Rasa provides the default implementations of
+`action_default_ask_affirmation` and `action_default_ask_rephrase`.
+The default implementation of `action_default_ask_rephrase` action utters
+the response `utter_ask_rephrase`, so be sure to specify this
+response in your domain file.
+The implementation of both actions can be overwritten with [custom actions](./actions#custom-actions).
+
+You can specify the core fallback action as well as the ultimate NLU
+fallback action as parameters to `TwoStageFallbackPolicy` in your
+policy configuration file.
 
 ```yaml
 policies:
   - name: TwoStageFallbackPolicy
     nlu_threshold: 0.3
-    ambiguity_threshold: 0.1
     core_threshold: 0.3
+    ambiguity_threshold: 0.1
     fallback_core_action_name: "action_default_fallback"
     fallback_nlu_action_name: "action_default_fallback"
     deny_suggestion_intent_name: "out_of_scope"

@@ -97,6 +97,7 @@ module.exports = {
             'retrieval-actions',
             'forms',
             'reminders-and-external-events',
+            'default-actions',
           ],
         },
         {
@@ -181,7 +182,6 @@ module.exports = {
         'entity-extraction',
         'slots',
         'interactive-learning',
-        'fallback-actions',
         'rasa-sdk',
         'training-data-importers',
         ]
