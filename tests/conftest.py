@@ -41,8 +41,6 @@ from tests.core.conftest import (
     INCORRECT_NLU_DATA,
 )
 
-PLATFORMS = {"darwin", "linux", "win32"}
-
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
@@ -273,8 +271,8 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
     )
 
 
-def pytest_runtest_setup(item: pytest.Item) -> None:
-    if "skip_on_windows" in item.iter_markers() and sys.platform == "win32":
+def pytest_runtest_setup(item) -> None:
+    if "skip_on_windows" in [mark.name for mark in item.iter_markers()] and sys.platform == "win32":
         pytest.skip(f"cannot run on Windows")
 
 
