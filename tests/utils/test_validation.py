@@ -47,11 +47,6 @@ def test_example_training_data_is_valid():
     [
         {"wrong_top_level": []},
         ["this is not a toplevel dict"],
-        {   
-            "rasa_nlu_data": {  
-                "common_examples": [{"intent": "some example without text"}]    
-            }   
-        },
         {
             "rasa_nlu_data": {
                 "common_examples": [
