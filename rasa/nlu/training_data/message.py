@@ -96,7 +96,7 @@ class Message:
     @classmethod
     def build(
         cls,
-        text: Optional[Text] = None,
+        text: Text,
         intent: Optional[Text] = None,
         entities: List[Dict[Text, Any]] = None,
         **kwargs,
