@@ -2121,7 +2121,7 @@ description = "Python type inferencer"
 name = "pytype"
 optional = false
 python-versions = "<3.9,>=3.5"
-version = "2020.7.24"
+version = "2020.7.30"
 
 [package.dependencies]
 attrs = "*"
@@ -4555,13 +4555,13 @@ python-telegram-bot = [
     {file = "python_telegram_bot-12.8-py2.py3-none-any.whl", hash = "sha256:7eebed539ccacf77896cff9e41d1f68746b8ff3ca4da1e2e59285e9c749cb050"},
 ]
 pytype = [
-    {file = "pytype-2020.7.24-cp35-cp35m-macosx_10_14_x86_64.whl", hash = "sha256:a977290a6c2e12c3f69987bc21a5bf16f55372535c16b59e2480c07f4576ac61"},
-    {file = "pytype-2020.7.24-cp35-cp35m-manylinux2014_x86_64.whl", hash = "sha256:d1bc9066c922f1179e7ba2da320094f88942cf36da91654f5e9dc2968b9ba180"},
-    {file = "pytype-2020.7.24-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:d2193d30730f3d6e9c1dcb284cfaa1287ec642265cf2a0e972bcb0514c3b80a9"},
-    {file = "pytype-2020.7.24-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:17172f17daddcc67c281df11ffbc2f0847b1e71d799180ace79fc398b1b16315"},
-    {file = "pytype-2020.7.24-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:3ca6eb0d966d30523f8249cfc37885cfb3faa169587576592e9c96dbba568a5e"},
-    {file = "pytype-2020.7.24-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:49d3d6635241c7924ea671a61b47f1ec35d5e64df1f884d0c29279697cf1ca2a"},
-    {file = "pytype-2020.7.24.tar.gz", hash = "sha256:9ebc2b1351621323ce8644f5d20fac190ceb8ebb911aa9f880a1a93c6844803e"},
+    {file = "pytype-2020.7.30-cp35-cp35m-macosx_10_14_x86_64.whl", hash = "sha256:63fedf180e430ee2fdf381ecfba656a766f4a571b5fa631c2d70ebd0844c1b90"},
+    {file = "pytype-2020.7.30-cp35-cp35m-manylinux2014_x86_64.whl", hash = "sha256:ae85279e92e5c60e143059ab34eb3e1f7f1a17b76d8f5320ce3a93dbc5f34613"},
+    {file = "pytype-2020.7.30-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:c8f382f9f251df8f4cdf5edf851cf05ea7752df6bc90c6812dcc3d2e28751729"},
+    {file = "pytype-2020.7.30-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:6f89443fd912111dc845810d30e443b993edf6acd5681529907d32458e5dca2a"},
+    {file = "pytype-2020.7.30-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:62f7f4b4330808fe5e8a3e47f20275345aff63e78953e78d4e27d9dcac35c664"},
+    {file = "pytype-2020.7.30-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:fead49bf61685d9d578af2c7f307514240f6c5ace266ed0816a5562fb511966d"},
+    {file = "pytype-2020.7.30.tar.gz", hash = "sha256:ae71db7b2264271c7e6a4cd26f01f5d77cde408ebae69b8544ab246228a2a372"},
 ]
 pytz = [
     {file = "pytz-2020.1-py2.py3-none-any.whl", hash = "sha256:a494d53b6d39c3c6e44c3bec237336e14305e4f29bbf800b599253057fbb79ed"},
