@@ -1236,8 +1236,13 @@ def _merge_annotated_and_original_entities(
     return entities
 
 
-def _is_same_entity_annotation(entity, other) -> Any:
-    return entity["value"] == other["value"] and entity["entity"] == other["entity"]
+def _is_same_entity_annotation(entity: Dict[Text, Any], other: Dict[Text, Any]) -> bool:
+    return (
+        entity["value"] == other["value"]
+        and entity["entity"] == other["entity"]
+        and entity.get("group") == other.get("group")
+        and entity.get("role") == other.get("group")
+    )
 
 
 async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -> None:

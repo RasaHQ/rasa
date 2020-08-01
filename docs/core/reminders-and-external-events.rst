@@ -57,7 +57,7 @@ Finally, we define another custom action ``action_react_to_reminder`` and link i
 .. code-block:: md
 
   - EXTERNAL_reminder:
-    triggers: action_react_to_reminder
+      triggers: action_react_to_reminder
 
 where the ``action_react_to_reminder`` is
 
