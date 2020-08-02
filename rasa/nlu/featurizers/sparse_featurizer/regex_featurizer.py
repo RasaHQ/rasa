@@ -19,6 +19,7 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
 from rasa.nlu.model import Metadata
@@ -67,7 +68,7 @@ class RegexFeaturizer(SparseFeaturizer):
         )
 
         for example in training_data.training_examples:
-            for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
+            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self._text_features_with_regex(example, attribute)
 
     def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
