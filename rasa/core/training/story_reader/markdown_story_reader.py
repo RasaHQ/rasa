@@ -248,7 +248,7 @@ class MarkdownStoryReader(StoryReader):
         message_processed = MarkdownReader().parse_training_example(text)
 
         utterance = UserUttered(
-            message_processed.text, None, message_processed.get("entities"),
+            message_processed.get(TEXT), None, message_processed.get("entities"),
         )
         return utterance
 

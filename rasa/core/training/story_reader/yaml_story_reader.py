@@ -342,7 +342,7 @@ class YAMLStoryReader(StoryReader):
             )
             return
 
-        self._add_event(bot_message, {"e2e_text": bot_message})
+        self._add_event(bot_message, {"e2e_text": bot_message}, is_e2e = True)
 
     def _parse_rule_snippet_action(self) -> None:
         self._add_event(RULE_SNIPPET_ACTION_NAME, {})
