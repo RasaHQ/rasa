@@ -1,4 +1,4 @@
-.PHONY: clean test lint init
+.PHONY: clean test lint init docs
 
 JOBS ?= 1
 
@@ -27,8 +27,6 @@ help:
 	@echo "    test"
 	@echo "        Run pytest on tests/."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
-	@echo "    doctest"
-	@echo "        Run all doctests embedded in the documentation."
 	@echo "    livedocs"
 	@echo "        Build the docs locally."
 	@echo "    release"
@@ -41,7 +39,8 @@ clean:
 	rm -rf build/
 	rm -rf .pytype/
 	rm -rf dist/
-	rm -rf docs/_build
+	rm -rf docs/build
+	rm -rf docs/.docusaurus
 
 install:
 	poetry run python -m pip install -U pip
@@ -57,6 +56,9 @@ install-full-windows: install install-mitie
 	# tensorflow_text is not available on Windows, so we're skipping it
 	# see https://github.com/tensorflow/text/issues/44 for more details
 	poetry install -E spacy -E transformers -E jieba
+
+install-docs:
+	cd docs/ && yarn install
 
 formatter:
 	poetry run black rasa tests
@@ -95,11 +97,11 @@ test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
 
-doctest: clean
-	cd docs && poetry run make doctest
+docs:
+	cd docs/ && poetry run yarn pre-build && yarn build
 
 livedocs:
-	cd docs && poetry run make livehtml
+	cd docs/ && poetry run yarn start
 
 release:
 	poetry run python scripts/release.py
