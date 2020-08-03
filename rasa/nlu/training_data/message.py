@@ -31,10 +31,9 @@ class Message:
         features: Optional[List["Features"]] = None,
         **kwargs,
     ) -> None:
-        import copy
         self.time = time
         self.text = text
-        self.data = copy.deepcopy(data) if data else {}
+        self.data = data if data else {}
         self.data.update({TEXT: text})
         self.features = features if features else []
 
