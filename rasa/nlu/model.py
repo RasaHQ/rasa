@@ -263,7 +263,7 @@ class Interpreter:
     # that will be returned by `parse`
     @staticmethod
     def default_output_attributes() -> Dict[Text, Any]:
-        return {"text": "", "intent": {"name": None, "confidence": 0.0}, "entities": []}
+        return {"intent": {"name": None, "confidence": 0.0}, "entities": []}
 
     @staticmethod
     def ensure_model_compatibility(
