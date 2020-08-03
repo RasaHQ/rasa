@@ -70,10 +70,11 @@ jobs:
       env:
         GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
         TMP_DOCS_FOLDER: /tmp/documentation-${{ github.run_id }}
+        TMP_SSH_KEY_PATH: /tmp/docs_key
       run: |
-        eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
-        echo "$GITHUB_DOCS_KEY" > "docs_key"
-        ssh-add docs_key
+        eval "$(ssh-agent -s)"; touch $TMP_SSH_KEY_PATH; chmod 0600 $TMP_SSH_KEY_PATH
+        echo "$GITHUB_DOCS_KEY" > $TMP_SSH_KEY_PATH
+        ssh-add $TMP_SSH_KEY_PATH
 
         git config --global user.email "builds@github-ci.com"
         git config --global user.name "GitHub CI"
