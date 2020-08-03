@@ -81,7 +81,7 @@ def test_auto_configure(keys_to_configure: Set[Text]):
     ],
 )
 def test_add_missing_config_keys_to_file(
-    tmp_path: Path, config_path: Path, missing_keys: Set[Text],
+    tmp_path: Path, config_path: Path, missing_keys: Set[Text]
 ):
     config_file = str(tmp_path / "config.yml")
     shutil.copyfile(str(config_path), config_file)

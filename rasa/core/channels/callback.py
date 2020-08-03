@@ -7,9 +7,9 @@ from sanic.request import Request
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     UserMessage,
-    RestInput,
     InputChannel,
 )
+from rasa.core.channels.rest import RestInput
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from sanic.response import HTTPResponse
 

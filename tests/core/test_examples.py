@@ -59,7 +59,7 @@ async def test_formbot_example():
         }
         with aioresponses() as mocked:
             mocked.post(
-                "https://example.com/webhooks/actions", payload=response, repeat=True,
+                "https://example.com/webhooks/actions", payload=response, repeat=True
             )
             responses = await agent.handle_text(input_text)
             assert responses[0]["text"] == output_text
