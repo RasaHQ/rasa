@@ -13,8 +13,6 @@ contextual conversations.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="build-faq-assistant"></a>
 
-## Building a simple FAQ assistant
-
 FAQ assistants are the simplest assistants to build and a good place to get started.
 These assistants allow the user to ask a simple question and get a response. We’re going to
 build a basic FAQ assistant using features of Rasa designed specifically for this type of assistant.
@@ -44,7 +42,7 @@ and `domain.yml` files are empty.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="respond-with-memoization-policy"></a>
 
-### Memoization Policy
+## Memoization Policy
 
 The MemoizationPolicy remembers examples from training stories for up to a `max_history`
 of turns. The number of “turns” includes messages the user sent, and actions the
@@ -191,7 +189,7 @@ an exception that stops the pipeline.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="faqs-response-selector"></a>
 
-### Response Selectors
+## Response Selectors
 
 The [ResponseSelector](../nlu/components#response-selector) NLU component is designed to make it easier to handle dialogue
 elements like [Small Talk](../dialogue-elements/small-talk) and FAQ messages in a simple manner. By using the ResponseSelector,

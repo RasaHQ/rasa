@@ -12,7 +12,7 @@ Even if you design your bot perfectly, users will inevitably say things to your
 assistant that you did not anticipate. In these cases, your assistant will fail,
 and it’s important you ensure it does so gracefully.
 
-#### Fallback policy
+## Fallback policy
 
 One of the most common failures is low NLU confidence, which is handled very nicely with
 the TwoStageFallbackPolicy. You can enable it by adding the following to your configuration file,
@@ -53,7 +53,7 @@ We define some intent mappings to make it more intuitive to the user what an int
 
 <img alt="Intent Mappings" src="../../img/intent_mappings.png" width="240" />
 
-#### Out of scope intent
+## Out of scope intent
 
 It is good practice to also handle questions you know your users may ask, but for which you haven’t necessarily implemented a user goal yet.
 

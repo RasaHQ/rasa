@@ -66,7 +66,7 @@ For this to work, keep in mind that the slot has to be featurized in your `domai
 file. This time we can use the `text` slot type, as we only care about whether the
 [slot was set or not](https://rasa.com/docs/rasa/core/slots/).
 
-#### AugmentedMemoizationPolicy
+## AugmentedMemoizationPolicy
 
 To make your bot more robust to interjections, you can replace the MemoizationPolicy
 with the AugmentedMemoizationPolicy. It works the same way as the MemoizationPolicy,
@@ -74,7 +74,7 @@ but if no exact match is found it additionally has a mechanism that forgets a ce
 amount of steps in the conversation history to find a match in your stories (read more
 [here](https://rasa.com/docs/rasa/core/policies/#augmented-memoization-policy))
 
-#### Using ML to generalise
+## Using ML to generalise
 
 Aside from the more rule-based policies we described above, Core also has some ML
 policies you can use. These come in as an additional layer in your policy configuration,
