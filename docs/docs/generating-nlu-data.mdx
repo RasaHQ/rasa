@@ -39,12 +39,6 @@ In order to gather real data, you’re going to need real user messages. This me
 
 ## Avoiding Intent Confusion
 
-Intents should be designed to be as distinct as possible so that the model is able to make predictions correctly
-
-
-Entities can be used to perform conditional logic for a given intent
-
-
 A common mistake developers make is creating separate intents when entities can be used as the differentiating factor.
 An example of this is when designing intents centered around the user providing information. A simple solution would be to create separate intents depending on what information is provided, e.g. inform_name, inform_address, inform_email, when all of these intents should actually be grouped as a single inform intent with several possible entity values.
 
@@ -65,19 +59,9 @@ Extracted entity values can be used to affect the conversation flow using catego
 
 ### Using Synonyms Wisely
 
-Adding synonyms to the training data is useful for mapping certain entity values to a single normalized entity
-
-Synonyms, however, are not meant for improving your model's entity recognition and has no effect on NLU performance
-
+Adding synonyms to the training data is useful for mapping certain entity values to a single normalized entity. Synonyms, however, are not meant for improving your model's entity recognition and has no effect on NLU performance.
 
 A good use case for synonyms is when normalizing entities belonging to distinct groups. For example, in an assistant that asks users what insurance policies they're interested in, they might respond with "my truck," "a car," or "I drive a batmobile." It would be a good idea to map `truck`, `car`, and `batmobile` to the normalized value `auto` so that the processing logic will only need to account for a narrow set of possibilities (see [Entity Synonyms](./training-data-format/#entity-synonyms)).
-
-
-### Lookup Tables
-Lookup tables are lists of entities that get featurized at training time and passed into the NLU model itself.
-
-
-Lookup tables are not used to perform match-based entity recognition, but rather are supplied to the NLU model as training data. Examples of useful applications of lookup tables are flavors of ice cream, brands of bottled water, and even sock length styles (see [Lookup Tables](./training-data-format/#lookup-tables)).
 
 
 ### Regexes
@@ -85,14 +69,15 @@ Lookup tables are not used to perform match-based entity recognition, but rather
 Regexes are useful for performing entity extraction on structured patterns such as 5 digits in US zip codes. Regex patterns are used to generate features for the NLU model to learn, not as a method of direct entity matching (see [Regular Expression Features](./training-data-format/#regular-expression-features)).
 
 
+### Lookup Tables
+
+Lookup tables are not used to perform match-based entity recognition, but rather are processed as a Regex pattern if any of the lookup table entries exist in the training example. Examples of useful applications of lookup tables are flavors of ice cream, brands of bottled water, and even sock length styles (see [Lookup Tables](./training-data-format/#lookup-tables)).
+
+
+
 ### Pre-trained Entity Extractors
-Common entities such as names, addresses, and cities require a large amount of training data for an NLU model to generalize effectively.
 
-
-When possible, take advantage of pre-trained entity extractors to reduce the effort of creating a large dataset.
-
-
-Rasa provides two great options for pre-trained extraction: SpacyEntityExtractor and DucklingEntityExtractor. Both have been pre-trained on a large corpus of data and can make your life a whole lot easier.
+Common entities such as names, addresses, and cities require a large amount of training data for an NLU model to generalize effectively. Rasa provides two great options for pre-trained extraction: [SpacyEntityExtractor](./components/entity-extractors/#SpacyEntityExtractor) and [DucklingEntityExtractor](./components/entity-extractors/#DucklingHTTPExtractor). Because these extractors have been pre-trained on a large corpus of data, you won't need to provide as many training examples for them to make accurate predictions.
 
 
 ## Handling Edge Cases
