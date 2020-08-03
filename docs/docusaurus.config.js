@@ -1,3 +1,4 @@
+const path = require('path');
 const remarkSources = require('remark-sources');
 const remarkCollapse = require('remark-collapse');
 const { remarkProgramOutput } = require("./plugins/program_output");
@@ -84,4 +85,5 @@ module.exports = {
       },
     ],
   ],
+  themes: [path.resolve(__dirname, './themes/theme-live-codeblock')],
 };
