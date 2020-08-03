@@ -65,6 +65,9 @@ module.exports = {
       style: 'dark',
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
+    gtm: {
+      containerID: 'GTM-PK448GB',
+    },
     // algolia: {
     //   apiKey: 'YOUR_API_KEY',
     //   indexName: 'YOUR_INDEX_NAME',
@@ -93,13 +96,12 @@ module.exports = {
         remarkProgramOutput
       ],
     }],
-    // ['@docusaurus/plugin-google-analytics', {}],
-    // ['@docusaurus/plugin-google-gtag', {}],
     ['@docusaurus/plugin-sitemap', {
       cacheTime: 600 * 1000, // 600 sec - cache purge period
       changefreq: 'weekly',
       priority: 0.5,
     }],
+    path.resolve(__dirname, './plugins/google-tagmanager'),
   ],
 };
 
