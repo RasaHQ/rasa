@@ -70,7 +70,7 @@ Adding synonyms to the training data is useful for mapping certain entity values
 Synonyms, however, are not meant for improving your model's entity recognition and has no effect on NLU performance
 
 
-A good use case for synonyms is when normalizing entities belonging to distinct groups. For example, in an assistant that asks users what insurance policies they're interested in, they might respond with "my truck," "a car," or "I drive a batmobile." It would be a good idea to map truck, car, and batmobile to the normalized value auto so that the processing logic will only need to account for a narrow set of possibilities (see [Entity Synonyms](./training-data-format/#entity-synonyms)).
+A good use case for synonyms is when normalizing entities belonging to distinct groups. For example, in an assistant that asks users what insurance policies they're interested in, they might respond with "my truck," "a car," or "I drive a batmobile." It would be a good idea to map `truck`, `car`, and `batmobile` to the normalized value `auto` so that the processing logic will only need to account for a narrow set of possibilities (see [Entity Synonyms](./training-data-format/#entity-synonyms)).
 
 
 ### Lookup Tables
