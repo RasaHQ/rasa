@@ -1,4 +1,4 @@
-const getIncludedSources = require('./plugins/included_source.js');
+const getIncludedSources = require('../plugins/included_source.js');
 
 
 
