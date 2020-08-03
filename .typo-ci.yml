@@ -61,6 +61,8 @@ excluded_words:
   - asyncio
   - bot
   - bot's
+  - cdd
+  - CDD
   - cmdline
   - conveRT
   - ConveRTFeaturizer
