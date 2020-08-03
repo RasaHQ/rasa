@@ -8,6 +8,8 @@ help:
 	@echo "        Remove Python/build artifacts."
 	@echo "    install"
 	@echo "        Install rasa."
+	@echo "    install-full"
+	@echo "        Install rasa with all extras (transformers, tensorflow_text, spacy, jieba)."
 	@echo "    formatter"
 	@echo "        Apply black formatting to code."
 	@echo "    lint"
@@ -18,6 +20,8 @@ help:
 	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
 	@echo "    prepare-tests-macos"
 	@echo "        Install system requirements for running tests on macOS."
+	@echo "    prepare-tests-windows"
+	@echo "        Install system requirements for running tests on Windows."
 	@echo "    prepare-tests-files"
 	@echo "        Download all additional project files needed to run tests."
 	@echo "    test"
@@ -49,6 +53,11 @@ install-mitie:
 install-full: install install-mitie
 	poetry install -E full
 
+install-full-windows: install install-mitie
+	# tensorflow_text is not available on Windows, so we're skipping it
+	# see https://github.com/tensorflow/text/issues/44 for more details
+	poetry install -E spacy -E transformers -E jieba
+
 formatter:
 	poetry run black rasa tests
 
@@ -60,7 +69,7 @@ types:
 	poetry run pytype --keep-going rasa -j 16
 
 prepare-tests-files:
-	poetry install --extras spacy
+	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
 	poetry run python -m spacy download de_core_news_sm
 	poetry run python -m spacy link en_core_web_md en --force
@@ -70,14 +79,20 @@ prepare-tests-files:
 prepare-wget-macos:
 	brew install wget || true
 
+prepare-wget-windows:
+	choco install wget
+
 prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
 
 prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
+prepare-tests-windows: prepare-wget-windows prepare-tests-files
+	choco install graphviz
+
 test: clean
-	# OMP_NUM_THREADS can improve overral performance using one thread by process (on tensorflow), avoiding overload
+	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
 
 doctest: clean
