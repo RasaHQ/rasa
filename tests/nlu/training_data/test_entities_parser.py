@@ -105,7 +105,7 @@ import rasa.nlu.training_data.entities_parser as entities_parser
     ],
 )
 def test_markdown_entity_regex(
-    example: Text, expected_entities: List[Dict[Text, Any]], expected_text: Text,
+    example: Text, expected_entities: List[Dict[Text, Any]], expected_text: Text
 ):
 
     result = entities_parser.find_entities_in_training_example(example)

@@ -7,7 +7,8 @@ from sanic.exceptions import abort
 import jwt
 
 from rasa.core import constants
-from rasa.core.channels.channel import RestInput, InputChannel
+from rasa.core.channels.channel import InputChannel
+from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from sanic.request import Request
 

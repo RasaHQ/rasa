@@ -1,1 +1,0 @@
-Add support for proxy use in :ref:`slack` input channel.

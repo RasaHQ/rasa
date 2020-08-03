@@ -12,6 +12,7 @@ intents:
  - search_venues
  - compare_reviews
  - bot_challenge
+ - nlu_fallback
 
 entities:
  - name

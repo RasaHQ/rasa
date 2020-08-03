@@ -39,7 +39,7 @@ def test_export_help(run: Callable[..., RunResult]):
     [(2, 3), (None, 5.5), (None, None), (5, None)],
 )
 def test_validate_timestamp_options(
-    minimum_timestamp: Optional[float], maximum_timestamp: Optional[float],
+    minimum_timestamp: Optional[float], maximum_timestamp: Optional[float]
 ):
     args = argparse.Namespace()
     args.minimum_timestamp = (
