@@ -65,25 +65,53 @@ module.exports = {
       style: 'dark',
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
+    algolia: {
+      apiKey: 'YOUR_API_KEY',
+      indexName: 'YOUR_INDEX_NAME',
+      searchParameters: {}, // Optional (if provided by Algolia)
+    },
   },
-  presets: [
-    [
-      '@docusaurus/preset-classic',
-      {
-        docs: {
-          // It is recommended to set document id as docs home page (`docs/` path).
-          homePageId: 'index',
-          // https://v2.docusaurus.io/docs/next/docs-introduction/#docs-only-mode
-          routeBasePath: '/',
-          sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
-          remarkPlugins: [[remarkCollapse, { test: '' }], remarkSources, remarkProgramOutput],
-        },
-        theme: {
-          customCss: require.resolve('./src/css/custom.css'),
-        },
-      },
-    ],
+  themes: [
+    ['@docusaurus/theme-classic', {
+      customCss: require.resolve('./src/css/custom.css'),
+    }],
+    // FIXME: apply for and setup algolia docSearchv3 https://docsearch.algolia.com/apply/
+    // ['@docusaurus/theme-search-algolia', {}],
+    path.resolve(__dirname, './themes/theme-live-codeblock'),
   ],
-  themes: [path.resolve(__dirname, './themes/theme-live-codeblock')],
+  plugins: [
+    ['@docusaurus/plugin-content-docs', {
+      // https://v2.docusaurus.io/docs/next/docs-introduction/#docs-only-mode
+      routeBasePath: '/',
+      // It is recommended to set document id as docs home page (`docs/` path).
+      homePageId: 'index',
+      sidebarPath: require.resolve('./sidebars.js'),
+      editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
+      remarkPlugins: [
+        [ remarkCollapse, { test: '' }],
+        remarkSources,
+        remarkProgramOutput
+      ],
+    }],
+    // ['@docusaurus/plugin-google-analytics', {}],
+    // ['@docusaurus/plugin-google-gtag', {}],
+    ['@docusaurus/plugin-sitemap', {
+      cacheTime: 600 * 1000, // 600 sec - cache purge period
+      changefreq: 'weekly',
+      priority: 0.5,
+    }],
+  ],
 };
+
+/*
+
+
+
+
+
+
+
+
+
+
+ */

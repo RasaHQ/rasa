@@ -1,0 +1,9 @@
+{
+  "public": "build",
+  "rewrites": [
+    {
+      "source": "/docs/rasa/next/:rest",
+      "destination": "/:rest"
+    }
+  ]
+}

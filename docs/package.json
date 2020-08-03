@@ -5,6 +5,7 @@
   "scripts": {
     "start": "yarn run pre-build && docusaurus start",
     "pre-build": "yarn run copy-md-files && yarn run variables && yarn run program-outputs && yarn run included-sources",
+    "serve": "serve",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "new-version": "docusaurus docs:version",
@@ -34,6 +35,7 @@
     "remark": "^12.0.0",
     "remark-collapse": "^0.1.2",
     "remark-sources": "^1.0.1",
+    "styled-components": "4",
     "unist-util-visit-children": "^1.1.3"
   },
   "browserslist": {
@@ -49,6 +51,7 @@
     ]
   },
   "devDependencies": {
+    "serve": "^11.3.2",
     "toml": "^3.0.0"
   }
 }
