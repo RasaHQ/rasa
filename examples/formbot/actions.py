@@ -1,4 +1,4 @@
-from typing import Dict, Text, Any, List, Union, Optional
+from typing import Dict, Text, Any, List, Union
 
 from rasa_sdk import Tracker
 from rasa_sdk.executor import CollectingDispatcher
@@ -6,16 +6,16 @@ from rasa_sdk.forms import FormAction
 
 
 class RestaurantForm(FormAction):
-    """Example of a custom form action"""
+    """Example of a custom form action."""
 
     def name(self) -> Text:
-        """Unique identifier of the form"""
+        """Unique identifier of the form."""
 
         return "restaurant_form"
 
     @staticmethod
     def required_slots(tracker: Tracker) -> List[Text]:
-        """A list of required slots that the form has to fill"""
+        """A list of required slots that the form has to fill."""
 
         return ["cuisine", "num_people", "outdoor_seating", "preferences", "feedback"]
 
@@ -24,7 +24,7 @@ class RestaurantForm(FormAction):
             - an extracted entity
             - intent: value pairs
             - a whole message
-            or a list of them, where a first match will be picked"""
+        or a list of them, where a first match will be picked."""
 
         return {
             "cuisine": self.from_entity(entity="cuisine", not_intent="chitchat"),
@@ -45,10 +45,9 @@ class RestaurantForm(FormAction):
             "feedback": [self.from_entity(entity="feedback"), self.from_text()],
         }
 
-    # USED FOR DOCS: do not rename without updating in docs
     @staticmethod
     def cuisine_db() -> List[Text]:
-        """Database of supported cuisines"""
+        """Database of supported cuisines."""
 
         return [
             "caribbean",
@@ -62,7 +61,7 @@ class RestaurantForm(FormAction):
 
     @staticmethod
     def is_int(string: Text) -> bool:
-        """Check if a string is an integer"""
+        """Check if a string is an integer."""
 
         try:
             int(string)
@@ -70,7 +69,6 @@ class RestaurantForm(FormAction):
         except ValueError:
             return False
 
-    # USED FOR DOCS: do not rename without updating in docs
     def validate_cuisine(
         self,
         value: Text,
@@ -127,7 +125,7 @@ class RestaurantForm(FormAction):
                 return {"outdoor_seating": None}
 
         else:
-            # affirm/deny was picked up as T/F
+            # affirm/deny was picked up as True/False by the from_intent mapping
             return {"outdoor_seating": value}
 
     def submit(
@@ -136,9 +134,7 @@ class RestaurantForm(FormAction):
         tracker: Tracker,
         domain: Dict[Text, Any],
     ) -> List[Dict]:
-        """Define what the form has to do
-            after all required slots are filled"""
+        """Define what the form has to do after all required slots are filled."""
 
-        # utter submit template
         dispatcher.utter_message(template="utter_submit")
         return []

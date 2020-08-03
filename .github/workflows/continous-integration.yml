@@ -39,8 +39,8 @@ jobs:
     - name: Run Swagger 🕵️‍♀️
       run: |
         npm install -g swagger-cli
-        swagger-cli validate docs/_static/spec/action-server.yml
-        swagger-cli validate docs/_static/spec/rasa.yml
+        swagger-cli validate docs/static/spec/action-server.yml
+        swagger-cli validate docs/static/spec/rasa.yml
 
   quality:
     name: Code Quality
@@ -54,6 +54,11 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
+
+    - name: Set up Node 12.x 🦙
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
 
     - name: Read Poetry Version 🔢
       run: |
@@ -72,10 +77,17 @@ jobs:
         key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-3.7
 
+    - name: Load Yarn Cached Packages ⬇
+      uses: actions/cache@v1
+      with:
+        path: docs/node_modules
+        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
+        restore-keys: ${{ runner.os }}-yarn-12.x
+
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
-        make install-full
+        make install-full install-docs
 
     - name: Lint Code 🎎
       run: make lint
@@ -89,24 +101,10 @@ jobs:
       # trying to run the `rasa` command once before the docs build.
       run: poetry run rasa --help
 
-# DOES NOT WORK YET DUE TO TENSORFLOW 1.5 (some issue with no tensorflow-cpu verison)
-#  -> should work with 2.0 and replace the below "Test Docs":
-#
-#    - name: Test Docs
-#      uses: ammaraskar/sphinx-action@0.3
-#      with:
-#        docs-folder: "docs/"
-#        repo-token: "${{ secrets.GITHUB_TOKEN }}"
-#        build-command: "make SPHINXOPTS=\"-W --keep-going -A html_theme=rasabaster\" html"
-#        pre-build-command: "apt-get update -y && apt-get install -y git"
-
     - name: Test Docs 📃
       run: |
-        make install-full
         poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
-        export SPHINXBUILD=$(poetry run which sphinx-build)
-        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html && make SPHINXBUILD=$SPHINXBUILD linkcheck
-        
+        make docs
 
   test:
     name: Run Tests
@@ -275,9 +273,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
-        sudo apt-get update
-        sudo apt-get -y install pandoc
-        pip install -U github3.py pypandoc
+        pip install -U github3.py
         python3 scripts/publish_gh_release_notes.py
         ./scripts/ping_slack_about_package_release.sh
 

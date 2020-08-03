@@ -1,1 +1,0 @@
-Update ``rasa shell`` documentation to explain how to recreate external channel session behavior.
