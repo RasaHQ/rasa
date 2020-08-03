@@ -177,7 +177,7 @@ def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
         `True` if it's a conversation test file, otherwise `False`.
     """
 
-    if not Path(file_path).suffix in MARKDOWN_FILE_EXTENSIONS:
+    if Path(file_path).suffix not in MARKDOWN_FILE_EXTENSIONS:
         return False
 
     dirname = os.path.dirname(file_path)
