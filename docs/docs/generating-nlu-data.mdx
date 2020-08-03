@@ -49,8 +49,7 @@ A common mistake developers make is creating separate intents when entities can 
 An example of this is when designing intents centered around the user providing information. A simple solution would be to create separate intents depending on what information is provided, e.g. inform_name, inform_address, inform_email, when all of these intents should actually be grouped as a single inform intent with several possible entity values.
 
 
-Extracted entity values can be used to affect the conversation flow using categorical slots:
-Code snippet:
+Extracted entity values can be used to affect the conversation flow using categorical slots. For example:
 
 ```story
 - inform
