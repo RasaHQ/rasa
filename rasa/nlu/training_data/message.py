@@ -79,16 +79,16 @@ class Message:
         # Message object in markdown format
         d = {key: value for key, value in d.items() if value is not None}
 
-        return dict(d, text=self.text)
+        return dict(d)
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Message):
             return False
         else:
-            return (other.text, ordered(other.data)) == (self.text, ordered(self.data))
+            return ordered(other.data) == ordered(self.data)
 
     def __hash__(self) -> int:
-        return hash((self.text, str(ordered(self.data))))
+        return hash(str(ordered(self.data)))
 
     @classmethod
     def build(
