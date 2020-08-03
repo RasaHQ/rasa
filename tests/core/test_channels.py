@@ -565,7 +565,7 @@ def test_slack_form_metadata():
     header = {"content-type": "application/x-www-form-urlencoded"}
     payload = {
         "type": "block_actions",
-        "user": {"id": authed_user, "username": user, "name": "name",},
+        "user": {"id": authed_user, "username": user, "name": "name"},
         "channel": {"id": channel},
         "message": {
             "type": "message",
@@ -580,7 +580,7 @@ def test_slack_form_metadata():
                         {
                             "type": "button",
                             "action_id": "XXXXX",
-                            "text": {"type": "plain_text", "text": "text",},
+                            "text": {"type": "plain_text", "text": "text"},
                             "value": "value",
                         }
                     ],
@@ -669,7 +669,7 @@ def test_slack_form_metadata_missing_keys():
                         {
                             "type": "button",
                             "action_id": "XXXXX",
-                            "text": {"type": "plain_text", "text": "text",},
+                            "text": {"type": "plain_text", "text": "text"},
                             "value": "value",
                         }
                     ],
