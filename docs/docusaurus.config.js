@@ -65,11 +65,11 @@ module.exports = {
       style: 'dark',
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
-    algolia: {
-      apiKey: 'YOUR_API_KEY',
-      indexName: 'YOUR_INDEX_NAME',
-      searchParameters: {}, // Optional (if provided by Algolia)
-    },
+    // algolia: {
+    //   apiKey: 'YOUR_API_KEY',
+    //   indexName: 'YOUR_INDEX_NAME',
+    //   searchParameters: {}, // Optional (if provided by Algolia)
+    // },
   },
   themes: [
     ['@docusaurus/theme-classic', {

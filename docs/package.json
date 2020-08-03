@@ -13,11 +13,17 @@
     "program-outputs": "node scripts/compile_program_outputs.js",
     "copy-md-files": "node scripts/copy_md_files.js",
     "included-sources": "node scripts/compile_included_sources.js",
-    "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}"
+    "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}",
+    "ci": "yarn install --frozen-lockfile",
+    "u": "yarn upgrade-interactive --latest"
   },
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.60",
-    "@docusaurus/preset-classic": "^2.0.0-alpha.60",
+    "@docusaurus/plugin-client-redirects": "^2.0.0-alpha.58",
+    "@docusaurus/plugin-ideal-image": "^2.0.0-alpha.39",
+    "@docusaurus/plugin-pwa": "^2.0.0-alpha.59",
+    "@docusaurus/plugin-sitemap": "^2.0.0-alpha.37",
+    "@docusaurus/preset-classic": "^2.0.0-alpha.40",
     "@fortawesome/fontawesome-svg-core": "^1.2.30",
     "@fortawesome/free-solid-svg-icons": "^5.14.0",
     "@fortawesome/react-fontawesome": "^0.1.11",
