@@ -33,7 +33,7 @@ class Message:
     ) -> None:
         self.time = time
         self.text = text
-        self.data = data if data else {}
+        self.data = data.copy() if data else {}
         self.data.update({TEXT: text})
         self.features = features if features else []
 
