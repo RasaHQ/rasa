@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
 class Message:
     def __init__(
         self,
-        text: Text,
+        text: Optional[Text] = "",
         data: Optional[Dict[Text, Any]] = None,
         output_properties: Optional[Set] = None,
         time: Optional[Text] = None,
