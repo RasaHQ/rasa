@@ -247,7 +247,7 @@ async def test_import_nlu_training_data_with_default_actions(project: Text):
 
     extended_training_data = await importer.get_nlu_data()
     assert all(
-        Message(data={ACTION_NAME: action_name})
+        Message("", data={ACTION_NAME: action_name})
         in extended_training_data.training_examples
         for action_name in action.default_action_names()
     )
