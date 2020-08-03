@@ -18,8 +18,6 @@ venv
 .pytype
 dist/
 pip-wheel-metadata
-docs/nlu/_build
-docs/_build
 server/
 scala/
 mongodb/
@@ -47,15 +45,11 @@ tmp_training_data.json
 models/
 .mypy_cache/
 *.tar.gz
-docs/nlu/key
-docs/nlu/key.pub
 secrets.tar
 .pytest_cache
-src
 test_download.zip
 bower_components/
 build/lib/
-docs/core/_build
 /models/
 node_modules/
 npm-debug.log
@@ -72,8 +66,6 @@ examples/moodbot/errors.json
 examples/formbot/models*
 examples/concertbot/models*
 examples/moodbot/models*
-docs/core/key
-docs/core/key.pub
 failed_stories.md
 errors.json
 pip-wheel-metadata/*
@@ -88,3 +80,7 @@ rasa.db-wal
 env
 .dir-locals.el
 .history
+docs/.docusaurus
+docs/docs/variables.json
+docs/docs/sources/
+docs/docs/changelog.mdx
