@@ -8,7 +8,7 @@ on:
     - '**'
 
 # SECRETS
-# - GITHUB_DOCS_KEY: generated locally, added to github repo (public key)
+# - GH_DOCS_WRITE_KEY: generated locally, added to github repo (public key)
 #                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
 # - GITHUB_TOKEN: (default, from github actions)
 
@@ -68,12 +68,12 @@ jobs:
 
     - name: Build & Publish Docs 🏃‍♀️
       env:
-        GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
+        GH_DOCS_WRITE_KEY: ${{ secrets.GH_DOCS_WRITE_KEY }}
         TMP_DOCS_FOLDER: /tmp/documentation-${{ github.run_id }}
         TMP_SSH_KEY_PATH: /tmp/docs_key
       run: |
         eval "$(ssh-agent -s)"; touch $TMP_SSH_KEY_PATH; chmod 0600 $TMP_SSH_KEY_PATH
-        echo "$GITHUB_DOCS_KEY" > $TMP_SSH_KEY_PATH
+        echo "$GH_DOCS_WRITE_KEY" > $TMP_SSH_KEY_PATH
         ssh-add $TMP_SSH_KEY_PATH
 
         git config --global user.email "builds@github-ci.com"
