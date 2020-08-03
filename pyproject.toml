@@ -162,6 +162,7 @@ pep440-version-utils = "^0.3.0"
 [tool.poetry.extras]
 spacy = [ "spacy",]
 convert = [ "tensorflow-text",]
+jieba = [ "jieba",]
 transformers = [ "transformers",]
 full = [ "spacy", "tensorflow-text", "transformers", "jieba",]
 gh-release-notes = [ "pypandoc", "github3.py",]
