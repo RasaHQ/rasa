@@ -25,4 +25,4 @@ When asked questions such as “Are you a bot?” or “Are you a human?”, a b
 
 ## 4. **A conversational assistant should provide users a way to prove its identity**. 
 
-When an assistant is designed to communicate with users while representing a company, organization, etc., it is important to allow users to verify that this re
+When an assistant is designed to communicate with users while representing a company, organization, etc., it is important to allow users to verify that this representation has been previously authorized. It’s possible to use already existing technologies to do this: for example, by integrating a conversational assistant to a website served using HTTPS, the content of the site (and therefore the assistant itself) will be guaranteed to be legitimate by a trusted certificate authority. Another example would be to have the conversational assistant use a “verified” social media account.
