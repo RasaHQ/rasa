@@ -23,13 +23,13 @@ CDD is not a linear process; you'll circle back to the same actions over and ove
 
 Read more about these actions and the concept of CDD [here](https://blog.rasa.com/conversation-driven-development-a-better-approach-to-building-ai-assistants/). 
 
-You can also check out [Rasa X](x), a purpose-built tool for CDD. 
+You can also check out [Rasa X](https://rasa.com/docs/rasa-x/), a purpose-built tool for CDD. 
 
 ## CDD in early stages of development
 
 If you're at the earliest stage of bot development, it might seem like CDD has no role to play - after all, you have no conversations yet! However, there are CDD actions you can take at the very beginning of bot development:
 
-1. See the best practices for [NLU](http://s) and [Stories](http://s) for details on applying CDD in these areas.
+1. See the best practices for [NLU](generating-nlu-data) and [Stories](writing-stories) for details on applying CDD in these areas.
 2. Give your bot to test users early on. 
 
     CDD is all about listening to your users, so the earlier you find some, the better. 
@@ -38,15 +38,17 @@ If you're at the earliest stage of bot development, it might seem like CDD has n
 
 3. Set up a CI/CD pipeline.
 
-    CDD leads to frequent, smaller updates to your bot as you gather insights from bot conversations. [Setting up a CI/CD pipeline](http://s)early on in development will enable you to act quickly on what you see in conversations.
+    CDD leads to frequent, smaller updates to your bot as you gather insights from bot conversations. [Setting up a CI/CD pipeline](setting-up-ci-cd) early on in development will enable you to act quickly on what you see in conversations.
 
 
-At this stage, you can [install Rasa X in local mode](http://x) to make it easier to share your bot with test users, collect conversations, and apply NLU and Story best practices based on the conversations you collect.
+At this stage, you can [install Rasa X in local mode](https://rasa.com/docs/rasa-x/installation-and-setup/install/local-mode/) to make it easier to share your bot with test users, collect conversations, and apply NLU and Story best practices based on the conversations you collect.
 
 
 ## CDD with a bot in production 
 
-Once your bot is in production, you'll have more conversations to gain insights from. Then you can fully apply CDD actions.
+Once your bot is in production, you'll have more conversations to gain insights from. Then you can fully apply CDD actions. 
+At this stage, you can [install Rasa X on a server](https://rasa.com/docs/rasa-x/installation-and-setup/install/helm-chart/) 
+to both deploy your bot and enable CDD with a bot in production.
 
 *   **Review**: Look in conversations for what users are really asking for.
 
@@ -55,7 +57,7 @@ Once your bot is in production, you'll have more conversations to gain insights 
     *   Look at conversations where an “out_of_scope” intent or fallback behavior occurred. These could indicate a potential new skill, or just a misclassified user utterance.
     *   Look for user frustration, such as requests for transfer to a human.
 
-*   **Annotate**: Continue to follow [best practices for NLU](http://s) as you add new user utterances from real conversations to your training data. Be careful not to overfit your NLU model to utterances like those already in your training data. This can happen when you continuously add user utterances that were already predicted correctly and with high confidence to your training data.  To avoid overfitting and help your model generalize to more diverse user utterances, add only user utterances that the model previously predicted incorrectly or with low confidence. 
+*   **Annotate**: Continue to follow [best practices for NLU](generating-nlu-data) as you add new user utterances from real conversations to your training data. Be careful not to overfit your NLU model to utterances like those already in your training data. This can happen when you continuously add user utterances that were already predicted correctly and with high confidence to your training data.  To avoid overfitting and help your model generalize to more diverse user utterances, add only user utterances that the model previously predicted incorrectly or with low confidence. 
 
 *   **Test:** Add successful user conversations to your test conversations. Doing this consistently will help ensure you don't introduce regressions as you make other fixes to your bot. 
 
@@ -65,4 +67,4 @@ Once your bot is in production, you'll have more conversations to gain insights 
 
     Automatically tracked metrics are by nature proxy metrics; the only way to get a true measure of success would be to individually review and rate every single conversation with your bot. While this clearly isn't realistic, just keep in mind that no metric is a perfect representation of your bot's performance, so don't really only on metrics to see where your bot needs improvement.
 
-*   **Fix:** Continue to follow [best practices for Stories](http://s) as you expand and improve your bot's skills. Let user demand guide which skills you add and which fixes you make. Make smaller changes frequently rather than making big changes only once in a while. This will help you gauge the effectiveness of changes you're making, since you'll get user feedback more frequently. Your [CI/CD pipeline ](http://c) should allow you to do so with confidence.
+*   **Fix:** Continue to follow [best practices for Stories](writing-stories) as you expand and improve your bot's skills. Let user demand guide which skills you add and which fixes you make. Make smaller changes frequently rather than making big changes only once in a while. This will help you gauge the effectiveness of changes you're making, since you'll get user feedback more frequently. Your [CI/CD pipeline ](http://c) should allow you to do so with confidence.
