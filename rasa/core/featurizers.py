@@ -791,7 +791,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def slice_state_history(
-        states: List[Dict[Text, Dict[Text, Union[Text, Tuple[float]]]]],
+        states: List[STATE],
         slice_length: Optional[int],
     ) -> List[Dict[Text, Dict[Text, Union[Text, Tuple[float]]]]]:
         """Slices states from the trackers history.
