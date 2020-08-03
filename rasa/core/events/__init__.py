@@ -1033,7 +1033,6 @@ class ActionExecuted(Event):
             else:
                 return False
 
-
     def as_story_string(self) -> Text:
         return self.action_name
 

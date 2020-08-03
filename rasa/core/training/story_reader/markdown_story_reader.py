@@ -94,8 +94,8 @@ class MarkdownStoryReader(StoryReader):
                         await self._add_user_messages(user_messages, line_num)
                     # end-to-end BOT message
                 elif line.startswith("<B>"):
-                    event_name, parameters = self._parse_event_line(line[3:])
-                    self._add_event(event_name, parameters, is_e2e=True)
+                    event_name, parameters = self._parse_bot_message_e2e(line[3:])
+                    self._add_event(event_name, parameters)
                 # end-to-end USER message
                 elif line.startswith("<U>"):
                     user_messages = [el.strip() for el in line[3:].split(" OR ")]
@@ -181,6 +181,13 @@ class MarkdownStoryReader(StoryReader):
                 docs=DOCS_URL_STORIES,
             )
             return "", {}
+
+    @staticmethod
+    def _parse_bot_message_e2e(line):
+        from rasa.nlu.training_data.formats.markdown import MarkdownReader
+
+        action_as_message = MarkdownReader().parse_e2e_training_example(line)
+        return "", {"e2e_text": action_as_message.get(TEXT).strip()}
 
     async def _add_user_messages(self, messages, line_num):
         if not self.current_step_builder:
