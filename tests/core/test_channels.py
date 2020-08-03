@@ -565,7 +565,7 @@ def test_slack_form_metadata():
     header = {"content-type": "application/x-www-form-urlencoded"}
     payload = {
         "type": "block_actions",
-        "user": {"id": authed_user, "username": user, "name": "name",},
+        "user": {"id": authed_user, "username": user, "name": "name"},
         "channel": {"id": channel},
         "message": {
             "type": "message",
@@ -580,7 +580,7 @@ def test_slack_form_metadata():
                         {
                             "type": "button",
                             "action_id": "XXXXX",
-                            "text": {"type": "plain_text", "text": "text",},
+                            "text": {"type": "plain_text", "text": "text"},
                             "value": "value",
                         }
                     ],
@@ -669,7 +669,7 @@ def test_slack_form_metadata_missing_keys():
                         {
                             "type": "button",
                             "action_id": "XXXXX",
-                            "text": {"type": "plain_text", "text": "text",},
+                            "text": {"type": "plain_text", "text": "text"},
                             "value": "value",
                         }
                     ],
@@ -1234,7 +1234,7 @@ async def test_slackbot_send_custom_json_threaded():
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 def test_channel_inheritance():
-    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels import RestInput
     from rasa.core.channels.rasa_chat import RasaChatInput
 
     rasa_input = RasaChatInput("https://example.com")
@@ -1290,7 +1290,7 @@ def test_newsline_strip():
 
 def test_register_channel_without_route():
     """Check we properly connect the input channel blueprint if route is None"""
-    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels import RestInput
     import rasa.core
 
     input_channel = RestInput()
@@ -1303,7 +1303,7 @@ def test_register_channel_without_route():
 
 
 def test_channel_registration_with_absolute_url_prefix_overwrites_route():
-    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels import RestInput
     import rasa.core
 
     input_channel = RestInput()
@@ -1332,7 +1332,7 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     ],
 )
 def test_extract_input_channel(test_input, expected):
-    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels import RestInput
 
     input_channel = RestInput()
 
