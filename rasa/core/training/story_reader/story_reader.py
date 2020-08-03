@@ -7,7 +7,6 @@ from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.training.story_reader.story_step_builder import StoryStepBuilder
 from rasa.core.training.structures import StoryStep
-from rasa.nlu.constants import TEXT
 
 logger = logging.getLogger(__name__)
 
