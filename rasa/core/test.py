@@ -556,7 +556,7 @@ async def test(
     """Run the evaluation of the stories, optionally plot the results.
 
     Args:
-        stories: the stories to evaulate on
+        stories: the stories to evaluate on
         agent: the agent
         max_stories: maximum number of stories to consider
         out_directory: path to directory to results to

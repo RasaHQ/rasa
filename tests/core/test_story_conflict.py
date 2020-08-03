@@ -16,7 +16,7 @@ async def _setup_trackers_for_testing(
     domain_path: Text, training_data_file: Text
 ) -> Tuple[List[TrackerWithCachedStates], Domain]:
     importer = RasaFileImporter(
-        domain_path=domain_path, training_data_paths=[training_data_file],
+        domain_path=domain_path, training_data_paths=[training_data_file]
     )
     validator = await Validator.from_importer(importer)
 
