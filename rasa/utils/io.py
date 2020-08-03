@@ -278,7 +278,21 @@ def write_yaml_file(
         data = convert_to_ordered_dict(data)
 
     with Path(filename).open("w", encoding=DEFAULT_ENCODING) as outfile:
-        yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True)
+        return yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True)
+
+
+def write_yaml(data: Any, should_preserve_key_order: bool = False) -> Text:
+    """Writes a yaml string.
+
+    Args:
+        data: The data to write.
+        should_preserve_key_order: Whether to preserve key order in `data`.
+    """
+    if should_preserve_key_order:
+        _enable_ordered_dict_yaml_dumping()
+        data = convert_to_ordered_dict(data)
+
+    return yaml.dump(data, default_flow_style=False, allow_unicode=True)
 
 
 def write_text_file(

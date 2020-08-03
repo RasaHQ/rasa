@@ -506,7 +506,7 @@ def test_training_data_conversion(
     [
         ("data/examples/luis/demo-restaurants_v5.json", JSON),
         ("data/examples", JSON),
-        ("examples/moodbot/data/nlu.md", MARKDOWN),
+        ("data/examples/rasa/demo-rasa.md", MARKDOWN),
         ("data/rasa_yaml_examples", RASA_YAML),
     ],
 )

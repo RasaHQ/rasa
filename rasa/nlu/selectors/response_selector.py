@@ -223,6 +223,7 @@ class ResponseSelector(DIETClassifier):
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
+        responses: Optional[Dict[Text, Any]] = None,
     ) -> None:
 
         component_config = component_config or {}
@@ -232,6 +233,7 @@ class ResponseSelector(DIETClassifier):
         component_config[ENTITY_RECOGNITION] = False
         component_config[BILOU_FLAG] = None
         self.retrieval_intent_mapping = retrieval_intent_mapping or {}
+        self.responses = responses or {}
 
         super().__init__(
             component_config, index_label_id_mapping, entity_tag_specs, model
@@ -302,6 +304,7 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent_mapping = self._create_retrieval_intent_mapping(
             training_data
         )
+        self.responses = training_data.nlg_stories
 
         if not label_id_index_mapping:
             # no labels are present to train
@@ -322,6 +325,14 @@ class ResponseSelector(DIETClassifier):
         self._check_input_dimension_consistency(model_data)
 
         return model_data
+
+    def _full_response(self, label: Dict[Text, Any]) -> Optional[Dict[Text, Any]]:
+        """Given a label return the full response based on the labels id."""
+        for key, responses in self.responses.items():
+            for response in responses:
+                if hash(response.get("text", "")) == label.get("id"):
+                    return response
+        return None
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response and its similarity to the input."""
@@ -346,7 +357,7 @@ class ResponseSelector(DIETClassifier):
         )
 
         prediction_dict = {
-            "response": label,
+            "response": self._full_response(label) or {"text": label.get("name")},
             "ranking": label_ranking,
             "full_retrieval_intent": retrieval_intent_name,
         }
@@ -370,7 +381,7 @@ class ResponseSelector(DIETClassifier):
             self.retrieval_intent_mapping,
         )
 
-        return {"file": file_name}
+        return {"file": file_name, "responses": self.responses}
 
     @classmethod
     def load(
@@ -386,9 +397,8 @@ class ResponseSelector(DIETClassifier):
         model = super().load(
             meta, model_dir, model_metadata, cached_component, **kwargs
         )
-        if model == cls(component_config=meta):
-            model.retrieval_intent_mapping = {}
-            return model  # pytype: disable=bad-return-type
+        if not meta.get("file"):
+            return model
 
         file_name = meta.get("file")
         model_dir = Path(model_dir)
@@ -398,6 +408,7 @@ class ResponseSelector(DIETClassifier):
         )
 
         model.retrieval_intent_mapping = retrieval_intent_mapping
+        model.collected_responses = meta.get("responses", {})
 
         return model  # pytype: disable=bad-return-type
 

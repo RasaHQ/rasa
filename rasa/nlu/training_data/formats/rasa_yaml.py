@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 KEY_NLU = "nlu"
+KEY_RESPONSES = "responses"
 KEY_INTENT = "intent"
 KEY_INTENT_EXAMPLES = "examples"
 KEY_INTENT_TEXT = "text"
@@ -39,6 +40,7 @@ class RasaYAMLReader(TrainingDataReader):
         self.entity_synonyms: Dict[Text, Text] = {}
         self.regex_features: List[Dict[Text, Text]] = []
         self.lookup_tables: List[Dict[Text, List[Text]]] = []
+        self.nlg_stories: Dict[Text, Dict[Text, Any]] = {}
 
     def reads(self, string: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData in YAML format from a string.
@@ -63,12 +65,15 @@ class RasaYAMLReader(TrainingDataReader):
         for key, value in yaml_content.items():  # pytype: disable=attribute-error
             if key == KEY_NLU:
                 self._parse_nlu(value)
+            elif key == KEY_RESPONSES:
+                self._parse_responses(value)
 
         return TrainingData(
             self.training_examples,
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
+            self.nlg_stories,
         )
 
     def _parse_nlu(self, nlu_data: List[Dict[Text, Any]]) -> None:
@@ -102,6 +107,11 @@ class RasaYAMLReader(TrainingDataReader):
                     f"This section will be skipped.",
                     docs=DOCS_URL_TRAINING_DATA_NLU,
                 )
+
+    def _parse_responses(self, responses_data: Dict[Text, List[Any]]) -> None:
+        from rasa.core.domain import Domain
+
+        self.nlg_stories = Domain.collect_templates(responses_data)
 
     def _parse_intent(self, data: Dict[Text, Any]) -> None:
         from rasa.nlu.training_data import Message
@@ -307,12 +317,17 @@ class RasaYAMLReader(TrainingDataReader):
             `True` if the `filename` is possibly a valid YAML NLU file,
             `False` otherwise.
         """
-        if not Path(filename).suffix in YAML_FILE_EXTENSIONS:
+        if Path(filename).suffix not in YAML_FILE_EXTENSIONS:
             return False
+
         try:
             content = io_utils.read_yaml_file(filename)
             if KEY_NLU in content:
                 return True
+            elif KEY_RESPONSES in content:
+                return True
+            else:
+                return False
         except (YAMLError, Warning) as e:
             logger.error(
                 f"Tried to check if '{filename}' is an NLU file, but failed to "
@@ -321,4 +336,4 @@ class RasaYAMLReader(TrainingDataReader):
                 f"move the file to a different location. "
                 f"Error: {e}"
             )
-        return False
+            return False

@@ -144,11 +144,13 @@ def test_fetch_events_within_time_range_tracker_contains_no_events():
         exporter._fetch_events_within_time_range()
 
 
-def test_fetch_events_within_time_range_with_session_events():
+def test_fetch_events_within_time_range_with_session_events(tmp_path):
     conversation_id = "test_fetch_events_within_time_range_with_sessions"
 
     tracker_store = SQLTrackerStore(
-        dialect="sqlite", db=f"{uuid.uuid4().hex}.db", domain=Domain.empty()
+        dialect="sqlite",
+        db=str(tmp_path / f"{uuid.uuid4().hex}.db"),
+        domain=Domain.empty(),
     )
 
     events = [

@@ -53,6 +53,8 @@ class TrainingData:
         self.lookup_tables = lookup_tables if lookup_tables else []
         self.nlg_stories = nlg_stories if nlg_stories else {}
 
+        self._fill_response_phrases()
+
     def merge(self, *others: "TrainingData") -> "TrainingData":
         """Return merged instance of this data with other training data."""
 
@@ -101,6 +103,7 @@ class TrainingData:
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
+            self.nlg_stories,
         )
 
     def __hash__(self) -> int:
@@ -232,27 +235,21 @@ class TrainingData:
             self.regex_features, key=lambda e: "{}+{}".format(e["name"], e["pattern"])
         )
 
-    def fill_response_phrases(self) -> None:
+    def _fill_response_phrases(self) -> None:
         """Set response phrase for all examples by looking up NLG stories"""
         for example in self.training_examples:
-            response_key = example.get(RESPONSE_KEY_ATTRIBUTE)
             # if response_key is None, that means the corresponding intent is not a
             # retrieval intent and hence no response text needs to be fetched.
             # If response_key is set, fetch the corresponding response text
-            if response_key:
-                # look for corresponding bot utterance
-                story_lookup_intent = example.get_combined_intent_response_key()
-                assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
-                if assistant_utterances:
-                    # selecting only first assistant utterance for now
-                    example.set(RESPONSE, assistant_utterances[0])
-                else:
-                    raise ValueError(
-                        "No response phrases found for {}. Check training data "
-                        "files for a possible wrong intent name in NLU/NLG file".format(
-                            story_lookup_intent
-                        )
-                    )
+            if example.get(RESPONSE_KEY_ATTRIBUTE) is None:
+                continue
+
+            # look for corresponding bot utterance
+            story_lookup_intent = example.get_combined_intent_response_key()
+            assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
+            if assistant_utterances:
+                # selecting only first assistant utterance for now
+                example.set(RESPONSE, assistant_utterances[0].get("text"))
 
     def nlu_as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
@@ -377,6 +374,16 @@ class TrainingData:
                     f"this the training may fail."
                 )
 
+        # emit warnings for response intents without a response template
+        for example in self.training_examples:
+            if example.get(RESPONSE_KEY_ATTRIBUTE) and not example.get(RESPONSE):
+                raise ValueError(
+                    f"Your training data contains an example '{example.text[:20]}...' "
+                    f"for the {example.get_combined_intent_response_key()} intent. "
+                    f"You either need to add a response phrase or correct the "
+                    f"intent for this example in your training data."
+                )
+
     def train_test_split(
         self, train_frac: float = 0.8, random_seed: Optional[int] = None
     ) -> Tuple["TrainingData", "TrainingData"]:
@@ -396,7 +403,6 @@ class TrainingData:
             lookup_tables=self.lookup_tables,
             nlg_stories=train_nlg_stories,
         )
-        data_train.fill_response_phrases()
 
         data_test = TrainingData(
             test,
@@ -405,7 +411,6 @@ class TrainingData:
             lookup_tables=self.lookup_tables,
             nlg_stories=test_nlg_stories,
         )
-        data_test.fill_response_phrases()
 
         return data_train, data_test
 

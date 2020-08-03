@@ -3,12 +3,15 @@ import functools
 import logging
 import multiprocessing
 import os
+from pathlib import Path
 import tempfile
 import traceback
 import typing
 from functools import reduce, wraps
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union, Dict
+
+from sanic.exceptions import InvalidUsage
 
 import rasa
 import rasa.core.utils
@@ -743,6 +746,17 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
+    def _write_as_yaml_or_md(
+        content: Union[Text, Dict[Text, Any]], path_prefix: Text
+    ) -> Path:
+        if isinstance(content, str):
+            full_path = Path(path_prefix).with_suffix(".md")
+            rasa.utils.io.write_text_file(content, full_path)
+        else:
+            full_path = Path(path_prefix).with_suffix(".yml")
+            rasa.utils.io.write_yaml_file(content, full_path)
+        return full_path
+
     @app.post("/model/train")
     @requires_auth(app, auth_token)
     async def train(request: Request) -> HTTPResponse:
@@ -765,17 +779,16 @@ def create_app(
 
         rasa.utils.io.write_text_file(rjs["config"], config_path)
 
+        # TODO: revisit if this is the right approach? should we rather use content
+        #   negotiation?
         if "nlu" in rjs:
-            nlu_path = os.path.join(temp_dir, "nlu.md")
-            rasa.utils.io.write_text_file(rjs["nlu"], nlu_path)
+            _write_as_yaml_or_md(rjs["nlu"], os.path.join(temp_dir, "nlu"))
 
         if "stories" in rjs:
-            stories_path = os.path.join(temp_dir, "stories.md")
-            rasa.utils.io.write_text_file(rjs["stories"], stories_path)
+            _write_as_yaml_or_md(rjs["stories"], os.path.join(temp_dir, "stories"))
 
         if "responses" in rjs:
-            responses_path = os.path.join(temp_dir, "responses.md")
-            rasa.utils.io.write_text_file(rjs["responses"], responses_path)
+            _write_as_yaml_or_md(rjs["responses"], os.path.join(temp_dir, "responses"))
 
         domain_path = DEFAULT_DOMAIN_PATH
         if "domain" in rjs:
@@ -803,18 +816,25 @@ def create_app(
 
             from rasa import train as train_model
 
-            # Declare `model_path` upfront to avoid pytype `name-error`
-            model_path: Optional[Text] = None
             # pass `None` to run in default executor
-            model_path = await loop.run_in_executor(
+            model_path: Optional[Text] = await loop.run_in_executor(
                 None, functools.partial(train_model, **info)
             )
 
-            filename = os.path.basename(model_path) if model_path else None
+            if model_path:
+                filename = os.path.basename(model_path)
 
-            return await response.file(
-                model_path, filename=filename, headers={"filename": filename}
-            )
+                return await response.file(
+                    model_path, filename=filename, headers={"filename": filename}
+                )
+            else:
+                raise ErrorResponse(
+                    500,
+                    "TrainingError",
+                    f"Ran training, but it finished without a trained model.",
+                )
+        except ErrorResponse as e:
+            raise e
         except InvalidDomain as e:
             raise ErrorResponse(
                 400,
@@ -822,7 +842,7 @@ def create_app(
                 f"Provided domain file is invalid. Error: {e}",
             )
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TrainingError",
@@ -870,14 +890,24 @@ def create_app(
             "evaluate your model.",
         )
 
-        stories = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
+        try:
+            # might throw an error, if that is the case we will assume user submitted md
+            content = rasa.utils.io.write_yaml(request.json)
+            stories = rasa.utils.io.create_temporary_file(
+                content, mode="w", suffix=".yml"
+            )
+        except InvalidUsage:
+            stories = rasa.utils.io.create_temporary_file(
+                request.body, mode="w+b", suffix=".md"
+            )
+
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
             evaluation = await test(stories, app.agent, e2e=use_e2e)
             return response.json(evaluation)
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TestingError",
@@ -905,7 +935,17 @@ def create_app(
                 model_path, model_server, app.agent.remote_storage
             )
 
-        nlu_data = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
+        try:
+            # might throw an error, if that is the case we will assume user submitted md
+            content = rasa.utils.io.write_yaml(request.json)
+            nlu_data = rasa.utils.io.create_temporary_file(
+                content, mode="w", suffix=".yml"
+            )
+        except InvalidUsage:
+            nlu_data = rasa.utils.io.create_temporary_file(
+                request.body, mode="w+b", suffix=".md"
+            )
+
         data_path = os.path.abspath(nlu_data)
 
         if not os.path.exists(eval_agent.model_directory):
@@ -918,7 +958,7 @@ def create_app(
             evaluation = run_evaluation(data_path, nlu_model)
             return response.json(evaluation)
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TestingError",

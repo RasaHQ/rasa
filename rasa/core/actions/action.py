@@ -243,10 +243,8 @@ class ActionRetrieveResponse(Action):
 
         logger.debug(f"Picking response from selector of type {query_key}")
         selected = response_selector_properties[query_key]
-        message = {
-            "text": selected[OPEN_UTTERANCE_PREDICTION_KEY]["name"],
-            "template_name": selected["full_retrieval_intent"],
-        }
+        message = selected[OPEN_UTTERANCE_PREDICTION_KEY]
+        message["template_name"] = selected["full_retrieval_intent"]
 
         return [create_bot_utterance(message)]
 

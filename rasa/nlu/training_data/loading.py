@@ -72,9 +72,6 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     else:
         training_data = data_sets[0].merge(*data_sets[1:])
 
-    if training_data.nlg_stories:
-        training_data.fill_response_phrases()
-
     return training_data
 
 

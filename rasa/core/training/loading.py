@@ -10,7 +10,7 @@ from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryR
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 from rasa.core.training.structures import StoryStep
-from rasa.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSION
+from rasa.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ def _get_reader(
     use_e2e: bool = False,
 ) -> StoryReader:
 
-    if filename.endswith(MARKDOWN_FILE_EXTENSION):
+    if Path(filename).suffix in MARKDOWN_FILE_EXTENSIONS:
         return MarkdownStoryReader(
             interpreter, domain, template_variables, use_e2e, filename
         )
@@ -54,7 +54,8 @@ def _guess_reader(
         )
     raise ValueError(
         f"Failed to find a reader class for the story file `{filename}`. "
-        f"Supported formats are {MARKDOWN_FILE_EXTENSION}, {YAML_FILE_EXTENSIONS}."
+        f"Supported formats are "
+        f"{', '.join(MARKDOWN_FILE_EXTENSIONS.union(YAML_FILE_EXTENSIONS))}."
     )
 
 

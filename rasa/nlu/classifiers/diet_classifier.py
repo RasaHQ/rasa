@@ -1,3 +1,4 @@
+import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
@@ -880,6 +881,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # if X contains all zeros do not predict some label
         if label_ids.size > 0:
             label = {
+                "id": hash(self.index_label_id_mapping[label_ids[0]]),
                 "name": self.index_label_id_mapping[label_ids[0]],
                 "confidence": message_sim[0],
             }
@@ -895,7 +897,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ranking = list(zip(list(label_ids), message_sim))
             ranking = ranking[:output_length]
             label_ranking = [
-                {"name": self.index_label_id_mapping[label_idx], "confidence": score}
+                {
+                    "id": hash(self.index_label_id_mapping[label_idx]),
+                    "name": self.index_label_id_mapping[label_idx],
+                    "confidence": score,
+                }
                 for label_idx, score in ranking
             ]
 
@@ -1098,7 +1104,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_signature=model_data_example.get_signature(),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
-            config=meta,
+            config=copy.deepcopy(meta),
         )
 
         # build the graph for prediction

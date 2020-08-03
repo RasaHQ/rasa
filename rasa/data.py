@@ -10,9 +10,16 @@ from rasa.constants import DEFAULT_E2E_TESTS_PATH
 from rasa.nlu.training_data import loading as nlu_loading
 
 logger = logging.getLogger(__name__)
-MARKDOWN_FILE_EXTENSION = ".md"
-YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
-JSON_FILE_EXTENSION = ".json"
+
+MARKDOWN_FILE_EXTENSIONS = {".md"}
+
+YAML_FILE_EXTENSIONS = {".yml", ".yaml"}
+
+JSON_FILE_EXTENSIONS = {".json"}
+
+TRAINING_DATA_EXTENSIONS = JSON_FILE_EXTENSIONS.union(MARKDOWN_FILE_EXTENSIONS).union(
+    YAML_FILE_EXTENSIONS
+)
 
 
 def get_core_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
@@ -124,14 +131,7 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
 
 
 def _is_valid_filetype(path: Text) -> bool:
-    is_file = os.path.isfile(path)
-    is_datafile = (
-        path.endswith(JSON_FILE_EXTENSION)
-        or path.endswith(MARKDOWN_FILE_EXTENSION)
-        or Path(path).suffix in YAML_FILE_EXTENSIONS
-    )
-
-    return is_file and is_datafile
+    return os.path.isfile(path) and Path(path).suffix in TRAINING_DATA_EXTENSIONS
 
 
 def is_nlu_file(file_path: Text) -> bool:
@@ -177,7 +177,7 @@ def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
         `True` if it's a conversation test file, otherwise `False`.
     """
 
-    if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
+    if not Path(file_path).suffix in MARKDOWN_FILE_EXTENSIONS:
         return False
 
     dirname = os.path.dirname(file_path)

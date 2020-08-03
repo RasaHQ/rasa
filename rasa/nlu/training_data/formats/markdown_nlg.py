@@ -56,7 +56,7 @@ class NLGMarkdownReader(TrainingDataReader):
                     utterance = "-".join(line.split("- ")[1:])
                     # utterance might contain escaped newlines that we want to unescape
                     utterance = utterance.replace("\\n", "\n")
-                    story_bot_utterances.append(utterance)
+                    story_bot_utterances.append({"text": utterance})
 
                 elif line.startswith("*"):
                     # reached a user intent

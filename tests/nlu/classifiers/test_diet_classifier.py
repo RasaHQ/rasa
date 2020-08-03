@@ -24,6 +24,7 @@ from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
 from rasa.utils import train_utils
+from tests.conftest import DEFAULT_NLU_DATA
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
@@ -197,7 +198,7 @@ def as_pipeline(*components):
         ),  # higher than default ranking_length
         (
             {RANDOM_SEED: 42, EPOCHS: 1},
-            "examples/moodbot/data/nlu.md",
+            DEFAULT_NLU_DATA,
             7,
             True,
         ),  # less intents than default ranking_length

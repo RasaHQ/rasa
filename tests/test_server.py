@@ -28,6 +28,7 @@ from rasa.core.events import Event, UserUttered, SlotSet, BotUttered
 from rasa.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
 from rasa.utils.endpoints import EndpointConfig
+from rasa import utils as rasa_utils
 from sanic import Sanic
 from sanic.testing import SanicTestClient
 from tests.nlu.utilities import ResponseTest
@@ -387,10 +388,10 @@ def test_train_nlu_success(
     with ExitStack() as stack:
         domain_file = stack.enter_context(open(default_domain_path))
         config_file = stack.enter_context(open(default_stack_config))
-        nlu_file = stack.enter_context(open(default_nlu_data))
+        nlu_data = rasa_utils.io.read_yaml_file(default_nlu_data)
 
         payload = dict(
-            domain=domain_file.read(), config=config_file.read(), nlu=nlu_file.read()
+            domain=domain_file.read(), config=config_file.read(), nlu=nlu_data
         )
 
     _, response = rasa_app.post("/model/train", json=payload)
@@ -554,9 +555,9 @@ def test_evaluate_stories_end_to_end(rasa_app, end_to_end_story_file):
 
 
 def test_evaluate_intent(rasa_app, default_nlu_data):
-    nlu_data = rasa.utils.io.read_file(default_nlu_data)
+    nlu_data = rasa.utils.io.read_yaml_file(default_nlu_data)
 
-    _, response = rasa_app.post("/model/test/intents", data=nlu_data)
+    _, response = rasa_app.post("/model/test/intents", json=nlu_data)
 
     assert response.status == 200
     assert set(response.json.keys()) == {
@@ -569,9 +570,9 @@ def test_evaluate_intent(rasa_app, default_nlu_data):
 def test_evaluate_intent_on_just_nlu_model(
     rasa_app_nlu: SanicTestClient, default_nlu_data
 ):
-    nlu_data = rasa.utils.io.read_file(default_nlu_data)
+    nlu_data = rasa.utils.io.read_yaml_file(default_nlu_data)
 
-    _, response = rasa_app_nlu.post("/model/test/intents", data=nlu_data)
+    _, response = rasa_app_nlu.post("/model/test/intents", json=nlu_data)
 
     assert response.status == 200
     assert set(response.json.keys()) == {
@@ -587,10 +588,10 @@ def test_evaluate_intent_with_query_param(
     _, response = rasa_app.get("/status")
     previous_model_file = response.json["model_file"]
 
-    nlu_data = rasa.utils.io.read_file(default_nlu_data)
+    nlu_data = rasa.utils.io.read_yaml_file(default_nlu_data)
 
     _, response = rasa_app.post(
-        f"/model/test/intents?model={trained_nlu_model}", data=nlu_data
+        f"/model/test/intents?model={trained_nlu_model}", json=nlu_data
     )
 
     assert response.status == 200
