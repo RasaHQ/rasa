@@ -23,6 +23,7 @@ excluded_files:
   - "*.html"
   - "*.json"
   - "*.lock"
+  - "*.js"
   - "*.md"
   - "CHANGELOG.mdx"
   - "CODE_OF_CONDUCT.md"
@@ -155,5 +156,8 @@ excluded_words:
   - unschedule
   - wsgi
   - ruamel
+  - prototyper
+  - hallo
+  - crypto
 
 spellcheck_filenames: false
