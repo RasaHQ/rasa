@@ -42,6 +42,7 @@ class Message:
             self.output_properties = output_properties
         else:
             self.output_properties = set()
+        self.output_properties.add(TEXT)
 
     def add_features(self, features: Optional["Features"]) -> None:
         if features is not None:
