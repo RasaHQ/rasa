@@ -854,7 +854,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         if not sliced_states == [{}]:
                             if self.remove_duplicates:
                                 hashed = self._hash_example(
-                                    sliced_states, event.action_name, tracker
+                                    sliced_states, event.action_name or event.e2e_text, tracker
                                 )
 
                                 # only continue with tracker_states that created a
