@@ -31,9 +31,11 @@ class Message:
         features: Optional[List["Features"]] = None,
         **kwargs,
     ) -> None:
-        self.text = text
+        import copy
         self.time = time
-        self.data = data if data else {}
+        self.text = text
+        self.data = copy.deepcopy(data) if data else {}
+        self.data.update({TEXT: text})
         self.features = features if features else []
 
         self.data.update(**kwargs)
@@ -48,16 +50,11 @@ class Message:
             self.features.append(features)
 
     def set(self, prop, info, add_to_output=False) -> None:
-        if prop == TEXT:
-            self.text = info
-        else:
-            self.data[prop] = info
-            if add_to_output:
-                self.output_properties.add(prop)
+        self.data[prop] = info
+        if add_to_output:
+            self.output_properties.add(prop)
 
     def get(self, prop, default=None) -> Any:
-        if prop == TEXT:
-            return self.text
         return self.data.get(prop, default)
 
     def as_dict_nlu(self) -> dict:
