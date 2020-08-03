@@ -14,7 +14,7 @@ Useful applications for rules are for example:
 
 * [Fallback Actions](./fallback-actions.mdx): Users might confront your assistant with unexpected messages.
   The messages will typically receive low intent confidence.
-  You can use the [FallbackClassifier](../nlu/components.mdx#fallback-classifier)
+  You can use the [FallbackClassifier](../nlu/components.mdx#fallbackclassifier)
   in combination with rules to treat messages with low NLU confidence like an FAQ.
 
 * [Forms](./forms.mdx) : It's a common use case for assistants to collect form-like
@@ -54,8 +54,6 @@ rules:
   - intent: greet
   - action: utter_greet
 ```
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="applying-anytime"></a>
 
 ### Rules which Apply Anytime
 
@@ -126,15 +124,13 @@ rules:
 When a [Form](./forms.mdx) is active, rules become applicable again if
 
 - the form filled all required slots
-- the form rejected its execution (see [Handling unhappy paths](./forms.mdx#section-unhappy) for more details)
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="use-cases"></a>
+- the form rejected its execution (see
+[Handling unhappy paths](./forms.mdx#writing-stories--rules-for-unhappy-form-paths) for
+ more details)
 
 ## Use Cases
 
 This section explains common use cases of rules.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="faqs"></a>
 
 ### FAQs / Mapping Intents to Actions
 
@@ -142,7 +138,7 @@ Some messages do not require any context to answer them. Common examples are eit
 or triggers which are sent by [Reminders and External Events](./reminders-and-external-events.mdx).
 
 To map an intent to a certain action, you need
-[Rules which Apply Anytime](./rules.mdx#applying-anytime).
+[Rules which Apply Anytime](./rules.mdx#rules-which-apply-anytime).
 The following example always responds with an action `utter_greet` in case the user
 greets the assistant.
 
@@ -159,7 +155,7 @@ rules:
 
 Handling unknown messages gracefully is key to a successful assistant. As unknown
 messages can happen at any time in a conversation, they are a special case of
-[FAQs](./rules.mdx#faqs). Please see the docs on
+[FAQs](./rules.mdx#faqs--mapping-intents-to-actions). Please see the docs on
 [Fallback Actions](./fallback-actions.mdx) for different ways to
 handle fallbacks gracefully.
 

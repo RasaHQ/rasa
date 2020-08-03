@@ -368,9 +368,6 @@ for details.
 
 :::
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="rule-policy"></a>
-
 ## Rule Policy
 
 The `RulePolicy` is a policy that handles conversation parts that follow
@@ -409,7 +406,7 @@ data as well.
 The `MappingPolicy` is deprecated. Please see [Rules](./rules.mdx) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `MappingPolicy`, see the
-[migration guide](../migration-guide.mdx#migrate-mapping-policy-to-rule-policy).
+[migration guide](../migration-guide.mdx#migrating-from-the-mapping-policy).
 :::
 
 The `MappingPolicy` can be used to directly map intents to actions. The
@@ -472,7 +469,7 @@ in your policy example these intents will not work.
 The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-actions.mdx) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `FallbackPolicy`, see the
-[migration guide](../migration-guide.mdx#migrate-fallback-policy-to-rule-policy).
+[migration guide](../migration-guide.mdx#migrating-from-the-fallback-policy).
 :::
 
 The `FallbackPolicy` invokes a predefined action if at least one of the following occurs:
@@ -534,7 +531,7 @@ You can include either the `FallbackPolicy` or the
 The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-actions.mdx) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `TwoStageFallbackPolicy`, see the
-[migration guide](../migration-guide.mdx#migrate-two-stage-policy-to-rule-policy).
+[migration guide](../migration-guide.mdx#migrating-from-the-two-stage-fallback-policy).
 :::
 
 The `TwoStageFallbackPolicy` handles low NLU confidence in multiple stages
@@ -605,7 +602,7 @@ You can include either the `FallbackPolicy` or the
 The `FormPolicy` is deprecated. Please see [Forms](./forms.mdx) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `FormPolicy`, see the
-[migration guide](../migration-guide.mdx#migrate-form-policy-to-rule-policy).
+[migration guide](../migration-guide.mdx#formpolicy).
 :::
 
 The `FormPolicy` is an extension of the `MemoizationPolicy` which

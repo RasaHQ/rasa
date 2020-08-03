@@ -40,12 +40,10 @@ deprecated:
 - [Two-Stage-Fallback Policy](./core/policies.mdx#two-stage-fallback-policy)
 - [Form Policy](./core/policies.mdx#form-policy)
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migrate-mapping-policy-to-rule-policy"></a>
-
 #### Migrating from the Mapping Policy
 
 If you previously used the [Mapping Policy](./core/policies.mdx#mapping-policy), you
-can follow the documentation on [FAQs](./core/rules.mdx#faqs) to convert your mapped
+can follow the documentation on [FAQs](./core/rules.mdx#faqs--mapping-intents-to-actions) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
 ```yaml
@@ -64,8 +62,6 @@ rules:
     - intent: ask_is_bot
     - action: action_is_bot
 ```
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migrate-fallback-policy-to-rule-policy"></a>
 
 #### Migrating from the Fallback Policy
 
@@ -111,8 +107,6 @@ rules:
 
 Please see the [Fallback Actions](./core/fallback-actions) documentation for more
 information.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migrate-two-stage-policy-to-rule-policy"></a>
 
 #### Migrating from the Two-Stage-Fallback Policy
 
@@ -167,8 +161,6 @@ Note that the previous parameters `fallback_nlu_action_name` and
 
 Please see the [Fallback Actions](./core/fallback-actions) documentation for more
 information.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migrate-form-policy-to-rule-policy"></a>
 
 #### FormPolicy
 
@@ -245,7 +237,7 @@ policies:
 ```
 
 Then you need to define the form and the required slots in the domain as described in
-[Forms](./core/forms.mdx#form-domain):
+[Forms](./core/forms.mdx#defining-a-form):
 
 ```yaml
 forms:

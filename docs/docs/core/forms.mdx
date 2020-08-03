@@ -21,14 +21,12 @@ policies:
 - name: RulePolicy
 ```
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="form-domain"></a>
-
 ### Defining a Form
 
 Define a form by adding it to the `forms` section in your [Domain](./domains.mdx).
 The name of the form is also the name of the action which you can use in
 [Stories](./stories.mdx) or [Rules](./rules.mdx) to handle form executions. Further you
-need to define [Slot Mappings](./forms.mdx#form-slot-mappings) for each slot which your
+need to define [Slot Mappings](./forms.mdx#slot-mappings) for each slot which your
 form should fill.
 You can specify one or more slot mappings for each slot to be filled.
 
@@ -94,10 +92,8 @@ The following example runs the utterance `utter_all_slots_filled` as soon as the
 ```
 
 Users might want to break out of a form early. Please see
-[Writing Stories / Rules for Unhappy Form Paths](./forms.mdx#section-unhappy) on how to
+[Writing Stories / Rules for Unhappy Form Paths](./forms.mdx#writing-stories--rules-for-unhappy-form-paths) on how to
 write stories or rules for this case.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="form-slot-mappings"></a>
 
 ### Slot Mappings
 
@@ -189,8 +185,6 @@ forms:
       not_intent: excluded_intent
 ```
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="section-unhappy"></a>
-
 ### Writing Stories / Rules for Unhappy Form Paths
 
 Your users will not always respond with the information you ask of them.
@@ -245,8 +239,6 @@ on how to use interactive learning with forms.
 
 Forms are fully customizable using [Custom Actions](./actions.mdx#custom-actions).
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="form-validation"></a>
-
 ### Validating Form input
 
 After extracting a slot value from user input, you can validate the extracted slots.
@@ -271,7 +263,7 @@ you can either
 
 - validate already extracted slots. You can retrieve them from the tracker by running
   `tracker.get_extracted_slots`.
-- use [Custom Slot Mappings](./forms.mdx#form-slot-mappings) to extract slot values .
+- use [Custom Slot Mappings](./forms.mdx#slot-mappings) to extract slot values .
 
 After validating the extracted slots, return `SlotSet` events for them. If you want
 to mark a slot as invalid return a `SlotSet` event which sets the value to `None`.
@@ -317,11 +309,9 @@ class ValidateSlots(Action):
         # Implementation of the validate function.
 ```
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="custom-slot-mappings"></a>
-
 ### Custom Slot Mappings
 
-If none of the predefined [Slot Mappings](./forms.mdx#form-slot-mappings) fit your use
+If none of the predefined [Slot Mappings](./forms.mdx#slot-mappings) fit your use
 case, you can use the
 [Custom Action](./actions.mdx#custom-actions) `validate_{form_name}` to write your own
 extraction code. Rasa Open Source will trigger this function when the form is run.
