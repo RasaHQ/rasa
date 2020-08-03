@@ -831,7 +831,7 @@ def create_app(
                 raise ErrorResponse(
                     500,
                     "TrainingError",
-                    f"Ran training, but it finished without a trained model.",
+                    "Ran training, but it finished without a trained model.",
                 )
         except ErrorResponse as e:
             raise e
