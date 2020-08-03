@@ -283,23 +283,42 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         self.output_shapes = {}
 
     def prepare_from_domain(self, domain: Domain) -> None:
-        self.slot_states = domain.slot_states + domain.form_states
+        # storing slot names so that the features are always added in the same order
+        self.slot_names = [slot.name for slot in domain.slots]
+        self.slot_states = domain.slot_states
+        self.form_states = domain.form_states
         self.entities = domain.entities
-        self.output_shapes[ENTITIES] = len(self.slot_states + self.entities)
+
+        self.output_shapes[ENTITIES] = len(
+            self.slot_states + self.form_states + self.entities
+        )
 
     def _get_slot_and_entity_features(self, state: Dict) -> np.ndarray:
-        binary_features = np.zeros((len(self.slot_states + self.entities)))
-        if state.get(FORM):
-            binary_features[self.slot_states.index(state.get(FORM).get("name"))] += 1
+        binary_features = np.zeros(
+            (len(self.slot_states + self.form_states + self.entities))
+        )
         if state.get(SLOTS):
-            for slot_value in state.get(SLOTS):
-                binary_features[self.slot_states.index(slot_value)] += 1
+            # collect slots
+            slot_values = [
+                np.array(state.get(SLOTS)[slot_name])
+                for slot_name in self.slot_names
+                if slot_name in state.get(SLOTS).keys()
+            ]
+            slot_values = np.hstack(slot_values)
+            binary_features[: len(self.slot_states)] = slot_values
+        if state.get(FORM):
+            form_values = np.zeros((len(self.form_states)))
+            form_values[self.form_states.index(state.get(FORM).get("name"))] += 1
+            binary_features[
+                len(self.slot_states) : len(self.slot_states + self.form_states)
+            ] = form_values
         if state.get(USER):
             if state[USER].get(ENTITIES):
                 entities = state[USER].get(ENTITIES)
                 for entity in entities:
                     binary_features[
-                        len(self.slot_states) + self.entities.index(entity)
+                        len(self.slot_states + self.form_states)
+                        + self.entities.index(entity)
                     ] += 1
 
         return binary_features
@@ -734,7 +753,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                     if not event.unpredictable:
                         # only actions which can be
                         # predicted at a stories start
-                        actions.append(event)
+                        actions.append(event.action_name or event.e2e_text)
                     else:
                         # unpredictable actions can be
                         # only the first in the story
@@ -791,8 +810,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def slice_state_history(
-        states: List[STATE],
-        slice_length: Optional[int],
+        states: List[STATE], slice_length: Optional[int],
     ) -> List[STATE]:
         """Slices states from the trackers history.
         If the slice is at the array borders, padding will be added to ensure
@@ -854,7 +872,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         if not sliced_states == [{}]:
                             if self.remove_duplicates:
                                 hashed = self._hash_example(
-                                    sliced_states, event.action_name or event.e2e_text, tracker
+                                    sliced_states,
+                                    event.action_name or event.e2e_text,
+                                    tracker,
                                 )
 
                                 # only continue with tracker_states that created a

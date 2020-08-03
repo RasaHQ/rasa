@@ -713,15 +713,19 @@ class Domain:
         tracker: "DialogueStateTracker",
     ) -> Dict[Text, Dict[Text, Union[Text, Tuple[float]]]]:
         # Set all set slots with the featurization of the stored value
-        slots = {}
-        for key, slot in tracker.slots.items():
-            if slot is not None and slot.as_feature():
-                if slot.value == SHOULD_NOT_BE_SET:
-                    slots[key] = SHOULD_NOT_BE_SET
-                else:
-                    slots[key] = tuple(slot.as_feature())
-        if slots:
-            return {SLOTS: slots}
+
+        # proceed with values only if the user of a bot have done something at the previous step
+        # i.e., when the state is not empty.
+        if not tracker.latest_message == UserUttered.empty() and tracker.latest_action:
+            slots = {}
+            for key, slot in tracker.slots.items():
+                if slot is not None and slot.as_feature():
+                    if slot.value == SHOULD_NOT_BE_SET:
+                        slots[key] = SHOULD_NOT_BE_SET
+                    else:
+                        slots[key] = tuple(slot.as_feature())
+            if slots:
+                return {SLOTS: slots}
 
         return {}
 
