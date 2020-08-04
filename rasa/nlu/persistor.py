@@ -1,9 +1,12 @@
 import io
+import json
 import logging
 import os
 import shutil
 import tarfile
 from typing import List, Optional, Text, Tuple
+
+import rasa.utils.common
 
 
 logger = logging.getLogger(__name__)
@@ -27,15 +30,20 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
             os.environ.get("AZURE_ACCOUNT_NAME"),
             os.environ.get("AZURE_ACCOUNT_KEY"),
         )
-
+    if name:
         try:
             persistor = rasa.utils.common.class_from_module_path(name)
-            return persistor()
         except ImportError:
-            raise ImportError(f"Unknown model persistor {name}. Please make sure to "
-                              f"either use an included model persistor (`aws`, `gcs` "
-                              f"or `azure`) or specify the module path to an external "
-                              f"model persistor.")
+            raise ImportError(
+                f"Unknown model persistor {name}. Please make sure to "
+                "either use an included model persistor (`aws`, `gcs` "
+                "or `azure`) or specify the module path to an external "
+                "model persistor."
+            )
+        else:
+            cfg = os.environ.get("RASA_PERSISTOR")
+            kwargs = json.loads(cfg) if cfg else {}
+            return persistor(**kwargs)
     return None
 
 
