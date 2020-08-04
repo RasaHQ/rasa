@@ -28,20 +28,14 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
             os.environ.get("AZURE_ACCOUNT_KEY"),
         )
 
-    if name == "ali-oss":
-        from ali_persistor import OssPersistor
-
-        return OssPersistor(
-            access_key_id=os.environ.get("ALI_ACCESS_KEY_ID"),
-            access_key_secret=os.environ.get("ALI_ACCESS_KEY_SECRET"),
-            sts_role_arn=os.environ.get("ALI_STS_ROLE_ARN"),
-            region_id=os.environ.get("ALI_REGION_ID"),
-            endpoint=os.environ.get("ALI_ENDPOINT"),
-            bucket_name=os.environ.get("ALI_BUCKET_NAME"),
-            bucket_path=os.environ.get("ALI_BUCKET_PATH"),
-            local_path=os.environ.get("ALI_LOCAL_PATH"),
-        )
-
+        try:
+            persistor = rasa.utils.common.class_from_module_path(name)
+            return persistor()
+        except ImportError:
+            raise ImportError(f"Unknown model persistor {name}. Please make sure to "
+                              f"either use an included model persistor (`aws`, `gcs` "
+                              f"or `azure`) or specify the module path to an external "
+                              f"model persistor.")
     return None
 
 
