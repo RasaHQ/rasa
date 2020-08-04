@@ -33,6 +33,15 @@ components you want to use directly in the configuration file. See
 To get started, you can let the
 [Suggested Config](../api/model-configuration.mdx#suggested-config) feature choose a
 default pipeline for you.
+Just provide your bot's `language` in the `config.yml` file and leave the `pipeline` key
+out or empty.
+
+```yaml
+language: fr  # your 2-letter language code
+
+pipeline:
+# intentionally left empty
+```
 
 ### A Longer Answer
 
