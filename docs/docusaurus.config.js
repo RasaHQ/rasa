@@ -68,11 +68,6 @@ module.exports = {
     gtm: {
       containerID: 'GTM-PK448GB',
     },
-    // algolia: {
-    //   apiKey: 'YOUR_API_KEY',
-    //   indexName: 'YOUR_INDEX_NAME',
-    //   searchParameters: {}, // Optional (if provided by Algolia)
-    // },
   },
   themes: [
     ['@docusaurus/theme-classic', {
