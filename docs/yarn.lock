@@ -8824,6 +8824,11 @@ react-loadable@^5.5.0:
   dependencies:
     prop-types "^15.5.0"
 
+react-promise@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/react-promise/-/react-promise-3.0.2.tgz#1180f9e9d2e1a5362d005688c002366b4e9f2b67"
+  integrity sha512-Ez2aFel11b08H2HAWNnKf0GDV5ATGBmxK9UXHXxoKwCEoQey9manXDTwB2n3mhgOvMRzGH/YTHACdqQUjXf6Rw==
+
 react-router-config@^5.1.1:
   version "5.1.1"
   resolved "https://registry.yarnpkg.com/react-router-config/-/react-router-config-5.1.1.tgz#0f4263d1a80c6b2dc7b9c1902c9526478194a988"
