@@ -17,6 +17,15 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.10] - 2020-08-04
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6280 <https://github.com/rasahq/rasa/issues/6280>`_: Fixed ``TypeError: expected string or bytes-like object``
+  issue caused by integer, boolean, and null values in templates.
+
+
 [1.10.9] - 2020-07-29
 ^^^^^^^^^^^^^^^^^^^^^
 
