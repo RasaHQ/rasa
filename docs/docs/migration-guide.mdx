@@ -56,11 +56,10 @@ This becomes the following rule:
 
 ```yaml
 rules:
-    rule: Rule to map `ask_is_bot` intent
-    steps:
-    - ...
-    - intent: ask_is_bot
-    - action: action_is_bot
+- rule: Rule to map `ask_is_bot` intent
+  steps:
+  - intent: ask_is_bot
+  - action: action_is_bot
 ```
 
 #### Migrating from the Fallback Policy
@@ -98,7 +97,6 @@ in case of low NLU confidence:
 
 ```yaml
 rules:
-
 - rule: Ask the user to rephrase whenever they send a message with low NLU confidence
   steps:
   - intent: nlu_fallback
@@ -145,6 +143,7 @@ In addition you need to add a [Rule](./core/rules.mdx) to activate the Two-Stage
 messages with low NLU confidence.
 
 ```yaml
+rules:
 - rule: Implementation of the TwoStageFallbackPolicy
   steps:
   # This intent is automatically triggered by the `FallbackClassifier` in the NLU
@@ -162,7 +161,7 @@ Note that the previous parameters `fallback_nlu_action_name` and
 Please see the [Fallback Actions](./core/fallback-actions) documentation for more
 information.
 
-#### FormPolicy
+#### Form Policy
 
 As of Rasa Open Source 2.0 the logic for [Forms](./core/forms.mdx) has been moved from the
 Rasa SDK to Rasa Open Source to simplify implementations of custom action libraries.

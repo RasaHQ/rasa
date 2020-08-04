@@ -17,7 +17,7 @@ Useful applications for rules are for example:
   You can use the [FallbackClassifier](../nlu/components.mdx#fallbackclassifier)
   in combination with rules to treat messages with low NLU confidence like an FAQ.
 
-* [Forms](./forms.mdx) : It's a common use case for assistants to collect form-like
+* [Forms](./forms.mdx): It's a common use case for assistants to collect form-like
   data from the user. Both activation of forms and handling of unexpected
   events as part of a form will often follow fixed paths.
 
@@ -29,7 +29,7 @@ real user behavior.
 ## Writing a Rule
 
 Before you start writing rules, you have to make sure that the
-[RulePolicy](./policies.mdx#rule-policy) is added to your model configuration:
+[Rule Policy](./policies.mdx#rule-policy) is added to your model configuration:
 
 ```yaml
 policies:
@@ -105,7 +105,7 @@ rules:
   # This means that Rasa Open Source will wait for the next user message.
   - action_listen
 ```
-
+TODO: Rewrite section to match removal of `...`
 If you want to hand over to another story or rule, add `...` as last step in order to
 indicate that the assistant should execute another action before waiting for more user
 input.

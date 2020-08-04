@@ -12,7 +12,7 @@ API, search a database, etc.). This is also called **slot filling**.
 ## Usage
 
 To use forms with Rasa Open Source you need to make sure that the
-[RulePolicy](./policies.mdx#rule-policy) is added to your policy configuration.
+[Rule Policy](./policies.mdx#rule-policy) is added to your policy configuration.
 For example:
 
 ```yaml
@@ -154,7 +154,7 @@ also define lists of intents for the parameters `intent` and `not_intent`.
 :::note
 The slot mapping will not apply during the initial activation of the form. To fill
 a slot based on the intent that activated the form, use the `from_trigger_intent`
-mapping
+mapping.
 :::
 
 ```yaml
@@ -239,7 +239,7 @@ on how to use interactive learning with forms.
 
 Forms are fully customizable using [Custom Actions](./actions.mdx#custom-actions).
 
-### Validating Form input
+### Validating Form Input
 
 After extracting a slot value from user input, you can validate the extracted slots.
 By default Rasa Open Source only validates if any slot was filled after requesting
