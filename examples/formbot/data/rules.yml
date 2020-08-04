@@ -22,8 +22,8 @@ rules:
       - ...
       - intent: request_restaurant
       - action: restaurant_form
-      - form: restaurant_form
-      - form: null
+      - active_loop: restaurant_form
+      - active_loop: null
       - action: utter_slots_values
 
   - rule: Chitchat

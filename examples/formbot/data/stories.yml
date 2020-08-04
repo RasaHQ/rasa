@@ -3,12 +3,12 @@ stories:
     steps:
       - intent: request_restaurant
       - action: restaurant_form
-      - form: restaurant_form
+      - active_loop: restaurant_form
       - intent: stop
       - action: utter_ask_continue
       - intent: affirm
       - action: restaurant_form
-      - form: null
+      - active_loop: null
       - action: utter_submit
       - action: utter_slots_values
 
@@ -16,9 +16,9 @@ stories:
     steps:
       - intent: request_restaurant
       - action: restaurant_form
-      - form: restaurant_form
+      - active_loop: restaurant_form
       - intent: stop
       - action: utter_ask_continue
       - intent: deny
       - action: action_deactivate_form
-      - form: null
+      - active_loop: null
