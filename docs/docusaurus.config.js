@@ -73,8 +73,6 @@ module.exports = {
     ['@docusaurus/theme-classic', {
       customCss: require.resolve('./src/css/custom.css'),
     }],
-    // FIXME: apply for and setup algolia docSearchv3 https://docsearch.algolia.com/apply/
-    // ['@docusaurus/theme-search-algolia', {}],
     path.resolve(__dirname, './themes/theme-live-codeblock'),
   ],
   plugins: [
@@ -99,16 +97,3 @@ module.exports = {
     path.resolve(__dirname, './plugins/google-tagmanager'),
   ],
 };
-
-/*
-
-
-
-
-
-
-
-
-
-
- */
