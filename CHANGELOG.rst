@@ -19,7 +19,11 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 [1.10.10] - 2020-08-04
 ^^^^^^^^^^^^^^^^^^^^^^
- No significant changes.
+
+Bugfixes
+--------
+- `#6255 <https://github.com/rasahq/rasa/issues/6255>`_: Fixed ``TypeError: expected string or bytes-like object``
+  issue caused by integer, boolean, and null values in templates.
 
 
 [1.10.9] - 2020-07-29
@@ -27,7 +31,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Improvements
 ------------
-- `#6255 <https://github.com/rasahq/rasa/issues/6255>`_: Rasa Open Source will no longer add ``responses`` to the ``actions`` section of the
+- `#6280 <https://github.com/rasahq/rasa/issues/6280>`_: Rasa Open Source will no longer add ``responses`` to the ``actions`` section of the
   domain when persisting the domain as a file. This addresses related problems in Rasa X
   when Integrated Version Control introduced big diffs due to the added utterances
   in the ``actions`` section.
