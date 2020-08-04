@@ -31,7 +31,6 @@ class MarkdownStoryReader(StoryReader):
         """Given a md file reads the contained stories."""
 
         try:
-            # TODO: Hack by Genie for Windows
             with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
                 lines = f.readlines()
 
