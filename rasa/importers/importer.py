@@ -378,8 +378,8 @@ def _messages_from_user_utterance(event: UserUttered) -> Message:
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
-    return Message(
-        "", data={ACTION_NAME: event.action_name, ACTION_TEXT: event.e2e_text or "",},
+    return Message.build_from_action(
+        action_name=event.action_name, action_text=event.e2e_text or "",
     )
 
 
@@ -388,7 +388,7 @@ def _additional_training_data_from_default_actions() -> TrainingData:
     from rasa.core.actions import action
 
     additional_messages_from_default_actions = [
-        Message("", data={ACTION_NAME: action_name})
+        Message.build_from_action(action_name=action_name)
         for action_name in action.default_action_names()
     ]
 

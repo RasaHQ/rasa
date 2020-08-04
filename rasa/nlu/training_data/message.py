@@ -14,6 +14,8 @@ from rasa.nlu.constants import (
     RESPONSE_IDENTIFIER_DELIMITER,
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
+    ACTION_TEXT,
+    ACTION_NAME,
 )
 from rasa.nlu.utils import ordered
 
@@ -109,6 +111,16 @@ class Message:
         if entities:
             data[ENTITIES] = entities
         return cls(text, data, **kwargs)
+
+    @classmethod
+    def build_from_action(
+        cls,
+        action_text: Optional[Text] = "",
+        action_name: Optional[Text] = "",
+        **kwargs,
+    ) -> "Message":
+        action_data = {ACTION_TEXT: action_text, ACTION_NAME: action_name}
+        return cls(data=action_data, **kwargs)
 
     def get_combined_intent_response_key(self) -> Text:
         """Get intent as it appears in training data"""
