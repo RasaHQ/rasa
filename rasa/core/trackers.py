@@ -156,6 +156,7 @@ class DialogueStateTracker:
         # Stores the most recent message sent by the user
         self.latest_message = None
         self.latest_bot_utterance = None
+        self.latest_query = None
         self._reset()
         self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
 
@@ -177,6 +178,7 @@ class DialogueStateTracker:
         return {
             "sender_id": self.sender_id,
             "slots": self.current_slot_values(),
+            "latest_query": self.latest_query,
             "latest_message": self.latest_message.parse_data,
             "latest_event_time": latest_event_time,
             "followup_action": self.followup_action,
@@ -600,6 +602,7 @@ class DialogueStateTracker:
         self.latest_action_name = None
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
+        self.latest_query = None
         self.followup_action = ACTION_LISTEN_NAME
         self.active_loop = {}
 
@@ -617,6 +620,18 @@ class DialogueStateTracker:
         else:
             logger.error(
                 "Tried to set non existent slot '{}'. Make sure you "
+                "added all your slots to your domain file."
+                "".format(key)
+            )
+
+    def _set_query(self, query: Text) -> None:
+        """Set the value of a slot if that slot exists."""
+
+        if key in self.slots:
+            self.slots[key].value = value
+        else:
+            logger.error(
+                "Tried to set non existent query '{}'. Make sure you "
                 "added all your slots to your domain file."
                 "".format(key)
             )

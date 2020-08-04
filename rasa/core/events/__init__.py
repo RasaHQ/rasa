@@ -517,6 +517,68 @@ class SlotSet(Event):
 
 
 # noinspection PyProtectedMember
+class QueryEvent(Event):
+    """Query to fetch knowledge from a knowledge base."""
+
+    type_name = "query"
+
+    def __init__(
+        self,
+        query: Text,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        self.query = query
+        super().__init__(timestamp, metadata)
+
+    def __str__(self) -> Text:
+        return f"QueryEvent(query: {self.query})"
+
+    def __hash__(self) -> int:
+        return hash(self.query)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, QueryEvent):
+            return False
+        else:
+            return self.query == other.query
+
+    def as_story_string(self) -> Text:
+        props = json.dumps({"query": self.query}, ensure_ascii=False)
+        return f"{self.type_name}{props}"
+
+    @classmethod
+    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+        query_events = []
+        for query in parameters.values():
+            query_events.append(QueryEvent(query))
+
+        if query_events:
+            return query_events
+        else:
+            return None
+
+    def as_dict(self) -> Dict[Text, Any]:
+        d = super().as_dict()
+        d.update({"query": self.query})
+        return d
+
+    @classmethod
+    def _from_parameters(cls, parameters) -> "QueryEvent":
+        try:
+            return QueryEvent(
+                parameters.get("query"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        except KeyError as e:
+            raise ValueError(f"Failed to parse query event. {e}")
+
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        tracker.latest_query = self.query
+
+
+# noinspection PyProtectedMember
 class Restarted(Event):
     """Conversation should start over & history wiped.
 
