@@ -108,7 +108,7 @@ class YAMLStoryReader(StoryReader):
             parser = parser_class.from_reader(self)
             parser.parse_data(data)
             self.story_steps.extend(parser.get_steps())
-            
+
         return self.story_steps
 
     @staticmethod

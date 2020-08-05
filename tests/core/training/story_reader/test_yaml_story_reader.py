@@ -206,7 +206,7 @@ def test_rule_without_condition(rule_steps_without_stories: List[StoryStep]):
 
 
 def test_rule_with_explicit_wait_for_user_message(
-    rule_steps_without_stories: List[StoryStep]
+    rule_steps_without_stories: List[StoryStep],
 ):
     rule = rule_steps_without_stories[2]
     assert rule.block_name == "Rule which explicitly waits for user input when finished"
