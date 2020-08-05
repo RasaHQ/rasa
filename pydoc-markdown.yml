@@ -1,0 +1,14 @@
+loaders:
+  - type: python
+    packages:
+    - rasa
+processors:
+  - type: filter
+  - type: smart
+  - type: crossref
+renderer:
+  type: docusaurus
+  docs_base_path: docs/docs/
+  sidebar_top_level_label: 'Source reference'
+packages:
+  - rasa

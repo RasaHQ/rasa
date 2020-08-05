@@ -103,7 +103,10 @@ module.exports = {
       type: 'category',
       label: 'Reference',
       collapsed: false,
-      items: ['glossary'],
+      items: [
+        'glossary',
+        require("./docs/reference/sidebar.json"),
+      ],
     },
   ],
 };
