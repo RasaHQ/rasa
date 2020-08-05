@@ -305,6 +305,7 @@ class TEDPolicy(Policy):
                             label_features[0], label_ids
                         )
                 else:
+                    Y_dense = np.array([])
                     if is_full_dialogue_featurizer_used:
                         Y_sparse = self._features_for_full_dialog_featurizer(
                             label_features[0], label_ids
@@ -313,7 +314,6 @@ class TEDPolicy(Policy):
                         Y_sparse = self._features_for_max_history_featurizer(
                             label_features[0], label_ids
                         )
-                    Y_dense = np.array([])
 
         else:
             Y_sparse = np.array([])
@@ -321,7 +321,7 @@ class TEDPolicy(Policy):
 
         return Y_sparse, Y_dense, Y_action_name
 
-    def _process_per_dialog_features(self, dialog_features):
+    def _process_user_and_action_features(self, dialog_features):
         text_state_sparse = []
         text_state_dense = []
         name_state = []
@@ -394,13 +394,13 @@ class TEDPolicy(Policy):
                 state_user_dense,
                 state_intent,
                 state_user_if_text,
-            ) = self._process_per_dialog_features(dial[:, :4])
+            ) = self._process_user_and_action_features(dial[:, :4])
             (
                 state_action_sparse,
                 state_action_dense,
                 state_action_name,
                 state_action_if_text,
-            ) = self._process_per_dialog_features(dial[:, 4:8])
+            ) = self._process_user_and_action_features(dial[:, 4:8])
             state_entites = self._process_entities(dial[:, 8])
 
             X_user_sparse.append(state_user_sparse)
@@ -434,7 +434,7 @@ class TEDPolicy(Policy):
         )
 
         model_data.add_features(LABEL_FEATURES, [Y_sparse, Y_dense])
-        model_data.add_features(f"{LABEL_FEATURES}_action_name", [Y_action_name])
+        model_data.add_features(f"{LABEL_FEATURES}_{ACTION_NAME}", [Y_action_name])
         model_data.add_features(LABEL_IDS, [label_ids])
 
         if dialog_lengths is not None:

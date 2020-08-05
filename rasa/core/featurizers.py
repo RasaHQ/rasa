@@ -288,6 +288,8 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         self.slot_states = domain.slot_states
         self.form_states = domain.form_states
         self.entities = domain.entities
+        self.action_names = domain.action_names
+        self.intents = domain.intent_states
 
         self.output_shapes[ENTITIES] = len(
             self.slot_states + self.form_states + self.entities
@@ -298,7 +300,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             (len(self.slot_states + self.form_states + self.entities))
         )
         if state.get(SLOTS):
-            # collect slots
+            # collect slot features
             slot_values = [
                 np.array(state.get(SLOTS)[slot_name])
                 for slot_name in self.slot_names
@@ -307,6 +309,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             slot_values = np.hstack(slot_values)
             binary_features[: len(self.slot_states)] = slot_values
         if state.get(FORM):
+            # featurize forms
             form_values = np.zeros((len(self.form_states)))
             form_values[self.form_states.index(state.get(FORM).get("name"))] += 1
             binary_features[
@@ -372,12 +375,28 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             output_features = [None, None, sparse_features[0].sum(0), -1]
         return output_features
 
+    def process_state_without_trained_nlu(self, state: STATE):
+        intent_features = np.zeros((1, len(self.intents)))
+        action_name_features = np.zeros((1, len(self.action_names)))
+        if state.get(USER):
+            intent = state.get(USER).get(INTENT)
+            intent_features[0, self.intents.index(intent)] += 1
+        if state.get(PREVIOUS_ACTION):
+            action_name = state.get(PREVIOUS_ACTION).get(ACTION_NAME)    
+            action_name_features[0, self.action_names.index(action_name)]+=1
+        user_features = [None, None, intent_features, -1]
+        action_features = [None, None, action_name_features, -1]
+        return user_features + action_features
+
     def encode(
         self,
-        state: Dict[Text, float],
+        state: STATE,
         interpreter: Optional[NaturalLanguageInterpreter],
     ):
         slot_and_entity_features = self._get_slot_and_entity_features(state)
+        if isinstance(interpreter, RegexInterpreter):
+            logger.warning("No trained NLU model was loaded. End-to-end training can't be performed. Intents and actions will be featurized as one-hot.")
+            return self.process_state_without_trained_nlu(state) + [slot_and_entity_features]
         state_extracted_features = {
             key: self._extract_features(state.get(key), key, interpreter)
             for key in [USER, PREVIOUS_ACTION]
@@ -403,7 +422,8 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         Checking whether a given action name from the domain is text or action_name
         """
 
-        # check that there is a featurizer trained for the action name, i.e., that we have encountered action_names in the dataset
+        # check that there is a featurizer trained for the action name, 
+        # i.e., that we have encountered action_names in the dataset
         if f"{ACTION_NAME}_sparse" in self.output_shapes.keys():
             action_name_features = self._extract_features(
                 {ACTION_NAME: action}, PREVIOUS_ACTION, interpreter
@@ -427,6 +447,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         else:
             action_text_features = None
             num_text_elements = -1
+
         return (
             num_text_elements > num_name_elements,
             action_name_features,
@@ -440,10 +461,10 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         label_data = []
         # if we're doing rasa trin core without trained NLU model
         if isinstance(interpreter, RegexInterpreter):
-            label_features = np.eye(len(domain.action_names))
+            label_features = np.expand_dims(np.eye(len(domain.action_names)), 1)
             label_data = [
                 (j, [None, None, label_features[j]])
-                for j, action in domain.action_names
+                for j, action in enumerate(domain.action_names)
             ]
             return label_data
 

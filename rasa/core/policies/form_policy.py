@@ -67,7 +67,7 @@ class FormPolicy(MemoizationPolicy):
             - capture previous meaningful action before action_listen
             - ignore previous intent
         """
-        if states[0] is None:
+        if len(states) == 1:
             action_before_listen = None
         else:
             action_before_listen = {
