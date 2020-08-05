@@ -58,6 +58,12 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ ,
 
     If there is no container with the name ``AZURE_CONTAINER``, Rasa will create it.
 
+* Other Remote Storage
+    Other remote storage is supported using the external model persistor library,
+    which you can install or implement by yourself.
+
+    Start the Rasa server with ``remote-storage`` option set to the module path of model persistor.
+
 Models are gzipped before they are saved in the cloud. The gzipped file naming convention
 is ``{MODEL_NAME}.tar.gz`` and it is stored in the root folder of the storage service.
 Currently, you are not able to manually specify the path on the cloud storage.
