@@ -390,6 +390,14 @@ class Interpreter:
         return output
 
     def parse_message(self, message: Message, attribute: Text = TEXT) -> Message:
+        """
+        Tokenizer and featurize the input message by the provided attribute;
+        Args:
+            message: message storing text to process;
+            attribute: message attribute
+        Returns:
+            message: it contains the tokens and features which are the output of the NLU pipeline;  
+        """
         for component in self.pipeline:
             if isinstance(component, (Featurizer, tokenizer.Tokenizer)):
                 component.process(message, attribute, **self.context)
