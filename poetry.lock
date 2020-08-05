@@ -2664,7 +2664,7 @@ description = "Twilio API client and TwiML generator"
 name = "twilio"
 optional = false
 python-versions = "*"
-version = "6.42.0"
+version = "6.44.1"
 
 [package.dependencies]
 PyJWT = ">=1.4.2"
@@ -2860,7 +2860,6 @@ version = ">=3.7.4"
 [[package]]
 category = "main"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-marker = "python_version < \"3.7\" and python_version != \"3.4\" or python_version < \"3.8\""
 name = "zipp"
 optional = false
 python-versions = ">=3.6"
@@ -4405,7 +4404,7 @@ transformers = [
     {file = "transformers-2.11.0.tar.gz", hash = "sha256:8de20f03a94ebf16d98610a7df0acc6ba68c80bd44605cf5ad4300c642a7b57a"},
 ]
 twilio = [
-    {file = "twilio-6.42.0.tar.gz", hash = "sha256:9d423321d577cab175712e4cc3636b68534572c3ab1c6c5b191925d3abac0223"},
+    {file = "twilio-6.44.1.tar.gz", hash = "sha256:a84b6a4e8f6c739cf3fa429033ad522d07c78e3788800e68fe5195d83db4f03a"},
 ]
 typed-ast = [
     {file = "typed_ast-1.4.1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:73d785a950fc82dd2a25897d525d003f6378d1cb23ab305578394694202a58c3"},
