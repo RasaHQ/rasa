@@ -78,7 +78,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   entity predictions.
 
 * [#5976](https://github.com/rasahq/rasa/issues/5976): Fix server crashes that occurred when Rasa Open Source pulls a model from a
-  [model server](./configuring-http-api.mdx#server-fetch-from-server) and an exception was thrown during
+  [model server](./model-storage.mdx#server-fetch-from-server) and an exception was thrown during
   model loading (such as a domain with invalid YAML).
 
 ## [1.10.2] - 2020-06-03
@@ -127,7 +127,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   The group label can be used to group multiple entities together.
   For example, you could group different pizza orders, so that you know what toppings goes with which pizza and
   what size which pizza has.
-  For more details see [Entities Roles and Groups](./entity-extraction.mdx#entities-roles-groups).
+  For more details see [Entities Roles and Groups](./training-data-format.mdx#entities-roles-groups).
 
   To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
   We updated the tracker method `get_latest_entity_values` to take an optional role/group label.
@@ -513,7 +513,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5230](https://github.com/rasahq/rasa/issues/5230): Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
 
-  Please refer to the [documentation](./tensorflow_usage.mdx#tensorflow-usage) to understand
+  Please refer to the [documentation](./tuning-your-model.mdx#configuring-tensorflow) to understand
   which environment variables to set in what scenarios. A couple of examples are shown below as well:
 
   ```python

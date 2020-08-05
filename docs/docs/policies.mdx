@@ -483,12 +483,12 @@ policies:
     fallback_action_name: 'action_default_fallback'
 ```
 
-|                       |                                                                                                                                                |
-|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-|`nlu_threshold`        |Min confidence needed to accept an NLU prediction                                                                                               |
-|`ambiguity_threshold`  |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.                                      |
-|`core_threshold`       |Min confidence needed to accept an action prediction from Rasa Core                                                                             |
-|`fallback_action_name` |Name of the [fallback action](./fallback-actions.mdx) to be called if the confidence of intent or action is below the respective threshold |
+|                       |                                                                                                                 |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------|
+|`nlu_threshold`        |Min confidence needed to accept an NLU prediction                                                                |
+|`ambiguity_threshold`  |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.       |
+|`core_threshold`       |Min confidence needed to accept an action prediction from Rasa Core                                              |
+|`fallback_action_name` |Name of the fallback action to be called if the confidence of intent or action is below the respective threshold |
 
 `action_default_fallback` is a default action in Rasa Core which sends the
 `utter_default` response to the user (you will have to define this response
@@ -573,14 +573,14 @@ policies:
     deny_suggestion_intent_name: "out_of_scope"
 ```
 
-|                              |                                                                                                                                                                                                                     |
-|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|`nlu_threshold`               |Min confidence needed to accept an NLU prediction                                                                                                                                                                    |
-|`ambiguity_threshold`         |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.                                                                                                           |
-|`core_threshold`              |Min confidence needed to accept an action prediction from Rasa Core                                                                                                                                                  |
-|`fallback_core_action_name`   |Name of the [fallback action](./fallback-actions.mdx) to be called if the confidence of Rasa Core action prediction is below the `core_threshold`. This action is to propose the recognized intents             |
-|`fallback_nlu_action_name`    |Name of the [fallback action](./fallback-actions.mdx) to be called if the confidence of Rasa NLU intent classification is below the `nlu_threshold`. This action is called when the user denies the second time |
-|`deny_suggestion_intent_name` |The name of the intent which is used to detect that the user denies the suggested intents                                                                                                                            |
+|                              |                                                                                                                                                                                      |
+|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|`nlu_threshold`               |Min confidence needed to accept an NLU prediction                                                                                                                                     |
+|`ambiguity_threshold`         |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.                                                                            |
+|`core_threshold`              |Min confidence needed to accept an action prediction from Rasa Core                                                                                                                   |
+|`fallback_core_action_name`   |Name of the fallback action to be called if the confidence of Rasa Core action prediction is below the `core_threshold`. This action is to propose the recognized intents             |
+|`fallback_nlu_action_name`    |Name of the fallback action to be called if the confidence of Rasa NLU intent classification is below the `nlu_threshold`. This action is called when the user denies the second time |
+|`deny_suggestion_intent_name` |The name of the intent which is used to detect that the user denies the suggested intents                                                                                             |
 
 :::note
 You can include either the `FallbackPolicy` or the
