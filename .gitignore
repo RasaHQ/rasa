@@ -84,3 +84,6 @@ docs/.docusaurus
 docs/docs/variables.json
 docs/docs/sources/
 docs/docs/changelog.mdx
+
+# Local Netlify folder
+.netlify
