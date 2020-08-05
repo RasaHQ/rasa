@@ -178,7 +178,7 @@ module.exports = {
         },
         {
           type: 'category',
-          label: 'Versioning',
+          label: 'Change Log',
           collapsed: true,
           items: [
             'changelog',
