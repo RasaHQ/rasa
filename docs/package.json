@@ -18,11 +18,11 @@
     "u": "yarn upgrade-interactive --latest"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-alpha.60",
-    "@docusaurus/plugin-client-redirects": "^2.0.0-alpha.60",
-    "@docusaurus/plugin-content-docs": "^2.0.0-alpha.60",
-    "@docusaurus/plugin-sitemap": "^2.0.0-alpha.60",
-    "@docusaurus/theme-classic": "^2.0.0-alpha.60",
+    "@docusaurus/core": "^2.0.0-alpha.61",
+    "@docusaurus/plugin-client-redirects": "^2.0.0-alpha.61",
+    "@docusaurus/plugin-content-docs": "^2.0.0-alpha.61",
+    "@docusaurus/plugin-sitemap": "^2.0.0-alpha.61",
+    "@docusaurus/theme-classic": "^2.0.0-alpha.61",
     "@fortawesome/fontawesome-svg-core": "^1.2.30",
     "@fortawesome/free-solid-svg-icons": "^5.14.0",
     "@fortawesome/react-fontawesome": "^0.1.11",
