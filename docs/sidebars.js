@@ -171,7 +171,6 @@ module.exports = {
           label: 'APIs',
           collapsed: true,
           items: [
-            'architecture',
             'command-line-interface',
             'http-api',
             'jupyter-notebooks',
