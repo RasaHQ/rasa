@@ -594,7 +594,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#4006](https://github.com/rasahq/rasa/issues/4006): Fixed timestamp parsing warning when using DucklingHTTPExtractor
 
 * [#4601](https://github.com/rasahq/rasa/issues/4601): Fixed issue with `action_restart` getting overridden by `action_listen` when the `MappingPolicy` and the
-  [TwoStageFallbackPolicy](https://rasa.com/docs/rasa/core/policies/#two-stage-fallback-policy) are used together.
+  [TwoStageFallbackPolicy](./policies.mdx#two-stage-fallback-policy) are used together.
 
 * [#5201](https://github.com/rasahq/rasa/issues/5201): Fixed incorrectly raised Error encountered in pipelines with a `ResponseSelector` and NLG.
 
@@ -796,11 +796,11 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
       min_df: 5
   ```
 
-* [#4957](https://github.com/rasahq/rasa/issues/4957): To use custom features in the `CRFEntityExtractor` use `text_dense_features` instead of `ner_features`. If
+* [#4957](https://github.com/rasahq/rasa/issues/4957): To [use custom features in the `CRFEntityExtractor`](./components/entity-extractors.mdx#passing-custom-features-to-crfentityextractor)
+  use `text_dense_features` instead of `ner_features`. If
   `text_dense_features` are present in the feature set, the `CRFEntityExtractor` will automatically make use of
   them. Just make sure to add a dense featurizer in front of the `CRFEntityExtractor` in your pipeline and set the
   flag `return_sequence` to `True` for that featurizer.
-  See [https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor](https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor).
 
 * [#4990](https://github.com/rasahq/rasa/issues/4990): Deprecated `Agent.continue_training`. Instead, a model should be retrained.
 
@@ -847,10 +847,10 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
   Add option `return_sequence` to all featurizers. By default all featurizers return a matrix of size
   (1 x feature-dimension). If the option `return_sequence` is set to `True`, the corresponding featurizer will return
-  a matrix of size (token-length x feature-dimension). See [https://rasa.com/docs/rasa/nlu/components/#featurizers](https://rasa.com/docs/rasa/nlu/components/#featurizers).
+  a matrix of size (token-length x feature-dimension). See [Text Featurizers](./components/featurizers.mdx).
   Default value is set to `False`. However, you might want to set it to `True` if you want to use custom features
   in the `CRFEntityExtractor`.
-  See [https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor](https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor).
+  See [passing custom features to the `CRFEntityExtractor`](./components/entity-extractors.mdx#passing-custom-features-to-crfentityextractor)
 
   Changed some featurizers to use sparse features, which should reduce memory usage with large amounts of training data significantly.
   Read more: [Text Featurizers](./components/featurizers.mdx) .
@@ -1321,7 +1321,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 
 * experimental training data importer which supports training with data of multiple
   sub bots. Please see the
-  [docs](https://rasa.com/docs/rasa/api/training-data-importers/) for more
+  [docs](./training-data-importers.mdx) for more
   information.
 
 * throw error during training when triggers are defined in the domain without

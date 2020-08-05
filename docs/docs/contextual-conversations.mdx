@@ -12,7 +12,7 @@ other cases you will need to use stories and context to help the user achieve th
 If we take the example of the “getting started” skill from Sara, we want to give them
 different information based on whether they’ve built an AI assistant before and are
 migrating from a different tool etc. This can be done quite simply with stories and
-the concept of [max history](https://rasa.com/docs/rasa/core/policies/#max-history).
+the concept of [max history](./policies.mdx#max-history).
 
 ```md
  ## new to rasa + built a bot before
@@ -64,7 +64,7 @@ question by storing this information in a slot.
 
 For this to work, keep in mind that the slot has to be featurized in your `domain.yml`
 file. This time we can use the `text` slot type, as we only care about whether the
-[slot was set or not](https://rasa.com/docs/rasa/core/slots/).
+[slot was set or not](./domain.mdx#slots/).
 
 ## AugmentedMemoizationPolicy
 
@@ -72,7 +72,7 @@ To make your bot more robust to interjections, you can replace the MemoizationPo
 with the AugmentedMemoizationPolicy. It works the same way as the MemoizationPolicy,
 but if no exact match is found it additionally has a mechanism that forgets a certain
 amount of steps in the conversation history to find a match in your stories (read more
-[here](https://rasa.com/docs/rasa/core/policies/#augmented-memoization-policy))
+[here](policies.mdx#augmented-memoization-policy))
 
 ## Using ML to generalise
 
@@ -81,7 +81,7 @@ policies you can use. These come in as an additional layer in your policy config
 and only jump in if the user follows a path that you have not anticipated. **It is important
 to understand that using these policies does not mean letting go of control over your
 assistant.** If a rule based policy is able to make a prediction, that prediction will
-always have a higher priority (read more [here](https://rasa.com/docs/rasa/core/policies/#action-selection)) and predict the next action. The
+always have a higher priority (read more [here](./policies.mdx#action-selection)) and predict the next action. The
 ML based policies give your assistant the chance not to fail, whereas if they are not
 used your assistant will definitely fail, like in state machine based dialogue systems.
 

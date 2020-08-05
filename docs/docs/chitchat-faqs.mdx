@@ -7,7 +7,7 @@ title: Chitchat and FAQs
 TODO: Restructure all conversations patterns pages to not depend
 on one another
 
-After following the basics of [prototyping an assistant](https://rasa.com/docs/rasa/prototype-an-assistant/), we’ll
+After following the basics of [prototyping an assistant](./prototype-an-assistant.mdx), we’ll
 now walk through building a basic FAQ chatbot and then build a bot that can handle
 contextual conversations.
 
@@ -25,8 +25,8 @@ In this section we’re going to cover the following topics:
 
 We’re going to use content from [Sara](https://github.com/RasaHQ/rasa-demo), the Rasa
 assistant that, amongst other things, helps the user get started with the Rasa products.
-You should first install Rasa using the [Step-by-step Installation Guide](https://rasa.com/docs/rasa/installation/#step-by-step-installation-guide)
-and then [prototype an assistant](https://rasa.com/docs/rasa/prototype-an-assistant/)
+You should first install Rasa using the [Step-by-step Installation Guide](./installation.mdx#step-by-step-installation-guide)
+and then [prototype an assistant](./prototype-an-assistant.mdx)
 to make sure you know the basics.
 
 To prepare for this tutorial, we’re going to create a new directory and start a
@@ -233,7 +233,7 @@ Next, we’ll need to define the responses associated with these FAQs in a new f
 * faq/ask_channels
   - We have a comprehensive list of [supported connectors](https://rasa.com/docs/core/connectors/), but if
     you don't see the one you're looking for, you can always create a custom connector by following
-    [this guide](https://rasa.com/docs/rasa/connectors/custom-connectors/).
+    [this guide](./connectors/custom-connectors.mdx).
 
 ## ask languages
 * faq/ask_languages
@@ -274,7 +274,7 @@ intents:
   - faq
 ```
 
-We’ll also need to add a [retrieval action](https://rasa.com/docs/rasa/core/retrieval-actions/),
+We’ll also need to add a [retrieval action](./retrieval-actions.mdx),
 which takes care of sending the response predicted from the ResponseSelector back to the user,
 to the list of actions. These actions always have to start with the `respond_` prefix:
 
@@ -317,7 +317,7 @@ At this stage it makes sense to add a few test cases to your `test_stories.md` f
 ```
 
 You can read more in this [blog post](https://blog.rasa.com/response-retrieval-models/) and the
-[Retrieval Actions](https://rasa.com/docs/rasa/core/retrieval-actions/) page.
+[Retrieval Actions](./retrieval-actions.mdx) page.
 
 Using the features we described in this tutorial, you can easily build a context-less assistant.
 

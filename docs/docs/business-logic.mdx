@@ -13,7 +13,7 @@ need to collect information about which account to transfer from, whom to transf
 amount to transfer. This type of behavior can and should be handled in a rule based way, as it
 is clear how this information should be collected.
 
-For this type of use case, we can use Forms and our FormPolicy. The [FormPolicy](https://rasa.com/docs/rasa/core/policies/#form-policy)
+For this type of use case, we can use Forms and our FormPolicy. The [FormPolicy](./policies.mdx#form-policy)
 works by predicting the form as the next action until all information is gathered from the user.
 
 As an example, we will build out the SalesForm from Sara. The user wants to contact
@@ -261,7 +261,7 @@ rasa shell
 This simple form will work out of the box, however you will likely want to add a bit
 more capability to handle different situations. One example of this is validating
 slots, to make sure the user provided information correctly (read more about it
-[here](https://rasa.com/docs/rasa/core/forms/#validating-user-input)).
+[here](./forms.mdx#validating-user-input)).
 
 Another example is that you may want to fill slots from things other than entities
 of the same name. E.g. for the “use case” situation in our Form, we would expect
@@ -284,7 +284,7 @@ Now our bot will extract the full user message when asking for the use case slot
 and we don’t need to use the `use_case` entity defined before.
 
 All of the methods within a form can be customized to handle different branches in your
-business logic. Read more about this [here](https://rasa.com/docs/rasa/core/forms/#).
+business logic. Read more about this [here](./forms.mdx).
 However, you should make sure not to handle any unhappy paths inside the form. These
 should be handled by writing regular stories, so your model can learn this behavior.
 
