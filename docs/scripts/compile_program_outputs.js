@@ -1,4 +1,4 @@
-const getProgramOutputs = require('./plugins/program_output.js');
+const getProgramOutputs = require('../plugins/program_output.js');
 
 
 
