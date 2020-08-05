@@ -64,8 +64,8 @@ Rasa supports using [S3](https://aws.amazon.com/s3/) ,
 
 * Other Remote Storage
 
-  Other remote storage is supported using the external model persistor library,
-  which you can install or implement by yourself.
+  Support for other remote storages can be achieved by using an external library or implementing
+  a custom module for it by extending the `rasa.nlu.persistor.Persistor` class.
 
   Start the Rasa server with ``remote-storage`` option set to the module path of model persistor.
 
