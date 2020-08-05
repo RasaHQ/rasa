@@ -172,7 +172,7 @@ def test_read_rules_without_stories(rule_steps_without_stories: List[StoryStep])
     ml_steps = [s for s in rule_steps_without_stories if not s.is_rule]
     rule_steps = [s for s in rule_steps_without_stories if s.is_rule]
 
-    # this file contains three rules and no ML stories
+    # this file contains five rules and no ML stories
     assert len(ml_steps) == 0
     assert len(rule_steps) == 5
 

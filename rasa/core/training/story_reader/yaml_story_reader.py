@@ -104,10 +104,11 @@ class YAMLStoryReader(StoryReader):
             KEY_STORIES: StoryParser,
             KEY_RULES: RuleParser,
         }.items():
-            stories = parsed_content.get(key, [])
+            data = parsed_content.get(key, [])
             parser = parser_class.from_reader(self)
-            parser.parse_data(stories)
+            parser.parse_data(data)
             self.story_steps.extend(parser.get_steps())
+            
         return self.story_steps
 
     @staticmethod
@@ -386,7 +387,7 @@ class YAMLStoryReader(StoryReader):
 
 
 class StoryParser(YAMLStoryReader):
-    """Encapsulate story specific parser behavior."""
+    """Encapsulate story-specific parser behavior."""
 
     def _new_part(self, item_name: Text, item: Dict[Text, Any]) -> None:
         self._new_story_part(item_name, self.source_name)
@@ -402,7 +403,7 @@ class StoryParser(YAMLStoryReader):
 
 
 class RuleParser(YAMLStoryReader):
-    """Encapsulate rule specific parser behavior."""
+    """Encapsulate rule-specific parser behavior."""
 
     def _new_part(self, item_name: Text, item: Dict[Text, Any]) -> None:
         self._new_rule_part(item_name, self.source_name)
