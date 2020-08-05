@@ -101,6 +101,12 @@ class Message:
     ) -> "Message":
         """
         Builds a Message from UserUttered data
+        Args: 
+            text: text of a user's utterance
+            intent: an intent of the user utterance
+            entities: entities in the user's utterance
+        Returns:
+            Message
         """
         data = {}
         if intent:
@@ -122,6 +128,11 @@ class Message:
     ) -> "Message":
         """
         Builds a Message from ActionExecuted data
+        Args: 
+            action_text: text of a bot's utterance
+            action_name: name of an action executed
+        Returns:
+            Message
         """
         action_data = {ACTION_TEXT: action_text, ACTION_NAME: action_name}
         return cls(data=action_data, **kwargs)

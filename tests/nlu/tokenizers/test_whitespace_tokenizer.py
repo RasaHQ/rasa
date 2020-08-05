@@ -108,7 +108,7 @@ def test_custom_intent_symbol(text, expected_tokens):
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
 
 
-def test_whitespace_training(supervised_embeddings_config):
+def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
     examples = [
         Message(
             "Any Mexican restaurant will do",
@@ -182,7 +182,7 @@ def test_whitespace_language_suuport(language, error, component_builder):
         component_builder.create_component({"name": "WhitespaceTokenizer"}, config)
 
 
-def test_whitespace_processing_with_attribute(supervised_embeddings_config):
+def test_whitespace_processing_with_attribute(supervised_embeddings_config: RasaNLUModelConfig):
     message = Message(
         "Any Mexican restaurant will do",
         {
