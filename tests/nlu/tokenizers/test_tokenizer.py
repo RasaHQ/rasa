@@ -34,7 +34,9 @@ def test_tokens_comparison():
     "text, expected_tokens, expected_indices",
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
-def test_train_tokenizer(text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]):
+def test_train_tokenizer(
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+):
     tk = WhitespaceTokenizer()
 
     message = Message(text)
@@ -63,7 +65,9 @@ def test_train_tokenizer(text: Text, expected_tokens: List[Text], expected_indic
     "text, expected_tokens, expected_indices",
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
-def test_train_tokenizer_e2e_actions(text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]):
+def test_train_tokenizer_e2e_actions(
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+):
     tk = WhitespaceTokenizer()
 
     message = Message(text)
@@ -87,7 +91,9 @@ def test_train_tokenizer_e2e_actions(text: Text, expected_tokens: List[Text], ex
     "text, expected_tokens, expected_indices",
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
-def test_train_tokenizer_action_name(text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]):
+def test_train_tokenizer_action_name(
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+):
     tk = WhitespaceTokenizer()
 
     message = Message(text)
@@ -108,7 +114,9 @@ def test_train_tokenizer_action_name(text: Text, expected_tokens: List[Text], ex
     "text, expected_tokens, expected_indices",
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
-def test_process_tokenizer(text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]):
+def test_process_tokenizer(
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+):
     tk = WhitespaceTokenizer()
 
     message = Message(text)

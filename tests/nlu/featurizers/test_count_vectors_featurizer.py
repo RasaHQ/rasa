@@ -416,7 +416,11 @@ def test_count_vectors_featurizer_train():
     ],
 )
 def test_count_vector_featurizer_action_attribute_featurization(
-    sentence: Text, action_name: Text, action_text: Text, action_name_features: np.ndarray, response_features: np.ndarray
+    sentence: Text,
+    action_name: Text,
+    action_text: Text,
+    action_name_features: np.ndarray,
+    response_features: np.ndarray,
 ):
     ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
     tk = WhitespaceTokenizer()
@@ -468,7 +472,11 @@ def test_count_vector_featurizer_action_attribute_featurization(
     ],
 )
 def test_count_vector_featurizer_process_by_attribute(
-    sentence: Text, action_name: Text, action_text: Text, action_name_features: np.ndarray, response_features: np.ndarray
+    sentence: Text,
+    action_name: Text,
+    action_text: Text,
+    action_name_features: np.ndarray,
+    response_features: np.ndarray,
 ):
     ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
     tk = WhitespaceTokenizer()

@@ -182,7 +182,9 @@ def test_whitespace_language_suuport(language, error, component_builder):
         component_builder.create_component({"name": "WhitespaceTokenizer"}, config)
 
 
-def test_whitespace_processing_with_attribute(supervised_embeddings_config: RasaNLUModelConfig):
+def test_whitespace_processing_with_attribute(
+    supervised_embeddings_config: RasaNLUModelConfig,
+):
     message = Message(
         "Any Mexican restaurant will do",
         {

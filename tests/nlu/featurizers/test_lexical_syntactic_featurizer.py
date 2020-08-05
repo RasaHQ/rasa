@@ -144,7 +144,9 @@ def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
         )
     ],
 )
-def test_text_featurizer_using_pos_with_action_text(sentence: Text, expected: np.ndarray, spacy_nlp):
+def test_text_featurizer_using_pos_with_action_text(
+    sentence: Text, expected: np.ndarray, spacy_nlp
+):
     featurizer = LexicalSyntacticFeaturizer({"features": [["pos", "pos2"]]})
 
     train_message = Message(sentence, {ACTION_TEXT: sentence})
