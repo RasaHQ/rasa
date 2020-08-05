@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 
-from typing import Dict
+from typing import Dict, Text
 from typing import List, Optional
 
 from core.knowledge_base.database_schema import DatabaseSchema
@@ -42,36 +42,43 @@ class SpecialSymbol:
     copy_delimiter = " [COPY] "
 
 
-class GrammarAction(object):
+class GrammarRule(object):
+    """
+    A GrammarRule describes something like
+      Root -> Select Filter
+    or
+      Select -> Agg Agg
+    """
+
     grammar_dict = {}
 
     def __init__(self):
-        self.ins_id = None
+        self.rule_id = None
         self.rule = None
 
-    def get_next_action(self, is_sketch: bool = False):
-        actions = []
-        # a rule always first mentions the action you are currently performing
-        # 1: to remove this from the list of next actions
+    def get_next_action(self, is_sketch: bool = False) -> List["GrammarRule"]:
+        rules = []
+
+        # a rule always first mentioned the current rule, e.g. Root Select Filter
+        # '1:' to remove this from the list of next actions
+
         for x in self.rule.split(" ")[1:]:
             if x not in Keywords:
                 rule_type = eval(x)
                 if is_sketch:
                     if rule_type is not A and rule_type is not T:
-                        actions.append(rule_type)
+                        rules.append(rule_type)
                 else:
-                    actions.append(rule_type)
-        return actions
+                    rules.append(rule_type)
+        return rules
 
     def __repr__(self):
         space_index = self.rule.find(" ")
         return f"{self.rule[:space_index]} -> {self.rule[space_index + 1:]}"
 
-    def is_global(self):
-        """
-        Actions are global means they fit for the whole dataset, while others only
-        fit for specific instances
-        :return:
+    def is_global(self) -> bool:
+        """GrammarRules are global means they fit for the whole dataset, while others
+        only fit for specific instances.
         """
         if self.__class__ in [C, T, Segment]:
             return False
@@ -88,76 +95,86 @@ class GrammarAction(object):
         return self.__repr__() == other.__repr__()
 
     @staticmethod
-    def from_str(action_repr: str):
+    def from_string(rule_string: Text) -> "GrammarRule":
+        """Create a GrammarRule from a string.
+
+        The string looks like 'Root -> Select Filter'
+
+        Args:
+            rule_string: the string representing the grammar rule
+
+        Returns:
+            A GrammarRule
         """
-        Build an action object from string
-        :param action_repr: the representation of action
-        :return: Action object
-        """
-        # the from_str ONLY can be used in non-copy scenario
-        lhs, rhs = action_repr.split(" -> ")
+        # the rule_string ONLY can be used in non-copy scenario
+        lhs, rhs = rule_string.split(" -> ")
+
         # eval class object
-        cls_obj = eval(lhs)
-        if cls_obj in [C, T]:
-            return cls_obj(rhs)
-        else:
-            # find the rule id
-            rule_str = " ".join([lhs, rhs])
-            grammar_dict: Dict = cls_obj.grammar_dict
-            rule_id = list(grammar_dict.keys())[
-                list(grammar_dict.values()).index(rule_str)
-            ]
-            return cls_obj(rule_id)
+        rule_type = eval(lhs)
+        if rule_type in [C, T]:
+            return rule_type(rhs)
+
+        # find the rule id
+        rule_str = " ".join([lhs, rhs])
+        grammar_dict = rule_type.grammar_dict
+        rule_id = list(grammar_dict.keys())[list(grammar_dict.values()).index(rule_str)]
+        return rule_type(rule_id)
 
     @property
-    def is_nonterminal(self):
+    def is_nonterminal(self) -> bool:
+        """Determine whether this rule is nonterminal or not.
+
+        A nonterminal rule has an instance id of type int.
+
+        Returns:
+            True, if this rule is a terminal rule, False, otherwise.
         """
-        Here we use a simple but not robust method to judge whether self is a nonterminal action (Select),
-        or a terminal action (C/T)
-        :return:
-        """
-        if isinstance(self.ins_id, int):
+        if isinstance(self.rule_id, int):
             return True
         else:
             return False
 
     @property
-    def nonterminal(self):
+    def nonterminal(self) -> Text:
         return self.__class__.__name__
 
 
-class ActionTreeNode(object):
-    def __init__(self, action: GrammarAction):
-        self.action = action
-        self.child: List[Optional[ActionTreeNode]] = []
+class GrammarRuleTreeNode(object):
+    def __init__(self, grammar_rule: GrammarRule):
+        self.grammar_rule = grammar_rule
+        self.child: List[Optional[GrammarRuleTreeNode]] = []
+
         # drop self
-        if isinstance(self.action.ins_id, int):
-            all_child = self.action.grammar_dict[self.action.ins_id].split(" ")[1:]
+        if isinstance(self.grammar_rule.rule_id, int):
+            all_child = self.grammar_rule.grammar_dict[self.grammar_rule.rule_id].split(
+                " "
+            )[1:]
         else:
             all_child = []
+
         for child_name in all_child:
             if child_name not in Keywords:
                 # placeholder
                 self.child.append(None)
 
     def full_in_child(self) -> bool:
-        """
-        test if an action could be inserted into self's child, if fail, return false; otherwise, return true.
-        :return:
+        """Test if a grammar rule could be inserted into self's child, if fail,
+        return false; otherwise, return true.
         """
         # if is a non terminal
         if None in self.child:
             return False
+
         # successfully add the child, return true.
         return True
 
-    def add_child(self, action_node):
+    def add_child(self, action_node) -> None:
         ind = self.child.index(None)
         self.child[ind] = action_node
 
-    def get_tree_action(self) -> List[GrammarAction]:
-        if self.action.is_nonterminal:
-            sub_tree = [self.action]
+    def get_tree_action(self) -> List[GrammarRule]:
+        if self.grammar_rule.is_nonterminal:
+            sub_tree = [self.grammar_rule]
             # FIXME: here we use a simple method to extract all subtrees from current root node:
             #  call all nodes' get_sub_tree. A better way is to backtrack and construct all subtrees
             #  using dynamic programming.
@@ -165,7 +182,7 @@ class ActionTreeNode(object):
                 sub_tree.extend(child.get_tree_action())
             return sub_tree
         else:
-            return [self.action]
+            return [self.grammar_rule]
 
 
 class GrammarType:
@@ -269,59 +286,60 @@ class Grammar(object):
         self.local_grammar = self.build_instance_production()
 
     @classmethod
-    def build_ast_tree(cls, action_seq: List[GrammarAction]):
+    def build_syntax_tree(cls, rule_sequence: List[GrammarRule]):
         # action is the depth-first traversal
-        node_queue: List[ActionTreeNode] = []
+        node_queue: List[GrammarRuleTreeNode] = []
         root_node = None
-        seq_len = len(action_seq)
+        seq_len = len(rule_sequence)
         for i in range(seq_len):
             # build tree node
-            tree_node = ActionTreeNode(action_seq[i])
+            tree_node = GrammarRuleTreeNode(rule_sequence[i])
             if i == 0:
                 root_node = tree_node
             # try to append current node into the first element of node queue
             else:
-                cur_node = node_queue[-1]
+                current_node = node_queue[-1]
                 # cannot insert, pop the least node
-                while cur_node.full_in_child():
+                while current_node.full_in_child():
                     # break the first node
                     node_queue.pop(-1)
                     # update current node
-                    cur_node = node_queue[-1]
-                cur_node.add_child(tree_node)
+                    current_node = node_queue[-1]
+                current_node.add_child(tree_node)
             node_queue.append(tree_node)
+
         return root_node
 
     @classmethod
-    def extract_all_subtree(cls, action_seq: List[GrammarAction]) -> List:
+    def extract_all_subtree(cls, action_seq: List[GrammarRule]) -> List:
         """
-        Given the root node of ast tree, return all the valid subtrees
+        Given the root node of syntax tree, return all the valid subtrees
         :return:
         """
-        nonterminal_node_list: List[ActionTreeNode] = []
+        nonterminal_node_list: List[GrammarRuleTreeNode] = []
         # store root node into queue
-        node_queue: List[ActionTreeNode] = []
+        node_queue: List[GrammarRuleTreeNode] = []
         seq_len = len(action_seq)
         for i in range(seq_len):
             # build tree node
-            tree_node = ActionTreeNode(action_seq[i])
+            tree_node = GrammarRuleTreeNode(action_seq[i])
             # try to append current node into the first element of node queue
             if i == 0:
                 pass
             # try to append current node into the first element of node queue
             else:
-                cur_node = node_queue[-1]
+                current_node = node_queue[-1]
                 # cannot insert, pop the least node
-                while cur_node.full_in_child():
+                while current_node.full_in_child():
                     # break the first node
                     node_queue.pop(-1)
                     # update current node
-                    cur_node = node_queue[-1]
-                cur_node.add_child(tree_node)
+                    current_node = node_queue[-1]
+                current_node.add_child(tree_node)
 
             node_queue.append(tree_node)
             # add note into node list
-            if tree_node.action.is_nonterminal:
+            if tree_node.grammar_rule.is_nonterminal:
                 nonterminal_node_list.append(tree_node)
         # build tree end, get all subtrees
         subtree_list = [node.get_tree_action() for node in nonterminal_node_list]
@@ -377,7 +395,7 @@ class Grammar(object):
         return default_sql
 
 
-class Statement(GrammarAction):
+class Statement(GrammarRule):
     grammar_dict = {
         GrammarType.StateInter: "Statement intersect Root Root",
         GrammarType.StateUnion: "Statement union Root Root",
@@ -385,13 +403,13 @@ class Statement(GrammarAction):
         GrammarType.StateNone: "Statement Root",
     }
 
-    def __init__(self, id_c):
+    def __init__(self, rule_id):
         super().__init__()
-        self.ins_id = id_c
-        self.production = self.grammar_dict[id_c]
+        self.rule_id = rule_id
+        self.rule = self.grammar_dict[rule_id]
 
 
-class Root(GrammarAction):
+class Root(GrammarRule):
     grammar_dict = {
         GrammarType.RootSFO: "Root Select Filter Order",
         GrammarType.RootSF: "Root Select Filter",
@@ -403,13 +421,13 @@ class Root(GrammarAction):
         GrammarType.RootJS: "Root Join Select",
     }
 
-    def __init__(self, id_c: int):
+    def __init__(self, rule_id: int):
         super().__init__()
-        self.ins_id = id_c
-        self.production = self.grammar_dict[id_c]
+        self.rule_id = rule_id
+        self.rule = self.grammar_dict[rule_id]
 
 
-class Select(GrammarAction):
+class Select(GrammarRule):
     grammar_dict = {
         0: "Select A",
         1: "Select A A",
@@ -419,25 +437,25 @@ class Select(GrammarAction):
         5: "Select A A A A A A",
     }
 
-    def __init__(self, id_c):
+    def __init__(self, rule_id):
         super().__init__()
-        self.ins_id = id_c
-        self.production = self.grammar_dict[id_c]
+        self.rule_id = rule_id
+        self.rule = self.grammar_dict[rule_id]
 
 
-class Join(GrammarAction):
+class Join(GrammarRule):
     grammar_dict = {
         0: "Join A",
         # 1: 'Join A A'
     }
 
-    def __init__(self, id_c):
+    def __init__(self, rule_id):
         super().__init__()
-        self.ins_id = id_c
-        self.production = self.grammar_dict[id_c]
+        self.rule_id = rule_id
+        self.rule = self.grammar_dict[rule_id]
 
 
-class A(GrammarAction):
+class A(GrammarRule):
     grammar_dict = {
         GrammarType.ANone: "A none C T",
         GrammarType.AMax: "A max C T",
@@ -447,13 +465,13 @@ class A(GrammarAction):
         GrammarType.AAvg: "A avg C T",
     }
 
-    def __init__(self, id_c):
+    def __init__(self, rule_id):
         super().__init__()
-        self.ins_id = id_c
-        self.production = self.grammar_dict[id_c]
+        self.rule_id = rule_id
+        self.rule = self.grammar_dict[rule_id]
 
 
-class Filter(GrammarAction):
+class Filter(GrammarRule):
     # TODO: why not directly predict the number of Filters
     grammar_dict = {
         GrammarType.FilterAnd: "Filter Filter and Filter",
@@ -479,13 +497,13 @@ class Filter(GrammarAction):
         GrammarType.FilterNotInNes: "Filter not_in A Root",
     }
 
-    def __init__(self, id_c):
+    def __init__(self, rule_id):
         super().__init__()
-        self.ins_id = id_c
-        self.production = self.grammar_dict[id_c]
+        self.rule_id = rule_id
+        self.rule = self.grammar_dict[rule_id]
 
 
-class Order(GrammarAction):
+class Order(GrammarRule):
     grammar_dict = {
         GrammarType.OrderAsc: "Order asc A",
         GrammarType.OrderDes: "Order des A",
@@ -493,38 +511,38 @@ class Order(GrammarAction):
         GrammarType.OrderDesLim: "Order des A limit",
     }
 
-    def __init__(self, ins_id):
+    def __init__(self, rule_id):
         super().__init__()
-        self.ins_id = ins_id
-        self.production = self.grammar_dict[ins_id]
+        self.ins_id = rule_id
+        self.rule = self.grammar_dict[rule_id]
 
 
-class C(GrammarAction):
-    def __init__(self, ins_id: str):
+class C(GrammarRule):
+    def __init__(self, rule_id: str):
         super().__init__()
         # TODO: here we lower it because the col -> id (entities_names) in SparcWorld is the lower key-value pair.
-        self.ins_id = ins_id.lower()
-        self.production = f"C {self.ins_id}"
+        self.rule_id = rule_id.lower()
+        self.rule = f"C {self.rule_id}"
 
 
-class T(GrammarAction):
-    def __init__(self, ins_id: str):
+class T(GrammarRule):
+    def __init__(self, rule_id: str):
         super().__init__()
-        self.ins_id = ins_id.lower()
-        self.production = f"T {self.ins_id}"
+        self.rule_id = rule_id.lower()
+        self.rule = f"T {self.rule_id}"
 
 
-class Segment(GrammarAction):
+class Segment(GrammarRule):
     """
     segment action appears only in the training post-processing. it is used to copy segment-level precedent SQL
     """
 
-    def __init__(self, copy_ins_action: List[GrammarAction], copy_ins_idx: List[int]):
+    def __init__(self, copy_ins_action: List[GrammarRule], copy_ins_idx: List[int]):
         super().__init__()
         self.copy_ins_action = copy_ins_action
         # copy ins idx has been padded
         self.copy_ins_idx = copy_ins_idx
-        self.production = f"Copy {self.ins_id}"
+        self.production = f"Copy {self.rule_id}"
 
     def __repr__(self):
         repr_str = SpecialSymbol.copy_delimiter + SpecialSymbol.copy_delimiter.join(

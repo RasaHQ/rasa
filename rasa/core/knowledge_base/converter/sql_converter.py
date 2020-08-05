@@ -4,15 +4,31 @@
 """
 This script is responsible for translating SQL to SemQL in a flexible and readable method.
 """
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Text
 import json
-from context.grammar import *
-from allennlp.common.checks import ConfigurationError
-from context.graph import Graph
 from collections import deque
 from copy import deepcopy
 import logging
 import re
+
+from core.knowledge_base.converter.process_sql import parse_sql, tokenize
+from core.knowledge_base.database_schema import DatabaseSchema, TableColumn, Table
+from core.knowledge_base.grammar.grammar import (
+    GrammarRule,
+    A,
+    C,
+    T,
+    GrammarType,
+    Join,
+    Select,
+    Filter,
+    Order,
+    Root,
+    Grammar,
+    GrammarRuleTreeNode,
+    Statement,
+)
+from core.knowledge_base.grammar.graph import Graph
 
 
 class SparcType:
@@ -52,41 +68,26 @@ class SQLConverter(object):
     The class is designed to handle the process from structural query dict into intermediate action sequence.
     """
 
-    def __init__(self, db_context: SparcDBContext):
+    def __init__(self, database_schema: DatabaseSchema):
         """
         :param db_context: data context for database
         """
-        self.db_context = db_context
-        self.col_names: Dict[int, TableColumn] = db_context.id_to_col
-        self.table_names: Dict[int, Table] = db_context.id_to_tab
+        self.db_context = database_schema
+        self.col_names = database_schema.id_to_columns()
+        self.table_names = database_schema.id_to_tables()
 
-    def translate_to_intermediate(self, sql_clause: Dict) -> List[Action]:
-        """
-        Given a SQL clause, this function is designed to translate it into intermediate logic form like SemQL.
-        TODO: Once the intermediate grammar rules updates, we should check or update the translate processing too.
-        {
-            "select": [
-                ...
-            ],
-            "union": null,
-            "except": null,
-            "groupBy": [],
-            "limit": null,
-            "intersect": null,
-            "where": [
-                ...
-            ],
-            "having": [],
-            "orderBy": [],
-            "from": {
-                ...
-            }
+    def convert_to_grammar_rules(self, query: Text) -> List[GrammarRule]:
+        sql_clause = {}
+
+        toks = tokenize(query)
+        tables_with_aliases = {
+            table.text: table.name for table in self.db_context.tables
         }
-        :return: intermediate grammar sequence list, typing `List[str]`.
-        """
-        return self._process_statement(sql_clause=sql_clause)
+        _, sql_clause = parse_sql(toks, 0, tables_with_aliases, self.db_context)
 
-    def _process_statement(self, sql_clause: Dict) -> List[Action]:
+        return self._process_statement(sql_clause)
+
+    def _process_statement(self, sql_clause: Dict) -> List[GrammarRule]:
         """
         Except the intersect/union/except, the remaining parsing method iss implemented here.
         :return:
@@ -224,7 +225,7 @@ class SQLConverter(object):
             if agg_id in sparc_to_grammar:
                 _agg_grammar = A(sparc_to_grammar[agg_id])
             else:
-                raise ConfigurationError(f"No support for the aggregate {agg_id}")
+                raise ValueError(f"No support for the aggregate {agg_id}")
             return _agg_grammar
 
         def _process_col() -> C:
@@ -237,7 +238,7 @@ class SQLConverter(object):
         table_grammar = _process_tab()
         return [agg_grammar, col_grammar, table_grammar]
 
-    def _process_join(self, sql_clause) -> List[Action]:
+    def _process_join(self, sql_clause) -> List[GrammarRule]:
         assert "join" in sql_clause
         assert isinstance(sql_clause["join"], str)
 
@@ -262,7 +263,7 @@ class SQLConverter(object):
                     if self.col_names[col_ind].refer_table.name == join_tab_name:
                         join_col_inds.append(col_ind)
 
-        inter_seq: List[Action] = [Join(0)]
+        inter_seq: List[GrammarRule] = [Join(0)]
 
         # use Join A A
         if len(join_col_inds) >= 1:
@@ -279,18 +280,18 @@ class SQLConverter(object):
             )
         return inter_seq
 
-    def _process_select(self, sql_clause) -> List[Action]:
+    def _process_select(self, sql_clause) -> List[GrammarRule]:
         """
         the select clause will be mapped into A, C and T.
         :return:
         """
         sql_select_clause = sql_clause["select"]
         # check the instance type
-        assert isinstance(sql_select_clause, list)
+        # assert isinstance(sql_select_clause, list)
         # boolean / list of column items
         distinct, sel_items = sql_select_clause[0], sql_select_clause[1]
         # find index of @Select.grammar_dict and initialize intermediate select action sequence
-        inter_seq: List[Action] = [Select(len(sel_items) - 1)]
+        inter_seq: List[GrammarRule] = [Select(len(sel_items) - 1)]
         # traverse sel items, including aggregation and others
         for sel_item in sel_items:
             # aggregation grammar
@@ -303,12 +304,12 @@ class SQLConverter(object):
             )
         return inter_seq
 
-    def _process_condition(self, sql_clause, cond: List) -> List[Action]:
+    def _process_condition(self, sql_clause, cond: List) -> List[GrammarRule]:
         """
         Son function of filter, which aims to align @SparcType with @GrammarType.
         :return:
         """
-        inter_seq: List[Action] = []
+        inter_seq: List[GrammarRule] = []
         # if the condition is a nested query
         is_nested_query = True if type(cond[3]) == dict else False
         # corresponding where operation index
@@ -323,7 +324,7 @@ class SQLConverter(object):
             if sparc_type in sparc_to_grammar:
                 filter_grammar = Filter(sparc_to_grammar[sparc_type])
             else:
-                raise ConfigurationError(f"No support for sparc type:{sparc_type}")
+                raise ValueError(f"No support for sparc type:{sparc_type}")
         else:
             if is_nested_query:
                 sparc_to_direct_nested = {
@@ -341,7 +342,7 @@ class SQLConverter(object):
                 if sparc_type in sparc_to_direct_nested:
                     filter_grammar = Filter(sparc_to_direct_nested[sparc_type])
                 else:
-                    raise ConfigurationError(
+                    raise ValueError(
                         f"Grammar {sparc_type} does not support nested setting"
                     )
             else:
@@ -359,7 +360,7 @@ class SQLConverter(object):
                 if sparc_type in sparc_to_grammar:
                     filter_grammar = Filter(sparc_to_grammar[sparc_type])
                 else:
-                    raise ConfigurationError(
+                    raise ValueError(
                         f"Grammar {sparc_type} does not have a corresponding Filter"
                     )
 
@@ -380,7 +381,7 @@ class SQLConverter(object):
 
         return inter_seq
 
-    def _process_filter(self, sql_clause) -> List[Action]:
+    def _process_filter(self, sql_clause) -> List[GrammarRule]:
         """
         Process where and having clause, merge them into filter operations
         :return: filter action sequences
@@ -435,7 +436,7 @@ class SQLConverter(object):
                 right_op = sql_where_clause[3]
                 right_filter_grammar = op_to_grammar[right_op]
 
-                left_cond_grammar: List[Action] = self._process_condition(
+                left_cond_grammar: List[GrammarRule] = self._process_condition(
                     sql_clause=sql_clause, cond=sql_where_clause[0]
                 )
                 middle_cond_grammar = self._process_condition(
@@ -465,7 +466,7 @@ class SQLConverter(object):
                     extend_list.insert(1, right_filter_grammar)
                     extend_list.insert(0, left_filter_grammar)
                 else:
-                    raise ConfigurationError(
+                    raise ValueError(
                         f"We do not support Filter combine type:{combine_type}"
                     )
 
@@ -482,7 +483,7 @@ class SQLConverter(object):
         # no non-terminal
         return inter_seq
 
-    def _process_order(self, sql_clause) -> List[Action]:
+    def _process_order(self, sql_clause) -> List[GrammarRule]:
         """
         the orderby clause will be mapped into Order, A, C, T
         :return:
@@ -519,7 +520,7 @@ class SQLConverter(object):
         # no non-terminal
         return inter_seq
 
-    def _process_root(self, sql_clause: Dict) -> List[Action]:
+    def _process_root(self, sql_clause: Dict) -> List[GrammarRule]:
         """
         Process statement and return its corresponding transaction
         :return: grammar transaction clauses
@@ -717,7 +718,7 @@ class ActionConverter(object):
     should process it in another separate function such as `ConditionStatelet`.
     """
 
-    def __init__(self, db_context: SparcDBContext):
+    def __init__(self, db_context: DatabaseSchema):
         """
         :param db_context: data context for database, mainly usage on its knowledge graph for building foreign-key table
         relation graph. Then it is used to inference the JOIN path.
@@ -738,9 +739,11 @@ class ActionConverter(object):
         :return:
         """
         # convert action sequence into action
-        action_seq = [Action.from_str(action_repr) for action_repr in action_seq]
+        action_seq = [
+            GrammarRule.from_string(action_repr) for action_repr in action_seq
+        ]
         # translation sequence into tree
-        root_node = Grammar.build_ast_tree(action_seq)
+        root_node = Grammar.build_syntax_tree(action_seq)
 
         # from root node, traverse the tree
         statement_clause = self._process_statement(root_node)
@@ -750,7 +753,7 @@ class ActionConverter(object):
 
     def _process_join(
         self,
-        component_mapping: Dict[str, List[ActionTreeNode]],
+        component_mapping: Dict[str, List[GrammarRuleTreeNode]],
         repr: Dict[str, str],
         is_subquery: bool,
     ):
@@ -799,7 +802,9 @@ class ActionConverter(object):
             return _route
 
         # for group by between two tables
-        used_tab_names = [node.action.ins_id for node in component_mapping["from"]]
+        used_tab_names = [
+            node.grammar_rule.rule_id for node in component_mapping["from"]
+        ]
         join_tables = []
 
         if len(used_tab_names) != 2:
@@ -822,7 +827,9 @@ class ActionConverter(object):
         repr["from"] = "FROM " + " JOIN ".join(join_tables)
 
     def _process_group_by(
-        self, component_mapping: Dict[str, List[ActionTreeNode]], repr: Dict[str, str]
+        self,
+        component_mapping: Dict[str, List[GrammarRuleTreeNode]],
+        repr: Dict[str, str],
     ):
         """
         Define rules to judge whether the SQL should contain GROUP BY
@@ -840,7 +847,11 @@ class ActionConverter(object):
         order_nodes = component_mapping["order"]
         # if there are two or more columns in select and any one in [count,max,min,avg,sum], we need group
         if len(select_nodes) > 1 and any(
-            [node for node in select_nodes if node.action.ins_id != GrammarType.ANone]
+            [
+                node
+                for node in select_nodes
+                if node.grammar_rule.rule_id != GrammarType.ANone
+            ]
         ):
             keep_group_by = True
         # if there is any one should be count in order by, we need group
@@ -848,12 +859,18 @@ class ActionConverter(object):
         # that there is no rule that group by should be assigned into order.
         # Here is only a judgement to identify whether to use.
         elif any(
-            [node for node in order_nodes if node.action.ins_id != GrammarType.ANone]
+            [
+                node
+                for node in order_nodes
+                if node.grammar_rule.rule_id != GrammarType.ANone
+            ]
         ):
             keep_group_by = True
 
         # for group by between two tables
-        used_tab_names = [node.action.ins_id for node in component_mapping["from"]]
+        used_tab_names = [
+            node.grammar_rule.rule_id for node in component_mapping["from"]
+        ]
 
         if not keep_group_by:
             return
@@ -866,7 +883,7 @@ class ActionConverter(object):
                 #  the algorithm may be unstable, but we now use it.
 
                 for node in select_nodes:
-                    if node.action.ins_id == GrammarType.ANone:
+                    if node.grammar_rule.rule_id == GrammarType.ANone:
                         # TODO: no more mapping
                         agg_repr = self._process_agg(node, {"from": []})
                         group_by_clause = f"GROUP BY {agg_repr}"
@@ -876,8 +893,8 @@ class ActionConverter(object):
                 if group_by_clause is None and len(having_nodes) > 0:
                     # without any aggregator
                     for agg_node in select_nodes:
-                        col_name = agg_node.child[0].action.ins_id
-                        tab_name = agg_node.child[1].action.ins_id
+                        col_name = agg_node.child[0].grammar_rule.rule_id
+                        tab_name = agg_node.child[1].grammar_rule.rule_id
                         if col_name == "*":
                             continue
                         agg_repr = f"{tab_name}.{col_name}"
@@ -903,7 +920,7 @@ class ActionConverter(object):
                 # if having, select the column in select as the group by one
                 if group_by_clause is None:
                     for node in select_nodes:
-                        if node.action.ins_id == GrammarType.ANone:
+                        if node.grammar_rule.rule_id == GrammarType.ANone:
                             agg_repr = self._process_agg(node, {"from": []})
                             if agg_repr == "*":
                                 continue
@@ -920,13 +937,13 @@ class ActionConverter(object):
             else:
                 return
 
-    def _process_statement(self, node: Optional[ActionTreeNode]) -> str:
+    def _process_statement(self, node: Optional[GrammarRuleTreeNode]) -> str:
         """
         Process statement node and return the SQL clause of statement
         :return: SQL clause equal to node
         """
-        action = node.action
-        action_type = action.ins_id
+        action = node.grammar_rule
+        action_type = action.rule_id
         assert isinstance(action, Statement)
         if action_type == GrammarType.StateNone:
             assert len(node.child) == 1
@@ -944,19 +961,17 @@ class ActionConverter(object):
             elif action_type == GrammarType.StateUnion:
                 return f"{left_child} UNION {right_child}"
             else:
-                raise ConfigurationError(
-                    f"Not support for statement type:{action_type}"
-                )
+                raise ValueError(f"Not support for statement type:{action_type}")
 
-    def _process_root(self, node: Optional[ActionTreeNode], is_subquery):
+    def _process_root(self, node: Optional[GrammarRuleTreeNode], is_subquery):
         """
         Process root node and return the root representation
         :param node:
         :return:
         """
         # traverse node child
-        assert isinstance(node.action, Root)
-        component_mapping: Dict[str, List[ActionTreeNode]] = {
+        assert isinstance(node.grammar_rule, Root)
+        component_mapping: Dict[str, List[GrammarRuleTreeNode]] = {
             "select": [],
             "where": [],
             "having": [],
@@ -967,7 +982,7 @@ class ActionConverter(object):
         repr_mapping: Dict[str, str] = {}
 
         for node_son in node.child:
-            action_cls = node_son.action.__class__
+            action_cls = node_son.grammar_rule.__class__
             # must in Select, Order or Filter
             assert action_cls in [Select, Order, Filter, Join]
             process_func = self.processor[action_cls]
@@ -991,20 +1006,20 @@ class ActionConverter(object):
 
     def _process_order(
         self,
-        node: Optional[ActionTreeNode],
-        component: Dict[str, List[ActionTreeNode]],
+        node: Optional[GrammarRuleTreeNode],
+        component: Dict[str, List[GrammarRuleTreeNode]],
         repr: Dict[str, str],
     ):
         """
         Process order by clause
         """
 
-        assert isinstance(node.action, Order)
+        assert isinstance(node.grammar_rule, Order)
         assert len(node.child) == 1
-        assert isinstance(node.child[0].action, A)
+        assert isinstance(node.child[0].grammar_rule, A)
         agg_repr = self._process_agg(node.child[0], component)
         basic_repr = f"ORDER BY {agg_repr} "
-        action_type = node.action.ins_id
+        action_type = node.grammar_rule.rule_id
         if action_type == GrammarType.OrderAsc:
             basic_repr += "ASC"
         elif action_type == GrammarType.OrderDes:
@@ -1014,36 +1029,36 @@ class ActionConverter(object):
         elif action_type == GrammarType.OrderDesLim:
             basic_repr += "DESC LIMIT 1"
         else:
-            raise ConfigurationError(f"Not support for order type:{action_type}")
+            raise ValueError(f"Not support for order type:{action_type}")
         repr["order"] = basic_repr
         component["order"] = node.child
 
     def _process_sep_join(
         self,
-        node: Optional[ActionTreeNode],
-        component: Dict[str, List[ActionTreeNode]],
+        node: Optional[GrammarRuleTreeNode],
+        component: Dict[str, List[GrammarRuleTreeNode]],
         repr: Dict[str, str],
     ):
         """
         process separate join path and return nothing
         :return: modifiy component and insert another join table into it
         """
-        assert isinstance(node.action, Join)
+        assert isinstance(node.grammar_rule, Join)
         for child in node.child:
             # append table name into join path
             self._process_agg(child, component)
 
     def _process_select(
         self,
-        node: Optional[ActionTreeNode],
-        component: Dict[str, List[ActionTreeNode]],
+        node: Optional[GrammarRuleTreeNode],
+        component: Dict[str, List[GrammarRuleTreeNode]],
         repr: Dict[str, str],
     ):
         """
         process select clause and return the select clause
         :return: modifiy repr and make the key `select` as SELECT representation
         """
-        assert isinstance(node.action, Select)
+        assert isinstance(node.grammar_rule, Select)
         agg_reprs = []
         for child in node.child:
             agg_reprs.append(self._process_agg(child, component))
@@ -1053,8 +1068,8 @@ class ActionConverter(object):
 
     def _process_filter(
         self,
-        node: Optional[ActionTreeNode],
-        component: Dict[str, List[ActionTreeNode]],
+        node: Optional[GrammarRuleTreeNode],
+        component: Dict[str, List[GrammarRuleTreeNode]],
         repr: Dict[str, str],
     ):
         """
@@ -1063,18 +1078,18 @@ class ActionConverter(object):
         :return: modifies on repr to return the representation of different components
         """
 
-        def _mark_node_type(cur_node: ActionTreeNode, keep_having: bool):
+        def _mark_node_type(cur_node: GrammarRuleTreeNode, keep_having: bool):
             """
             Split current node into two separate trees.
             :param keep_having: specify whether to keep having nodes
             """
             # deep copy a node
             for ind, child_node in enumerate(cur_node.child):
-                action_type = child_node.action.ins_id
+                action_type = child_node.grammar_rule.rule_id
                 # if root node, do not mark
-                if isinstance(child_node.action, Root):
+                if isinstance(child_node.grammar_rule, Root):
                     continue
-                if isinstance(child_node.action, Filter):
+                if isinstance(child_node.grammar_rule, Filter):
                     _mark_node_type(child_node, keep_having)
                     continue
                 # if it is A node and mark where
@@ -1100,13 +1115,15 @@ class ActionConverter(object):
         having_root_node = deepcopy(node)
         _mark_node_type(having_root_node, True)
 
-        def _recursive_repr(_inner_node: Optional[ActionTreeNode]) -> Optional[str]:
+        def _recursive_repr(
+            _inner_node: Optional[GrammarRuleTreeNode]
+        ) -> Optional[str]:
             """
             Recursively represent the _inner_node
             :return: string or None(if all marked as None)
             """
-            assert isinstance(_inner_node.action, Filter)
-            action_type = _inner_node.action.ins_id
+            assert isinstance(_inner_node.grammar_rule, Filter)
+            action_type = _inner_node.grammar_rule.rule_id
 
             if (
                 action_type == GrammarType.FilterAnd
@@ -1184,14 +1201,14 @@ class ActionConverter(object):
                 elif action_type == GrammarType.FilterNotInNes:
                     template = "{} NOT IN "
                 else:
-                    raise ConfigurationError(
+                    raise ValueError(
                         f"Error on Filter processing: not filter type: {len(action_type)}"
                     )
 
                 assert len(_inner_node.child) >= 1
 
                 if _inner_node.child[0] is not None:
-                    assert isinstance(_inner_node.child[0].action, A)
+                    assert isinstance(_inner_node.child[0].grammar_rule, A)
 
                     agg_repr = self._process_agg(_inner_node.child[0], component)
 
@@ -1200,8 +1217,8 @@ class ActionConverter(object):
                         return template.format(agg_repr) + "1"
                     # sub query
                     elif len(_inner_node.child) == 2:
-                        assert isinstance(_inner_node.child[0].action, A)
-                        assert isinstance(_inner_node.child[1].action, Root)
+                        assert isinstance(_inner_node.child[0].grammar_rule, A)
+                        assert isinstance(_inner_node.child[1].grammar_rule, Root)
                         agg_repr = self._process_agg(_inner_node.child[0], component)
                         # sub-query start, allocate a new mapping dictionary
                         root_repr = self._process_root(
@@ -1209,7 +1226,7 @@ class ActionConverter(object):
                         )
                         return template.format(agg_repr) + f"( {root_repr} )"
                     else:
-                        raise ConfigurationError(
+                        raise ValueError(
                             f"Error on Filter processing: not supported child number: {len(_inner_node.child)}"
                         )
                 else:
@@ -1225,35 +1242,36 @@ class ActionConverter(object):
             repr["having"] = f"HAVING {having_clause}"
 
         if not where_clause and not having_clause:
-            raise ConfigurationError(
+            raise ValueError(
                 "There is no WHERE and HAVING, but there is an Filter Node."
             )
 
     @staticmethod
     def _process_agg(
-        node: Optional[ActionTreeNode], mapping: Dict[str, List[ActionTreeNode]]
+        node: Optional[GrammarRuleTreeNode],
+        mapping: Dict[str, List[GrammarRuleTreeNode]],
     ) -> str:
         """
         Process column, table and aggregation, return the representation
         :return: representation of aggregation
         """
         # process aggregation, column and table
-        assert isinstance(node.action, A)
+        assert isinstance(node.grammar_rule, A)
         # C and T
         assert len(node.child) == 2
         # TODO: assum C is always before T
-        assert isinstance(node.child[0].action, C)
-        assert isinstance(node.child[1].action, T)
-        col_name = node.child[0].action.ins_id
-        tab_name = node.child[1].action.ins_id
+        assert isinstance(node.child[0].grammar_rule, C)
+        assert isinstance(node.child[1].grammar_rule, T)
+        col_name = node.child[0].grammar_rule.rule_id
+        tab_name = node.child[1].grammar_rule.rule_id
 
         # TODO: we use Node instead of table name to keep consistent
-        used_tab_names = [node.action.ins_id for node in mapping["from"]]
+        used_tab_names = [node.grammar_rule.rule_id for node in mapping["from"]]
         if tab_name not in used_tab_names:
             mapping["from"].append(node.child[1])
 
         # add tab_name into mapping
-        action_type = node.action.ins_id
+        action_type = node.grammar_rule.rule_id
         if action_type == GrammarType.ANone:
             if col_name == "*":
                 return "*"
@@ -1323,3 +1341,27 @@ class ActionConverter(object):
                 )
 
         return Graph(relations), foreign_pairs
+
+
+if __name__ == "__main__":
+    query = "Select * from class JOIN prof on prof.name = class.prof where age >= 43"
+    print(query)
+    table_column1 = TableColumn("name", "name", "text", is_primary_key=True)
+    table_column2 = TableColumn("location", "location", "text")
+    table_column5 = TableColumn("prof", "prof", "text", foreign_key=["prof:name"])
+    table_column3 = TableColumn("age", "age", "number")
+    table_column4 = TableColumn("name", "name", "text", is_primary_key=True)
+    table1 = Table("class", "class", [table_column1, table_column2, table_column5])
+    table2 = Table("prof", "prof", [table_column4, table_column3])
+    database_schema = DatabaseSchema(
+        "class",
+        [table1, table2],
+        [table_column2, table_column1, table_column5, table_column4, table_column3],
+    )
+    converter = SQLConverter(database_schema)
+    grammar = converter.convert_to_grammar_rules(query)
+    print(grammar)
+
+    action_converter = ActionConverter(database_schema)
+    sql = action_converter.translate_to_sql([repr(rule) for rule in grammar])
+    print(sql)
