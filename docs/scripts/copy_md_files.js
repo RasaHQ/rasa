@@ -1,6 +1,3 @@
-/**
-
-*/
 const fs = require('fs');
 
 const { copyFile } = fs.promises;
@@ -28,4 +25,11 @@ async function copyMarkdownFiles(options) {
     }
 };
 
-module.exports = copyMarkdownFiles;
+
+console.info('Copying markdown files');
+copyMarkdownFiles({
+    docsDir: './docs',
+    files: {
+        '../CHANGELOG.mdx': 'changelog.mdx',
+    }
+});
