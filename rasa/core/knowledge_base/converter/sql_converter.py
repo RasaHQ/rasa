@@ -12,7 +12,11 @@ import logging
 import re
 
 from core.knowledge_base.converter.process_sql import parse_sql, tokenize
-from core.knowledge_base.database_schema import DatabaseSchema, TableColumn, Table
+from core.knowledge_base.schema.database_schema import (
+    DatabaseSchema,
+    TableColumn,
+    Table,
+)
 from core.knowledge_base.grammar.grammar import (
     GrammarRule,
     A,
@@ -73,15 +77,15 @@ class SQLConverter(object):
         :param db_context: data context for database
         """
         self.db_context = database_schema
-        self.col_names = database_schema.id_to_columns()
-        self.table_names = database_schema.id_to_tables()
+        self.col_names = database_schema.id_to_columns
+        self.table_names = database_schema.id_to_tables
 
     def convert_to_grammar_rules(self, query: Text) -> List[GrammarRule]:
         sql_clause = {}
 
         toks = tokenize(query)
         tables_with_aliases = {
-            table.text: table.name for table in self.db_context.tables
+            table.alias: table.name for table in self.db_context.tables
         }
         _, sql_clause = parse_sql(toks, 0, tables_with_aliases, self.db_context)
 
@@ -1344,20 +1348,18 @@ class ActionConverter(object):
 
 
 if __name__ == "__main__":
-    query = "Select * from class JOIN prof on prof.name = class.prof where age >= 43"
+    query = "Select * from class JOIN prof where age >= 43 and class.prof = prof.name"
     print(query)
     table_column1 = TableColumn("name", "name", "text", is_primary_key=True)
     table_column2 = TableColumn("location", "location", "text")
     table_column5 = TableColumn("prof", "prof", "text", foreign_key=["prof:name"])
     table_column3 = TableColumn("age", "age", "number")
     table_column4 = TableColumn("name", "name", "text", is_primary_key=True)
-    table1 = Table("class", "class", [table_column1, table_column2, table_column5])
-    table2 = Table("prof", "prof", [table_column4, table_column3])
-    database_schema = DatabaseSchema(
-        "class",
-        [table1, table2],
-        [table_column2, table_column1, table_column5, table_column4, table_column3],
-    )
+    table1 = Table("class", "class")
+    table1.set_columns([table_column1, table_column2, table_column5])
+    table2 = Table("prof", "prof")
+    table2.set_columns([table_column4, table_column3])
+    database_schema = DatabaseSchema("class", [table1, table2])
     converter = SQLConverter(database_schema)
     grammar = converter.convert_to_grammar_rules(query)
     print(grammar)

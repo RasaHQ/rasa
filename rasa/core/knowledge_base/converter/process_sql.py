@@ -194,12 +194,12 @@ def parse_col(toks, start_idx, tables_with_alias, schema, default_tables=None):
     """
     tok = toks[start_idx]
     if tok == "*":
-        return start_idx + 1, schema.columns_to_id()[tok]
+        return start_idx + 1, schema.column_names_to_id()[tok]
 
     if "." in tok:  # if token is a composite
         alias, col = tok.split(".")
         key = tables_with_alias[alias] + "." + col
-        return start_idx + 1, schema.columns_to_id()[key]
+        return start_idx + 1, schema.column_names_to_id()[key]
 
     assert (
         default_tables is not None and len(default_tables) > 0
@@ -209,7 +209,7 @@ def parse_col(toks, start_idx, tables_with_alias, schema, default_tables=None):
         table = tables_with_alias[alias]
         if tok in schema.columns_names_of_table(table):
             key = table + "." + tok
-            return start_idx + 1, schema.columns_to_id()[key]
+            return start_idx + 1, schema.column_names_to_id()[key]
 
     assert False, "Error col: {}".format(tok)
 
@@ -294,7 +294,7 @@ def parse_table_unit(toks, start_idx, tables_with_alias, schema):
     else:
         idx += 1
 
-    return idx, schema.tables_to_id()[key], key
+    return idx, schema.table_names_to_id()[key], key
 
 
 def parse_value(toks, start_idx, tables_with_alias, schema, default_tables=None):

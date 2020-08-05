@@ -5,7 +5,7 @@
 from typing import Dict, Text
 from typing import List, Optional
 
-from core.knowledge_base.database_schema import DatabaseSchema
+from core.knowledge_base.schema.database_schema import DatabaseSchema
 
 Keywords = [
     "limit",

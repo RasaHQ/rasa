@@ -26,8 +26,7 @@ class KnowledgeGraph:
     """
     A ``KnowledgeGraph`` represents a collection of entities and their relationships.
 
-    The ``KnowledgeGraph`` currently stores (untyped) neighborhood information and text
-    representations of each entity (if there is any).
+    The ``KnowledgeGraph`` currently stores (untyped) neighborhood information.
 
     The knowledge base itself can be a table (like in WikitableQuestions), a figure (like in NLVR)
     or some other structured knowledge source. This abstract class needs to be inherited for

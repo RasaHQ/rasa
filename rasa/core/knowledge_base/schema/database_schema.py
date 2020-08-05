@@ -3,19 +3,25 @@ from typing import List, Optional, Text, Dict, Set
 
 from sqlalchemy.util import OrderedSet
 
-from core.knowledge_base.knowledge_graph_filed import KnowledgeGraph
+from core.knowledge_base.schema.knowledge_graph_filed import KnowledgeGraph
 
 
 class Table:
     """Representing the table."""
 
-    def __init__(self, name: str, text: str, columns: Optional[List["TableColumn"]]):
+    def __init__(self, name: str, alias: str):
         self.name = name
-        self.text = text
-        self.columns = columns or []
+        self.alias = alias
+        self.columns = [TableColumn("*", "*", "any")]
 
-        for column in columns:
+    def set_columns(self, columns: List["TableColumn"]) -> None:
+        self.columns.extend(columns)
+
+        for column in self.columns:
             column.refer_table = self
+
+    def get_full_column_names(self) -> List[Text]:
+        return [f"{self.name}.{column.name}" for column in self.columns]
 
 
 class TableColumn:
@@ -24,14 +30,14 @@ class TableColumn:
     def __init__(
         self,
         name: str,
-        text: str,
+        alias: str,
         column_type: str,
         is_primary_key: bool = False,
         refer_table: Optional["Table"] = None,
         foreign_key: Optional[List[str]] = None,
     ):
         self.name = name
-        self.text = text
+        self.alias = alias
         self.column_type = column_type
         self.is_primary_key = is_primary_key
         self.foreign_key = foreign_key or []
@@ -40,66 +46,52 @@ class TableColumn:
     def __str__(self):
         return f"{self.name}"
 
+    def full_name(self):
+        return f"{self.refer_table.name}.{self.name}"
+
 
 class DatabaseSchema:
-    def __init__(
-        self,
-        name: Text,
-        tables: Optional[List[Table]],
-        columns: Optional[List[TableColumn]],
-    ):
+    def __init__(self, name: Text, tables: Optional[List[Table]]):
         self.name = name
         self.tables = tables or []
-        self.columns = columns or []
+        self.columns = [column for table in tables for column in table.columns]
         self.knowledge_graph = self.get_db_knowledge_graph()
 
-    def id_to_tables(self) -> Dict[int, Table]:
-        return {i: table for i, table in enumerate(self.tables)}
+        self.id_to_tables = {i: table for i, table in enumerate(self.tables)}
+        self.id_to_columns = {i: column for i, column in enumerate(self.columns)}
 
-    def tables_to_id(self) -> Dict[int, Table]:
-        return {table.name: i for i, table in enumerate(self.tables)}
+    def table_names_to_id(self) -> Dict[int, Table]:
+        return {table.name: id for id, table in self.id_to_tables.items()}
 
-    def id_to_columns(self) -> Dict[int, TableColumn]:
-        map = {i: column for i, column in enumerate(self.columns, start=1)}
-        map[0] = TableColumn("*", "*", "text")
+    def column_names_to_id(self) -> Dict[int, TableColumn]:
+        map = {column.full_name(): id for id, column in self.id_to_columns.items()}
+        map.update({column.name: id for id, column in self.id_to_columns.items()})
         return map
 
-    def columns_to_id(self) -> Dict[int, TableColumn]:
-        map = {
-            column.refer_table.name + "." + column.name: i
-            for i, column in enumerate(self.columns, start=1)
-        }
-        map.update({column.name: i for i, column in enumerate(self.columns, start=1)})
-        map["*"] = 0
-        return map
-
-    def columns_names_of_table(self, table_name):
+    def columns_names_of_table(self, table_name: Text) -> List[Text]:
         for table in self.tables:
-            if table.name != table_name:
-                continue
-
-            return [column.name for column in table.columns]
+            if table.name == table_name:
+                return [column.name for column in table.columns]
+        return []
 
     @staticmethod
-    def entity_key_for_column(column: TableColumn) -> str:
+    def entity_key_for_column(column: TableColumn) -> Text:
         if column.foreign_key is not None:
             column_type = "foreign"
         elif column.is_primary_key:
             column_type = "primary"
         else:
             column_type = column.column_type
-        # FIXME: here we assume the same column name always returns the same text & entity
         return f"column:{column_type.lower()}:{column.name.lower()}"
 
     @staticmethod
-    def entity_key_for_column_with_table(table_name: str, column: TableColumn) -> str:
+    def entity_key_for_column_with_table(table_name: Text, column: TableColumn) -> Text:
         if column.foreign_key is not None:
             column_type = "foreign"
         elif column.is_primary_key:
             column_type = "primary"
         else:
             column_type = column.column_type
-        # FIXME: here we assume the same column name always returns the same text & entity
         return (
             f"column:{column_type.lower()}:{table_name.lower()}:{column.name.lower()}"
         )
@@ -116,7 +108,7 @@ class DatabaseSchema:
             table_key = f"table:{table.name.lower()}"
             if table_key not in entities:
                 entities.add(table_key)
-            entity_text[table_key] = table.text
+            entity_text[table_key] = table.alias
 
             for column in self.columns:
                 entity_key = self.entity_key_for_column(column)
@@ -125,7 +117,7 @@ class DatabaseSchema:
                 )
                 if entity_key not in entities:
                     entities.add(entity_key)
-                entity_text[entity_key] = column.text
+                entity_text[entity_key] = column.alias
 
                 neighbors[entity_key].add(table_key)
                 neighbors[table_key].add(entity_key)
@@ -163,8 +155,6 @@ class DatabaseSchema:
                     neighbors_with_table[entity_key].add(other_entity_key)
                     neighbors_with_table[other_entity_key].add(entity_key)
 
-        kg = KnowledgeGraph(
+        return KnowledgeGraph(
             entities, dict(neighbors), dict(neighbors_with_table), entity_text
         )
-
-        return kg
