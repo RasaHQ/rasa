@@ -165,51 +165,9 @@ def test_list_models_method_raise_exeception_in_Azure_persistor():
     assert result == []
 
 
-def test_list_models_method_in_external_persistor():
-    def mocked_get_persistor(name):
-        p = Object()
-
-        def mocked_list_models():
-            return ["model_name"]
-
-        p.list_models = mocked_list_models
-        return p
-
-    with patch.object(persistor, "get_persistor", mocked_get_persistor):
-        result = persistor.get_persistor("persistor_name").list_models()
-    assert result == ["model_name"]
-
-
-def test_list_models_method_raise_exeception_in_external_persistor():
-    def mocked_get_persistor(name):
-        p = Object()
-
-        def _list_storage():
-            raise ValueError
-
-        def mocked_list_models():
-            try:
-                return _list_storage()
-            except:
-                return []
-
-        p.list_models = mocked_list_models
-        return p
-
-    with patch.object(persistor, "get_persistor", mocked_get_persistor):
-        result = persistor.get_persistor("persistor_name").list_models()
-    assert result == []
-
-
-def test_get_external_persistor_raise_exeception():
-    def mocked_get_persistor(name):
-        raise ImportError
-
-    with patch.object(persistor, "get_persistor", mocked_get_persistor):
-        try:
-            _ = persistor.get_persistor("persistor_name")
-        except Exception as e:
-            assert isinstance(e, ImportError)
+def test_get_external_persistor():
+    p = persistor.get_persistor("rasa.nlu.persistor.Persistor")
+    assert isinstance(p, persistor.Persistor)
 
 
 # noinspection PyPep8Naming
