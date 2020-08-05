@@ -133,7 +133,6 @@ def test_process_tokenizer(
 @pytest.mark.parametrize(
     "text, expected_tokens", [("action_listen", ["action", "listen"])],
 )
-
 def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
     tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
@@ -150,7 +149,6 @@ def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
 @pytest.mark.parametrize(
     "text, expected_tokens", [("I am hungry", ["I", "am", "hungry"])],
 )
-
 def test_process_tokenizer_action_test(text: Text, expected_tokens: List[Text]):
     tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
