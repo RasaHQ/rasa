@@ -69,6 +69,12 @@ Rasa supports using [S3](https://aws.amazon.com/s3/) ,
 
   Start the Rasa server with ``remote-storage`` option set to the module path of model persistor.
 
+  A single command is:
+
+  ```bash
+  rasa run --remote-storage rasa.nlu.persistor.Persistor
+  ```
+
 Models are gzipped before they are saved in the cloud. The gzipped file naming convention
 is `{MODEL_NAME}.tar.gz` and it is stored in the root folder of the storage service.
 Currently, you are not able to manually specify the path on the cloud storage.
