@@ -27,7 +27,7 @@ whatever Git repository you use.
 
 ## Continuous Integration (CI)
 
-The best way to improve an assistant is with frequent [incremental updates](https://rasa.com/docs/rasa-x/user-guide/fix-problems).
+The best way to improve an assistant is with frequent [incremental updates](https://rasa.com/docs/rasa-x/fix-problems).
 No matter how small a change is, you want to be sure that it doesn’t introduce
 new problems or negatively impact the performance of your assistant.
 
@@ -39,7 +39,7 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 
 ### Validate Data and Stories
 
-[Data validation](./validate-files.mdx) verifies that there are no mistakes or
+Data validation verifies that there are no mistakes or
 major inconsistencies in your domain file, NLU data, or story data.
 
 ```bash
@@ -103,7 +103,7 @@ End-to-end testing is only as thorough and accurate as the test
 cases you include, so you should continue to grow your set of test conversations
 as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test conversations
 to be representative of the true distribution of real conversations.
-Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests).
+Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/test-assistant/#how-to-create-tests).
 
 Note: End-to-end testing does **not** execute your action code. You will need to
 [test your action code](./setting-up-ci-cd.mdx#testing-action-code) in a seperate step.

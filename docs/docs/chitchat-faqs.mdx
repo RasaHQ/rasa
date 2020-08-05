@@ -7,7 +7,7 @@ title: Chitchat and FAQs
 TODO: Restructure all conversations patterns pages to not depend
 on one another
 
-After following the basics of setting up an assistant in the [Rasa Tutorial](https://rasa.com/docs/rasa/user-guide/rasa-tutorial/), we’ll
+After following the basics of setting up an assistant in the [Rasa Tutorial](https://rasa.com/docs/rasa/rasa-tutorial/), we’ll
 now walk through building a basic FAQ chatbot and then build a bot that can handle
 contextual conversations.
 
@@ -25,8 +25,8 @@ In this section we’re going to cover the following topics:
 
 We’re going to use content from [Sara](https://github.com/RasaHQ/rasa-demo), the Rasa
 assistant that, amongst other things, helps the user get started with the Rasa products.
-You should first install Rasa using the [Step-by-step Installation Guide](https://rasa.com/docs/rasa/user-guide/installation/#step-by-step-installation-guide)
-and then follow the [Rasa Tutorial](https://rasa.com/docs/rasa/user-guide/rasa-tutorial/)
+You should first install Rasa using the [Step-by-step Installation Guide](https://rasa.com/docs/rasa/installation/#step-by-step-installation-guide)
+and then follow the [Rasa Tutorial](https://rasa.com/docs/rasa/rasa-tutorial/)
 to make sure you know the basics.
 
 To prepare for this tutorial, we’re going to create a new directory and start a
@@ -191,8 +191,8 @@ an exception that stops the pipeline.
 
 ## Response Selectors
 
-The [ResponseSelector](../nlu/components#response-selector) NLU component is designed to make it easier to handle dialogue
-elements like [Small Talk](../dialogue-elements/small-talk) and FAQ messages in a simple manner. By using the ResponseSelector,
+The [ResponseSelector](../components#response-selector) NLU component is designed to make it easier to handle
+conversation patterns like small talk and FAQ messages in a simple manner. By using the ResponseSelector,
 you only need one story to handle all FAQs, instead of adding new stories every time you
 want to increase your bot’s scope.
 
@@ -233,7 +233,7 @@ Next, we’ll need to define the responses associated with these FAQs in a new f
 * faq/ask_channels
   - We have a comprehensive list of [supported connectors](https://rasa.com/docs/core/connectors/), but if
     you don't see the one you're looking for, you can always create a custom connector by following
-    [this guide](https://rasa.com/docs/rasa/user-guide/connectors/custom-connectors/).
+    [this guide](https://rasa.com/docs/rasa/connectors/custom-connectors/).
 
 ## ask languages
 * faq/ask_languages

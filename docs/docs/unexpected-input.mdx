@@ -22,7 +22,7 @@ is a tool that can help you review conversations and make these types of decisio
 ## Generic interjections
 
 If you have generic interjections that should always have the same single response no
-matter the context, you can use the [Mapping Policy](../core/policies#mapping-policy) to handle these. It will always
+matter the context, you can use the [Mapping Policy](../policies.mdx#mapping-policy) to handle these. It will always
 predict the same action for an intent, and when combined with a forgetting mechanism,
 you don’t need to write any stories either.
 
@@ -121,7 +121,7 @@ As always, make sure to add an end to end test case to your test_stories.md file
 
 ## Contextual questions
 
-You can also handle [contextual questions](https://rasa.com/docs/rasa/dialogue-elements/completing-tasks/#contextual-questions)),
+You can also handle contextual questions,
 like the user asking the question “Why do you need to know that”. The user could ask this based on a certain slot
 the bot has requested, and the response should differ for each slot. For example:
 

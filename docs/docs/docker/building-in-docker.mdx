@@ -101,7 +101,7 @@ Here’s what’s happening in that command:
   <li>rasa/rasa:{variables.release}-full: Use the Rasa image with the tag ‘{variables.release}-full’</li>
 
   <li><inlineCode>train</inlineCode>: Execute the <inlineCode>rasa train</inlineCode> command within the container. For more
-  information see <a href="/user-guide/command-line-interface">Command Line Interface</a>.</li>
+  information see <a href="/command-line-interface">Command Line Interface</a>.</li>
 </ul>
 
 In this case, we’ve also passed values for the location of the domain file, training
@@ -133,7 +133,7 @@ as you like without worrying about missing dependencies. The plain `{version}` t
 dependencies you need to run the default pipeline created by `rasa init`.
 
 To keep images as small as possible, we also publish different tags of the `rasa/rasa` image
-with different dependencies installed. See [Choosing a Pipeline](../../nlu/choosing-a-pipeline.mdx) for more dependency information
+with different dependencies installed. See [Choosing a Pipeline](../../choosing-a-pipeline.mdx) for more dependency information
 specific to your pipeline. For example, if you are using components with pre-trained word vectors from spaCy or
 MITIE, you should choose the corresponding tag.
 
@@ -162,7 +162,7 @@ environment variable `PYTHONPATH=$PYTHONPATH:<directory of your module>`.
 
 ### Adding Custom Actions
 
-To create more sophisticated assistants, you will want to use [Custom Actions](../../core/actions.mdx#custom-actions).
+To create more sophisticated assistants, you will want to use [Custom Actions](../../actions.mdx#custom-actions).
 Continuing the example from above, you might want to add an action which tells
 the user a joke to cheer them up.
 
