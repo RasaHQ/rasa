@@ -305,11 +305,11 @@ class E2EImporter(TrainingDataImporter):
         additional_e2e_action_names = set()
         for story_step in stories.story_steps:
             additional_e2e_action_names.update(
-                [
+                {
                     event.e2e_text
                     for event in story_step.events
                     if isinstance(event, ActionExecuted) and event.e2e_text
-                ]
+                }
             )
 
         additional_e2e_action_names = list(additional_e2e_action_names)

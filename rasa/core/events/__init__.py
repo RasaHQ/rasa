@@ -1011,12 +1011,6 @@ class ActionExecuted(Event):
     def __hash__(self) -> int:
         return hash(self.action_name)
 
-    def _check_for_e2e_text(self) -> bool:
-        if hasattr(self, "e2e_text"):
-            return self.e2e_text is not None
-        else:
-            return False
-
     def __eq__(self, other) -> bool:
         if not isinstance(other, ActionExecuted):
             return False
@@ -1027,11 +1021,8 @@ class ActionExecuted(Event):
                     self.action_name == other.action_name
                     and self.e2e_text == other.e2e_text
                 )
-            # if both of them don't have the attribute, only compare action name
-            if self._check_for_e2e_text() == other._check_for_e2e_text():
-                return self.action_name == other.action_name
             else:
-                return False
+                return self.action_name == other.action_name
 
     def as_story_string(self) -> Text:
         return self.action_name

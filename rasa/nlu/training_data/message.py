@@ -80,9 +80,7 @@ class Message:
 
         # Filter all keys with None value. These could have come while building the
         # Message object in markdown format
-        d = {key: value for key, value in d.items() if value is not None}
-
-        return dict(d)
+        return {key: value for key, value in d.items() if value is not None}
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Message):
@@ -101,6 +99,9 @@ class Message:
         entities: List[Dict[Text, Any]] = None,
         **kwargs,
     ) -> "Message":
+        """
+        Builds a Message from UserUttered data
+        """
         data = {}
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(intent)
@@ -119,6 +120,9 @@ class Message:
         action_name: Optional[Text] = "",
         **kwargs,
     ) -> "Message":
+        """
+        Builds a Message from ActionExecuted data
+        """
         action_data = {ACTION_TEXT: action_text, ACTION_NAME: action_name}
         return cls(data=action_data, **kwargs)
 
