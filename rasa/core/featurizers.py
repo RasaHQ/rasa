@@ -333,11 +333,11 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         dense_features: Tuple[np.array, np.array],
     ) -> None:
         if not sparse_features[0] is None:
-            if not f"{attribute}_sparse" in self.output_shapes.keys():
+            if f"{attribute}_sparse" not in self.output_shapes.keys():
                 self.output_shapes[f"{attribute}_sparse"] = sparse_features[0].shape[-1]
 
         if not dense_features[0] is None:
-            if not f"{attribute}_dense" in self.output_shapes.keys():
+            if not f"{attribute}_dense" not in self.output_shapes.keys():
                 self.output_shapes[f"{attribute}_dense"] = dense_features[0].shape[-1]
 
     def _extract_features(
@@ -382,28 +382,30 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             intent = state.get(USER).get(INTENT)
             intent_features[0, self.intents.index(intent)] += 1
         if state.get(PREVIOUS_ACTION):
-            action_name = state.get(PREVIOUS_ACTION).get(ACTION_NAME)    
-            action_name_features[0, self.action_names.index(action_name)]+=1
+            action_name = state.get(PREVIOUS_ACTION).get(ACTION_NAME)
+            action_name_features[0, self.action_names.index(action_name)] += 1
         user_features = [None, None, intent_features, -1]
         action_features = [None, None, action_name_features, -1]
         return user_features + action_features
 
     def encode(
-        self,
-        state: STATE,
-        interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter],
     ):
         slot_and_entity_features = self._get_slot_and_entity_features(state)
         if isinstance(interpreter, RegexInterpreter):
-            logger.warning("No trained NLU model was loaded. End-to-end training can't be performed. Intents and actions will be featurized as one-hot.")
-            return self.process_state_without_trained_nlu(state) + [slot_and_entity_features]
+            logger.warning(
+                "No trained NLU model was loaded. End-to-end training can't be performed. Intents and actions will be featurized as one-hot."
+            )
+            return self.process_state_without_trained_nlu(state) + [
+                slot_and_entity_features
+            ]
         state_extracted_features = {
             key: self._extract_features(state.get(key), key, interpreter)
             for key in [USER, PREVIOUS_ACTION]
             if state.get(key)
         }
 
-        if not USER in state_extracted_features.keys():
+        if USER not in state_extracted_features.keys():
             state_extracted_features[USER] = self._extract_features(
                 {INTENT: ""}, USER, interpreter
             )
@@ -422,7 +424,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         Checking whether a given action name from the domain is text or action_name
         """
 
-        # check that there is a featurizer trained for the action name, 
+        # check that there is a featurizer trained for the action name,
         # i.e., that we have encountered action_names in the dataset
         if f"{ACTION_NAME}_sparse" in self.output_shapes.keys():
             action_name_features = self._extract_features(

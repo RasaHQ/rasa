@@ -331,7 +331,7 @@ class TEDPolicy(Policy):
             if not state[0] is None:
                 text_state_sparse.append(state[0].astype(np.float32))
             if not state[1] is None:
-                test_state_dense.append(state[1])
+                text_state_dense.append(state[1])
             if not state[2] is None:
                 name_state.append(state[2])
             if not state[3] is None:
@@ -353,7 +353,7 @@ class TEDPolicy(Policy):
 
     def _process_entities(self, features: np.ndarray):
         state_entities = np.array(
-            [entities for entities in features if not entities is None]
+            [entities for entities in features if entities is not None]
         )
         return state_entities
 
@@ -937,11 +937,11 @@ class TED(RasaModel):
                 )
                 name_features = name_features * mask
 
-            if not text_features is None and not name_features is None:
+            if text_features is not None and name_features is not None:
                 batch_features.append(text_features + name_features)
             else:
                 batch_features.append(
-                    text_features if not text_features is None else name_features
+                    text_features if text_features is not None else name_features
                 )
 
         if not batch[f"{DIALOGUE_FEATURES}_entities"] == []:
