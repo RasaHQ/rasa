@@ -15,7 +15,6 @@ from rasa.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     UTTER_PREFIX,
     RESPOND_PREFIX,
-    RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
@@ -62,6 +61,8 @@ ACTION_DEFAULT_ASK_AFFIRMATION_NAME = "action_default_ask_affirmation"
 ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
 
 ACTION_BACK_NAME = "action_back"
+
+RULE_SNIPPET_ACTION_NAME = "..."
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:

@@ -5,10 +5,7 @@ import pytest
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.validator import Validator, KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.importers.rasa import RasaFileImporter
-from tests.core.conftest import (
-    DEFAULT_STORIES_FILE,
-    DEFAULT_NLU_DATA,
-)
+from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
 import rasa.utils.io as io_utils
 
 

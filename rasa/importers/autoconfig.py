@@ -155,7 +155,7 @@ def _dump_config(
 
 
 def _is_config_file_as_expected(
-    config_file_path: Text, missing_keys: Set[Text], auto_configured_keys: Set[Text],
+    config_file_path: Text, missing_keys: Set[Text], auto_configured_keys: Set[Text]
 ) -> bool:
     try:
         content = io_utils.read_config_file(config_file_path)
@@ -180,7 +180,7 @@ def _add_missing_config_keys_to_file(
 
 
 def _get_lines_including_autoconfig(
-    lines: List[Text], autoconfig_lines: Dict[Text, List[Text]],
+    lines: List[Text], autoconfig_lines: Dict[Text, List[Text]]
 ) -> List[Text]:
     auto_configured_keys = autoconfig_lines.keys()
 
