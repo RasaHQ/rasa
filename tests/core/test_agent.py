@@ -292,6 +292,63 @@ def test_two_stage_fallback_without_deny_suggestion(
     assert "The intent 'out_of_scope' must be present" in str(execinfo.value)
 
 
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {"actions": ["other-action"]},
+            {
+                "policies": [
+                    {"name": "RulePolicy", "core_fallback_action_name": "my_fallback"}
+                ]
+            },
+        )
+    ],
+)
+def test_rule_policy_without_fallback_action_present(
+    domain: Dict[Text, Any], policy_config: Dict[Text, Any]
+):
+    with pytest.raises(InvalidDomain):
+        Agent(
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
+        )
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {"actions": ["other-action"]},
+            {
+                "policies": [
+                    {
+                        "name": "RulePolicy",
+                        "core_fallback_action_name": "my_fallback",
+                        "enable_fallback_prediction": False,
+                    }
+                ]
+            },
+        ),
+        (
+            {"actions": ["my-action"]},
+            {
+                "policies": [
+                    {"name": "RulePolicy", "core_fallback_action_name": "my-action"}
+                ]
+            },
+        ),
+        ({}, {"policies": [{"name": "MemoizationPolicy"}]}),
+    ],
+)
+def test_rule_policy_valid(domain: Dict[Text, Any], policy_config: Dict[Text, Any]):
+    # no exception should be thrown
+    Agent(
+        domain=Domain.from_dict(domain),
+        policies=PolicyEnsemble.from_dict(policy_config),
+    )
+
+
 async def test_agent_update_model_none_domain(trained_rasa_model: Text):
     agent = await load_agent(model_path=trained_rasa_model)
     agent.update_model(

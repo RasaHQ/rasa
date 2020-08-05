@@ -1,4 +1,4 @@
-from typing import List, Text
+from typing import List, Text, Optional
 
 import pytest
 from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
@@ -124,9 +124,12 @@ actions:
 
 
 def assert_predicted_action(
-    action_probabilities: List[float], domain: Domain, expected_action_name: Text
+    action_probabilities: List[float],
+    domain: Domain,
+    expected_action_name: Text,
+    confidence: float = 1.0,
 ) -> None:
-    assert max(action_probabilities) == 1
+    assert max(action_probabilities) == confidence
     index_of_predicted_action = action_probabilities.index(max(action_probabilities))
     prediction_action_name = domain.action_names[index_of_predicted_action]
     assert prediction_action_name == expected_action_name
@@ -639,7 +642,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    action_probabilities = policy.predict_action_probabilities(tracker, domain,)
+    action_probabilities = policy.predict_action_probabilities(tracker, domain)
     assert_predicted_action(action_probabilities, domain, form_name)
     # check that RulePolicy added FormValidation False event based on the training rule
     assert tracker.events[-1] == FormValidation(False)
@@ -705,7 +708,7 @@ async def test_form_unhappy_path_no_validation_from_story():
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    action_probabilities = policy.predict_action_probabilities(tracker, domain,)
+    action_probabilities = policy.predict_action_probabilities(tracker, domain)
     # there is no rule for next action
     assert max(action_probabilities) == 0
     # check that RulePolicy added FormValidation False event based on the training story
@@ -1097,3 +1100,75 @@ actions:
     action_probabilities = policy.predict_action_probabilities(new_conversation, domain)
 
     assert_predicted_action(action_probabilities, domain, expected_action_name)
+
+
+@pytest.mark.parametrize(
+    "rule_policy, expected_confidence, expected_prediction",
+    [
+        (RulePolicy(), 0.3, ACTION_DEFAULT_FALLBACK_NAME),
+        (
+            RulePolicy(
+                core_fallback_threshold=0.1,
+                core_fallback_action_name="my_core_fallback",
+            ),
+            0.1,
+            "my_core_fallback",
+        ),
+    ],
+)
+def test_predict_core_fallback(
+    rule_policy: RulePolicy, expected_confidence: float, expected_prediction: Text
+):
+    other_intent = "other"
+    domain = Domain.from_yaml(
+        f"""
+    intents:
+    - {GREET_INTENT_NAME}
+    - {other_intent}
+    actions:
+    - {UTTER_GREET_ACTION}
+    - my_core_fallback
+        """
+    )
+    rule_policy.train([GREET_RULE], domain, RegexInterpreter())
+
+    new_conversation = DialogueStateTracker.from_events(
+        "bla2",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": other_intent}),
+        ],
+    )
+
+    action_probabilities = rule_policy.predict_action_probabilities(
+        new_conversation, domain
+    )
+
+    assert_predicted_action(
+        action_probabilities, domain, expected_prediction, expected_confidence
+    )
+
+
+def test_predict_nothing_if_fallback_disabled():
+    other_intent = "other"
+    domain = Domain.from_yaml(
+        f"""
+    intents:
+    - {GREET_INTENT_NAME}
+    - {other_intent}
+    actions:
+    - {UTTER_GREET_ACTION}
+        """
+    )
+    policy = RulePolicy(enable_fallback_prediction=False)
+    policy.train([GREET_RULE], domain, RegexInterpreter())
+    new_conversation = DialogueStateTracker.from_events(
+        "bla2",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": other_intent}),
+        ],
+    )
+    action_probabilities = policy.predict_action_probabilities(new_conversation, domain)
+
+    assert max(action_probabilities) == 0

@@ -90,7 +90,11 @@ class PolicyEnsemble:
         from rasa.core.policies.mapping_policy import MappingPolicy
         from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 
-        policies_needing_validation = [MappingPolicy, TwoStageFallbackPolicy]
+        policies_needing_validation = [
+            MappingPolicy,
+            TwoStageFallbackPolicy,
+            RulePolicy,
+        ]
         for policy in policies_needing_validation:
             policy.validate_against_domain(ensemble, domain)
 
