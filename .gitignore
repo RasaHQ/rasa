@@ -85,3 +85,6 @@ docs/docs/variables.json
 docs/docs/sources/
 docs/docs/reference/
 docs/docs/changelog.mdx
+
+# Local Netlify folder
+.netlify
