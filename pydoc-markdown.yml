@@ -9,6 +9,6 @@ processors:
 renderer:
   type: docusaurus
   docs_base_path: docs/docs/
-  sidebar_top_level_label: 'Source reference'
+  sidebar_top_level_label: 'Source'
 packages:
   - rasa
