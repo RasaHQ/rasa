@@ -67,13 +67,13 @@ same thing.
 It is important to include the entities here as well because the policies learn
 to predict the next action based on a *combination* of both the intent and
 entities (you can, however, change this behavior using the
-[use_entities](./domains.mdx#use-entities) attribute).
+[use_entities](./domain.mdx#use-entities) attribute).
 
 :::caution
 `/` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers.
 Refer to `Training Data Format` section of [Retrieval Actions](./retrieval-actions.mdx) for more details on this format.
 If any of the intent names contain the delimiter, the file containing these stories will be considered as a training
-file for [ResponseSelector](../components/selectors.mdx#response-selector) model and will be ignored for training Core models.
+file for [ResponseSelector](./components/selectors.mdx#response-selector) model and will be ignored for training Core models.
 
 :::
 
@@ -102,7 +102,7 @@ returned by a custom action separately, when that custom action is already
 part of a story might seem redundant. However, since Rasa cannot
 determine this fact during training, this step is necessary.
 
-You can read more about events [here](../events.mdx).
+You can read more about events [here](./events.mdx).
 
 #### Slot Events
 
@@ -206,7 +206,7 @@ will slow down training.
 ## End-to-End Story Evaluation Format
 
 The end-to-end story format is a format that combines both NLU and Core training data
-into a single file for evaluation. Read more about [Testing Your Assistant](../testing-your-assistant.mdx)
+into a single file for evaluation. Read more about [Testing Your Assistant](./testing-your-assistant.mdx)
 
 :::caution
 This format is only used for end-to-end evaluation and cannot be used for training.

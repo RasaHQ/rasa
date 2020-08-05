@@ -6,7 +6,7 @@ description: Create custom components to create additional features like sentime
 ---
 
 You can create a custom component to perform a specific task which NLU doesn’t currently offer (for example, sentiment analysis).
-Below is the specification of the [`rasa.nlu.components.Component`](./custom-nlu-components.mdx#rasa.nlu.components.Component) class with the methods you’ll need to implement.
+Below is the specification of the [`rasa.nlu.components.Component`](./components/custom-nlu-components.mdx#rasa.nlu.components.Component) class with the methods you’ll need to implement.
 
 :::note
 There is a detailed tutorial on building custom components [here](https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/).
@@ -22,7 +22,7 @@ pipeline:
 - name: "sentiment.SentimentAnalyzer"
 ```
 
-Also be sure to read the section on the [Component Lifecycle](../choosing-a-pipeline.mdx#component-lifecycle).
+Also be sure to read the section on the [Component Lifecycle](../tuning-your-model.mdx#component-lifecycle).
 
 To get started, you can use this skeleton that contains the most important
 methods that you should implement:

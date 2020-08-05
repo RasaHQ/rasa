@@ -6,9 +6,9 @@ title: Model Storage
 
 Rasa can load your model in three different ways:
 
-1. Fetch the model from a server (see [Fetching Models from a Server](./model-storage#server-fetch-from-server)), or
+1. Fetch the model from a server (see [Fetching Models from a Server](./model-storage.mdx#server-fetch-from-server)), or
 
-2. Fetch the model from a remote storage (see [Cloud Storage](./cloud-storage)).
+2. Fetch the model from a remote storage (see [Remote Storage](./model-storage.mdx#server-fetch-from-remote-storage)).
 
 3. Load the model specified via `-m` from your local storage system.
 
@@ -20,8 +20,8 @@ storage system if no model server and no remote storage were configured.
 ## Fetching Models from a Server
 
 You can configure the HTTP server to fetch models from another URL
-by adding it to your `endpoints.yml`. The server will then 
-reguarly query this URL for zipped models. 
+by adding it to your `endpoints.yml`. The server will then
+reguarly query this URL for zipped models.
 
 ```yaml
 models:
@@ -133,13 +133,13 @@ from the cloud storage, Rasa will download the gzipped model locally and extract
 
 ## Fetching Models from Local Storage
 
-If you do not configure any other storage, Rasa will try to load models from local storage. 
-You can specify the path to your model with the `-m` parameter: 
+If you do not configure any other storage, Rasa will try to load models from local storage.
+You can specify the path to your model with the `-m` parameter:
 
 ```bash
 rasa run -m models/20190506-100418.tar.gz
 ```
 
-You can also specify a path to a directory instead of a specific model; Rasa will 
-then load the model with the latest timestamp in that directory. If you do not 
+You can also specify a path to a directory instead of a specific model; Rasa will
+then load the model with the latest timestamp in that directory. If you do not
 specify the `-m` parameter, it will look for models in the default `models` path.

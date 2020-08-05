@@ -127,7 +127,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Requires**
 
-  [MitieNLP](./components#mitienlp)
+  [MitieNLP](../components/language-models.mdx#mitienlp)
 
 
 
@@ -168,7 +168,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Requires**
 
-  [SpacyNLP](./components#spacynlp)
+  [SpacyNLP](../components/language-models.mdx#spacynlp)
 
 
 
@@ -217,7 +217,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Description**
 
-  Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](./components#convertfeaturizer) is used.
+  Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](../components/featurizers.mdx#convertfeaturizer) is used.
 
   :::note
   Since `ConveRT` model is trained only on an English corpus of conversations, this tokenizer should only
@@ -265,14 +265,14 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Requires**
 
-  [HFTransformersNLP](./components#hftransformersnlp)
+  [HFTransformersNLP](../components/language-models.mdx#hftransformersnlp)
 
 
 
 * **Description**
 
-  Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components#hftransformersnlp) component.
-  Must be used whenever the [LanguageModelFeaturizer](./components#languagemodelfeaturizer) is used.
+  Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](../components/language-models.mdx#hftransformersnlp) component.
+  Must be used whenever the [LanguageModelFeaturizer](../components/featurizers.mdx#languagemodelfeaturizer) is used.
 
 
 

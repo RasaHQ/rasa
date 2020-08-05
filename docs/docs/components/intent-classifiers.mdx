@@ -24,7 +24,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 * **Requires**
 
-  `tokens` for user message and [MitieNLP](./components#mitienlp)
+  `tokens` for user message and [MitieNLP](../components/language-models.mdx#mitienlp)
 
 
 
@@ -181,7 +181,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   :::note
   This classifier is intended only for small projects or to get started. If
   you have few NLU training data, you can take a look at the recommended pipelines in
-  [Choosing a Pipeline](./choosing-a-pipeline).
+  [Tuning Your Model](./tuning-your-model).
 
   :::
 
@@ -264,7 +264,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   :::note
   If during prediction time a message contains **only** words unseen during training
   and no Out-Of-Vocabulary preprocessor was used, an empty intent `None` is predicted with confidence
-  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](./components#countvectorsfeaturizer) with a `word` analyzer
+  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](../components/featurizers.mdx#countvectorsfeaturizer) with a `word` analyzer
   as featurizer. If you use the `char_wb` analyzer, you should always get an intent with a confidence
   value `> 0.0`.
 

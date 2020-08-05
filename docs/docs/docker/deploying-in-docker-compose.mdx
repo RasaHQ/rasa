@@ -122,17 +122,17 @@ curl -XPOST http://localhost:5005/webhooks/rest/webhook \
 By default, all conversations are saved in memory. This means that all
 conversations are lost as soon as you restart the Rasa server.
 If you want to persist your conversations, you can use a different
-[Tracker Store](../../tracker-stores.mdx).
+[Tracker Store](../tracker-stores.mdx).
 
 To add a tracker store to a Docker Compose deployment, you need to add a new
 service to your `docker-compose.yml` and modify the `endpoints.yml` to add
 the new tracker store, pointing to your new service. More information about how
 to do so can be found in the tracker store documentation:
 
-* [SQLTrackerStore](../../tracker-stores.mdx#sql-tracker-store)
+* [SQLTrackerStore](../tracker-stores.mdx#sql-tracker-store)
 
-* [RedisTrackerStore](../../tracker-stores.mdx#redis-tracker-store)
+* [RedisTrackerStore](../tracker-stores.mdx#redis-tracker-store)
 
-* [MongoTrackerStore](../../tracker-stores.mdx#mongo-tracker-store)
+* [MongoTrackerStore](../tracker-stores.mdx#mongo-tracker-store)
 
-* [Custom Tracker Store](../../tracker-stores.mdx#custom-tracker-store)
+* [Custom Tracker Store](../tracker-stores.mdx#custom-tracker-store)

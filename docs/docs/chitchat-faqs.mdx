@@ -7,7 +7,7 @@ title: Chitchat and FAQs
 TODO: Restructure all conversations patterns pages to not depend
 on one another
 
-After following the basics of setting up an assistant in the [Rasa Tutorial](https://rasa.com/docs/rasa/rasa-tutorial/), we’ll
+After following the basics of [prototyping an assistant](https://rasa.com/docs/rasa/prototype-an-assistant/), we’ll
 now walk through building a basic FAQ chatbot and then build a bot that can handle
 contextual conversations.
 
@@ -19,14 +19,14 @@ build a basic FAQ assistant using features of Rasa designed specifically for thi
 
 In this section we’re going to cover the following topics:
 
-* [Responding to simple intents](respond-with-memoization-policy) with the MemoizationPolicy
+* [Responding to simple intents](./chitchat-faqs.mdxrespond-with-memoization-policy) with the MemoizationPolicy
 
 * [Handling FAQs](faqs-response-selector) using the ResponseSelector
 
 We’re going to use content from [Sara](https://github.com/RasaHQ/rasa-demo), the Rasa
 assistant that, amongst other things, helps the user get started with the Rasa products.
 You should first install Rasa using the [Step-by-step Installation Guide](https://rasa.com/docs/rasa/installation/#step-by-step-installation-guide)
-and then follow the [Rasa Tutorial](https://rasa.com/docs/rasa/rasa-tutorial/)
+and then [prototype an assistant](https://rasa.com/docs/rasa/prototype-an-assistant/)
 to make sure you know the basics.
 
 To prepare for this tutorial, we’re going to create a new directory and start a
@@ -145,7 +145,7 @@ For example:
 
 
 
-<img alt="Memoization Policy Conversation" src="../../img/memoization_policy_convo.png" />
+<img alt="Memoization Policy Conversation" src="../img/memoization_policy_convo.png" />
 
 While it’s good to test the bot interactively, we should also add end to end test cases that
 can later be included as part of a [CI/CD system](./setting-up-ci-cd). End-to-end [test conversations](./testing-your-assistant#end-to-end-testing)
@@ -191,7 +191,7 @@ an exception that stops the pipeline.
 
 ## Response Selectors
 
-The [ResponseSelector](../components#response-selector) NLU component is designed to make it easier to handle
+The [ResponseSelector](./components/selectors.mdx#response-selector) NLU component is designed to make it easier to handle
 conversation patterns like small talk and FAQ messages in a simple manner. By using the ResponseSelector,
 you only need one story to handle all FAQs, instead of adding new stories every time you
 want to increase your bot’s scope.

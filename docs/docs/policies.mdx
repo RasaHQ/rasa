@@ -15,7 +15,7 @@ The `rasa.core.policies.Policy` class decides which action to take
 at every step in the conversation.
 
 There are different policies to choose from, and you can include
-multiple policies in a single [`rasa.core.agent.Agent`](../agent.mdx#rasa.core.agent.Agent).
+multiple policies in a single configuration.
 
 :::note
 Per default a maximum of 10 next actions can be predicted
@@ -60,7 +60,7 @@ in the policy configuration yaml file.
 :::note
 Only the `MaxHistoryTrackerFeaturizer` uses a max history,
 whereas the `FullDialogueTrackerFeaturizer` always looks at
-the full conversation history. See [Featurization of Conversations](../core-featurization.mdx#featurization-conversations) for details.
+the full conversation history. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for details.
 
 :::
 
@@ -191,7 +191,7 @@ following steps:
   This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
 
 It is recommended to use `state_featurizer=LabelTokenizerSingleStateFeaturizer(...)`
-(see [Featurization of Conversations](../core-featurization.mdx#featurization-conversations) for details).
+(see [Featurization of Conversations](./policies.mdx#featurization-conversations) for details).
 
 **Configuration:**
 
@@ -242,7 +242,7 @@ be trained only for `1` epoch.
 :::caution
 Default `max_history` for this policy is `None` which means it’ll use the
 `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to some finite value in order to
-use `MaxHistoryTrackerFeaturizer` for **faster training**. See [Featurization of Conversations](../core-featurization.mdx#featurization-conversations) for
+use `MaxHistoryTrackerFeaturizer` for **faster training**. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for
 details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
 (e.g. `"batch_size": [32, 64]`)
 
@@ -598,7 +598,7 @@ handles the filling of forms. Once a `FormAction` is called, the
 slots in the form are filled. For more information, see [Forms](./forms).
 
 
-## Featurization
+## Conversation Featurization
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="featurization-conversations"></a>
 

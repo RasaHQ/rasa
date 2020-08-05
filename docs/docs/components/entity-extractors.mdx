@@ -25,7 +25,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 * **Requires**
 
-  [MitieNLP](./components#mitienlp) and `tokens`
+  [MitieNLP](../components/language-models.mdx#mitienlp) and `tokens`
 
 
 
@@ -86,7 +86,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 * **Requires**
 
-  [SpacyNLP](./components#spacynlp)
+  [SpacyNLP](../components/language-models.mdx#spacynlp)
 
 
 
@@ -112,7 +112,7 @@ Entity extractors extract entities, such as person names or locations, from the 
   Using spaCy this component predicts the entities of a message. spaCy uses a statistical BILOU transition model.
   As of now, this component can only use the spaCy builtin entity extraction models and can not be retrained.
   This extractor does not provide any confidence scores.
-  
+
   You can test out spaCy's entity extraction models in this [interactive demo](https://explosion.ai/demos/displacy-ent).
   Note that some spaCy models are highly case-sensitive.
 
@@ -183,8 +183,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   and the states are entity classes. Features of the words (capitalization, POS tagging,
   etc.) give probabilities to certain entity classes, as are transitions between
   neighbouring entity tags: the most likely set of tags is then calculated and returned.
-  
-  
+
+
   If you want to pass custom features, such as pre-trained word embeddings, to `CRFEntityExtractor`, you can
   add any dense featurizer to the pipeline before the `CRFEntityExtractor`.
   `CRFEntityExtractor` automatically finds the additional dense features and checks if the dense features are an
@@ -337,7 +337,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   situation, your application would have to decide which entity type is be the correct one.
   The extractor will always return 1.0 as a confidence, as it is a rule
   based system.
-  
+
   The list of supported languages can be found [here](https://github.com/facebook/duckling/tree/master/Duckling/Dimensions).
 
 
@@ -379,7 +379,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 * **Description**
 
-  You can find the detailed description of the [DIETClassifier](./components#diet-classifier) under the section
+  You can find the detailed description of the [DIETClassifier](../components/intent-classifiers.mdx#diet-classifier) under the section
   Intent Classifiers.
 
 
@@ -401,7 +401,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 * **Requires**
 
-  An extractor from [Entity Extractors](./components#entityextractors)
+  An extractor from [Entity Extractors](../components/entity-extractors.mdx)
 
 
 

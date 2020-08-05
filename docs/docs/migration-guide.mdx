@@ -63,7 +63,7 @@ model before trying to use it with this improved version.
 
 * All pre-defined pipeline templates are deprecated. **Any templates you use will be
   mapped to the new configuration, but the underlying architecture is the same**.
-  Take a look at [Choosing a Pipeline](./choosing-a-pipeline.mdx) to decide on what components you should use
+  Take a look at [Tuning Your Model](./tuning-your-model.mdx) to decide on what components you should use
   in your configuration file.
 
 * The [Embedding Policy](./policies.mdx#embedding-policy) was renamed to [TED Policy](./policies.mdx#ted-policy). The functionality of the policy stayed the same.
@@ -214,7 +214,8 @@ model before trying to use it with this improved version.
 
 ### General
 
-* Default parameters of `EmbeddingIntentClassifier` are changed. See [Components](./components.mdx) for details.
+* Default parameters of `EmbeddingIntentClassifier` are changed. See
+  [Components](./components/intent-classifiers.mdx#embedding-intent-classifier) for details.
   Architecture implementation is changed as well, so **old trained models cannot be loaded**.
   Default parameters and architecture for `EmbeddingPolicy` are changed. See [Policies](./policies.mdx) for details.
   It uses transformer instead of lstm. **Old trained models cannot be loaded**.
@@ -229,7 +230,7 @@ model before trying to use it with this improved version.
 * Default `max_history` for `EmbeddingPolicy` is `None` which means it’ll use
   the `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to
   some finite value in order to use `MaxHistoryTrackerFeaturizer`
-  for **faster training**. See [Featurization of Conversations](./core-featurization.mdx#featurization-conversations) for details.
+  for **faster training**. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for details.
   We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
   (e.g. `"batch_size": [32, 64]`)
 

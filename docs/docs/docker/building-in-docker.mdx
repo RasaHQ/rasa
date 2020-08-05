@@ -26,7 +26,7 @@ See [Docker Installation](https://docs.docker.com/install/) for details.
 
 ## Setting up your Rasa Project
 
-Just like in the [tutorial](../rasa-tutorial.mdx), you’ll use the `rasa init` command to create a project.
+Just like starting a project from scratch, you’ll use the `rasa init` command to create a project.
 The only difference is that you’ll be running Rasa inside a Docker container, using
 the image `rasa/rasa`. To initialize your project, run:
 
@@ -133,7 +133,7 @@ as you like without worrying about missing dependencies. The plain `{version}` t
 dependencies you need to run the default pipeline created by `rasa init`.
 
 To keep images as small as possible, we also publish different tags of the `rasa/rasa` image
-with different dependencies installed. See [Choosing a Pipeline](../../choosing-a-pipeline.mdx) for more dependency information
+with different dependencies installed. See [Tuning Your Model](../tuning-your-model.mdx) for more dependency information
 specific to your pipeline. For example, if you are using components with pre-trained word vectors from spaCy or
 MITIE, you should choose the corresponding tag.
 
@@ -162,7 +162,7 @@ environment variable `PYTHONPATH=$PYTHONPATH:<directory of your module>`.
 
 ### Adding Custom Actions
 
-To create more sophisticated assistants, you will want to use [Custom Actions](../../actions.mdx#custom-actions).
+To create more sophisticated assistants, you will want to use [Custom Actions](../actions.mdx#custom-actions).
 Continuing the example from above, you might want to add an action which tells
 the user a joke to cheer them up.
 

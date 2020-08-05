@@ -21,7 +21,7 @@ You can test it out right here without installing anything. You can also install
 
 ## 1. Define a basic user goal
 
-To prototype an assistant, start with a single [user goal](../glossary.mdx#user-goal)
+To prototype an assistant, start with a single [user goal](./glossary.mdx#user-goal)
 that your assistant will handle. You can create a prototype with the "subscribing to a newsletter" user goal
 we have chosen, or you can come up with your own. If you choose your own user goal,
 you can create a prototype that handles your goal by following the instructions to change each
@@ -30,8 +30,8 @@ section throughout the tutorial.
 
 ## 2. Create some NLU data
 
-[NLU](../glossary.mdx#rasa-nlu) data provides examples of what users might say to your assistant and what they mean by it.
-[Intent](../glossary.mdx#intent)  refers to what the user means with a specific message.
+[NLU](./glossary.mdx#rasa-nlu) data provides examples of what users might say to your assistant and what they mean by it.
+[Intent](./glossary.mdx#intent)  refers to what the user means with a specific message.
 Your assistant can only learn to recognize intents for which it has seen examples, so we need to provide some data.
 
 Add examples for your user-goal specific intents in the format shown below.
@@ -62,13 +62,13 @@ nlu:
        Email is something@example.com
 ```
 
-[Read about best practices for NLU](../training-data-format.mdx)
+[Read about best practices for NLU](./training-data-format.mdx)
 
 
 ## 3. Define a simple form
 
 For most user goals, the bot will need to collect some information from the user to fulfill their request.
-To do so, we define a [form](../glossary.mdx#form). You can change the name of the form to reflect your user goal.
+To do so, we define a [form](./glossary.mdx#form). You can change the name of the form to reflect your user goal.
 Add to or replace the `email` item in the list below to reflect the information the bot needs
 to collect for your user goal. Leave the `type` field the same for any items you add.
 
@@ -98,9 +98,9 @@ rules:
 ## 5. Write some stories
 
 Stories are example conversations of how your assistant should handle a user’s intent in context.
-The first stories you write should follow the [happy path](../glossary.mdx#happy--unhappy-paths) for your user goal.
+The first stories you write should follow the [happy path](./glossary.mdx#happy--unhappy-paths) for your user goal.
 
-A story contains one or more blocks of (user) intent and (bot) [actions](../glossary.mdx#action) or [responses](../glossary.mdx#template--response--utterance).
+A story contains one or more blocks of (user) intent and (bot) [actions](./glossary.mdx#action) or [responses](./glossary.mdx#template--response--utterance).
 The form you defined above is one kind of action; responses are just bot messages.
 Give intuitive names to your responses starting with `utter_` for now; you’ll define what they return later.
 
@@ -118,7 +118,7 @@ stories:
    - form: newsletter_form
 ```
 
-[Read about best practices for writing stories](../stories.mdx)
+[Read about best practices for writing stories](./stories.mdx)
 
 
 ## 6. Edit responses
@@ -173,8 +173,8 @@ Once your model has finished training, you can talk to your assistant:
 
 You can download this project and build on it to create a more advanced assistant.
 In your downloaded project, you’ll notice several files that were configured for you that you didn’t edit on this page.
-Check out other docs pages to learn more about [domains](../domains.mdx), [actions](../actions.mdx),
-and your config's [pipeline](../choosing-a-pipeline.mdx) and [policies](../policies.mdx).
+Check out other docs pages to learn more about [domains](./domain.mdx), [actions](./actions.mdx),
+and your config's [pipeline](./tuning-your-model.mdx) and [policies](./policies.mdx).
 
 <DownloadButton />
 

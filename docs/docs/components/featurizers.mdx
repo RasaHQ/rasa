@@ -41,7 +41,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [MitieNLP](./components#mitienlp)
+  [MitieNLP](../components/language-models.mdx#mitienlp)
 
 
 
@@ -98,7 +98,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [SpacyNLP](./components#spacynlp)
+  [SpacyNLP](../components/language-models.mdx#spacynlp)
 
 
 
@@ -150,7 +150,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [ConveRTTokenizer](./components#converttokenizer)
+  [ConveRTTokenizer](../components/tokenizers.mdx#converttokenizer)
 
 
 
@@ -206,7 +206,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [HFTransformersNLP](./components#hftransformersnlp) and [LanguageModelTokenizer](./components#languagemodeltokenizer)
+  [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer)
 
 
 
@@ -219,7 +219,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 * **Description**
 
   Creates features for entity extraction, intent classification, and response selection.
-  Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components#hftransformersnlp) component to compute vector
+  Uses the pre-trained language model specified in upstream [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) component to compute vector
   representations of input text.
 
   :::note
@@ -232,8 +232,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Configuration**
 
-  Include [HFTransformersNLP](./components#hftransformersnlp) and [LanguageModelTokenizer](./components#languagemodeltokenizer) components before this component. Use
-  [LanguageModelTokenizer](./components#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
+  Include [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) components before this component. Use
+  [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
 
   ```yaml
   pipeline:
@@ -278,8 +278,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   For each regex, a feature will be set marking whether this expression was found in the user message or not.
   All features will later be fed into an intent classifier / entity extractor to simplify classification (assuming
   the classifier has learned during the training phase, that this set feature indicates a certain intent / entity).
-  Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](./components#crfentityextractor) and the
-  [DIETClassifier](./components#diet-classifier) components!
+  Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](../components/entity-extractors.mdx#crfentityextractor) and the
+  [DIETClassifier](../components/intent-classifiers.mdx#diet-classifier) components!
 
 
 

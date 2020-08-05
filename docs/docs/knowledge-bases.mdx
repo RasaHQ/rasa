@@ -132,7 +132,7 @@ In this section:
 * we will annotate `mention` entities so that our model detects indirect mentions of objects like “the
   first one”
 
-* we will use [synonyms](../training-data-format.mdx#entity-synonyms) extensively
+* we will use [synonyms](./training-data-format.mdx#entity-synonyms) extensively
 
 For the bot to understand that the user wants to retrieve information from the knowledge base, you need to define
 a new intent. We will call it `query_knowledge_base`.
@@ -167,7 +167,7 @@ In addition to adding a variety of training examples for each query type,
 you need to specify and annotate the following entities in your training examples:
 
 * `object_type`: Whenever a training example references a specific object type from your knowledge base, the object type should
-  be marked as an entity. Use [synonyms](../training-data-format.mdx#entity-synonyms) to map e.g. `restaurants` to `restaurant`, the correct
+  be marked as an entity. Use [synonyms](./training-data-format.mdx#entity-synonyms) to map e.g. `restaurants` to `restaurant`, the correct
   object type listed as a key in the knowledge base.
 
 * `mention`: If the user refers to an object via “the first one”, “that one”, or “it”, you should mark those terms
@@ -363,7 +363,7 @@ The ordinal mention mapping maps a string, such as “1”, to the object in a l
 object at index `0`.
 
 As the ordinal mention mapping does not, for example, include an entry for “the first one”,
-it is important that you use [Entity Synonyms](../training-data-format.mdx#entity-synonyms) to map “the first one” in your NLU data to “1”:
+it is important that you use [Entity Synonyms](./training-data-format.mdx#entity-synonyms) to map “the first one” in your NLU data to “1”:
 
 ```md
 Does the [first one](mention:1) have [outside seating](attribute:outside-seating)?

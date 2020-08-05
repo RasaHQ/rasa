@@ -41,7 +41,7 @@ the following pipeline:
 
 It uses the [SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer) instead of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer).
 [SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer) provides pre-trained word embeddings from either GloVe or fastText in many different languages
-(see [Pre-trained Word Vectors](./language-support.mdx#pretrained-word-vectors)).
+(see [Language Models](./components/language-models.mdx)).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-non-english"></a>
 
@@ -54,9 +54,7 @@ we recommend using the following pipeline:
 ```
 
 :::note
-We encourage everyone to define their own pipeline by listing the names of the components you want to use.
-You can find the details of each component in [Components](./components.mdx).
-If you want to use custom components in your pipeline, see [Custom NLU Components](../custom-nlu-components.mdx).
+If you want to use custom components in your pipeline, see [Custom NLU Components](./components/custom-nlu-components.mdx).
 
 :::
 
@@ -125,7 +123,7 @@ The image below shows the call order during the training of this pipeline:
 
 
 
-<img alt="image" src="../../img/component_lifecycle.png" />
+<img alt="image" src="../img/component_lifecycle.png" />
 
 Before the first component is created using the `create` function, a so
 called `context` is created (which is nothing more than a python dict).
@@ -144,7 +142,7 @@ final context dictionary is used to persist the model’s metadata.
 You can use Rasa Open Source components to split intents into multiple labels. For example, you can predict
 multiple intents (`thank+goodbye`) or model hierarchical intent structure (`feedback+positive` being more similar
 to `feedback+negative` than `chitchat`).
-To do this, you need to use the [DIETClassifier](./components#diet-classifier) in your pipeline.
+To do this, you need to use the [DIETClassifier](./components/intent-classifiers.mdx#diet-classifier) in your pipeline.
 You’ll also need to define these flags in whichever tokenizer you are using:
 
 * `intent_tokenization_flag`: Set it to `True`, so that intent labels are tokenized.
@@ -170,7 +168,7 @@ pipeline:
 ### Comparing Pipelines
 
 Rasa gives you the tools to compare the performance of multiple pipelines on your data directly.
-See [Comparing NLU Pipelines](../testing-your-assistant#comparing-nlu-pipelines) for more information.
+See [Comparing NLU Pipelines](./testing-your-assistant.mdx#comparing-nlu-pipelines) for more information.
 
 :::note
 Intent classification is independent of entity extraction. So sometimes
@@ -183,9 +181,9 @@ You need to provide enough data for both intents and entities.
 ## Choosing the Right Components
 
 There are components for entity extraction, for intent classification, response selection,
-pre-processing, and others. You can learn more about any specific component on the [Components](./components.mdx) page.
+pre-processing, and others.
 If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out [Custom NLU Components](../custom-nlu-components.mdx).
+do sentiment analysis, check out [Custom NLU Components](./components/custom-nlu-components.mdx).
 
 A pipeline usually consists of three main parts:
 
@@ -195,11 +193,11 @@ For tokenization of English input, we recommend the [ConveRTTokenizer](./compone
 You can process other whitespace-tokenized (words are separated by spaces) languages
 with the [WhitespaceTokenizer](./components/tokenizers.mdx#swhitespacetokenizer). If your language is not whitespace-tokenized, you should use a different tokenizer.
 We support a number of different [tokenizers](./components/tokenizers.mdx), or you can
-create your own [custom tokenizer](../custom-nlu-components.mdx).
+create your own [custom tokenizer](./components/custom-nlu-components.mdx).
 
 :::note
 Some components further down the pipeline may require a specific tokenizer. You can find those requirements
-on the individual components in [Components](./components.mdx). If a required component is missing inside the pipeline, an
+on the individual components' `requires` parameter. If a required component is missing inside the pipeline, an
 error will be thrown.
 
 :::
@@ -245,7 +243,7 @@ A full list of different variants of
 these language models is available in the
 [official documentation of the Transformers library](https://huggingface.co/transformers/pretrained_models.html).
 
-[SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer) also provides word embeddings in many different languages (see [Pre-trained Word Vectors](./language-support.mdx#pretrained-word-vectors)),
+[spacynlp](./components/featurizers.mdx#spacyfeaturizer) also provides word embeddings in many different languages,
 so you can use this as another alternative, depending on the language of your training data.
 
 #### Supervised Embeddings
@@ -261,8 +259,7 @@ pre-trained word embeddings.
 ### Intent Classification / Response Selectors
 
 Depending on your data you may want to only perform intent classification, entity recognition or response selection.
-Or you might want to combine multiple of those tasks.
-We support several components for each of the tasks. All of them are listed in [Components](./components.mdx).
+Or you might want to combine multiple of those tasks. We support several components for each of the tasks.
 We recommend using [DIETClassifier](./components/intent-classifiers.mdx#diet-classifier) for intent classification and entity recognition
 and [ResponseSelector](./components/selectors.mdx#response-selector) for response selection.
 
@@ -276,7 +273,6 @@ By default the alias is set the the full featurizer class name, for example, `Re
 You can then specify, for example, on the [ResponseSelector](./components/selectors.mdx#response-selector) via the option `featurizers` what features from
 which featurizers should be used.
 If you don’t set the option `featurizers` all available features will be used.
-To check which components have the option `featurizers` available, see [Components](./components.mdx).
 
 Here is an example configuration file where the `DIETClassifier` is using all available features and the
 `ResponseSelector` is just using the features from the `ConveRTFeaturizer` and the `CountVectorsFeaturizer`.
