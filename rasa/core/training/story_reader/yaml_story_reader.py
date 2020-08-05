@@ -31,6 +31,9 @@ KEY_CHECKPOINT = "checkpoint"
 KEY_CHECKPOINT_SLOTS = "slots"
 KEY_METADATA = "metadata"
 KEY_OR = "or"
+KEY_RULE_CONDITION = "condition"
+KEY_WAIT_FOR_USER_INPUT_AFTER_RULE = "wait_for_user_input"
+KEY_RULE_APPLIES_ONLY_FOR_CONVERSATION_START = "only_for_conversation_start"
 
 
 class YAMLStoryReader(StoryReader):
@@ -133,11 +136,25 @@ class YAMLStoryReader(StoryReader):
 
         if is_rule_data:
             self._new_rule_part(item_name, self.source_name)
+            conditions = item.get(KEY_RULE_CONDITION, [])
+            self._parse_rule_conditions(conditions)
+            if not item.get(KEY_RULE_APPLIES_ONLY_FOR_CONVERSATION_START):
+                self._parse_rule_snippet_action()
         else:
             self._new_story_part(item_name, self.source_name)
 
         for step in steps:
             self._parse_step(step, is_rule_data)
+        
+
+        if is_rule_data and item.get(KEY_WAIT_FOR_USER_INPUT_AFTER_RULE) is False:
+            self._add_event(RULE_SNIPPET_ACTION_NAME, {})
+
+    def _parse_rule_conditions(
+        self, conditions: List[Union[Text, Dict[Text, Any]]]
+    ) -> None:
+        for condition in conditions:
+            self._parse_step(condition, is_rule_data=True)
 
     def _parse_step(
         self, step: Union[Text, Dict[Text, Any]], is_rule_data: bool

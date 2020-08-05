@@ -1,21 +1,21 @@
 rules:
 - rule: rule 1
-  steps:
+  condition:
   - form: loop_q_form
   - slot: requested_slot
     value: some_slot
-  - ...
+  steps:
   - intent: inform
     entities:
     - some_slot: bla
   - action: loop_q_form
 
 - rule: rule 2
-  steps:
+  condition:
   - form: loop_q_form
   - slot: requested_slot
     value: some_slot
-  - ...
+  steps:
   - intent: explain
   - action: utter_explain_some_slot
   - action: loop_q_form
@@ -24,7 +24,6 @@ rules:
 - rule: rule 3
   steps:
   - form: loop_q_form
-  - ...
   - form: null
   - slot: null
   - action: stop_q_form

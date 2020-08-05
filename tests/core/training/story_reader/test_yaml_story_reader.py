@@ -1,15 +1,26 @@
-from typing import Text
+from typing import Text, List
 
 import pytest
 
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
+from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.training import loading
 from rasa.core.events import ActionExecuted, UserUttered, SlotSet, Form
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
+from rasa.core.training.structures import StoryStep
 from rasa.utils import io as io_utils
+
+
+@pytest.fixture()
+async def rule_steps_without_stories(default_domain: Domain) -> List[StoryStep]:
+    yaml_file = "data/test_yaml_stories/rules_without_stories.yml"
+
+    return await loading.load_data_from_files(
+        [yaml_file], default_domain, RegexInterpreter()
+    )
 
 
 async def test_can_read_test_story_with_slots(default_domain: Domain):
@@ -157,39 +168,73 @@ async def test_read_rules_with_stories(default_domain: Domain):
     assert ml_steps[2].block_name == "simple_story_with_only_end"
 
 
-async def test_read_rules_without_stories(default_domain: Domain):
-
-    yaml_file = "data/test_yaml_stories/rules_without_stories.yml"
-
-    steps = await loading.load_data_from_files(
-        [yaml_file], default_domain, RegexInterpreter()
-    )
-
-    ml_steps = [s for s in steps if not s.is_rule]
-    rule_steps = [s for s in steps if s.is_rule]
+def test_read_rules_without_stories(rule_steps_without_stories: List[StoryStep]):
+    ml_steps = [s for s in rule_steps_without_stories if not s.is_rule]
+    rule_steps = [s for s in rule_steps_without_stories if s.is_rule]
 
     # this file contains three rules and no ML stories
     assert len(ml_steps) == 0
-    assert len(rule_steps) == 3
+    assert len(rule_steps) == 5
 
-    assert rule_steps[0].block_name == "rule 1"
-    assert rule_steps[1].block_name == "rule 2"
-    assert rule_steps[2].block_name == "rule 3"
 
-    # inspect the first rule and make sure all events were picked up correctly
-    events = rule_steps[0].events
+def test_rule_with_condition(rule_steps_without_stories: List[StoryStep]):
+    rule = rule_steps_without_stories[0]
+    assert rule.block_name == "Rule with condition"
+    assert rule.events == [
+        Form("loop_q_form"),
+        SlotSet("requested_slot", "some_slot"),
+        ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+        UserUttered(
+            "inform",
+            {"name": "inform", "confidence": 1.0},
+            [{"entity": "some_slot", "value": "bla"}],
+        ),
+        ActionExecuted("loop_q_form"),
+    ]
 
-    assert len(events) == 5
 
-    assert events[0] == Form("loop_q_form")
-    assert events[1] == SlotSet("requested_slot", "some_slot")
-    assert events[2] == ActionExecuted("...")
-    assert events[3] == UserUttered(
-        "inform",
-        {"name": "inform", "confidence": 1.0},
-        [{"entity": "some_slot", "value": "bla"}],
-    )
-    assert events[4] == ActionExecuted("loop_q_form")
+def test_rule_without_condition(rule_steps_without_stories: List[StoryStep]):
+    rule = rule_steps_without_stories[1]
+    assert rule.block_name == "Rule without condition"
+    assert rule.events == [
+        ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+        UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
+        ActionExecuted("utter_explain_some_slot"),
+        ActionExecuted("loop_q_form"),
+        Form("loop_q_form"),
+    ]
+
+
+def test_rule_with_explicit_wait_for_user_message(
+    rule_steps_without_stories: List[StoryStep]
+):
+    rule = rule_steps_without_stories[2]
+    assert rule.block_name == "Rule which explicitly waits for user input when finished"
+    assert rule.events == [
+        ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+        UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
+        ActionExecuted("utter_explain_some_slot"),
+    ]
+
+
+def test_rule_which_hands_over_at_end(rule_steps_without_stories: List[StoryStep]):
+    rule = rule_steps_without_stories[3]
+    assert rule.block_name == "Rule after which another action should be predicted"
+    assert rule.events == [
+        ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+        UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
+        ActionExecuted("utter_explain_some_slot"),
+        ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+    ]
+
+
+def test_conversation_start_rule(rule_steps_without_stories: List[StoryStep]):
+    rule = rule_steps_without_stories[4]
+    assert rule.block_name == "Rule which only applies at conversation start"
+    assert rule.events == [
+        UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
+        ActionExecuted("utter_explain_some_slot"),
+    ]
 
 
 async def test_warning_if_intent_not_in_domain(default_domain: Domain):
