@@ -219,6 +219,9 @@ class ConveRTFeaturizer(DenseFeaturizer):
         attribute: Text = TEXT,
         **kwargs: Any,
     ) -> None:
+        if attribute not in DENSE_FEATURIZABLE_ATTRIBUTES:
+            return
+
         sequence_features, sentence_features = self._compute_features(
             [message], tf_hub_module, attribute=attribute
         )
