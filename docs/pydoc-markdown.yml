@@ -1,5 +1,6 @@
 loaders:
   - type: python
+    search_path: [../]
     packages:
     - rasa
 processors:
@@ -8,7 +9,5 @@ processors:
   - type: crossref
 renderer:
   type: docusaurus
-  docs_base_path: docs/docs/
+  docs_base_path: docs/
   sidebar_top_level_label: 'Source'
-packages:
-  - rasa
