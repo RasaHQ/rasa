@@ -3,7 +3,6 @@ import logging
 import rasa
 
 from rasa.core.train import train
-from rasa.core.test import test
 from rasa.core.visualize import visualize
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())

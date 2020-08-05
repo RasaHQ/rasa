@@ -9,7 +9,6 @@ from pytest_sanic.utils import TestClient
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import StreamingHTTPResponse
-from uvloop.loop import Loop
 
 import rasa.core
 from rasa.core.policies.form_policy import FormPolicy
@@ -52,7 +51,7 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
 
 @pytest.fixture()
 def model_server(
-    loop: Loop, sanic_client: Callable, trained_moodbot_path: Text
+    loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_moodbot_path: Text
 ) -> TestClient:
     app = model_server_app(trained_moodbot_path, model_hash="somehash")
     return loop.run_until_complete(sanic_client(app))

@@ -1,2 +1,0 @@
-Remove ``clean_up_entities`` from extractors that extract pre-defined entities.
-Just keep the clean up method for entity extractors that extract custom entities.
