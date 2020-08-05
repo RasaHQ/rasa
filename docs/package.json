@@ -14,8 +14,7 @@
     "copy-md-files": "node scripts/copy_md_files.js",
     "included-sources": "node scripts/compile_included_sources.js",
     "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}",
-    "ci": "yarn install --frozen-lockfile",
-    "u": "yarn upgrade-interactive --latest"
+    "ci": "yarn install --frozen-lockfile"
   },
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.61",
