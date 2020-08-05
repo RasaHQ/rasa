@@ -33,6 +33,7 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
     if name:
         try:
             persistor = rasa.utils.common.class_from_module_path(name)
+            return persistor()
         except ImportError:
             raise ImportError(
                 f"Unknown model persistor {name}. Please make sure to "
@@ -40,10 +41,6 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
                 "or `azure`) or specify the module path to an external "
                 "model persistor."
             )
-        else:
-            cfg = os.environ.get("RASA_PERSISTOR")
-            kwargs = json.loads(cfg) if cfg else {}
-            return persistor(**kwargs)
     return None
 
 
