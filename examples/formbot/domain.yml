@@ -15,6 +15,7 @@ entities:
   - cuisine
   - number
   - feedback
+  - seating
 
 slots:
   cuisine:
