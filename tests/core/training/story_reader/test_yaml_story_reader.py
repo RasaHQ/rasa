@@ -230,7 +230,7 @@ def test_rule_which_hands_over_at_end(rule_steps_without_stories: List[StoryStep
 
 def test_conversation_start_rule(rule_steps_without_stories: List[StoryStep]):
     rule = rule_steps_without_stories[4]
-    assert rule.block_name == "Rule which only applies at conversation start"
+    assert rule.block_name == "Rule which only applies to conversation start"
     assert rule.events == [
         UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
         ActionExecuted("utter_explain_some_slot"),

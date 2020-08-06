@@ -1,7 +1,7 @@
 rules:
 
 - rule: Greet
-  # This rule only applies at the start of a session.
+  # This rule only applies to the start of a session.
   conversation_start: True
   steps:
   - intent: greet
