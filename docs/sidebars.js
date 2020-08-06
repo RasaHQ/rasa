@@ -70,6 +70,7 @@ module.exports = {
       label: 'API Reference',
       collapsed: false,
       items: [
+        'api/training-data-format',
         'api/action-server',
         'api/http-api',
         'api/jupyter-notebooks',
