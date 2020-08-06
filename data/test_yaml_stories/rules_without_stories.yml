@@ -30,7 +30,7 @@ rules:
   wait_for_user_input: False
 
 - rule: Rule which only applies at conversation start
-  only_for_conversation_start: True
+  conversation_start: True
   steps:
   - intent: explain
   - action: utter_explain_some_slot

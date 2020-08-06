@@ -33,7 +33,7 @@ KEY_METADATA = "metadata"
 KEY_OR = "or"
 KEY_RULE_CONDITION = "condition"
 KEY_WAIT_FOR_USER_INPUT_AFTER_RULE = "wait_for_user_input"
-KEY_RULE_APPLIES_ONLY_FOR_CONVERSATION_START = "only_for_conversation_start"
+KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
 
 
 class YAMLStoryReader(StoryReader):
@@ -409,7 +409,7 @@ class RuleParser(YAMLStoryReader):
         self._new_rule_part(item_name, self.source_name)
         conditions = item.get(KEY_RULE_CONDITION, [])
         self._parse_rule_conditions(conditions)
-        if not item.get(KEY_RULE_APPLIES_ONLY_FOR_CONVERSATION_START):
+        if not item.get(KEY_RULE_FOR_CONVERSATION_START):
             self._parse_rule_snippet_action()
 
     def _parse_rule_conditions(
