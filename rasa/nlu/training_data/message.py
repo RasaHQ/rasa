@@ -101,7 +101,7 @@ class Message:
     ) -> "Message":
         """
         Builds a Message from UserUttered data
-        Args: 
+        Args:
             text: text of a user's utterance
             intent: an intent of the user utterance
             entities: entities in the user's utterance
@@ -128,7 +128,7 @@ class Message:
     ) -> "Message":
         """
         Builds a Message from ActionExecuted data
-        Args: 
+        Args:
             action_text: text of a bot's utterance
             action_name: name of an action executed
         Returns:

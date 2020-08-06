@@ -396,7 +396,7 @@ class Interpreter:
             message: message storing text to process;
             attribute: message attribute
         Returns:
-            message: it contains the tokens and features which are the output of the NLU pipeline;  
+            message: it contains the tokens and features which are the output of the NLU pipeline;
         """
         for component in self.pipeline:
             if isinstance(component, (Featurizer, tokenizer.Tokenizer)):
