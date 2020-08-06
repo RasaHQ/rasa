@@ -1,7 +1,7 @@
 rules:
 - rule: Rule with condition
   condition:
-  - form: loop_q_form
+  - active_loop: loop_q_form
   - slot: requested_slot
     value: some_slot
   steps:
@@ -15,7 +15,7 @@ rules:
   - intent: explain
   - action: utter_explain_some_slot
   - action: loop_q_form
-  - form: loop_q_form
+  - active_loop: loop_q_form
 
 - rule: Rule which explicitly waits for user input when finished
   steps:

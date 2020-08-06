@@ -11,12 +11,12 @@ rules:
   steps:
   - intent: activate_q_form
   - action: loop_q_form
-  - form: loop_q_form
+  - active_loop: loop_q_form
 
 - rule: Example of an unhappy path for the 'loop_q_form'
   condition:
   # Condition that form is active.
-  - form: loop_q_form
+  - active_loop: loop_q_form
   - slot: requested_slot
     value: some_slot
   steps:
@@ -25,14 +25,14 @@ rules:
   - action: utter_explain_some_slot
   # Return to form after handling the `explain` intent
   - action: loop_q_form
-  - form: loop_q_form
+  - active_loop: loop_q_form
 
 - rule: Submit form
   condition:
-  - form: loop_q_form
+  - active_loop: loop_q_form
   steps:
   - action: loop_q_form
-  - form: null
+  - active_loop: null
   - slot: requested_slot
     value: null
   # The action we want to run when the form is submitted.
@@ -119,4 +119,4 @@ rules:
   - intent: nlu_fallback
   # The Fallback is implemented as now implemented as form.
   - action: two_stage_fallback
-  - form: two_stage_fallback
+  - active_loop: two_stage_fallback

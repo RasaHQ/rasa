@@ -1,7 +1,7 @@
 rules:
 - rule: rule 1
   condition:
-  - form: loop_q_form
+  - active_loop: loop_q_form
   - slot: requested_slot
     value: some_slot
   steps:
@@ -12,19 +12,19 @@ rules:
 
 - rule: rule 2
   condition:
-  - form: loop_q_form
+  - active_loop: loop_q_form
   - slot: requested_slot
     value: some_slot
   steps:
   - intent: explain
   - action: utter_explain_some_slot
   - action: loop_q_form
-  - form: loop_q_form
+  - active_loop: loop_q_form
 
 - rule: rule 3
   steps:
-  - form: loop_q_form
-  - form: null
+  - action: loop_q_form
+  - active_loop: null
   - slot: null
   - action: stop_q_form
 
