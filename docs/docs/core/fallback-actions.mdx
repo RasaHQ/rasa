@@ -127,12 +127,21 @@ the corresponding confidence threshold as follows:
 ```yaml
 policies:
 - name: RulePolicy
-  # Confidence threshold for the `fallback_action_name` to apply.
+  # Confidence threshold for the `core_fallback_action_name` to apply.
   # The action will apply if no other action was predicted with
   # a confidence >= core_fallback_threshold
   core_fallback_threshold: 0.4
-  fallback_action_name: "action_default_fallback"
+  core_fallback_action_name: "action_default_fallback"
+  enable_fallback_prediction: True
 ```
+
+:::note
+
+If you do not want the `Rule Policy` to predict a default action in case of low Core
+confidence, specify `enable_fallback_prediction: False` in the configuration of the
+policy.
+:::
+
 
 `action_default_fallback` is a default action in Rasa Open Source that sends the
 `utter_default` response to the user. Make sure to specify
