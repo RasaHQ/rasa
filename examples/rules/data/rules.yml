@@ -18,7 +18,7 @@ rules:
   steps:
   # Condition that form is active.
   - form: loop_q_form
-  - slot: requested_slot
+  - slot_was_set: requested_slot
     value: some_slot
   - ...
   # This unhappy path handles the case of an intent `explain`.
@@ -35,7 +35,7 @@ rules:
   - ...
   - action: loop_q_form
   - form: null
-  - slot: requested_slot
+  - slot_was_set: requested_slot
     value: null
   # The action we want to run when the form is submitted.
   - action: utter_stop
@@ -56,7 +56,7 @@ rules:
 
 - rule: FAQ simple
   steps:
-  - slot: detailed_faq
+  - slot_was_set: detailed_faq
     value: false
   # Indicator that there might be story beforehand.
   - ...
@@ -65,7 +65,7 @@ rules:
 
 - rule: FAQ detailed
   steps:
-  - slot: detailed_faq
+  - slot_was_set: detailed_faq
     value: true
   # Indicator that there might be story beforehand.
   - ...
@@ -76,7 +76,7 @@ rules:
 
 - rule: FAQ helped - continue
   steps:
-  - slot: detailed_faq
+  - slot_was_set: detailed_faq
     value: true
   - ...
   - action: utter_faq
@@ -86,7 +86,7 @@ rules:
 
 - rule: FAQ did not help
   steps:
-  - slot: detailed_faq
+  - slot_was_set: detailed_faq
     value: true
   - ...
   - action: utter_faq
@@ -98,7 +98,7 @@ rules:
 
 - rule: Detailed FAQ did not help - continue
   steps:
-  - slot: detailed_faq
+  - slot_was_set: detailed_faq
     value: true
   - ...
   - action: utter_detailed_faq
@@ -110,7 +110,7 @@ rules:
 
 - rule: Detailed FAQ did not help - stop
   steps:
-  - slot: detailed_faq
+  - slot_was_set: detailed_faq
     value: true
   - ...
   - action: utter_detailed_faq

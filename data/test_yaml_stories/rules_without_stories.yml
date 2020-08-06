@@ -2,7 +2,7 @@ rules:
 - rule: rule 1
   steps:
   - form: loop_q_form
-  - slot: requested_slot
+  - slot_was_set: requested_slot
     value: some_slot
   - ...
   - intent: inform
@@ -13,7 +13,7 @@ rules:
 - rule: rule 2
   steps:
   - form: loop_q_form
-  - slot: requested_slot
+  - slot_was_set: requested_slot
     value: some_slot
   - ...
   - intent: explain
@@ -26,5 +26,5 @@ rules:
   - form: loop_q_form
   - ...
   - form: null
-  - slot: null
+  - slot_was_set: null
   - action: stop_q_form
