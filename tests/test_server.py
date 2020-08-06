@@ -195,8 +195,11 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
             formbot_data = dict(
                 domain="examples/formbot/domain.yml",
                 config="examples/formbot/config.yml",
-                stories="examples/formbot/data/stories.md",
-                nlu="examples/formbot/data/nlu.md",
+                training_files=[
+                    "examples/formbot/data/rules.yml",
+                    "examples/formbot/data/stories.yml",
+                    "examples/formbot/data/nlu.yml",
+                ],
             )
             payload = {
                 key: stack.enter_context(open(path)).read()
