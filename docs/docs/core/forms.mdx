@@ -56,7 +56,6 @@ triggering a form, you can for example use the following rule:
 ```yaml
 - rule: Activate form
   steps:
-  - ...
   - intent: intent_which_activates_form
   - action: your_form
   - form: your_form
@@ -197,10 +196,10 @@ you could add a story like this:
 
 ```yaml
 - rule: Example of an unhappy path
-  steps:
+  condition:
   # Condition that form is active.
   - form: your_form
-  - ...
+  steps:
   # This unhappy path handles the case of an intent `chitchat`.
   - intent: chitchat
   - action: utter_chitchat
@@ -218,10 +217,10 @@ look as follows:
 
 ```yaml
 - rule: Example of an unhappy path
-  steps:
+  condition:
   # Condition that form is active.
   - form: your_form
-  - ...
+  steps:
   - intent: stop
   - action: utter_ask_continue
   - intent: stop

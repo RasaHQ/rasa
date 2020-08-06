@@ -39,24 +39,6 @@ policies:
 
 Rules can then be added to the `rules` section of your training data.
 
-### Rules for the Conversation Start
-TODO!!!!! This will need to be changed, TBD.
-
-To write a rule which only applies at the beginning of a conversation, start with the
-intent which starts the conversation and then add the actions which your assistant
-should perform in response to that.
-
-```yaml
-rules:
-
-- rule: Say `hello` when the user starts a conversation with intent `greet`
-  steps:
-  - intent: greet
-  - action: utter_greet
-```
-
-### Rules which Apply Anytime
-
 To indicate that a rule can apply at any point in a conversation, start with the
 intent which starts the conversation and then add the actions which your assistant
 should perform in response to that.
@@ -71,6 +53,24 @@ rules:
 
 This example rule applies at the start of conversation as well as when the user decides
 to a send a message with an intent `greet` in the middle of an ongoing conversation.
+
+### Rules for the Conversation Start
+
+To write a rule which only applies at the beginning of a conversation, add a
+`conversation_start: True` to your rule:
+
+```yaml
+rules:
+
+- rule: Say `hello` when the user starts a conversation with intent `greet`
+  conversation_start: True
+  steps:
+  - intent: greet
+  - action: utter_greet
+```
+
+If a user starts by sending a message with an intent other than `greet`, and sends a
+message with intent `greet` later in the conversation, the rule will not match.
 
 ### Rules with Pre-Conditions
 
@@ -90,7 +90,7 @@ rules:
   - action: utter_greet
 ```
 
-### Not Predicting `action_listen` at the End of a Rule
+### Skip Waiting for User Input at the End of a Rule
 
 By default, rules will wait for the next user message when finished with the last step:
 
@@ -105,10 +105,10 @@ rules:
   # This means that Rasa Open Source will wait for the next user message.
   - action_listen
 ```
-TODO: Rewrite section to match removal of `...`
-If you want to hand over to another story or rule, add `...` as last step in order to
-indicate that the assistant should execute another action before waiting for more user
-input.
+
+If you want to hand over to another story or rule, add `wait_for_user_input: False`
+to your rule.intent This indicates that the assistant should execute another action
+before waiting for more user input.
 
 ```yaml
 rules:
@@ -117,8 +117,9 @@ rules:
   steps:
   - intent: greet
   - action: utter_greet
-  - ...
+  wait_for_user_input: False
 ```
+
 ### Rules and Forms
 
 When a [Form](./forms.mdx) is active, rules become applicable again if
@@ -137,8 +138,8 @@ This section explains common use cases of rules.
 Some messages do not require any context to answer them. Common examples are either FAQs
 or triggers which are sent by [Reminders and External Events](./reminders-and-external-events.mdx).
 
-To map an intent to a certain action, you need
-[Rules which Apply Anytime](./rules.mdx#rules-which-apply-anytime).
+To map an intent to a certain action, you need to define a
+[Rule](./rules.mdx).
 The following example always responds with an action `utter_greet` in case the user
 greets the assistant.
 
