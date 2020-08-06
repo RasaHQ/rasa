@@ -234,8 +234,11 @@ def test_train_status_is_not_blocked_by_training(
             return False
 
     # wait until server is up before sending train request and status test loop
-    while not is_server_ready():
+    start = time.time()
+    while not is_server_ready() and time.time() - start < 60:
         time.sleep(1)
+
+    assert is_server_ready()
 
     training_request.start()
 
@@ -251,8 +254,10 @@ def test_train_status_is_not_blocked_by_training(
     # Tell the blocking training function to stop
     shared_statuses["stop_training"] = True
 
-    while shared_statuses.get("training_result") is None:
+    start = time.time()
+    while shared_statuses.get("training_result") is None and time.time() - start < 60:
         time.sleep(1)
+    assert shared_statuses.get("training_result")
 
     # Check that the training worked correctly
     assert shared_statuses["training_result"] == 200
