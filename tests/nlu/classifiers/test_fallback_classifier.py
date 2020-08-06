@@ -1,30 +1,69 @@
 import copy
+from typing import Dict
+
+import pytest
 
 from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
-from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier, THRESHOLD_KEY
+from rasa.nlu.classifiers.fallback_classifier import (
+    FallbackClassifier,
+    THRESHOLD_KEY,
+    AMBIGUITY_THRESHOLD_KEY,
+)
 from rasa.nlu.training_data import Message
 from rasa.nlu.constants import INTENT_RANKING_KEY, INTENT, INTENT_CONFIDENCE_KEY
 
 
-def test_predict_fallback_intent():
-    threshold = 0.5
-    message = Message(
-        "some message",
-        data={
-            INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 0.234891876578331},
-            INTENT_RANKING_KEY: [
-                {"name": "greet", INTENT_CONFIDENCE_KEY: 0.234891876578331},
-                {"name": "stop", INTENT_CONFIDENCE_KEY: threshold - 0.0001},
-                {"name": "affirm", INTENT_CONFIDENCE_KEY: 0},
-                {"name": "inform", INTENT_CONFIDENCE_KEY: -100},
-                {"name": "deny", INTENT_CONFIDENCE_KEY: 0.0879683718085289},
-            ],
-        },
-    )
+@pytest.mark.parametrize(
+    "message, component_config",
+    [
+        (
+            Message(
+                "some message",
+                data={
+                    INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 0.234891876578331},
+                    INTENT_RANKING_KEY: [
+                        {"name": "greet", INTENT_CONFIDENCE_KEY: 0.234891876578331},
+                        {"name": "stop", INTENT_CONFIDENCE_KEY: 0.5 - 0.0001},
+                        {"name": "affirm", INTENT_CONFIDENCE_KEY: 0},
+                        {"name": "inform", INTENT_CONFIDENCE_KEY: -100},
+                        {"name": "deny", INTENT_CONFIDENCE_KEY: 0.0879683718085289},
+                    ],
+                },
+            ),
+            {THRESHOLD_KEY: 0.5},
+        ),
+        (
+            Message(
+                "some message",
+                data={
+                    INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
+                    INTENT_RANKING_KEY: [
+                        {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
+                        {"name": "stop", INTENT_CONFIDENCE_KEY: 0.9},
+                    ],
+                },
+            ),
+            {THRESHOLD_KEY: 0.5, AMBIGUITY_THRESHOLD_KEY: 0.1},
+        ),
+        (
+            Message(
+                "some message",
+                data={
+                    INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
+                    INTENT_RANKING_KEY: [
+                        {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
+                        {"name": "stop", INTENT_CONFIDENCE_KEY: 0.5},
+                    ],
+                },
+            ),
+            {THRESHOLD_KEY: 0.5, AMBIGUITY_THRESHOLD_KEY: 0.51},
+        ),
+    ],
+)
+def test_predict_fallback_intent(message: Message, component_config: Dict):
     old_message_state = copy.deepcopy(message)
-
-    classifier = FallbackClassifier(component_config={THRESHOLD_KEY: threshold})
+    classifier = FallbackClassifier(component_config=component_config)
     classifier.process(message)
 
     expected_intent = {
@@ -41,30 +80,51 @@ def test_predict_fallback_intent():
     assert current_intent_ranking[0] == expected_intent
 
 
-def test_not_predict_fallback_intent():
-    threshold = 0.5
-    message = Message(
-        "some message",
-        data={
-            INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: threshold},
-            INTENT_RANKING_KEY: [
-                {"name": "greet", INTENT_CONFIDENCE_KEY: 0.234891876578331},
-                {"name": "stop", INTENT_CONFIDENCE_KEY: 0.1},
-                {"name": "affirm", INTENT_CONFIDENCE_KEY: 0},
-                {"name": "inform", INTENT_CONFIDENCE_KEY: -100},
-                {"name": "deny", INTENT_CONFIDENCE_KEY: 0.0879683718085289},
-            ],
-        },
-    )
+@pytest.mark.parametrize(
+    "message, component_config",
+    [
+        (
+            Message(
+                "some message",
+                data={
+                    INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 0.5},
+                    INTENT_RANKING_KEY: [
+                        {"name": "greet", INTENT_CONFIDENCE_KEY: 0.234891876578331},
+                        {"name": "stop", INTENT_CONFIDENCE_KEY: 0.1},
+                        {"name": "affirm", INTENT_CONFIDENCE_KEY: 0},
+                        {"name": "inform", INTENT_CONFIDENCE_KEY: -100},
+                        {"name": "deny", INTENT_CONFIDENCE_KEY: 0.0879683718085289},
+                    ],
+                },
+            ),
+            {THRESHOLD_KEY: 0.5},
+        ),
+        (
+            Message(
+                "some message",
+                data={
+                    INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
+                    INTENT_RANKING_KEY: [
+                        {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
+                        {"name": "stop", INTENT_CONFIDENCE_KEY: 0.89},
+                    ],
+                },
+            ),
+            {THRESHOLD_KEY: 0.5, AMBIGUITY_THRESHOLD_KEY: 0.1},
+        ),
+    ],
+)
+def test_not_predict_fallback_intent(message: Message, component_config: Dict):
     old_message_state = copy.deepcopy(message)
 
-    classifier = FallbackClassifier(component_config={THRESHOLD_KEY: threshold})
+    classifier = FallbackClassifier(component_config=component_config)
     classifier.process(message)
 
     assert message == old_message_state
 
 
-def test_default_threshold():
+def test_defaults():
     classifier = FallbackClassifier({})
 
     assert classifier.component_config[THRESHOLD_KEY] == DEFAULT_NLU_FALLBACK_THRESHOLD
+    assert classifier.component_config[AMBIGUITY_THRESHOLD_KEY] == 0.1
