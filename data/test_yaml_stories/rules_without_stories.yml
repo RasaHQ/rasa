@@ -29,7 +29,7 @@ rules:
   - action: utter_explain_some_slot
   wait_for_user_input: False
 
-- rule: Rule which only applies at conversation start
+- rule: Rule which only applies to conversation start
   conversation_start: True
   steps:
   - intent: explain
