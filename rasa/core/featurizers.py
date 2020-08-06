@@ -372,7 +372,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         if attribute.endswith(TEXT):
             output_features = [sparse_features[1], dense_features[1], None, 1]
         else:
-            output_features = [None, None, sparse_features[0].sum(0), -1]
+            output_features = [None, None, scipy.sparse.coo_matrix(sparse_features[0].sum(0)), -1]
         return output_features
 
     def process_state_without_trained_nlu(self, state: STATE):
@@ -430,7 +430,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             action_name_features = self._extract_features(
                 {ACTION_NAME: action}, PREVIOUS_ACTION, interpreter
             )
-            num_name_elements = np.count_nonzero(action_name_features[2])
+            num_name_elements = action_name_features[2].nnz
         else:
             action_name_features = None
             num_name_elements = -1
@@ -548,11 +548,11 @@ class TrackerFeaturizer:
             for key in shapes.keys():
                 if INTENT in key:
                     feature[np.array(intent_rows_to_fill), 2] = [
-                        np.ones((1, shapes.get(key))) * -1
-                    ] * len(intent_rows_to_fill)
+                        scipy.sparse.coo_matrix((1, shapes.get(key)))
+                        ] * len(intent_rows_to_fill)
                 elif ACTION_NAME in key:
                     feature[np.array(action_names_rows_to_fill), 6] = [
-                        np.ones((1, shapes.get(key))) * -1
+                        scipy.sparse.coo_matrix((1, shapes.get(key)))
                     ] * len(action_names_rows_to_fill)
                 elif ACTION_TEXT in key:
                     if "sparse" in key:

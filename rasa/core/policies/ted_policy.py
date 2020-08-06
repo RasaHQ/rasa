@@ -103,7 +103,7 @@ class TEDPolicy(Policy):
         # Hidden layer sizes for layers before the dialogue and label embedding layers.
         # The number of hidden layers is equal to the length of the corresponding
         # list.
-        HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: [], f"{DIALOGUE}_inputs": [100]},
+        HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: [], f"{DIALOGUE}_name_and_text": [100]},
         # Number of units in transformer
         TRANSFORMER_SIZE: 128,
         # Number of transformer layers
@@ -333,7 +333,7 @@ class TEDPolicy(Policy):
             if not state[1] is None:
                 text_state_dense.append(state[1])
             if not state[2] is None:
-                name_state.append(state[2])
+                name_state.append(state[2].astype(np.float32))
             if not state[3] is None:
                 if_text_state.append(state[3])
 
@@ -342,7 +342,12 @@ class TEDPolicy(Policy):
         if not text_state_dense == []:
             text_state_dense = np.array(text_state_dense).squeeze(1)
         if not name_state == []:
-            name_state = np.array(name_state).squeeze(1)
+            # we will have different data types if an NLU pipeline 
+            # has been trained or not;
+            if isinstance(name_state[0], np.ndarray):
+                name_state = np.array(name_state).squeeze(1)
+            else:
+                name_state = sparse.vstack(name_state)
 
         if not if_text_state == []:
             if_text_state = np.expand_dims(np.array(if_text_state), -1)
@@ -743,10 +748,6 @@ class TED(RasaModel):
                 sparse = True
             else:
                 dense = True
-                # if dense features are present
-                # use the feature dimension of the dense features
-                # dense_dim = shape[-1]
-                dense_dim = dense_dim
 
         if sparse:
             self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
@@ -786,7 +787,7 @@ class TED(RasaModel):
                 "if_text"
             ):
                 self._tf_layers[f"ffnn.{feature_name}"] = layers.Ffnn(
-                    self.config[HIDDEN_LAYERS_SIZES][f"{DIALOGUE}_inputs"],
+                    self.config[HIDDEN_LAYERS_SIZES][f"{DIALOGUE}_name_and_text"],
                     self.config[DROP_RATE_DIALOGUE],
                     self.config[REGULARIZATION_CONSTANT],
                     self.config[WEIGHT_SPARSITY],
