@@ -17,18 +17,24 @@ rules:
       - intent: bot_challenge
       - action: utter_iamabot
 
-  - rule: Request restaurant form
+  - rule: activate restaurant form
     steps:
       - ...
       - intent: request_restaurant
       - action: restaurant_form
       - active_loop: restaurant_form
-      - active_loop: null
-      - action: utter_submit
-      - action: utter_slots_values
 
   - rule: Chitchat
     steps:
       - ...
       - intent: chitchat
       - action: utter_chitchat
+
+  - rule: submit form
+    steps:
+      - ...
+      - action: restaurant_form
+      - form: restaurant_form
+      - form: null
+      - action: utter_submit
+      - action: utter_slots_values
