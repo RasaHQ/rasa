@@ -6,7 +6,7 @@ from ruamel.yaml.parser import ParserError
 
 import rasa.utils.common as common_utils
 import rasa.utils.io
-from rasa.constants import DOCS_URL_STORIES
+from rasa.constants import DOCS_URL_STORIES, DOCS_URL_RULES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, Form
@@ -431,8 +431,7 @@ class RuleParser(YAMLStoryReader):
         return KEY_RULES
 
     def _get_docs_link(self) -> Text:
-        # TODO
-        return ""
+        return DOCS_URL_RULES
 
     def _parse_rule_snippet_action(self) -> None:
         self._add_event(RULE_SNIPPET_ACTION_NAME, {})

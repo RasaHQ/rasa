@@ -36,12 +36,7 @@ policies:
       max_history: 5
       state_featurizer:
         - name: BinarySingleStateFeaturizer
-  - name: "MemoizationPolicy"
-    max_history: 5
-  - name: "FallbackPolicy"
-    nlu_threshold: 0.4
-    core_threshold: 0.3
-    fallback_action_name: "my_fallback_action"
+  - name: "RulePolicy"
   - name: "path.to.your.policy.class"
     arg1: "..."
 ```
@@ -138,7 +133,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 
 4. `FallbackPolicy` and `TwoStageFallbackPolicy`
 
-5. `FormPolicy`
+5. `RulePolicy` and `FormPolicy`
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
 above the `nlu_threshold`, the bot will still fall back. In general, it is not recommended to have more
@@ -373,9 +368,46 @@ for details.
 
 :::
 
+## Rule Policy
+
+The `Rule Policy` is a policy that handles conversation parts that follow
+a fixed behavior. Please see [Rules](./rules.mdx) for further information.
+
+## Memoization Policy
+
+The `MemoizationPolicy` just memorizes the conversations in your
+training data. It predicts the next action with confidence `1.0`
+if this exact conversation exists in the training data, otherwise it
+predicts `None` with confidence `0.0`.
+
+## Augmented Memoization Policy
+
+The `AugmentedMemoizationPolicy` remembers examples from training
+stories for up to `max_history` turns, just like the `MemoizationPolicy`.
+Additionally, it has a forgetting mechanism that will forget a certain amount
+of steps in the conversation history and try to find a match in your stories
+with the reduced history. It predicts the next action with confidence `1.0`
+if a match is found, otherwise it predicts `None` with confidence `0.0`.
+
+:::note
+If you have dialogues where some slots that are set during
+prediction time might not be set in training stories (e.g. in training
+stories starting with a reminder not all previous slots are set),
+make sure to add the relevant stories without slots to your training
+data as well.
+
+:::
+
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="mapping-policy"></a>
 
 ## Mapping Policy
+
+:::caution
+The `MappingPolicy` is deprecated. Please see [Rules](./rules.mdx) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `MappingPolicy`, see the
+[migration guide](../migration-guide.mdx#migrating-from-the-mapping-policy).
+:::
 
 The `MappingPolicy` can be used to directly map intents to actions. The
 mappings are assigned by giving an intent the property `triggers`, e.g.:
@@ -429,36 +461,18 @@ in your policy example these intents will not work.
 
 :::
 
-## Memoization Policy
-
-The `MemoizationPolicy` just memorizes the conversations in your
-training data. It predicts the next action with confidence `1.0`
-if this exact conversation exists in the training data, otherwise it
-predicts `None` with confidence `0.0`.
-
-## Augmented Memoization Policy
-
-The `AugmentedMemoizationPolicy` remembers examples from training
-stories for up to `max_history` turns, just like the `MemoizationPolicy`.
-Additionally, it has a forgetting mechanism that will forget a certain amount
-of steps in the conversation history and try to find a match in your stories
-with the reduced history. It predicts the next action with confidence `1.0`
-if a match is found, otherwise it predicts `None` with confidence `0.0`.
-
-:::note
-If you have dialogues where some slots that are set during
-prediction time might not be set in training stories (e.g. in training
-stories starting with a reminder not all previous slots are set),
-make sure to add the relevant stories without slots to your training
-data as well.
-
-:::
-
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="fallback-policy"></a>
 
 ## Fallback Policy
 
-The `FallbackPolicy` invokes a [fallback action](./fallback-actions.mdx) if at least one of the following occurs:
+:::caution
+The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-actions.mdx) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `FallbackPolicy`, see the
+[migration guide](../migration-guide.mdx#migrating-from-the-fallback-policy).
+:::
+
+The `FallbackPolicy` invokes a predefined action if at least one of the following occurs:
 
 1. The intent recognition has a confidence below `nlu_threshold`.
 
@@ -512,6 +526,13 @@ You can include either the `FallbackPolicy` or the
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="two-stage-fallback-policy"></a>
 
 ## Two-Stage Fallback Policy
+
+:::caution
+The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-actions.mdx) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `TwoStageFallbackPolicy`, see the
+[migration guide](../migration-guide.mdx#migrating-from-the-two-stage-fallback-policy).
+:::
 
 The `TwoStageFallbackPolicy` handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.
@@ -577,7 +598,14 @@ You can include either the `FallbackPolicy` or the
 
 ## Form Policy
 
+:::caution
+The `FormPolicy` is deprecated. Please see [Forms](./forms.mdx) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `FormPolicy`, see the
+[migration guide](../migration-guide.mdx#form-policy).
+:::
+
 The `FormPolicy` is an extension of the `MemoizationPolicy` which
 handles the filling of forms. Once a `FormAction` is called, the
 `FormPolicy` will continually predict the `FormAction` until all required
-slots in the form are filled. For more information, see [Forms](./forms.mdx).
+slots in the form are filled.
