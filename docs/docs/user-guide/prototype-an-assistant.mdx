@@ -92,7 +92,7 @@ rules:
    - ...
    - intent: subscribe
    - action: newsletter_form
-   - form: newsletter_form
+   - active_loop: newsletter_form
 ```
 
 ## 5. Write some stories
@@ -115,7 +115,7 @@ stories:
    - action: utter_greet
    - intent: subscribe
    - action: newsletter_form
-   - form: newsletter_form
+   - active_loop: newsletter_form
 ```
 
 [Read about best practices for writing stories](../core/stories.mdx)
@@ -177,5 +177,10 @@ Check out other docs pages to learn more about [domains](../core/domains.mdx), [
 and your config's [pipeline](../nlu/choosing-a-pipeline.mdx) and [policies](../core/policies.mdx).
 
 <DownloadButton />
+
+<br/><br/>
+
+*Your prototype was created using a Rasa Open Source alpha release. Please make sure
+you're running* `rasa==2.0.0a1` *to develop your project further.*
 
 </Prototyper>

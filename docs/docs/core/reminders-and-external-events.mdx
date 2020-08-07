@@ -47,7 +47,7 @@ Thus, we define an intent `ask_remind_call` with some NLU data,
 
 and connect this intent with a new custom action `action_set_reminder`.
 We could make this connection by providing training stories (recommended for more complex assistants),
-or using the [Mapping Policy](./policies.mdx#mapping-policy).
+or using [Rules](./rules.mdx).
 
 The custom action `action_set_reminder` should schedule a reminder that, 5 seconds later,
 triggers an intent `EXTERNAL_reminder` with all the entities that the user provided
@@ -80,13 +80,15 @@ async def run(
 
 Note that this requires the `datetime` and `rasa_sdk.events` packages.
 
-Finally, we define another custom action `action_react_to_reminder` to dispatch the reminder’s message to
-the user, and link it to the `EXTERNAL_reminder` intent:
+Finally, we define another custom action `action_react_to_reminder` and link it to the `EXTERNAL_reminder` intent
+by writing a [Rule](./rules.mdx) for it:
 
 ```yaml
-intents:
-  - EXTERNAL_reminder:
-      triggers: action_react_to_reminder
+rules:
+- rule: Trigger `action_react_to_reminder` for `EXTERNAL_reminder`
+  steps:
+  - intent: EXTERNAL_reminder
+  - action: action_react_to_reminder
 ```
 
 This tells the model which action to take when the time is up on the reminder.
@@ -130,7 +132,8 @@ To do this, your Raspberry Pi needs to send a message to the
 As the name says, this injects a user intent (possibly with entities) into your conversation.
 So for Rasa it is almost as if you had entered a message that got classified with this intent and these entities.
 Rasa then needs to respond to this input with an action such as `action_warn_dry`.
-The easiest and most reliable way to connect this action with the intent is via the [Mapping Policy](./policies.mdx#mapping-policy).
+The easiest and most reliable way to connect this action with the intent is to use
+[Rules](./rules.mdx).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="responding-to-external-events"></a>
 
