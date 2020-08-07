@@ -398,7 +398,7 @@ class ResponseSelector(DIETClassifier):
             meta, model_dir, model_metadata, cached_component, **kwargs
         )
         if not meta.get("file"):
-            return model
+            return model  # pytype: disable=bad-return-type
 
         file_name = meta.get("file")
         model_dir = Path(model_dir)
