@@ -20,7 +20,7 @@ pipeline:
 
 policies:
   - name: RulePolicy
-    # Confidence of the prediction if no rule matched d de-facto threshold for a
+    # Confidence of the prediction if no rule matched and de-facto threshold for a
     # core fallback.
     core_fallback_threshold: 0.3
     # Name of the action which should be predicted if no rule matched.

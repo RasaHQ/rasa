@@ -1,4 +1,4 @@
-from typing import List, Text, Optional
+from typing import List, Text
 
 import pytest
 from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
