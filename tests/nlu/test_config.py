@@ -164,8 +164,6 @@ def config_files_in(config_directory: Text):
 async def test_train_docker_and_docs_configs(
     config_file: Text, monkeypatch: MonkeyPatch
 ):
-    content = io_utils.read_yaml_file(config_file)
-
     monkeypatch.setattr(autoconfig, "_dump_config", Mock())
     importer = RasaFileImporter(config_file=config_file)
     imported_config = await importer.get_config()
@@ -173,7 +171,7 @@ async def test_train_docker_and_docs_configs(
     loaded_config = config.load(imported_config)
 
     assert len(loaded_config.component_names) > 1
-    assert loaded_config.language == content["language"]
+    assert loaded_config.language == imported_config["language"]
 
 
 @pytest.mark.parametrize(
