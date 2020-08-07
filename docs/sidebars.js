@@ -85,6 +85,7 @@ module.exports = {
         'api/training-data-importers',
         'api/core-featurization',
         'api/tensorflow_usage',
+        'api/model-configuration',
         'migration-guide',
         'changelog',
       ],
