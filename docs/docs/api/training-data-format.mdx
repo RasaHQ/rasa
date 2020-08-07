@@ -465,17 +465,21 @@ As a step in a story, a form takes the following basic format:
 ```yaml
     steps:
     - intent: find_restaurant
-    - action: restaurant_form
-    - form: restaurant_form
-    - form: null
+    - action: restaurant_form <!--Activate the form-->
+    - form: restaurant_form   <!--This form is currently active-->
+    - form: null              <!--No form is active-->
     - action: utter_restaurant_found
 ```
 
-In the example above, `restaurant_form` is specified as an action step, and then two `form` steps.
-The second `form` step indicates 
-that all required slots are filled; once this condition is met, the next step in the story should 
-be taken.
 
+The `action` step activates the form and begins looping over the required slots. The `form: restaurant_form`
+step indicates that there is a currently active form. Much like a `slot_was_set` step,
+a `form` step doesn't **set** a form to active but indicates that it should already be activated.
+In the same way, the  `form: null` step indicates that no form should be active before the subsequent
+steps are taken. 
+
+A form can be interrupted and remain active; in this case the interruption should come after the 
+`action: <form to activate>` step and be followed by the `form: <active form>` step. 
 An interruption of a form could look like this:
 
 ```yaml
