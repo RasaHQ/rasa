@@ -108,7 +108,7 @@ def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
         "config_1.yml",
         "config_2.yml",
         "--stories",
-        "data/stories.md",
+        "data/stories.yml",
         "--out",
         "core_comparison_results",
         "--runs",
@@ -195,8 +195,10 @@ def test_train_force(run_in_simple_project_with_model):
 def test_train_with_only_nlu_data(run_in_simple_project):
     temp_dir = os.getcwd()
 
-    assert os.path.exists(os.path.join(temp_dir, "data/stories.md"))
-    os.remove(os.path.join(temp_dir, "data/stories.md"))
+    assert os.path.exists(os.path.join(temp_dir, "data/stories.yml"))
+    assert os.path.exists(os.path.join(temp_dir, "data/rules.yml"))
+    os.remove(os.path.join(temp_dir, "data/stories.yml"))
+    os.remove(os.path.join(temp_dir, "data/rules.yml"))
 
     run_in_simple_project("train", "--fixed-model-name", "test-model")
 
@@ -209,8 +211,8 @@ def test_train_with_only_nlu_data(run_in_simple_project):
 def test_train_with_only_core_data(run_in_simple_project):
     temp_dir = os.getcwd()
 
-    assert os.path.exists(os.path.join(temp_dir, "data/nlu.md"))
-    os.remove(os.path.join(temp_dir, "data/nlu.md"))
+    assert os.path.exists(os.path.join(temp_dir, "data/nlu.yml"))
+    os.remove(os.path.join(temp_dir, "data/nlu.yml"))
 
     run_in_simple_project("train", "--fixed-model-name", "test-model")
 

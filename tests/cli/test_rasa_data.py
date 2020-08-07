@@ -14,7 +14,7 @@ from rasa.validator import Validator
 
 def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
     run_in_simple_project(
-        "data", "split", "nlu", "-u", "data/nlu.md", "--training-fraction", "0.75"
+        "data", "split", "nlu", "-u", "data/nlu.yml", "--training-fraction", "0.75"
     )
 
     assert os.path.exists("train_test_split")
@@ -28,7 +28,7 @@ def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
         "convert",
         "nlu",
         "--data",
-        "data/nlu.md",
+        "data/nlu.yml",
         "--out",
         "out_nlu_data.json",
         "-f",
