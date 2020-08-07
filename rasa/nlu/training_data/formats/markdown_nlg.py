@@ -29,7 +29,7 @@ class NLGMarkdownReader(TrainingDataReader):
         return TrainingData(responses=self.responses)
 
     @staticmethod
-    def process_lines(lines: List[Text]) -> Dict[Text, List[Text]]:
+    def process_lines(lines: List[Text]) -> Dict[Text, List[Dict[Text, Text]]]:
 
         responses = {}
         story_intent = None
