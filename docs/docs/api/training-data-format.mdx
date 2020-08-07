@@ -452,6 +452,44 @@ While writing stories, you will encounter three types of actions:
     - action: action_store_feedback
 ```
 
+### Forms
+
+A form is a specific kind of custom action that contains the logic to loop over
+a set of required slots and ask the user for this information. The "happy path" 
+for a form should be specified as a [rule](rules#form-policy), but interruptions of forms or 
+other "unhappy paths" should be included in stories so that the model can 
+generalize to unseen conversation sequences.
+As a step in a story, a form takes the following basic format:
+
+
+```yaml
+    steps:
+    - intent: find_restaurant
+    - action: restaurant_form
+    - form: restaurant_form
+    - form: null
+    - action: utter_restaurant_found
+```
+
+In the example above, `restaurant_form` is specified as an action step, and then two `form` steps.
+The second `form` step indicates 
+that all required slots are filled; once this condition is met, the next step in the story should 
+be taken.
+
+An interruption of a form could look like this:
+
+```yaml
+  - rule: interrupted food
+    steps:
+      - intent: request_restaurant
+      - action: restaurant_form
+      - intent: chitchat
+      - action: utter_chitchat
+      - form: restaurant_form
+      - form: null
+      - action: utter_slots_values
+```
+
 
 ### Slots
 
