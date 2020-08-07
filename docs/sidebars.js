@@ -7,6 +7,7 @@ module.exports = {
       items: [
         'index',
         'user-guide/installation',
+        'user-guide/training-data-format',
         'user-guide/prototype-an-assistant',
         'user-guide/building-assistants',
         'user-guide/command-line-interface',
@@ -71,7 +72,6 @@ module.exports = {
       label: 'API Reference',
       collapsed: false,
       items: [
-        'api/training-data-format',
         'api/action-server',
         'api/http-api',
         'api/jupyter-notebooks',

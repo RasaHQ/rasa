@@ -436,7 +436,7 @@ While writing stories, you will encounter three types of actions:
     - action: utter_greet
 ```
 
-2. [**Retrieval actions**](#retrieval-actions): start with `respond_` and send a message selected by a retrieval model. e.g.
+2. [**Retrieval actions**](../core/retrieval-actions): start with `respond_` and send a message selected by a retrieval model. e.g.
 
 ```yaml
     steps:
@@ -444,7 +444,7 @@ While writing stories, you will encounter three types of actions:
     - action: respond_faq
 ```
 
-3. [**Custom actions**](#custom-actions): start with `action_`, run arbitrary code and send any number of messages (or none).
+3. [**Custom actions**](../core/actions#custom-actions): start with `action_`, run arbitrary code and send any number of messages (or none).
 
 ```yaml
     steps:
@@ -456,7 +456,7 @@ While writing stories, you will encounter three types of actions:
 
 A form is a specific kind of custom action that contains the logic to loop over
 a set of required slots and ask the user for this information. The "happy path" 
-for a form should be specified as a [rule](rules#form-policy), but interruptions of forms or 
+for a form should be specified as a [rule](../core/forms), but interruptions of forms or 
 other "unhappy paths" should be included in stories so that the model can 
 generalize to unseen conversation sequences.
 As a step in a story, a form takes the following basic format:
@@ -497,7 +497,7 @@ An interruption of a form could look like this:
 
 ### Slots
 
-**[Slots](#slots)** act as the bots memory. Slots are **set** by entities or by custom actions and **referenced** by stories in `slot_was_set` steps. For example.
+**[Slots](../core/slots)** act as the bots memory. Slots are **set** by entities or by custom actions and **referenced** by stories in `slot_was_set` steps. For example.
 
 ```yaml
     steps:
@@ -575,16 +575,35 @@ Overusing these features (both checkpoints and OR statements) will slow down tra
 
 ## Rules
 
-**[Rules](#rules)** describe parts of conversations that should always follow
-the same path and are used to train the [RulePolicy](#rule-policy). Rules
-include many of the same steps as stories do, but can also include other
-elements like conditions. Read more about rules and their format [here](#rules)
+**[Rules](../core/rules)** describe parts of conversations that should always follow
+the same path and are used to train the [RulePolicy](../core/policies#rule-policy). 
+
+Rules are listed under the `rules` key and look similar to stories. A rule also has a `steps`
+key, which contains a list of the same steps as stories do. Rules can additionally
+contain the `conversation_started` and `conditions` keys. These are used to specify conditions
+under which the rule should apply.
+
+A rule that with a condition looks like this:
+
+```yaml
+rules:
+
+- rule: Only say `hello` when the user provided a name
+  condition:
+  - slot: user_provided_name
+    value: true
+  steps:
+  - intent: greet
+  - action: utter_greet
+```
+
+Read more about writing rules [here](../core/rules#writing-a-rule).
 
 ## Responses
 
-Responses are messages the bot will send back to the user. Both [retrieval actions](#retrieval-actions) and [utter actions](#responses) are responses. Both are listed under the `responses` key, and can include text, images and buttons. In this example, `utter_greet` and 
-`utter_cheer_up` are utter actions, while `faq/language` is a retrieval
-action: 
+Both [retrieval actions](../core/retrieval-actions) and [responses](#responses) go under the `responses` key. Responses can include text, images and buttons. In this example, `utter_greet` and 
+`utter_cheer_up` are bot responses, and `faq/language` is a retrieval
+action:
 
 ```yaml
 responses:
