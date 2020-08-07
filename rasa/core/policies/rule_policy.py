@@ -27,7 +27,7 @@ from rasa.core.actions.action import (
 )
 
 if TYPE_CHECKING:
-    from rasa.core.policies.ensemble import PolicyEnsemble # pytype: disable=pyi-error
+    from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
 
 logger = logging.getLogger(__name__)
 
@@ -112,8 +112,9 @@ class RulePolicy(MemoizationPolicy):
             or rule_policy._fallback_action_name not in domain.action_names
         ):
             raise InvalidDomain(
-                f"The configured fallback action '{rule_policy._fallback_action_name}' "
-                f"must be present in the domain."
+                f"The fallback action '{rule_policy._fallback_action_name}' which was "
+                f"configured for the {RulePolicy.__name__} must be present in the "
+                f"domain."
             )
 
     def _create_feature_key(self, states: List[Dict]) -> Text:

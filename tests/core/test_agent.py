@@ -308,11 +308,13 @@ def test_two_stage_fallback_without_deny_suggestion(
 def test_rule_policy_without_fallback_action_present(
     domain: Dict[Text, Any], policy_config: Dict[Text, Any]
 ):
-    with pytest.raises(InvalidDomain):
+    with pytest.raises(InvalidDomain) as execinfo:
         Agent(
             domain=Domain.from_dict(domain),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
+
+    assert RulePolicy.__name__ in execinfo.value.message
 
 
 @pytest.mark.parametrize(
