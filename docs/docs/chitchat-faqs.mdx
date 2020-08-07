@@ -4,8 +4,7 @@ sidebar_label: Chitchat and FAQs
 title: Chitchat and FAQs
 ---
 
-FAQs and chitchat are involve non-contextual questions with single-message answers.
-
+FAQs and chitchat both involve non-contextual questions with single-message answers. 
 For example, in the following conversation, every question's answer is independent of context and could
 just as easily be answered on its own:
 
@@ -18,17 +17,34 @@ user: Is Rasa open source?
 bot: Yes, Rasa is open source!
 ```
 
-An FAQ bot would handle only these kinds of questions, but even with a contextual assistant, you usually
-want to handle FAQ and chitchat without regard for context. This page is a guide on the components, policies
-and training data you need to handle FAQ and chitchat in your assistant
+Whether you are building a strictly FAQ bot, or a contextual assistant, you usually
+want to handle FAQ and chitchat without regard for context. This page is a guide on the configuration
+and training data you need to handle FAQ and chitchat in your assistant.
 
-## Pipeline and Policies
+## Configuration
+
+### `RulePolicy`
+
+Since you always want the same response for the same question, the only policy you need to add to your config
+is the [`RulePolicy`](#rule-policy). That doesn't mean you can't include other policies; only that they aren't 
+necessary for handling FAQs and chitchat. 
+
+```yaml
+policies:
+- name: RulePolicy
+```
+
+### `ResponseSelector`
+
+While you could use only regular intent classification and action prediction for each intent, you
+can also take advantage of the `ResponseSelector` in your NLU pipeline to simplify your rules and stories.
+
+The `ResponseSelector` builds a response retrieval model to to directly predict a bot response from a set of candidate responses.
 
 
-
-### RulePolicy
-
-### ResponseSelector
+```yaml
+policies:
+- name: 
 
 ## Training Data
 
