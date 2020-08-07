@@ -223,7 +223,7 @@ class ResponseSelector(DIETClassifier):
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
-        responses: Optional[Dict[Text, Any]] = None,
+        responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
 
         component_config = component_config or {}
@@ -304,7 +304,7 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent_mapping = self._create_retrieval_intent_mapping(
             training_data
         )
-        self.responses = training_data.nlg_stories
+        self.responses = training_data.responses
 
         if not label_id_index_mapping:
             # no labels are present to train

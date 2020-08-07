@@ -39,8 +39,8 @@ class RasaYAMLReader(TrainingDataReader):
         self.training_examples: List[Message] = []
         self.entity_synonyms: Dict[Text, Text] = {}
         self.regex_features: List[Dict[Text, Text]] = []
-        self.lookup_tables: List[Dict[Text, List[Text]]] = []
-        self.nlg_stories: Dict[Text, Dict[Text, Any]] = {}
+        self.lookup_tables: List[Dict[Text, Any]] = []
+        self.responses: Dict[Text, List[Dict[Text, Any]]] = {}
 
     def reads(self, string: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData in YAML format from a string.
@@ -73,7 +73,7 @@ class RasaYAMLReader(TrainingDataReader):
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
-            self.nlg_stories,
+            self.responses,
         )
 
     def _parse_nlu(self, nlu_data: List[Dict[Text, Any]]) -> None:
@@ -111,7 +111,7 @@ class RasaYAMLReader(TrainingDataReader):
     def _parse_responses(self, responses_data: Dict[Text, List[Any]]) -> None:
         from rasa.core.domain import Domain
 
-        self.nlg_stories = Domain.collect_templates(responses_data)
+        self.responses = Domain.collect_templates(responses_data)
 
     def _parse_intent(self, data: Dict[Text, Any]) -> None:
         from rasa.nlu.training_data import Message

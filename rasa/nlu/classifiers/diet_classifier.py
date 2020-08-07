@@ -987,7 +987,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.label_data.pkl", self._label_data
         )
         io_utils.json_pickle(
-            model_dir / f"{file_name}.index_label_id_mapping.pkl",
+            model_dir / f"{file_name}.index_label_id_mapping.json",
             self.index_label_id_mapping,
         )
 
@@ -1051,7 +1051,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
         index_label_id_mapping = io_utils.json_unpickle(
-            model_dir / f"{file_name}.index_label_id_mapping.pkl"
+            model_dir / f"{file_name}.index_label_id_mapping.json"
         )
         entity_tag_specs = io_utils.read_json_file(
             model_dir / f"{file_name}.entity_tag_specs.json"
