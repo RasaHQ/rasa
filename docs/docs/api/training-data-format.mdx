@@ -171,7 +171,7 @@ any information relevant to the example.
 
 ### Entities
 
-Where applicable, entites are annotated in training examples using the
+Where applicable, entities are annotated in training examples using the
 syntax:
 
 ```yaml
@@ -259,16 +259,16 @@ that Rasa Open Source can learn to pick them up.
 Regular expressions can be used in two different ways:
 
 1. They can be used to support intent classification and entity
-extraction when using the RegexFeaturizer component in the pipeline.
+extraction when using the `RegexFeaturizer` component in the pipeline.
 
 2. They can be used to directly extract entities from a user messages
-when using the RegexEntityExtractor component in the pipeline.
+when using the `RegexEntityExtractor` component in the pipeline.
 
 For example, if your entity has a deterministic structure (like a
 zipcode or an email address), you can use a regular expression to ease
-detection of that entity (using the RegexFeaturizer) or to directly
+detection of that entity (using the `RegexFeaturizer`) or to directly
 extract the entities from the user message (using the
-RegexEntityExtractor). For the zipcode example it might look like this:
+`RegexEntityExtractor`). For the zipcode example it might look like this:
 
 ```yaml
 - regex: zipcode
@@ -277,10 +277,10 @@ RegexEntityExtractor). For the zipcode example it might look like this:
 ```
 
 If you are using regular expressions to directly extract entities using
-the RegexEntityExtractor, the name of the regular expression should
+the `RegexEntityExtractor`, the name of the regular expression should
 match the name of the entity you want to extract.
 
-If you are using the regular expressions for the RegexFeaturizer the
+If you are using the regular expressions for the `RegexFeaturizer` the
 name of the regular expression does not matter. If does not define the
 entity nor the intent, it is just a human readable description for you
 to remember what this regex is used for and is the title of the
@@ -301,7 +301,7 @@ words as possible. E.g. using `hey[^\\s]*` instead of `hey.*`, as the
 later one might match the whole message whereas the first one only
 matches a single word.
 
-When using the RegexFeaturizer, the regex features for entity extraction
+When using the `RegexFeaturizer`, the regex features for entity extraction
 are currently only supported by the `CRFEntityExtractor` and the
 `DIETClassifier` component! Hence, other entity extractors, like
 `MitieEntityExtractor` or `SpacyEntityExtractor` won't use the generated
@@ -474,7 +474,7 @@ Stories do not **set** slots. The slot must be set by an entity or custom action
 
 ### Checkpoints
 
-Checkpoints are ways to connect stories together. They can be either the first or the last step in a story. If they are the last step in a storys, that story will be connected to each other story that starts with the checkpoint of the same name when the model is trained.
+Checkpoints are ways to connect stories together. They can be either the first or the last step in a story. If they are the last step in a stories, that story will be connected to each other story that starts with the checkpoint of the same name when the model is trained.
 Here is an example of a story that ends with a checkpoint, and one that starts with the same checkpoint:
 
 ```yaml
@@ -511,8 +511,8 @@ Checkpoints can help simplify your training data and reduce redundancy in it, bu
 ### or
 
 `or` steps are ways to handle multiple intents the same way,
-without writing a seperate story for each intent. For example, if you ask the user to confirm something, you might want to treat the `affirm` and `thankyou` intents in the same way. Stories with `or` steps will be converted into multiple
-seperate stories at training time. For example, the following story would be converted to two stories at training time:
+without writing a separate story for each intent. For example, if you ask the user to confirm something, you might want to treat the `affirm` and `thankyou` intents in the same way. Stories with `or` steps will be converted into multiple
+separate stories at training time. For example, the following story would be converted to two stories at training time:
 
 ```yaml
 - story: story with OR
