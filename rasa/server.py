@@ -1030,11 +1030,13 @@ def create_app(
                     {"parameter": "model_server", "in": "body"},
                 )
 
-        app.agent = await _load_agent(
+        tmp_agent = await _load_agent(
             model_path, model_server, remote_storage, endpoints, app.agent.lock_store
         )
+        if tmp_agent.model_directory:
+            app.agent = tmp_agent
 
-        logger.debug(f"Successfully loaded model '{model_path}'.")
+            logger.debug(f"Successfully loaded model '{model_path}'.")
         return response.json(None, status=204)
 
     @app.delete("/model")
