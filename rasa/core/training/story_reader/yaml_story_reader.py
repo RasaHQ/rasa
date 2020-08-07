@@ -213,12 +213,14 @@ class YAMLStoryReader(StoryReader):
             self._parse_user_utterance(step)
         elif KEY_OR in step.keys():
             self._parse_or_statement(step)
-        elif KEY_SLOT_NAME in step.keys():
-            self._parse_slot(step)
         elif KEY_ACTION in step.keys():
             self._parse_action(step)
         elif KEY_CHECKPOINT in step.keys():
             self._parse_checkpoint(step)
+        # This has to be after the checkpoint test as there can be a slot key within
+        # a checkpoint.
+        elif KEY_SLOT_NAME in step.keys():
+            self._parse_slot(step)
         elif KEY_FORM in step.keys():
             self._parse_form(step[KEY_FORM])
         elif KEY_METADATA in step.keys():
