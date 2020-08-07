@@ -25,16 +25,37 @@ KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
 KEY_SLOT_NAME = "slot"
 KEY_SLOT_VALUE = "value"
-KEY_FORM = "form"
+KEY_FORM = "active_loop"
 KEY_ACTION = "action"
 KEY_CHECKPOINT = "checkpoint"
 KEY_CHECKPOINT_SLOTS = "slots"
 KEY_METADATA = "metadata"
 KEY_OR = "or"
+KEY_RULE_CONDITION = "condition"
+KEY_WAIT_FOR_USER_INPUT_AFTER_RULE = "wait_for_user_input"
+KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
 
 
 class YAMLStoryReader(StoryReader):
     """Class that reads Core training data and rule data in YAML format."""
+
+    @classmethod
+    def from_reader(cls, reader: "YAMLStoryReader") -> "YAMLStoryReader":
+        """Create a reader from another reader.
+
+        Args:
+            reader: Another reader.
+
+        Returns:
+            A new reader instance.
+        """
+        return cls(
+            reader.interpreter,
+            reader.domain,
+            reader.template_variables,
+            reader.use_e2e,
+            reader.source_name,
+        )
 
     async def read_from_file(self, filename: Text) -> List[StoryStep]:
         """Read stories or rules from file.
@@ -79,267 +100,16 @@ class YAMLStoryReader(StoryReader):
         ):
             return []
 
-        stories = parsed_content.get(KEY_STORIES, [])
-        self._parse_data(stories, is_rule_data=False)
-
-        rules = parsed_content.get(KEY_RULES, [])
-        self._parse_data(rules, is_rule_data=True)
-
-        self._add_current_stories_to_result()
+        for key, parser_class in {
+            KEY_STORIES: StoryParser,
+            KEY_RULES: RuleParser,
+        }.items():
+            data = parsed_content.get(key, [])
+            parser = parser_class.from_reader(self)
+            parser.parse_data(data)
+            self.story_steps.extend(parser.get_steps())
 
         return self.story_steps
-
-    def _parse_data(self, data: List[Dict[Text, Any]], is_rule_data: bool) -> None:
-        item_title = self._get_item_title(is_rule_data)
-
-        for item in data:
-            if not isinstance(item, dict):
-                common_utils.raise_warning(
-                    f"Unexpected block found in '{self.source_name}':\n"
-                    f"{item}\nItems under the "
-                    f"'{self._get_plural_item_title(is_rule_data)}' key must be YAML "
-                    f"dictionaries. It will be skipped.",
-                    docs=self._get_docs_link(is_rule_data),
-                )
-                continue
-
-            if item_title in item.keys():
-                self._parse_plain_item(item, is_rule_data)
-
-    def _parse_plain_item(self, item: Dict[Text, Any], is_rule_data: bool) -> None:
-        item_name = item.get(self._get_item_title(is_rule_data), "")
-
-        if not item_name:
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': \n"
-                f"{item}\n"
-                f"The {self._get_item_title(is_rule_data)} has an empty name. "
-                f"{self._get_plural_item_title(is_rule_data).capitalize()} should "
-                f"have a name defined under '{self._get_item_title(is_rule_data)}' "
-                f"key. It will be skipped.",
-                docs=self._get_docs_link(is_rule_data),
-            )
-
-        steps: List[Union[Text, Dict[Text, Any]]] = item.get(KEY_STEPS, [])
-
-        if not steps:
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': "
-                f"The {self._get_item_title(is_rule_data)} has no steps. "
-                f"It will be skipped.",
-                docs=self._get_docs_link(is_rule_data),
-            )
-            return
-
-        if is_rule_data:
-            self._new_rule_part(item_name, self.source_name)
-        else:
-            self._new_story_part(item_name, self.source_name)
-
-        for step in steps:
-            self._parse_step(step, is_rule_data)
-
-    def _parse_step(
-        self, step: Union[Text, Dict[Text, Any]], is_rule_data: bool
-    ) -> None:
-
-        if step == RULE_SNIPPET_ACTION_NAME:
-            self._parse_rule_snippet_action()
-        elif isinstance(step, str):
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}':\n"
-                f"Found an unexpected step in the {self._get_item_title(is_rule_data)} "
-                f"description:\n{step}\nThe step is of type `str` "
-                f"which is only allowed for the rule snippet action "
-                f"'{RULE_SNIPPET_ACTION_NAME}'. It will be skipped.",
-                docs=self._get_docs_link(is_rule_data),
-            )
-        elif KEY_USER_INTENT in step.keys():
-            self._parse_user_utterance(step, is_rule_data)
-        elif KEY_OR in step.keys():
-            self._parse_or_statement(step, is_rule_data)
-        elif KEY_SLOT_NAME in step.keys():
-            self._parse_slot(step, is_rule_data)
-        elif KEY_ACTION in step.keys():
-            self._parse_action(step, is_rule_data)
-        elif KEY_CHECKPOINT in step.keys():
-            self._parse_checkpoint(step, is_rule_data)
-        elif KEY_FORM in step.keys():
-            self._parse_form(step[KEY_FORM])
-        elif KEY_METADATA in step.keys():
-            pass
-        else:
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}':\n"
-                f"Found an unexpected step in the {self._get_item_title(is_rule_data)} "
-                f"description:\n{step}\nIt will be skipped.",
-                docs=self._get_docs_link(is_rule_data),
-            )
-
-    @staticmethod
-    def _get_item_title(is_rule_data: bool) -> Text:
-        return KEY_RULE_NAME if is_rule_data else KEY_STORY_NAME
-
-    @staticmethod
-    def _get_plural_item_title(is_rule_data: bool) -> Text:
-        return KEY_RULES if is_rule_data else KEY_STORIES
-
-    @staticmethod
-    def _get_docs_link(is_rule_data: bool) -> Text:
-        # TODO: update docs link to point to rules
-        return "" if is_rule_data else DOCS_URL_STORIES
-
-    def _parse_user_utterance(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
-        utterance = self._parse_raw_user_utterance(step, is_rule_data=is_rule_data)
-        if utterance:
-            self._validate_that_utterance_is_in_domain(utterance)
-            self.current_step_builder.add_user_messages([utterance])
-
-    def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
-        intent_name = utterance.intent.get("name")
-
-        if not self.domain:
-            logger.debug(
-                "Skipped validating if intent is in domain as domain " "is `None`."
-            )
-            return
-
-        if intent_name not in self.domain.intents:
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': \n"
-                f"Found intent '{intent_name}' in stories which is not part of the "
-                f"domain.",
-                docs=DOCS_URL_STORIES,
-            )
-
-    def _parse_or_statement(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
-        utterances = []
-
-        for utterance in step.get(KEY_OR):
-            if KEY_USER_INTENT in utterance.keys():
-                utterance = self._parse_raw_user_utterance(
-                    utterance, is_rule_data=is_rule_data
-                )
-                if utterance:
-                    utterances.append(utterance)
-            else:
-                common_utils.raise_warning(
-                    f"Issue found in '{self.source_name}': \n"
-                    f"`OR` statement can only have '{KEY_USER_INTENT}' "
-                    f"as a sub-element. This step will be skipped:\n"
-                    f"'{utterance}'\n",
-                    docs=self._get_docs_link(is_rule_data),
-                )
-                return
-
-        self.current_step_builder.add_user_messages(utterances)
-
-    def _parse_raw_user_utterance(
-        self, step: Dict[Text, Any], is_rule_data: bool
-    ) -> Optional[UserUttered]:
-        user_utterance = step.get(KEY_USER_INTENT, "").strip()
-
-        if not user_utterance:
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}':\n"
-                f"User utterance cannot be empty. "
-                f"This {self._get_item_title(is_rule_data)} step will be skipped:\n"
-                f"{step}",
-                docs=self._get_docs_link(is_rule_data),
-            )
-
-        raw_entities = step.get(KEY_ENTITIES, [])
-        final_entities = YAMLStoryReader._parse_raw_entities(raw_entities)
-
-        if user_utterance.startswith(INTENT_MESSAGE_PREFIX):
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}':\n"
-                f"User intent '{user_utterance}' starts with "
-                f"'{INTENT_MESSAGE_PREFIX}'. This is not required.",
-                docs=self._get_docs_link(is_rule_data),
-            )
-            # Remove leading slash
-            user_utterance = user_utterance[1:]
-
-        intent = {"name": user_utterance, "confidence": 1.0}
-
-        return UserUttered(user_utterance, intent, final_entities)
-
-    @staticmethod
-    def _parse_raw_entities(
-        raw_entities: Union[List[Dict[Text, Text]], List[Text]]
-    ) -> List[Dict[Text, Text]]:
-        final_entities = []
-        for entity in raw_entities:
-            if isinstance(entity, dict):
-                for key, value in entity.items():
-                    final_entities.append({"entity": key, "value": value})
-            else:
-                final_entities.append({"entity": entity, "value": ""})
-
-        return final_entities
-
-    def _parse_slot(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
-
-        slot_name = step.get(KEY_SLOT_NAME, "")
-
-        if not slot_name or KEY_SLOT_VALUE not in step:
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': \n"
-                f"Slots should have a name and a value. "
-                f"This {self._get_item_title(is_rule_data)} step will be skipped:\n"
-                f"{step}",
-                docs=self._get_docs_link(is_rule_data),
-            )
-            return
-
-        slot_value = step.get(KEY_SLOT_VALUE, "")
-
-        self._add_event(SlotSet.type_name, {slot_name: slot_value})
-
-    def _parse_action(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
-
-        action_name = step.get(KEY_ACTION, "")
-        if not action_name:
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': \n"
-                f"Action name cannot be empty. "
-                f"This {self._get_item_title(is_rule_data)} step will be skipped:\n"
-                f"{step}",
-                docs=self._get_docs_link(is_rule_data),
-            )
-            return
-
-        self._add_event(action_name, {})
-
-    def _parse_rule_snippet_action(self) -> None:
-        self._add_event(RULE_SNIPPET_ACTION_NAME, {})
-
-    def _parse_form(self, form_name: Optional[Text]) -> None:
-        self._add_event(Form.type_name, {"name": form_name})
-
-    def _parse_checkpoint(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
-
-        checkpoint_name = step.get(KEY_CHECKPOINT, "")
-        slots = step.get(KEY_CHECKPOINT_SLOTS, [])
-
-        slots_dict = {}
-
-        for slot in slots:
-            if not isinstance(slot, dict):
-                common_utils.raise_warning(
-                    f"Issue found in '{self.source_name}':\n"
-                    f"Checkpoint '{checkpoint_name}' has an invalid slot: "
-                    f"{slots}\nItems under the '{KEY_CHECKPOINT_SLOTS}' key must be "
-                    f"YAML dictionaries. The checkpoint will be skipped.",
-                    docs=self._get_docs_link(is_rule_data),
-                )
-                return
-
-            for key, value in slot.items():
-                slots_dict[key] = value
-
-        self._add_checkpoint(checkpoint_name, slots_dict)
 
     @staticmethod
     def is_yaml_story_file(file_path: Text) -> bool:
@@ -369,3 +139,298 @@ class YAMLStoryReader(StoryReader):
                 f"move the file to a different location. Error: {e}"
             )
             return False
+
+    def get_steps(self) -> List[StoryStep]:
+        self._add_current_stories_to_result()
+        return self.story_steps
+
+    def parse_data(self, data: List[Dict[Text, Any]]) -> None:
+        item_title = self._get_item_title()
+
+        for item in data:
+            if not isinstance(item, dict):
+                common_utils.raise_warning(
+                    f"Unexpected block found in '{self.source_name}':\n"
+                    f"{item}\nItems under the "
+                    f"'{self._get_plural_item_title()}' key must be YAML "
+                    f"dictionaries. It will be skipped.",
+                    docs=self._get_docs_link(),
+                )
+                continue
+
+            if item_title in item.keys():
+                self._parse_plain_item(item)
+
+    def _parse_plain_item(self, item: Dict[Text, Any]) -> None:
+        item_name = item.get(self._get_item_title(), "")
+
+        if not item_name:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}': \n"
+                f"{item}\n"
+                f"The {self._get_item_title()} has an empty name. "
+                f"{self._get_plural_item_title().capitalize()} should "
+                f"have a name defined under '{self._get_item_title()}' "
+                f"key. It will be skipped.",
+                docs=self._get_docs_link(),
+            )
+
+        steps: List[Union[Text, Dict[Text, Any]]] = item.get(KEY_STEPS, [])
+
+        if not steps:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}': "
+                f"The {self._get_item_title()} has no steps. "
+                f"It will be skipped.",
+                docs=self._get_docs_link(),
+            )
+            return
+
+        self._new_part(item_name, item)
+
+        for step in steps:
+            self._parse_step(step)
+
+        self._close_part(item)
+
+    def _new_part(self, item_name: Text, item: Dict[Text, Any]) -> None:
+        raise NotImplementedError()
+
+    def _close_part(self, item: Dict[Text, Any]) -> None:
+        pass
+
+    def _parse_step(self, step: Union[Text, Dict[Text, Any]]) -> None:
+        if isinstance(step, str):
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"Found an unexpected step in the {self._get_item_title()} "
+                f"description:\n{step}\nThe step is of type `str` "
+                f"which is only allowed for the rule snippet action "
+                f"'{RULE_SNIPPET_ACTION_NAME}'. It will be skipped.",
+                docs=self._get_docs_link(),
+            )
+        elif KEY_USER_INTENT in step.keys():
+            self._parse_user_utterance(step)
+        elif KEY_OR in step.keys():
+            self._parse_or_statement(step)
+        elif KEY_SLOT_NAME in step.keys():
+            self._parse_slot(step)
+        elif KEY_ACTION in step.keys():
+            self._parse_action(step)
+        elif KEY_CHECKPOINT in step.keys():
+            self._parse_checkpoint(step)
+        elif KEY_FORM in step.keys():
+            self._parse_form(step[KEY_FORM])
+        elif KEY_METADATA in step.keys():
+            pass
+        else:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"Found an unexpected step in the {self._get_item_title()} "
+                f"description:\n{step}\nIt will be skipped.",
+                docs=self._get_docs_link(),
+            )
+
+    def _get_item_title(self) -> Text:
+        raise NotImplementedError()
+
+    def _get_plural_item_title(self) -> Text:
+        raise NotImplementedError()
+
+    def _get_docs_link(self) -> Text:
+        raise NotImplementedError()
+
+    def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
+        utterance = self._parse_raw_user_utterance(step)
+        if utterance:
+            self._validate_that_utterance_is_in_domain(utterance)
+            self.current_step_builder.add_user_messages([utterance])
+
+    def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
+        intent_name = utterance.intent.get("name")
+
+        if not self.domain:
+            logger.debug(
+                "Skipped validating if intent is in domain as domain " "is `None`."
+            )
+            return
+
+        if intent_name not in self.domain.intents:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}': \n"
+                f"Found intent '{intent_name}' in stories which is not part of the "
+                f"domain.",
+                docs=DOCS_URL_STORIES,
+            )
+
+    def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
+        utterances = []
+
+        for utterance in step.get(KEY_OR):
+            if KEY_USER_INTENT in utterance.keys():
+                utterance = self._parse_raw_user_utterance(utterance)
+                if utterance:
+                    utterances.append(utterance)
+            else:
+                common_utils.raise_warning(
+                    f"Issue found in '{self.source_name}': \n"
+                    f"`OR` statement can only have '{KEY_USER_INTENT}' "
+                    f"as a sub-element. This step will be skipped:\n"
+                    f"'{utterance}'\n",
+                    docs=self._get_docs_link(),
+                )
+                return
+
+        self.current_step_builder.add_user_messages(utterances)
+
+    def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
+        user_utterance = step.get(KEY_USER_INTENT, "").strip()
+
+        if not user_utterance:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"User utterance cannot be empty. "
+                f"This {self._get_item_title()} step will be skipped:\n"
+                f"{step}",
+                docs=self._get_docs_link(),
+            )
+
+        raw_entities = step.get(KEY_ENTITIES, [])
+        final_entities = self._parse_raw_entities(raw_entities)
+
+        if user_utterance.startswith(INTENT_MESSAGE_PREFIX):
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"User intent '{user_utterance}' starts with "
+                f"'{INTENT_MESSAGE_PREFIX}'. This is not required.",
+                docs=self._get_docs_link(),
+            )
+            # Remove leading slash
+            user_utterance = user_utterance[1:]
+
+        intent = {"name": user_utterance, "confidence": 1.0}
+
+        return UserUttered(user_utterance, intent, final_entities)
+
+    @staticmethod
+    def _parse_raw_entities(
+        raw_entities: Union[List[Dict[Text, Text]], List[Text]]
+    ) -> List[Dict[Text, Text]]:
+        final_entities = []
+        for entity in raw_entities:
+            if isinstance(entity, dict):
+                for key, value in entity.items():
+                    final_entities.append({"entity": key, "value": value})
+            else:
+                final_entities.append({"entity": entity, "value": ""})
+
+        return final_entities
+
+    def _parse_slot(self, step: Dict[Text, Any]) -> None:
+
+        slot_name = step.get(KEY_SLOT_NAME, "")
+
+        if not slot_name or KEY_SLOT_VALUE not in step:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}': \n"
+                f"Slots should have a name and a value. "
+                f"This {self._get_item_title()} step will be skipped:\n"
+                f"{step}",
+                docs=self._get_docs_link(),
+            )
+            return
+
+        slot_value = step.get(KEY_SLOT_VALUE, "")
+
+        self._add_event(SlotSet.type_name, {slot_name: slot_value})
+
+    def _parse_action(self, step: Dict[Text, Any]) -> None:
+
+        action_name = step.get(KEY_ACTION, "")
+        if not action_name:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}': \n"
+                f"Action name cannot be empty. "
+                f"This {self._get_item_title()} step will be skipped:\n"
+                f"{step}",
+                docs=self._get_docs_link(),
+            )
+            return
+
+        self._add_event(action_name, {})
+
+    def _parse_form(self, form_name: Optional[Text]) -> None:
+        self._add_event(Form.type_name, {"name": form_name})
+
+    def _parse_checkpoint(self, step: Dict[Text, Any]) -> None:
+
+        checkpoint_name = step.get(KEY_CHECKPOINT, "")
+        slots = step.get(KEY_CHECKPOINT_SLOTS, [])
+
+        slots_dict = {}
+
+        for slot in slots:
+            if not isinstance(slot, dict):
+                common_utils.raise_warning(
+                    f"Issue found in '{self.source_name}':\n"
+                    f"Checkpoint '{checkpoint_name}' has an invalid slot: "
+                    f"{slots}\nItems under the '{KEY_CHECKPOINT_SLOTS}' key must be "
+                    f"YAML dictionaries. The checkpoint will be skipped.",
+                    docs=self._get_docs_link(),
+                )
+                return
+
+            for key, value in slot.items():
+                slots_dict[key] = value
+
+        self._add_checkpoint(checkpoint_name, slots_dict)
+
+
+class StoryParser(YAMLStoryReader):
+    """Encapsulate story-specific parser behavior."""
+
+    def _new_part(self, item_name: Text, item: Dict[Text, Any]) -> None:
+        self._new_story_part(item_name, self.source_name)
+
+    def _get_item_title(self) -> Text:
+        return KEY_STORY_NAME
+
+    def _get_plural_item_title(self) -> Text:
+        return KEY_STORIES
+
+    def _get_docs_link(self) -> Text:
+        return DOCS_URL_STORIES
+
+
+class RuleParser(YAMLStoryReader):
+    """Encapsulate rule-specific parser behavior."""
+
+    def _new_part(self, item_name: Text, item: Dict[Text, Any]) -> None:
+        self._new_rule_part(item_name, self.source_name)
+        conditions = item.get(KEY_RULE_CONDITION, [])
+        self._parse_rule_conditions(conditions)
+        if not item.get(KEY_RULE_FOR_CONVERSATION_START):
+            self._parse_rule_snippet_action()
+
+    def _parse_rule_conditions(
+        self, conditions: List[Union[Text, Dict[Text, Any]]]
+    ) -> None:
+        for condition in conditions:
+            self._parse_step(condition)
+
+    def _close_part(self, item: Dict[Text, Any]) -> None:
+        if item.get(KEY_WAIT_FOR_USER_INPUT_AFTER_RULE) is False:
+            self._parse_rule_snippet_action()
+
+    def _get_item_title(self) -> Text:
+        return KEY_RULE_NAME
+
+    def _get_plural_item_title(self) -> Text:
+        return KEY_RULES
+
+    def _get_docs_link(self) -> Text:
+        # TODO
+        return ""
+
+    def _parse_rule_snippet_action(self) -> None:
+        self._add_event(RULE_SNIPPET_ACTION_NAME, {})
