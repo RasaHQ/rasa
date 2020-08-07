@@ -4,17 +4,38 @@ sidebar_label: Chitchat and FAQs
 title: Chitchat and FAQs
 ---
 
-<!-- TODO: Restructure all conversations patterns pages to not depend on one another -->
+FAQs and chitchat are involve non-contextual questions with single-message answers.
 
-After following the basics of [prototyping an assistant](./prototype-an-assistant.mdx), we’ll
-now walk through building a basic FAQ chatbot and then build a bot that can handle
-contextual conversations.
+For example, in the following conversation, every question's answer is independent of context and could
+just as easily be answered on its own:
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="build-faq-assistant"></a>
+```yaml
+user: What is your name?
+bot: My name is Sara!
+user: What language do you speak?
+bot: I only speak English.
+user: Is Rasa open source?
+bot: Yes, Rasa is open source!
+```
 
-FAQ assistants are the simplest assistants to build and a good place to get started.
-These assistants allow the user to ask a simple question and get a response. We’re going to
-build a basic FAQ assistant using features of Rasa designed specifically for this type of assistant.
+An FAQ bot would handle only these kinds of questions, but even with a contextual assistant, you usually
+want to handle FAQ and chitchat without regard for context. This page is a guide on the components, policies
+and training data you need to handle FAQ and chitchat in your assistant
+
+## Pipeline and Policies
+
+
+
+### RulePolicy
+
+### ResponseSelector
+
+## Training Data
+
+### NLU
+
+### Dialogue Management
+
 
 In this section we’re going to cover the following topics:
 
