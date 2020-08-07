@@ -558,7 +558,7 @@ async def test_form_unhappy_path_from_story():
         ),
         domain,
     )
-    assert max(action_probabilities) == 0
+    assert max(action_probabilities) == policy._core_fallback_threshold
 
 
 async def test_form_unhappy_path_no_validation_from_rule():
@@ -710,7 +710,7 @@ async def test_form_unhappy_path_no_validation_from_story():
     )
     action_probabilities = policy.predict_action_probabilities(tracker, domain)
     # there is no rule for next action
-    assert max(action_probabilities) == 0
+    assert max(action_probabilities) == policy._core_fallback_threshold
     # check that RulePolicy added FormValidation False event based on the training story
     assert tracker.events[-1] == FormValidation(False)
 
@@ -755,7 +755,7 @@ async def test_form_unhappy_path_without_rule():
         domain,
     )
 
-    assert max(action_probabilities) == 0
+    assert max(action_probabilities) == policy._core_fallback_threshold
 
 
 async def test_form_activation_rule():
@@ -832,7 +832,7 @@ async def test_failing_form_activation_due_to_no_rule():
         domain,
     )
 
-    assert max(action_probabilities) == 0
+    assert max(action_probabilities) == policy._core_fallback_threshold
 
 
 def test_form_submit_rule():
