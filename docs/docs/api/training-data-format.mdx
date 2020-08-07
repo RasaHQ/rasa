@@ -540,28 +540,27 @@ elements like conditions. Read more about rules and their format [here](#rules)
 
 ## Responses
 
-Both [retrieval actions](#retrieval-actions) and [bot responses](#responses) require message templates to send back to the user. These are listed under the `responses` key. 
-Responses can include text, buttons, images, or a custom output payload.
-
+Responses are messages the bot will send back to the user. Both [retrieval actions](#retrieval-actions) and [utter actions](#responses) are responses. Both are listed under the `responses` key, and can include text, images and buttons. In this example, `utter_greet` and 
+`utter_cheer_up` are utter actions, while `faq/language` is a retrieval
+action: 
 
 ```yaml
 responses:
-  chitchat/ask_weather:
-  - text: |
-     Where do you want to check the weather?
+  utter_greet:
+  - text: "Hey! How are you?"
     buttons:
-    - title: Current location
-      payload: here
-    - title: Other place
-      payload: other_location
-  faq/other_language:
-  - text: |
-     I can only do English right now.
+    - title: "great"
+      payload: "/react_positive"
+    - title: "super sad"
+      payload: "/react_negative"
+  utter_cheer_up:
+  - text: "Here is something to cheer you up:"
     image: "https://i.imgur.com/nGF1K8f.jpg"
-  - text: |
-     I only speak English!
+  faq/language:
+  - text: "I only speak English for now!"
 ```
 
+Read more about responses and their format on the [domains page](../core/domains#responses)
 
 ## Test Conversations
 
