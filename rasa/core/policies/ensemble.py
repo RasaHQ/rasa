@@ -13,6 +13,8 @@ from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DOCS_URL_POLICIES,
     DEFAULT_CONFIG_PATH,
+    DOCS_URL_MIGRATION_GUIDE,
+    DOCS_URL_RULES,
 )
 
 from rasa.core import utils
@@ -153,7 +155,6 @@ class PolicyEnsemble:
             training_trackers
         )
 
-        # TODO: add new docs links to these warnings
         if (
             is_rules_consuming_policy_available
             and not training_trackers_contain_rule_trackers
@@ -163,7 +164,8 @@ class PolicyEnsemble:
                 f"no rule-based training data. Please add rule-based "
                 f"stories to your training data or "
                 f"remove the rule-based policy (`{RulePolicy.__name__}`) from your "
-                f"your pipeline."
+                f"your pipeline.",
+                docs=DOCS_URL_RULES,
             )
         elif (
             not is_rules_consuming_policy_available
@@ -172,7 +174,8 @@ class PolicyEnsemble:
             common_utils.raise_warning(
                 f"Found rule-based training data but no policy supporting rule-based "
                 f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
-                f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`."
+                f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`.",
+                docs=DOCS_URL_RULES,
             )
 
     def train(
@@ -444,13 +447,13 @@ class PolicyEnsemble:
             isinstance(policy, policies_not_be_used_with_rule_policy)
             for policy in policies
         ):
-            # TODO: Add link to the RulePolicy documentation
             raise InvalidPolicyConfig(
-                "It is not possible to use the RulePolicy with "
-                "other policies which implement rule-like "
-                "behavior. Either re-implement the desired "
-                "behavior as rules or remove the RulePolicy from"
-                "your policy configuration."
+                f"It is not possible to use the RulePolicy with "
+                f"other policies which implement rule-like "
+                f"behavior. Either re-implement the desired "
+                f"behavior as rules or remove the RulePolicy from"
+                f"your policy configuration. Please see the Rasa Open Source 2.0 "
+                f"migration guide ({DOCS_URL_MIGRATION_GUIDE}) for more information."
             )
 
 
