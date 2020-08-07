@@ -41,6 +41,7 @@ module.exports = {
       items: [
         'core/about',
         'core/stories',
+        'core/rules',
         'core/domains',
         'core/responses',
         'core/actions',
