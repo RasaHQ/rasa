@@ -1,30 +1,36 @@
 rules:
-- rule: rule 1
-  steps:
+- rule: Rule with condition
+  condition:
   - active_loop: loop_q_form
   - slot_was_set: requested_slot
     value: some_slot
-  - ...
+  steps:
   - intent: inform
     entities:
     - some_slot: bla
   - action: loop_q_form
 
-- rule: rule 2
+- rule: Rule without condition
   steps:
-  - active_loop: loop_q_form
-  - slot_was_set: requested_slot
-    value: some_slot
-  - ...
   - intent: explain
   - action: utter_explain_some_slot
   - action: loop_q_form
   - active_loop: loop_q_form
 
-- rule: rule 3
+- rule: Rule which explicitly waits for user input when finished
   steps:
-  - active_loop: loop_q_form
-  - ...
-  - active_loop: null
-  - slot_was_set: null
-  - action: stop_q_form
+  - intent: explain
+  - action: utter_explain_some_slot
+  wait_for_user_input: True
+
+- rule: Rule after which another action should be predicted
+  steps:
+  - intent: explain
+  - action: utter_explain_some_slot
+  wait_for_user_input: False
+
+- rule: Rule which only applies to conversation start
+  conversation_start: True
+  steps:
+  - intent: explain
+  - action: utter_explain_some_slot
