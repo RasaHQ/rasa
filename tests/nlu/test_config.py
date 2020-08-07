@@ -5,7 +5,6 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-import rasa.utils.io as io_utils
 from rasa.importers import autoconfig
 from rasa.importers.rasa import RasaFileImporter
 from rasa.nlu.config import RasaNLUModelConfig
