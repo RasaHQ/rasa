@@ -25,8 +25,12 @@ to the desired number of maximum predictions.
 
 Your project’s `config.yml` file takes a `policies` key
 which you can use to customize the policies your assistant uses.
-In the example below, the last two lines show how to use a custom
-policy class and pass arguments to it.
+You can also leave this key out or empty. Then the
+[Suggested Config](../api/model-configuration.mdx#suggested-config)
+feature will choose some default policies for you.
+
+You can also reference custom policies in your configuration. In the example below, the
+last two lines show how to use a custom policy class and pass arguments to it.
 
 ```yaml
 policies:
