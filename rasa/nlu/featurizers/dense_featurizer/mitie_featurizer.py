@@ -53,7 +53,7 @@ class MitieFeaturizer(DenseFeaturizer):
     ) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        for example in training_data.intent_examples:
+        for example in training_data.training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self.process_training_example(
                     example, attribute, mitie_feature_extractor

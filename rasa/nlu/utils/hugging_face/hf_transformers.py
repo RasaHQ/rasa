@@ -535,8 +535,8 @@ class HFTransformersNLP(Component):
         Args:
             message: Incoming message object
         """
-
-        message.set(
-            LANGUAGE_MODEL_DOCS[attribute],
-            self._get_docs_for_batch([message], attribute=attribute)[0],
-        )
+        if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            message.set(
+                LANGUAGE_MODEL_DOCS[attribute],
+                self._get_docs_for_batch([message], attribute=attribute)[0],
+            )
