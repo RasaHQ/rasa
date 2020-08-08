@@ -280,7 +280,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         return result
 
-    def synchronous_parse_message(self, message: Message, attribute: Text):
+    def synchronous_parse_message(self, message: Message, attribute: Text) -> Message:
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
 

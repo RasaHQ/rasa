@@ -79,7 +79,6 @@ SAVE_MODEL_FILE_NAME = "ted_policy"
 class TEDPolicy(Policy):
     """Transformer Embedding Dialogue (TED) Policy is described in
     https://arxiv.org/abs/1910.00486.
-
     This policy has a pre-defined architecture, which comprises the
     following steps:
         - concatenate user input (user intent and entities), previous system actions,
@@ -103,7 +102,7 @@ class TEDPolicy(Policy):
         # Hidden layer sizes for layers before the dialogue and label embedding layers.
         # The number of hidden layers is equal to the length of the corresponding
         # list.
-        HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: [], f"{DIALOGUE}_name_and_text": [100]},
+        HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: [], f"{DIALOGUE}_name_text": []},
         # Number of units in transformer
         TRANSFORMER_SIZE: 128,
         # Number of transformer layers
@@ -207,6 +206,10 @@ class TEDPolicy(Policy):
             featurizer = self._standard_featurizer(max_history)
 
         super().__init__(featurizer, priority)
+        if isinstance(featurizer, FullDialogueTrackerFeaturizer):
+            self.is_full_dialogue_featurizer_used = True
+        else:
+            self.is_full_dialogue_featurizer_used = False
 
         self._load_params(**kwargs)
 
@@ -229,19 +232,26 @@ class TEDPolicy(Policy):
     @staticmethod
     def _label_ids_for_Y(data_Y: np.ndarray) -> np.ndarray:
         """Prepare Y data for training: extract label_ids.
-
         label_ids are indices of labels, while `data_Y` contains one-hot encodings.
         """
 
         return data_Y.argmax(axis=-1)
 
     def _features_for_full_dialog_featurizer(self, features, label_ids) -> np.ndarray:
-        return np.stack(
-            [
-                np.stack([features[label_idx] for label_idx in seq_label_ids])
-                for seq_label_ids in label_ids
-            ]
-        )
+        if isinstance(features[0], np.ndarray):
+            return np.array(
+                [
+                    np.stack([features[label_idx] for label_idx in seq_label_ids if not label_idx == -1])
+                    for seq_label_ids in label_ids
+                ]
+            )
+        else:
+            return np.array(
+                [
+                    sparse.vstack([features[label_idx] for label_idx in seq_label_ids if not label_idx == -1])
+                    for seq_label_ids in label_ids
+                ]
+            )
 
     def _features_for_max_history_featurizer(self, features, label_ids) -> np.ndarray:
         return np.stack([features[label_idx] for label_idx in label_ids])
@@ -261,12 +271,10 @@ class TEDPolicy(Policy):
             f"{LABEL_FEATURES}_{ACTION_NAME}"
         )
 
-        is_full_dialogue_featurizer_used = len(label_ids.shape) == 2
-
         if label_features_action_names:
-            if is_full_dialogue_featurizer_used:
+            if self.is_full_dialogue_featurizer_used:
                 Y_action_name = self._features_for_full_dialog_featurizer(
-                    label_features_action_names[0], label_ids
+                    label_features_action_names[0].squeeze(1), label_ids
                 )
             else:
                 Y_action_name = self._features_for_max_history_featurizer(
@@ -278,27 +286,27 @@ class TEDPolicy(Policy):
         if label_features:
             # we have both sparse and dense features for action text
             if len(label_features) == 2:
-                if is_full_dialogue_featurizer_used:
+                if self.is_full_dialogue_featurizer_used:
                     Y_sparse = self._features_for_full_dialog_featurizer(
                         label_features[0], label_ids
                     )
                     Y_dense = self._features_for_full_dialog_featurizer(
-                        label_features[1], label_ids
+                        label_features[1].squeeze(1), label_ids
                     )
                 else:
                     Y_sparse = self._features_for_max_history_featurizer(
                         label_features[0], label_ids
                     )
                     Y_dense = self._features_for_max_history_featurizer(
-                        label_features[1], label_ids
+                        label_features[1].squeeze(1), label_ids
                     )
             else:
                 # we only have sparse or dense features for action text
                 if isinstance(label_features[0][0], np.ndarray):
                     Y_sparse = np.array([])
-                    if is_full_dialogue_featurizer_used:
+                    if self.is_full_dialogue_featurizer_used:
                         Y_dense = self._features_for_full_dialog_featurizer(
-                            label_features[0], label_ids
+                            label_features[0].squeeze(1), label_ids
                         )
                     else:
                         Y_dense = self._features_for_max_history_featurizer(
@@ -306,7 +314,7 @@ class TEDPolicy(Policy):
                         )
                 else:
                     Y_dense = np.array([])
-                    if is_full_dialogue_featurizer_used:
+                    if self.is_full_dialogue_featurizer_used:
                         Y_sparse = self._features_for_full_dialog_featurizer(
                             label_features[0], label_ids
                         )
@@ -333,7 +341,7 @@ class TEDPolicy(Policy):
             if not state[1] is None:
                 text_state_dense.append(state[1])
             if not state[2] is None:
-                name_state.append(state[2].astype(np.float32))
+                name_state.append(state[2])
             if not state[3] is None:
                 if_text_state.append(state[3])
 
@@ -342,12 +350,7 @@ class TEDPolicy(Policy):
         if not text_state_dense == []:
             text_state_dense = np.array(text_state_dense).squeeze(1)
         if not name_state == []:
-            # we will have different data types if an NLU pipeline 
-            # has been trained or not;
-            if isinstance(name_state[0], np.ndarray):
-                name_state = np.array(name_state).squeeze(1)
-            else:
-                name_state = sparse.vstack(name_state)
+            name_state = np.array(name_state).squeeze(1)
 
         if not if_text_state == []:
             if_text_state = np.expand_dims(np.array(if_text_state), -1)
@@ -367,19 +370,20 @@ class TEDPolicy(Policy):
         self,
         data_X: np.ndarray,
         dialog_lengths: Optional[np.ndarray] = None,
-        data_Y: Optional[np.ndarray] = None,
+        label_ids: Optional[np.ndarray] = None,
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData."""
 
-        label_ids = np.array([])
+        
         Y_sparse, Y_dense, Y_action_name = np.array([]), np.array([]), np.array([])
 
-        if data_Y is not None:
-            label_ids = np.squeeze(data_Y, axis=-1)
+        if label_ids is not None:
             Y_sparse, Y_dense, Y_action_name = self._label_features_for_Y(label_ids)
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
             label_ids = np.expand_dims(label_ids, -1)
+        else:
+            label_ids = np.array([])
 
         model_data = RasaModelData(label_key=LABEL_IDS)
 
@@ -541,7 +545,6 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> List[float]:
         """Predict the next action the bot should take.
-
         Return the list of probabilities for the next actions.
         """
 
@@ -599,7 +602,6 @@ class TEDPolicy(Policy):
     @classmethod
     def load(cls, path: Text) -> "TEDPolicy":
         """Loads a policy from the storage.
-
         **Needs to load its featurizer**
         """
 
@@ -787,7 +789,7 @@ class TED(RasaModel):
                 "if_text"
             ):
                 self._tf_layers[f"ffnn.{feature_name}"] = layers.Ffnn(
-                    self.config[HIDDEN_LAYERS_SIZES][f"{DIALOGUE}_name_and_text"],
+                    self.config[HIDDEN_LAYERS_SIZES][f"{DIALOGUE}_name_text"],
                     self.config[DROP_RATE_DIALOGUE],
                     self.config[REGULARIZATION_CONSTANT],
                     self.config[WEIGHT_SPARSITY],
@@ -964,11 +966,6 @@ class TED(RasaModel):
             if key.startswith(LABEL_FEATURES):
                 label_in.append(self._combine_sparse_dense_features(batch[key], key))
         label_in = tf.concat(label_in, axis=-1)
-        label_in = tf.squeeze(label_in, axis=1)
-
-        if self.max_history_tracker_featurizer_used:
-            # add time dimension if max history featurizer is used
-            label_in = label_in[:, tf.newaxis, :]
 
         all_labels, all_labels_embed = self._create_all_labels_embed()
 
