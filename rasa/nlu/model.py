@@ -400,6 +400,7 @@ class Interpreter:
         """
         from rasa.nlu.extractors.extractor import EntityExtractor
         from rasa.nlu.classifiers.classifier import IntentClassifier
+
         for component in self.pipeline:
             if not isinstance(component, (EntityExtractor, IntentClassifier)):
                 component.process(message, attribute, **self.context)

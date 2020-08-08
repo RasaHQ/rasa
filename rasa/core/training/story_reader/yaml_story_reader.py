@@ -396,12 +396,8 @@ class YAMLStoryReader(StoryReader):
     def _parse_form(self, form_name: Optional[Text]) -> None:
         self._add_event(Form.type_name, {"name": form_name})
 
-<<<<<<< HEAD
-    def _parse_checkpoint(self, step: Dict[Text, Any], is_rule_data: bool) -> None:
-=======
     def _parse_checkpoint(self, step: Dict[Text, Any]) -> None:
 
->>>>>>> origin/e2e
         checkpoint_name = step.get(KEY_CHECKPOINT, "")
         slots = step.get(KEY_CHECKPOINT_SLOTS, [])
 
