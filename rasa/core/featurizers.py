@@ -17,7 +17,11 @@ from rasa.core.events import ActionExecuted, UserUttered, Form, SlotSet
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter, RasaNLUInterpreter
+from rasa.core.interpreter import (
+    NaturalLanguageInterpreter,
+    RegexInterpreter,
+    RasaNLUInterpreter,
+)
 from rasa.core.constants import USER, PREVIOUS_ACTION, FORM, SLOTS
 from rasa.nlu.constants import (
     TEXT,
@@ -430,9 +434,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             # )
             return tokenizer_in_pipeline
 
-    def _count_featurizer_in_pipeline(
-        self, interpreter: RasaNLUInterpreter
-    ) -> bool:
+    def _count_featurizer_in_pipeline(self, interpreter: RasaNLUInterpreter) -> bool:
         from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
             CountVectorsFeaturizer,
         )
