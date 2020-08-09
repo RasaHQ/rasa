@@ -375,9 +375,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                 if f"{attribute}" not in self.output_shapes.keys():
                     self.output_shapes[f"{attribute}"] = sparse_features[0].shape[-1]
 
-    def _construct_message(
-        self, state: Dict[Text, Text], state_comes_from: Text
-    ) -> ("Message", Text):
+    def _construct_message(self, state: Dict[Text, Text], state_comes_from: Text):
         if state_comes_from == USER:
             if state.get(INTENT):
                 message = Message(data={INTENT: state.get(INTENT)})
@@ -396,9 +394,9 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
     def _extract_features(
         self,
-        state: Dict[Text, Text],
+        state: Optional[Dict[str, Union[str, Tuple[Union[float, str]]]]],
         state_comes_from: Text,
-        interpreter: RasaNLUInterpreter,
+        interpreter: NaturalLanguageInterpreter,
     ) -> List[Union[scipy.sparse.spmatrix, np.ndarray]]:
 
         message, attribute = self._construct_message(state, state_comes_from)
@@ -434,7 +432,9 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             # )
             return tokenizer_in_pipeline
 
-    def _count_featurizer_in_pipeline(self, interpreter: RasaNLUInterpreter) -> bool:
+    def _count_featurizer_in_pipeline(
+        self, interpreter: NaturalLanguageInterpreter
+    ) -> bool:
         from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
             CountVectorsFeaturizer,
         )
