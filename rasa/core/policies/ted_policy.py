@@ -271,7 +271,6 @@ class TEDPolicy(Policy):
     # noinspection PyPep8Naming
     def _label_features_for_Y(self, label_ids: np.ndarray) -> np.ndarray:
         """Prepare Y data for training: features for label_ids.
-        
         Returns Y_sparse, Y_dense, Y_action_name:
          - Y_sparse -- sparse features for action text
          - Y_dense -- dense_features for action text
