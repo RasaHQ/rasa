@@ -433,7 +433,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             return tokenizer_in_pipeline
 
     def _count_featurizer_in_pipeline(
-        self, interpreter: NaturalLanguageInterpreter
+        self, interpreter: RasaNLUInterpreter
     ) -> bool:
         from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
             CountVectorsFeaturizer,
@@ -456,15 +456,16 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def _interpreter_is_suitable_for_core_featurization(
         self, interpreter: NaturalLanguageInterpreter
     ) -> bool:
-        if isinstance(interpreter, RegexInterpreter):
+        if isinstance(interpreter, RasaNLUInterpreter):
+            return self._tokenizer_in_pipeline(
+                interpreter
+            ) and self._count_featurizer_in_pipeline(interpreter)
+        else:
             # logger.warning(
             #     "No trained NLU model was loaded. Features for intents and actions will be featurized on the fly."
             # )
             return False
-        else:
-            return self._tokenizer_in_pipeline(
-                interpreter
-            ) and self._count_featurizer_in_pipeline(interpreter)
+            
 
     def process_state_without_trained_nlu(self, state: STATE):
         intent_features = np.zeros((1, len(self.intents)))
