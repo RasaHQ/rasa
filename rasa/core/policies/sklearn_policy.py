@@ -123,7 +123,9 @@ class SklearnPolicy(Policy):
         **kwargs: Any,
     ) -> None:
 
-        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
+        training_data = self.featurize_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
 
         X, y = self._extract_training_data(training_data)
         self._train_params.update(kwargs)
@@ -166,7 +168,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> List[float]:
-        X = self.featurizer.create_X([tracker], domain)
+        X = self.featurizer.create_X([tracker], domain, interpreter)
         Xt = self._preprocess_data(X)
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)

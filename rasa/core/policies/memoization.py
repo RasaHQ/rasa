@@ -107,7 +107,7 @@ class MemoizationPolicy(Policy):
 
         if self.max_history:
             assert len(trackers_as_states[0]) == self.max_history, (
-                f"Trying to memorizefeaturized data with {len(trackers_as_states[0])} "
+                f"Trying to memorize featurized data with {len(trackers_as_states[0])} "
                 f"historic turns. Expected: {self.max_history}"
             )
 

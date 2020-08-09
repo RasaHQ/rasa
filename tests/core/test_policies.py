@@ -14,7 +14,14 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
     ACTION_BACK_NAME,
 )
-from rasa.core.constants import USER_INTENT_RESTART, USER_INTENT_BACK
+from rasa.core.constants import (
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    FORM,
+    PREVIOUS_ACTION,
+    USER,
+)
+from rasa.nlu.constants import INTENT, ACTION_NAME
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, ConversationPaused
@@ -23,6 +30,7 @@ from rasa.core.featurizers import (
     LabelTokenizerSingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
+    E2ESingleStateFeaturizer,
 )
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.policies.form_policy import FormPolicy
@@ -80,7 +88,7 @@ class PolicyTestCollection:
     @pytest.fixture(scope="module")
     def featurizer(self):
         featurizer = MaxHistoryTrackerFeaturizer(
-            BinarySingleStateFeaturizer(), max_history=self.max_history
+            E2ESingleStateFeaturizer(), max_history=self.max_history
         )
         return featurizer
 
@@ -108,15 +116,13 @@ class PolicyTestCollection:
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
-            trained_policy.featurizer.state_featurizer, BinarySingleStateFeaturizer
+            trained_policy.featurizer.state_featurizer, E2ESingleStateFeaturizer
         )
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
-        assert isinstance(
-            loaded.featurizer.state_featurizer, BinarySingleStateFeaturizer
-        )
+        assert isinstance(loaded.featurizer.state_featurizer, E2ESingleStateFeaturizer)
 
     async def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
         trained_policy.persist(tmpdir.strpath)
@@ -316,26 +322,81 @@ class TestTEDPolicy(PolicyTestCollection):
 
     async def test_gen_batch(self, trained_policy, default_domain):
         training_trackers = await train_trackers(default_domain, augmentation_factor=0)
+        interpreter = RegexInterpreter()
         training_data = trained_policy.featurize_for_training(
-            training_trackers, default_domain
+            training_trackers, default_domain, interpreter
         )
-        model_data = trained_policy._create_model_data(training_data.X, training_data.y)
+        model_data = trained_policy._create_model_data(
+            training_data.X, label_ids=training_data.y
+        )
         batch_size = 2
-        batch_x, batch_y, _ = next(model_data._gen_batch(batch_size=batch_size))
-        assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
+        (
+            batch_entities,
+            batch_user_name,
+            batch_action_name,
+            _,
+            _,
+            batch_label_action_name,
+            _,
+        ) = next(model_data._gen_batch(batch_size=batch_size))
         assert (
-            batch_x[0].shape == model_data.get("dialogue_features")[0][0].shape
-            and batch_y[0].shape == model_data.get("label_features")[0][0].shape
+            batch_user_name.shape[0] == batch_size
+            and batch_action_name.shape[0] == batch_size
+            and batch_entities.shape[0] == batch_size
+            and batch_label_action_name.shape[0] == batch_size
         )
-        batch_x, batch_y, _ = next(
+
+        assert (
+            batch_entities[0].shape[1]
+            == model_data.get("dialogue_features_entities")[0][0].shape[1]
+        )
+        assert (
+            batch_user_name[0].shape[1]
+            == model_data.get("dialogue_features_user_name")[0][0].shape[1]
+        )
+        assert (
+            batch_label_action_name[0].shape[1]
+            == model_data.get("label_features_action_name")[0][0].shape[1]
+        )
+        assert (
+            batch_action_name[0].shape[1]
+            == model_data.get("dialogue_features_action_name")[0][0].shape[1]
+        )
+
+        (
+            batch_entities,
+            batch_user_name,
+            batch_action_name,
+            _,
+            _,
+            batch_label_action_name,
+            _,
+        ) = next(
             model_data._gen_batch(
                 batch_size=batch_size, batch_strategy="balanced", shuffle=True
             )
         )
-        assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
         assert (
-            batch_x[0].shape == model_data.get("dialogue_features")[0][0].shape
-            and batch_y[0].shape == model_data.get("label_features")[0][0].shape
+            batch_user_name.shape[0] == batch_size
+            and batch_action_name.shape[0] == batch_size
+            and batch_entities.shape[0] == batch_size
+            and batch_label_action_name.shape[0] == batch_size
+        )
+        assert (
+            batch_entities[0].shape[1]
+            == model_data.get("dialogue_features_entities")[0][0].shape[1]
+        )
+        assert (
+            batch_user_name[0].shape[1]
+            == model_data.get("dialogue_features_user_name")[0][0].shape[1]
+        )
+        assert (
+            batch_label_action_name[0].shape[1]
+            == model_data.get("label_features_action_name")[0][0].shape[1]
+        )
+        assert (
+            batch_action_name[0].shape[1]
+            == model_data.get("dialogue_features_action_name")[0][0].shape[1]
         )
 
 
@@ -420,15 +481,12 @@ class TestTEDPolicyWithFullDialogue(TestTEDPolicy):
     def test_featurizer(self, trained_policy, tmpdir):
         assert isinstance(trained_policy.featurizer, FullDialogueTrackerFeaturizer)
         assert isinstance(
-            trained_policy.featurizer.state_featurizer,
-            LabelTokenizerSingleStateFeaturizer,
+            trained_policy.featurizer.state_featurizer, E2ESingleStateFeaturizer,
         )
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
         assert isinstance(loaded.featurizer, FullDialogueTrackerFeaturizer)
-        assert isinstance(
-            loaded.featurizer.state_featurizer, LabelTokenizerSingleStateFeaturizer
-        )
+        assert isinstance(loaded.featurizer.state_featurizer, E2ESingleStateFeaturizer)
 
 
 class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
@@ -443,16 +501,13 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
-            trained_policy.featurizer.state_featurizer,
-            LabelTokenizerSingleStateFeaturizer,
+            trained_policy.featurizer.state_featurizer, E2ESingleStateFeaturizer,
         )
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
-        assert isinstance(
-            loaded.featurizer.state_featurizer, LabelTokenizerSingleStateFeaturizer
-        )
+        assert isinstance(loaded.featurizer.state_featurizer, E2ESingleStateFeaturizer)
 
 
 class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
@@ -548,6 +603,17 @@ class TestFormPolicy(TestMemoizationPolicy):
         p = FormPolicy(priority=priority)
         return p
 
+    def test_for_previous_action_and_intent(self, states, intent, action_name) -> bool:
+        previous_action_as_expected = False
+        intent_as_expected = False
+        if states[0].get(PREVIOUS_ACTION):
+            previous_action_as_expected = (
+                states[0].get(PREVIOUS_ACTION).get(ACTION_NAME) == action_name
+            )
+        if states[-1].get(USER):
+            intent_as_expected = states[-1].get(USER).get(INTENT) == intent
+        return previous_action_as_expected and intent_as_expected
+
     async def test_memorise(self, trained_policy: FormPolicy, default_domain: Domain):
         domain = Domain.load("data/test_domains/form.yml")
         trackers = await training.load_data("data/test_stories/stories_form.md", domain)
@@ -562,7 +628,8 @@ class TestFormPolicy(TestMemoizationPolicy):
             for state in states:
                 if state is not None:
                     # check that 'form: inform' was ignored
-                    assert "intent_inform" not in state.keys()
+                    if state.get(USER):
+                        assert not state.get(USER).get(INTENT) == "inform"
             recalled = trained_policy.recall(states, tracker, domain)
             active_form = trained_policy._get_active_form_name(states[-1])
 
@@ -572,27 +639,22 @@ class TestFormPolicy(TestMemoizationPolicy):
                 # should add FormValidation(False) event
                 # @formatter:off
                 is_no_validation = (
-                    (
-                        "prev_some_form" in states[0].keys()
-                        and "intent_default" in states[-1].keys()
+                    self.test_for_previous_action_and_intent(
+                        states, "default", "some_form"
                     )
-                    or (
-                        "prev_some_form" in states[0].keys()
-                        and "intent_stop" in states[-1].keys()
+                    or self.test_for_previous_action_and_intent(
+                        states, "stop", "some_form"
                     )
-                    or (
-                        "prev_utter_ask_continue" in states[0].keys()
-                        and "intent_affirm" in states[-1].keys()
+                    or self.test_for_previous_action_and_intent(
+                        states, "affirm", "utter_ask_continue"
                     )
-                    or (
-                        "prev_utter_ask_continue" in states[0].keys()
-                        and "intent_deny" in states[-1].keys()
+                    or self.test_for_previous_action_and_intent(
+                        states, "deny", "utter_ask_continue"
                     )
                     # comes from the fact that intent_inform after utter_ask_continue
                     # is not read from stories
-                    or (
-                        "prev_utter_ask_continue" in states[0].keys()
-                        and "intent_stop" in states[-1].keys()
+                    or self.test_for_previous_action_and_intent(
+                        states, "stop", "utter_ask_continue"
                     )
                 )
                 # @formatter:on
