@@ -398,10 +398,10 @@ class Interpreter:
         Returns:
             message: it contains the tokens and features which are the output of the NLU pipeline;
         """
-        from rasa.nlu.extractors.extractor import EntityExtractor
-        from rasa.nlu.classifiers.classifier import IntentClassifier
+        from rasa.nlu.extractors import extractor
+        from rasa.nlu.classifiers import classifier
 
         for component in self.pipeline:
-            if not isinstance(component, (EntityExtractor, IntentClassifier)):
+            if not isinstance(component, (extractor.EntityExtractor, classifier.IntentClassifier)):
                 component.process(message, attribute, **self.context)
         return message
