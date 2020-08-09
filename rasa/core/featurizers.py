@@ -339,7 +339,9 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
         return binary_features
 
-    def _check_dense_features(self, dense_features: Tuple[np.ndarray, np.ndarray]) -> bool:
+    def _check_dense_features(
+        self, dense_features: Tuple[np.ndarray, np.ndarray]
+    ) -> bool:
         if dense_features[1] is None:
             return False
         if dense_features[1].size == 0:
