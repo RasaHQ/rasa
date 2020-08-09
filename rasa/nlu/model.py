@@ -402,6 +402,8 @@ class Interpreter:
         from rasa.nlu.classifiers import classifier
 
         for component in self.pipeline:
-            if not isinstance(component, (extractor.EntityExtractor, classifier.IntentClassifier)):
+            if not isinstance(
+                component, (extractor.EntityExtractor, classifier.IntentClassifier)
+            ):
                 component.process(message, attribute, **self.context)
         return message
