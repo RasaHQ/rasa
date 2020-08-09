@@ -17,7 +17,7 @@ from rasa.core.events import ActionExecuted, UserUttered, Form, SlotSet
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter, RasaNLUInterpreter
 from rasa.core.constants import USER, PREVIOUS_ACTION, FORM, SLOTS
 from rasa.nlu.constants import (
     TEXT,
@@ -312,7 +312,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         binary_features = np.zeros(
             (len(self.slot_states + self.form_states + self.entities))
         )
-        if state.get(SLOTS):
+        if state.get(SLOTS) is not None:
             # collect slot features
             slot_values = [
                 np.array(state.get(SLOTS)[slot_name])
@@ -321,14 +321,14 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             ]
             slot_values = np.hstack(slot_values)
             binary_features[: len(self.slot_states)] = slot_values
-        if state.get(FORM):
+        if state.get(FORM) is not None:
             # featurize forms
             form_values = np.zeros((len(self.form_states)))
             form_values[self.form_states.index(state.get(FORM).get("name"))] += 1
             binary_features[
                 len(self.slot_states) : len(self.slot_states + self.form_states)
             ] = form_values
-        if state.get(USER):
+        if state.get(USER) is not None:
             if state[USER].get(ENTITIES):
                 entities = state[USER].get(ENTITIES)
                 for entity in entities:
@@ -394,7 +394,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         self,
         state: Dict[Text, Text],
         state_comes_from: Text,
-        interpreter: Optional[NaturalLanguageInterpreter],
+        interpreter: RasaNLUInterpreter,
     ) -> List[Union[scipy.sparse.spmatrix, np.ndarray]]:
 
         message, attribute = self._construct_message(state, state_comes_from)
@@ -412,7 +412,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             output_features = [None, None, sparse_features[0].sum(0), -1]
         return output_features
 
-    def _tokenizer_in_pipeline(self, interpreter: NaturalLanguageInterpreter) -> bool:
+    def _tokenizer_in_pipeline(self, interpreter: RasaNLUInterpreter) -> bool:
         from rasa.nlu.tokenizers.tokenizer import Tokenizer
 
         tokenizer_in_pipeline = any(
@@ -431,7 +431,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             return tokenizer_in_pipeline
 
     def _count_featurizer_in_pipeline(
-        self, interpreter: NaturalLanguageInterpreter
+        self, interpreter: RasaNLUInterpreter
     ) -> bool:
         from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
             CountVectorsFeaturizer,
@@ -482,7 +482,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         return user_features + action_features
 
     def encode(
-        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: NaturalLanguageInterpreter,
     ):
         slot_and_entity_features = self._get_slot_and_entity_features(state)
         if state == {}:
