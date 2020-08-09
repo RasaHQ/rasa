@@ -512,7 +512,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
     def _is_action_text(
         self, action: Text, interpreter: NaturalLanguageInterpreter
-    ) -> bool:
+    ) -> Tuple[bool, Any, Any]:
         """
         Checking whether a given action name from the domain is text or action_name
         """
