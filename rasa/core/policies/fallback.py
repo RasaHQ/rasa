@@ -4,7 +4,7 @@ import os
 from typing import Any, List, Text, Optional, Dict, Tuple
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
 
 import rasa.utils.io
 from rasa.utils import common as common_utils
@@ -35,7 +35,7 @@ class FallbackPolicy(Policy):
         nlu_threshold: float = 0.3,
         ambiguity_threshold: float = 0.1,
         core_threshold: float = 0.3,
-        fallback_action_name: Text = "action_default_fallback",
+        fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
     ) -> None:
         """Create a new Fallback policy.
 

@@ -3,21 +3,21 @@ stories:
     steps:
     - intent: search_venues
     - action: action_search_venues
-    - slot: venues
+    - slot_was_set: venues
       value: [{"name": "Big Arena", "reviews": 4.5}]
 
   - story: search_concerts
     steps:
     - intent: search_concerts
     - action: action_search_concerts
-    - slot: concerts
+    - slot_was_set: concerts
       value: [{"artist": "Foo Fighters", "reviews": 4.5}]
 
   - story: compare_reviews_venues
     steps:
     - intent: search_venues
     - action: action_search_venues
-    - slot: venues
+    - slot_was_set: venues
       value: [{"name": "Big Arena", "reviews": 4.5}]
     - intent: compare_reviews
     - action: action_show_venue_reviews
@@ -26,7 +26,7 @@ stories:
     steps:
     - intent: search_concerts
     - action: action_search_concerts
-    - slot: concerts
+    - slot_was_set: concerts
       value: [{"artist": "Foo Fighters", "reviews": 4.5}]
     - intent: compare_reviews
     - action: action_show_concert_reviews

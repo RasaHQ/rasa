@@ -1,11 +1,11 @@
 import logging
-from typing import List, Dict, Text, Optional, Any, Set
+from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
 import re
 from collections import defaultdict
 
 from rasa.core.events import FormValidation
-from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
+from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
@@ -23,7 +23,11 @@ from rasa.core.actions.action import (
     ACTION_BACK_NAME,
     ACTION_SESSION_START_NAME,
     RULE_SNIPPET_ACTION_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
 )
+
+if TYPE_CHECKING:
+    from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
 
 logger = logging.getLogger(__name__)
 
@@ -59,11 +63,59 @@ class RulePolicy(MemoizationPolicy):
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = FORM_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
+        core_fallback_threshold: float = 0.3,
+        core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
+        enable_fallback_prediction: bool = True,
     ) -> None:
+        """Create a `RulePolicy` object.
 
-        super().__init__(
-            featurizer=featurizer, priority=priority, max_history=None, lookup=lookup
+        Args:
+            featurizer: `Featurizer` which is used to convert conversation states to
+                features.
+            priority: Priority of the policy which is used if multiple policies predict
+                actions with the same confidence.
+            lookup: Lookup table which is used to pick matching rules for a conversation
+                state.
+            core_fallback_threshold: Confidence of the prediction if no rule matched
+                and de-facto threshold for a core fallback.
+            core_fallback_action_name: Name of the action which should be predicted
+                if no rule matched.
+            enable_fallback_prediction: If `True` `core_fallback_action_name` is
+                predicted in case no rule matched.
+        """
+        if not featurizer:
+            # max history is set to `None` in order to capture lengths of rule stories
+            featurizer = self._standard_featurizer()
+            featurizer.max_history = None
+
+        self._core_fallback_threshold = core_fallback_threshold
+        self._fallback_action_name = core_fallback_action_name
+        self._enable_fallback_prediction = enable_fallback_prediction
+
+        super().__init__(featurizer=featurizer, priority=priority, lookup=lookup)
+
+    @classmethod
+    def validate_against_domain(
+        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ) -> None:
+        if ensemble is None:
+            return
+
+        rule_policy = next(
+            (p for p in ensemble.policies if isinstance(p, RulePolicy)), None
         )
+        if not rule_policy or not rule_policy._enable_fallback_prediction:
+            return
+
+        if (
+            domain is None
+            or rule_policy._fallback_action_name not in domain.action_names
+        ):
+            raise InvalidDomain(
+                f"The fallback action '{rule_policy._fallback_action_name}' which was "
+                f"configured for the {RulePolicy.__name__} must be present in the "
+                f"domain."
+            )
 
     def _create_feature_key(self, states: List[Dict]) -> Text:
 
@@ -455,4 +507,13 @@ class RulePolicy(MemoizationPolicy):
         if rules_action_name:
             return self._prediction_result(rules_action_name, tracker, domain)
 
+        return result
+
+    def _default_predictions(self, domain: Domain) -> List[float]:
+        result = super()._default_predictions(domain)
+
+        if self._enable_fallback_prediction:
+            result[
+                domain.index_for_action(self._fallback_action_name)
+            ] = self._core_fallback_threshold
         return result

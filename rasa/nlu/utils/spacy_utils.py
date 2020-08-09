@@ -228,8 +228,10 @@ class SpacyNLP(Component):
                     example.set(SPACY_DOCS[attribute], example_attribute_doc)
 
     def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
-
-        message.set(SPACY_DOCS[attribute], self.doc_for_text(message.get(attribute)))
+        if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            message.set(
+                SPACY_DOCS[attribute], self.doc_for_text(message.get(attribute))
+            )
 
     @classmethod
     def load(
