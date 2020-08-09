@@ -59,7 +59,7 @@ class SingleStateFeaturizer:
         )
 
     @staticmethod
-    def action_as_index(action: Text, domain: Domain) -> int:
+    def action_as_index(action: Text, domain: Domain) -> Optional[int]:
         """Encode system action as one-hot vector."""
 
         if action is None:
@@ -288,6 +288,12 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
         super().__init__()
         self.output_shapes = {}
+        self.slot_names = []
+        self.slot_states = []
+        self.form_states = []
+        self.entities = []
+        self.action_names = []
+        self.intents = []
 
     def prepare_from_domain(self, domain: Domain) -> None:
         # storing slot names so that the features are always added in the same order
@@ -333,7 +339,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
         return binary_features
 
-    def _check_dense_features(self, dense_features: Tuple[np.array, np.array]) -> bool:
+    def _check_dense_features(self, dense_features: Tuple[np.ndarray, np.ndarray]) -> bool:
         if dense_features[1] is None:
             return False
         if dense_features[1].size == 0:
@@ -344,7 +350,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         self,
         attribute: Text,
         sparse_features: Tuple[scipy.sparse.spmatrix, scipy.sparse.spmatrix],
-        dense_features: Tuple[np.array, np.array],
+        dense_features: Tuple[np.ndarray, np.ndarray],
     ) -> None:
         if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
             if not sparse_features[1] is None:
@@ -365,7 +371,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
     def _construct_message(
         self, state: Dict[Text, Text], state_comes_from: Text
-    ) -> (Message, Text):
+    ) -> ("Message", Text):
         if state_comes_from == USER:
             if state.get(INTENT):
                 message = Message(data={INTENT: state.get(INTENT)})
@@ -387,7 +393,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         state: Dict[Text, Text],
         state_comes_from: Text,
         interpreter: Optional[NaturalLanguageInterpreter],
-    ) -> List[Union[scipy.sparse.spmatrix, np.array]]:
+    ) -> List[Union[scipy.sparse.spmatrix, np.ndarray]]:
 
         message, attribute = self._construct_message(state, state_comes_from)
 

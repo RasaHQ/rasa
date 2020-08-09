@@ -49,6 +49,9 @@ class NaturalLanguageInterpreter:
         else:
             return _create_from_endpoint_config(obj)
 
+    def synchronous_parse_message(self, message: Message, attribute: Text) -> Message:
+        pass
+
 
 class RegexInterpreter(NaturalLanguageInterpreter):
     @staticmethod
@@ -146,6 +149,9 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             logger.warning(f"Failed to parse intent end entities from '{user_input}'.")
             return None, 0.0, []
 
+    def synchronous_parse_message(self, message: Message, attribute: Text) -> Message:
+        pass
+
     async def parse(
         self,
         text: Text,
@@ -185,6 +191,9 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             self.endpoint_config = endpoint_config
         else:
             self.endpoint_config = EndpointConfig(constants.DEFAULT_SERVER_URL)
+
+    def synchronous_parse_message(self, message: Message, attribute: Text) -> Message:
+        pass
 
     async def parse(
         self,
