@@ -19,7 +19,14 @@ from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.constants import USER, PREVIOUS_ACTION, FORM, SLOTS
-from rasa.nlu.constants import TEXT, INTENT, ACTION_NAME, ACTION_TEXT, ENTITIES, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.nlu.constants import (
+    TEXT,
+    INTENT,
+    ACTION_NAME,
+    ACTION_TEXT,
+    ENTITIES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+)
 from rasa.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -342,33 +349,38 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
             if not sparse_features[1] is None:
                 if f"{attribute}_sparse" not in self.output_shapes.keys():
-                    self.output_shapes[f"{attribute}_sparse"] = sparse_features[1].shape[-1]
+                    self.output_shapes[f"{attribute}_sparse"] = sparse_features[
+                        1
+                    ].shape[-1]
 
             if self._check_dense_features(dense_features):
                 if f"{attribute}_dense" not in self.output_shapes.keys():
-                    self.output_shapes[f"{attribute}_dense"] = dense_features[1].shape[-1]
+                    self.output_shapes[f"{attribute}_dense"] = dense_features[1].shape[
+                        -1
+                    ]
         else:
             if not sparse_features[0] is None:
                 if f"{attribute}" not in self.output_shapes.keys():
                     self.output_shapes[f"{attribute}"] = sparse_features[0].shape[-1]
 
-    def _construct_message(self, state: Dict[Text, Text], state_comes_from: Text) -> (Message, Text):
+    def _construct_message(
+        self, state: Dict[Text, Text], state_comes_from: Text
+    ) -> (Message, Text):
         if state_comes_from == USER:
             if state.get(INTENT):
-                message = Message(data = {INTENT: state.get(INTENT)})
+                message = Message(data={INTENT: state.get(INTENT)})
                 attribute = INTENT
             else:
                 message = Message(state.get(TEXT))
                 attribute = TEXT
         else:
             if state.get(ACTION_NAME):
-                message = Message(data = {ACTION_NAME: state.get(ACTION_NAME)})
+                message = Message(data={ACTION_NAME: state.get(ACTION_NAME)})
                 attribute = ACTION_NAME
             else:
-                message = Message(data = {ACTION_TEXT: state.get(ACTION_TEXT)})
+                message = Message(data={ACTION_TEXT: state.get(ACTION_TEXT)})
                 attribute = ACTION_TEXT
         return message, attribute
-
 
     def _extract_features(
         self,
@@ -394,7 +406,13 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
     def _tokenizer_in_pipeline(self, interpreter: NaturalLanguageInterpreter) -> bool:
         from rasa.nlu.tokenizers.tokenizer import Tokenizer
-        tokenizer_in_pipeline = any([isinstance(component, Tokenizer) for component in interpreter.interpreter.pipeline])
+
+        tokenizer_in_pipeline = any(
+            [
+                isinstance(component, Tokenizer)
+                for component in interpreter.interpreter.pipeline
+            ]
+        )
         if tokenizer_in_pipeline:
             return tokenizer_in_pipeline
         else:
@@ -404,11 +422,19 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             # )
             return tokenizer_in_pipeline
 
+    def _count_featurizer_in_pipeline(
+        self, interpreter: NaturalLanguageInterpreter
+    ) -> bool:
+        from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+            CountVectorsFeaturizer,
+        )
 
-
-    def _count_featurizer_in_pipeline(self, interpreter: NaturalLanguageInterpreter) -> bool:
-        from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import CountVectorsFeaturizer
-        count_featurizer_in_pipeline = any([isinstance(component, CountVectorsFeaturizer) for component in interpreter.interpreter.pipeline])
+        count_featurizer_in_pipeline = any(
+            [
+                isinstance(component, CountVectorsFeaturizer)
+                for component in interpreter.interpreter.pipeline
+            ]
+        )
         if count_featurizer_in_pipeline:
             return count_featurizer_in_pipeline
         else:
@@ -417,16 +443,18 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             # )
             return count_featurizer_in_pipeline
 
-
-    def _interpreter_is_suitable_for_core_featurization(self, interpreter: NaturalLanguageInterpreter) -> bool:
+    def _interpreter_is_suitable_for_core_featurization(
+        self, interpreter: NaturalLanguageInterpreter
+    ) -> bool:
         if isinstance(interpreter, RegexInterpreter):
             # logger.warning(
             #     "No trained NLU model was loaded. Features for intents and actions will be featurized on the fly."
             # )
             return False
         else:
-            return self._tokenizer_in_pipeline(interpreter) and self._count_featurizer_in_pipeline(interpreter)
-
+            return self._tokenizer_in_pipeline(
+                interpreter
+            ) and self._count_featurizer_in_pipeline(interpreter)
 
     def process_state_without_trained_nlu(self, state: STATE):
         intent_features = np.zeros((1, len(self.intents)))
@@ -450,13 +478,16 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     ):
         slot_and_entity_features = self._get_slot_and_entity_features(state)
         if state == {}:
-            return np.array([None, None, None, 0, None, None, None, 0, slot_and_entity_features])
+            return np.array(
+                [None, None, None, 0, None, None, None, 0, slot_and_entity_features]
+            )
 
         if not self._interpreter_is_suitable_for_core_featurization(interpreter):
-            return np.array(self.process_state_without_trained_nlu(state) + [
-                            slot_and_entity_features
-                        ])
-        
+            return np.array(
+                self.process_state_without_trained_nlu(state)
+                + [slot_and_entity_features]
+            )
+
         state_extracted_features = {
             key: self._extract_features(state.get(key), key, interpreter)
             for key in [USER, PREVIOUS_ACTION]
@@ -537,8 +568,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
                 action_features = action_text_features
                 if self.output_shapes.get(f"{ACTION_NAME}"):
                     action_features[2] = (
-                        np.ones((1, self.output_shapes.get(f"{ACTION_NAME}")))
-                        * -1
+                        np.ones((1, self.output_shapes.get(f"{ACTION_NAME}"))) * -1
                     )
             else:
                 action_features = action_name_features
@@ -606,7 +636,7 @@ class TrackerFeaturizer:
                 if INTENT in key:
                     feature[np.array(intent_rows_to_fill), 2] = [
                         np.ones((1, shapes.get(key))) * -1
-                        ] * len(intent_rows_to_fill)
+                    ] * len(intent_rows_to_fill)
                 elif ACTION_NAME in key:
                     feature[np.array(action_names_rows_to_fill), 6] = [
                         np.ones((1, shapes.get(key))) * -1

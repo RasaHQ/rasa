@@ -241,14 +241,26 @@ class TEDPolicy(Policy):
         if isinstance(features[0], np.ndarray):
             return np.array(
                 [
-                    np.stack([features[label_idx] for label_idx in seq_label_ids if not label_idx == -1])
+                    np.stack(
+                        [
+                            features[label_idx]
+                            for label_idx in seq_label_ids
+                            if not label_idx == -1
+                        ]
+                    )
                     for seq_label_ids in label_ids
                 ]
             )
         else:
             return np.array(
                 [
-                    sparse.vstack([features[label_idx] for label_idx in seq_label_ids if not label_idx == -1])
+                    sparse.vstack(
+                        [
+                            features[label_idx]
+                            for label_idx in seq_label_ids
+                            if not label_idx == -1
+                        ]
+                    )
                     for seq_label_ids in label_ids
                 ]
             )
@@ -374,7 +386,6 @@ class TEDPolicy(Policy):
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData."""
 
-        
         Y_sparse, Y_dense, Y_action_name = np.array([]), np.array([]), np.array([])
 
         if label_ids is not None:
