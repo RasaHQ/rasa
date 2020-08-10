@@ -107,16 +107,21 @@ class SklearnPolicy(Policy):
         lengths = [row[:, 2].shape[0] for row in X]
         return max(lengths)
 
-    def _fill_in_features(self, state_features: List[np.ndarray], max_length: int) -> List[np.ndarray]:
+    def _fill_in_features(
+        self, state_features: List[np.ndarray], max_length: int
+    ) -> List[np.ndarray]:
         if len(state_features) == max_length:
             return state_features
         else:
             shape_of_input = state_features[0].shape[-1]
-            return [np.ones((1, shape_of_input))*-1] * (max_length - len(state_features)) + state_features
+            return [np.ones((1, shape_of_input)) * -1] * (
+                max_length - len(state_features)
+            ) + state_features
 
-
-    def _collect_features(self, X: np.ndarray) -> List[np.ndarray]:       
-        max_dialogue_length = self.featurizer.max_history or self._get_max_dialogue_length(X)
+    def _collect_features(self, X: np.ndarray) -> List[np.ndarray]:
+        max_dialogue_length = (
+            self.featurizer.max_history or self._get_max_dialogue_length(X)
+        )
         X_intent = []
         X_previous_action = []
         X_slots = []
@@ -127,7 +132,9 @@ class SklearnPolicy(Policy):
             X_intent.append(state_intent)
 
             state_previous_action = [previous_action for previous_action in row[:, 6]]
-            state_previous_action = self._fill_in_features(state_previous_action, max_dialogue_length)
+            state_previous_action = self._fill_in_features(
+                state_previous_action, max_dialogue_length
+            )
             state_previous_action = np.hstack(state_previous_action)
             X_previous_action.append(state_previous_action)
 
