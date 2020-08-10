@@ -22,6 +22,10 @@ multiple files or combined with training data in one file. The domain includes
 the definitions for [responses](../core/domains#responses) and [forms](../core/forms).
 See the [documentation for domains](../core/domains) to learn more.
 
+:::note
+See the documentation for Rasa Open Source 1.x for the previous (now deprecated) formats for [NLU](https://rasa.com/docs/rasa/nlu/training-data-format/) and [stories](https://rasa.com/docs/rasa/core/stories/).
+:::
+
 ### High Level Structure
 
 Each file can contain one or more **keys** with corresponding training
@@ -35,9 +39,8 @@ than one of a certain key in a single file. The available keys are:
 - `e2e_tests`
 
 All YAML training data files should specify the `version` key
-to be parsed correctly. Training data files with no `version` specified will be assumed to
-be in the format of the latest version of Rasa Open Source. Training data files with a version greater than is currently
-available for Rasa Open Source will be skipped.
+to be parsed correctly. If you don't specify a version key in your training data file, Rasa will assume you are using the latest training data format specification. Training data files with a version greater than is currently
+available will be skipped.
 
 ### Example
 
