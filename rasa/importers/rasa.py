@@ -31,7 +31,7 @@ class RasaFileImporter(TrainingDataImporter):
             self.config = {}
 
         self._domain_path = domain_path
-
+        print(f'DOMAIN IMPORTER DOMAIN={domain_path}')
         self._story_files, self._nlu_files = data.get_core_nlu_files(
             training_data_paths
         )

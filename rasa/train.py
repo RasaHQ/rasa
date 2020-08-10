@@ -318,7 +318,9 @@ async def train_core_async(
     file_importer = TrainingDataImporter.load_core_importer_from_config(
         config, domain, [stories]
     )
+    print(f'DOMAIN B4: {domain}')
     domain = await file_importer.get_domain()
+    print(f'DOMAIN AFTER: {domain}')
     if domain.is_empty():
         print_error(
             "Core training was skipped because no valid domain file was found. "

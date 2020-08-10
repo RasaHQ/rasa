@@ -1071,7 +1071,7 @@ class Domain:
 
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
-
+        print(f'self={self.as_dict()}')
         return self.as_dict() == Domain.empty().as_dict()
 
 
