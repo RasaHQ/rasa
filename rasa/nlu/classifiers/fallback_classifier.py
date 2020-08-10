@@ -6,7 +6,12 @@ from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import INTENT_RANKING_KEY, INTENT, INTENT_CONFIDENCE_KEY
+from rasa.nlu.constants import (
+    INTENT_RANKING_KEY,
+    INTENT,
+    INTENT_CONFIDENCE_KEY,
+    INTENT_NAME_KEY,
+)
 
 THRESHOLD_KEY = "threshold"
 AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
@@ -62,7 +67,7 @@ class FallbackClassifier(Component):
         Returns:
             `True` if the fallback intent should be predicted.
         """
-        intent_name = message.data[INTENT].get("name")
+        intent_name = message.data[INTENT].get(INTENT_NAME_KEY)
         below_threshold, nlu_confidence = self._nlu_confidence_below_threshold(message)
 
         if below_threshold:
@@ -107,7 +112,7 @@ class FallbackClassifier(Component):
 
 def _fallback_intent() -> Dict[Text, Union[Text, float]]:
     return {
-        "name": DEFAULT_NLU_FALLBACK_INTENT_NAME,
+        INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
         # TODO: Re-consider how we represent the confidence here
         INTENT_CONFIDENCE_KEY: 1.0,
     }

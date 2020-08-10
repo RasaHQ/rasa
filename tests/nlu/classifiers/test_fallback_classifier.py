@@ -11,7 +11,12 @@ from rasa.nlu.classifiers.fallback_classifier import (
     AMBIGUITY_THRESHOLD_KEY,
 )
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import INTENT_RANKING_KEY, INTENT, INTENT_CONFIDENCE_KEY
+from rasa.nlu.constants import (
+    INTENT_RANKING_KEY,
+    INTENT,
+    INTENT_CONFIDENCE_KEY,
+    INTENT_NAME_KEY,
+)
 
 
 @pytest.mark.parametrize(
@@ -21,13 +26,22 @@ from rasa.nlu.constants import INTENT_RANKING_KEY, INTENT, INTENT_CONFIDENCE_KEY
             Message(
                 "some message",
                 data={
-                    INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 0.234891876578331},
+                    INTENT: {
+                        INTENT_NAME_KEY: "greet",
+                        INTENT_CONFIDENCE_KEY: 0.234891876578331,
+                    },
                     INTENT_RANKING_KEY: [
-                        {"name": "greet", INTENT_CONFIDENCE_KEY: 0.234891876578331},
-                        {"name": "stop", INTENT_CONFIDENCE_KEY: 0.5 - 0.0001},
-                        {"name": "affirm", INTENT_CONFIDENCE_KEY: 0},
-                        {"name": "inform", INTENT_CONFIDENCE_KEY: -100},
-                        {"name": "deny", INTENT_CONFIDENCE_KEY: 0.0879683718085289},
+                        {
+                            INTENT_NAME_KEY: "greet",
+                            INTENT_CONFIDENCE_KEY: 0.234891876578331,
+                        },
+                        {INTENT_NAME_KEY: "stop", INTENT_CONFIDENCE_KEY: 0.5 - 0.0001},
+                        {INTENT_NAME_KEY: "affirm", INTENT_CONFIDENCE_KEY: 0},
+                        {INTENT_NAME_KEY: "inform", INTENT_CONFIDENCE_KEY: -100},
+                        {
+                            INTENT_NAME_KEY: "deny",
+                            INTENT_CONFIDENCE_KEY: 0.0879683718085289,
+                        },
                     ],
                 },
             ),
@@ -37,10 +51,10 @@ from rasa.nlu.constants import INTENT_RANKING_KEY, INTENT, INTENT_CONFIDENCE_KEY
             Message(
                 "some message",
                 data={
-                    INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
+                    INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
-                        {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
-                        {"name": "stop", INTENT_CONFIDENCE_KEY: 0.9},
+                        {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
+                        {INTENT_NAME_KEY: "stop", INTENT_CONFIDENCE_KEY: 0.9},
                     ],
                 },
             ),
@@ -50,10 +64,10 @@ from rasa.nlu.constants import INTENT_RANKING_KEY, INTENT, INTENT_CONFIDENCE_KEY
             Message(
                 "some message",
                 data={
-                    INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
+                    INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
-                        {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
-                        {"name": "stop", INTENT_CONFIDENCE_KEY: 0.5},
+                        {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
+                        {INTENT_NAME_KEY: "stop", INTENT_CONFIDENCE_KEY: 0.5},
                     ],
                 },
             ),
@@ -67,7 +81,7 @@ def test_predict_fallback_intent(message: Message, component_config: Dict):
     classifier.process(message)
 
     expected_intent = {
-        "name": DEFAULT_NLU_FALLBACK_INTENT_NAME,
+        INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
         INTENT_CONFIDENCE_KEY: 1.0,
     }
     assert message.data[INTENT] == expected_intent
@@ -87,13 +101,19 @@ def test_predict_fallback_intent(message: Message, component_config: Dict):
             Message(
                 "some message",
                 data={
-                    INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 0.5},
+                    INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 0.5},
                     INTENT_RANKING_KEY: [
-                        {"name": "greet", INTENT_CONFIDENCE_KEY: 0.234891876578331},
-                        {"name": "stop", INTENT_CONFIDENCE_KEY: 0.1},
-                        {"name": "affirm", INTENT_CONFIDENCE_KEY: 0},
-                        {"name": "inform", INTENT_CONFIDENCE_KEY: -100},
-                        {"name": "deny", INTENT_CONFIDENCE_KEY: 0.0879683718085289},
+                        {
+                            INTENT_NAME_KEY: "greet",
+                            INTENT_CONFIDENCE_KEY: 0.234891876578331,
+                        },
+                        {INTENT_NAME_KEY: "stop", INTENT_CONFIDENCE_KEY: 0.1},
+                        {INTENT_NAME_KEY: "affirm", INTENT_CONFIDENCE_KEY: 0},
+                        {INTENT_NAME_KEY: "inform", INTENT_CONFIDENCE_KEY: -100},
+                        {
+                            INTENT_NAME_KEY: "deny",
+                            INTENT_CONFIDENCE_KEY: 0.0879683718085289,
+                        },
                     ],
                 },
             ),
@@ -103,10 +123,10 @@ def test_predict_fallback_intent(message: Message, component_config: Dict):
             Message(
                 "some message",
                 data={
-                    INTENT: {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
+                    INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
-                        {"name": "greet", INTENT_CONFIDENCE_KEY: 1},
-                        {"name": "stop", INTENT_CONFIDENCE_KEY: 0.89},
+                        {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
+                        {INTENT_NAME_KEY: "stop", INTENT_CONFIDENCE_KEY: 0.89},
                     ],
                 },
             ),
