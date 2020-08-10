@@ -466,8 +466,9 @@ While writing stories, you will encounter three types of actions:
 
 #### Forms
 
-A form is a specific kind of custom action that contains the logic to loop over
-a set of required slots and ask the user for this information. The "happy path" 
+A [form](../glossary#form) is a specific kind of custom action that contains the logic to loop over
+a set of required slots and ask the user for this information. You [define a form](../core/forms#defining-a-form) in the `forms` section in your domain.
+Once defined, the [happy path](../glossary#happy--unhappy-paths)
 for a form should be specified as a [rule](../core/forms), but interruptions of forms or 
 other "unhappy paths" should be included in stories so that the model can 
 generalize to unseen conversation sequences.
