@@ -20,13 +20,13 @@ The [domain](../glossary#domain) uses
 the same YAML format as the training data and can also be split across
 multiple files or combined with training data in one file. The domain includes
 the definitions for [responses](../core/domains#responses) and [forms](../core/forms).
-See the [documentation for domains](../core/domains) to learn more.
+See the [documentation for domains](../core/domains) for information on how to format your domain file.
 
 :::note
 See the documentation for Rasa Open Source 1.x for the previous (now deprecated) formats for [NLU](https://rasa.com/docs/rasa/nlu/training-data-format/) and [stories](https://rasa.com/docs/rasa/core/stories/).
 :::
 
-### High Level Structure
+### High-Level Structure
 
 Each file can contain one or more **keys** with corresponding training
 data. One file can contain multiple keys, as long as there is not more
@@ -92,9 +92,9 @@ e2e_tests:
 [NLU](../glossary#nlu) training data consists of example user utterances categorized by
 **intent**, i.e. what the user is trying to convey or accomplish with their
 message. Training examples can also include **entities**. Entities are structured
-pieces of information that can be extracted from a user's message. The other components
-of NLU training data are there to help the model identify intent and entity
-correctly.
+pieces of information that can be extracted from a user's message. You can also
+add extra information such as regular expressions and lookup tables to your 
+training data to help the model identify intents and entities correctly.
 
 NLU training data is defined under the `nlu` key. Items that can be added under this key are:
 
@@ -396,7 +396,7 @@ stories:
 Each step can be one of the following:
 
   - A [user message](#user-messages), represented by **intent** and **entities**.
-  - An [`or`](#or) statement, which includes two or more user messages under it
+  - An [or statement](#or), which includes two or more user messages under it
   - A bot [action](#actions)
   - A [form](#forms)
   - A [slot was set](#slots) event
@@ -576,7 +576,7 @@ stories hard to understand. It makes sense to use them if a sequence of steps
 is repeated often in different stories, but stories without checkpoints
 are easier to read and write. 
 
-#### or
+#### OR statement
 
 `or` steps are ways to handle multiple intents the same way,
 without writing a separate story for each intent. For example, if you ask the user to confirm something, you might want to treat the `affirm` and `thankyou` intents in the same way. Stories with `or` steps will be converted into multiple
