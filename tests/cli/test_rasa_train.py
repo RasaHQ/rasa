@@ -1,5 +1,6 @@
 import os
 import tempfile
+from pathlib import Path
 
 import pytest
 from typing import Callable
@@ -108,7 +109,7 @@ def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
         "config_1.yml",
         "config_2.yml",
         "--stories",
-        "data/stories.md",
+        "data/stories.yml",
         "--out",
         "core_comparison_results",
         "--runs",
@@ -178,7 +179,7 @@ def test_train_skip_on_model_not_changed(
     assert file_name == files[0]
 
 
-def test_train_force(run_in_simple_project_with_model):
+def test_train_force(run_in_simple_project_with_model: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
@@ -192,11 +193,12 @@ def test_train_force(run_in_simple_project_with_model):
     assert len(files) == 2
 
 
-def test_train_with_only_nlu_data(run_in_simple_project):
-    temp_dir = os.getcwd()
+def test_train_with_only_nlu_data(run_in_simple_project: Callable[..., RunResult]):
+    temp_dir = Path.cwd()
 
-    assert os.path.exists(os.path.join(temp_dir, "data/stories.md"))
-    os.remove(os.path.join(temp_dir, "data/stories.md"))
+    for core_file in ["stories.yml", "rules.yml"]:
+        assert (temp_dir / "data" / core_file).exists()
+        (temp_dir / "data" / core_file).unlink()
 
     run_in_simple_project("train", "--fixed-model-name", "test-model")
 
@@ -206,11 +208,11 @@ def test_train_with_only_nlu_data(run_in_simple_project):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
-def test_train_with_only_core_data(run_in_simple_project):
+def test_train_with_only_core_data(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
-    assert os.path.exists(os.path.join(temp_dir, "data/nlu.md"))
-    os.remove(os.path.join(temp_dir, "data/nlu.md"))
+    assert os.path.exists(os.path.join(temp_dir, "data/nlu.yml"))
+    os.remove(os.path.join(temp_dir, "data/nlu.yml"))
 
     run_in_simple_project("train", "--fixed-model-name", "test-model")
 
