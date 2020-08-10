@@ -983,28 +983,26 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         sliced_states = self.slice_state_history(
                             states[: idx + 1], self.max_history
                         )
+                        if self.remove_duplicates:
+                            hashed = self._hash_example(
+                                sliced_states,
+                                event.action_name or event.e2e_text,
+                                tracker,
+                            )
 
-                        if not sliced_states == [{}]:
-                            if self.remove_duplicates:
-                                hashed = self._hash_example(
-                                    sliced_states,
-                                    event.action_name or event.e2e_text,
-                                    tracker,
-                                )
-
-                                # only continue with tracker_states that created a
-                                # hashed_featurization we haven't observed
-                                if hashed not in hashed_examples:
-                                    hashed_examples.add(hashed)
-                                    trackers_as_states.append(sliced_states)
-                                    trackers_as_actions.append(
-                                        [event.action_name or event.e2e_text]
-                                    )
-                            else:
+                            # only continue with tracker_states that created a
+                            # hashed_featurization we haven't observed
+                            if hashed not in hashed_examples:
+                                hashed_examples.add(hashed)
                                 trackers_as_states.append(sliced_states)
                                 trackers_as_actions.append(
                                     [event.action_name or event.e2e_text]
                                 )
+                        else:
+                            trackers_as_states.append(sliced_states)
+                            trackers_as_actions.append(
+                                [event.action_name or event.e2e_text]
+                            )
 
                         pbar.set_postfix(
                             {"# actions": "{:d}".format(len(trackers_as_actions))}

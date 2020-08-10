@@ -45,6 +45,7 @@ from tests.core.utilities import (
     user_uttered,
     get_tracker,
 )
+from rasa.nlu.constants import ACTION_NAME
 
 domain = Domain.load("examples/moodbot/domain.yml")
 
@@ -364,7 +365,7 @@ def test_revert_action_event(default_domain: Domain):
     # Expecting count of 4:
     #   +3 executed actions
     #   +1 final state
-    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(list(tracker.generate_all_prior_trackers())) == 4
 
     tracker.update(ActionReverted())
@@ -373,7 +374,7 @@ def test_revert_action_event(default_domain: Domain):
     #   +3 executed actions
     #   +1 final state
     #   -1 reverted action
-    assert tracker.latest_action_name == "my_action"
+    assert tracker.latest_action.get(ACTION_NAME) == "my_action"
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
     dialogue = tracker.as_dialogue()
@@ -382,7 +383,7 @@ def test_revert_action_event(default_domain: Domain):
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
-    assert tracker.latest_action_name == "my_action"
+    assert tracker.latest_action.get(ACTION_NAME) == "my_action"
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
 
@@ -405,7 +406,7 @@ def test_revert_user_utterance_event(default_domain: Domain):
     # Expecting count of 6:
     #   +5 executed actions
     #   +1 final state
-    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(list(tracker.generate_all_prior_trackers())) == 6
 
     tracker.update(UserUtteranceReverted())
@@ -415,7 +416,7 @@ def test_revert_user_utterance_event(default_domain: Domain):
     #   +1 final state
     #   -2 rewound actions associated with the /goodbye
     #   -1 rewound action from the listen right before /goodbye
-    assert tracker.latest_action_name == "my_action_1"
+    assert tracker.latest_action.get(ACTION_NAME) == "my_action_1"
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
     dialogue = tracker.as_dialogue()
@@ -424,7 +425,7 @@ def test_revert_user_utterance_event(default_domain: Domain):
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
-    assert tracker.latest_action_name == "my_action_1"
+    assert tracker.latest_action.get(ACTION_NAME) == "my_action_1"
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
 
@@ -449,7 +450,7 @@ def test_traveling_back_in_time(default_domain: Domain):
     # Expecting count of 4:
     #   +3 executed actions
     #   +1 final state
-    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(tracker.events) == 4
     assert len(list(tracker.generate_all_prior_trackers())) == 4
 
@@ -458,7 +459,7 @@ def test_traveling_back_in_time(default_domain: Domain):
     # Expecting count of 2:
     #   +1 executed actions
     #   +1 final state
-    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(tracker.events) == 2
     assert len(list(tracker.generate_all_prior_trackers())) == 2
 
@@ -488,7 +489,7 @@ def test_read_json_dump(default_agent: Agent):
     )
 
     assert len(restored_tracker.events) == 7
-    assert restored_tracker.latest_action_name == "action_listen"
+    assert restored_tracker.latest_action.get(ACTION_NAME) == "action_listen"
     assert not restored_tracker.is_paused()
     assert restored_tracker.sender_id == "mysender"
     assert restored_tracker.events[-1].timestamp == 1517821726.211042

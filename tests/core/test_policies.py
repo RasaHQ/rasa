@@ -638,7 +638,6 @@ class TestFormPolicy(TestMemoizationPolicy):
                 # which FormPolicy should not predict a form action and
                 # should add FormValidation(False) event
                 # @formatter:off
-                print(states)
                 is_no_validation = (
                     self._test_for_previous_action_and_intent(
                         states, "default", "some_form"
