@@ -34,6 +34,7 @@ from rasa.core.processor import MessageProcessor, DEFAULT_INTENTS
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request
 
@@ -69,7 +70,7 @@ async def test_message_id_logging(default_processor: MessageProcessor):
 async def test_parsing(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "boy"}')
     parsed = await default_processor._parse_message(message)
-    assert parsed["intent"]["name"] == "greet"
+    assert parsed["intent"][INTENT_NAME_KEY] == "greet"
     assert parsed["entities"][0]["entity"] == "name"
 
 
@@ -126,7 +127,7 @@ async def mocked_parse(self, text, message_id=None, tracker=None):
     value from the tracker's state."""
 
     return {
-        "intent": {"name": "", "confidence": 0.0},
+        "intent": {INTENT_NAME_KEY: "", "confidence": 0.0},
         "entities": [],
         "text": text,
         "requested_language": tracker.get_slot("requested_language"),
@@ -177,7 +178,8 @@ async def test_reminder_scheduled(
     assert t.events[-4] == ActionExecuted("action_schedule_reminder")
     assert isinstance(t.events[-3], ReminderScheduled)
     assert t.events[-2] == UserUttered(
-        f"{EXTERNAL_MESSAGE_PREFIX}remind", intent={"name": "remind", IS_EXTERNAL: True}
+        f"{EXTERNAL_MESSAGE_PREFIX}remind",
+        intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
     )
     assert t.events[-1] == ActionExecuted("action_listen")
 
@@ -261,7 +263,7 @@ async def test_reminder_cancelled_multi_user(
     assert (
         UserUttered(
             f"{EXTERNAL_MESSAGE_PREFIX}greet",
-            intent={"name": "greet", IS_EXTERNAL: True},
+            intent={INTENT_NAME_KEY: "greet", IS_EXTERNAL: True},
         )
         not in tracker_0.events
     )
@@ -271,7 +273,7 @@ async def test_reminder_cancelled_multi_user(
     assert (
         UserUttered(
             f"{EXTERNAL_MESSAGE_PREFIX}greet",
-            intent={"name": "greet", IS_EXTERNAL: True},
+            intent={INTENT_NAME_KEY: "greet", IS_EXTERNAL: True},
         )
         in tracker_1.events
     )
@@ -617,7 +619,7 @@ async def test_handle_message_with_session_start(
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(
             f"/greet{json.dumps(slot_1)}",
-            {"name": "greet", "confidence": 1.0},
+            {INTENT_NAME_KEY: "greet", "confidence": 1.0},
             [{"entity": entity, "start": 6, "end": 22, "value": "Core"}],
         ),
         SlotSet(entity, slot_1[entity]),
@@ -631,7 +633,7 @@ async def test_handle_message_with_session_start(
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(
             f"/greet{json.dumps(slot_2)}",
-            {"name": "greet", "confidence": 1.0},
+            {INTENT_NAME_KEY: "greet", "confidence": 1.0},
             [
                 {
                     "entity": entity,
