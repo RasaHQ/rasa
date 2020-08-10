@@ -37,6 +37,7 @@ module.exports = {
             'fallback-handoff',
             'unexpected-input',
             'contextual-conversations',
+            'reaching-out-to-user',
           ],
         },
         {

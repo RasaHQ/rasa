@@ -4,16 +4,33 @@ sidebar_label: Handling Unexpected Input
 title: Handling Unexpected Input
 ---
 
-import useBaseUrl from '@docusaurus/useBaseUrl';
+One thing you can count on when building a conversational assistant is that users
+will say unexpected things. Unexpected input is a deviation from the [`happy path`](glossary.mdx#happy_unhappy_paths)
+that you have defined.  For example:
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="handling-unexpected-user-input"></a>
+- A user walks away in the middle of a conversation about their subscription, then comes back
+and says "hi!"
+- A user asks "Why do you need to know that?" when the bot asks for their email address.
 
-All expected user inputs should be handled by the form we defined above, i.e. if the
-user provides the information the bot asks for. However, in real situations, the user
-will often behave differently. In this section we'll go through various forms of
-“interjections” and how to handle them within Rasa.
+This page is a guide on methods for handling unexpected input that is still within your bot's domain. 
+Depending on what kind of unexpected
+input you're trying to handle, some or all of the methods describe may be applicable for you. This guide
+is not about disambiguating user input or handling out-of-scope questions; for these cases see 
+the guide on [fallback and human handoff](fallback-handoff.mdx)
 
-The decision to handle these types of user input should always come from reviewing
+
+## Concepts
+
+There are two kinds of unexpected input: generic interjections, and contextual interjections.
+Generic interjections are interruptions that should always get the same response regardless of the 
+conversation context. [FAQs and chitchat](#chitchat-faqs) are common generic interjections.
+A contextual interjection is one whose response depends on the conversation context. 
+For example, if a user asks "Why do you need that?", the answer will depend on what the bot just
+asked for. 
+
+### When to Account for Interruptions
+
+The decision to handle unexpected user input should always come from reviewing
 real conversations. You should first build part of your assistant, test it with real users
 (whether that's your end user, or your colleague) and then add what's missing. You shouldn't
 try to implement every possible edge case that you think might happen, because in the end
@@ -21,18 +38,17 @@ your users may never actually behave in that way.
 [Rasa X](https://rasa.com/docs/rasa-x/)
 is a tool that can help you review conversations and make these types of decisions.
 
-## Generic interjections
+### `UserUtteranceReverted`
 
-If you have generic interjections that should always have the same single response no
-matter the context, you can use the [Mapping Policy](./policies.mdx#mapping-policy) to handle these. It will always
-predict the same action for an intent, and when combined with a forgetting mechanism,
-you don't need to write any stories either.
+If you have generic interjections that should always have the same response no
+matter the context, you can define 
+short rules for the interjecting intents and the responses that should always be returned. 
+When combined with a forgetting mechanism, this won't affect your dialogue history either, so
+you won't need to write any stories or rules showing the interruption.
 
 For example, let's say you see users having conversations like the following one with
 your assistant, where they write a greeting in the middle of a conversation -
 maybe because they were gone for a few minutes:
-
-
 
 <img alt="Greeting Interjection" src={useBaseUrl("/img/greet_interjection.png")} width="240" />
 
@@ -41,23 +57,13 @@ yet we don't want the intent to affect the dialogue history. To do this, the res
 must be an action that returns the `UserUtteranceReverted()` event to remove the
 interaction from the dialogue history.
 
-First, open the `domain.yml` file and modify the greet intent and add a new block `\`actions\`` in
-the file, next, add the `action_greet` as shown here:
+First, make sure the `RulePolicy` is in the policies section of your configuration file:
 
-```yaml
-intents:
-  - greet: {triggers: action_greet}
-  - bye
-  - thank
-  - faq
-  - contact_sales
-  - inform
-
-actions:
-  - action_greet
+```rasa-yaml
+policies:
+  # Other policies
+  - name: RulePolicy
 ```
-
-Remove any stories using the “greet” intent if you have them.
 
 Next, we need to define `action_greet`. Add the following action to your `actions.py` file:
 
@@ -72,68 +78,80 @@ def name(self):
     return "action_greet"
 
 def run(self, dispatcher, tracker, domain):
-    dispatcher.utter_template("utter_greet", tracker)
+    dispatcher.utter_message(template="utter_greet")
     return [UserUtteranceReverted()]
 ```
 
-To test the modified intents, we need to re-start our action server:
+This action will return the `utter_greet` response to the user, before removing the interaction from the dialogue history.
 
-```bash
-rasa run actions
+## Data
+
+### Rules for Reverted Utterances
+
+If you've defined an action that includes `UserUtteranceReverted`, you only
+need to add a single rule for it, since it won't affect the dialogue history:
+
+```rasa-yaml
+rules:
+- rule: greet user
+  steps:
+  - intent: greet
+  - action: action_greet_user
 ```
 
-Then we can retrain the model, and try out our additions:
+You'll also need to add any responses your action runs to your domain:
 
-```bash
-rasa train
-rasa shell
+```rasa-yaml
+responses:
+  utter_greet: Hi there! 
 ```
 
-FAQs are another kind of generic interjections that should always get the same response.
-For example, a user might ask a related FAQ in the middle of filling a form:
+### Stories for Interjections
 
+You can't revert every kind of interjection. In these cases,
+you need stories with interruptions in them. 
 
+#### Generic Interjections
 
-<img alt="Generic Interjections" src={useBaseUrl("/img/generic_interjection.png")} width="240" />
+Generic interjections that aren't reverted should be added to stories wherever you see them occurring.
 
-To handle FAQs defined with retrieval actions, you can add a simple story that will be handled by the MemoizationPolicy:
+If you're using the [`ResponseSelector`](components/selectors.mdx#responseselector)
+for any generic interjection intents, you'll only need to include one kind of interruption for each retrieval
+intent. For example, if you had an `faq` retrieval intent,
+to account for a user asking an FAQ in the middle of a form, you'd write a story like this:
 
-```md
-## just sales, continue
-* contact_sales
-    - sales_form
-    - active_loop{"name": "sales_form"}
-* faq
-    - respond_faq
-    - sales_form
-    - active_loop{"name": null}
+```
+stories:
+- story: form with faq interruption
+  steps:
+  - intent: contact_sales
+  - action: sales_form
+  - intent: faq           <!--generic interruption-->
+  - action: respond_faq   <!--retrieval action response-->
+  - action: sales_form
+  - active_loop: sales_form
+  - active_loop: null
+  - action: action_submit_salesform
 ```
 
-This will break out of the form and deal with the users FAQ question, and then return back to the original task.
-For example:
+You can write similar stories for any other generic interruption intent and response,
+whether or not it's a retrieval intent.
 
+#### Contextual Interjections
 
+Handling contextual interjections is similar to handling [contextual conversations](contextual-conversations.mdx)
+in general. 
 
-<img alt="Generic Interjection Handled" src={useBaseUrl("/img/generic_interjection_handled.png")} width="240" />
-
-If you find it difficult to write stories in this format, you can always use [Interactive Learning](./writing-stories.mdx#using-interactive-learning)
-to help you create them.
-
-As always, make sure to add an end to end test case to your test_stories.md file.
-
-## Contextual questions
-
-You can also handle contextual questions,
-like the user asking the question “Why do you need to know that”. The user could ask this based on a certain slot
-the bot has requested, and the response should differ for each slot. For example:
-
-
+One common case of contextual interjections is during slot filling for [form](forms.mdx), where the user
+asks “Why do you need to know that?” or "Can you explain that?". 
+The response should differ for each slot. For example:
 
 <img alt="Contextual Interjection" src={useBaseUrl("/img/contextual_interjection.png")} width="240" />
 
-To handle this, we need to make the `requested_slot` featurized, and assign it the categorical type:
+Since we want the `requested_slot` to influence the conversation,
+we need to make the `requested_slot` featurized, and assign it the categorical type:
 
-```yaml
+```rasa-yaml
 slots:
   requested_slot:
     type: categorical
@@ -146,96 +164,43 @@ slots:
       - job_function
 ```
 
-This means that Core will pay attention to the value of the slot when making a prediction
+This means that the dialogue model will pay attention to the value of the slot when making a prediction
 (read more about other [featurized slots](./domain.mdx#slots), whereas
-unfeaturized slots are only used for storing information. The stories for this should look as follows:
+unfeaturized slots are only used for storing information. 
 
-```md
-## explain email
-* contact_sales
-    - sales_form
-    - active_loop{"name": "sales_form"}
-    - slot{"requested_slot": "business_email"}
-* explain
-    - utter_explain_why_email
-    - sales_form
-    - active_loop{"name": null}
+You can then write stories for specific responses to interruptions based on the value of `requested_slot`, for example:
 
-## explain budget
-* contact_sales
-    - sales_form
-    - active_loop{"name": "sales_form"}
-    - slot{"requested_slot": "budget"}
-* explain
-    - utter_explain_why_budget
-    - sales_form
-    - active_loop{"name": null}
+```
+stories:
+- story: email interruption
+  steps:
+  - active_loop: sales_form
+  - slot_was_set: 
+    - requested_slot: email
+  - intent: ask_why_needed
+  - action: utter_why_email
+  - action: sales_form
+
+- story: company interruption
+  steps:
+  - active_loop: sales_form
+  - slot_was_set: 
+    - requested_slot: company
+  - intent: ask_why_needed
+  - action: utter_why_company
+  - action: sales_form
 ```
 
-We'll need to add the intent and utterances we just added to our `domain.yml` file:
 
-```yaml
-intents:
-- greet: {triggers: action_greet_user}
-- bye
-- thank
-- faq
-- explain
+## Putting it all together
 
-responses:
-  utter_explain_why_budget:
-  - text: We need to know your budget to recommend a subscription
-  utter_explain_why_email:
-  - text: We need your email so we can contact you
-```
+How you handle unexpected input depends on whether the response should be 
+context sensitive or not.
 
-Finally, we'll need to add some NLU data for the explain intent:
+For generic interjections:
+  - [ ] Define rules for single-turn interactions with actions that return the `UserUtteranceReverted` event
+  - [ ] Use the `ResponseSelector` for [FAQ and chitchat interruptions](chitchat-faqs.mdx)
 
-```md
-## intent:explain
-- why
-- why is that
-- why do you need it
-- why do you need to know that?
-- could you explain why you need it?
-```
-
-Then you can retrain your bot and test it again:
-
-```bash
-rasa train
-rasa shell
-```
-
-:::note
-You will need to add a story for each of the values of the `requested_slot` slot
-for the bot to handle every case of “Why do you need to know that”
-
-:::
-
-Don't forget to add a few end to end stories to your `test_stories.md` for testing as well.
-
-:::note
-Here's a minimal checklist of  of files we modified to handle unexpected user input:
-
-* `actions.py`: Define `action_greet`
-
-* `data/nlu.yml`: Add training data for an `explain` intent
-
-* `domain.yml`:
-
-    * Map intent `greet` to  `action_greet_user`
-
-    * Make `requested_slot` a categorical slot with all required slots as values
-
-    * Add the `explain` intent
-
-    * Add responses for contextual question interruptions
-
-* `data/stories.yml`:
-
-    * Remove stories using mapped intents if you have them
-
-    * Add stories with FAQ & contextual interruptions in the middle of filling a form
-
-:::
+For contextual interjections:
+  - [ ] Make `requested_slot` a categorical slot (for forms)
+  - [ ] Write stories for context-specific responses to interjections, using slot values where applicable

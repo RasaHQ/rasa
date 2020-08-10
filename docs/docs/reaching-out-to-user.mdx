@@ -1,0 +1,61 @@
+---
+id: reaching-out-to-user
+sidebar_label: Reaching Out to the User
+title: Reaching Out to the User
+---
+
+Sometimes you want your assistant to reach out to the user without the user's prompting.
+For example, you might want the assistant to send a message when the user opens the chat window,
+or you might want to prompt the user if they haven't sent a message for a while. 
+This page is a guide to enabling your assistant to reach out to the user proactively.
+
+
+## Concepts
+
+### Reaching out first
+
+To have your assistant reach out to the user at the beginning of a conversation,
+configure your [messaging or voice channel]() to send a payload to the bot that 
+will trigger the appropriate response. For example, in Sara, the Rasa bot, when a 
+user opens the chat window, the chat widget sends the payload `/greet`, so that
+Sara greets the user with a welcome message. How you send the initial payload
+will depend on the channel(s) you are using. 
+
+On the bot's side,
+you might want to reuse an existing intent and response, or have a specific
+intent and response for the start of conversations. If you want a specific welcome
+message that the user won't also see by e.g. greeting the bot, you need
+to add the intent and response(s) to your domain, and add a rule
+for what the bot should do with the initial payload. For example:
+
+```rasa-yaml
+intents: 
+- chat_opened
+
+responses:
+  utter_welcome:
+  - text: Hi, I'm Sara! What can I help you with today?
+
+rules:
+  - rule: welcome user
+    steps:
+      - intent: chat_opened
+      - action: utter_welcome
+```
+
+Since there's no training data for the intent `chat_opened`, the intent can only
+be triggered explicitly by sending `/chat_opened`, which is what your channel
+should send to the bot. 
+
+### External Events
+
+You might want to reach out to the user based on an
+[external event](reminders-and-external-events.mdx#external-events). 
+
+
+### Reminders
+
+
+
+
+## Putting it all together

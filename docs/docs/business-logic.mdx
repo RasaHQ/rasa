@@ -4,318 +4,274 @@ sidebar_label: Handling Business Logic
 title: Handling Business Logic
 ---
 
-
-A lot of conversational assistants have user goals that involve collecting a bunch of information
-from the user before being able to do something for them. This is called slot filling. For
+Conversational assistants often have user goals that involve collecting a bunch of information
+from the user before being able to do something for them. For
 example, in the banking industry you may have a user goal of transferring money, where you
 need to collect information about which account to transfer from, whom to transfer to and the
 amount to transfer. This type of behavior can and should be handled in a rule based way, as it
 is clear how this information should be collected.
 
-For this type of use case, we can use Forms and our FormPolicy. The [FormPolicy](./policies.mdx#form-policy)
-works by predicting the form as the next action until all information is gathered from the user.
-
-As an example, we will build out the SalesForm from Sara. The user wants to contact
-our sales team, and for this we need to gather the following pieces of information:
-
-* Their job
-
-* Their bot use case
-
-* Their name
-
-* Their email
-
-* Their budget
-
-* Their company
-
-We will start by defining the `SalesForm` as a new class in the file called `actions.py`.
-The first method we need to define is the name, which like in a regular Action
-returns the name that will be used in our stories:
-
-```python
-from rasa_sdk.forms import FormAction
-
-class SalesForm(FormAction):
-    """Collects sales information and adds it to the spreadsheet"""
-
-    def name(self):
-        return "sales_form"
-```
-
-Next we have to define the `required_slots` method which specifies which pieces of information to
-ask for, i.e. which slots to fill.
-
-```python
-@staticmethod
-def required_slots(tracker):
-    return [
-        "job_function",
-        "use_case",
-        "budget",
-        "person_name",
-        "company",
-        "business_email",
-        ]
-```
-
-Note: you can customize the required slots function not to be static. E.g. if the `job_function` is a
-developer, you could add a `required_slot` about the users experience level with Rasa
-
-Once you've done that, you'll need to specify how the bot should ask for this information. This
-is done by specifying `utter_ask_{slotname}` responses in your `domain.yml` file. For the above
-we'll need to specify the following:
+Here's a short adapted example from Sara, the Rasa assistant. The user wants to subscribe to the newsletter,
+and for this we need to gather one piece of information, namely the user's email. We also want the user to confirm 
+before subscribing them:
 
 ```yaml
-utter_ask_business_email:
-  - text: What's your business email?
-utter_ask_company:
-  - text: What company do you work for?
-utter_ask_budget:
-  - text: "What's your annual budget for conversational AI? 💸"
-utter_ask_job_function:
-  - text: "What's your job? 🕴"
-utter_ask_person_name:
-  - text: What's your name?
-utter_ask_use_case:
-  - text: What's your use case?
+User: I want to subscribe to the newsletter
+    Sara: Sure thing! What's your email address?
+User: user@example.com
+    Sara: Do you want me to send you the Rasa newsletter at user@example.com?
+          [yes]
+          [no]
+User: Yes
+    Sara: We sent a confirmation email to user@example.com.
 ```
 
-We'll also need to define all these slots in our `domain.yml` file:
+This page is a guide on handling business logic. You can use the example
+configuration and training data below to build an assistant that can handle a conversation
+like the one above, or you can apply the guidelines to your own use case. 
 
-```yaml
-slots:
-  company:
-    type: unfeaturized
-  job_function:
-    type: unfeaturized
-  person_name:
-    type: unfeaturized
-  budget:
-    type: unfeaturized
-  business_email:
-    type: unfeaturized
-  use_case:
-    type: unfeaturized
-```
+## Concepts
 
-Going back to our Form definition, we need to define the `submit` method as well,
-which will do something with the information the user has provided once the form is complete:
+### Forms
 
-```python
-def submit(
-    self,
-    dispatcher: CollectingDispatcher,
-    tracker: Tracker,
-    domain: Dict[Text, Any],
-) -> List[Dict]:
+Forms work by looping over a set of required information until all information is gathered from the user.
+The information is stored in [`slots`](domain.mdx#slots). Once all the required slots are filled,
+the bot addresses the user's original request.
 
-    dispatcher.utter_message("Thanks for getting in touch, we'll contact you soon")
-    return []
-```
+A form's happy path should be defined as a [rule](#rules), which means you'll need to add the [`RulePolicy`](policies.mdx#rulepolicy)
+to your policies in your configuration file:
 
-In this case, we only tell the user that we'll be in touch with them, however
-usually you would send this information to an API or a database. See the [rasa-demo](https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L148)
-for an example of how to store this information in a spreadsheet.
-
-We'll need to add the form we just created to a new section in our `domain.yml` file:
-
-```yaml
-forms:
-  - sales_form
-```
-
-We also need to create an intent to activate the form, as well as an intent for providing all the
-information the form asks the user for. For the form activation intent, we can create an
-intent called `contact_sales`. Add the following training data to your nlu file:
-
-```md
-## intent:contact_sales
-- I wanna talk to your sales people.
-- I want to talk to your sales people
-- I want to speak with sales
-- Sales
-- Please schedule a sales call
-- Please connect me to someone from sales
-- I want to get in touch with your sales guys
-- I would like to talk to someone from your sales team
-- sales please
-```
-
-You can view the full intent [here](https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md#intentcontact_sales))
-
-We will also create an intent called `inform` which covers any sort of information the user
-provides to the bot. *The reason we put all this under one intent, is because there is no
-real intent behind providing information, only the entity is important.* Add the following
-data to your NLU file:
-
-```md
-## intent:inform
-- [100k](budget)
-- [100k](budget)
-- [240k/year](budget)
-- [150,000 USD](budget)
-- I work for [Rasa](company)
-- The name of the company is [ACME](company)
-- company: [Rasa Technologies](company)
-- it's a small company from the US, the name is [Hooli](company)
-- it's a tech company, [Rasa](company)
-- [ACME](company)
-- [Rasa Technologies](company)
-- [maxmeier@firma.de](business_email)
-- [bot-fan@bots.com](business_email)
-- [maxmeier@firma.de](business_email)
-- [bot-fan@bots.com](business_email)
-- [my email is email@rasa.com](business_email)
-- [engineer](job_function)
-- [brand manager](job_function)
-- [marketing](job_function)
-- [sales manager](job_function)
-- [growth manager](job_function)
-- [CTO](job_function)
-- [CEO](job_function)
-- [COO](job_function)
-- [John Doe](person_name)
-- [Jane Doe](person_name)
-- [Max Mustermann](person_name)
-- [Max Meier](person_name)
-- We plan to build a [sales bot](use_case) to increase our sales by 500%.
-- we plan to build a [sales bot](use_case) to increase our revenue by 100%.
-- a [insurance tool](use_case) that consults potential customers on the best life insurance to choose.
-- we're building a [conversational assistant](use_case) for our employees to book meeting rooms.
-```
-
-:::note
-Entities like `business_email` and `budget` would usually be handled by pretrained entity extractors
-(e.g. [DucklingHTTPExtractor](./components/entity-extractors.mdx#ducklinghttpextractor)
-or [SpacyEntityExtractor](./components/entity-extractors.mdx#spacyentityextractor)), but for this tutorial
-we want to avoid any additional setup.
-
-:::
-
-The intents and entities will need to be added to your `domain.yml` file as well:
-
-```yaml
-intents:
-  - greet
-  - bye
-  - thank
-  - faq
-  - contact_sales
-  - inform
-
-entities:
-  - company
-  - job_function
-  - person_name
-  - budget
-  - business_email
-  - use_case
-```
-
-A story for a form is very simple, as all the slot collection form happens inside the form, and
-therefore doesn't need to be covered in your stories. You just need to write a single story showing when the form should be activated. For the sales form, add this story
-to your `stories.md` file:
-
-```md
-## sales form
-* contact_sales
-    - sales_form                   <!--Run the sales_form action-->
-    - active_loop{"name": "sales_form"}   <!--Activate the form-->
-    - active_loop{"name": null}           <!--Deactivate the form-->
-```
-
-As a final step, let's add the FormPolicy to our config file:
-
-```yaml
+```rasa-yaml
 policies:
-  - name: MemoizationPolicy
-  - name: TEDPolicy
-  - name: MappingPolicy
-  - name: FormPolicy
+  - name: RulePolicy
 ```
 
-At this point, you already have a working form, so let's try it out. Make sure to uncomment the
-`action_endpoint` in your `endpoints.yml` to make Rasa aware of the action server that will run our form:
+#### Required Slots
 
-```yaml
-action_endpoint:
- url: "http://localhost:5055/webhook"
+For the newsletter subscription example, we want to collect the user's email and confirmation.
+
+We need to add all the slots our form is using to the domain. Slots filled by
+forms are usually `unfeaturized`, since their value doesn't change
+the flow of the conversation. 
+
+```rasa-yaml
+slots:
+  email:
+    type: unfeaturized
+  confirmation:
+    type: unfeaturized
 ```
 
-Then start the action server in a new terminal window:
+We define a form in our domain file with a slot and [slot mappings](forms.mdx#slot-mappings) for each piece
+of required information:
 
-```bash
-rasa run actions
+```rasa-yaml
+forms:
+  subscribe_form:
+    email:
+    - type: from_entity
+      entity: email
+    confirmation:
+    - type: from_intent
+      intent: affirm
+      value: true
+    - type: from_intent
+      intent: deny
+      value: false
 ```
 
-Then you can retrain and talk to your bot:
+#### Filling Slots
 
-```bash
-rasa train
-rasa shell
+[`Slot mappings`](forms.mdx#slot-mappings) define how a slot in a form can be filled.
+By default, a slot will be filled by an entity with the same name.
+
+The `email` slot is filled from the entity of the same name. Entities like emails 
+are best extracted using the [`DucklingEntityExtractor`](entity-extractors.mdx#ducklingentityextractor)
+in your NLU pipeline:
+
+```rasa-yaml
+language: en
+pipeline:
+# other components
+- DucklingEntityExtractor:
+  dimensions: ["email"]
 ```
 
-This simple form will work out of the box, however you will likely want to add a bit
-more capability to handle different situations. One example of this is validating
-slots, to make sure the user provided information correctly (read more about it
-[here](./forms.mdx#validating-user-input)).
+The `confirmation` slot is 
+filled based on the user's intent: If it is `affirm`, it'll be `true`, if it is
+`deny`, it'll be `false`. You can
+define the bot's response for asking for confirmation with buttons, so that the user can
+click "yes" or "no" to trigger `affirm` and `deny` (see next section).
 
-Another example is that you may want to fill slots from things other than entities
-of the same name. E.g. for the “use case” situation in our Form, we would expect
-the user to type a full sentence and not something that you could necessarily
-extract as an entity. In this case we can make use of the `slot_mappings` method,
-where you can describe what your entities should be extracted from. Here we can
-use the `from_text` method to extract the users whole message:
+
+## Validating Slots
+
+Often, you'll want to validate the user's input before accepting it,
+for example by checking an email against a database to verify if the user is already subscribed.
+See the docs on [validating form input](forms.mdx#validating-form-input) for more information
+about validation actions. 
+
+
+#### Requesting Slots
+
+To specify how the bot should ask for the required information,
+you define [`responses`](domain.mdx#responses) called `utter_ask_{slotname}` in your domain. 
+For the newsletter subscription example, the responses look like this:
+
+```rasa-yaml
+responses:
+  utter_ask_email:
+  - text: Sure thing! What's your email address?
+  utter_ask_confirmation:
+  - text: Do you want me to send you the Rasa newsletter at {email}?
+    buttons:
+    - payload: /affirm
+      title: Yes
+    - payload: /deny
+      title: No
+```
+
+#### Completing the Form
+
+Once all required slots have been filled, the bot can act on the
+information it has collected. Depending on the use case, the assistant
+might just respond with a message, or take a more complicated action behind
+the scenes before responding to the user.
+
+For the newsletter subscription example, the email would usually be added to a database. 
+In this case, the bot will just utter a response, but the response will vary based 
+on whether the user confirms or not:
+
 
 ```python
-def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict[Text, Any]]]]:
-    """A dictionary to map required slots to
-    - an extracted entity
-    - intent: value pairs
-    - a whole message
-    or a list of them, where a first match will be picked"""
-    return {"use_case": self.from_text(intent="inform")}
+class ActionSubscribeUser(Action):
+    def name(self):
+        return "action_subscribe_user"
+
+    def run(self, dispatcher, tracker, domain):
+        confirmation = tracker.get_slot("confirmation")
+
+        if confirmation:
+          email = tracker.get_slot("email")
+
+          # Code here for adding user's email to database
+
+          dispatcher.utter_message(
+              template="utter_subscribed"
+          )
+        else:
+          dispatcher.utter_message(
+              template="utter_cancelled"
+          )
+
+        return []
 ```
 
-Now our bot will extract the full user message when asking for the use case slot,
-and we don't need to use the `use_case` entity defined before.
 
-All of the methods within a form can be customized to handle different branches in your
-business logic. Read more about this [here](./forms.mdx).
-However, you should make sure not to handle any unhappy paths inside the form. These
-should be handled by writing regular stories, so your model can learn this behavior.
 
-:::note
-Here's a minimal checklist of files we modified to handle business logic using a form action:
+## Training Data
 
-* `actions.py`: Define the form action, including the `required_slots`, `slot_mappings` and `submit` methods
+### Rules
 
-* `data/nlu.yml`:
+All the slot collection happens inside the form, and
+therefore doesn't need to be covered explicitly by a rule. 
+You need two rules for a form's happy path: 
+One to activate it, and one to submit it. 
 
-    * Add examples for an intent to activate the form
 
-    * Add examples for an `inform` intent to fill the form
+```rasa-yaml
+rules:
+  - rule: activate form
+    steps:
+      - intent: subscribe_newsletter
+      - action: subscribe_form
+  - rule: submit form
+    steps:
+      - form: subscribe_form
+      - form: null
+      - action: action_subscribe_user
+```
 
-* `domain.yml`:
+By splitting up the activation and submission of the form, 
+the rules will still apply if the user provides 
+[unexpected input](unexpected-input.mdx) or interrupts
+the form with [chitchat](chitchat-faqs.mdx).
 
-    * Add all slots required by the form
 
-    * Add `utter_ask_{slot}` responses for all required slots
+### NLU Training Data
 
-    * Add your form action to the `forms` section
+You'll need to add examples for the intent that should activate the form, as well as 
+examples for how the user will provide the required information.
 
-    * Add all intents and entities from your NLU training data
+#### Form Activation Intent(s)
 
-* `data/stories.yml`: Add a story for the form
+You need to provide training examples for the
+intent(s) that should activate the form.
+For the newsletter subscription use case, we want the intent `subscribe_newsletter` to activate the form:
 
-* `config.yml`:
+```rasa-yaml
+nlu:
+- intent: subscribe_newsletter
+  examples: |
+    - Subscribe me to the newsletter please
+    - I want to get news from Rasa
+    - Send me the newsletter
+```
 
-    * Add the `FormPolicy` to your policies
+#### Form Filling Intent(s)
 
-    * Add entity extractors to your pipeline
+While the form is filling slots, it will not pay attention to which intent was predicted 
+unless:
+ - a slot mapping explicitly asks for or excludes an intent or
+ - an intent is involved in a different, competing rule
 
-* `endpoints.yml`: Define the `action_endpoint`
+For the newsletter subscription example, the `confirmation` slot is mapped to two intents,
+so you need to add training data for these intents if you expect users to provide
+free form input and not just use the buttons. 
 
-:::
+For the `email` slot, you can add examples to a generic `inform` intent. You don't need
+to annotate any entities, since `DucklingEntityExtractor` is a rule-based extractors
+that isn't trained on your training data:
+
+
+```rasa-yaml
+nlu:
+- intent: affirm
+  examples: |
+    - Yes
+    - yes, please
+    - yup
+- intent: deny
+  examples: |
+    - no don't
+    - no
+    - no I don't want that
+- intent: inform
+  examples: |
+    - example@example.com
+    - my email is bat@man.com
+    - send it to my@email.com
+```
+
+
+## Putting it all together
+
+Forms require a few more pieces than other conversation patterns,
+but in turn they can greatly simplify the logic of collecting user 
+information. To define a minimal form like the newsletter subscription
+example above, this is a summary of what you'll need to do:
+
+- [ ] Define the form with slot mappings
+- [ ] Add all required slots to the domain
+- [ ] Add `RulePolicy` to your policies in `config.yml`
+- [ ] Add rules for activating and submitting the form
+- [ ] Add examples for the intent to activate your form
+- [ ] Add examples for the intent(s) to fill the required slots
+- [ ] Define an action or response for the bot to take when the form is completed
+- [ ] Update your domain with new intents and actions you've defined
+
+To try out your newly defined form, retrain the bot and start `rasa shell`.
+If your final action is a custom action, you'll need to start the action server 
+in a seperate terminal when running `rasa shell`. If you're using `DucklingEntityExtractor` to extract
+entities, you'll need to start Duckling in the background as well
+(see the [instructions for running Duckling](entity-extractors.mdx#ducklingentityextractor)).

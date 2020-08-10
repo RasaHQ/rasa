@@ -4,55 +4,13 @@ sidebar_label: Fallback and Human Handoff
 title: Fallback and Human Handoff
 ---
 
-import useBaseUrl from '@docusaurus/useBaseUrl';
-
-<!-- TODO: add info about human handoff -->
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="failing-gracefully"></a>
-
 Even if you design your bot perfectly, users will inevitably say things to your
 assistant that you did not anticipate. In these cases, your assistant will fail,
 and it's important you ensure it does so gracefully.
 
-## Fallback policy
+## Concepts
 
-One of the most common failures is low NLU confidence, which is handled very nicely with
-the TwoStageFallbackPolicy. You can enable it by adding the following to your configuration file,
-
-```yaml
-policies:
-  - name: TwoStageFallbackPolicy
-    nlu_threshold: 0.8
-```
-
-and adding the `out_of_scope` intent to your `domain.yml` file:
-
-```yaml
-intents:
-- out_of_scope
-```
-
-When the nlu confidence falls below the defined threshold, the bot will prompt the user to
-rephrase their message. If the bot isn't able to get their message three times, there
-will be a final action where the bot can e.g. hand off to a human.
-
-To try this out, retrain your model and send a message like “order me a pizza” to your bot:
-
-```bash
-rasa train
-rasa shell
-```
-
-There are also a bunch of ways in which you can customize this policy. In Sara, our demo bot,
-we've customized it to suggest intents to the user within a certain confidence range to make
-it easier for the user to give the bot the information it needs.
-
-This is done by customizing the action `ActionDefaultAskAffirmation` as shown in the
-[Sara rasa-demo action server](https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L443)
-We define some intent mappings to make it more intuitive to the user what an intent means.
-
-
-## Fallback Actions
+### Fallback Actions
 
 Sometimes you want to revert to a fallback action, such as replying,
 `"Sorry, I didn't understand that"`. You can handle fallback cases by adding appropriate
@@ -61,52 +19,50 @@ fallbacks.
 In addition, you can also use [Custom Actions](./actions.mdx#custom-actions) to run any
 custom code.
 
-### Handling Low NLU Confidence
+#### `FallbackClassifier`
 
 Although Rasa's [Intent Classifier](./components/intent-classifiers.mdx) will
 generalize to unseen messages, some
 messages might receive a low classification confidence.
 To handle messages with low confidence, we recommend adding the
-[FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier) to your NLU pipeline.
-The [FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier) will
-predict an intent `nlu_fallback` when all other intent predictions fall below
-the configured confidence threshold.
-
-#### Writing Stories / Rules for Messages with Low Confidence
-
-When you add the [FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier)  to
-your NLU pipeline, you can treat
-messages with low classification confidence as any other intent. The following
-[Rule](./rules.mdx) will ask the user to rephrase when they send a message that is
-classified with low confidence:
+[FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier) to your NLU pipeline:
 
 ```yaml
-rules:
-- rule: Ask the user to rephrase whenever they send a message with low NLU confidence
-  steps:
-  - intent: nlu_fallback
-  - action: utter_please_rephrase
+pipeline:
+# other components
+- name: FallbackClassifier
+  confidence_threshold: 0.7
 ```
 
-Using [Rules](./rules.mdx) or [Stories](./stories.mdx) you can implement any desired
-fallback behavior.
+The [FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier) will
+predict the intent `nlu_fallback` when all other intent predictions fall below
+the configured confidence threshold. You can then write a rule
+for what the bot should do when `nlu_fallback` is predicted. Alternatively,
+you can use Two-Stage-Fallback (see next section).
 
-#### Two-Stage-Fallback
 
-The `Two-Stage-Fallback` handles low NLU confidence in multiple stages
+### Two-Stage-Fallback
+
+Two-Stage-Fallback handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.
 
-##### Requirements
 
-* Add the [RulePolicy](./policies.mdx#rule-policy) to your policy configuration
-  before using the `Two-Stage-Fallback`
-* Before using the `Two-Stage-Fallback`, make sure to add the
-  `out_of_scope` intent to your [Domain](./domain.mdx).
-  When users send messages with
-  the intent `out_of_scope` during the fallback (e.g. by pressing a button),
-  Rasa Open Source will know that the users denied the given intent suggestions.
+To make use of it, add `FallbackClassifier` to 
+your pipeline (see above) and the [RulePolicy](./policies.mdx#rule-policy) to your policy configuration:
 
-##### Usage
+```yaml
+policies:
+# other policies
+- RulePolicy
+```
+
+You'll also need to add the
+`out_of_scope` intent to your [Domain](./domain.mdx).
+When users send messages with
+the intent `out_of_scope` during the first or second stage of fallback (e.g. by pressing a button),
+Rasa Open Source will know that the users denied the given intent suggestions.
+
+#### Usage
 
 - If an NLU prediction has a low confidence score, the user is asked to affirm
   the classification of the intent.  (Default action:
@@ -164,9 +120,8 @@ Rasa's machine learning policies such as the [TED Policy](./policies.mdx#ted-pol
 are optimized to handle these unknown paths.
 
 To handle cases where even the machine learning policies can't predict the
-next action with high confidence, make sure to add the
-[Rule Policy](./policies.mdx#rule-policy) to your
-policy configuration. The [Rule Policy](./policies.mdx#rule-policy) will predict a
+next action with high confidence, configure the 
+[Rule Policy](./policies.mdx#rule-policy) to predict a
 default action if no [Policy](./policies.mdx) has a next action prediction with
 confidence above a configurable threshold.
 
@@ -231,80 +186,186 @@ class ActionDefaultFallback(Action):
 ```
 
 
-
 <img alt="Intent Mappings" src={useBaseUrl("/img/intent_mappings.png")} width="240" />
 
-## Out of scope intent
+### Out of scope intent
 
-It is good practice to also handle questions you know your users may ask, but for which you haven't necessarily implemented a user goal yet.
+It is good practice to also handle questions you know your users may ask, 
+but for which you haven't necessarily implemented a user goal yet.
 
 You can define an `out_of_scope` intent to handle generic out of scope requests, like “I'm hungry” and have
-the bot respond with a default message like “Sorry, I can't handle that request”:
+the bot respond with a default message like “Sorry, I can't handle that request” by writing a rule with the
+`out_of_scope` intent in it.
 
-```md
-* out_of_scope
-  utter_out_of_scope
+Going one step further, if you observe your users asking for certain things that you'll
+want to turn into a user goal in future, you can handle these as separate intents, to let
+the user know you've understood their message, but don't have a solution quite yet. For example,
+if the user asks “I want to apply for a job at Rasa”, we can then reply with
+“I understand you're looking for a job, but I'm afraid I can't handle that skill yet.”
+
+### Human Handoff
+
+As part of your fallback action, you may want the bot to hand over to a human agent
+e.g. as the final action in Two-Stage-Fallback, or when the user explicitly asks 
+for a human. A straightforward way to achieve human handoff is to configure your 
+[messaging or voice channel](messaging-and-voice-channels.mdx) to switch
+which host it listens to based on a specific bot or user message.
+
+For example, as the final action of Two-Stage-Fallback, the bot could ask the user, 
+"Would you like to be transferred to a human assistant?" and if they say yes, the
+bot sends a message with a specific payload like
+e.g. "handoff_to_human" to the channel. When the channel sees this message, it stops listening
+to the Rasa server, and sends a message to the human channel with the transcript
+of the chat conversation up to that point. 
+
+The implementation for handing off to a human from the front end will depend on which
+channel you're using. You can
+see an example implementation using an adaption of the [chatroom](https://github.com/scalableminds/chatroom) channel 
+in the [Financial Demo](https://github.com/RasaHQ/financial-demo) and 
+[Helpdesk-Assistant](https://github.com/RasaHQ/helpdesk-assistant)
+starterpacks.
+
+
+## Data
+
+You'll need to define rules for fallback and out-of-scope situations.
+You'll only need NLU training data for out-of-scope intents. 
+For human handoff, no training data is needed unless you want 
+a seperate rule for handing off to a human vs. Two-Stage-Fallback,
+or if you want to create a `human_handoff` intent that can be predicted directly.
+
+### NLU Training Data
+
+You should add any known out-of-scope requests to the training
+data for the `out_of_scope` intent or the specific out-of-scope intents, for example:
+
+```yaml
+nlu:
+- intent: out_of_scope
+  examples: |
+    - I want to order food
+    - What is 2 + 2?
+    - Who's the US President?
+
+- intent: ask_job
+  examples: |
+    - I need a job
+    - can I apply for a job here
+    - do you have open positions
 ```
 
-We'll need to add NLU data for the `out_of_scope` intent as well:
+As with every intent, you should source the majority of your examples 
+from real conversations. This is especially important for out-of-scope intents
+since false positives for these intents can lead to a bad user experience.
 
-```md
-## intent:out_of_scope
-- I want to order food
-- What is 2 + 2?
-- Who's the US President?
-- I need a job
+### Rules
+#### Rules for Messages with Low Confidence
+
+When you add the [FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier)  to
+your NLU pipeline, you can treat
+messages with low classification confidence as any other intent. The following
+[Rule](./rules.mdx) will ask the user to rephrase when they send a message that is
+classified with low confidence:
+
+```yaml
+rules:
+- rule: Ask the user to rephrase whenever they send a message with low NLU confidence
+  steps:
+  - intent: nlu_fallback
+  - action: utter_please_rephrase
 ```
 
-And finally we'll add a response to our `domain.yml` file:
+Using [Rules](./rules.mdx) or [Stories](./stories.mdx) you can implement any desired
+fallback behavior.
+
+<<<<<<< HEAD
+* `data/nlu.yml`:
+=======
+#### Rules for Two-Stage Fallback
+>>>>>>> 9a6687ebb2b... Conversation patterns
+
+To use the `Two-Stage-Fallback` for messages with low NLU confidence, add the
+following [Rule](./rules.mdx) to your training data. This rule will make sure that the
+`Two-Stage-Fallback` will be activated whenever a message is received with
+low classification confidence.
+
+<<<<<<< HEAD
+* `data/stories.yml`:
+=======
+```yaml
+rules:
+- rule: Implementation of the Two-Stage-Fallback
+  steps:
+  - intent: nlu_fallback
+  - action: two_stage_fallback
+  - form: two_stage_fallback
+```
+>>>>>>> 9a6687ebb2b... Conversation patterns
+
+
+#### Rules for out-of-scope requests 
+
+You need to write rules for what should happen for 
+each type of out-of-scope request:
+
+```yaml
+rules:
+- rule: out of scope
+  steps:
+  - intent: out_of_scope
+  - action: utter_out_of_scope
+
+- rule: out of scope job
+  steps:
+  - intent: ask_job
+  - action: utter_job_not_handled
+```
+
+The above example uses single-turn interactions, but 
+you can write a rule with whichever action or actions you'd like for each out-of-scope scenario.
+
+### Responses
+
+You'll need to define fallback and out-of-scope responses in our domain. 
+For example, assuming you're using the default fallback actions and the
+two out-of-scope intents defined above:
 
 ```yaml
 responses:
   utter_out_of_scope:
   - text: Sorry, I can't handle that request.
+  utter_job_not_handled:
+  - text: I understand you're looking for a job, but I'm afraid I can't handle that request yet.
+  utter_ask_rephrase:
+  - text: I'm sorry, I didn't quite understand that. Could you rephrase?
+  utter_default:
+  - text: 
 ```
 
-We can now re-train, and test this addition
+## Putting it all together
 
-```bash
-rasa train
-rasa shell
-```
+It's up to you how you want your assistant to act in a fallback or handoff
+situation. You might want to use one or more of the options
+described above Here's a summary of changes you need to make for each:
 
-Going one step further, if you observe your users asking for certain things, that you'll
-want to turn into a user goal in future, you can handle these as separate intents, to let
-the user know you've understood their message, but don't have a solution quite yet. E.g.,
-let's say the user asks “I want to apply for a job at Rasa”, we can then reply with
-“I understand you're looking for a job, but I'm afraid I can't handle that skill yet.”
+For single stage NLU fallback:
+  - [ ] Add `FallbackClassifier` to your pipeline in `config.yml`
+  - [ ] Define a rule for the `nlu_fallback` intent
 
-```md
-* ask_job
-  utter_job_not_handled
-```
+For known out-of-scope intents:
+  - [ ] Add training examples for each out-of-scope intent to your NLU data
+  - [ ] Define rules for each out-of-scope intent
 
-:::note
-Here's a minimal checklist of files we modified to help our assistant fail gracefully:
+For Two-Stage Fallback:
+  - [ ] Add `FallbackClassifier` to your pipeline in `config.yml`
+  - [ ] Define a rule for the `nlu_fallback` intent that triggers the `two_stage_fallback` action
+  - [ ] Define an out-of-scope intent in your domain
 
-* `data/nlu.yml`:
+For handling low core confidence:
+  - [ ] Configure the `RulePolicy` for core fallback in `config.yml`
+  - [ ] Optionally customize the fallback action you configure
 
-    * Add training data for the `out_of_scope` intent & any specific out of scope intents that you want to handle seperately
-
-* `data/stories.yml`:
-
-    * Add stories for any specific out of scope intents
-
-* `domain.yml`:
-
-    * Add the `out_of_scope` intent & any specific out of scope intents
-
-    * Add an `utter_out_of_scope` response & responses for any specific out of scope intents
-
-* `actions.py`:
-
-    * Customize `ActionDefaultAskAffirmation` to suggest intents for the user to choose from
-
-* `config.yml`:
-
-    * Add the TwoStageFallbackPolicy to the `policies` section
-
-:::
+For handing off to a human:
+  - [ ] Configure your front end to switch hosts
+  - [ ] Write a custom action (which could be your fallback action) to send the handoff payload
+  - [ ] Add a rule for triggering handoff (if not part of fallback)
