@@ -486,7 +486,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 * **Requires**
 
-  `intent` and `intent_ranking` output from a previous [Intent Classifier](./components.mdx#intent-classifiers)
+  `intent` and `intent_ranking` output from a previous intent classifier
 
 * **Output-Example**
 
@@ -518,14 +518,14 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 * **Description**
 
     The `FallbackClassifier` classifies a user message with the intent `nlu_fallback`
-    in case the previous [Intent Classifier](./components.mdx#intent-classifiers) wasn't
+    in case the previous intent classifier wasn't
     able to classify an intent with a confidence greater or equal than the `threshold`
     of the `FallbackClassifier`. It can also predict the fallback intent in the
     case when the confidence scores of the two top ranked intents are closer than the the
     `ambiguity_threshold`.
 
     You can use the `FallbackClassifier` to implement a
-    [Fallback Action](../core/fallback-actions.mdx) which handles message with uncertain
+    [Fallback Action](./extra/fallback-actions.mdx) which handles message with uncertain
     NLU predictions.
 
     ```yaml
@@ -545,7 +545,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     - `threshold`:
       This parameter sets the threshold for predicting the `nlu_fallback` intent.
       If no intent predicted by a previous
-      [Intent Classifier](./components.mdx#intent-classifiers) has a confidence
+      intent classifier has a confidence
       level greater or equal than `threshold` the `FallbackClassifier` will add
       a prediction of the `nlu_fallback` intent with a confidence `1.0`.
     - `ambiguity_threshold`: If you configure an `ambiguity_threshold`, the

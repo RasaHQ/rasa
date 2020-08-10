@@ -14,18 +14,18 @@ custom code.
 
 ## Handling Low NLU Confidence
 
-Although Rasa's [Intent Classifier](../nlu/components.mdx#intent-classifiers) will
+Although Rasa's [Intent Classifier](../components/intent-classifiers.mdx) will
 generalize to unseen messages, some
 messages might receive a low classification confidence.
 To handle messages with low confidence, we recommend adding the
-[FallbackClassifier](../nlu/components.mdx#fallbackclassifier) to your NLU pipeline.
-The [FallbackClassifier](../nlu/components.mdx#fallbackclassifier) will
+[FallbackClassifier](../components/intent-classifiers.mdx#fallbackclassifier) to your NLU pipeline.
+The [FallbackClassifier](../components/intent-classifiers.mdx#fallbackclassifier) will
 predict an intent `nlu_fallback` when all other intent predictions fall below
 the configured confidence threshold.
 
 ### Writing Stories / Rules for Messages with Low Confidence
 
-When you add the [FallbackClassifier](../nlu/components.mdx#fallbackclassifier)  to
+When you add the [FallbackClassifier](../components/intent-classifiers.mdx#fallbackclassifier)  to
 your NLU pipeline, you can treat
 messages with low classification confidence as any other intent. The following
 [Rule](./rules.mdx) will ask the user to rephrase when they send a message that is
@@ -52,7 +52,7 @@ by trying to disambiguate the user input.
 * Add the [RulePolicy](./policies.mdx#rule-policy) to your policy configuration
   before using the `Two-Stage-Fallback`
 * Before using the `Two-Stage-Fallback`, make sure to add the
-  `out_of_scope` intent to your [Domain](./domains.mdx).
+  `out_of_scope` intent to your [Domain](./domain.mdx).
   When users send messages with
   the intent `out_of_scope` during the fallback (e.g. by pressing a button),
   Rasa Open Source will know that the users denied the given intent suggestions.

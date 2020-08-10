@@ -12,9 +12,9 @@ Useful applications for rules are for example:
 * **FAQs**: FAQs are questions that users ask independent of the current context.
   Rules are an easy way to specify fixed answers to these questions.
 
-* [Fallback Actions](./fallback-actions.mdx): Users might confront your assistant with unexpected messages.
+* [Fallback Actions](./extra/fallback-actions.mdx): Users might confront your assistant with unexpected messages.
   The messages will typically receive low intent confidence.
-  You can use the [FallbackClassifier](../components.mdx#fallbackclassifier)
+  You can use the [FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier)
   in combination with rules to treat messages with low NLU confidence like an FAQ.
 
 * [Forms](./forms.mdx): It's a common use case for assistants to collect form-like
@@ -157,7 +157,7 @@ rules:
 Handling unknown messages gracefully is key to a successful assistant. As unknown
 messages can happen at any time in a conversation, they are a special case of
 [FAQs](./rules.mdx#faqs--mapping-intents-to-actions). Please see the docs on
-[Fallback Actions](./fallback-actions.mdx) for different ways to
+[Fallback Actions](./extra/fallback-actions.mdx) for different ways to
 handle fallbacks gracefully.
 
 ### Forms

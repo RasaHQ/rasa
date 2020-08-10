@@ -28,7 +28,7 @@ to the desired number of maximum predictions.
 Your project's `config.yml` file takes a `policies` key
 which you can use to customize the policies your assistant uses.
 You can also leave this key out or empty. Then the
-[Suggested Config](../api/model-configuration.mdx#suggested-config)
+[Suggested Config](.//model-configuration.mdx#suggested-config)
 feature will choose some default policies for you.
 
 You can also reference custom policies in your configuration. In the example below, the
@@ -412,7 +412,7 @@ data as well.
 The `MappingPolicy` is deprecated. Please see [Rules](./rules.mdx) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `MappingPolicy`, see the
-[migration guide](../migration-guide.mdx#migrating-from-the-mapping-policy).
+[migration guide](./migration-guide.mdx#migrating-from-the-mapping-policy).
 :::
 
 The `MappingPolicy` can be used to directly map intents to actions. The
@@ -472,10 +472,10 @@ in your policy example these intents will not work.
 ## Fallback Policy
 
 :::caution
-The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-actions.mdx) how to implement
+The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./extra/fallback-actions.mdx) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `FallbackPolicy`, see the
-[migration guide](../migration-guide.mdx#migrating-from-the-fallback-policy).
+[migration guide](./migration-guide.mdx#migrating-from-the-fallback-policy).
 :::
 
 The `FallbackPolicy` invokes a predefined action if at least one of the following occurs:
@@ -539,10 +539,10 @@ You can include either the `FallbackPolicy` or the
 ## Two-Stage Fallback Policy
 
 :::caution
-The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-actions.mdx) how to implement
+The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./extra/fallback-actions.mdx) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `TwoStageFallbackPolicy`, see the
-[migration guide](../migration-guide.mdx#migrating-from-the-two-stage-fallback-policy).
+[migration guide](./migration-guide.mdx#migrating-from-the-two-stage-fallback-policy).
 :::
 
 The `TwoStageFallbackPolicy` handles low NLU confidence in multiple stages
@@ -621,7 +621,7 @@ You can include either the `FallbackPolicy` or the
 The `FormPolicy` is deprecated. Please see [Forms](./forms.mdx) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `FormPolicy`, see the
-[migration guide](../migration-guide.mdx#form-policy).
+[migration guide](./migration-guide.mdx#form-policy).
 :::
 
 The `FormPolicy` is an extension of the `MemoizationPolicy` which
