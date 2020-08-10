@@ -33,8 +33,8 @@ data. One file can contain multiple keys, as long as there is not more
 than one of a certain key in a single file. The available keys are:
 
 - `version`
-- `stories`
 - `nlu`
+- `stories`
 - `rules`
 - `e2e_tests`
 
@@ -98,37 +98,42 @@ correctly.
 
 NLU training data is defined under the `nlu` key. Items that can be added under this key are:
 
-- [Training examples](#training-examples) grouped by user intent,
+- [Training examples](#training-examples) grouped by user intent e.g.
   optionally with annotated [entities](#entities)
-- [Synonyms](#synonyms)
-- [Regular Expression Features](#regular-expression-features)
-- [Lookup Tables](#lookup-tables)
-
-Here is a simple example of each item type:
 
 ```yaml
-nlu:
 - intent: check_balance
   examples: |
   - What's my [credit](account) balance?
   - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
+```
 
+- [Synonyms](#synonyms)
+
+```yaml
 - synonym: credit
   examples: |
   - credit card account
   - credit account
+```
 
+- [Regular expressions](#regular-expression-features)
+
+```yaml
 - regex: account_number
   examples: |
   - \d{10:12}
+```
 
+- [Lookup tables](#lookup-tables)
+
+```yaml
 - lookup: banks
   examples: |
   - JPMC
   - Comerica
   - Bank of America
 ```
-
 
 ### Training Examples
 
@@ -242,47 +247,21 @@ mapped to the **value** `credit`.
 
 :::note
 Synonym mapping only happens **after** entities have been extracted.
-That means that you need to provide examples of the variations 
-on a synonym in your training examples so
-that Rasa Open Source can learn to pick them up.
+That means that your training examples should include the synonym examples (`credit card account` and `credit account`) so that the model will learn to recognize these as entities and replace them with `credit`. 
 :::
 
-### Regular Expression Features
+### Regular Expressions
 
-Regular expressions can be used in two different ways:
+You can use regular expressions to improve intent classification and 
+entity extraction in combination with the [`RegexFeaturizer`](../nlu/components#regexfeaturizer) and [`RegexEntityExtractor`](../nlu/components#regexentityextractor) components in the pipeline.
 
-1. They can be used to support intent classification and entity
-extraction when using the [RegexFeaturizer](../nlu/components#regexfeaturizer) component in the pipeline.
+#### Regular Expressions for Intent Classification 
 
-2. They can be used to extract entities from a user message using the rule-based
-[`RegexEntityExtractor`](../nlu/components#regexentityextractor) component in the pipeline.
+You can use regular expressions to improve intent classification by including the `RegexFeaturizer` component in your pipeline. When using the `RegexFeaturizer`, a regex does not act as a rule for classifying an intent. It only provides a feature that the intent classifier will use 
+to learn patterns for intent classification.
+Currently, all intent classifiers make use of available regex features. 
 
-For example, if your entity has a deterministic structure (like a
-zipcode or an email address), you can use a regular expression to ease
-detection of that entity (using the `RegexFeaturizer`) or to
-extract the entities from the user message directly (using the
-`RegexEntityExtractor`). For a bank account number that is 10-12 digits long,
-it might look like this:
-
-```yaml
-- regex: account_number
-  examples: |
-  - \d{10:12}
-```
-
-If you are using regular expressions to directly extract entities using
-the `RegexEntityExtractor`, the name of the regular expression should
-match the name of the entity you want to extract.
-
-If you are using the regular expressions for the `RegexFeaturizer` the
-name of the regular expression does not matter. If does not define the
-entity nor the intent, it is a human readable description for you
-to remember what this regex is used for and is the title of the
-corresponding pattern feature.
-
-If you want to use the RegexFeaturizer you can also use the regex
-features to improve the intent classification performance, for example,
-by defining a greet clause:
+The name of a regex in this case is a human readable description. It can help you remember what a regex is used for, and it is the title of the corresponding pattern feature. It does not have to match any intent or entity name. A regex for greeting might look like this: 
 
 ```yaml
 - regex: greet
@@ -290,27 +269,52 @@ by defining a greet clause:
   - hey[^\\s]*
 ```
 
-Try to create your regular expressions in a way that they match as few
+The intent being matched could be `greet`,`say_hi`, `hallo` or anything else.
+
+Try to create your regular epressions in a way that they match as few
 words as possible. E.g. using `hey[^\\s]*` instead of `hey.*`, as the
 later one might match the whole message whereas the first one only
 matches a single word.
 
-When using the `RegexFeaturizer`, the regex features for entity extraction
-are currently only supported by the `CRFEntityExtractor` and the
-`DIETClassifier` component! Hence, other entity extractors, like
-`MitieEntityExtractor` or `SpacyEntityExtractor` won't use the generated
-features and their presence will not improve entity recognition for
-these extractors. Currently, all intent classifiers make use of
-available regex features.
+#### Regular Expressions for Entity Extraction
+
+If your entity has a deterministic structure (like an account number), you can use regular expressions in one of two ways:
+
+1. As features for the [`RegexFeaturizer`](../nlu/components#regexfeaturizer) component in the pipeline.
+
+  When used as as features for the `RegexFeaturizer` the
+  name of the regular expression does not matter.
+
+  Regex features for entity extraction
+  are currently only supported by the `CRFEntityExtractor` and the
+  `DIETClassifier` component. Other entity extractors, like
+  `MitieEntityExtractor` or `SpacyEntityExtractor`, won't use the generated
+  features and their presence will not improve entity recognition for
+  these extractors. 
+
+2. For rule-based entity extraction using the [`RegexEntityExtractor`](../nlu/components#regexentityextractor) component in the pipeline.
+
+  When using the `RegexEntityExtractor`, the name of the regular expression should
+  match the name of the entity you want to extract.
+
+In both cases, the format for defining the regex is the same.
+For example, a regex for extracting a bank account number that is 10-12 digits long mightlook like this:
+
+```yaml
+- regex: account_number
+  examples: |
+  - \d{10:12}
+```
+
 
 :::note
 
-Regex features only define entities when used in combination with the `RegexEntityExtractor`. Otherwise they  
-don't define entities nor intents! They only provide patterns to
-help the classifier recognize entities and related intents. Hence, you
-still need to provide intent & entity examples as part of your
-training data!
+When using the `RegexFeaturizer`, a regular expression only provides a feature
+that helps the model learn an association between intents/entities and inputs
+that fit the regular expression. In order for the model to learn this association,
+you must provide example inputs that include that regular expression! 
 :::
+
 
 ### Lookup Tables
 
@@ -318,38 +322,40 @@ Lookup tables provide a convenient way to supply a list of entity
 examples. The format is as follows:
 
 ```yaml
-- lookup: <lookup table name>
+- lookup: banks
   examples: |
-  - <an entity>
-  - <another entity>
+  - JPMC
+  - Bank of America
 ```
 
 The name of the lookup table is subject to the same constraints as the
 name of a regex feature.
 
-When lookup tables are supplied in training data, the contents are
-combined into a large regex pattern that looks for exact matches in the
-training examples. These regexes match over multiple tokens, so
-`lettuce wrap` would match `get me a lettuce wrap ASAP` as
-`[0 0 0 1 1 0]`. 
+When you supply a lookup table in your training data, the contents of that table
+are combined into one large regular expression. This regex is used to check
+each training example to see if it contains matches for entries in the
+lookup table.
 
-These regexes are processed identically to the regular
+Lookup table regexes are processed identically to the regular
 regex patterns directly specified in the training data and can be used
 either with the [RegexFeaturizer](../nlu/components#regexfeaturizer)
 or with the [RegexEntityExtractor](../nlu/components#regexentityextractor).
 
-**note**
+:::note
 
-If you are using lookup tables in combination with the RegexFeaturizer, there must be a few examples of matches  
+If you are using lookup tables in combination with the `RegexFeaturizer`, there must be a few examples of matches  
 in your training data. Otherwise the model will not learn to use the
 lookup table match features.
+:::
 
-**warning**
+:::warning
 
 You have to be careful when you add data to the lookup table.  
 For example, if there are false positives or other noise in the table,
 this can hurt performance. So make sure your lookup tables contain
 clean data.
+:::
+
 
 ## Conversation Training Data
 
