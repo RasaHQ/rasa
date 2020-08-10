@@ -85,6 +85,9 @@ pipeline:
 
 ## Training Data
 
+To train a Rasa model using the `RulePolicy` and the `ResponseSelector`, you'll need to provide
+rules, NLU training examples, and responses.
+
 ### Rules
 
 By using retrieval actions, you only need to write one rule for each retrieval intent. All intents
@@ -156,6 +159,8 @@ responses:
     It's always sunny where I live!
 ```
 
+## Putting it all together
 
-
-### Test Conversations
+Once you have your config, pipeline and training data set up, you can train a model and try it out! Even if you 
+have other skills in your bot besides chitchat and FAQs, your bot should be able to respond consistently 
+and correctly to FAQs and chitchat in any context. 
