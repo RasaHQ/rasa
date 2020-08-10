@@ -441,11 +441,19 @@ class FormAction(LoopAction):
         )
 
     def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Text:
-        full_name = f"utter_ask_{self._form_name}_{slot_name}"
-        if full_name in domain.action_names:
-            return full_name
+        search_path = [
+            f"action_ask_{self._form_name}_{slot_name}",
+            f"utter_ask_{self._form_name}_{slot_name}",
+            f"action_ask_{slot_name}",
+        ]
 
-        return f"utter_ask_{slot_name}"
+        found_actions = (
+            action_name
+            for action_name in search_path
+            if action_name in domain.action_names
+        )
+
+        return next(found_actions, f"utter_ask_{slot_name}")
 
     async def _ask_for_slot(
         self,
@@ -457,7 +465,6 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         logger.debug(f"Request next slot '{slot_name}'")
 
-        # TODO: Make it possible to use a custom action to ask for the next slot
         action_to_ask_for_next_slot = action.action_from_name(
             self._name_of_utterance(domain, slot_name), None, domain.user_actions
         )
