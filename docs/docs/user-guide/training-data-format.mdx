@@ -36,7 +36,7 @@ than one of a certain key in a single file. The available keys are:
 - `rules`
 - `e2e_tests`
 
-All YAML training data files should specify the `version` key in order
+All YAML training data files should specify the `version` key
 to be parsed correctly. Training data files with no `version` specified will be assumed to
 be in the format of the latest version of Rasa Open Source. Training data files with a version greater than is currently
 available for Rasa Open Source will be skipped.
@@ -297,7 +297,7 @@ match the name of the entity you want to extract.
 
 If you are using the regular expressions for the `RegexFeaturizer` the
 name of the regular expression does not matter. If does not define the
-entity nor the intent, it is just a human readable description for you
+entity nor the intent, it is a human readable description for you
 to remember what this regex is used for and is the title of the
 corresponding pattern feature.
 
@@ -327,7 +327,7 @@ available regex features.
 :::note
 
 Regex features only define entities when used in combination with the `RegexEntityExtractor`. Otherwise they  
-don't define entities nor intents! They simply provide patterns to
+don't define entities nor intents! They only provide patterns to
 help the classifier recognize entities and related intents. Hence, you
 still need to provide intent & entity examples as part of your
 training data!
@@ -416,7 +416,7 @@ Each step can be one of the following:
 
 While writing stories, you do not have to deal with the specific
 contents of the messages that the users send. Instead, you can take
-advantage of the output from the NLU pipeline, which lets you use just
+advantage of the output from the NLU pipeline, which lets you use
 the combination of an intent and entities to refer to all the possible
 messages the users can send to mean the same thing.
 
@@ -534,7 +534,8 @@ An interruption of a form could look like this:
     - action: utter_yay
 ```
 
-This means the story requires that the current value for the `feedback_value` slot be `positive` in order for the conversation to continue as specified.
+This means the story requires that the current value for the `feedback_value`
+slot be `positive` for the conversation to continue as specified.
 
 :::note
 Stories do not **set** slots. The slot must be set by an entity or custom action **before** the `slot_was_set` step.
@@ -543,8 +544,11 @@ Stories do not **set** slots. The slot must be set by an entity or custom action
 
 ### Checkpoints
 
-Checkpoints are ways to connect stories together. They can be either the first or the last step in a story. If they are the last step in a stories, that story will be connected to each other story that starts with the checkpoint of the same name when the model is trained.
-Here is an example of a story that ends with a checkpoint, and one that starts with the same checkpoint:
+Checkpoints are ways to connect stories together. They can be either the first
+or the last step in a story. If they are the last step in a stories, that story
+will be connected to each other story that starts with the checkpoint of the
+same name when the model is trained. Here is an example of a story that ends
+with a checkpoint, and one that starts with the same checkpoint:
 
 ```yaml
 - story: story_with_a_checkpoint_1
@@ -575,7 +579,11 @@ Checkpoints at the beginning of stories can also be conditional on slots being s
 ```
 
 
-Checkpoints can help simplify your training data and reduce redundancy in it, but **do not overuse them**. Using lots of checkpoints can quickly make your stories hard to understand. It makes sense to use them if a sequence of steps is repeated very often in different stories, but stories without checkpoints are easier to read and write. 
+Checkpoints can help simplify your training data and reduce redundancy in it,
+but **do not overuse them**. Using lots of checkpoints can quickly make your
+stories hard to understand. It makes sense to use them if a sequence of steps
+is repeated often in different stories, but stories without checkpoints
+are easier to read and write. 
 
 ### or
 
@@ -635,7 +643,7 @@ This format is only used for end-to-end evaluation and cannot be used for traini
 :::
 
 Test conversations are listed under the `e2e_tests` key. 
-Their format is very similar to the [story](#stories) format,
+Their format is similar to the [story](#stories) format,
 except that user message steps can include a `user` key which specifies the actual text and entity annotation of the user message. 
 
 Here's an example of a test conversation:
