@@ -603,7 +603,7 @@ class TestFormPolicy(TestMemoizationPolicy):
         p = FormPolicy(priority=priority)
         return p
 
-    def test_for_previous_action_and_intent(self, states, intent, action_name) -> bool:
+    def _test_for_previous_action_and_intent(self, states, intent, action_name) -> bool:
         previous_action_as_expected = False
         intent_as_expected = False
         if states[0].get(PREVIOUS_ACTION):
@@ -638,22 +638,23 @@ class TestFormPolicy(TestMemoizationPolicy):
                 # which FormPolicy should not predict a form action and
                 # should add FormValidation(False) event
                 # @formatter:off
+                print(states)
                 is_no_validation = (
-                    self.test_for_previous_action_and_intent(
+                    self._test_for_previous_action_and_intent(
                         states, "default", "some_form"
                     )
-                    or self.test_for_previous_action_and_intent(
+                    or self._test_for_previous_action_and_intent(
                         states, "stop", "some_form"
                     )
-                    or self.test_for_previous_action_and_intent(
+                    or self._test_for_previous_action_and_intent(
                         states, "affirm", "utter_ask_continue"
                     )
-                    or self.test_for_previous_action_and_intent(
+                    or self._test_for_previous_action_and_intent(
                         states, "deny", "utter_ask_continue"
                     )
                     # comes from the fact that intent_inform after utter_ask_continue
                     # is not read from stories
-                    or self.test_for_previous_action_and_intent(
+                    or self._test_for_previous_action_and_intent(
                         states, "stop", "utter_ask_continue"
                     )
                 )

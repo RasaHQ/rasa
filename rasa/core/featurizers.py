@@ -312,27 +312,28 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             self.slot_states + self.form_states + self.entities
         )
 
-    def _get_slot_and_entity_features(self, state: Dict) -> np.ndarray:
+    def _get_slot_and_entity_features(self, state: STATE) -> np.ndarray:
         binary_features = np.zeros(
             (len(self.slot_states + self.form_states + self.entities))
         )
-        if state.get(SLOTS) is not None:
+        if state.get(SLOTS):
             # collect slot features
+            current_slot_names = state.get(SLOTS).keys()
             slot_values = [
                 np.array(state.get(SLOTS)[slot_name])
                 for slot_name in self.slot_names
-                if slot_name in state.get(SLOTS).keys()
+                if slot_name in current_slot_names
             ]
             slot_values = np.hstack(slot_values)
             binary_features[: len(self.slot_states)] = slot_values
-        if state.get(FORM) is not None:
+        if state.get(FORM):
             # featurize forms
             form_values = np.zeros((len(self.form_states)))
             form_values[self.form_states.index(state.get(FORM).get("name"))] += 1
             binary_features[
                 len(self.slot_states) : len(self.slot_states + self.form_states)
             ] = form_values
-        if state.get(USER) is not None:
+        if state.get(USER):
             if state[USER].get(ENTITIES):
                 entities = state[USER].get(ENTITIES)
                 for entity in entities:
