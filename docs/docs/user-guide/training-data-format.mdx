@@ -149,8 +149,8 @@ nlu:
   - whats up
 ```
 
-However, its also possible to use an extended format if you need to include
-metadata for your examples:
+However, it's also possible to use an extended format if you have a custom NLU component and need metadata for your examples:
+
 
 ```yaml
 nlu:
@@ -164,23 +164,17 @@ nlu:
       hey there!
 ```
 
-The `metadata` key can contain arbitrary key-value data and the parser will not read its value. 
-Metadata can be useful for storing information relevant to an example, but not used by 
-the NLU pipeline. In the example above, the sentiment of 
-the example is recorded as metadata.
+The `metadata` key can contain arbitrary key-value data that stays with an example and is accessible by the componenets in the NLU pipeline. In the example above, the sentiment of 
+the example could be used by a custom component in the pipeline for sentiment analysis.
 
 ### Entities
 
-Training examples can include [entities])(../glossary#entity), which are annotated with the entity name. 
-In addition to the entity name, you can assign synonyms, roles, or groups to an entity.
+[Entities](../glossary#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](../nlu/components#regexentityextractor) based on a character pattern.
 
-The abbreviated syntax for annotating an entity is: 
+Entities are annotated in training examples with minimally the entity's name. 
+In addition to the entity name, you can annotate an entity with synonyms, roles, or groups.
 
-```yaml
-[<entity-text>]("<entity name>")
-```
-
-The extended syntax is: 
+The syntax for annotating an entity is: 
 
 ```yaml
 [<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}
@@ -372,12 +366,12 @@ follow the same path and are used to train the
 
 Stories are composed of:
   
-  - name: The name is arbitrary and not used in training; 
+  - `story`: The story's name. The name is arbitrary and not used in training; 
     you can use it as a human-readable reference for the story.
-  - metadata: arbitrary and optional, not used in training, 
+  - `metadata`: arbitrary and optional, not used in training, 
     you can use it to store relevant information about the story
     like e.g. the author
-  - a list of ``steps``: The user messages and actions that make up the story
+  - a list of `steps`: The user messages and actions that make up the story
 
 For example:
 
