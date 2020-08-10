@@ -77,6 +77,7 @@ module.exports = {
               items: [
                 'training-data-format',
                 'stories',
+                'rules',
               ],
             },
             'domain',
@@ -84,6 +85,7 @@ module.exports = {
               type: 'category',
               label: 'Config',
               items: [
+                'model-configuration',
                 {
                   type: 'category',
                   label: 'Pipeline Components',

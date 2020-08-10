@@ -13,6 +13,19 @@ In Rasa Open Source, incoming messages are processed by a sequence of components
 These components are executed one after another in a so-called processing `pipeline` defined in your `config.yml`.
 Choosing an NLU pipeline allows you to customize your model and finetune it on your dataset.
 
+To get started, you can let the
+[Suggested Config](../api/model-configuration.mdx#suggested-config) feature choose a
+default pipeline for you.
+Just provide your bot's `language` in the `config.yml` file and leave the `pipeline` key
+out or empty.
+
+```yaml
+language: fr  # your 2-letter language code
+
+pipeline:
+# intentionally left empty
+```
+
 ### Sensible Starting Pipelines
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-english"></a>
