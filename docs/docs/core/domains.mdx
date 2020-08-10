@@ -87,21 +87,22 @@ see [Custom Actions](./actions.mdx#custom-actions)).
 
 ## Responses
 
-Responses are messages the bot will send back to the user. There are
-two ways to use these responses:
+Responses are messages the bot will send back to the user. 
+Regular responses should start with `utter_` so that they can be used directly as actions.
+[Retrieval actions](../core/retrieval-actions) also go under the `responses` section, and are
+written as `<retrieval_model>/<retrieval_intent>` e.g. `faq/language` or `chitchat/askweather`.
+Responses can include text, images and buttons. A text response would be defined in the domain as e.g.
 
-1. If the name of the response starts with `utter_`, the response can
-   directly be used as an action. You would add the response
-   to the domain:
 
-   ```yaml
-   responses:
-     utter_greet:
-     - text: "Hey! How are you?"
-   ```
+```yaml
+responses:
+  utter_greet:
+  - text: "Hey! How are you?"
+```
+  
+There are two ways to use these responses:
 
-   Afterwards, you can use the response as an action in the
-   stories:
+1. The response can directly be used as an action in a story:
 
    ```story
    ## greet the user

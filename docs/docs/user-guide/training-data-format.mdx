@@ -10,13 +10,19 @@ description: Description of the YAML format for training data
 ### YAML Format
 
 Rasa Open Source 2.0 uses [YAML](https://yaml.org/spec/1.2/spec.html) as
-a unified and extendable way to manage all kinds of training data,
-including NLU data, stories, and responses. With the YAML format, users
-are free to distribute training data among any number of YAML files;
-only the top level keys determine what kind of training data is in a
-section. That means that if any one component of training data gets too
-large (e.g. a lookup table with many entries), it can be moved to a
-separate file.
+a unified and extendable way to manage all training data,
+including NLU data, stories and rules. 
+
+With the YAML format, training data can be split over any number of YAML files,
+and every file can contain any kind of data. 
+The training data parser will read the top level keys in each file to decide
+what kind of data is in a section at training time.
+
+The [domain](../glossary#domain) uses
+the same YAML format as the training data and can also be split across
+multiple files or combined with training data in one file. The domain includes
+the definitions for [responses](../core/domains#responses) and [forms](../core/forms).
+See the [documentation for domains](../core/domains) to learn more.
 
 ### High Level Structure
 
@@ -24,20 +30,16 @@ Each file can contain one or more **keys** with corresponding training
 data. One file can contain multiple keys, as long as there is not more
 than one of a certain key in a single file. The available keys are:
 
--   `version`
--   `stories`
--   `nlu`
--   `responses`
--   `rules`
--   `e2e_tests`
+- `version`
+- `stories`
+- `nlu`
+- `rules`
+- `e2e_tests`
 
 All YAML training data files should specify the `version` key in order
-to be parsed correctly:
-
--   Training data files with no `version` specified will be assumed to
-    be in the format of the latest version of Rasa Open Source.
--   Training data files with a version greater than is currently
-    available for Rasa Open Source will be skipped.
+to be parsed correctly. Training data files with no `version` specified will be assumed to
+be in the format of the latest version of Rasa Open Source. Training data files with a version greater than is currently
+available for Rasa Open Source will be skipped.
 
 ### Example
 
@@ -67,13 +69,14 @@ responses:
 
   utter_greet:
   - text: |
-    Hallo there!
+    Hey there!
 
 nlu:
 - intent: greet
   examples: |
-  - Hallo
+  - Hey
   - Hi
+  - hey there [Sara](name)
 
 - intent: faq/language
   examples: |
@@ -82,7 +85,7 @@ nlu:
 
 e2e_tests:
 - user: |
-    hello
+    hey
   intent: greet
 - action: utter_greet
 - user: |
@@ -96,8 +99,8 @@ e2e_tests:
 
 NLU training data consists of example user utterances categorized by
 **intent**, i.e. what the user is trying to convey or accomplish with their
-message. Training examples can also include **entities**, which is structured
-information that can be extracted from a user's message. The other components
+message. Training examples can also include **entities**. Entities are structured
+pieces of information that can be extracted from a user's message. The other components
 of NLU training data are there to help the model identify intent and entity
 correctly.
 
@@ -113,70 +116,77 @@ Here is a simple example of each item type:
 
 ```yaml
 nlu:
-- intent: greet
+- intent: check_balance
   examples: |
-  - hey
-  - hello
+  - What's my [credit](account) balance?
+  - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
 
 - synonym: credit
   examples: |
   - credit card account
   - credit account
 
-- regex: zipcode
+- regex: account_number
   examples: |
-  - [0-9]{5}
+  - \d{10:12}
 
-- lookup: additional_currencies
+- lookup: banks
   examples: |
-  - Peso
-  - Euro
-  - Dollar
+  - JPMC
+  - Comerica
+  - Bank of America
 ```
 
 
 ### Training Examples
 
-Training examples are grouped by intent and listed under the
-`examples` key. Examples can be provided in one of two formats:
-
-1.  As a list of text values. For example:
+Training examples are grouped by [intent](../glossary#intent) and listed under the
+`examples` key. Usually, you'll list one example per line as follows:
 
 ```yaml
 nlu:
 - intent: greet
   examples: |
   - hey
-  - hallo
+  - hi
   - whats up
 ```
 
-1.  As a list of dictionaries, with at least the `text` key specified.
-    For example:
+However, its also possible to use an extended format if you want to include
+metadata for your examples:
 
 ```yaml
 nlu:
 - intent: greet
   examples: 
   - text: |
-      hallo
+      hi
     metadata:
       sentiment: neutral
   - text: |
       hey there!
 ```
 
-Note the `metadata` key inside the `examples` dictionary. It can contain arbitrary key-value data and the parser will not read its value. You can use it to store
-any information relevant to the example.
+The `metadata` key can contain arbitrary key-value data and the parser will not read its value. 
+Metadata can be useful for storing information relevant to an example, but not used by 
+the NLU pipeline. In the example above, the sentiment of 
+the example is recorded as metadata.
 
 ### Entities
 
-Where applicable, entities are annotated in training examples using the
-syntax:
+Where applicable, [entities])(../glossary#entity) can be annotated in training examples using either the
+abbreviated syntax:
+
+```yaml
+[<entity-text>]("<entity name>")
+```
+
+Or the syntax:
 
 ```yaml
 [<entity-text>]{"entity": "<entity name>"}
 ```
+
 
 In a training example, this would look like:
 
@@ -184,11 +194,14 @@ In a training example, this would look like:
 nlu:
 - intent: check_balance
   examples: |
-  - how much do I have on my [savings]{"entity": "account"} account
+  - how much do I have on my [savings]("account") account
   - how much money is in my [checking]{"entity": "account"} account
+  - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
+
 ```
 
-You can also assign synonyms, roles, or groups to an entity using the
+The third example above includes a [synonym](#synonyms).
+You can assign synonyms, roles, or groups to an entity using the
 syntax:
 
 ```yaml
@@ -198,7 +211,7 @@ syntax:
 The keywords `role`, `group`, and `value` are optional in this notation.
 The `value` keyword refers to synonyms, which are explained in the
 following section. To understand what the labels `role` and `group` are
-for, see section entities-roles-groups.
+for, see the section on (entity roles and groups)[nlu/entity-extraction#entities-roles-and-groups].
 
 ### Synonyms
 
@@ -225,11 +238,13 @@ nlu:
 ```
 
 To use the synonyms defined in your training data, you need to make sure the
-pipeline contains the `EntitySynonymMapper` component (see components). You
+pipeline contains the [`EntitySynonymMapper`](../nlu/components#entitysynonymmapper) component. You
 should define synonyms when there are multiple ways users refer to the same
 thing.
 
-For example, let's say you had an entity `account_type`, and you expect the
+#### Example 
+
+For example, let's say you had an entity `account`, and you expect the
 value "credit". Your users also refer to their "credit" account as "credit
 account" and "credit card account".
 
@@ -248,9 +263,8 @@ mapped to the **value** `credit`.
 
 :::note
 Synonym mapping only happens **after** entities have been extracted.
-That means that in addition to defining your synonyms, you need to
-provide examples of the variations on a synonym as
-entities in your training examples so
+That means that you need to provide examples of the variations 
+on a synonym in your training examples so
 that Rasa Open Source can learn to pick them up.
 :::
 
@@ -259,21 +273,22 @@ that Rasa Open Source can learn to pick them up.
 Regular expressions can be used in two different ways:
 
 1. They can be used to support intent classification and entity
-extraction when using the `RegexFeaturizer` component in the pipeline.
+extraction when using the [RegexFeaturizer](../nlu/components#regexfeaturizer) component in the pipeline.
 
-2. They can be used to directly extract entities from a user messages
-when using the `RegexEntityExtractor` component in the pipeline.
+2. They can be used to extract entities from a user message using the rule-based
+[`RegexEntityExtractor`](../nlu/components#regexentityextractor) component in the pipeline.
 
 For example, if your entity has a deterministic structure (like a
 zipcode or an email address), you can use a regular expression to ease
-detection of that entity (using the `RegexFeaturizer`) or to directly
-extract the entities from the user message (using the
-`RegexEntityExtractor`). For the zipcode example it might look like this:
+detection of that entity (using the `RegexFeaturizer`) or to
+extract the entities from the user message directly (using the
+`RegexEntityExtractor`). For a bank account number that is 10-12 digits long,
+it might look like this:
 
 ```yaml
-- regex: zipcode
+- regex: account_number
   examples: |
-  - [0-9]{5}
+  - \d{10:12}
 ```
 
 If you are using regular expressions to directly extract entities using
@@ -311,7 +326,7 @@ available regex features.
 
 :::note
 
-Regex features only define entities when used in combination with the RegexEntityExtractor. Otherwise they  
+Regex features only define entities when used in combination with the `RegexEntityExtractor`. Otherwise they  
 don't define entities nor intents! They simply provide patterns to
 help the classifier recognize entities and related intents. Hence, you
 still need to provide intent & entity examples as part of your
@@ -337,8 +352,12 @@ When lookup tables are supplied in training data, the contents are
 combined into a large regex pattern that looks for exact matches in the
 training examples. These regexes match over multiple tokens, so
 `lettuce wrap` would match `get me a lettuce wrap ASAP` as
-`[0 0 0 1 1 0]`. These regexes are processed identically to the regular
-regex patterns directly specified in the training data.
+`[0 0 0 1 1 0]`. 
+
+These regexes are processed identically to the regular
+regex patterns directly specified in the training data and can be used
+either with the [RegexFeaturizer](../nlu/components#regexfeaturizer)
+or with the [RegexEntityExtractor](../nlu/components#regexentityextractor).
 
 **note**
 
@@ -356,10 +375,18 @@ clean data.
 
 ## Stories
 
-**Stories** are representations of conversations between a user and an AI
-assistant. They are used to train the dialogue management model and can help it learn to generalize to unseen conversation paths.
+**Stories** are representations of conversations between a user and a conversational
+assistant. They are used to train the dialogue management model and can help it
+learn to generalize to unseen conversation paths.
 
-Stories are composed of a name (arbitrary, not used in training), optional metadata (also arbitrary and not used in training) and a list of ``steps``.
+Stories are composed of:
+  
+  - name: The name is arbitrary and not used in training; 
+    you can use it as a human-readable reference for the story.
+  - metadata: arbitrary and optional, not used in training, 
+    you can use it to store relevant information about the story
+    like e.g. the author
+  - a list of ``steps``: The user messages and actions that make up the story
 
 For example:
 
@@ -375,13 +402,13 @@ stories:
   - action: utter_greet
 ```
 
-Each step is a dictionary representation of one of the following:
+Each step can be one of the following:
 
   - A [user message](#user-messages), represented by **intent** and **entities**.
   - An [`or`](#or) statement, which includes two or more user messages under it
   - A bot [action](#actions)
   - A [form](#forms)
-  - A [slot was set](#slots) record
+  - A [slot was set](#slots) event
   - A [checkpoint](#checkpoints), which connects the story to another story
 
 
@@ -588,7 +615,7 @@ A rule that with a condition looks like this:
 ```yaml
 rules:
 
-- rule: Only say `hello` when the user provided a name
+- rule: Only say `hey` when the user provided a name
   condition:
   - slot: user_provided_name
     value: true
@@ -598,30 +625,6 @@ rules:
 ```
 
 Read more about writing rules [here](../core/rules#writing-a-rule).
-
-## Responses
-
-Both [retrieval actions](../core/retrieval-actions) and [responses](#responses) go under the `responses` key. Responses can include text, images and buttons. In this example, `utter_greet` and 
-`utter_cheer_up` are bot responses, and `faq/language` is a retrieval
-action:
-
-```yaml
-responses:
-  utter_greet:
-  - text: "Hey! How are you?"
-    buttons:
-    - title: "great"
-      payload: "/react_positive"
-    - title: "super sad"
-      payload: "/react_negative"
-  utter_cheer_up:
-  - text: "Here is something to cheer you up:"
-    image: "https://i.imgur.com/nGF1K8f.jpg"
-  faq/language:
-  - text: "I only speak English for now!"
-```
-
-Read more about responses and their format on the [domains page](../core/domains#responses)
 
 ## Test Conversations
 
@@ -642,7 +645,7 @@ e2e_tests:
 - story: A basic end-to-end test
   steps:
   - user: |
-     hello
+     hey
     intent: greet
   - action: utter_ask_howcanhelp
   - user: |
