@@ -21,6 +21,7 @@ from rasa.nlu.constants import (
     OPEN_UTTERANCE_PREDICTION_KEY,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     INTENT_RANKING_KEY,
+    INTENT_NAME_KEY,
 )
 
 from rasa.core.events import (
@@ -722,14 +723,14 @@ class ActionDefaultAskAffirmation(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        intent_to_affirm = tracker.latest_message.intent.get("name")
+        intent_to_affirm = tracker.latest_message.intent.get(INTENT_NAME_KEY)
 
         intent_ranking = tracker.latest_message.intent.get(INTENT_RANKING_KEY, [])
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1]["name"]
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 
