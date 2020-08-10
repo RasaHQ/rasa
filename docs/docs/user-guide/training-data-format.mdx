@@ -86,7 +86,7 @@ e2e_tests:
 
 ## NLU Training Data
 
-NLU training data consists of example user utterances categorized by
+[NLU](../glossary#nlu) training data consists of example user utterances categorized by
 **intent**, i.e. what the user is trying to convey or accomplish with their
 message. Training examples can also include **entities**. Entities are structured
 pieces of information that can be extracted from a user's message. The other components
@@ -141,7 +141,7 @@ nlu:
   - whats up
 ```
 
-However, its also possible to use an extended format if you want to include
+However, its also possible to use an extended format if you need to include
 metadata for your examples:
 
 ```yaml
@@ -163,21 +163,27 @@ the example is recorded as metadata.
 
 ### Entities
 
-Where applicable, [entities])(../glossary#entity) can be annotated in training examples using either the
-abbreviated syntax:
+Training examples can include [entities])(../glossary#entity), which are annotated with the entity name. 
+In addition to the entity name, you can assign synonyms, roles, or groups to an entity.
+
+The abbreviated syntax for annotating an entity is: 
 
 ```yaml
 [<entity-text>]("<entity name>")
 ```
 
-Or the syntax:
+The extended syntax is: 
 
 ```yaml
-[<entity-text>]{"entity": "<entity name>"}
+[<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}
 ```
 
+The keywords `role`, `group`, and `value` are optional in this notation.
+The `value` keyword refers to synonyms, which are explained in the
+following section. To understand what the labels `role` and `group` are
+for, see the section on (entity roles and groups)[nlu/entity-extraction#entities-roles-and-groups].
 
-In a training example, this would look like:
+In training examples, entity annotation would look like this:
 
 ```yaml
 nlu:
@@ -189,19 +195,6 @@ nlu:
 
 ```
 
-The third example above includes a [synonym](#synonyms).
-You can assign synonyms, roles, or groups to an entity using the
-syntax:
-
-```yaml
-[<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}
-```
-
-The keywords `role`, `group`, and `value` are optional in this notation.
-The `value` keyword refers to synonyms, which are explained in the
-following section. To understand what the labels `role` and `group` are
-for, see the section on (entity roles and groups)[nlu/entity-extraction#entities-roles-and-groups].
-
 ### Synonyms
 
 Synonyms provide a way to normalize your training data by mapping an
@@ -209,13 +202,13 @@ extracted entity to a value other than the literal text extracted.
 Synonyms can be defined in the format:
 
 ```yaml
-- synonym: <synonym value>
+- synonym: credit
   examples: |
-  - <a synonym variation>
-  - <another synonym variation>
+  - credit card account
+  - credit account
 ```
 
-Synonyms can also be definedin-line in your training examples by
+Synonyms can also be defined in-line in your training examples by
 specifying the `value` of the entity:
 
 ```yaml
@@ -227,25 +220,19 @@ nlu:
 ```
 
 To use the synonyms defined in your training data, you need to make sure the
-pipeline contains the [`EntitySynonymMapper`](../nlu/components#entitysynonymmapper) component. You
+pipeline in your configuration file contains the
+[`EntitySynonymMapper`](../nlu/components#entitysynonymmapper) component. You
 should define synonyms when there are multiple ways users refer to the same
 thing.
 
 #### Example 
 
-For example, let's say you had an entity `account`, and you expect the
+Let's say you had an entity `account`, and you expect the
 value "credit". Your users also refer to their "credit" account as "credit
 account" and "credit card account".
 
 In this case, you could define "credit card account" and "credit account" as
-**synonyms** to "credit":
-
-```yaml
-- synonym: credit
-  examples: |
-  - credit card account
-  - credit account
-```
+**synonyms** to "credit", as in the examples above.
 
 Then, if either of these phrases is extracted as an entity, it will be
 mapped to the **value** `credit`.
