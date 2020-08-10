@@ -51,6 +51,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 
@@ -436,7 +437,7 @@ class MessageProcessor:
         if not self.domain or self.domain.is_empty():
             return
 
-        intent = parse_data["intent"]["name"]
+        intent = parse_data["intent"][INTENT_NAME_KEY]
         if intent:
             known_intents = self.domain.intents + DEFAULT_INTENTS
             if intent not in known_intents:
@@ -520,7 +521,7 @@ class MessageProcessor:
     def _should_handle_message(tracker: DialogueStateTracker):
         return (
             not tracker.is_paused()
-            or tracker.latest_message.intent.get("name") == USER_INTENT_RESTART
+            or tracker.latest_message.intent.get(INTENT_NAME_KEY) == USER_INTENT_RESTART
         )
 
     def is_action_limit_reached(
