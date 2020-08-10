@@ -44,6 +44,8 @@ clean:
 
 install:
 	poetry run python -m pip install -U pip
+	# temporary fix for the issue described here: https://rasa-hq.slack.com/archives/C36SS4N8M/p1596443747470000
+	poetry run pip install tensorflow==2.2.0 --no-cache-dir
 	poetry install
 
 install-mitie:
