@@ -7,9 +7,7 @@ description: Description of the YAML format for training data
 
 ## Overview
 
-### YAML Format
-
-Rasa Open Source 2.0 uses [YAML](https://yaml.org/spec/1.2/spec.html) as
+Rasa Open Source uses [YAML](https://yaml.org/spec/1.2/spec.html) as
 a unified and extendable way to manage all training data,
 including NLU data, stories and rules. 
 
@@ -61,15 +59,6 @@ rules:
   steps:
   - intent: greet
   - action: utter_greet
-
-responses:
-  faq/language:
-  - text: |
-    I can only do English at the moment
-
-  utter_greet:
-  - text: |
-    Hey there!
 
 nlu:
 - intent: greet
@@ -372,12 +361,18 @@ For example, if there are false positives or other noise in the table,
 this can hurt performance. So make sure your lookup tables contain
 clean data.
 
+## Conversation Training Data
 
-## Stories
+Stories and rules are both representations of conversations between a user and a conversational
+assistant. They are used to train the dialogue management
+model. **Stories** are used to train a machine learning model to identify patterns
+in conversations and generalize to unseen conversation paths.
+**[Rules](../core/rules)** describe parts of conversations that should always
+follow the same path and are used to train the
+[RulePolicy](../core/policies#rule-policy). 
 
-**Stories** are representations of conversations between a user and a conversational
-assistant. They are used to train the dialogue management model and can help it
-learn to generalize to unseen conversation paths.
+
+### Stories
 
 Stories are composed of:
   
@@ -412,7 +407,7 @@ Each step can be one of the following:
   - A [checkpoint](#checkpoints), which connects the story to another story
 
 
-### User Messages
+#### User Messages
 
 While writing stories, you do not have to deal with the specific
 contents of the messages that the users send. Instead, you can take
@@ -447,7 +442,7 @@ both the intent and entities (you can, however, change this behavior
 using the [`use_entities`](#use-entities) attribute).
 
 
-### Actions
+#### Actions
 
 All actions executed by the bot are specified with the `action:` key followed
 by the name of the action.
@@ -479,7 +474,7 @@ While writing stories, you will encounter three types of actions:
     - action: action_store_feedback
 ```
 
-### Forms
+#### Forms
 
 A form is a specific kind of custom action that contains the logic to loop over
 a set of required slots and ask the user for this information. The "happy path" 
@@ -522,7 +517,7 @@ An interruption of a form could look like this:
 ```
 
 
-### Slots
+#### Slots
 
 **[Slots](../core/slots)** act as the bots memory. Slots are **set** by entities or by custom actions and **referenced** by stories in `slot_was_set` steps. For example.
 
@@ -542,7 +537,7 @@ Stories do not **set** slots. The slot must be set by an entity or custom action
 :::
 
 
-### Checkpoints
+#### Checkpoints
 
 Checkpoints are ways to connect stories together. They can be either the first
 or the last step in a story. If they are the last step in a stories, that story
@@ -585,7 +580,7 @@ stories hard to understand. It makes sense to use them if a sequence of steps
 is repeated often in different stories, but stories without checkpoints
 are easier to read and write. 
 
-### or
+#### or
 
 `or` steps are ways to handle multiple intents the same way,
 without writing a separate story for each intent. For example, if you ask the user to confirm something, you might want to treat the `affirm` and `thankyou` intents in the same way. Stories with `or` steps will be converted into multiple
@@ -608,10 +603,7 @@ Just like checkpoints, OR statements can be useful, but if you are using a lot o
 Overusing these features (both checkpoints and OR statements) will slow down training.
 :::
 
-## Rules
-
-**[Rules](../core/rules)** describe parts of conversations that should always follow
-the same path and are used to train the [RulePolicy](../core/policies#rule-policy). 
+### Rules
 
 Rules are listed under the `rules` key and look similar to stories. A rule also has a `steps`
 key, which contains a list of the same steps as stories do. Rules can additionally
