@@ -13,7 +13,7 @@ module.exports = {
             'index',
             'prototype-an-assistant',
             'installation',
-            'cheatsheet',
+            // 'cheatsheet',
             'migrate-from',
           ],
         },
@@ -22,7 +22,7 @@ module.exports = {
           label: 'Best Practices',
           collapsed: true,
           items: [
-            'cdd',
+            'conversation-driven-development',
             'generating-nlu-data',
             'writing-stories',
           ],
@@ -44,11 +44,11 @@ module.exports = {
           label: 'Preparing For Production',
           collapsed: true,
           items: [
+            'messaging-and-voice-channels',
             'tuning-your-model',
             'testing-your-assistant',
             'setting-up-ci-cd',
             'how-to-deploy',
-            'messaging-and-voice-channels',
           ],
         },
         {
@@ -63,129 +63,127 @@ module.exports = {
     },
     {
       type: 'category',
-      label: 'Rasa Concepts',
+      label: 'Concepts',
       collapsed: false,
       items: [
         {
           type: 'category',
-          label: 'Rasa Open Source',
-          collapsed: true,
+          label: 'Training Data',
           items: [
+            'training-data-format',
+            'stories',
+            'rules',
+          ],
+        },
+        'domain',
+        {
+          type: 'category',
+          label: 'Config',
+          items: [
+            'model-configuration',
             {
               type: 'category',
-              label: 'Training Data',
+              label: 'Pipeline Components',
               items: [
-                'training-data-format',
-                'stories',
+                'components/language-models',
+                'components/tokenizers',
+                'components/featurizers',
+                'components/intent-classifiers',
+                'components/entity-extractors',
+                'components/selectors',
+                'components/custom-nlu-components',
               ],
             },
-            'domain',
-            {
-              type: 'category',
-              label: 'Config',
-              items: [
-                {
-                  type: 'category',
-                  label: 'Pipeline Components',
-                  items: [
-                    'components/language-models',
-                    'components/tokenizers',
-                    'components/featurizers',
-                    'components/intent-classifiers',
-                    'components/entity-extractors',
-                    'components/selectors',
-                    'components/custom-nlu-components',
-                  ],
-                },
-                {
-                  type: 'category',
-                  label: 'Policies',
-                  items: [
-                    'policies',
-                  ],
-                },
-                'training-data-importers',
-              ],
-            },
-            {
-              type: 'category',
-              label: 'Actions',
-              items: [
-                'responses',
-                'retrieval-actions',
-                'forms',
-                'reminders-and-external-events',
-                'default-actions',
-              ],
-            },
-            {
-              type: 'category',
-              label: 'Channel Connectors',
-              items: [
-                'connectors/your-own-website',
-                'connectors/facebook-messenger',
-                'connectors/slack',
-                'connectors/telegram',
-                'connectors/twilio',
-                'connectors/hangouts',
-                'connectors/microsoft-bot-framework',
-                'connectors/cisco-webex-teams',
-                'connectors/rocketchat',
-                'connectors/mattermost',
-              ],
-            },
-            {
-              type: 'category',
-              label: 'Architecture', // name still confusing with architecture page elsewhere
-              items: [
-                'tracker-stores',
-                'event-brokers',
-                'model-storage',
-                'lock-stores',
-                'nlg',
-              ],
-            },
+            'policies',
+            'training-data-importers',
           ],
         },
         {
           type: 'category',
-          label: 'Rasa SDK',
-          collapsed: true,
+          label: 'Actions',
           items: [
-            'running-action-server',
+            // 'actions',
+            'responses',
             {
               type: 'category',
               label: 'Custom Actions',
               items: [
-                'actions',
+                'custom-actions',
                 'knowledge-bases',
+                {
+                  type: 'category',
+                  label: 'Rasa SDK',
+                  collapsed: true,
+                  items: [
+                    'running-action-server',
+                    'tracker-dispatcher',
+                    // 'events',
+                    // 'rasa-sdk-changelog'
+                  ],
+                },
               ],
             },
-            'tracker-dispatcher',
-            'events',
-            'rasa-sdk-changelog'
+            'retrieval-actions',
+            'forms',
+            'reminders-and-external-events',
+            'default-actions',
           ],
         },
         {
           type: 'category',
-          label: 'APIs',
-          collapsed: true,
+          label: 'Channel Connectors',
           items: [
-            'command-line-interface',
-            'http-api',
-            'jupyter-notebooks',
+            'connectors/your-own-website',
+            'connectors/facebook-messenger',
+            'connectors/slack',
+            'connectors/telegram',
+            'connectors/twilio',
+            'connectors/hangouts',
+            'connectors/microsoft-bot-framework',
+            'connectors/cisco-webex-teams',
+            'connectors/rocketchat',
+            'connectors/mattermost',
           ],
         },
         {
           type: 'category',
-          label: 'Change Log',
-          collapsed: true,
+          label: 'Architecture', // name still confusing with architecture page elsewhere
           items: [
-            'changelog',
-            'migration-guide',
+            'tracker-stores',
+            'event-brokers',
+            'model-storage',
+            'lock-stores',
+            'nlg',
           ],
         },
       ]
-    }
+    },
+    {
+      type: 'category',
+      label: 'APIs',
+      collapsed: true,
+      items: [
+        'command-line-interface',
+        {
+          type: 'category',
+          label: 'HTTP API',
+          collapsed: true,
+          items: [
+            'http-api',
+            'http-api-spec',
+          ],
+        },
+        'jupyter-notebooks',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Change Log',
+      collapsed: true,
+      items: [
+        'changelog',
+        'migration-guide',
+      ],
+    },
   ],
 };

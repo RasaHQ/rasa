@@ -7,13 +7,13 @@ description: Learn how to build a Rasa assistant in Docker.
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from '../variables.json';
 
-If you don’t have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
-on your local machine. If you already have a model you’re satisfied with, see
+If you don't have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
+on your local machine. If you already have a model you're satisfied with, see
 [Deploying Your Rasa Assistant](../how-to-deploy.mdx#deploying-your-rasa-assistant) to learn how to deploy your model.
 
 ## Installing Docker
 
-If you’re not sure if you have Docker installed, you can check by running:
+If you're not sure if you have Docker installed, you can check by running:
 
 ```bash
 docker -v
@@ -21,13 +21,13 @@ docker -v
 ```
 
 If Docker is installed on your machine, the output should show you your installed
-versions of Docker. If the command doesn’t work, you’ll have to install Docker.
+versions of Docker. If the command doesn't work, you'll have to install Docker.
 See [Docker Installation](https://docs.docker.com/install/) for details.
 
 ## Setting up your Rasa Project
 
-Just like starting a project from scratch, you’ll use the `rasa init` command to create a project.
-The only difference is that you’ll be running Rasa inside a Docker container, using
+Just like starting a project from scratch, you'll use the `rasa init` command to create a project.
+The only difference is that you'll be running Rasa inside a Docker container, using
 the image `rasa/rasa`. To initialize your project, run:
 
 <pre><code parentName="pre" className="language-bash">
@@ -40,10 +40,10 @@ What does this command mean?
     in the Docker container. This means that files you create on your computer will be
     visible inside the container, and files created in the container will
     get synced back to your computer.</li>
-  <li><inlineCode>rasa/rasa</inlineCode> is the name of the docker image to run. ‘{variables.release}-full‘ is the name of the tag,
+  <li><inlineCode>rasa/rasa</inlineCode> is the name of the docker image to run. '{variables.release}-full' is the name of the tag,
     which specifies the version and dependencies.</li>
 
-  <li>the Docker image has the <inlineCode>rasa</inlineCode> command as its entrypoint, which means you don’t
+  <li>the Docker image has the <inlineCode>rasa</inlineCode> command as its entrypoint, which means you don't
     have to type <inlineCode>rasa init</inlineCode>, just <inlineCode>init</inlineCode> is enough.</li>
 </ul>
 
@@ -51,7 +51,7 @@ Running this command will produce a lot of output. What happens is:
 
 * a Rasa project is created
 
-* an initial model is trained using the project’s training data.
+* an initial model is trained using the project's training data.
 
 To check that the command completed correctly, look at the contents of your working directory:
 
@@ -86,25 +86,25 @@ you need to pass the `-it` flags.
 
 ## Training a Model
 
-If you edit the NLU or Core training data or edit the `config.yml` file, you’ll need to
+If you edit the NLU or Core training data or edit the `config.yml` file, you'll need to
 retrain your Rasa model. You can do so by running:
 
 <pre><code parentName="pre" className="language-bash">
 {`docker run -v $(pwd):/app rasa/rasa:${variables.release}-full train --domain domain.yml --data data --out models`}</code></pre>
 
-Here’s what’s happening in that command:
+Here's what's happening in that command:
 
 <ul>
   <li><inlineCode>-v $(pwd):/app</inlineCode>: Mounts your project directory into the Docker
   container so that Rasa can train a model on your training data</li>
 
-  <li>rasa/rasa:{variables.release}-full: Use the Rasa image with the tag ‘{variables.release}-full’</li>
+  <li>rasa/rasa:{variables.release}-full: Use the Rasa image with the tag '{variables.release}-full'</li>
 
   <li><inlineCode>train</inlineCode>: Execute the <inlineCode>rasa train</inlineCode> command within the container. For more
   information see <a href="/command-line-interface">Command Line Interface</a>.</li>
 </ul>
 
-In this case, we’ve also passed values for the location of the domain file, training
+In this case, we've also passed values for the location of the domain file, training
 data, and the models output directory to show how these can be customized.
 You can also leave these out, since we are passing the default values.
 
@@ -222,7 +222,7 @@ You can then run the actions with the following command:
 {`docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:${variables.rasa_sdk_version}`}</code></pre>
 
 
-Here’s what’s happening in that command:
+Here's what's happening in that command:
 
 * `-d`: Runs the container in detached mode so that you can run the rasa container in the same window.
 
@@ -272,6 +272,6 @@ docker rm action-server
 ## Deploying your Assistant
 
 Work on your bot until you have a minimum viable assistant that can handle your happy paths. After
-that, you’ll want to deploy your model to get feedback from real test users. To do so, you can deploy the
+that, you'll want to deploy your model to get feedback from real test users. To do so, you can deploy the
 model you created with Rasa X via one of our [recommended deployment methods](../how-to-deploy.mdx#recommended-deployment-methods).
 Or, you can do a [Rasa-only deployment in Docker Compose](./deploying-in-docker-compose.mdx#deploying-rasa-in-docker-compose).

@@ -60,7 +60,7 @@ word vectors in your pipeline.
 
   2. Build and run [MITIE Wordrep Tool](https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep) on your corpus.
      This can take several hours/days depending on your dataset and your workstation.
-     You’ll need something like 128GB of RAM for wordrep to run – yes, that’s a lot: try to extend your swap.
+     You'll need something like 128GB of RAM for wordrep to run – yes, that's a lot: try to extend your swap.
 
   3. Set the path of your new `total_word_feature_extractor.dat` as the `model` parameter in your
      [configuration](./tuning-your-model.mdx#section-mitie-pipeline).
@@ -128,7 +128,7 @@ word vectors in your pipeline.
 
   In addition to SpaCy's pretrained language models, you can also use this component to
   load fastText vectors, which are available for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md).
-  If you want to incorporate a custom model you’ve found into spaCy, check out their page on
+  If you want to incorporate a custom model you've found into spaCy, check out their page on
   [adding languages](https://spacy.io/usage/adding-languages/). As described in the documentation, you need to
   register your language model and link it to the language identifier, which will allow Rasa to load and use your new language
   by passing in your language identifier as the `language` option.
@@ -141,7 +141,7 @@ word vectors in your pipeline.
 
 * **Short**
 
-  HuggingFace’s Transformers based pre-trained language model initializer
+  HuggingFace's Transformers based pre-trained language model initializer
 
 
 
@@ -159,7 +159,7 @@ word vectors in your pipeline.
 
 * **Description**
 
-  Initializes specified pre-trained language model from HuggingFace’s [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
+  Initializes specified pre-trained language model from HuggingFace's [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
   featurization to compute sequence and sentence level representations for each example in the training data.
   Include [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](../components/featurizers.mdx#languagemodelfeaturizer) to utilize the output of this
   component for downstream NLU models.

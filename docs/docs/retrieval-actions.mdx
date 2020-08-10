@@ -11,7 +11,7 @@ We introduce experimental features to get feedback from our community, so we enc
 However, the functionality might be changed or removed in the future.
 If you have feedback (positive or negative) please share it with us on the [forum](https://forum.rasa.com).
 Also, currently we do not support adding new annotations in Rasa X if your training data contains retrieval actions.
-Once we have gathered enough feedback and we’re happy with the training data format, we’ll add support for training response retrieval models in Rasa X.
+Once we have gathered enough feedback and we're happy with the training data format, we'll add support for training response retrieval models in Rasa X.
 
 :::
 
@@ -138,7 +138,7 @@ actions:
 ```
 
 A simple way to ensure that the retrieval action is predicted after the chitchat
-intent is to use the [Mapping Policy](./policies.mdx#mapping-policy).
+intent is to use [Rules](./rules.mdx).
 However, you can also include this action in your stories.
 For example, if you want to repeat a question after handling chitchat:
 

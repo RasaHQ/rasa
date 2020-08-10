@@ -69,7 +69,7 @@ rasa train
 
 This command trains a Rasa model that combines a Rasa NLU and a Rasa Core model.
 If you only want to train an NLU or a Core model, you can run `rasa train nlu` or `rasa train core`.
-However, Rasa will automatically skip training Core or NLU if the training data and config haven’t changed.
+However, Rasa will automatically skip training Core or NLU if the training data and config haven't changed.
 
 `rasa train` will store the trained model in the directory defined by `--out`. The name of the model
 is per default `<timestamp>.tar.gz`. If you want to name your model differently, you can specify the name
@@ -99,13 +99,13 @@ If you provide a trained model using the `--model` argument, the interactive lea
 is started with the provided model. If no model is specified, `rasa interactive` will
 train a new Rasa model with the data located in `data/` if no other directory was passed to the
 `--data` flag. After training the initial model, the interactive learning session starts.
-Training will be skipped if the training data and config haven’t changed.
+Training will be skipped if the training data and config haven't changed.
 
 During the interactive learning, Rasa will plot the current conversation
 and a few similar conversations from the training data to help you
 keep track of where you are. You can view the visualization at
 [http://localhost:5005/visualization.html](http://localhost:5005/visualization.html)
-as soon as you’ve started interactive learning.
+as soon as you've started interactive learning.
 This plotting can take some time; to skip the visualization, run `rasa interactive --skip-visualization`.
 
 

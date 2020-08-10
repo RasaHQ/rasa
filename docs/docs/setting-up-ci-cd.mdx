@@ -27,8 +27,8 @@ whatever Git repository you use.
 
 ## Continuous Integration (CI)
 
-The best way to improve an assistant is with frequent [incremental updates](https://rasa.com/docs/rasa-x/fix-problems).
-No matter how small a change is, you want to be sure that it doesn’t introduce
+The best way to improve an assistant is with frequent [incremental updates](https://rasa.com/docs/rasa-x/user-guide/fix-problems).
+No matter how small a change is, you want to be sure that it doesn't introduce
 new problems or negatively impact the performance of your assistant.
 
 It is usually best to run CI checks on merge / pull requests or on commit. Most tests are
@@ -49,7 +49,7 @@ rasa data validate --fail-on-warnings --max-history <max_history>
 By default the validator searches only for errors in the data (e.g. the same
 example being listed as an example for two intents), but does not report other
 minor issues (such as unused intents, utterances that are not listed as
-actions) that won’t prevent training a model, but might indicate
+actions) that won't prevent training a model, but might indicate
 messy data.
 
 If data validation results in errors, training a model will also fail, so it's
@@ -61,7 +61,7 @@ Story validation checks if you have any
 stories where different bot actions follow from the same dialogue history.
 Conflicts between stories will prevent a model from learning the correct
 pattern for a dialogue. Set the `--max-history` parameter to the value of `max_history` for the
-memoization policy in your `config.yml`. If you haven’t set one, use the default of `5`.
+memoization policy in your `config.yml`. If you haven't set one, use the default of `5`.
 
 :::caution
 The `rasa data validate stories` command assumes that all your **story names are unique**.
@@ -103,16 +103,16 @@ End-to-end testing is only as thorough and accurate as the test
 cases you include, so you should continue to grow your set of test conversations
 as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test conversations
 to be representative of the true distribution of real conversations.
-Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/test-assistant/#how-to-create-tests).
+Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests).
 
 Note: End-to-end testing does **not** execute your action code. You will need to
 [test your action code](./setting-up-ci-cd.mdx#testing-action-code) in a seperate step.
 
 ### Compare NLU Performance
 
-If you’ve made significant changes to your NLU training data (e.g.
+If you've made significant changes to your NLU training data (e.g.
 splitting an intent into two intents or adding a lot of training examples), you should run a
-[full NLU evaluation](./testing-your-assistant.mdx#nlu-evaluation). You’ll want to compare
+[full NLU evaluation](./testing-your-assistant.mdx#nlu-evaluation). You'll want to compare
 the performance of the NLU model without your changes to an NLU model with your
 changes.
 
@@ -126,7 +126,7 @@ You could also train a model on a training set and testing it on a test set. If 
 set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#train-test-split) using `rasa data split` as part of this CI step, as
 opposed to using a static NLU test set, which can easily become outdated.
 
-Because this test doesn’t result in a pass/fail exit code, it’s best to make
+Because this test doesn't result in a pass/fail exit code, it's best to make
 the results visible so that you can interpret them.
 For example, [this workflow](https://gist.github.com/amn41/de555c93913a01fbd56df2e2d211862c)
 includes commenting on a PR with a results table that shows which intents are confused with others.
@@ -157,7 +157,7 @@ succeeded.
 ### Deploy your Rasa Model
 
 If you ran [end-to-end tests](./setting-up-ci-cd.mdx#test-the-assistant) in your CI pipeline,
-you’ll already have a trained model. You can set up your CD pipeline to upload the trained model to your
+you'll already have a trained model. You can set up your CD pipeline to upload the trained model to your
 Rasa server if the CI results are satisfactory. For example, to upload a model to Rasa X:
 
 ```bash
@@ -174,8 +174,8 @@ curl -X PUT "https://example.rasa.com/api/projects/default/models/my_model/tags/
 However, if your update includes changes to both your model and your action
 code, and these changes depend on each other in any way, you should **not**
 automatically tag the model as `production`. You will first need to build and
-deploy your updated action server, so that the new model won’t e.g. call
-actions that don’t exist in the pre-update action server.
+deploy your updated action server, so that the new model won't e.g. call
+actions that don't exist in the pre-update action server.
 
 ### Deploy your Action Server
 

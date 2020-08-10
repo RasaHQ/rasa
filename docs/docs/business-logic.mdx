@@ -72,12 +72,12 @@ def required_slots(tracker):
         ]
 ```
 
-Note: you can customise the required slots function not to be static. E.g. if the `job_function` is a
+Note: you can customize the required slots function not to be static. E.g. if the `job_function` is a
 developer, you could add a `required_slot` about the users experience level with Rasa
 
-Once you’ve done that, you’ll need to specify how the bot should ask for this information. This
+Once you've done that, you'll need to specify how the bot should ask for this information. This
 is done by specifying `utter_ask_{slotname}` responses in your `domain.yml` file. For the above
-we’ll need to specify the following:
+we'll need to specify the following:
 
 ```yaml
 utter_ask_business_email:
@@ -94,7 +94,7 @@ utter_ask_use_case:
   - text: What's your use case?
 ```
 
-We’ll also need to define all these slots in our `domain.yml` file:
+We'll also need to define all these slots in our `domain.yml` file:
 
 ```yaml
 slots:
@@ -117,21 +117,21 @@ which will do something with the information the user has provided once the form
 
 ```python
 def submit(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict]:
+    self,
+    dispatcher: CollectingDispatcher,
+    tracker: Tracker,
+    domain: Dict[Text, Any],
+) -> List[Dict]:
 
-    dispatcher.utter_message("Thanks for getting in touch, we’ll contact you soon")
+    dispatcher.utter_message("Thanks for getting in touch, we'll contact you soon")
     return []
 ```
 
-In this case, we only tell the user that we’ll be in touch with them, however
+In this case, we only tell the user that we'll be in touch with them, however
 usually you would send this information to an API or a database. See the [rasa-demo](https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L148)
 for an example of how to store this information in a spreadsheet.
 
-We’ll need to add the form we just created to a new section in our `domain.yml` file:
+We'll need to add the form we just created to a new section in our `domain.yml` file:
 
 ```yaml
 forms:
@@ -201,7 +201,7 @@ data to your NLU file:
 :::note
 Entities like `business_email` and `budget` would usually be handled by pretrained entity extractors
 (e.g. [DucklingHTTPExtractor](./components/entity-extractors.mdx#ducklinghttpextractor)
-or [SpacyEntityExtractor](./components/entity-extractors.mdx#spacyhttpextractor)), but for this tutorial
+or [SpacyEntityExtractor](./components/entity-extractors.mdx#spacyentityextractor)), but for this tutorial
 we want to avoid any additional setup.
 
 :::
@@ -227,7 +227,7 @@ entities:
 ```
 
 A story for a form is very simple, as all the slot collection form happens inside the form, and
-therefore doesn’t need to be covered in your stories. You just need to write a single story showing when the form should be activated. For the sales form, add this story
+therefore doesn't need to be covered in your stories. You just need to write a single story showing when the form should be activated. For the sales form, add this story
 to your `stories.md` file:
 
 ```md
@@ -238,7 +238,7 @@ to your `stories.md` file:
     - form{"name": null}           <!--Deactivate the form-->
 ```
 
-As a final step, let’s add the FormPolicy to our config file:
+As a final step, let's add the FormPolicy to our config file:
 
 ```yaml
 policies:
@@ -248,7 +248,7 @@ policies:
   - name: FormPolicy
 ```
 
-At this point, you already have a working form, so let’s try it out. Make sure to uncomment the
+At this point, you already have a working form, so let's try it out. Make sure to uncomment the
 `action_endpoint` in your `endpoints.yml` to make Rasa aware of the action server that will run our form:
 
 ```yaml
@@ -292,7 +292,7 @@ def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict[Text, Any]]]]:
 ```
 
 Now our bot will extract the full user message when asking for the use case slot,
-and we don’t need to use the `use_case` entity defined before.
+and we don't need to use the `use_case` entity defined before.
 
 All of the methods within a form can be customized to handle different branches in your
 business logic. Read more about this [here](./forms.mdx).
@@ -300,7 +300,7 @@ However, you should make sure not to handle any unhappy paths inside the form. T
 should be handled by writing regular stories, so your model can learn this behavior.
 
 :::note
-Here’s a minimal checklist of files we modified to handle business logic using a form action:
+Here's a minimal checklist of files we modified to handle business logic using a form action:
 
 * `actions.py`: Define the form action, including the `required_slots`, `slot_mappings` and `submit` methods
 

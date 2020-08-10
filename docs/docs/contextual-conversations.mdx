@@ -22,7 +22,7 @@ Not every user goal you define will fall under the category of business logic. F
 other cases you will need to use stories and context to help the user achieve their goal.
 
 If we take the example of the “getting started” skill from Sara, we want to give them
-different information based on whether they’ve built an AI assistant before and are
+different information based on whether they've built an AI assistant before and are
 migrating from a different tool etc. This can be done quite simply with stories and
 the concept of [max history](./policies.mdx#max-history).
 
@@ -62,7 +62,7 @@ the concept of [max history](./policies.mdx#max-history).
 
 The above example mostly leverages intents to guide the flow, however you can also
 guide the flow with entities and slots. For example, if the user gives you the
-information that they’re new to Rasa at the beginning, you may want to skip this
+information that they're new to Rasa at the beginning, you may want to skip this
 question by storing this information in a slot.
 
 ```md
@@ -100,7 +100,7 @@ used your assistant will definitely fail, like in state machine based dialogue s
 These types of unexpected user behaviors are something our [TEDPolicy](https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/) deals with
 very well. It can learn to bring the user back on track after some
 interjections during the main user goal the user is trying to complete. For example,
-in the conversation below (extracted from a conversation on [Rasa X](https://rasa.com/docs/rasa-x/review-conversations/)):
+in the conversation below (extracted from a conversation on [Rasa X](https://rasa.com/docs/rasa-x/user-guide/review-conversations/)):
 
 ```md
 ## Story from conversation with a2baab6c83054bfaa8d598459c659d2a on November 28th 2019

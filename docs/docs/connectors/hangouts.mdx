@@ -14,7 +14,7 @@ send one response. The response will be displayed to the user either as text or 
 more information, see the Cards section).
 
 In order to connect your Rasa bot to Google Hangouts Chat, you first need to create a project in
-Google Developer Console that includes the Hangouts API. There you can specify your bot’s endpoint
+Google Developer Console that includes the Hangouts API. There you can specify your bot's endpoint
 and also obtain your project id, which determines the scope for the OAuth2 authorization in case you
 want to use OAuth2. The Hangouts Chat API sends a Bearer token with every request, but it is up to
 the bot to actually verify the token, hence the channel also works without this.
@@ -31,7 +31,7 @@ If you want to connect to Hangouts Chat using the run script, e.g. using:
 rasa run
 ```
 
-you don’t need to supply a `credentials.yml`.
+you don't need to supply a `credentials.yml`.
 
 If you want to use OAuth2, simply put the project id obtained from the Google Developer Console into it.
 
