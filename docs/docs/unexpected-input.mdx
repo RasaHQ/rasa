@@ -4,6 +4,8 @@ sidebar_label: Handling Unexpected Input
 title: Handling Unexpected Input
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="handling-unexpected-user-input"></a>
 
 All expected user inputs should be handled by the form we defined above, i.e. if the
@@ -32,7 +34,7 @@ maybe because they were gone for a few minutes:
 
 
 
-<img alt="Greeting Interjection" src="../img/greet_interjection.png" width="240" />
+<img alt="Greeting Interjection" src={useBaseUrl("/img/greet_interjection.png")} width="240" />
 
 The greet intent is a good example where we will always give the same response and
 yet we don't want the intent to affect the dialogue history. To do this, the response
@@ -92,7 +94,7 @@ For example, a user might ask a related FAQ in the middle of filling a form:
 
 
 
-<img alt="Generic Interjections" src="../img/generic_interjection.png" width="240" />
+<img alt="Generic Interjections" src={useBaseUrl("/img/generic_interjection.png")} width="240" />
 
 To handle FAQs defined with retrieval actions, you can add a simple story that will be handled by the MemoizationPolicy:
 
@@ -112,7 +114,7 @@ For example:
 
 
 
-<img alt="Generic Interjection Handled" src="../img/generic_interjection_handled.png" width="240" />
+<img alt="Generic Interjection Handled" src={useBaseUrl("/img/generic_interjection_handled.png")} width="240" />
 
 If you find it difficult to write stories in this format, you can always use [Interactive Learning](./writing-stories.mdx#interactive-learning)
 to help you create them.
@@ -127,7 +129,7 @@ the bot has requested, and the response should differ for each slot. For example
 
 
 
-<img alt="Contextual Interjection" src="../img/contextual_interjection.png" width="240" />
+<img alt="Contextual Interjection" src={useBaseUrl("/img/contextual_interjection.png")} width="240" />
 
 To handle this, we need to make the `requested_slot` featurized, and assign it the categorical type:
 

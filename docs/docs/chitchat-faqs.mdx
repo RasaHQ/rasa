@@ -4,6 +4,8 @@ sidebar_label: Chitchat and FAQs
 title: Chitchat and FAQs
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 <!-- TODO: Restructure all conversations patterns pages to not depend on one another -->
 
 After following the basics of [prototyping an assistant](./prototype-an-assistant.mdx), we'll
@@ -144,7 +146,7 @@ For example:
 
 
 
-<img alt="Memoization Policy Conversation" src="../img/memoization_policy_convo.png" />
+<img alt="Memoization Policy Conversation" src={useBaseUrl("/img/memoization_policy_convo.png")} />
 
 While it's good to test the bot interactively, we should also add end to end test cases that
 can later be included as part of a [CI/CD system](./setting-up-ci-cd). End-to-end [test conversations](./testing-your-assistant#end-to-end-testing)
