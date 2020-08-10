@@ -63,6 +63,7 @@ excluded_words:
   - bot
   - bot's
   - cdd
+  - CDD
   - cmdline
   - conveRT
   - ConveRTFeaturizer

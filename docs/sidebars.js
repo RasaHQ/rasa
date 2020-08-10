@@ -22,7 +22,7 @@ module.exports = {
           label: 'Best Practices',
           collapsed: true,
           items: [
-            'cdd',
+            'conversation-driven-development',
             'generating-nlu-data',
             'writing-stories',
           ],
