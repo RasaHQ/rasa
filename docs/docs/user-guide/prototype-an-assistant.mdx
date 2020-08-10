@@ -92,7 +92,7 @@ rules:
    - ...
    - intent: subscribe
    - action: newsletter_form
-   - form: newsletter_form
+   - active_loop: newsletter_form
 ```
 
 ## 5. Write some stories
@@ -115,7 +115,7 @@ stories:
    - action: utter_greet
    - intent: subscribe
    - action: newsletter_form
-   - form: newsletter_form
+   - active_loop: newsletter_form
 ```
 
 [Read about best practices for writing stories](../core/stories.mdx)
@@ -174,7 +174,7 @@ Once your model has finished training, you can talk to your assistant:
 You can download this project and build on it to create a more advanced assistant.
 In your downloaded project, you’ll notice several files that were configured for you that you didn’t edit on this page.
 Check out other docs pages to learn more about [domains](../core/domains.mdx), [actions](../core/actions.mdx),
-and your config's [pipeline](../nlu/choosing-a-pipeline.mdx) and [policies](../core/policies.mdx).
+and your [model configuration](../api/model-configuration.mdx).
 
 <DownloadButton />
 
