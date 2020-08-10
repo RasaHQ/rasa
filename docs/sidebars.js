@@ -13,7 +13,7 @@ module.exports = {
             'index',
             'prototype-an-assistant',
             'installation',
-            'cheatsheet',
+            // 'cheatsheet',
             'migrate-from',
           ],
         },
@@ -102,7 +102,7 @@ module.exports = {
           type: 'category',
           label: 'Actions',
           items: [
-            'actions',
+            // 'actions',
             'responses',
             {
               type: 'category',
@@ -117,8 +117,8 @@ module.exports = {
                   items: [
                     'running-action-server',
                     'tracker-dispatcher',
-                    'events',
-                    'rasa-sdk-changelog'
+                    // 'events',
+                    // 'rasa-sdk-changelog'
                   ],
                 },
               ],
