@@ -53,7 +53,8 @@ Details of the `run()` method:
 
 
 #### Action.run
-async Action.rundispatcher, tracker, domain**:
+``async Action.run(dispatcher, tracker, domain):``
+
 Execute the side effects of this action.
 
 
@@ -61,7 +62,7 @@ Execute the side effects of this action.
 
   * **dispatcher** – the dispatcher which is used to
     send messages back to the user. Use
-    `dipatcher.utter_message()` or any other
+    `dispatcher.utter_message()` or any other
     `rasa_sdk.executor.CollectingDispatcher`
     method.
 
