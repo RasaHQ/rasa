@@ -3,13 +3,14 @@ id: facebook-wit-ai-to-rasa
 sidebar_label: "Rasa as open source alternative to Facebook\u2019s Wit.ai - Migration\
   \ Guide"
 title: "Rasa as open source alternative to Facebook\u2019s Wit.ai - Migration Guide"
+description: Open source alternative to Facebook's Wit.ai for conversational bots and NLP
 ---
 
 To get started with migrating your application from Wit.ai to Rasa:
 
 ## Step 1: Export your Training Data from Wit.ai
 
-Navigate to your app’s setting page by clicking the **Settings** icon in the upper right corner. Scroll down to **Export your data** and hit the button **Download .zip with your data**.
+Navigate to your app's setting page by clicking the **Settings** icon in the upper right corner. Scroll down to **Export your data** and hit the button **Download .zip with your data**.
 
 This will download a file with a `.zip` extension. Unzip this file to create a folder. The file you want from your download is called `expressions.json`
 
@@ -40,7 +41,7 @@ rasa train nlu
 
 ## Step 4: Test your NLU model
 
-Let’s see how your NLU model will interpret some test messages.
+Let's see how your NLU model will interpret some test messages.
 To start a testing session, run:
 
 ```bash
@@ -48,10 +49,10 @@ rasa shell nlu
 ```
 
 This will prompt your for input.
-Type a test message and press ‘Enter’.
+Type a test message and press 'Enter'.
 The output of your NLU model will be printed to the screen.
 You can keep entering messages and test as many as you like.
-Press ‘control + C’ to quit.
+Press 'control + C' to quit.
 
 ## Step 5: Start a Server with your NLU Model
 

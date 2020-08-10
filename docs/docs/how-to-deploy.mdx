@@ -1,7 +1,8 @@
 ---
 id: how-to-deploy
 sidebar_label: Deploying Your Assistant
-title: Deploying Your Assistant
+title: Deploying Your Rasa Assistant
+description: How to deploy your Rasa Assistant with Docker Compose or Kubernetes/Openshift
 ---
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from './variables.json';
@@ -14,12 +15,12 @@ It will allow you to make your assistant available to users and set you up with 
 ## When to Deploy Your Assistant
 
 The best time to deploy your assistant and make it available to test users is once it can handle the most
-important happy paths or is what we call a [minimum viable assistant](https://rasa.com/docs/rasa/glossary).
+important happy paths or is what we call a [minimum viable assistant](./glossary.mdx).
 
 The recommended deployment methods described below make it easy to share your assistant
 with test users via the [share your assistant feature in
 Rasa X](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share-your-bot).
-Then, when you’re ready to make your assistant available via one or more [Messaging and Voice Channels](./messaging-and-voice-channels),
+Then, when you're ready to make your assistant available via one or more [Messaging and Voice Channels](./messaging-and-voice-channels.mdx),
 you can easily add them to your existing deployment set up.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-deployment-methods"></a>
@@ -73,7 +74,7 @@ for doing so, as well as manual instructions for any custom setups.
 It is also possible to deploy a Rasa assistant without Rasa X using Docker Compose. To do so, you can build your
 Rasa Assistant locally or in Docker. Then you can deploy your model in Docker Compose.
 
-* [Building a Rasa Assistant Locally](./rasa-tutorial)
+* [Building a Rasa Assistant Locally](./prototype-an-assistant)
 
 * [Building a Rasa Assistant in Docker](./docker/building-in-docker)
 
@@ -108,7 +109,7 @@ To create your image:
    `actions/requirements-actions.txt`.
 
 3. Create a file named `Dockerfile` in your project directory,
-   in which you’ll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
+   in which you'll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
    For example:
 
    <pre><code parentName="pre" className="language-python">
@@ -145,7 +146,7 @@ and development servers. You should create a new tag any time you update your co
 
 ### Using your Custom Action Server Image
 
-If you’re building this image to make it available from another server,
+If you're building this image to make it available from another server,
 for example a Rasa X or Rasa Enterprise deployment, you should push the image to a cloud repository.
 
 This documentation assumes you are pushing your images to [DockerHub](https://hub.docker.com/).

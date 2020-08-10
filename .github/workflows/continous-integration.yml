@@ -108,10 +108,11 @@ jobs:
 
   test:
     name: Run Tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 3
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
 
     steps:
@@ -140,15 +141,33 @@ jobs:
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
-    - name: Install Dependencies 📦
+    - name: Install Dependencies (Linux) 📦
+      if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get -y install libpq-dev
         make install-full | tee .output
         if grep 'The lock file is not up to date' .output; then exit 1; fi
         make prepare-tests-ubuntu
 
+    - name: Install Dependencies (Windows) 📦
+      if: matrix.os == 'windows-latest'
+      run: |
+        make install-full-windows
+        make prepare-tests-windows
+
     - name: Test Code 🔍
-      run: JOBS=2 make test
+      # We don't test Windows code with Python 3.8 because there is an issue
+      # with python-crc32c library — CFFI is not supported by Github Runners (the corresponding
+      # C++ Build Tools are not installed on their machines). In this case, python-crc32c
+      # should use a pure Python implementation of CFFI but Google made a mistake with
+      # the order of arguments in their code, and their solution doesn't work.
+      # This PR fixes the issue but it's not merged yet:
+      # https://github.com/googleapis/python-crc32c/pull/27
+      if: matrix.os != 'windows-latest' || matrix.python-version != '3.8'
+      env:
+        JOBS: 2
+        PYTHONIOENCODING: "utf-8"
+      run: make test
 
     - name: Send Coverage Report 📊
       if: matrix.python-version == 3.6

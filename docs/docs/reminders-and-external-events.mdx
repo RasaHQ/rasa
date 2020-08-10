@@ -2,16 +2,17 @@
 id: reminders-and-external-events
 sidebar_label: Reminders and External Events
 title: Reminders and External Events
+description: Learn how to use external events and schedule reminders.
 ---
 
 The `ReminderScheduled` event and the
-[trigger_intent endpoint](../../api/http-api/#operation/triggerConversationIntent) let your assistant remind you
+[trigger_intent endpoint](./http-api.mdx#operation/triggerConversationIntent) let your assistant remind you
 about things after a given period of time, or to respond to external events (other applications, sensors, etc.).
 [ReminderBot](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md)
 is a full example assistant that implements these features.
 
 :::caution
-Reminders don’t work in request-response channels like the `rest` channel or `rasa shell`.
+Reminders don't work in request-response channels like the `rest` channel or `rasa shell`.
 Custom connectors for assistants implementing reminders or external events should be built
 off of the `CallbackInput` channel instead of the `RestInput` channel.
 
@@ -31,7 +32,7 @@ For this, Rasa provides the special event `ReminderScheduled`, and another event
 
 ### Scheduling Reminders
 
-Let’s say you want your assistant to remind you to call a friend in 5 seconds.
+Let's say you want your assistant to remind you to call a friend in 5 seconds.
 (You probably want some longer time span, but for the sake of testing, let it be 5 seconds.)
 Thus, we define an intent `ask_remind_call` with some NLU data,
 
@@ -46,7 +47,7 @@ Thus, we define an intent `ask_remind_call` with some NLU data,
 
 and connect this intent with a new custom action `action_set_reminder`.
 We could make this connection by providing training stories (recommended for more complex assistants),
-or using the [Mapping Policy](./policies#mapping-policy).
+or using [Rules](./rules.mdx).
 
 The custom action `action_set_reminder` should schedule a reminder that, 5 seconds later,
 triggers an intent `EXTERNAL_reminder` with all the entities that the user provided
@@ -79,13 +80,15 @@ async def run(
 
 Note that this requires the `datetime` and `rasa_sdk.events` packages.
 
-Finally, we define another custom action `action_react_to_reminder` to dispatch the reminder’s message to
-the user, and link it to the `EXTERNAL_reminder` intent:
+Finally, we define another custom action `action_react_to_reminder` and link it to the `EXTERNAL_reminder` intent
+by writing a [Rule](./rules.mdx) for it:
 
 ```yaml
-intents:
-  - EXTERNAL_reminder:
-      triggers: action_react_to_reminder
+rules:
+- rule: Trigger `action_react_to_reminder` for `EXTERNAL_reminder`
+  steps:
+  - intent: EXTERNAL_reminder
+  - action: action_react_to_reminder
 ```
 
 This tells the model which action to take when the time is up on the reminder.
@@ -120,16 +123,17 @@ Alternatively, you may provide some parameters to narrow down the types of remin
 
 ## External Events
 
-Let’s say you want to send a message from some other device to change the course of an ongoing conversation.
+Let's say you want to send a message from some other device to change the course of an ongoing conversation.
 For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favorite
 plant needs watering, and your assistant should then relay this message to you.
 
 To do this, your Raspberry Pi needs to send a message to the
-[trigger_intent endpoint](../../api/http-api/#operation/triggerConversationIntent) of your conversation.
+[trigger_intent endpoint](./http-api.mdx#operation/triggerConversationIntent) of your conversation.
 As the name says, this injects a user intent (possibly with entities) into your conversation.
 So for Rasa it is almost as if you had entered a message that got classified with this intent and these entities.
 Rasa then needs to respond to this input with an action such as `action_warn_dry`.
-The easiest and most reliable way to connect this action with the intent is via the [Mapping Policy](./policies#mapping-policy).
+The easiest and most reliable way to connect this action with the intent is to use
+[Rules](./rules.mdx).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="responding-to-external-events"></a>
 

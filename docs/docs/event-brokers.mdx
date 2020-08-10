@@ -2,6 +2,7 @@
 id: event-brokers
 sidebar_label: Event Brokers
 title: Event Brokers
+description: Find out how open source chatbot framework Rasa allows you to stream events to a message broker.
 ---
 
 An event broker allows you to connect your running assistant to other services that process the data coming
@@ -9,7 +10,7 @@ in from conversations. For example, you could [connect your live assistant to
 Rasa X](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment/)
 to review and annotate conversations or forward messages to an external analytics
 service. The event broker publishes messages to a message streaming service,
-also known as a message broker, to forward Rasa [Events](./events) from the Rasa server to other services.
+also known as a message broker, to forward Rasa [Events](./events.mdx) from the Rasa server to other services.
 
 ## Format
 
@@ -30,14 +31,14 @@ tracker looks like this:
 }
 ```
 
-The `event` field takes the event’s `type_name` (for more on event
-types, check out the [Events](./events) docs).
+The `event` field takes the event's `type_name` (for more on event
+types, check out the [Events](./events.mdx) docs).
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="event-brokers-pika"></a>
 
 ## Pika Event Broker
 
-The example implementation we’re going to show you here uses
+The example implementation we're going to show you here uses
 [Pika](https://pika.readthedocs.io) , the Python client library for
 [RabbitMQ](https://www.rabbitmq.com).
 
@@ -70,8 +71,8 @@ tracker_store = InMemoryTrackerStore(domain=domain, event_broker=pika_broker)
 ### Implementing a Pika Event Consumer
 
 You need to have a RabbitMQ server running, as well as another application
-that consumes the events. This consumer to needs to implement Pika’s
-`start_consuming()` method with a `callback` action. Here’s a simple
+that consumes the events. This consumer to needs to implement Pika's
+`start_consuming()` method with a `callback` action. Here's a simple
 example:
 
 ```python
@@ -154,12 +155,12 @@ kafka_broker = KafkaEventBroker(host=['kafka_broker_1:9092',
 
 ### Authentication and Authorization
 
-Rasa’s Kafka producer accepts two types of security protocols - `SASL_PLAINTEXT` and `SSL`.
+Rasa's Kafka producer accepts two types of security protocols - `SASL_PLAINTEXT` and `SSL`.
 
 For development environment, or if the brokers servers and clients are located
 into the same machine, you can use simple authentication with `SASL_PLAINTEXT`.
 By using this protocol, the credentials and messages exchanged between the clients and servers
-will be sent in plaintext. Thus, this is not the most secure approach, but since it’s simple
+will be sent in plaintext. Thus, this is not the most secure approach, but since it's simple
 to configure, it is useful for simple cluster configurations.
 `SASL_PLAINTEXT` protocol requires the setup of the `username` and `password`
 previously configured in the broker server.
@@ -173,10 +174,10 @@ kafka_broker = KafkaEventBroker(host='kafka_broker:9092',
 ```
 
 If the clients or the brokers in the kafka cluster are located in different
-machines, it’s important to use ssl protocol to assure encryption of data and client
+machines, it's important to use ssl protocol to assure encryption of data and client
 authentication. After generating valid certificates for the brokers and the
 clients, the path to the certificate and key generated for the producer must
-be provided as arguments, as well as the CA’s root certificate.
+be provided as arguments, as well as the CA's root certificate.
 
 ```python
 kafka_broker = KafkaEventBroker(host='kafka_broker:9092',
@@ -189,7 +190,7 @@ kafka_broker = KafkaEventBroker(host='kafka_broker:9092',
 ```
 
 If the `ssl_check_hostname` parameter is enabled, the clients will verify
-if the broker’s hostname matches the certificate. It’s used on client’s connections
+if the broker's hostname matches the certificate. It's used on client's connections
 and inter-broker connections to prevent man-in-the-middle attacks.
 
 ### Implementing a Kafka Event Consumer

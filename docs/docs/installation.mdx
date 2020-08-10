@@ -2,6 +2,7 @@
 id: installation
 sidebar_label: Installation
 title: Installation
+description: Install Rasa Open Source on premises to enable local and customizable Natural Lanaguage Understanding and Dialogue Management.
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -14,19 +15,19 @@ You can install Rasa Open Source using pip (requires Python 3.6 or 3.7).
 $ pip3 install rasa
 ```
 
-* Having trouble installing? Read our [step-by-step installation guide](./installation#installation-guide).
+* Having trouble installing? Read our [step-by-step installation guide](./installation.mdx#installation-guide).
 
-* You can also [build Rasa Open Source from source](./installation#build-from-source).
+* You can also [build Rasa Open Source from source](./installation.mdx#build-from-source).
 
 * For advanced installation options such as building from source and installation instructions for
-  custom pipelines, head over [here](./installation#pipeline-dependencies).
+  custom pipelines, head over [here](./installation.mdx#pipeline-dependencies).
 
 * Prefer following video instructions? Watch our installation series on [Youtube](https://www.youtube.com/playlist?list=PL75e0qA87dlEWUA5ToqLLR026wIkk2evk).
 
-When you’re done installing, you can head over to the tutorial!
+When you're done installing, you can head over to the tutorial!
 
 
-<a className="button button--outline button--secondary button--lg" href="rasa-tutorial">Next Step: Tutorial</a>
+<a className="button button--outline button--secondary button--lg" href="prototype-an-assistant">Next Step: Tutorial</a>
 
 ---
 
@@ -61,9 +62,9 @@ Otherwise, proceed with the instructions below to install them.
   </TabItem>
   <TabItem value="macos">
 
-  Install the [Homebrew](https://brew.sh) package manager if you haven’t already.
+  Install the [Homebrew](https://brew.sh) package manager if you haven't already.
 
-  Once you’re done, you can install Python3.
+  Once you're done, you can install Python3.
 
   ```bash
   $ brew update
@@ -151,10 +152,10 @@ Tools like [virtualenv](https://virtualenv.pypa.io/en/latest/) and [virtualenvwr
 
 **Congratulations! You have successfully installed Rasa Open Source!**
 
-You can now head over to the tutorial.
+You can now start prototyping your first assistant
 
 
-<a className="button button--outline button--secondary button--lg" href="rasa-tutorial">Next Step: Tutorial</a>
+<a className="button button--outline button--secondary button--lg" href="prototype-an-assistant">Next Step: Prototype an Assistant</a>
 
 ---
 
@@ -185,7 +186,7 @@ Here, you will find installation instructions for each of them below.
 
 ### How do I choose a pipeline?
 
-The page on [Choosing a Pipeline](../nlu/choosing-a-pipeline) will help you pick the right pipeline
+The page on [Tuning Your Model](./tuning-your-model.mdx) will help you pick the right pipeline
 for your assistant.
 
 ### I have decided on a pipeline. How do I install the dependencies for it?
@@ -194,10 +195,10 @@ When you install Rasa Open Source, the dependencies for the `supervised_embeddin
 and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need to be separately installed if you want to use pipelines containing components from those libraries.
 
 :::tip Just give me everything!
-If you don’t mind the additional dependencies lying around, you can use
+If you don't mind the additional dependencies lying around, you can use
 this to install everything.
 
-You’ll first need to clone the repository and then run the following
+You'll first need to clone the repository and then run the following
 command to install all the packages:
 
 ```bash
@@ -222,7 +223,7 @@ $ python -m spacy link en_core_web_md en
 
 This will install Rasa Open Source as well as spaCy and its language model
 for the English language. We recommend using at least the
-“medium” sized models (`_md`) instead of the spaCy’s
+“medium” sized models (`_md`) instead of the spaCy's
 default small `en_core_web_sm` model. Small models require less
 memory to run, but will somewhat reduce intent classification performance.
 

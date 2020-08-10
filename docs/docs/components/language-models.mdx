@@ -51,7 +51,24 @@ word vectors in your pipeline.
   ```
 
   For more information where to get that file from, head over to
-  [installing MITIE](../user-guide/installation#install-mitie).
+  [installing MITIE](../installation.mdx#install-mitie).
+
+
+  You can also pre-train your own word vectors from a language corpus using MITIE. To do so:
+
+  1. Get a clean language corpus (a Wikipedia dump works) as a set of text files.
+
+  2. Build and run [MITIE Wordrep Tool](https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep) on your corpus.
+     This can take several hours/days depending on your dataset and your workstation.
+     You'll need something like 128GB of RAM for wordrep to run – yes, that's a lot: try to extend your swap.
+
+  3. Set the path of your new `total_word_feature_extractor.dat` as the `model` parameter in your
+     [configuration](./tuning-your-model.mdx#section-mitie-pipeline).
+
+  For a full example of how to train MITIE word vectors, check out
+  [this blogpost](http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html)
+  of creating a MITIE model from a Chinese Wikipedia dump.
+
 
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="spacynlp"></a>
@@ -107,7 +124,14 @@ word vectors in your pipeline.
   ```
 
   For more information on how to download the spaCy models, head over to
-  [installing SpaCy](../user-guide/installation#install-spacy).
+  [installing SpaCy](../installation.mdx#install-spacy).
+
+  In addition to SpaCy's pretrained language models, you can also use this component to
+  load fastText vectors, which are available for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md).
+  If you want to incorporate a custom model you've found into spaCy, check out their page on
+  [adding languages](https://spacy.io/usage/adding-languages/). As described in the documentation, you need to
+  register your language model and link it to the language identifier, which will allow Rasa to load and use your new language
+  by passing in your language identifier as the `language` option.
 
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="hftransformersnlp"></a>
@@ -117,7 +141,7 @@ word vectors in your pipeline.
 
 * **Short**
 
-  HuggingFace’s Transformers based pre-trained language model initializer
+  HuggingFace's Transformers based pre-trained language model initializer
 
 
 
@@ -135,9 +159,9 @@ word vectors in your pipeline.
 
 * **Description**
 
-  Initializes specified pre-trained language model from HuggingFace’s [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
+  Initializes specified pre-trained language model from HuggingFace's [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
   featurization to compute sequence and sentence level representations for each example in the training data.
-  Include [LanguageModelTokenizer](./components#languagemodeltokenizer) and [LanguageModelFeaturizer](./components#languagemodelfeaturizer) to utilize the output of this
+  Include [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](../components/featurizers.mdx#languagemodelfeaturizer) to utilize the output of this
   component for downstream NLU models.
 
   :::note

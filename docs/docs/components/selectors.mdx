@@ -50,14 +50,14 @@ Selectors predict a bot response from a set of candidate responses.
 * **Description**
 
   Response Selector component can be used to build a response retrieval model to directly predict a bot response from
-  a set of candidate responses. The prediction of this model is used by [Retrieval Actions](../core/retrieval-actions).
+  a set of candidate responses. The prediction of this model is used by [Retrieval Actions](../retrieval-actions).
   It embeds user inputs and response labels into the same space and follows the exact same
-  neural network architecture and optimization as the [DIETClassifier](./components#diet-classifier).
+  neural network architecture and optimization as the [DIETClassifier](../components/intent-classifiers.mdx#diet-classifier).
 
   :::note
   If during prediction time a message contains **only** words unseen during training
   and no Out-Of-Vocabulary preprocessor was used, an empty response `None` is predicted with confidence
-  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](./components#countvectorsfeaturizer) with a `word` analyzer
+  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](../components/featurizers.mdx#countvectorsfeaturizer) with a `word` analyzer
   as featurizer. If you use the `char_wb` analyzer, you should always get a response with a confidence
   value `> 0.0`.
 
@@ -67,14 +67,14 @@ Selectors predict a bot response from a set of candidate responses.
 
 * **Configuration**
 
-  The algorithm includes almost all the hyperparameters that [DIETClassifier](./components#diet-classifier) uses.
+  The algorithm includes almost all the hyperparameters that [DIETClassifier](../components/intent-classifiers.mdx#diet-classifier) uses.
   If you want to adapt your model, start by modifying the following parameters:
 
   * `epochs`:
     This parameter sets the number of times the algorithm will see the training data (default: `300`).
     One `epoch` is equals to one forward pass and one backward pass of all the training examples.
     Sometimes the model needs more epochs to properly learn.
-    Sometimes more epochs don’t influence the performance.
+    Sometimes more epochs don't influence the performance.
     The lower the number of epochs the faster the model is trained.
 
   * `hidden_layers_sizes`:

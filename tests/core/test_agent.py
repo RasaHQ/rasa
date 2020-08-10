@@ -9,7 +9,6 @@ from pytest_sanic.utils import TestClient
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import StreamingHTTPResponse
-from uvloop.loop import Loop
 
 import rasa.core
 from rasa.core.policies.form_policy import FormPolicy
@@ -52,7 +51,7 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
 
 @pytest.fixture()
 def model_server(
-    loop: Loop, sanic_client: Callable, trained_moodbot_path: Text
+    loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_moodbot_path: Text
 ) -> TestClient:
     app = model_server_app(trained_moodbot_path, model_hash="somehash")
     return loop.run_until_complete(sanic_client(app))
@@ -291,6 +290,65 @@ def test_two_stage_fallback_without_deny_suggestion(
             policies=PolicyEnsemble.from_dict(policy_config),
         )
     assert "The intent 'out_of_scope' must be present" in str(execinfo.value)
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {"actions": ["other-action"]},
+            {
+                "policies": [
+                    {"name": "RulePolicy", "core_fallback_action_name": "my_fallback"}
+                ]
+            },
+        )
+    ],
+)
+def test_rule_policy_without_fallback_action_present(
+    domain: Dict[Text, Any], policy_config: Dict[Text, Any]
+):
+    with pytest.raises(InvalidDomain) as execinfo:
+        Agent(
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
+        )
+
+    assert RulePolicy.__name__ in execinfo.value.message
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {"actions": ["other-action"]},
+            {
+                "policies": [
+                    {
+                        "name": "RulePolicy",
+                        "core_fallback_action_name": "my_fallback",
+                        "enable_fallback_prediction": False,
+                    }
+                ]
+            },
+        ),
+        (
+            {"actions": ["my-action"]},
+            {
+                "policies": [
+                    {"name": "RulePolicy", "core_fallback_action_name": "my-action"}
+                ]
+            },
+        ),
+        ({}, {"policies": [{"name": "MemoizationPolicy"}]}),
+    ],
+)
+def test_rule_policy_valid(domain: Dict[Text, Any], policy_config: Dict[Text, Any]):
+    # no exception should be thrown
+    Agent(
+        domain=Domain.from_dict(domain),
+        policies=PolicyEnsemble.from_dict(policy_config),
+    )
 
 
 async def test_agent_update_model_none_domain(trained_rasa_model: Text):

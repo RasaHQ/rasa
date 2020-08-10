@@ -2,10 +2,10 @@
 id: training-data-format
 sidebar_label: NLU Data
 title: NLU Data
+description: Read more about how to format training data with Rasa NLU for open source natural language processing.
 ---
 
-TODO: describe each different piece of the training data in a processable format. move usage information
-about e.g. improving classification to NLU best practices.
+<!-- TODO: describe each different piece of the training data in a processable format. move usage information about e.g. improving classification to NLU best practices. -->
 
 ## Data Formats
 
@@ -21,7 +21,7 @@ e.g. `[<entity text>](<entity name>)`, or by using the following syntax `[<entit
 Using the latter syntax, you can also assign synonyms, roles, or groups to an entity, e.g.
 `[<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}`.
 The keywords `role`, `group`, and `value` are optional in this notation.
-To understand what the labels `role` and `group` are for, see section [Entities Roles and Groups](./entity-extraction#entities-roles-groups).
+To understand what the labels `role` and `group` are for, see section [Entities Roles and Groups](./training-data-format.mdx#entities-roles-groups).
 
 ```md
 ## intent:check_balance
@@ -135,35 +135,55 @@ That way you can map synonyms, or misspellings, to the same `value`.
 - show me [chinese](cuisine) restaurants
 ```
 
-### Regular Expression Features
+### Regular Expression Features (regex)
 
-Regular expressions can be used to support the intent classification and entity extraction. For example, if your entity
-has a deterministic structure (like a zipcode or an email address), you can use a regular expression to ease detection
-of that entity. For the zipcode example it might look like this:
+For example, the names of German streets often end in `strasse`. By adding this as a regex,
+we are telling the model to pay attention to words ending this way, and will quickly learn to
+associate that with a location entity.
+
+
+Regular expressions can be used in two different ways:
+
+1. They can be used to support the intent classification and entity extraction when using the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) component in the pipeline.
+   Each of the regexes then provide the intent classifier or entity extractor with an extra binary feature, which says if the regex was found or not.
+
+2. They can be used to directly extract entities from a user messages when using the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor) component in the pipeline.
+
+For example, if your entity has a deterministic structure (like a zipcode or an email address), you can use a regular
+expression to ease detection of that entity (using the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer)) or to directly extract the entities from
+the user message (using the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor)). For the zipcode example it might look like this:
 
 ```md
 ## regex:zipcode
 - [0-9]{5}
+```
 
+In case you are using the regular expressions for the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) the name of the regular expression does
+not matter. If does not define the entity nor the intent, it is just a human readable description for you to remember
+what this regex is used for and is the title of the corresponding pattern feature.
+If you want to use the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) you can also use the regex features to improve the intent
+classification performance, for example, by defining a greet clause:
+
+```md
 ## regex:greet
 - hey[^\\s]*
 ```
 
-The name doesn’t define the entity nor the intent, it is just a human readable description for you to remember what
-this regex is used for and is the title of the corresponding pattern feature. As you can see in the above example, you
-can also use the regex features to improve the intent
-classification performance.
+If you are using the regular expressions to directly extract entities using the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor),
+the name of the regular expression should match the name of the entity you want to extract.
 
-Try to create your regular expressions in a way that they match as few words as possible. E.g. using `hey[^\\s]\*`
+Try to create your regular expressions in a way that they match as few words as possible. E.g. using `hey[^\\s]*`
 instead of `hey.\*`, as the later one might match the whole message whereas the first one only matches a single word.
 
-Regex features for entity extraction are currently only supported by the `CRFEntityExtractor` component! Hence, other
-entity extractors, like `MitieEntityExtractor` or `SpacyEntityExtractor` won’t use the generated features and their
+When using the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer), the regex features for entity extraction are currently only supported by the
+`CRFEntityExtractor` and the `DIETClassifier` component! Hence, other entity extractors, like
+`MitieEntityExtractor` or `SpacyEntityExtractor` won't use the generated features and their
 presence will not improve entity recognition for these extractors. Currently, all intent classifiers make use of
 available regex features.
 
 :::note
-Regex features don’t define entities nor intents! They simply provide patterns to help the classifier
+Regex features only define entities when used in combination with the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor).
+Otherwise they don't define entities nor intents! They simply provide patterns to help the classifier
 recognize entities and related intents. Hence, you still need to provide intent & entity examples as part of your
 training data!
 
@@ -192,15 +212,15 @@ data/test/lookup_tables/plates.txt
 ```
 
 When lookup tables are supplied in training data, the contents are combined
-into a large, case-insensitive regex pattern that looks for exact matches in
+into a large regex pattern that looks for exact matches in
 the training examples. These regexes match over multiple tokens, so
 `lettuce wrap` would match `get me a lettuce wrap ASAP` as `[0 0 0 1 1 0]`.
 These regexes are processed identically to the regular regex patterns
 directly specified in the training data.
 
 :::note
-For lookup tables to be effective, there must be a few examples of matches in your training data. Otherwise the
-model will not learn to use the lookup table match features.
+If you are using lookup tables in combination with [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer), there must be a few examples of matches
+in your training data. Otherwise the model will not learn to use the lookup table match features.
 
 :::
 
@@ -232,7 +252,7 @@ and end index of the entity, you can define a synonym. Whenever the same text wi
 synonym instead of the actual text in the message.
 
 To use the synonyms defined in your training data, you need to make sure the pipeline contains the
-`EntitySynonymMapper` component (see [Components](./components)).
+`EntitySynonymMapper` component (see [Components](./components/entity-extractors.mdx#entity-synonym-mapper)).
 
 Alternatively, you can add an “entity_synonyms” array to define several synonyms to one entity value. Here is an
 example of that:
@@ -245,7 +265,91 @@ example of that:
 ```
 
 :::note
-Please note that adding synonyms using the above format does not improve the model’s classification of those entities.
+Please note that adding synonyms using the above format does not improve the model's classification of those entities.
 **Entities must be properly classified before they can be replaced with the synonym value.**
 
 :::
+
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="entities-roles-groups"></a>
+
+### Entities Roles and Groups
+
+:::caution
+This feature is experimental.
+We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+However, the functionality might be changed or removed in the future.
+If you have feedback (positive or negative) please share it with us on the [forum](https://forum.rasa.com).
+
+:::
+
+Assigning custom entity labels to words, allow you to define certain concepts in the data.
+For example, we can define what a city is:
+
+```
+I want to fly from [Berlin](city) to [San Francisco](city).
+```
+
+However, sometimes you want to specify entities even further.
+Let's assume we want to build an assistant that should book a flight for us.
+The assistant needs to know which of the two cities in the example above is the departure city and which is the
+destination city.
+`Berlin` and `San Francisco` are still cities, but they play a different role in our example.
+To distinguish between the different roles, you can assign a role label in addition to the entity label.
+
+```
+- I want to fly from [Berlin]{"entity": "city", "role": "departure"} to [San Francisco]{"entity": "city", "role": "destination"}.
+```
+
+You can also group different entities by specifying a group label next to the entity label.
+The group label can, for example, be used to define different orders.
+In the following example we use the group label to reference what toppings goes with which pizza and
+what size which pizza has.
+
+```
+Give me a [small]{"entity": "size", "group": "1"} pizza with [mushrooms]{"entity": "topping", "group": "1"} and
+a [large]{"entity": "size", "group": "2"} [pepperoni]{"entity": "topping", "group": "2"}
+```
+
+See [Training Data Format](./training-data-format) for details on how to define entities with roles and groups in your training data.
+
+The entity object returned by the extractor will include the detected role/group label.
+
+```json
+{
+  "text": "Book a flight from Berlin to SF",
+  "intent": "book_flight",
+  "entities": [
+    {
+      "start": 19,
+      "end": 25,
+      "value": "Berlin",
+      "entity": "city",
+      "role": "departure",
+      "extractor": "DIETClassifier",
+    },
+    {
+      "start": 29,
+      "end": 31,
+      "value": "San Francisco",
+      "entity": "city",
+      "role": "destination",
+      "extractor": "DIETClassifier",
+    }
+  ]
+}
+```
+
+:::note
+Composite entities are currently only supported by the [DIETClassifier](./components/intent-classifiers.mdx#diet-classifier) and [CRFEntityExtractor](./components/entity-extractors.mdx#crfentityextractor).
+
+:::
+
+In order to properly train your model with entities that have roles/groups, make sure to include enough training data
+examples for every combination of entity and role/group label.
+Also make sure to have some variations in your training data, so that the model is able to generalize.
+For example, you should not only have example like `fly FROM x TO y`, but also include examples like
+`fly TO y FROM x`.
+
+To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
+[Forms](./forms) or use [Custom Actions](./actions#custom-actions) to extract the corresponding entity directly from the tracker.

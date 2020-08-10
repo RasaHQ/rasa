@@ -2,6 +2,7 @@
 id: testing-your-assistant
 sidebar_label: Testing Your Assistant
 title: Testing Your Assistant
+description: Test your Rasa Open Source assistant to validate and improve your conversations
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -99,9 +100,12 @@ $ rasa test
 ```
 
 :::note
-[Custom Actions](../core/actions#custom-actions) are not executed as part of end-to-end tests. If your custom
+[Custom Actions](./actions.mdx#custom-actions) are **not executed as part of end-to-end tests.** If your custom
 actions append any events to the tracker, this has to be reflected in your end-to-end
 tests (e.g. by adding `slot` events to your end-to-end story).
+
+To test your custom actions, write unit tests for them and include these
+tests in your CI/CD pipeline.
 
 :::
 
@@ -120,20 +124,20 @@ the default `RegexInterpreter`.
 ## Evaluating an NLU Model
 
 A standard technique in machine learning is to keep some data separate as a *test set*.
-You can [split your NLU training data](./command-line-interface#train-test-split)
+You can [split your NLU training data](./command-line-interface.mdx#train-test-split)
 into train and test sets using:
 
 ```bash
 rasa data split nlu
 ```
 
-If you’ve done this, you can see how well your NLU model predicts the test cases using this command:
+If you've done this, you can see how well your NLU model predicts the test cases using this command:
 
 ```bash
 rasa test nlu -u train_test_split/test_data.md --model models/nlu-20180323-145833.tar.gz
 ```
 
-If you don’t want to create a separate test set, you can
+If you don't want to create a separate test set, you can
 still estimate how well your model generalises using cross-validation.
 To do this, add the flag `--cross-validation`:
 
@@ -217,7 +221,7 @@ Rasa NLU will report recall, precision, and f1 measure for each entity type that
 
 ### Entity Scoring
 
-To evaluate entity extraction we apply a simple tag-based approach. We don’t consider BILOU tags, but only the
+To evaluate entity extraction we apply a simple tag-based approach. We don't consider BILOU tags, but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
 expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`. Our approach is more lenient
 when it comes to evaluation, as it rewards partial extraction and does not punish the splitting of entities.
@@ -228,7 +232,7 @@ to be labeled as a last token in an entity (`L-LOC`) instead of a single token e
 a split extraction of “near” and “Alexanderplatz” would get full scores on our approach and zero on the
 BILOU-based one.
 
-Here’s a comparison between the two scoring mechanisms for the phrase “near Alexanderplatz tonight”:
+Here's a comparison between the two scoring mechanisms for the phrase “near Alexanderplatz tonight”:
 
 |                     extracted                      |Simple tags (score) |  BILOU tags (score)   |
 |----------------------------------------------------|--------------------|-----------------------|
@@ -267,9 +271,9 @@ The full list of options for the script is:
 
 To choose a configuration for your core model, or to choose hyperparameters for a
 specific policy, you want to measure how well Rasa Core will generalise
-to conversations which it hasn’t seen before. Especially in the beginning
+to conversations which it hasn't seen before. Especially in the beginning
 of a project, you do not have a lot of real conversations to use to train
-your bot, so you don’t just want to throw some away to use as a test set.
+your bot, so you don't just want to throw some away to use as a test set.
 
 Rasa Core has some scripts to help you choose and fine-tune your policy configuration.
 Once you are happy with it, you can then train your final configuration on your
@@ -302,7 +306,7 @@ can measure how well Rasa Core is predicting the held-out stories.
 To compare single policies create config files containing only one policy each.
 
 :::note
-This training process can take a long time, so we’d suggest letting it run
-somewhere in the background where it can’t be interrupted.
+This training process can take a long time, so we'd suggest letting it run
+somewhere in the background where it can't be interrupted.
 
 :::
