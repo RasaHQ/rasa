@@ -95,8 +95,8 @@ class FallbackClassifier(Component):
     ) -> Tuple[bool, Optional[float]]:
         intents = message.data.get(INTENT_RANKING_KEY, [])
         if len(intents) >= 2:
-            first_confidence = intents[0].get("confidence", 1.0)
-            second_confidence = intents[1].get("confidence", 1.0)
+            first_confidence = intents[0].get(INTENT_CONFIDENCE_KEY, 1.0)
+            second_confidence = intents[1].get(INTENT_CONFIDENCE_KEY, 1.0)
             difference = first_confidence - second_confidence
             return (
                 difference < self.component_config[AMBIGUITY_THRESHOLD_KEY],
