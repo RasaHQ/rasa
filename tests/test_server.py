@@ -20,6 +20,7 @@ from multiprocessing import Process, Manager
 import rasa
 import rasa.constants
 import rasa.utils.io
+import rasa.server
 from rasa.core import events, utils
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, SlackInput
@@ -288,7 +289,7 @@ def test_train_status_is_not_blocked_by_training(
         ),
     ],
 )
-def test_parse(rasa_app, response_test):
+def test_parse(rasa_app: SanicTestClient, response_test):
     _, response = rasa_app.post(response_test.endpoint, json=response_test.payload)
     rjs = response.json
     assert response.status == 200
@@ -330,7 +331,9 @@ def test_parse(rasa_app, response_test):
         ),
     ],
 )
-def test_parse_with_different_emulation_mode(rasa_app, response_test):
+def test_parse_with_different_emulation_mode(
+    rasa_app: SanicTestClient, response_test: ResponseTest
+):
     _, response = rasa_app.post(response_test.endpoint, json=response_test.payload)
     assert response.status == 200
 
@@ -351,11 +354,11 @@ def test_parse_on_invalid_emulation_mode(rasa_app_nlu: SanicTestClient):
 
 
 def test_train_stack_success(
-    rasa_app,
-    default_domain_path,
-    default_stories_file,
-    default_stack_config,
-    default_nlu_data,
+    rasa_app: SanicTestClient,
+    default_domain_path: Text,
+    default_stories_file: Text,
+    default_stack_config: Text,
+    default_nlu_data: Text,
 ):
     with ExitStack() as stack:
         domain_file = stack.enter_context(open(default_domain_path))
@@ -387,7 +390,10 @@ def test_train_stack_success(
 
 
 def test_train_nlu_success(
-    rasa_app, default_stack_config, default_nlu_data, default_domain_path
+    rasa_app: SanicTestClient,
+    default_stack_config: Text,
+    default_nlu_data: Text,
+    default_domain_path: Text,
 ):
     with ExitStack() as stack:
         domain_file = stack.enter_context(open(default_domain_path))
@@ -413,7 +419,10 @@ def test_train_nlu_success(
 
 
 def test_train_core_success(
-    rasa_app, default_stack_config, default_stories_file, default_domain_path
+    rasa_app: SanicTestClient,
+    default_stack_config: Text,
+    default_stories_file: Text,
+    default_domain_path: Text,
 ):
     with ExitStack() as stack:
         domain_file = stack.enter_context(open(default_domain_path))
@@ -440,7 +449,9 @@ def test_train_core_success(
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
 
 
-def test_train_with_retrieval_events_success(rasa_app, default_stack_config):
+def test_train_with_retrieval_events_success(
+    rasa_app: SanicTestClient, default_stack_config: Text
+):
     with ExitStack() as stack:
         domain_file = stack.enter_context(
             open("data/test_domains/default_retrieval_intents.yml")
@@ -497,7 +508,7 @@ def test_train_internal_error(rasa_app: SanicTestClient):
     assert response.status == 500
 
 
-def test_evaluate_stories(rasa_app, default_stories_file):
+def test_evaluate_stories(rasa_app: SanicTestClient, default_stories_file: Text):
     stories = rasa.utils.io.read_file(default_stories_file)
 
     _, response = rasa_app.post("/model/test/stories", data=stories)
@@ -524,7 +535,7 @@ def test_evaluate_stories(rasa_app, default_stories_file):
 
 
 def test_evaluate_stories_not_ready_agent(
-    rasa_app_nlu: SanicTestClient, default_stories_file
+    rasa_app_nlu: SanicTestClient, default_stories_file: Text
 ):
     stories = rasa.utils.io.read_file(default_stories_file)
 
@@ -533,7 +544,9 @@ def test_evaluate_stories_not_ready_agent(
     assert response.status == 409
 
 
-def test_evaluate_stories_end_to_end(rasa_app, end_to_end_story_file):
+def test_evaluate_stories_end_to_end(
+    rasa_app: SanicTestClient, end_to_end_story_file: Text
+):
     stories = rasa.utils.io.read_file(end_to_end_story_file)
 
     _, response = rasa_app.post("/model/test/stories?e2e=true", data=stories)
@@ -558,7 +571,7 @@ def test_evaluate_stories_end_to_end(rasa_app, end_to_end_story_file):
     }
 
 
-def test_evaluate_intent(rasa_app, default_nlu_data):
+def test_evaluate_intent(rasa_app: SanicTestClient, default_nlu_data: Text):
     nlu_data = rasa.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app.post("/model/test/intents", data=nlu_data)
@@ -572,7 +585,7 @@ def test_evaluate_intent(rasa_app, default_nlu_data):
 
 
 def test_evaluate_intent_on_just_nlu_model(
-    rasa_app_nlu: SanicTestClient, default_nlu_data
+    rasa_app_nlu: SanicTestClient, default_nlu_data: Text
 ):
     nlu_data = rasa.utils.io.read_file(default_nlu_data)
 
@@ -587,7 +600,7 @@ def test_evaluate_intent_on_just_nlu_model(
 
 
 def test_evaluate_intent_with_query_param(
-    rasa_app, trained_nlu_model, default_nlu_data
+    rasa_app: SanicTestClient, trained_nlu_model, default_nlu_data: Text
 ):
     _, response = rasa_app.get("/status")
     previous_model_file = response.json["model_file"]
@@ -760,7 +773,7 @@ def _create_tracker_for_sender(app: SanicTestClient, sender_id: Text) -> None:
     assert response.status == 200
 
 
-def test_get_tracker_with_jwt(rasa_secured_app):
+def test_get_tracker_with_jwt(rasa_secured_app: SanicTestClient):
     # token generated with secret "core" and algorithm HS256
     # on https://jwt.io/
 
@@ -857,7 +870,7 @@ def test_get_domain_invalid_accept_header(rasa_app: SanicTestClient):
     assert response.status == 406
 
 
-def test_load_model(rasa_app: SanicTestClient, trained_core_model):
+def test_load_model(rasa_app: SanicTestClient, trained_core_model: Text):
     _, response = rasa_app.get("/status")
 
     assert response.status == 200
@@ -878,7 +891,9 @@ def test_load_model(rasa_app: SanicTestClient, trained_core_model):
     assert old_fingerprint != response.json["fingerprint"]
 
 
-def test_load_model_from_model_server(rasa_app: SanicTestClient, trained_core_model):
+def test_load_model_from_model_server(
+    rasa_app: SanicTestClient, trained_core_model: Text
+):
     _, response = rasa_app.get("/status")
 
     assert response.status == 200
@@ -1005,7 +1020,7 @@ def test_trigger_intent_with_not_existing_intent(rasa_app: SanicTestClient):
     ],
 )
 def test_get_output_channel(
-    input_channels: List[Text], output_channel_to_use, expected_channel: Type
+    input_channels: List[Text], output_channel_to_use: Text, expected_channel: Type
 ):
     request = MagicMock()
     app = MagicMock()
