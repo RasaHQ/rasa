@@ -329,14 +329,14 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   Creates features for intent classification and response selection.
   Creates bag-of-words representation of user message, intent, and response using
-  [sklearn’s CountVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html).
+  [sklearn's CountVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html).
   All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
 
 
 * **Configuration**
 
-  See [sklearn’s CountVectorizer docs](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html)
+  See [sklearn's CountVectorizer docs](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html)
   for detailed description of the configuration parameters.
 
   This featurizer can be configured to use word or character n-grams, using the `analyzer` configuration parameter.
@@ -432,7 +432,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     |                   |                         | and user message.                                            |
     +-------------------+-------------------------+--------------------------------------------------------------+
     | analyzer          | word                    | Whether the features should be made of word n-gram or        |
-    |                   |                         | character n-grams. Option ‘char_wb’ creates character        |
+    |                   |                         | character n-grams. Option 'char_wb' creates character        |
     |                   |                         | n-grams only from text inside word boundaries;               |
     |                   |                         | n-grams at the edges of words are padded with space.         |
     |                   |                         | Valid values: 'word', 'char', 'char_wb'.                     |
@@ -507,7 +507,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   Creates features for entity extraction.
   Moves with a sliding window over every token in the user message and creates features according to the
-  configuration (see below). As a default configuration is present, you don’t need to specify a configuration.
+  configuration (see below). As a default configuration is present, you don't need to specify a configuration.
 
 
 

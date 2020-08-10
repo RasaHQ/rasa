@@ -10,7 +10,7 @@ title: Actions
 ## Custom Actions
 
 An action can run any code you want. Custom actions can turn on the lights,
-add an event to a calendar, check a user’s bank balance, or anything
+add an event to a calendar, check a user's bank balance, or anything
 else you can imagine.
 
 The `Action` class is the base class for any custom action. It has two methods
@@ -43,7 +43,7 @@ class ActionCheckRestaurants(Action):
 ```
 
 You should add the action name `action_check_restaurants` to
-the actions in your domain file. The action’s `run()` method receives
+the actions in your domain file. The action's `run()` method receives
 three arguments. You can access the values of slots and the latest message
 sent by the user using the `tracker` object, and you can send messages
 back to the user with the `dispatcher` object, by calling
@@ -72,7 +72,7 @@ Execute the side effects of this action.
     is `tracker.latest_message.text` and any other
     `rasa_sdk.Tracker` property.
 
-  * **domain** – the bot’s domain
+  * **domain** – the bot's domain
 
 
 

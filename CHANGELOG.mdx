@@ -99,7 +99,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Bugfixes
 
-* [#5617](https://github.com/rasahq/rasa/issues/5617): Don’t create TensorBoard log files during prediction.
+* [#5617](https://github.com/rasahq/rasa/issues/5617): Don't create TensorBoard log files during prediction.
 
 * [#5638](https://github.com/rasahq/rasa/issues/5638): Fix: DIET breaks with empty spaCy model
 
@@ -202,7 +202,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5646](https://github.com/rasahq/rasa/issues/5646): `DIETClassifier` only counts as extractor in `rasa test` if it was actually trained for entity recognition.
 
-* [#5669](https://github.com/rasahq/rasa/issues/5669): Remove regularization gradient for variables that don’t have prediction gradient.
+* [#5669](https://github.com/rasahq/rasa/issues/5669): Remove regularization gradient for variables that don't have prediction gradient.
 
 * [#5672](https://github.com/rasahq/rasa/issues/5672): Raise a warning in `CRFEntityExtractor` and `DIETClassifier` if entities are not correctly annotated in the
   training data, e.g. their start and end values do not match any start and end values of tokens.
@@ -282,10 +282,10 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   accesses schemas defined by the `POSTGRESQL_SCHEMA` environment variable if
   connected to a PostgreSQL database.
 
-  The schema is added to the connection string option’s `-csearch_path` key, e.g.
+  The schema is added to the connection string option's `-csearch_path` key, e.g.
   `-options=-csearch_path=<SCHEMA_NAME>` (see
   [https://www.postgresql.org/docs/11/contrib-dblink-connect.html](https://www.postgresql.org/docs/11/contrib-dblink-connect.html) for more details).
-  As before, if no `POSTGRESQL_SCHEMA` is defined, Rasa uses the database’s default
+  As before, if no `POSTGRESQL_SCHEMA` is defined, Rasa uses the database's default
   schema (`public`).
 
   The schema has to exist in the database before connecting, i.e. it needs to have been
@@ -345,7 +345,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
   Metrics can either be written after every epoch (default) or for every training step.
   You can specify when to write metrics using the variable `tensorboard_log_level`.
-  Valid values are ‘epoch’ and ‘minibatch’.
+  Valid values are 'epoch' and 'minibatch'.
 
   We also write down a model summary, i.e. layers with inputs and types, to the given directory.
 
@@ -451,7 +451,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#5438](https://github.com/rasahq/rasa/issues/5438): Fixed bug when installing rasa with `poetry`.
 
 * [#5413](https://github.com/RasaHQ/rasa/issues/5413): Fixed bug with `EmbeddingIntentClassifier`, where results
-  weren’t the same as in 1.7.x. Fixed by setting weight sparsity to 0.
+  weren't the same as in 1.7.x. Fixed by setting weight sparsity to 0.
 
 ### Improved Documentation
 
@@ -499,7 +499,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   featurization into a separate component so that the features can be reused and featurization is independent from the
   entity extraction.
 
-* [#5187](https://github.com/rasahq/rasa/issues/5187): Integrate language models from HuggingFace’s [Transformers](https://github.com/huggingface/transformers) Library.
+* [#5187](https://github.com/rasahq/rasa/issues/5187): Integrate language models from HuggingFace's [Transformers](https://github.com/huggingface/transformers) Library.
 
   Add a new NLP component [HFTransformersNLP](./components/language-models.mdx#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
   pre-trained model with the Transformers library as the backend.
@@ -559,7 +559,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#4682](https://github.com/rasahq/rasa/issues/4682): Added support to send images with the twilio output channel.
 
 * [#4817](https://github.com/rasahq/rasa/issues/4817): Part of Slack sanitization:
-  Multiple garbled URL’s in a string coming from slack will be converted into actual strings.
+  Multiple garbled URL's in a string coming from slack will be converted into actual strings.
   `Example: health check of <http://eemdb.net|eemdb.net> and <http://eemdb1.net|eemdb1.net> to health check of
   eemdb.net and eemdb1.net`
 
@@ -575,7 +575,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#5266](https://github.com/rasahq/rasa/issues/5266): We updated our code to TensorFlow 2.
 
 * [#5317](https://github.com/rasahq/rasa/issues/5317): Events exported using `rasa export` receive a message header if published through a
-  `PikaEventBroker`. The header is added to the message’s `BasicProperties.headers`
+  `PikaEventBroker`. The header is added to the message's `BasicProperties.headers`
   under the `rasa-export-process-id` key
   (`rasa.core.constants.RASA_EXPORT_PROCESS_ID_HEADER_NAME`). The value is a
   UUID4 generated at each call of `rasa export`. The resulting header is a key-value
@@ -724,7 +724,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](./migration-guide.mdx#migration-to-rasa-1-7) for more details.
 
 * [#4964](https://github.com/rasahq/rasa/issues/4964): `ReminderCancelled` can now cancel multiple reminders if no name is given. It still cancels a single
-  reminder if the reminder’s name is specified.
+  reminder if the reminder's name is specified.
 
 ### Bugfixes
 
@@ -864,7 +864,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#3549](https://github.com/rasahq/rasa/issues/3549): Added `--no-plot` option for `rasa test` command, which disables rendering of confusion matrix and histogram. By default plots will be rendered.
 
-* [#4086](https://github.com/rasahq/rasa/issues/4086): If matplotlib couldn’t set up a default backend, it will be set automatically to TkAgg/Agg one
+* [#4086](https://github.com/rasahq/rasa/issues/4086): If matplotlib couldn't set up a default backend, it will be set automatically to TkAgg/Agg one
 
 * [#4647](https://github.com/rasahq/rasa/issues/4647): Add the option `\`random_seed\`` to the `\`rasa data split nlu\`` command to generate
   reproducible train/test splits.
@@ -1057,7 +1057,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * `PikaEventProducer` adds the RabbitMQ `App ID` message property to published
   messages with the value of the `RASA_ENVIRONMENT` environment variable. The
-  message property will not be assigned if this environment variable isn’t set.
+  message property will not be assigned if this environment variable isn't set.
 
 ### Improvements
 
@@ -1152,7 +1152,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 
 * Event brokers are now also passed to custom tracker stores (using the `event_broker` parameter)
 
-* Don’t run the Rasa Docker image as `root`.
+* Don't run the Rasa Docker image as `root`.
 
 * Use multi-stage builds to reduce the size of the Rasa Docker image.
 
@@ -1227,7 +1227,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 
 * socketio can now be run without turning on the `--enable-api` flag
 
-* MappingPolicy no longer fails when the latest action doesn’t have a policy
+* MappingPolicy no longer fails when the latest action doesn't have a policy
 
 ## [1.3.6] - 2019-09-21
 
@@ -1283,7 +1283,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
   attribute of a message if no text is provided for that attribute across
   the training data.
 
-* Default one-hot representation for label featurization inside `EmbeddingIntentClassifier` if label features don’t exist.
+* Default one-hot representation for label featurization inside `EmbeddingIntentClassifier` if label features don't exist.
 
 * Policy ensemble no longer incorrectly wrings “missing mapping policy” when
   mapping policy is present.
@@ -1327,7 +1327,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 * throw error during training when triggers are defined in the domain without
   `MappingPolicy` being present in the policy ensemble
 
-* The tracker is now available within the interpreter’s `parse` method, giving the
+* The tracker is now available within the interpreter's `parse` method, giving the
   ability to create interpreter classes that use the tracker state (eg. slot values)
   during the parsing of the message. More details on motivation of this change see
   issues/3015.
@@ -1393,8 +1393,8 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
   decode the bearer token containing the conversation ID. This requires
   `rasa-x>=0.20.2`.
 
-* more specific exception message when loading custom components depending on whether component’s path or
-  class name is invalid or can’t be found in the global namespace
+* more specific exception message when loading custom components depending on whether component's path or
+  class name is invalid or can't be found in the global namespace
 
 * change priorities so that the `MemoizationPolicy` has higher priority than the `MappingPolicy`
 
@@ -1409,7 +1409,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 * defaults parameters and architectures for both `EmbeddingPolicy` and
   `EmbeddingIntentClassifier` are changed (this is a breaking change)
 
-* evaluation of NER does not include ‘no-entity’ anymore
+* evaluation of NER does not include 'no-entity' anymore
 
 * `--successes` for `rasa test nlu` is now boolean values. If set incorrect/successful predictions
   are saved in a file.
@@ -1494,7 +1494,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 
 ### Bugfixes
 
-* fixed bug that occurred when sending template `elements` through a channel that doesn’t support them
+* fixed bug that occurred when sending template `elements` through a channel that doesn't support them
 
 ## [1.2.5] - 2019-08-26
 
@@ -1644,7 +1644,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 
 ### Features
 
-* rest channel supports setting a message’s input_channel through a field
+* rest channel supports setting a message's input_channel through a field
   `input_channel` in the request body
 
 ### Improvements
@@ -1671,7 +1671,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 
 * `Validator` class to help developing by checking if the files have any errors
 
-* project’s code is now linted using flake8
+* project's code is now linted using flake8
 
 * `info` log when credentials were provided for multiple channels and channel in
   `--connector` argument was specified at the same time
@@ -1725,7 +1725,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 
 ### Improvements
 
-* removed leading underscore from name of ‘_create_initial_project’ function.
+* removed leading underscore from name of '_create_initial_project' function.
 
 ### Bugfixes
 
@@ -1781,7 +1781,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 
 * SQL `data` column type to `Text` for compatibility with MySQL
 
-* non-featurizer training parameters don’t break SklearnPolicy anymore
+* non-featurizer training parameters don't break SklearnPolicy anymore
 
 ## [1.0.9] - 2019-06-10
 
@@ -1865,7 +1865,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 ### Features
 
 * added `domain_warnings()` method to `Domain` which returns a dict containing the
-  diff between supplied {actions, intents, entities, slots} and what’s contained in the
+  diff between supplied {actions, intents, entities, slots} and what's contained in the
   domain
 
 ### Bugfixes
@@ -1915,7 +1915,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 * you can now choose actions previously created in the same session
   in `interactive learning`
 
-* add formatter ‘black’
+* add formatter 'black'
 
 * channel-specific utterances via the `- "channel":` key in utterance templates
 

@@ -30,7 +30,7 @@ the correct object.
 In addition, users may want to obtain detailed information about objects during a conversation –
 for example, whether a restaurant has outside seating, or how expensive it is.
 In order to respond to those user requests, knowledge about the restaurant domain is needed.
-Since the information is subject to change, hard-coding the information isn’t the solution.
+Since the information is subject to change, hard-coding the information isn't the solution.
 
 To handle the above challenges, Rasa can be integrated with knowledge bases. To use this integration, you can create a
 custom action that inherits from `ActionQueryKnowledgeBase`, a pre-written custom action that contains
@@ -46,7 +46,7 @@ for implementing this custom action below.
 
 ### Create a Knowledge Base
 
-The data used to answer the user’s requests will be stored in a knowledge base.
+The data used to answer the user's requests will be stored in a knowledge base.
 A knowledge base can be used to store complex data structures.
 We suggest you get started by using the `InMemoryKnowledgeBase`.
 Once you want to start working with a large amount of data, you can switch to a custom knowledge base
@@ -121,7 +121,7 @@ Once the data is defined in a json file, called, for example, `data.json`, you w
 `InMemoryKnowledgeBase`, which will be passed to the action that queries the knowledge base.
 
 Every object in your knowledge base should have at least the `"name"` and `"id"` fields to use the default implementation.
-If it doesn’t, you’ll have to [customize your InMemoryKnowledgeBase](./knowledge-bases.mdx#customize-in-memory-knowledge-base).
+If it doesn't, you'll have to [customize your InMemoryKnowledgeBase](./knowledge-bases.mdx#customize-in-memory-knowledge-base).
 
 ### Define the NLU Data
 
@@ -218,7 +218,7 @@ It can be either an `InMemoryKnowledgeBase` or your own implementation of a `Kno
 You can only pull information from one knowledge base, as the usage of multiple knowledge bases at the same time is not supported.
 
 This is the entirety of the code for this action! The name of the action is `action_query_knowledge_base`.
-Don’t forget to add it to your domain file:
+Don't forget to add it to your domain file:
 
 ```yaml
 actions:
@@ -248,7 +248,7 @@ the action `action_query_knowledge_base`. For example:
 ```
 
 The last thing you need to do is to define the response `utter_ask_rephrase` in your domain file.
-If the action doesn’t know how to handle the user’s request, it will use this response to ask the user to rephrase.
+If the action doesn't know how to handle the user's request, it will use this response to ask the user to rephrase.
 For example, add the following responses to your domain file:
 
 ```md
@@ -266,8 +266,8 @@ previously set slots to decide what to query for.
 
 ### Query the Knowledge Base for Objects
 
-In order to query the knowledge base for any kind of object, the user’s request needs to include the object type.
-Let’s look at an example:
+In order to query the knowledge base for any kind of object, the user's request needs to include the object type.
+Let's look at an example:
 
 Can you please name some restaurants?
 
@@ -326,11 +326,11 @@ mentions such as “it” or “that one”.
 
 **Ordinal Mentions**
 
-When a user refers to an object by its position in a list, it is called an ordinal mention. Here’s an example:
+When a user refers to an object by its position in a list, it is called an ordinal mention. Here's an example:
 
 * User: What restaurants in Berlin do you know?
 
-* Bot: Found the following objects of type ‘restaurant’:  1: I due forni  2: PastaBar  3: Berlin Burrito Company
+* Bot: Found the following objects of type 'restaurant':  1: I due forni  2: PastaBar  3: Berlin Burrito Company
 
 * User: Does the first one have outside seating?
 
@@ -405,7 +405,7 @@ You can disable this behavior by setting `use_last_object_mention` to `False` wh
 
 ### Customizing `ActionQueryKnowledgeBase`
 
-You can overwrite the following two functions of `ActionQueryKnowledgeBase` if you’d like to customize what the bot
+You can overwrite the following two functions of `ActionQueryKnowledgeBase` if you'd like to customize what the bot
 says to the user:
 
 * `utter_objects()`
@@ -415,14 +415,14 @@ says to the user:
 `utter_objects()` is used when the user has requested a list of objects.
 Once the bot has retrieved the objects from the knowledge base, it will respond to the user by default with a message, formatted like:
 
-Found the following objects of type ‘restaurant’:
+Found the following objects of type 'restaurant':
 1: I due forni
 2: PastaBar
 3: Berlin Burrito Company
 
 Or, if no objects are found,
 
-I could not find any objects of type ‘restaurant’.
+I could not find any objects of type 'restaurant'.
 
 If you want to change the utterance format, you can overwrite the method `utter_objects()` in your action.
 
@@ -431,11 +431,11 @@ an object.
 
 If the attribute of interest was found in the knowledge base, the bot will respond with the following utterance:
 
-‘Berlin Burrito Company’ has the value ‘Mexican’ for attribute ‘cuisine’.
+'Berlin Burrito Company' has the value 'Mexican' for attribute 'cuisine'.
 
 If no value for the requested attribute was found, the bot will respond with
 
-Did not find a valid value for attribute ‘cuisine’ for object ‘Berlin Burrito Company’.
+Did not find a valid value for attribute 'cuisine' for object 'Berlin Burrito Company'.
 
 If you want to change the bot utterance, you can overwrite the method `utter_attribute_value()`.
 
@@ -481,7 +481,7 @@ You can customize your `InMemoryKnowledgeBase` by overwriting the following func
   is set to `id`. You can overwrite the name of the key attribute for a specific object type by calling
   `set_key_attribute_of_object()`.
 
-* `get_representation_function_of_object()`: Let’s focus on the following restaurant:
+* `get_representation_function_of_object()`: Let's focus on the following restaurant:
 
   ```json
   {
@@ -493,7 +493,7 @@ You can customize your `InMemoryKnowledgeBase` by overwriting the following func
   }
   ```
 
-  When the user asks the bot to list any Italian restaurant, it doesn’t need all of the details of the restaurant.
+  When the user asks the bot to list any Italian restaurant, it doesn't need all of the details of the restaurant.
   Instead, you want to provide a meaningful name that identifies the restaurant – in most cases, the name of the object will do.
   The function `get_representation_function_of_object()` returns a lambda function that maps the
   above restaurant object to its name.

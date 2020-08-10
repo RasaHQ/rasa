@@ -25,7 +25,7 @@ to the desired number of maximum predictions.
 
 :::
 
-Your project’s `config.yml` file takes a `policies` key
+Your project's `config.yml` file takes a `policies` key
 which you can use to customize the policies your assistant uses.
 In the example below, the last two lines show how to use a custom
 policy class and pass arguments to it.
@@ -54,7 +54,7 @@ One important hyperparameter for Rasa Core policies is the `max_history`.
 This controls how much dialogue history the model looks at to decide which
 action to take next.
 
-You can set the `max_history` by passing it to your policy’s `Featurizer`
+You can set the `max_history` by passing it to your policy's `Featurizer`
 in the policy configuration yaml file.
 
 :::note
@@ -64,7 +64,7 @@ the full conversation history. See [Featurization of Conversations](./policies.m
 
 :::
 
-As an example, let’s say you have an `out_of_scope` intent which
+As an example, let's say you have an `out_of_scope` intent which
 describes off-topic user messages. If your bot sees this intent multiple
 times in a row, you might want to tell the user what you can help them
 with. So your story might look like this:
@@ -104,7 +104,7 @@ This is because if you have stories like:
 ```
 
 You actually want to teach your policy to **ignore** the dialogue history
-when it isn’t relevant and just respond with the same action no matter
+when it isn't relevant and just respond with the same action no matter
 what happened before.
 
 You can alter this behavior with the `--augmentation` flag.
@@ -124,8 +124,8 @@ ignore all augmented stories.
 
 At every turn, each policy defined in your configuration will
 predict a next action with a certain confidence level. For more information
-about how each policy makes its decision, read into the policy’s description below.
-The bot’s next action is then decided by the policy that predicts with the highest confidence.
+about how each policy makes its decision, read into the policy's description below.
+The bot's next action is then decided by the policy that predicts with the highest confidence.
 
 In the case that two policies predict with equal confidence (for example, the Memoization
 and Mapping Policies always predict with confidence of either 0 or 1), the priority of the
@@ -202,7 +202,7 @@ If you want to adapt your model, start by modifying the following parameters:
   This parameter sets the number of times the algorithm will see the training data (default: `1`).
   One `epoch` is equals to one forward pass and one backward pass of all the training examples.
   Sometimes the model needs more epochs to properly learn.
-  Sometimes more epochs don’t influence the performance.
+  Sometimes more epochs don't influence the performance.
   The lower the number of epochs the faster the model is trained.
 
 * `hidden_layers_sizes`:
@@ -240,7 +240,7 @@ be trained only for `1` epoch.
 :::
 
 :::caution
-Default `max_history` for this policy is `None` which means it’ll use the
+Default `max_history` for this policy is `None` which means it'll use the
 `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to some finite value in order to
 use `MaxHistoryTrackerFeaturizer` for **faster training**. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for
 details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
@@ -395,13 +395,13 @@ user message, normal prediction will resume.
 
 If you do not want your intent-action mapping to affect the dialogue
 history, the mapped action must return a `UserUtteranceReverted()`
-event. This will delete the user’s latest message, along with any events that
+event. This will delete the user's latest message, along with any events that
 happened after it, from the dialogue history. This means you should not
 include the intent-action interaction in your stories.
 
 For example, if a user asks “Are you a bot?” off-topic in the middle of the
 flow, you probably want to answer without that interaction affecting the next
-action prediction. A triggered custom action can do anything, but here’s a
+action prediction. A triggered custom action can do anything, but here's a
 simple example that dispatches a bot utterance and then reverts the interaction:
 
 ```python
@@ -617,13 +617,13 @@ of the tracker has a couple steps:
 1. **Tracker provides a bag of active features**:
 
        * features indicating intents and entities, if this is the first
-         state in a turn, e.g. it’s the first action we will take after
-         parsing the user’s message. (e.g.
+         state in a turn, e.g. it's the first action we will take after
+         parsing the user's message. (e.g.
          `[intent_restaurant_search, entity_cuisine]` )
 
        * features indicating which slots are currently defined, e.g.
          `slot_location` if the user previously mentioned the area
-         they’re searching for restaurants.
+         they're searching for restaurants.
 
        * features indicating the results of any API calls stored in
          slots, e.g. `slot_matches`
@@ -633,7 +633,7 @@ of the tracker has a couple steps:
 
 2. **Convert all the features into numeric vectors**:
 
-   We use the `X, y` notation that’s common for supervised learning,
+   We use the `X, y` notation that's common for supervised learning,
    where `X` is an array of shape
    `(num_data_points, time_dimension, num_input_features)`,
    and `y` is an array of shape `(num_data_points, num_bot_features)`
@@ -680,7 +680,7 @@ default restart, label `2` a greeting and `3` indicates goodbye.
 
 ### Tracker Featurizers
 
-It’s often useful to include a bit more history than just the current state
+It's often useful to include a bit more history than just the current state
 when predicting an action. The `TrackerFeaturizer` iterates over tracker
 states and calls a `SingleStateFeaturizer` for each state. There are two
 different tracker featurizers:

@@ -10,7 +10,7 @@ title: Fallback and Human Handoff
 
 Even if you design your bot perfectly, users will inevitably say things to your
 assistant that you did not anticipate. In these cases, your assistant will fail,
-and it’s important you ensure it does so gracefully.
+and it's important you ensure it does so gracefully.
 
 ## Fallback policy
 
@@ -31,7 +31,7 @@ intents:
 ```
 
 When the nlu confidence falls below the defined threshold, the bot will prompt the user to
-rephrase their message. If the bot isn’t able to get their message three times, there
+rephrase their message. If the bot isn't able to get their message three times, there
 will be a final action where the bot can e.g. hand off to a human.
 
 To try this out, retrain your model and send a message like “order me a pizza” to your bot:
@@ -41,8 +41,8 @@ rasa train
 rasa shell
 ```
 
-There are also a bunch of ways in which you can customise this policy. In Sara, our demo bot,
-we’ve customized it to suggest intents to the user within a certain confidence range to make
+There are also a bunch of ways in which you can customize this policy. In Sara, our demo bot,
+we've customized it to suggest intents to the user within a certain confidence range to make
 it easier for the user to give the bot the information it needs.
 
 This is done by customizing the action `ActionDefaultAskAffirmation` as shown in the
@@ -55,32 +55,32 @@ We define some intent mappings to make it more intuitive to the user what an int
 
 ## Out of scope intent
 
-It is good practice to also handle questions you know your users may ask, but for which you haven’t necessarily implemented a user goal yet.
+It is good practice to also handle questions you know your users may ask, but for which you haven't necessarily implemented a user goal yet.
 
-You can define an `out_of_scope` intent to handle generic out of scope requests, like “I’m hungry” and have
-the bot respond with a default message like “Sorry, I can’t handle that request”:
+You can define an `out_of_scope` intent to handle generic out of scope requests, like “I'm hungry” and have
+the bot respond with a default message like “Sorry, I can't handle that request”:
 
 ```md
 * out_of_scope
   utter_out_of_scope
 ```
 
-We’ll need to add NLU data for the `out_of_scope` intent as well:
+We'll need to add NLU data for the `out_of_scope` intent as well:
 
 ```md
 ## intent:out_of_scope
 - I want to order food
 - What is 2 + 2?
-- Who’s the US President?
+- Who's the US President?
 - I need a job
 ```
 
-And finally we’ll add a response to our `domain.yml` file:
+And finally we'll add a response to our `domain.yml` file:
 
 ```yaml
 responses:
   utter_out_of_scope:
-  - text: Sorry, I can’t handle that request.
+  - text: Sorry, I can't handle that request.
 ```
 
 We can now re-train, and test this addition
@@ -90,11 +90,11 @@ rasa train
 rasa shell
 ```
 
-Going one step further, if you observe your users asking for certain things, that you’ll
+Going one step further, if you observe your users asking for certain things, that you'll
 want to turn into a user goal in future, you can handle these as separate intents, to let
-the user know you’ve understood their message, but don’t have a solution quite yet. E.g.,
-let’s say the user asks “I want to apply for a job at Rasa”, we can then reply with
-“I understand you’re looking for a job, but I’m afraid I can’t handle that skill yet.”
+the user know you've understood their message, but don't have a solution quite yet. E.g.,
+let's say the user asks “I want to apply for a job at Rasa”, we can then reply with
+“I understand you're looking for a job, but I'm afraid I can't handle that skill yet.”
 
 ```md
 * ask_job
@@ -102,7 +102,7 @@ let’s say the user asks “I want to apply for a job at Rasa”, we can then r
 ```
 
 :::note
-Here’s a minimal checklist of files we modified to help our assistant fail gracefully:
+Here's a minimal checklist of files we modified to help our assistant fail gracefully:
 
 * `data/nlu.md`:
 
@@ -120,7 +120,7 @@ Here’s a minimal checklist of files we modified to help our assistant fail gra
 
 * `actions.py`:
 
-    * Customise `ActionDefaultAskAffirmation` to suggest intents for the user to choose from
+    * Customize `ActionDefaultAskAffirmation` to suggest intents for the user to choose from
 
 * `config.yml`:
 

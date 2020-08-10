@@ -78,7 +78,7 @@ and interactive components, and more.
 
 ### Images and Buttons
 
-Responses defined in a domain’s yaml file can contain images and
+Responses defined in a domain's yaml file can contain images and
 buttons as well:
 
 ```yaml
@@ -115,7 +115,7 @@ utter_ask_color:
 :::note
 Please keep in mind that it is up to the implementation of the output
 channel on how to display the defined buttons. The command line, for
-example, can’t display buttons or images, but tries to mimic them by
+example, can't display buttons or images, but tries to mimic them by
 printing the options.
 
 :::
@@ -152,7 +152,7 @@ responses:
 For each response, you can have multiple **response variations** (see [Variations](./domain.mdx#variations)).
 If you have certain response variations that you would like sent only to specific
 channels, you can specify this with the `channel:` key. The value should match
-the name defined in the `name()` method of the channel’s `OutputChannel`
+the name defined in the `name()` method of the channel's `OutputChannel`
 class. Channel-specific responses are especially useful if creating custom
 output payloads that will only work in certain channels.
 

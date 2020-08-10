@@ -62,6 +62,7 @@ excluded_words:
   - asyncio
   - bot
   - bot's
+  - cdd
   - cmdline
   - conveRT
   - ConveRTFeaturizer
@@ -86,6 +87,7 @@ excluded_words:
   - featurizes
   - featurizing
   - forni
+  - initializer
   - instaclient
   - jwt
   - jwt's
@@ -103,6 +105,7 @@ excluded_words:
   - miniconda
   - mitie
   - mitie's
+  - mitienlp
   - dataset
   - mongod
   - mrkdown
@@ -136,6 +139,7 @@ excluded_words:
   - scipy
   - sklearn
   - spacy
+  - spacynlp
   - ish
   - spaCy
   - spaCy's

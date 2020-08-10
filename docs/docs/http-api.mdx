@@ -78,11 +78,11 @@ Requests to the server need to contain a valid JWT token in
 the `Authorization` header that is signed using this secret
 and the `HS256` algorithm.
 
-The token’s payload must contain an object under the `user` key,
+The token's payload must contain an object under the `user` key,
 which in turn must contain the `username` and `role` attributes.
 If the `role` is `admin`, all endpoints are accessible.
 If the `role` is `user`, endpoints with a `sender_id` parameter are only accessible
-if the `sender_id` matches the payload’s `username` property.
+if the `sender_id` matches the payload's `username` property.
 
 ```bash
 rasa run \

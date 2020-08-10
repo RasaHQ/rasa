@@ -13,7 +13,7 @@ In interactive learning mode, you provide feedback to your bot while you talk
 to it. This is a powerful way
 to explore what your bot can do, and the easiest way to fix any mistakes
 it makes. One advantage of machine learning-based dialogue is that when
-your bot doesn’t know how to do something yet, you can just teach it!
+your bot doesn't know how to do something yet, you can just teach it!
 Some people call this [Software 2.0](https://medium.com/@karpathy/software-2-0-a64152b37c35).
 
 :::note
@@ -42,7 +42,7 @@ The second command starts interactive learning mode.
 
 In interactive mode, Rasa will ask you to confirm every prediction
 made by NLU and Core before proceeding.
-Here’s an example:
+Here's an example:
 
 ```text
 Bot loaded. Type a message and press enter (use '/stop' to exit).
@@ -84,7 +84,7 @@ the data from our [github repo](https://github.com/RasaHQ/rasa/tree/master/examp
 If you ask `/search_concerts`, the bot should suggest
 `action_search_concerts` and then `action_listen` (the confidence at which
 the policy selected its next action will be displayed next to the action name).
-Now let’s enter `/compare_reviews` as the next user message.
+Now let's enter `/compare_reviews` as the next user message.
 The bot *might* choose the wrong one out of the two
 possibilities (depending on the training run, it might also be correct):
 
@@ -148,7 +148,7 @@ training data for the next training.
 
 ### Interactive Learning with Forms
 
-If you’re using a FormAction, there are some additional things to keep in mind
+If you're using a FormAction, there are some additional things to keep in mind
 when using interactive learning.
 
 #### The `form:` prefix
@@ -160,7 +160,7 @@ removing a required slot.
 When you use interactive learning to generate stories containing a form,
 the conversation steps handled by the form
 get a `form:` prefix. This tells Rasa Core to ignore these steps when training
-your other policies. There is nothing special you have to do here, all of the form’s
+your other policies. There is nothing special you have to do here, all of the form's
 happy paths are still covered by the basic story given in [Forms](./forms.mdx).
 
 Here is an example:
@@ -188,7 +188,7 @@ Here is an example:
 Every time the user responds with something *other* than the requested slot or
 any of the required slots,
 you will be asked whether you want the form action to try and extract a slot
-from the user’s message when returning to the form. This is best explained with
+from the user's message when returning to the form. This is best explained with
 an example:
 
 ```text
@@ -220,8 +220,8 @@ Current slots:
 ? Should 'restaurant_form' validate user input to fill the slot 'outdoor_seating'?  (Y/n)
 ```
 
-Here the user asked to stop the form, and the bot asks the user whether they’re sure
-they don’t want to continue. The user says they want to continue (the `/affirm` intent).
+Here the user asked to stop the form, and the bot asks the user whether they're sure
+they don't want to continue. The user says they want to continue (the `/affirm` intent).
 Here `outdoor_seating` has a `from_intent` slot mapping (mapping
 the `/affirm` intent to `True`), so this user input could be used to fill
 that slot. However, in this case the user is just responding to the
@@ -232,15 +232,15 @@ should not be validated. The bot will then continue to ask for the
 :::caution
 If there is a conflicting story in your training data, i.e. you just chose
 to validate the input (meaning it will be printed with the `forms:` prefix),
-but your stories file contains the same story where you don’t validate
-the input (meaning it’s without the `forms:` prefix), you will need to make
+but your stories file contains the same story where you don't validate
+the input (meaning it's without the `forms:` prefix), you will need to make
 sure to remove this conflicting story. When this happens, there is a warning
 prompt that reminds you to do this:
 
 **WARNING: FormPolicy predicted no form validation based on previous training
 stories. Make sure to remove contradictory stories from training data**
 
-Once you’ve removed that story, you can press enter and continue with
+Once you've removed that story, you can press enter and continue with
 interactive learning
 
 :::

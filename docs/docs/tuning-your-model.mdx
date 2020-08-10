@@ -26,8 +26,8 @@ The pipeline contains the [ConveRTFeaturizer](./components/featurizers.mdx#conve
 Pre-trained word embeddings are helpful as they already encode some kind of linguistic knowledge.
 For example, if you have a sentence like “I want to buy apples” in your training data, and Rasa is asked to predict
 the intent for “get pears”, your model already knows that the words “apples” and “pears” are very similar.
-This is especially useful if you don’t have enough training data.
-The advantage of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is that it doesn’t treat each word of the user message independently, but
+This is especially useful if you don't have enough training data.
+The advantage of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence.
 However, `ConveRT` is only available in English.
 
@@ -45,7 +45,7 @@ It uses the [SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer) inst
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-non-english"></a>
 
-If you don’t use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
+If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
 and can train your model to be more domain specific.
 If there are no word embeddings for your language or you have very domain specific terminology,
 we recommend using the following pipeline:
@@ -135,7 +135,7 @@ vectors from the context and do intent classification.
 Initially the context is filled with all configuration values. The arrows
 in the image show the call order and visualize the path of the passed
 context. After all components are trained and persisted, the
-final context dictionary is used to persist the model’s metadata.
+final context dictionary is used to persist the model's metadata.
 
 ### Multi-Intent Classification
 
@@ -143,7 +143,7 @@ You can use Rasa Open Source components to split intents into multiple labels. F
 multiple intents (`thank+goodbye`) or model hierarchical intent structure (`feedback+positive` being more similar
 to `feedback+negative` than `chitchat`).
 To do this, you need to use the [DIETClassifier](./components/intent-classifiers.mdx#diet-classifier) in your pipeline.
-You’ll also need to define these flags in whichever tokenizer you are using:
+You'll also need to define these flags in whichever tokenizer you are using:
 
 * `intent_tokenization_flag`: Set it to `True`, so that intent labels are tokenized.
 
@@ -152,7 +152,7 @@ You’ll also need to define these flags in whichever tokenizer you are using:
 Read a [tutorial](https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/)
 on how to use multiple intents in Rasa.
 
-Here’s an example configuration:
+Here's an example configuration:
 
 ```yaml
 language: "en"
@@ -208,13 +208,13 @@ You need to decide whether to use components that provide pre-trained word embed
 of small amounts of training data to start with pre-trained word embeddings. Once you have a larger amount of data
 and ensure that most relevant words will be in your data and therefore will have a word embedding, supervised
 embeddings, which learn word meanings directly from your training data, can make your model more specific to your domain.
-If you can’t find a pre-trained model for your language, you should use supervised embeddings.
+If you can't find a pre-trained model for your language, you should use supervised embeddings.
 
 #### Pre-trained Embeddings
 
 The advantage of using pre-trained word embeddings in your pipeline is that if you have a training example like:
 “I want to buy apples”, and Rasa is asked to predict the intent for “get pears”, your model already knows that the
-words “apples” and “pears” are very similar. This is especially useful if you don’t have enough training data.
+words “apples” and “pears” are very similar. This is especially useful if you don't have enough training data.
 We support a few components that provide pre-trained word embeddings:
 
 1. [MitieFeaturizer](./components/featurizers.mdx#mitiefeaturizer)
@@ -226,11 +226,11 @@ We support a few components that provide pre-trained word embeddings:
 4. [LanguageModelFeaturizer](./components/featurizers.mdx#languagemodelfeaturizer)
 
 If your training data is in English, we recommend using the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer).
-The advantage of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is that it doesn’t treat each word of the user message independently, but
+The advantage of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence. For example, if you
 have a training example, like: “Can I book a car?”, and Rasa is asked to predict the intent for “I need a ride from
 my place”, since the contextual vector representation for both examples are already very similar, the intent classified
-for both is highly likely to be the same. This is also useful if you don’t have enough training data.
+for both is highly likely to be the same. This is also useful if you don't have enough training data.
 
 An alternative to [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is the [LanguageModelFeaturizer](./components/featurizers.mdx#languagemodelfeaturizer) which uses pre-trained language
 models such as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
@@ -248,12 +248,12 @@ so you can use this as another alternative, depending on the language of your tr
 
 #### Supervised Embeddings
 
-If you don’t use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
+If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
 and can train your model to be more domain specific. For example, in general English, the word “balance” is closely
 related to “symmetry”, but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely
-related and you’d like your model to capture that.
+related and you'd like your model to capture that.
 You should only use featurizers from the category [sparse featurizers](./components/featurizers.mdx#text-featurizers), such as
-[CountVectorsFeaturizer](./components/featurizers.mdx#countvectorsfeaturizer), [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer), if you don’t want to use
+[CountVectorsFeaturizer](./components/featurizers.mdx#countvectorsfeaturizer), [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer), if you don't want to use
 pre-trained word embeddings.
 
 ### Intent Classification / Response Selectors
@@ -272,7 +272,7 @@ Set an alias for every featurizer in your pipeline via the option `alias`.
 By default the alias is set the the full featurizer class name, for example, `RegexFeaturizer`.
 You can then specify, for example, on the [ResponseSelector](./components/selectors.mdx#response-selector) via the option `featurizers` what features from
 which featurizers should be used.
-If you don’t set the option `featurizers` all available features will be used.
+If you don't set the option `featurizers` all available features will be used.
 
 Here is an example configuration file where the `DIETClassifier` is using all available features and the
 `ResponseSelector` is just using the features from the `ConveRTFeaturizer` and the `CountVectorsFeaturizer`.
