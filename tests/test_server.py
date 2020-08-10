@@ -1,12 +1,13 @@
 import os
 from multiprocessing.managers import DictProxy
+from unittest.mock import Mock, ANY
 
 import requests
 import time
 import tempfile
 import uuid
 
-from typing import List, Text, Type, Generator, NoReturn
+from typing import List, Text, Type, Generator, NoReturn, Dict
 from contextlib import ExitStack
 
 from _pytest import pathlib
@@ -475,16 +476,111 @@ def test_train_with_retrieval_events_success(
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
+    assert_trained_model(response.body)
 
+
+def assert_trained_model(response_body: bytes) -> None:
     # save model to temporary file
     tempdir = tempfile.mkdtemp()
     model_path = os.path.join(tempdir, "model.tar.gz")
     with open(model_path, "wb") as f:
-        f.write(response.body)
+        f.write(response_body)
 
     # unpack model and ensure fingerprint is present
     model_path = unpack_model(model_path)
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
+
+
+def test_train_with_yaml(rasa_app: SanicTestClient):
+    training_data = """
+stories:
+- story: My story
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+rules:
+- story: My rule
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+intents:
+- greet
+
+nlu:
+- intent: greet
+  examples: |
+    - hi
+    - hello
+
+responses:
+ utter_greet:
+ - text: Hi
+
+language: en
+
+polices:
+- name: RulePolicy
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+  - name: DucklingHTTPExtractor
+  - name: DIETClassifier
+    epochs: 1
+"""
+    _, response = rasa_app.post(
+        "/model/train", data=training_data, headers={"Content-type": "application/yaml"}
+    )
+
+    assert response.status == 200
+    assert_trained_model(response.body)
+
+
+def test_train_with_invalid_yaml(rasa_app: SanicTestClient):
+    invalid_yaml = """
+rules:
+rule my rule
+"""
+
+    _, response = rasa_app.post(
+        "/model/train", data=invalid_yaml, headers={"Content-type": "application/yaml"}
+    )
+    assert response.status == 400
+
+
+@pytest.mark.parametrize(
+    "headers, expected",
+    [({}, False), ({"force_training": False}, False), ({"force_training": True}, True)],
+)
+def test_training_payload_from_yaml_force_training(headers: Dict, expected: bool):
+    request = Mock()
+    request.body = b""
+    request.args = headers
+
+    payload = rasa.server._training_payload_from_yaml(request)
+    assert payload.get("force_training") == expected
+
+
+@pytest.mark.parametrize(
+    "headers, expected",
+    [
+        ({}, rasa.constants.DEFAULT_MODELS_PATH),
+        ({"save_to_default_model_directory": False}, ANY),
+        ({"save_to_default_model_directory": True}, rasa.constants.DEFAULT_MODELS_PATH),
+    ],
+)
+def test_training_payload_from_yaml_save_to_default_model_directory(
+    headers: Dict, expected: Text
+):
+    request = Mock()
+    request.body = b""
+    request.args = headers
+
+    payload = rasa.server._training_payload_from_yaml(request)
+    assert payload.get("output")
+    assert payload.get("output") == expected
 
 
 def test_train_missing_config(rasa_app: SanicTestClient):

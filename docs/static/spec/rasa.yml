@@ -435,12 +435,32 @@ paths:
         Trains a new Rasa model. Depending on the data given only a dialogue model,
         only a NLU model, or a model combining a trained dialogue model with an
         NLU model will be trained. The new model is not loaded by default.
+      parameters:
+      - in: header
+        name: save_to_default_model_directory
+        schema:
+          type: boolean
+          description: >-
+            If `true` (default) the trained model will be saved in the default model
+            directory, if `false` it will be saved in a temporary directory
+      - in: header
+        name: force_training
+        schema:
+          type: boolean
+          description: Force a model training even if the data has not changed
       requestBody:
         required: true
+        description: >-
+          The training data can either be in YAML format or a JSON
+          which contains Rasa training data in Markdown format for each required key.
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/TrainingRequest'
+          application/yaml:
+            schema:
+              type: string
+
       responses:
         200:
           description: Zipped Rasa model
