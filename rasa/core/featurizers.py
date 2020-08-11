@@ -632,45 +632,6 @@ class TrackerFeaturizer:
 
         return states
 
-    def _fill_in_features(self, features):
-        shapes = self.state_featurizer.output_shapes
-
-        for feature in features:
-            intent_rows_to_fill = np.where(feature[:, 3] != -1)[0]
-            user_text_rows_to_fill = np.where(feature[:, 3] != 1)[0]
-            action_names_rows_to_fill = np.where(feature[:, 7] != -1)[0]
-            action_text_rows_to_fill = np.where(feature[:, 7] != 1)[0]
-
-            for key in shapes.keys():
-                if INTENT in key:
-                    feature[np.array(intent_rows_to_fill), 2] = [
-                        np.ones((1, shapes.get(key))) * -1
-                    ] * len(intent_rows_to_fill)
-                elif ACTION_NAME in key:
-                    feature[np.array(action_names_rows_to_fill), 6] = [
-                        np.ones((1, shapes.get(key))) * -1
-                    ] * len(action_names_rows_to_fill)
-                elif ACTION_TEXT in key:
-                    if "sparse" in key:
-                        feature[np.array(action_text_rows_to_fill), 4] = [
-                            scipy.sparse.coo_matrix((1, shapes.get(key)))
-                        ] * len(action_text_rows_to_fill)
-                    elif "dense" in key:
-                        feature[np.array(action_text_rows_to_fill), 5] = [
-                            np.ones((1, shapes.get(key))) * -1
-                        ] * len(action_text_rows_to_fill)
-                else:
-                    if "sparse" in key:
-                        feature[np.array(user_text_rows_to_fill), 0] = [
-                            scipy.sparse.coo_matrix((1, shapes.get(key)))
-                        ] * len(user_text_rows_to_fill)
-                    elif "dense" in key:
-                        feature[np.array(user_text_rows_to_fill), 1] = [
-                            np.ones((1, shapes.get(key))) * -1
-                        ] * len(user_text_rows_to_fill)
-
-        return features
-
     def _featurize_states(
         self,
         trackers_as_states: List[List[Dict[Text, float]]],
@@ -696,8 +657,6 @@ class TrackerFeaturizer:
             if not story_features == []:
                 features.append(np.stack(story_features))
                 true_lengths.append(dialogue_len)
-
-        features = self._fill_in_features(features)
 
         # noinspection PyPep8Naming
         X = np.array(features)
