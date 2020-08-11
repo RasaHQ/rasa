@@ -5,7 +5,7 @@ import logging
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.core.constants import REQUESTED_SLOT
+from rasa.core.constants import REQUESTED_SLOT, UTTER_PREFIX
 from rasa.core.domain import Domain
 
 from rasa.core.actions.action import (
@@ -443,7 +443,7 @@ class FormAction(LoopAction):
     def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Text:
         search_path = [
             f"action_ask_{self._form_name}_{slot_name}",
-            f"utter_ask_{self._form_name}_{slot_name}",
+            f"{UTTER_PREFIX}ask_{self._form_name}_{slot_name}",
             f"action_ask_{slot_name}",
         ]
 
@@ -453,7 +453,7 @@ class FormAction(LoopAction):
             if action_name in domain.action_names
         )
 
-        return next(found_actions, f"utter_ask_{slot_name}")
+        return next(found_actions, f"{UTTER_PREFIX}ask_{slot_name}")
 
     async def _ask_for_slot(
         self,
