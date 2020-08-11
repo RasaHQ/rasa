@@ -56,7 +56,7 @@ to both deploy your bot and enable CDD with a bot in production.
     Your test users had at least some instruction about what the bot was intended to do; real users often either have no idea, or ignore instructions given to them. You can't cater to every unexpected user behavior, but you can try to address the main friction points you notice. Here are some things you could consider looking for:
 
     *   Look at conversations where an “out_of_scope” intent or fallback behavior occurred. These could indicate a potential new skill, or just a misclassified user utterance.
-    *   Look for user frustration, such as requests for transfer to a håuman.
+    *   Look for user frustration, such as requests for transfer to a human.
 
 *   **Annotate**: Continue to follow [best practices for NLU](generating-nlu-data.mdx) as you add new user utterances from real conversations to your training data. Be careful not to overfit your NLU model to utterances like those already in your training data. This can happen when you continuously add user utterances that were already predicted correctly and with high confidence to your training data.  To avoid overfitting and help your model generalize to more diverse user utterances, add only user utterances that the model previously predicted incorrectly or with low confidence. 
 
