@@ -67,3 +67,5 @@ RedisLockStore
     - ``password`` (default: ``None``): Password used for authentication
       (``None`` equals no authentication)
     - ``use_ssl`` (default: ``False``): Whether or not the communication is encrypted
+    - ``socket_timeout`` (default: ``10``): Time in seconds after which an
+        error is raised if Redis doesn't answer

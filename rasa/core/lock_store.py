@@ -14,6 +14,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 LOCK_LIFETIME = int(os.environ.get("TICKET_LOCK_LIFETIME", 0)) or DEFAULT_LOCK_LIFETIME
+DEFAULT_SOCKET_TIMEOUT_IN_SECONDS = 10
 
 
 # noinspection PyUnresolvedReferences
@@ -85,16 +86,22 @@ class LockStore:
         Try acquiring lock with a wait time of `wait_time_in_seconds` seconds
         between attempts. Raise a `LockError` if lock has expired.
         """
-
-        ticket = self.issue_ticket(conversation_id, lock_lifetime)
-
+        ticket = None
         try:
+            ticket = self.issue_ticket(conversation_id, lock_lifetime)
+
             yield await self._acquire_lock(
                 conversation_id, ticket, wait_time_in_seconds
             )
-
+        except Exception as e:
+            logger.error(
+                f"The lock for conversation '{conversation_id}' could not be"
+                f"acquired. Error:\n{e}"
+            )
+            raise LockError(e)
         finally:
-            self.cleanup(conversation_id, ticket)
+            if ticket:
+                self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
         self, conversation_id: Text, ticket: int, wait_time_in_seconds: float
@@ -191,11 +198,17 @@ class RedisLockStore(LockStore):
         db: int = 1,
         password: Optional[Text] = None,
         use_ssl: bool = False,
+        socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
     ):
         import redis
 
         self.red = redis.StrictRedis(
-            host=host, port=int(port), db=int(db), password=password, ssl=use_ssl
+            host=host,
+            port=int(port),
+            db=int(db),
+            password=password,
+            ssl=use_ssl,
+            socket_timeout=socket_timeout,
         )
         super().__init__()
 

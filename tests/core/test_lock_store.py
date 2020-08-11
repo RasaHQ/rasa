@@ -4,9 +4,11 @@ import os
 import numpy as np
 import pytest
 import time
+
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempdirFactory
 from typing import Text
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
@@ -264,3 +266,14 @@ async def test_lock_lifetime_environment_variable():
     # reload module and check value is updated
     importlib.reload(rasa.core.lock_store)
     assert rasa.core.lock_store.LOCK_LIFETIME == new_lock_lifetime
+
+
+async def test_redis_lock_store_timeout(monkeypatch: MonkeyPatch):
+    import redis.exceptions
+
+    lock_store = FakeRedisLockStore()
+    lock_store.issue_ticket = Mock(side_effect=redis.exceptions.TimeoutError)
+
+    with pytest.raises(LockError):
+        async with lock_store.lock("some sender"):
+            assert False
