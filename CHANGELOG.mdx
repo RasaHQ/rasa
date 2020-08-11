@@ -87,7 +87,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5521](https://github.com/rasahq/rasa/issues/5521): Responses used in ResponseSelector now support new lines with explicitly adding `\\n` between them.
 
-* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [rasa export](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment) ([Export Conversations to an Event Broker](./command-line-interface.mdx#section-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./domain.mdx#session-config).
+* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [rasa export](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment) ([Export Conversations to an Event Broker](./command-line-interface.mdx#export-conversations-to-an-event-broker)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./domain.mdx#session-config).
 
 ## [1.10.1] - 2020-05-15
 
@@ -135,7 +135,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   `from_entity` (see [Forms](./forms.mdx)).
 
   :::note
-  Composite entities are currently just supported by the [DIETClassifier](./components/intent-classifiers.mdx#diet-classifier) and [CRFEntityExtractor](./components/entity-extractors.mdx#crfentityextractor).
+  Composite entities are currently just supported by the [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) and [CRFEntityExtractor](./components/entity-extractors.mdx#crfentityextractor).
 
   :::
 
@@ -278,7 +278,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5533](https://github.com/rasahq/rasa/issues/5533): Support for
   [PostgreSQL schemas](https://www.postgresql.org/docs/11/ddl-schemas.html) in
-  [SQLTrackerStore](./tracker-stores.mdx#sql-tracker-store). The `SQLTrackerStore`
+  [SQLTrackerStore](./tracker-stores.mdx#sqltrackerstore). The `SQLTrackerStore`
   accesses schemas defined by the `POSTGRESQL_SCHEMA` environment variable if
   connected to a PostgreSQL database.
 
@@ -323,7 +323,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Bugfixes
 
-* [#5492](https://github.com/rasahq/rasa/issues/5492): Fix an issue where the deprecated `queue` parameter for the [Pika Event Broker](./event-brokers.mdx#event-brokers-pika)
+* [#5492](https://github.com/rasahq/rasa/issues/5492): Fix an issue where the deprecated `queue` parameter for the [Pika Event Broker](./event-brokers.mdx#pika-event-broker)
   was ignored and Rasa Open Source published the events to the `rasa_core_events`
   queue instead. Note that this does not change the fact that the `queue` argument
   is deprecated in favor of the `queues` argument.
@@ -360,7 +360,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   e.g. `faq/which_version` to the prediction, making it accessible
   from the tracker.
 
-* [#5258](https://github.com/rasahq/rasa/issues/5258): Added `PikaEventBroker` ([Pika Event Broker](./event-brokers.mdx#event-brokers-pika)) support for publishing to
+* [#5258](https://github.com/rasahq/rasa/issues/5258): Added `PikaEventBroker` ([Pika Event Broker](./event-brokers.mdx#pika-event-broker)) support for publishing to
   multiple queues. Messages are now published to a `fanout` exchange with name
   `rasa-exchange` (see
   [exchange-fanout](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout)
@@ -405,7 +405,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   in DynamoDB tracker stores. All `decimal.Decimal` objects are now converted to
   `float` on tracker retrieval.
 
-  Added a new docs section on [DynamoTrackerStore](./tracker-stores.mdx#tracker-stores-dynamo).
+  Added a new docs section on [DynamoTrackerStore](./tracker-stores.mdx#dynamotrackerstore).
 
 * [#5356](https://github.com/rasahq/rasa/issues/5356): Fixed bug where `FallbackPolicy` would always fall back if the fallback action is
   `action_listen`.
@@ -508,7 +508,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
 * [#5225](https://github.com/rasahq/rasa/issues/5225): Added a new CLI command `rasa export` to publish tracker events from a persistent
-  tracker store using an event broker. See [Export Conversations to an Event Broker](./command-line-interface.mdx#section-export), [Tracker Stores](./tracker-stores.mdx)
+  tracker store using an event broker. See [Export Conversations to an Event Broker](./command-line-interface.mdx#export-conversations-to-an-event-broker), [Tracker Stores](./tracker-stores.mdx)
   and [Event Brokers](./event-brokers.mdx) for more details.
 
 * [#5230](https://github.com/rasahq/rasa/issues/5230): Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
@@ -527,10 +527,10 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   TF_INTRA_OP_PARALLELISM_THREADS="2"
   ```
 
-* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./components/intent-classifiers.mdx#diet-classifier) and a new policy [TEDPolicy](./policies.mdx#ted-policy).
+* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) and a new policy [TEDPolicy](./policies.mdx#ted-policy).
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
-  recognition. You can read more about this component in our [documentation](./components/intent-classifiers.mdx#diet-classifier).
+  recognition. You can read more about this component in our [documentation](./components/intent-classifiers.mdx#dietclassifier).
   The new component will replace the `EmbeddingIntentClassifier` and the
   [CRFEntityExtractor](./components/entity-extractors.mdx#crfentityextractor) in the future.
   Those two components are deprecated from now on.
@@ -566,7 +566,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#5117](https://github.com/rasahq/rasa/issues/5117): New command-line argument –conversation-id will be added and wiil give the ability to
   set specific conversation ID for each shell session, if not passed will be random.
 
-* [#5211](https://github.com/rasahq/rasa/issues/5211): Messages sent to the [Pika Event Broker](./event-brokers.mdx#event-brokers-pika) are now persisted. This guarantees
+* [#5211](https://github.com/rasahq/rasa/issues/5211): Messages sent to the [Pika Event Broker](./event-brokers.mdx#pika-event-broker) are now persisted. This guarantees
   the RabbitMQ will re-send previously received messages after a crash. Note that this
   does not help for the case where messages are sent to an unavailable RabbitMQ instance.
 
@@ -641,9 +641,9 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Bugfixes
 
-* [#5197](https://github.com/rasahq/rasa/issues/5197): Fixed incompatibility of Oracle with the [SQLTrackerStore](./tracker-stores.mdx#sql-tracker-store), by using a `Sequence`
+* [#5197](https://github.com/rasahq/rasa/issues/5197): Fixed incompatibility of Oracle with the [SQLTrackerStore](./tracker-stores.mdx#sqltrackerstore), by using a `Sequence`
   for the primary key columns. This does not change anything for SQL databases other than Oracle.
-  If you are using Oracle, please create a sequence with the instructions in the [SQLTrackerStore](./tracker-stores.mdx#sql-tracker-store) docs.
+  If you are using Oracle, please create a sequence with the instructions in the [SQLTrackerStore](./tracker-stores.mdx#sqltrackerstore) docs.
 
 ### Improved Documentation
 

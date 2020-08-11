@@ -21,14 +21,11 @@ for instructions on how to test your reminders locally.
 
 :::
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="reminders"></a>
-
 ## Reminders
 
 Instead of an external sensor, you might just want to be reminded about something after a certain amount of time.
 For this, Rasa provides the special event `ReminderScheduled`, and another event, `ReminderCancelled`, to unschedule a reminder.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="scheduling-reminders-guide"></a>
 
 ### Scheduling Reminders
 
@@ -101,7 +98,6 @@ Reminders are cancelled whenever you shutdown your Rasa server.
 
 :::
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="cancelling-reminders-guide"></a>
 
 ### Cancelling Reminders
 
@@ -119,7 +115,6 @@ Alternatively, you may provide some parameters to narrow down the types of remin
 * `ReminderCancelled("...")` cancels the one unique reminder with the given name “`...`” that you supplied
   during its creation
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="external-event-guide"></a>
 
 ## External Events
 
@@ -135,7 +130,6 @@ Rasa then needs to respond to this input with an action such as `action_warn_dry
 The easiest and most reliable way to connect this action with the intent is to use
 [Rules](./rules.mdx).
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="responding-to-external-events"></a>
 
 ### Responding to External Events
 

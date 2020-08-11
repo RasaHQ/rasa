@@ -5,7 +5,6 @@ title: Tuning Your Model
 ---
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="how-to-choose-a-pipeline"></a>
 
 ## How to Choose a Pipeline
 
@@ -28,8 +27,6 @@ pipeline:
 
 ### Sensible Starting Pipelines
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-english"></a>
-
 We recommend using following pipeline, if your training data is in English:
 
 ```yaml (docs/sources/data/configs_for_docs/default_english_config.yml)
@@ -44,8 +41,6 @@ The advantage of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfea
 creates a contextual vector representation for the complete sentence.
 However, `ConveRT` is only available in English.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-pretrained-non-english"></a>
-
 If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
 the following pipeline:
 
@@ -55,8 +50,6 @@ the following pipeline:
 It uses the [SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer) instead of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer).
 [SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer) provides pre-trained word embeddings from either GloVe or fastText in many different languages
 (see [Language Models](./components/language-models.mdx)).
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-pipeline-non-english"></a>
 
 If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
 and can train your model to be more domain specific.
@@ -155,7 +148,7 @@ final context dictionary is used to persist the model's metadata.
 You can use Rasa Open Source components to split intents into multiple labels. For example, you can predict
 multiple intents (`thank+goodbye`) or model hierarchical intent structure (`feedback+positive` being more similar
 to `feedback+negative` than `chitchat`).
-To do this, you need to use the [DIETClassifier](./components/intent-classifiers.mdx#diet-classifier) in your pipeline.
+To do this, you need to use the [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) in your pipeline.
 You'll also need to define these flags in whichever tokenizer you are using:
 
 * `intent_tokenization_flag`: Set it to `True`, so that intent labels are tokenized.
@@ -273,17 +266,17 @@ pre-trained word embeddings.
 
 Depending on your data you may want to only perform intent classification, entity recognition or response selection.
 Or you might want to combine multiple of those tasks. We support several components for each of the tasks.
-We recommend using [DIETClassifier](./components/intent-classifiers.mdx#diet-classifier) for intent classification and entity recognition
-and [ResponseSelector](./components/selectors.mdx#response-selector) for response selection.
+We recommend using [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) for intent classification and entity recognition
+and [ResponseSelector](./components/selectors.mdx#responseselector) for response selection.
 
 By default all of these components consume all available features produced in the pipeline.
 However, sometimes it makes sense to restrict the features that are used by a specific component.
-For example, [ResponseSelector](./components/selectors.mdx#response-selector) is likely to perform better if no features from the
+For example, [ResponseSelector](./components/selectors.mdx#responseselector) is likely to perform better if no features from the
 [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer) are used.
 To achieve that, you can do the following:
 Set an alias for every featurizer in your pipeline via the option `alias`.
 By default the alias is set the the full featurizer class name, for example, `RegexFeaturizer`.
-You can then specify, for example, on the [ResponseSelector](./components/selectors.mdx#response-selector) via the option `featurizers` what features from
+You can then specify, for example, on the [ResponseSelector](./components/selectors.mdx#responseselector) via the option `featurizers` what features from
 which featurizers should be used.
 If you don't set the option `featurizers` all available features will be used.
 
@@ -327,12 +320,8 @@ pipeline:
   batch_strategy: sequence
 ```
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="component-lifecycle"></a>
-
 
 ## Configuring Tensorflow
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="configuring-tensorflow"></a>
 
 TensorFlow allows configuring options in the runtime environment via
 [TF Config submodule](https://www.tensorflow.org/api_docs/python/tf/config). Rasa Open Source supports a smaller subset of these
