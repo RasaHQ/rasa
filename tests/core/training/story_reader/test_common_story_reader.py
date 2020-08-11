@@ -259,7 +259,7 @@ async def test_load_multi_file_training_data(
     assert np.all(
         data_X_action_name.sort(axis=0) == data_mul_X_action_name.sort(axis=0)
     )
-    assert np.all(data_mul_X_entities.sort(axis=0) == data_mul_X_entities.sort(axis=0))
+    assert np.all(data_X_entities.sort(axis=0) == data_mul_X_entities.sort(axis=0))
     assert np.all(data.y.sort(axis=0) == data_mul.y.sort(axis=0))
 
 
