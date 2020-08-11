@@ -1,0 +1,2 @@
+Do not deepcopy slots when instantiating trackers for training. This leads to a
+significant speedup when training on domains with a large number of slots.
