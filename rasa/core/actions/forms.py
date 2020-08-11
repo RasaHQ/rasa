@@ -441,10 +441,19 @@ class FormAction(LoopAction):
         )
 
     def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Text:
-        full_name = f"utter_ask_{self._form_name}_{slot_name}"
-        if full_name in domain.action_names:
-            return full_name
-
+        # Check if a RemoteAction exists to ask for this slot, fall back to
+        # utterance Actions otherwise.
+        # For RemoteActions, the prefix should be "action_ask_"
+        # instead of "utter_ask_"
+        names_to_try = [
+            f"action_ask_{self._form_name}_{slot_name}",
+            f"action_ask_{slot_name}",
+            f"utter_ask_{self._form_name}_{slot_name}"
+        ]
+        for name in names_to_try:
+            if name in domain.action_names:
+                return name
+        
         return f"utter_ask_{slot_name}"
 
     async def _ask_for_slot(
@@ -457,9 +466,12 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         logger.debug(f"Request next slot '{slot_name}'")
 
-        # TODO: Make it possible to use a custom action to ask for the next slot
+        # Get the action name to ask for the next slot,
+       # and check if it is remote or not.
+       action_name = self._name_of_utterance(domain, slot_name)
+       is_remote = action_name.startswith("action")
         action_to_ask_for_next_slot = action.action_from_name(
-            self._name_of_utterance(domain, slot_name), None, domain.user_actions
+            action_name, self.action_endpoint if is_remote else None, domain.user_actions
         )
         events_to_ask_for_next_slot = await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain
