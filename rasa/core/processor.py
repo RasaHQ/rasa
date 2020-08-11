@@ -6,11 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 
-from rasa.constants import (
-    DOCS_URL_POLICIES,
-    DOCS_URL_DOMAINS,
-    DEFAULT_NLU_FALLBACK_INTENT_NAME,
-)
+from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_DOMAINS
 from rasa.core import jobs
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -23,14 +19,7 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
-from rasa.core.constants import (
-    USER_INTENT_BACK,
-    USER_INTENT_OUT_OF_SCOPE,
-    USER_INTENT_RESTART,
-    USER_INTENT_SESSION_START,
-    UTTER_PREFIX,
-    REQUESTED_SLOT,
-)
+from rasa.core.constants import USER_INTENT_RESTART, UTTER_PREFIX, REQUESTED_SLOT
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
@@ -58,14 +47,6 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
-
-DEFAULT_INTENTS = [
-    USER_INTENT_RESTART,
-    USER_INTENT_BACK,
-    USER_INTENT_OUT_OF_SCOPE,
-    USER_INTENT_SESSION_START,
-    DEFAULT_NLU_FALLBACK_INTENT_NAME,
-]
 
 
 class MessageProcessor:
@@ -438,15 +419,13 @@ class MessageProcessor:
             return
 
         intent = parse_data["intent"][INTENT_NAME_KEY]
-        if intent:
-            known_intents = self.domain.intents + DEFAULT_INTENTS
-            if intent not in known_intents:
-                raise_warning(
-                    f"Interpreter parsed an intent '{intent}' "
-                    f"which is not defined in the domain. "
-                    f"Please make sure all intents are listed in the domain.",
-                    docs=DOCS_URL_DOMAINS,
-                )
+        if intent and intent not in self.domain.intents:
+            raise_warning(
+                f"Interpreter parsed an intent '{intent}' "
+                f"which is not defined in the domain. "
+                f"Please make sure all intents are listed in the domain.",
+                docs=DOCS_URL_DOMAINS,
+            )
 
         entities = parse_data["entities"] or []
         for element in entities:

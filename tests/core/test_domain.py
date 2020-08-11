@@ -1,6 +1,7 @@
 import copy
 import json
 from pathlib import Path
+from typing import Dict
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -11,6 +12,7 @@ from rasa.core.constants import (
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
+    DEFAULT_INTENTS,
 )
 from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
@@ -843,3 +845,12 @@ def test_domain_from_dict_does_not_change_input():
     Domain.from_dict(input_after)
 
     assert input_after == input_before
+
+
+@pytest.mark.parametrize(
+    "domain", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
+)
+def test_add_default_intents(domain: Dict):
+    domain = Domain.from_dict(domain)
+
+    assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)
