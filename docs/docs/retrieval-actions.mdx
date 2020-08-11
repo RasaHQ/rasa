@@ -50,7 +50,7 @@ You can cover all of these with a single story where the above intents are group
    - respond_chitchat
 ```
 
-A retrieval action uses the output of a [ResponseSelector](./components/selectors.mdx#response-selector) component from NLU which learns a
+A retrieval action uses the output of a [ResponseSelector](./components/selectors.mdx#responseselector) component from NLU which learns a
 retrieval model to predict the correct response from a list of candidate responses given a user message text.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="retrieval-training-data"></a>
@@ -107,7 +107,7 @@ use it in the name of your intents.
 
 ## Config File
 
-You need to include the [ResponseSelector](./components/selectors.mdx#response-selector) component in your config. The component needs a tokenizer, a featurizer and an
+You need to include the [ResponseSelector](./components/selectors.mdx#responseselector) component in your config. The component needs a tokenizer, a featurizer and an
 intent classifier to operate on the user message before it can predict a response and hence these
 components should be placed before `ResponseSelector` in the NLU configuration. An example:
 

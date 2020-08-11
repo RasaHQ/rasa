@@ -51,7 +51,7 @@ Selectors predict a bot response from a set of candidate responses.
   Response Selector component can be used to build a response retrieval model to directly predict a bot response from
   a set of candidate responses. The prediction of this model is used by [Retrieval Actions](../retrieval-actions).
   It embeds user inputs and response labels into the same space and follows the exact same
-  neural network architecture and optimization as the [DIETClassifier](../components/intent-classifiers.mdx#diet-classifier).
+  neural network architecture and optimization as the [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier).
 
   :::note
   If during prediction time a message contains **only** words unseen during training
@@ -66,7 +66,7 @@ Selectors predict a bot response from a set of candidate responses.
 
 * **Configuration**
 
-  The algorithm includes almost all the hyperparameters that [DIETClassifier](../components/intent-classifiers.mdx#diet-classifier) uses.
+  The algorithm includes almost all the hyperparameters that [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier) uses.
   If you want to adapt your model, start by modifying the following parameters:
 
   * `epochs`:
