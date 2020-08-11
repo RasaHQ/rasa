@@ -180,7 +180,7 @@ jobs:
     runs-on: [self-hosted, gpu]
     strategy:
       max-parallel: 1
-      matrix: ${{fromJson(${{ steps.fc_config.outputs.comment-id }})}}
+      matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
@@ -570,6 +570,7 @@ jobs:
     name: Delete Github Runner - GPU
     needs:
     - deploy_runner_gpu
+    - model_regression_test_gpu
     runs-on: ubuntu-latest
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
