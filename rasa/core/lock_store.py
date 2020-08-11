@@ -66,7 +66,7 @@ class LockStore:
 
         Creates a new lock if none is found.
         """
-
+        logger.debug(f"Issuing ticket for conversation '{conversation_id}'.")
         lock = self.get_or_create_lock(conversation_id)
         ticket = lock.issue_ticket(lock_lifetime)
         self.save_lock(lock)
@@ -99,7 +99,7 @@ class LockStore:
     async def _acquire_lock(
         self, conversation_id: Text, ticket: int, wait_time_in_seconds: float
     ) -> TicketLock:
-
+        logger.debug(f"Acquiring lock for conversation '{conversation_id}'.")
         while True:
             # fetch lock in every iteration because lock might no longer exist
             lock = self.get_lock(conversation_id)
@@ -110,6 +110,7 @@ class LockStore:
 
             # acquire lock if it isn't locked
             if not lock.is_locked(ticket):
+                logger.debug(f"Acquired lock for conversation '{conversation_id}'.")
                 return lock
 
             logger.debug(
