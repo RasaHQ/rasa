@@ -468,7 +468,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def process_state_without_trained_nlu(self, state: STATE):
         intent_features = np.zeros((1, len(self.intents)))
         action_name_features = np.zeros((1, len(self.action_names)))
-        if state.get(USER):
+        if state.get(USER) is not None:
             intent = state.get(USER).get(INTENT)
             if intent:
                 intent_features[0, self.intents.index(intent)] += 1
