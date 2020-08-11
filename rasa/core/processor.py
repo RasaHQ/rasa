@@ -41,7 +41,7 @@ from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import raise_warning
+from rasa.utils import common as common_utils
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ class MessageProcessor:
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
-            raise_warning(
+            common_utils.raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction "
                 "and execution.",
                 docs=DOCS_URL_POLICIES,
@@ -115,7 +115,7 @@ class MessageProcessor:
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
-            raise_warning(
+            common_utils.raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction."
                 "You should set a policy before training a model.",
                 docs=DOCS_URL_POLICIES,
@@ -386,7 +386,7 @@ class MessageProcessor:
         elif not entities:
             entity_list = []
         else:
-            raise_warning(
+            common_utils.raise_warning(
                 f"Invalid entity specification: {entities}. Assuming no entities."
             )
             entity_list = []
@@ -420,7 +420,7 @@ class MessageProcessor:
 
         intent = parse_data["intent"][INTENT_NAME_KEY]
         if intent and intent not in self.domain.intents:
-            raise_warning(
+            common_utils.raise_warning(
                 f"Interpreter parsed an intent '{intent}' "
                 f"which is not defined in the domain. "
                 f"Please make sure all intents are listed in the domain.",
@@ -431,7 +431,7 @@ class MessageProcessor:
         for element in entities:
             entity = element["entity"]
             if entity and entity not in self.domain.entities:
-                raise_warning(
+                common_utils.raise_warning(
                     f"Interpreter parsed an entity '{entity}' "
                     f"which is not defined in the domain. "
                     f"Please make sure all entities are listed in the domain.",
@@ -686,7 +686,7 @@ class MessageProcessor:
                     if e.key == REQUESTED_SLOT and tracker.active_loop:
                         pass
                     else:
-                        raise_warning(
+                        common_utils.raise_warning(
                             f"Action '{action_name}' set a slot type '{e.key}' which "
                             f"it never set during the training. This "
                             f"can throw off the prediction. Make sure to "
