@@ -395,7 +395,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
 
     def _extract_features(
         self,
-        state: Optional[Dict[str, Union[str, Tuple[Union[float, str]]]]],
+        state: Dict[str, Union[str, Tuple[Union[float, str]]]],
         state_comes_from: Text,
         interpreter: NaturalLanguageInterpreter,
     ) -> List[Union[scipy.sparse.spmatrix, np.ndarray]]:
@@ -465,10 +465,10 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             # )
             return False
 
-    def process_state_without_trained_nlu(self, state):
+    def process_state_without_trained_nlu(self, state: Dict):
         intent_features = np.zeros((1, len(self.intents)))
         action_name_features = np.zeros((1, len(self.action_names)))
-        if state.get(USER) is not None:
+        if state.get(USER):
             intent = state.get(USER).get(INTENT)
             if intent:
                 intent_features[0, self.intents.index(intent)] += 1
