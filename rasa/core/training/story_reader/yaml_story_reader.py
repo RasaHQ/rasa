@@ -9,7 +9,7 @@ import rasa.utils.io
 from rasa.constants import DOCS_URL_STORIES, DOCS_URL_RULES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
-from rasa.core.events import UserUttered, SlotSet, Form
+from rasa.core.events import UserUttered, SlotSet, Form, QueryEvent
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.data import YAML_FILE_EXTENSIONS
@@ -25,6 +25,7 @@ KEY_STEPS = "steps"
 KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
 KEY_SLOT_NAME = "slot_was_set"
+KEY_QUERY_NAME = "query"
 KEY_SLOT_VALUE = "value"
 KEY_FORM = "active_loop"
 KEY_ACTION = "action"
@@ -222,6 +223,8 @@ class YAMLStoryReader(StoryReader):
         # a checkpoint.
         elif KEY_SLOT_NAME in step.keys():
             self._parse_slot(step)
+        elif KEY_QUERY_NAME in step.keys():
+            self._parse_query(step)
         elif KEY_FORM in step.keys():
             self._parse_form(step[KEY_FORM])
         elif KEY_METADATA in step.keys():
@@ -346,6 +349,22 @@ class YAMLStoryReader(StoryReader):
         slot_value = step.get(KEY_SLOT_VALUE, "")
 
         self._add_event(SlotSet.type_name, {slot_name: slot_value})
+
+    def _parse_query(self, step: Dict[Text, Any]) -> None:
+
+        query = step.get(KEY_QUERY_NAME, "")
+
+        if not query:
+            common_utils.raise_warning(
+                f"Issue found in '{self.source_name}': \n"
+                f"Query not defined. "
+                f"This {self._get_item_title()} step will be skipped:\n"
+                f"{step}",
+                docs=self._get_docs_link(),
+            )
+            return
+
+        self._add_event(QueryEvent.type_name, {"query": query})
 
     def _parse_action(self, step: Dict[Text, Any]) -> None:
 
