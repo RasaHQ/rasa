@@ -84,16 +84,15 @@ class RulePolicy(MemoizationPolicy):
             enable_fallback_prediction: If `True` `core_fallback_action_name` is
                 predicted in case no rule matched.
         """
-        if not featurizer:
-            # max history is set to `None` in order to capture lengths of rule stories
-            featurizer = self._standard_featurizer()
-            featurizer.max_history = None
 
         self._core_fallback_threshold = core_fallback_threshold
         self._fallback_action_name = core_fallback_action_name
         self._enable_fallback_prediction = enable_fallback_prediction
 
-        super().__init__(featurizer=featurizer, priority=priority, lookup=lookup)
+        # max history is set to `None` in order to capture any lengths of rule stories
+        super().__init__(
+            featurizer=featurizer, priority=priority, max_history=None, lookup=lookup
+        )
 
     @classmethod
     def validate_against_domain(

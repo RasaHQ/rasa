@@ -185,12 +185,9 @@ class TEDPolicy(Policy):
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
-        if max_history is None:
-            return FullDialogueTrackerFeaturizer(E2ESingleStateFeaturizer())
-        else:
-            return MaxHistoryTrackerFeaturizer(
-                E2ESingleStateFeaturizer(), max_history=max_history
-            )
+        return MaxHistoryTrackerFeaturizer(
+            E2ESingleStateFeaturizer(), max_history=max_history
+        )
 
     def __init__(
         self,

@@ -8,6 +8,7 @@ from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
+import rasa.utils.common as common_utils
 
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted
@@ -55,16 +56,14 @@ class MemoizationPolicy(Policy):
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(
-            state_featurizer=None,
-            max_history=max_history,
-            use_intent_probabilities=False,
+            state_featurizer=None, max_history=max_history
         )
 
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = MEMOIZATION_POLICY_PRIORITY,
-        max_history: Optional[int] = None,
+        max_history: Optional[int] = -1,
         lookup: Optional[Dict] = None,
     ) -> None:
         """Initialize the policy.
@@ -76,6 +75,16 @@ class MemoizationPolicy(Policy):
             lookup: a dictionary that stores featurized tracker states and
                 predicted actions for them
         """
+
+        if max_history == -1:
+            max_history = 5  # old default value
+            common_utils.raise_warning(
+                f"Please configure the max history in your configuration file, "
+                f"currently 'max_history' is set to old default value of "
+                f"'{max_history}'. If you want to have infinite max history "
+                f"set it to 'None' explicitly. We will change the default value of "
+                f"'max_history' in the future to 'None'."
+            )
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)

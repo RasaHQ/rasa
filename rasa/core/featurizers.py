@@ -599,13 +599,10 @@ class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
     def __init__(
-        self,
-        state_featurizer: Optional[SingleStateFeaturizer] = None,
-        use_intent_probabilities: bool = False,
+        self, state_featurizer: Optional[SingleStateFeaturizer] = None
     ) -> None:
 
         self.state_featurizer = state_featurizer
-        self.use_intent_probabilities = use_intent_probabilities
 
     @staticmethod
     def _unfreeze_states(states: deque,) -> List[STATE]:
@@ -815,13 +812,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest dialogue with -1.
     """
 
-    def __init__(
-        self,
-        state_featurizer: SingleStateFeaturizer,
-        use_intent_probabilities: bool = False,
-    ) -> None:
-
-        super().__init__(state_featurizer, use_intent_probabilities)
+    def __init__(self, state_featurizer: SingleStateFeaturizer) -> None:
+        super().__init__(state_featurizer)
         self.max_len = None
 
     @staticmethod
@@ -916,10 +908,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         state_featurizer: Optional[SingleStateFeaturizer] = None,
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
-        use_intent_probabilities: bool = False,
     ) -> None:
 
-        super().__init__(state_featurizer, use_intent_probabilities)
+        super().__init__(state_featurizer)
         self.max_history = max_history
         self.remove_duplicates = remove_duplicates
 
