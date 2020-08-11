@@ -94,7 +94,7 @@ async def test_training_script_without_max_history_set(tmp_path: Path):
             if type(policy) == FormPolicy:
                 assert policy.featurizer.max_history == 2
             else:
-                assert policy.featurizer.max_history == None
+                assert policy.featurizer.max_history is None
 
 
 async def test_training_script_with_max_history_set(tmp_path: Path):
