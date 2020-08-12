@@ -50,9 +50,7 @@ class SingleStateFeaturizer:
         pass
 
     def encode(
-        self,
-        state: Dict[Text, float],
-        interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Encode user input."""
 
@@ -98,9 +96,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         self.input_state_map = domain.input_state_map
 
     def encode(
-        self,
-        state: Dict[Text, float],
-        interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Returns a binary vector indicating which features are active.
 
@@ -226,9 +222,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         )
 
     def encode(
-        self,
-        state: Dict[Text, float],
-        interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Returns a binary vector indicating which tokens are present."""
 
@@ -522,8 +516,8 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         return user_features + action_features
 
     def encode(
-        self, state: STATE, interpreter: NaturalLanguageInterpreter,
-    ):
+        self, state: STATE, interpreter: NaturalLanguageInterpreter
+    ) -> np.ndarray:
         slot_and_entity_features = self._get_slot_and_entity_features(state)
         if state == {}:
             return np.array(
@@ -670,7 +664,7 @@ class TrackerFeaturizer:
 
     def _featurize_states(
         self,
-        trackers_as_states: List[List[Dict[Text, float]]],
+        trackers_as_states: List[List[STATE]],
         interpreter: NaturalLanguageInterpreter,
     ) -> Tuple[np.ndarray, List[int]]:
         """Create X."""
