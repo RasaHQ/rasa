@@ -204,7 +204,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     def prepare_from_domain(self, domain: Domain) -> None:
         """Creates internal vocabularies for user intents and bot actions."""
 
-        self.user_labels = domain.intents + domain.entity_states
+        self.user_labels = domain.intents + domain.entities
         self.slot_labels = domain.slot_states + domain.form_names
         self.bot_labels = domain.action_names
 
@@ -357,7 +357,8 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         )
         if state.get(SLOTS):
             # collect slot features
-            current_slot_names = state.get(SLOTS).keys()
+            current_slot_names = state.get(SLOTS, {})
+            current_slot_names = current_slot_names.keys()
             slot_values = [
                 np.array(state.get(SLOTS)[slot_name])
                 for slot_name in self.slot_names
@@ -507,14 +508,14 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def process_state_without_trained_nlu(self, state: STATE):
         intent_features = np.zeros((1, len(self.intents)))
         action_name_features = np.zeros((1, len(self.action_names)))
-        if state.get(USER):
-            intent = state.get(USER).get(INTENT)
-            if intent:
-                intent_features[0, self.intents.index(intent)] += 1
-        if state.get(PREVIOUS_ACTION):
-            action_name = state.get(PREVIOUS_ACTION).get(ACTION_NAME)
-            if action_name:
-                action_name_features[0, self.action_names.index(action_name)] += 1
+        user = state.get(USER, {})
+        intent = user.get(INTENT)
+        if intent:
+            intent_features[0, self.intents.index(intent)] += 1
+        prev_action = state.get(PREVIOUS_ACTION, {})
+        action_name = prev_action.get(ACTION_NAME)
+        if action_name:
+            action_name_features[0, self.action_names.index(action_name)] += 1
         user_features = [None, None, intent_features, -1]
         action_features = [None, None, action_name_features, -1]
         self.output_shapes[INTENT] = intent_features.shape[-1]
