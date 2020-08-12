@@ -112,7 +112,7 @@ Note: End-to-end testing does **not** execute your action code. You will need to
 
 If you've made significant changes to your NLU training data (e.g.
 splitting an intent into two intents or adding a lot of training examples), you should run a
-[full NLU evaluation](./testing-your-assistant.mdx#nlu-evaluation). You'll want to compare
+[full NLU evaluation](./testing-your-assistant.mdx#evaluating-an-nlu-model). You'll want to compare
 the performance of the NLU model without your changes to an NLU model with your
 changes.
 
@@ -123,7 +123,7 @@ rasa test nlu --cross-validation
 ```
 
 You could also train a model on a training set and testing it on a test set. If you use the train-test
-set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#train-test-split) using `rasa data split` as part of this CI step, as
+set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#create-a-train-test-split) using `rasa data split` as part of this CI step, as
 opposed to using a static NLU test set, which can easily become outdated.
 
 Because this test doesn't result in a pass/fail exit code, it's best to make
