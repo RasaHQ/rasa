@@ -9,6 +9,7 @@ from rasa.nlu.training_data.formats.readerwriter import (
 )
 from rasa.nlu.training_data.util import transform_entity_synonyms
 from rasa.nlu.utils import json_to_string
+from rasa.nlu.constants import TEXT, INTENT, ENTITIES
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -35,7 +36,7 @@ class RasaReader(JsonTrainingDataReader):
 
         training_examples = []
         for ex in common_examples:
-            msg = Message.build(**ex)
+            msg = Message.build(text = ex.get(TEXT) or "", intent = ex.get(INTENT), entities = ex.get(ENTITIES))
             training_examples.append(msg)
 
         return TrainingData(

@@ -13,7 +13,7 @@ def test_spacy_featurizer_cls_vector(spacy_nlp):
     featurizer = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today"
-    message = Message(sentence)
+    message = Message(data = {TEXT: sentence})
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
 
     featurizer._set_spacy_features(message)
@@ -97,9 +97,9 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
 
     ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
-    greet = {"intent": "greet", "text_features": [0.5]}
+    greet = {TEXT: sentence, "intent": "greet", "text_features": [0.5]}
 
-    message = Message(sentence, greet)
+    message = Message(data = greet)
     message.set(SPACY_DOCS[TEXT], doc)
 
     ftr._set_spacy_features(message)
@@ -142,7 +142,7 @@ def test_spacy_featurizer_train(spacy_nlp):
     featurizer = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today"
-    message = Message(sentence)
+    message = Message(data = {TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
@@ -184,7 +184,7 @@ def test_spacy_featurizer_using_empty_model():
 
     ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
-    message = Message(sentence)
+    message = Message(data = {TEXT: sentence})
     message.set(SPACY_DOCS[TEXT], doc)
 
     ftr._set_spacy_features(message)

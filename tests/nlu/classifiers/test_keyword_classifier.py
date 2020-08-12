@@ -9,6 +9,7 @@ from rasa.nlu.training_data.formats.rasa import RasaReader
 from rasa.nlu.training_data import load_data
 from rasa.nlu.training_data.message import Message
 from tests.nlu.conftest import DEFAULT_DATA_PATH
+from rasa.nlu.constants import TEXT
 
 
 @pytest.fixture(scope="module")
@@ -97,7 +98,7 @@ class TestKeywordClassifier(ClassifierTestCollection):
         ],
     )
     def test_classification(self, trained_classifier, message, intent):
-        text = Message(message)
+        text = Message(data = {TEXT: message})
         trained_classifier.process(text)
         assert text.get("intent").get("name", "NOT_CLASSIFIED") == intent
 

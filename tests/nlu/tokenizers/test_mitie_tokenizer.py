@@ -23,7 +23,7 @@ from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 def test_mitie(text, expected_tokens, expected_indices):
     tk = MitieTokenizer()
 
-    tokens = tk.tokenize(Message(text), attribute=TEXT)
+    tokens = tk.tokenize(Message.build(text = text), attribute=TEXT)
 
     assert [t.text for t in tokens] == expected_tokens
     assert [t.start for t in tokens] == [i[0] for i in expected_indices]
@@ -42,7 +42,7 @@ def test_custom_intent_symbol(text, expected_tokens):
 
     tk = MitieTokenizer(component_config)
 
-    message = Message(text)
+    message = Message.build(text = text)
     message.set(INTENT, text)
 
     tk.train(TrainingData([message]))

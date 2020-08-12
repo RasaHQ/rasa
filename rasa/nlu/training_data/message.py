@@ -26,7 +26,6 @@ if typing.TYPE_CHECKING:
 class Message:
     def __init__(
         self,
-        text: Optional[Text] = "",
         data: Optional[Dict[Text, Any]] = None,
         output_properties: Optional[Set] = None,
         time: Optional[Text] = None,
@@ -35,7 +34,6 @@ class Message:
     ) -> None:
         self.time = time
         self.data = data.copy() if data else {}
-        self.data.update({TEXT: text})
         self.features = features if features else []
 
         self.data.update(**kwargs)
@@ -109,6 +107,7 @@ class Message:
             Message
         """
         data = {}
+        data.update({TEXT: text})
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(intent)
             if split_intent:
@@ -117,7 +116,7 @@ class Message:
                 data[RESPONSE_KEY_ATTRIBUTE] = response_key
         if entities:
             data[ENTITIES] = entities
-        return cls(text, data, **kwargs)
+        return cls(data, **kwargs)
 
     @classmethod
     def build_from_action(

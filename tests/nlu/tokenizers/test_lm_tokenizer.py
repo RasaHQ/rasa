@@ -352,7 +352,7 @@ def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens):
     transformers_nlp = HFTransformersNLP(transformers_config)
     lm_tokenizer = LanguageModelTokenizer(component_config)
 
-    message = Message(text)
+    message = Message.build(text = text)
     message.set(INTENT, text)
 
     td = TrainingData([message])
@@ -374,7 +374,7 @@ def test_lm_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
     transformers_nlp = HFTransformersNLP(transformers_config)
     lm_tokenizer = LanguageModelTokenizer()
 
-    message = Message(text)
+    message = Message.build(text = text)
 
     td = TrainingData([message])
 
