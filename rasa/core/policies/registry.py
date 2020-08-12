@@ -24,3 +24,6 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 
 # noinspection PyUnresolvedReferences
 from rasa.core.policies.rule_policy import RulePolicy
+
+# noinspection PyUnresolvedReferences
+from rasa.core.policies.knowledge_base_policy import KnowledgeBasePolicy
