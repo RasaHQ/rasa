@@ -436,7 +436,7 @@ paths:
         only a NLU model, or a model combining a trained dialogue model with an
         NLU model will be trained. The new model is not loaded by default.
       parameters:
-      - in: header
+      - in: query
         name: save_to_default_model_directory
         schema:
           type: boolean
@@ -444,7 +444,7 @@ paths:
           description: >-
             If `true` (default) the trained model will be saved in the default model
             directory, if `false` it will be saved in a temporary directory
-      - in: header
+      - in: query
         name: force_training
         schema:
           type: boolean

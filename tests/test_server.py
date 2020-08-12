@@ -204,7 +204,7 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
         response = requests.post(
             "http://localhost:5005/model/train",
             json=payload,
-            headers={"force_training": True},
+            params={"force_training": True},
         )
         shared_statuses["training_result"] = response.status_code
 
