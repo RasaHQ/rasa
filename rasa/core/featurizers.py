@@ -605,7 +605,7 @@ class TrackerFeaturizer:
         self.state_featurizer = state_featurizer
 
     @staticmethod
-    def _unfreeze_states(states: deque,) -> List[STATE]:
+    def _unfreeze_states(states: deque) -> List[STATE]:
         return [
             {key: dict(value) for key, value in dict(state).items()} for state in states
         ]

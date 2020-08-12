@@ -288,6 +288,11 @@ class RulePolicy(MemoizationPolicy):
                 # state_type exists in the rule, but don't exist in the state
                 return False
             for key, value in rule_sub_state.items():
+                if isinstance(value, list):
+                    # json dumps and loads tuples as lists,
+                    # so we need to convert them back
+                    value = tuple(value)
+
                 if (
                     # value should be set, therefore
                     # check whether it is the same as in the state
