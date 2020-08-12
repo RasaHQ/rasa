@@ -385,9 +385,10 @@ class Interpreter:
             output["text"] = ""
             return output
 
-        message = Message(
-            data=self.default_output_attributes().update({TEXT: text}), time=time
-        )
+        data = self.default_output_attributes()
+        data.update({TEXT: text})
+
+        message = Message(data=data, time=time)
 
         for component in self.pipeline:
             component.process(message, **self.context)
