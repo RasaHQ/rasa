@@ -1055,8 +1055,8 @@ def _get_output_channel(
     )
 
 
-def _training_payload_from_json(request: Request,) -> Dict[Text, Union[Text, bool]]:
-    logger.debug("Extracting JSON training data with Markdown from request body.")
+def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool]]:
+    logger.debug("Extracting JSON payload with Markdown training data from request body.")
 
     request_payload = request.json
     _validate_json_training_payload(request_payload)
@@ -1156,7 +1156,7 @@ def _training_payload_from_yaml(request: Request,) -> Dict[Text, Union[Text, boo
 
 
 def _model_output_directory(save_to_default_model_directory: bool) -> Text:
-    if save_to_default_model_directory is True:
+    if save_to_default_model_directory:
         return DEFAULT_MODELS_PATH
 
     return tempfile.gettempdir()

@@ -290,7 +290,7 @@ def test_train_status_is_not_blocked_by_training(
         ),
     ],
 )
-def test_parse(rasa_app: SanicTestClient, response_test):
+def test_parse(rasa_app: SanicTestClient, response_test: ResponseTest):
     _, response = rasa_app.post(response_test.endpoint, json=response_test.payload)
     rjs = response.json
     assert response.status == 200
