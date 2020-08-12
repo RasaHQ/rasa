@@ -758,7 +758,7 @@ class TrackerFeaturizer:
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[Dict[Text, float]]]:
+    ) -> List[List[STATE]]:
         """Transforms list of trackers to lists of states for prediction."""
 
         raise NotImplementedError(
