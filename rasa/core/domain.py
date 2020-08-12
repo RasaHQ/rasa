@@ -10,6 +10,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Unio
 from ruamel.yaml import YAMLError
 
 import rasa.core.constants
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import (
     raise_warning,
     lazy_property,
@@ -697,7 +698,7 @@ class Domain:
         return state_dict
 
     def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
-        intent_name = latest_message.intent.get("name")
+        intent_name = latest_message.intent.get(INTENT_NAME_KEY)
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
         entity_names = set(

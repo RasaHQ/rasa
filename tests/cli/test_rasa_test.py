@@ -117,7 +117,7 @@ def test_test_core_comparison_after_train(
         "config_1.yml",
         "config_2.yml",
         "--stories",
-        "data/stories.md",
+        "data/stories.yml",
         "--runs",
         "2",
         "--percentages",

@@ -22,6 +22,7 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
+from rasa.nlu.constants import INTENT_NAME_KEY
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -121,7 +122,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         """Predicts the next action if NLU confidence is low."""
 
         nlu_data = tracker.latest_message.parse_data
-        last_intent_name = nlu_data["intent"].get("name", None)
+        last_intent_name = nlu_data["intent"].get(INTENT_NAME_KEY, None)
         should_nlu_fallback = self.should_nlu_fallback(
             nlu_data, tracker.latest_action.get("action_name")
         )
