@@ -245,7 +245,11 @@ class TrainingData:
                 assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
                 if assistant_utterances:
                     # selecting only first assistant utterance for now
-                    example.set(RESPONSE, assistant_utterances[0])
+                    # example.set(RESPONSE, assistant_utterances[0])
+                    response = " ".join(
+                        [" ".join(w.split("_")) for w in response_key.split("-")]
+                    )
+                    example.set(RESPONSE, response)
                 else:
                     raise ValueError(
                         "No response phrases found for {}. Check training data "
