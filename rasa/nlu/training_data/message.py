@@ -106,8 +106,7 @@ class Message:
         Returns:
             Message
         """
-        data = {}
-        data.update({TEXT: text})
+        data = {TEXT: text}
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(intent)
             if split_intent:
