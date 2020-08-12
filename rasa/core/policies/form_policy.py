@@ -3,7 +3,7 @@ from typing import List, Dict, Text, Optional, Any
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
+from rasa.core.domain import Domain, STATE
 from rasa.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -44,26 +44,27 @@ class FormPolicy(MemoizationPolicy):
         )
 
     @staticmethod
-    def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
+    def _get_active_form_name(state: STATE) -> Optional[Text]:
         return state.get(FORM, {}).get("name")
 
     @staticmethod
-    def _prev_action_listen_in_state(state: Dict[Text, float]) -> bool:
-        prev_action = state.get(PREVIOUS_ACTION)
-        if prev_action:
-            return prev_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
-        return False
+    def _prev_action_listen_in_state(state: STATE) -> bool:
+        prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
+        return prev_action_name == ACTION_LISTEN_NAME
 
     @staticmethod
-    def _modified_states(
-        states: List[Dict[Text, float]]
-    ) -> List[Optional[Dict[Text, float]]]:
-        """Modify the states to
-            - capture previous meaningful action before action_listen
-            - ignore previous intent
+    def _modified_states(states: List[STATE]) -> List[STATE]:
+        """Modifies the states to create feature keys for form unhappy path conditions.
+
+        Args:
+            states: a representation of a tracker
+                as a list of dictionaries containing features
+
+        Returns:
+            modified states
         """
         if len(states) == 1 or states[0] == {}:
-            action_before_listen = None
+            action_before_listen = {}
         else:
             action_before_listen = {PREVIOUS_ACTION: states[0][PREVIOUS_ACTION]}
 
@@ -71,7 +72,7 @@ class FormPolicy(MemoizationPolicy):
 
     def _create_lookup_from_states(
         self,
-        trackers_as_states: List[List[Dict]],
+        trackers_as_states: List[List[STATE]],
         trackers_as_actions: List[List[Text]],
     ) -> Dict[Text, Text]:
         """Add states to lookup dict"""
@@ -89,10 +90,7 @@ class FormPolicy(MemoizationPolicy):
         return lookup
 
     def recall(
-        self,
-        states: List[Dict[Text, float]],
-        tracker: DialogueStateTracker,
-        domain: Domain,
+        self, states: List[STATE], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
         # modify the states
         return self._recall_states(self._modified_states(states))

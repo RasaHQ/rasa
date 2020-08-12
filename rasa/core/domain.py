@@ -42,6 +42,7 @@ from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
+from rasa.nlu.constants import ENTITIES
 
 logger = logging.getLogger(__name__)
 
@@ -692,7 +693,10 @@ class Domain:
                 for entity_name in self._get_featurized_entities(latest_message)
             ]
         )
-        state_dict[USER]["entities"] = entities
+        if entities:
+            state_dict[USER][ENTITIES] = entities
+        else:
+            del state_dict[USER][ENTITIES]
 
         return state_dict
 

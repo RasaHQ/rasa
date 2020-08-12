@@ -304,9 +304,9 @@ class UserUttered(Event):
     def as_dict_core(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         entities = [entity.get("entity") for entity in self.entities]
         if self.intent_name:
-            return {TEXT: None, INTENT: self.intent_name, ENTITIES: entities}
+            return {INTENT: self.intent_name, ENTITIES: entities}
         else:
-            return {TEXT: self.text, INTENT: None, ENTITIES: entities}
+            return {TEXT: self.text, ENTITIES: entities}
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -1062,7 +1062,10 @@ class ActionExecuted(Event):
         return d
 
     def as_dict_core(self) -> Dict[Text, Text]:
-        return {ACTION_NAME: self.action_name, ACTION_TEXT: self.e2e_text}
+        if self.action_name:
+            return {ACTION_NAME: self.action_name}
+        else:
+            return {ACTION_TEXT: self.e2e_text}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.set_latest_action(self.as_dict_core())

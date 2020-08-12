@@ -687,7 +687,7 @@ class TrackerFeaturizer:
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[Dict]], List[List[Text]]]:
+    ) -> Tuple[List[List[STATE]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions."""
 
         raise NotImplementedError(
