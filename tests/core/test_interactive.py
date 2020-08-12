@@ -531,10 +531,8 @@ async def test_filter_intents_before_save_nlu_file():
     from random import choice
 
     greet = {"text": "How are you?", "intent": "greet", "text_features": [0.5]}
-    goodbye = {"intent": "goodbye", "text_features": [0.5]}
-    goodbye1 = goodbye.copy()
-    goodbye1.update({"text": "I am inevitable"})
-    test_msgs = [Message(data=greet1), Message(data=goodbye1)]
+    goodbye = {"text": "I am inevitable", "intent": "goodbye", "text_features": [0.5]}
+    test_msgs = [Message(data=greet), Message(data=goodbye)]
 
     domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
     domain = Domain.load(domain_file)
@@ -542,9 +540,9 @@ async def test_filter_intents_before_save_nlu_file():
 
     msgs = test_msgs.copy()
     if intents:
-        greet2 = greet.copy()
-        greet2.update({"text": "/" + choice(intents)})
-        msgs.append(Message(data=greet2))
+        another_greet = greet.copy()
+        another_greet["text"] = "/" + choice(intents)
+        msgs.append(Message(data=another_greet))
 
     assert test_msgs == interactive._filter_messages(msgs)
 
