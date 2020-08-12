@@ -204,8 +204,8 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     def prepare_from_domain(self, domain: Domain) -> None:
         """Creates internal vocabularies for user intents and bot actions."""
 
-        self.user_labels = domain.intent_states + domain.entity_states
-        self.slot_labels = domain.slot_states + domain.form_states
+        self.user_labels = domain.intents + domain.entity_states
+        self.slot_labels = domain.slot_states + domain.form_names
         self.bot_labels = domain.action_names
 
         if self.use_shared_vocab:
@@ -303,10 +303,10 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         # storing slot names so that the features are always added in the same order
         self.slot_names = [slot.name for slot in domain.slots]
         self.slot_states = domain.slot_states
-        self.form_states = domain.form_states
+        self.form_states = domain.form_names
         self.entities = domain.entities
         self.action_names = domain.action_names
-        self.intents = domain.intent_states
+        self.intents = domain.intents
 
         self.output_shapes[ENTITIES] = len(
             self.slot_states + self.form_states + self.entities

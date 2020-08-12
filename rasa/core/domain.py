@@ -624,32 +624,6 @@ class Domain:
             for i in range(0, s.feature_dimensionality())
         ]
 
-    # noinspection PyTypeChecker
-    @lazy_property
-    def prev_action_states(self) -> List[Text]:
-        """Returns all available previous action state strings."""
-
-        return self.action_names
-
-    # noinspection PyTypeChecker
-    @lazy_property
-    def intent_states(self) -> List[Text]:
-        """Returns all available previous action state strings."""
-
-        return self.intents
-
-    # noinspection PyTypeChecker
-    @lazy_property
-    def entity_states(self) -> List[Text]:
-        """Returns all available previous action state strings."""
-
-        return self.entities
-
-    # noinspection PyTypeChecker
-    @lazy_property
-    def form_states(self) -> List[Text]:
-        return self.form_names
-
     def index_of_state(self, state_name: Text) -> Optional[int]:
         """Provide the index of a state."""
 
@@ -665,11 +639,11 @@ class Domain:
         """Returns all available states."""
 
         return (
-            self.intent_states
-            + self.entity_states
+            self.intents
+            + self.entities
             + self.slot_states
-            + self.prev_action_states
-            + self.form_states
+            + self.action_names
+            + self.form_names
         )
 
     def _get_user_states(
