@@ -199,7 +199,20 @@ class RedisLockStore(LockStore):
         password: Optional[Text] = None,
         use_ssl: bool = False,
         socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
-    ):
+    ) -> None:
+        """Create a lock store which uses Redis for persistence.
+
+        Args:
+            host: The host of the redis server.
+            port: The port of the redis server.
+            db: The name of the database within Redis which should be used by Rasa
+                Open Source.
+            password: The password which should be used for authentication with the
+                Redis database.
+            use_ssl: `True` if SSL should be used for the connection to Redis.
+            socket_timeout: Timeout in seconds after which an exception will be raised
+                in case Redis doesn't respond within `socket_timeout` seconds.
+        """
         import redis
 
         self.red = redis.StrictRedis(
