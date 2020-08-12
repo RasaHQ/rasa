@@ -280,6 +280,13 @@ class TrainingData:
 
         return MarkdownWriter().dumps(self)
 
+    def nlu_as_yaml(self) -> Text:
+        from rasa.nlu.training_data.formats.rasa_yaml import (  # pytype: disable=pyi-error
+            RasaYAMLWriter,
+        )
+
+        return RasaYAMLWriter().dumps(self)
+
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
 
         if filename.endswith("json"):

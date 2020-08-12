@@ -30,4 +30,4 @@ def update_number_of_epochs(config_path: Text, output_file: Text):
         if component["name"] in [DIETClassifier.name, ResponseSelector.name]:
             component[EPOCHS] = 1
 
-    io_utils.write_yaml_file(config, output_file)
+    io_utils.write_yaml(config, output_file)
