@@ -54,6 +54,9 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+JSON_CONTENT_TYPE = "application/json"
+YAML_CONTENT_TYPE = "application/x-yaml"
+
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
 
@@ -755,7 +758,7 @@ def create_app(
             "train your model.",
         )
 
-        if request.headers.get("Content-type") == "application/yaml":
+        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
             training_payload = _training_payload_from_yaml(request)
         else:
             training_payload = _training_payload_from_json(request)
@@ -991,25 +994,25 @@ def create_app(
     async def get_domain(request: Request) -> HTTPResponse:
         """Get current domain in yaml or json format."""
 
-        accepts = request.headers.get("Accept", default="application/json")
+        accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
         if accepts.endswith("json"):
             domain = app.agent.domain.as_dict()
             return response.json(domain)
         elif accepts.endswith("yml") or accepts.endswith("yaml"):
             domain_yaml = app.agent.domain.as_yaml()
             return response.text(
-                domain_yaml, status=200, content_type="application/x-yml"
+                domain_yaml, status=200, content_type=YAML_CONTENT_TYPE
             )
         else:
             raise ErrorResponse(
                 406,
-                "NotAcceptable",
-                "Invalid Accept header. Domain can be "
-                "provided as "
-                'json ("Accept: application/json") or'
-                'yml ("Accept: application/x-yml"). '
-                "Make sure you've set the appropriate Accept "
-                "header.",
+                f"NotAcceptable",
+                f"Invalid Accept header. Domain can be "
+                f"provided as "
+                f'json ("Accept: {JSON_CONTENT_TYPE}") or'
+                f'yml ("Accept: {YAML_CONTENT_TYPE}"). '
+                f"Make sure you've set the appropriate Accept "
+                f"header.",
             )
 
     return app
@@ -1056,7 +1059,9 @@ def _get_output_channel(
 
 
 def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool]]:
-    logger.debug("Extracting JSON payload with Markdown training data from request body.")
+    logger.debug(
+        "Extracting JSON payload with Markdown training data from request body."
+    )
 
     request_payload = request.json
     _validate_json_training_payload(request_payload)

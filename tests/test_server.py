@@ -531,7 +531,9 @@ pipeline:
     epochs: 1
 """
     _, response = rasa_app.post(
-        "/model/train", data=training_data, headers={"Content-type": "application/yaml"}
+        "/model/train",
+        data=training_data,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
     )
 
     assert response.status == 200
@@ -545,7 +547,9 @@ rule my rule
 """
 
     _, response = rasa_app.post(
-        "/model/train", data=invalid_yaml, headers={"Content-type": "application/yaml"}
+        "/model/train",
+        data=invalid_yaml,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
     )
     assert response.status == 400
 
@@ -736,7 +740,9 @@ def test_predict(rasa_app: SanicTestClient):
         }
     }
     _, response = rasa_app.post(
-        "/model/predict", json=data, headers={"Content-Type": "application/json"}
+        "/model/predict",
+        json=data,
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
     content = response.json
     assert response.status == 200
@@ -792,7 +798,7 @@ def test_pushing_event(rasa_app: SanicTestClient, event: Event):
     _, response = rasa_app.post(
         f"{conversation}/tracker/events",
         json=serialized_event,
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
     assert response.json is not None
     assert response.status == 200
@@ -817,7 +823,7 @@ def test_push_multiple_events(rasa_app: SanicTestClient):
     _, response = rasa_app.post(
         f"{conversation}/tracker/events",
         json=events,
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
     assert response.json is not None
     assert response.status == 200
@@ -835,7 +841,7 @@ def test_put_tracker(rasa_app: SanicTestClient):
     _, response = rasa_app.put(
         "/conversations/pushtracker/tracker/events",
         json=data,
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
     content = response.json
     assert response.status == 200
@@ -863,7 +869,7 @@ def _create_tracker_for_sender(app: SanicTestClient, sender_id: Text) -> None:
     _, response = app.put(
         f"/conversations/{sender_id}/tracker/events",
         json=data,
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
 
     assert response.status == 200
@@ -947,7 +953,9 @@ def test_unload_model_error(rasa_app: SanicTestClient):
 
 
 def test_get_domain(rasa_app: SanicTestClient):
-    _, response = rasa_app.get("/domain", headers={"accept": "application/json"})
+    _, response = rasa_app.get(
+        "/domain", headers={"accept": rasa.server.JSON_CONTENT_TYPE}
+    )
 
     content = response.json
 

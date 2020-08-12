@@ -459,7 +459,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/JSONTrainingRequest'
-          application/yaml:
+          application/x-yaml:
             schema:
               type: string
 
