@@ -12,6 +12,7 @@ import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
 
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.nlu.training_data.loading import MARKDOWN, RASA
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
@@ -323,12 +324,19 @@ def _selection_choices_from_intent_prediction(
 ) -> List[Dict[Text, Any]]:
     """"Given a list of ML predictions create a UI choice list."""
 
-    sorted_intents = sorted(predictions, key=lambda k: (-k["confidence"], k["name"]))
+    sorted_intents = sorted(
+        predictions, key=lambda k: (-k["confidence"], k[INTENT_NAME_KEY])
+    )
 
     choices = []
     for p in sorted_intents:
-        name_with_confidence = f'{p.get("confidence"):03.2f} {p.get("name"):40}'
-        choice = {"name": name_with_confidence, "value": p.get("name")}
+        name_with_confidence = (
+            f'{p.get("confidence"):03.2f} {p.get(INTENT_NAME_KEY):40}'
+        )
+        choice = {
+            INTENT_NAME_KEY: name_with_confidence,
+            "value": p.get(INTENT_NAME_KEY),
+        }
         choices.append(choice)
 
     return choices
@@ -417,15 +425,15 @@ async def _request_intent_from_user(
 
     predictions = latest_message.get("parse_data", {}).get("intent_ranking", [])
 
-    predicted_intents = {p["name"] for p in predictions}
+    predicted_intents = {p[INTENT_NAME_KEY] for p in predictions}
 
     for i in intents:
         if i not in predicted_intents:
-            predictions.append({"name": i, "confidence": 0.0})
+            predictions.append({INTENT_NAME_KEY: i, "confidence": 0.0})
 
     # convert intents to ui list and add <other> as a free text alternative
     choices = [
-        {"name": "<create_new_intent>", "value": OTHER_INTENT}
+        {INTENT_NAME_KEY: "<create_new_intent>", "value": OTHER_INTENT}
     ] + _selection_choices_from_intent_prediction(predictions)
 
     intent_name = await _request_selection_from_intents(
@@ -434,11 +442,12 @@ async def _request_intent_from_user(
 
     if intent_name == OTHER_INTENT:
         intent_name = await _request_free_text_intent(conversation_id, endpoint)
-        selected_intent = {"name": intent_name, "confidence": 1.0}
+        selected_intent = {INTENT_NAME_KEY: intent_name, "confidence": 1.0}
     else:
         # returns the selected intent with the original probability value
         selected_intent = next(
-            (x for x in predictions if x["name"] == intent_name), {"name": None}
+            (x for x in predictions if x[INTENT_NAME_KEY] == intent_name),
+            {INTENT_NAME_KEY: None},
         )
 
     return selected_intent
@@ -480,7 +489,7 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
     def format_user_msg(user_event: UserUttered, max_width: int) -> Text:
         intent = user_event.intent or {}
-        intent_name = intent.get("name", "")
+        intent_name = intent.get(INTENT_NAME_KEY, "")
         _confidence = intent.get("confidence", 1.0)
         _md = _as_md_message(user_event.parse_data)
 
@@ -746,7 +755,9 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
         if event.get("event") == UserUttered.type_name:
             data = event.get("parse_data", {})
             rasa_nlu_training_data_utils.remove_untrainable_entities_from(data)
-            msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
+            msg = Message.build(
+                data["text"], data["intent"][INTENT_NAME_KEY], data["entities"]
+            )
             messages.append(msg)
         elif event.get("event") == UserUtteranceReverted.type_name and messages:
             messages.pop()  # user corrected the nlu, remove incorrect example
@@ -1118,7 +1129,7 @@ def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -
     `/greet`. Return `True` if the intent is a known one."""
 
     parse_data = latest_message.get("parse_data", {})
-    intent = parse_data.get("intent", {}).get("name")
+    intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
 
     if intent in intents:
         return True
@@ -1135,7 +1146,7 @@ async def _validate_user_text(
 
     parse_data = latest_message.get("parse_data", {})
     text = _as_md_message(parse_data)
-    intent = parse_data.get("intent", {}).get("name")
+    intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
     entities = parse_data.get("entities", [])
     if entities:
         message = (

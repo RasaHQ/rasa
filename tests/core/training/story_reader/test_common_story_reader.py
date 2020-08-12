@@ -15,7 +15,9 @@ from rasa.core.featurizers import (
     BinarySingleStateFeaturizer,
     E2ESingleStateFeaturizer,
 )
+
 from rasa.core.interpreter import RegexInterpreter
+from rasa.nlu.constants import INTENT_NAME_KEY
 
 
 @pytest.mark.parametrize(
@@ -38,11 +40,11 @@ async def test_can_read_test_story(stories_file: Text, default_domain: Domain):
     assert tracker.events[0] == ActionExecuted("action_listen")
     assert tracker.events[1] == UserUttered(
         "simple",
-        intent={"name": "simple", "confidence": 1.0},
+        intent={INTENT_NAME_KEY: "simple", "confidence": 1.0},
         parse_data={
             "text": "/simple",
-            "intent_ranking": [{"confidence": 1.0, "name": "simple"}],
-            "intent": {"confidence": 1.0, "name": "simple"},
+            "intent_ranking": [{"confidence": 1.0, INTENT_NAME_KEY: "simple"}],
+            "intent": {"confidence": 1.0, INTENT_NAME_KEY: "simple"},
             "entities": [],
         },
     )

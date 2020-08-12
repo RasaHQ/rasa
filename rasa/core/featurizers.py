@@ -204,8 +204,8 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     def prepare_from_domain(self, domain: Domain) -> None:
         """Creates internal vocabularies for user intents and bot actions."""
 
-        self.user_labels = domain.intent_states + domain.entity_states
-        self.slot_labels = domain.slot_states + domain.form_states
+        self.user_labels = domain.intents + domain.entity_states
+        self.slot_labels = domain.slot_states + domain.form_names
         self.bot_labels = domain.action_names
 
         if self.use_shared_vocab:
@@ -303,14 +303,53 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         # storing slot names so that the features are always added in the same order
         self.slot_names = [slot.name for slot in domain.slots]
         self.slot_states = domain.slot_states
-        self.form_states = domain.form_states
+        self.form_states = domain.form_names
         self.entities = domain.entities
         self.action_names = domain.action_names
-        self.intents = domain.intent_states
+        self.intents = domain.intents
 
         self.output_shapes[ENTITIES] = len(
             self.slot_states + self.form_states + self.entities
         )
+
+    def fill_in_features(self, features: List) -> List:
+        shapes = self.output_shapes
+
+        for feature in features:
+            intent_rows_to_fill = np.where(feature[:, 3] != -1)[0]
+            user_text_rows_to_fill = np.where(feature[:, 3] != 1)[0]
+            action_names_rows_to_fill = np.where(feature[:, 7] != -1)[0]
+            action_text_rows_to_fill = np.where(feature[:, 7] != 1)[0]
+
+            for key in shapes.keys():
+                if INTENT in key:
+                    feature[np.array(intent_rows_to_fill), 2] = [
+                        np.ones((1, shapes.get(key))) * -1
+                    ] * len(intent_rows_to_fill)
+                elif ACTION_NAME in key:
+                    feature[np.array(action_names_rows_to_fill), 6] = [
+                        np.ones((1, shapes.get(key))) * -1
+                    ] * len(action_names_rows_to_fill)
+                elif ACTION_TEXT in key:
+                    if "sparse" in key:
+                        feature[np.array(action_text_rows_to_fill), 4] = [
+                            scipy.sparse.coo_matrix((1, shapes.get(key)))
+                        ] * len(action_text_rows_to_fill)
+                    elif "dense" in key:
+                        feature[np.array(action_text_rows_to_fill), 5] = [
+                            np.ones((1, shapes.get(key))) * -1
+                        ] * len(action_text_rows_to_fill)
+                else:
+                    if "sparse" in key:
+                        feature[np.array(user_text_rows_to_fill), 0] = [
+                            scipy.sparse.coo_matrix((1, shapes.get(key)))
+                        ] * len(user_text_rows_to_fill)
+                    elif "dense" in key:
+                        feature[np.array(user_text_rows_to_fill), 1] = [
+                            np.ones((1, shapes.get(key))) * -1
+                        ] * len(user_text_rows_to_fill)
+
+        return features
 
     def _get_slot_and_entity_features(self, state: STATE) -> np.ndarray:
         binary_features = np.zeros(
@@ -654,6 +693,9 @@ class TrackerFeaturizer:
             if not story_features == []:
                 features.append(np.stack(story_features))
                 true_lengths.append(dialogue_len)
+
+        if isinstance(self.state_featurizer, E2ESingleStateFeaturizer):
+            features = self.state_featurizer.fill_in_features(features)
 
         # noinspection PyPep8Naming
         X = np.array(features)

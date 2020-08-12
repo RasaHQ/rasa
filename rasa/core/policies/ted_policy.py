@@ -499,46 +499,6 @@ class TEDPolicy(Policy):
         label_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
         return label_data
 
-    def _fill_in_features(self, training_data_X: np.ndarray) -> np.ndarray:
-        features = list(training_data_X)
-        shapes = self.featurizer.state_featurizer.output_shapes
-
-        for feature in features:
-            intent_rows_to_fill = np.where(feature[:, 3] != -1)[0]
-            user_text_rows_to_fill = np.where(feature[:, 3] != 1)[0]
-            action_names_rows_to_fill = np.where(feature[:, 7] != -1)[0]
-            action_text_rows_to_fill = np.where(feature[:, 7] != 1)[0]
-
-            for key in shapes.keys():
-                if INTENT in key:
-                    feature[np.array(intent_rows_to_fill), 2] = [
-                        np.ones((1, shapes.get(key))) * -1
-                    ] * len(intent_rows_to_fill)
-                elif ACTION_NAME in key:
-                    feature[np.array(action_names_rows_to_fill), 6] = [
-                        np.ones((1, shapes.get(key))) * -1
-                    ] * len(action_names_rows_to_fill)
-                elif ACTION_TEXT in key:
-                    if "sparse" in key:
-                        feature[np.array(action_text_rows_to_fill), 4] = [
-                            sparse.coo_matrix((1, shapes.get(key)))
-                        ] * len(action_text_rows_to_fill)
-                    elif "dense" in key:
-                        feature[np.array(action_text_rows_to_fill), 5] = [
-                            np.ones((1, shapes.get(key))) * -1
-                        ] * len(action_text_rows_to_fill)
-                else:
-                    if "sparse" in key:
-                        feature[np.array(user_text_rows_to_fill), 0] = [
-                            sparse.coo_matrix((1, shapes.get(key)))
-                        ] * len(user_text_rows_to_fill)
-                    elif "dense" in key:
-                        feature[np.array(user_text_rows_to_fill), 1] = [
-                            np.ones((1, shapes.get(key))) * -1
-                        ] * len(user_text_rows_to_fill)
-
-        return np.array(features)
-
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
@@ -555,11 +515,9 @@ class TEDPolicy(Policy):
 
         self._label_data = self._create_label_data(domain, interpreter)
 
-        training_data_X = self._fill_in_features(training_data.X)
-
         # extract actual training data to feed to model
         model_data = self._create_model_data(
-            training_data_X, np.array(training_data.true_length), training_data.y
+            training_data.X, np.array(training_data.true_length), training_data.y
         )
         if model_data.is_empty():
             logger.error(
@@ -603,7 +561,6 @@ class TEDPolicy(Policy):
 
         # create model data from tracker
         data_X = self.featurizer.create_X([tracker], domain, interpreter)
-        data_X = self._fill_in_features(data_X)
         model_data = self._create_model_data(data_X)
 
         output = self.model.predict(model_data)
