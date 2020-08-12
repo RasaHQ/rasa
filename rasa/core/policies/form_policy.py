@@ -45,10 +45,7 @@ class FormPolicy(MemoizationPolicy):
 
     @staticmethod
     def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
-        found_form = state.get(FORM)
-        if found_form:
-            return found_form.get("name")
-        return found_form
+        return state.get(FORM, {}).get("name")
 
     @staticmethod
     def _prev_action_listen_in_state(state: Dict[Text, float]) -> bool:
