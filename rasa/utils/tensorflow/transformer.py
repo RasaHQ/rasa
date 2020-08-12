@@ -481,6 +481,128 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         return x  # (batch_size, length, units)
 
 
+class TransformerDecoderLayer(tf.keras.layers.Layer):
+    """Transformer decoder layer.
+
+    The layer is composed of the sublayers:
+        1. Self-attention layer
+        1. Multi-head-attention layer
+        2. Feed-forward network (which is 2 fully-connected layers)
+
+    Arguments:
+        units: Positive integer, output dim of hidden layer.
+        num_heads: Positive integer, number of heads
+            to repeat the same attention structure.
+        filter_units: Positive integer, output dim of the first ffn hidden layer.
+        dropout_rate: Float between 0 and 1; fraction of the input units to drop.
+        attention_dropout_rate: Float, dropout rate inside attention for training.
+        sparsity: Float between 0 and 1. Fraction of the `kernel`
+            weights to set to zero.
+        unidirectional: Boolean, use a unidirectional or bidirectional encoder.
+        use_key_relative_position: Boolean, if 'True' use key
+            relative embeddings in attention.
+        use_value_relative_position: Boolean, if 'True' use value
+            relative embeddings in attention.
+        max_relative_position: Positive integer, max position for relative embeddings.
+        heads_share_relative_embedding: Boolean, if 'True'
+            heads will share relative embeddings.
+    """
+
+    def __init__(
+        self,
+        units: int,
+        num_heads: int,
+        filter_units: int,
+        dropout_rate: float = 0.1,
+        attention_dropout_rate: float = 0.0,
+        sparsity: float = 0.8,
+        unidirectional: bool = False,
+        use_key_relative_position: bool = False,
+        use_value_relative_position: bool = False,
+        max_relative_position: Optional[int] = None,
+        heads_share_relative_embedding: bool = False,
+    ) -> None:
+        super().__init__()
+
+        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self._mha_1 = MultiHeadAttention(
+            units,
+            num_heads,
+            attention_dropout_rate,
+            sparsity,
+            unidirectional,
+            use_key_relative_position,
+            use_value_relative_position,
+            max_relative_position,
+            heads_share_relative_embedding,
+        )
+        self._mha_2 = MultiHeadAttention(
+            units,
+            num_heads,
+            attention_dropout_rate,
+            sparsity,
+            unidirectional,
+            use_key_relative_position,
+            use_value_relative_position,
+            max_relative_position,
+            heads_share_relative_embedding,
+        )
+        self._dropout = tf.keras.layers.Dropout(dropout_rate)
+
+        self._ffn_layers = [
+            tf.keras.layers.LayerNormalization(epsilon=1e-6),
+            DenseWithSparseWeights(
+                units=filter_units, activation=tfa.activations.gelu, sparsity=sparsity
+            ),  # (batch_size, length, filter_units)
+            tf.keras.layers.Dropout(dropout_rate),
+            DenseWithSparseWeights(
+                units=units, sparsity=sparsity
+            ),  # (batch_size, length, units)
+            tf.keras.layers.Dropout(dropout_rate),
+        ]
+
+    # noinspection PyMethodOverriding
+    def call(
+        self,
+        x: tf.Tensor,
+        encoder_output: tf.Tensor,
+        pad_mask: Optional[tf.Tensor] = None,
+        training: Optional[Union[tf.Tensor, bool]] = None,
+    ) -> tf.Tensor:
+        """Apply transformer encoder layer.
+
+        Arguments:
+            x: A tensor with shape [batch_size, length, units].
+            pad_mask: Float tensor with shape broadcastable
+                to (..., length, length). Defaults to None.
+            training: A bool, whether in training mode or not.
+
+        Returns:
+            Transformer encoder layer output with shape [batch_size, length, units]
+        """
+        if training is None:
+            training = K.learning_phase()
+
+        x_norm = self._layer_norm(x)  # (batch_size, length, units)
+        attn_out, _ = self._mha_1(x_norm, x_norm, pad_mask=pad_mask, training=training)
+        attn_out = self._dropout(attn_out, training=training)
+        x += attn_out
+
+        x_norm = self._layer_norm(x)  # (batch_size, length, units)
+        attn_out, _ = self._mha_2(
+            x_norm, encoder_output, pad_mask=pad_mask, training=training
+        )
+        attn_out = self._dropout(attn_out, training=training)
+        x += attn_out
+
+        ffn_out = x  # (batch_size, length, units)
+        for layer in self._ffn_layers:
+            ffn_out = layer(ffn_out, training=training)
+        x += ffn_out
+
+        return x  # (batch_size, length, units)
+
+
 class TransformerEncoder(tf.keras.layers.Layer):
     """Transformer encoder.
 
@@ -624,6 +746,156 @@ class TransformerEncoder(tf.keras.layers.Layer):
             x = layer(x, pad_mask=pad_mask, training=training)
 
         # if normalization is done in encoding layers, then it should also be done
+        # on the output, since the output can grow very large, being the sum of
+        # a whole stack of unnormalized layer outputs.
+        return self._layer_norm(x)  # (batch_size, length, units)
+
+
+class TransformerDecoder(tf.keras.layers.Layer):
+    """Transformer decoder.
+
+    Decoder stack is made up of `num_layers` identical decoder layers.
+
+    Arguments:
+        num_layers: Positive integer, number of decoder layers.
+        units: Positive integer, output dim of hidden layer.
+        num_heads: Positive integer, number of heads
+            to repeat the same attention structure.
+        filter_units: Positive integer, output dim of the first ffn hidden layer.
+        reg_lambda: Float, regularization factor.
+        dropout_rate: Float between 0 and 1; fraction of the input units to drop.
+        attention_dropout_rate: Float, dropout rate inside attention for training.
+        sparsity: Float between 0 and 1. Fraction of the `kernel`
+            weights to set to zero.
+        unidirectional: Boolean, use a unidirectional or bidirectional decoder.
+        use_key_relative_position: Boolean, if 'True' use key
+            relative embeddings in attention.
+        use_value_relative_position: Boolean, if 'True' use value
+            relative embeddings in attention.
+        max_relative_position: Positive integer, max position for relative embeddings.
+        heads_share_relative_embedding: Boolean, if 'True'
+            heads will share relative embeddings.
+        name: Optional name of the layer.
+    """
+
+    def __init__(
+        self,
+        num_layers: int,
+        units: int,
+        num_heads: int,
+        filter_units: int,
+        reg_lambda: float,
+        dropout_rate: float = 0.1,
+        attention_dropout_rate: float = 0.0,
+        sparsity: float = 0.8,
+        unidirectional: bool = False,
+        use_key_relative_position: bool = False,
+        use_value_relative_position: bool = False,
+        max_relative_position: Optional[int] = None,
+        heads_share_relative_embedding: bool = False,
+        name: Optional[Text] = None,
+    ) -> None:
+        super().__init__(name=name)
+
+        self.units = units
+        self.unidirectional = unidirectional
+
+        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
+        self._embedding = DenseWithSparseWeights(
+            units=units, kernel_regularizer=l2_regularizer, sparsity=sparsity
+        )
+        # positional encoding helpers
+        self._angles = self._get_angles()
+        self._even_indices = np.arange(0, self.units, 2, dtype=np.int32)[:, np.newaxis]
+        self._odd_indices = np.arange(1, self.units, 2, dtype=np.int32)[:, np.newaxis]
+
+        self._dropout = tf.keras.layers.Dropout(dropout_rate)
+
+        self._dec_layers = [
+            TransformerDecoderLayer(
+                units,
+                num_heads,
+                filter_units,
+                dropout_rate,
+                attention_dropout_rate,
+                sparsity,
+                unidirectional,
+                use_key_relative_position,
+                use_value_relative_position,
+                max_relative_position,
+                heads_share_relative_embedding,
+            )
+            for _ in range(num_layers)
+        ]
+        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+
+    def _get_angles(self) -> np.ndarray:
+        i = np.arange(self.units)[np.newaxis, :]
+        return 1 / np.power(10000, (2 * (i // 2)) / np.float32(self.units))
+
+    def _positional_encoding(self, max_position: tf.Tensor) -> tf.Tensor:
+        max_position = tf.cast(max_position, dtype=tf.float32)
+        angle_rads = tf.range(max_position)[:, tf.newaxis] * self._angles
+
+        # transpose for easy slicing
+        angle_rads = tf.transpose(angle_rads, perm=[1, 0])
+        shape = tf.shape(angle_rads)
+        # apply sin to even indices in the array; 2i
+        sin_even = tf.sin(tf.gather_nd(angle_rads, self._even_indices))
+        pos_encoding_even = tf.scatter_nd(self._even_indices, sin_even, shape)
+        # apply cos to odd indices in the array; 2i+1
+        cos_odd = tf.cos(tf.gather_nd(angle_rads, self._odd_indices))
+        pos_encoding_odd = tf.scatter_nd(self._odd_indices, cos_odd, shape)
+        # combine even and odd positions and transpose back
+        pos_encoding = tf.transpose(pos_encoding_even + pos_encoding_odd, perm=[1, 0])
+        # add batch dimension
+        return tf.stop_gradient(pos_encoding[tf.newaxis, ...])
+
+    @staticmethod
+    def _look_ahead_pad_mask(max_position: tf.Tensor) -> tf.Tensor:
+        pad_mask = 1 - tf.linalg.band_part(tf.ones((max_position, max_position)), -1, 0)
+        return pad_mask[tf.newaxis, tf.newaxis, :, :]  # (1, 1, seq_len, seq_len)
+
+    # noinspection PyMethodOverriding
+    def call(
+        self,
+        x: tf.Tensor,
+        encoder_output: tf.Tensor,
+        pad_mask: Optional[tf.Tensor] = None,
+        training: Optional[Union[tf.Tensor, bool]] = None,
+    ) -> tf.Tensor:
+        """Apply transformer decoder.
+
+        Arguments:
+            x: A tensor with shape [batch_size, length, input_size].
+            pad_mask: Float tensor with shape broadcastable
+                to (..., length, length). Defaults to None.
+            training: A bool, whether in training mode or not.
+
+        Returns:
+            Transformer decoder output with shape [batch_size, length, units]
+        """
+
+        # adding embedding and position encoding.
+        x = self._embedding(x)  # (batch_size, length, units)
+        x *= tf.math.sqrt(tf.cast(self.units, tf.float32))
+        x += self._positional_encoding(tf.shape(x)[1])
+        x = self._dropout(x, training=training)
+
+        if pad_mask is not None:
+            pad_mask = tf.squeeze(pad_mask, -1)  # (batch_size, length)
+            pad_mask = pad_mask[:, tf.newaxis, tf.newaxis, :]
+            # pad_mask.shape = (batch_size, 1, 1, length)
+            if self.unidirectional:
+                # add look ahead pad mask to emulate unidirectional behavior
+                pad_mask = tf.minimum(
+                    1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
+                )  # (batch_size, 1, length, length)
+
+        for layer in self._dec_layers:
+            x = layer(x, encoder_output, pad_mask=pad_mask, training=training)
+
+        # if normalization is done in decoding layers, then it should also be done
         # on the output, since the output can grow very large, being the sum of
         # a whole stack of unnormalized layer outputs.
         return self._layer_norm(x)  # (batch_size, length, units)
