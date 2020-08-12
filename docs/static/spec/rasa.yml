@@ -456,7 +456,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TrainingRequest'
+              $ref: '#/components/schemas/JSONTrainingRequest'
           application/yaml:
             schema:
               type: string
@@ -1303,7 +1303,7 @@ components:
           type: integer
           description: Time to wait between pulls from model server
 
-    TrainingRequest:
+    JSONTrainingRequest:
       type: object
       properties:
         domain:
