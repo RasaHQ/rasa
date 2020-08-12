@@ -20,4 +20,4 @@ stories:
   - intent: hello
   - action: utter_greet
   - slot_was_set: name
-    name: peter
+    value: peter

@@ -21,6 +21,7 @@ class StoryReader:
         template_vars: Optional[Dict] = None,
         use_e2e: bool = False,
         source_name: Text = None,
+        unfold_or_utterances: bool = True,
     ) -> None:
         self.story_steps = []
         self.current_step_builder: Optional[StoryStepBuilder] = None
@@ -29,6 +30,7 @@ class StoryReader:
         self.template_variables = template_vars if template_vars else {}
         self.use_e2e = use_e2e
         self.source_name = source_name
+        self.unfold_or_utterances = unfold_or_utterances
 
     async def read_from_file(self, filename: Text) -> List[StoryStep]:
         raise NotImplementedError

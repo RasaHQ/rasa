@@ -2,10 +2,11 @@ import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from ruamel.yaml.parser import ParserError
 
 import rasa.utils.common as common_utils
-import rasa.utils.io
+import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_STORIES, DOCS_URL_RULES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
@@ -35,6 +36,9 @@ KEY_OR = "or"
 KEY_RULE_CONDITION = "condition"
 KEY_WAIT_FOR_USER_INPUT_AFTER_RULE = "wait_for_user_input"
 KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
+
+
+CORE_SCHEMA_FILE = "core/schemas/stories.yml"
 
 
 class YAMLStoryReader(StoryReader):
@@ -67,19 +71,19 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `StoryStep`s read from `filename`.
         """
+        self.source_name = filename
+
         try:
-            yaml_content = rasa.utils.io.read_yaml_file(filename)
+            file_content = io_utils.read_file(filename, io_utils.DEFAULT_ENCODING)
+            validate_yaml_schema(file_content, CORE_SCHEMA_FILE)
+            yaml_content = io_utils.read_yaml(file_content)
         except (ValueError, ParserError) as e:
             common_utils.raise_warning(
                 f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
             )
             return []
-
-        if not isinstance(yaml_content, dict):
-            common_utils.raise_warning(
-                f"Failed to read '{filename}'. It should be a YAML dictionary."
-            )
-            return []
+        except InvalidYamlFileError as e:
+            raise ValueError from e
 
         return self.read_from_parsed_yaml(yaml_content)
 
@@ -129,7 +133,7 @@ class YAMLStoryReader(StoryReader):
             return False
 
         try:
-            content = rasa.utils.io.read_yaml_file(file_path)
+            content = io_utils.read_yaml_file(file_path)
             return any(key in content for key in [KEY_STORIES, KEY_RULES])
         except Exception as e:
             # Using broad `Exception` because yaml library is not exposing all Errors
