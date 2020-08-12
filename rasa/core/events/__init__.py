@@ -20,7 +20,14 @@ from rasa.core.constants import (
 )
 
 
-from rasa.nlu.constants import INTENT, TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, INTENT_NAME_KEY
+from rasa.nlu.constants import (
+    INTENT,
+    TEXT,
+    ACTION_NAME,
+    ACTION_TEXT,
+    ENTITIES,
+    INTENT_NAME_KEY,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker

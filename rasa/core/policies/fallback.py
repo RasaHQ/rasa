@@ -14,6 +14,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
+from rasa.nlu.constants import ACTION_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -159,8 +160,8 @@ class FallbackPolicy(Policy):
         nlu_data = tracker.latest_message.parse_data
 
         if (
-            tracker.latest_action.get("action_name") == self.fallback_action_name
-            and tracker.latest_action.get("action_name") != ACTION_LISTEN_NAME
+            tracker.latest_action.get(ACTION_NAME) == self.fallback_action_name
+            and tracker.latest_action.get(ACTION_NAME) != ACTION_LISTEN_NAME
         ):
             logger.debug(
                 "Predicted 'action_listen' after fallback action '{}'".format(
@@ -171,9 +172,7 @@ class FallbackPolicy(Policy):
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
 
-        elif self.should_nlu_fallback(
-            nlu_data, tracker.latest_action.get("action_name")
-        ):
+        elif self.should_nlu_fallback(nlu_data, tracker.latest_action.get(ACTION_NAME)):
             result = self.fallback_scores(domain)
 
         else:
