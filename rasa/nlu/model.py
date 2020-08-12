@@ -386,7 +386,7 @@ class Interpreter:
             return output
 
         data = self.default_output_attributes()
-        data.update({TEXT: text})
+        data[TEXT] = text
 
         message = Message(data=data, time=time)
 
