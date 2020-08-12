@@ -18,6 +18,7 @@ from rasa.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
 )
+from rasa.nlu.constants import INTENT_NAME_KEY
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -257,7 +258,13 @@ class UserUttered(Event):
         )
 
     def __hash__(self) -> int:
-        return hash((self.text, self.intent_name, jsonpickle.encode(self.entities)))
+        return hash(
+            (
+                self.text,
+                self.intent.get(INTENT_NAME_KEY),
+                jsonpickle.encode(self.entities),
+            )
+        )
 
     @property
     def intent_name(self) -> Optional[Text]:
@@ -269,11 +276,11 @@ class UserUttered(Event):
         else:
             return (
                 self.text,
-                self.intent_name,
+                self.intent.get(INTENT_NAME_KEY),
                 [jsonpickle.encode(ent) for ent in self.entities],
             ) == (
                 other.text,
-                other.intent_name,
+                other.intent.get(INTENT_NAME_KEY),
                 [jsonpickle.encode(ent) for ent in other.entities],
             )
 
@@ -326,11 +333,11 @@ class UserUttered(Event):
                 ent_string = ""
 
             parse_string = "{intent}{entities}".format(
-                intent=self.intent.get("name", ""), entities=ent_string
+                intent=self.intent.get(INTENT_NAME_KEY, ""), entities=ent_string
             )
             if e2e:
                 message = md_format_message(self.text, self.intent, self.entities)
-                return "{}: {}".format(self.intent.get("name"), message)
+                return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
             else:
                 return parse_string
         else:
@@ -346,7 +353,7 @@ class UserUttered(Event):
     ) -> "UserUttered":
         return UserUttered(
             text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
-            intent={"name": intent_name},
+            intent={INTENT_NAME_KEY: intent_name},
             metadata={IS_EXTERNAL: True},
             entities=entity_list or [],
         )
