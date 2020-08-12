@@ -13,7 +13,7 @@ from typing import Any, Callable, List, Optional, Text, Union, Dict
 
 import rasa
 import rasa.core.utils
-from rasa.utils.common import raise_warning, arguments_of
+from rasa.utils import common as common_utils
 import rasa.utils.endpoints
 import rasa.utils.io
 from rasa import model
@@ -123,7 +123,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
     def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
-            argnames = arguments_of(f)
+            argnames = common_utils.arguments_of(f)
 
             try:
                 sender_id_arg_idx = argnames.index("conversation_id")
@@ -520,7 +520,7 @@ def create_app(
         events = [event for event in events if event]
 
         if not events:
-            raise_warning(
+            common_utils.raise_warning(
                 f"Append event called, but could not extract a valid event. "
                 f"Request JSON: {request.json}"
             )
@@ -1006,7 +1006,7 @@ def create_app(
         else:
             raise ErrorResponse(
                 406,
-                f"NotAcceptable",
+                "NotAcceptable",
                 f"Invalid Accept header. Domain can be "
                 f"provided as "
                 f'json ("Accept: {JSON_CONTENT_TYPE}") or'
@@ -1134,6 +1134,15 @@ def _validate_json_training_payload(rjs: Dict):
             "To train a Rasa model with story training data, you also need to "
             "specify the `domain`.",
             {"parameter": "domain", "in": "body"},
+        )
+
+    if "force" in rjs or "save_to_default_model_directory" in rjs:
+        common_utils.raise_warning(
+            "Specifying 'force' and 'save_to_default_model_directory' as part of the "
+            "JSON payload is deprecated. Please use the header arguments "
+            "'force_training' and 'save_to_default_model_directory'.",
+            category=FutureWarning,
+            docs=_docs("/api/http-api"),
         )
 
 
