@@ -67,7 +67,7 @@ async def test_verify_bad_story_structure_ignore_warnings():
 async def test_fail_on_invalid_utterances(tmpdir):
     # domain and stories are from different domain and should produce warnings
     invalid_domain = str(tmpdir / "invalid_domain.yml")
-    io_utils.write_yaml_file(
+    io_utils.write_yaml(
         {
             "responses": {"utter_greet": {"text": "hello"}},
             "actions": [
