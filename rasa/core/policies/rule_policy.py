@@ -283,10 +283,7 @@ class RulePolicy(MemoizationPolicy):
     def _check_rule_state(rule_state: STATE, state: STATE) -> bool:
 
         for state_type, rule_sub_state in rule_state.items():
-            sub_state = state.get(state_type)
-            if not sub_state:
-                # state_type exists in the rule, but don't exist in the state
-                return False
+            sub_state = state.get(state_type, {})
             for key, value in rule_sub_state.items():
                 if isinstance(value, list):
                     # json dumps and loads tuples as lists,
@@ -425,11 +422,11 @@ class RulePolicy(MemoizationPolicy):
             # was applied inside the form.
             # Rules might not explicitly switch back to the `Form`.
             # Hence, we have to take care of that.
-            rule_active_form = self._get_active_form_name(
-                self._rule_key_to_state(best_rule_key)[-1]
-            )
             predicted_listen_from_general_rule = (
-                predicted_action_name == ACTION_LISTEN_NAME and not rule_active_form
+                predicted_action_name == ACTION_LISTEN_NAME
+                and not self._get_active_form_name(
+                    self._rule_key_to_state(best_rule_key)[-1]
+                )
             )
             if predicted_listen_from_general_rule:
                 if DO_NOT_PREDICT_FORM_ACTION not in unhappy_path_conditions:
