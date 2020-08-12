@@ -84,6 +84,9 @@ class MarkdownStoryReader(StoryReader):
                     # reached a slot, event, or executed action
                     event_name, parameters = self._parse_event_line(line[1:])
                     self._add_event(event_name, parameters)
+                elif line.startswith("- ?"):
+                    # reached a query event
+                    self._add_event("query", {"query": line[3:].strip()})
                 elif line.startswith("*"):
                     # reached a user message
                     user_messages = [el.strip() for el in line[1:].split(" OR ")]
