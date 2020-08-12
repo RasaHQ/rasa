@@ -6,27 +6,18 @@ description: Open source alternative to Google Dialogflow for conversational bot
 ---
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-This guide shows you how to migrate your application built with Google Dialogflow to Rasa. Here are a few reasons why we see developers switching:
-
-* **Faster**: Runs locally - no http requests and server round trips required
-
-* **Customizable**: Tune models and get higher accuracy with your data set
-
-* **Open source**: No risk of vendor lock-in - Rasa is under the Apache 2.0 license and you can use it in commercial projects
-
-In addition, our open source tools allow developers to build contextual AI assistants and manage dialogues with machine learning instead of rules - learn more in <a className="reference external" href="http://blog.rasa.com/a-new-approach-to-conversational-software/" target="_blank">this blog post</a>.
-<br />
-<br />Let's get started with migrating your application from Dialogflow to Rasa (you can find a more detailed tutorial <a className="reference external" href="http://blog.rasa.com/how-to-migrate-your-existing-google-dialogflow-assistant-to-rasa/" target="_blank">here</a>):
+Let's get started with migrating your application from Dialogflow to Rasa (you can find a more detailed
+tutorial <a className="reference external" href="http://blog.rasa.com/how-to-migrate-your-existing-google-dialogflow-assistant-to-rasa/" target="_blank">here</a>):
 
 ## Step 1: Export your data from Dialogflow
 
-Navigate to your agent’s settings by clicking the gear icon.
+Navigate to your agent's settings by clicking the gear icon.
 
 
 
 <img alt="Dialogflow Export" src={useBaseUrl("/img/dialogflow_export.png")} width="240" />
 
-Click on the ‘Export and Import’ tab and click on the ‘Export as ZIP’ button.
+Click on the 'Export and Import' tab and click on the 'Export as ZIP' button.
 
 
 
@@ -61,7 +52,7 @@ rasa train nlu
 
 ## Step 4: Test your NLU model
 
-Let’s see how your NLU model will interpret some test messages.
+Let's see how your NLU model will interpret some test messages.
 To start a testing session, run:
 
 ```bash
@@ -69,10 +60,10 @@ rasa shell nlu
 ```
 
 This will prompt your for input.
-Type a test message and press ‘Enter’.
+Type a test message and press 'Enter'.
 The output of your NLU model will be printed to the screen.
 You can keep entering messages and test as many as you like.
-Press ‘control + C’ to quit.
+Press 'control + C' to quit.
 
 ## Step 5: Start a Server with your NLU Model
 
@@ -95,6 +86,6 @@ You can also leave it out to get the result in the usual Rasa format.
 ## Terminology:
 
 The words `intent`, `entity`, and `utterance` have the same meaning in Rasa as they do in Dialogflow.
-In Dialogflow, there is a concept called `Fulfillment`. In Rasa we call this a [Custom Action](../core/actions/.mdx#custom-actions).
+In Dialogflow, there is a concept called `Fulfillment`. In Rasa we call this a [Custom Action](./actions/.mdx#custom-actions).
 
 Join the [Rasa Community Forum](https://forum.rasa.com/) and let us know how your migration went!

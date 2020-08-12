@@ -27,6 +27,7 @@ from rasa.core.channels.slack import SlackBot
 from rasa.core.events import Event, UserUttered, SlotSet, BotUttered
 from rasa.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from rasa import utils as rasa_utils
 from sanic import Sanic
@@ -42,7 +43,7 @@ test_events = [
             "event": UserUttered.type_name,
             "text": "/goodbye",
             "parse_data": {
-                "intent": {"confidence": 1.0, "name": "greet"},
+                "intent": {"confidence": 1.0, INTENT_NAME_KEY: "greet"},
                 "entities": [],
             },
         }
@@ -263,7 +264,7 @@ def test_train_status_is_not_blocked_by_training(
             "/model/parse",
             {
                 "entities": [],
-                "intent": {"confidence": 1.0, "name": "greet"},
+                "intent": {"confidence": 1.0, INTENT_NAME_KEY: "greet"},
                 "text": "hello",
             },
             payload={"text": "hello"},
@@ -272,7 +273,7 @@ def test_train_status_is_not_blocked_by_training(
             "/model/parse",
             {
                 "entities": [],
-                "intent": {"confidence": 1.0, "name": "greet"},
+                "intent": {"confidence": 1.0, INTENT_NAME_KEY: "greet"},
                 "text": "hello",
             },
             payload={"text": "hello"},
@@ -281,7 +282,7 @@ def test_train_status_is_not_blocked_by_training(
             "/model/parse",
             {
                 "entities": [],
-                "intent": {"confidence": 1.0, "name": "greet"},
+                "intent": {"confidence": 1.0, INTENT_NAME_KEY: "greet"},
                 "text": "hello ńöñàśçií",
             },
             payload={"text": "hello ńöñàśçií"},
@@ -305,7 +306,7 @@ def test_parse(rasa_app, response_test):
             "/model/parse?emulation_mode=wit",
             {
                 "entities": [],
-                "intent": {"confidence": 1.0, "name": "greet"},
+                "intent": {"confidence": 1.0, INTENT_NAME_KEY: "greet"},
                 "text": "hello",
             },
             payload={"text": "hello"},
@@ -314,7 +315,7 @@ def test_parse(rasa_app, response_test):
             "/model/parse?emulation_mode=dialogflow",
             {
                 "entities": [],
-                "intent": {"confidence": 1.0, "name": "greet"},
+                "intent": {"confidence": 1.0, INTENT_NAME_KEY: "greet"},
                 "text": "hello",
             },
             payload={"text": "hello"},
@@ -323,7 +324,7 @@ def test_parse(rasa_app, response_test):
             "/model/parse?emulation_mode=luis",
             {
                 "entities": [],
-                "intent": {"confidence": 1.0, "name": "greet"},
+                "intent": {"confidence": 1.0, INTENT_NAME_KEY: "greet"},
                 "text": "hello ńöñàśçií",
             },
             payload={"text": "hello ńöñàśçií"},
@@ -619,7 +620,7 @@ def test_predict(rasa_app: SanicTestClient):
                     "text": "hello",
                     "parse_data": {
                         "entities": [],
-                        "intent": {"confidence": 0.57, "name": "greet"},
+                        "intent": {"confidence": 0.57, INTENT_NAME_KEY: "greet"},
                         "text": "hello",
                     },
                 },
@@ -655,7 +656,7 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
         {"event": "session_started", "timestamp": 1514764800},
         {
             "event": "action",
-            "name": "action_listen",
+            INTENT_NAME_KEY: "action_listen",
             "policy": None,
             "confidence": None,
             "timestamp": 1514764800,
@@ -930,7 +931,7 @@ def test_load_model_invalid_configuration(rasa_app: SanicTestClient):
 def test_execute(rasa_app: SanicTestClient):
     _create_tracker_for_sender(rasa_app, "test_execute")
 
-    data = {"name": "utter_greet"}
+    data = {INTENT_NAME_KEY: "utter_greet"}
     _, response = rasa_app.post("/conversations/test_execute/execute", json=data)
 
     assert response.status == 200
@@ -961,7 +962,7 @@ def test_execute_with_not_existing_action(rasa_app: SanicTestClient):
 
 
 def test_trigger_intent(rasa_app: SanicTestClient):
-    data = {"name": "greet"}
+    data = {INTENT_NAME_KEY: "greet"}
     _, response = rasa_app.post("/conversations/test_trigger/trigger_intent", json=data)
 
     assert response.status == 200
@@ -986,7 +987,7 @@ def test_trigger_intent_with_not_existing_intent(rasa_app: SanicTestClient):
     test_sender = "test_trigger_intent_with_not_existing_intent"
     _create_tracker_for_sender(rasa_app, test_sender)
 
-    data = {"name": "ka[pa[opi[opj[oj[oija"}
+    data = {INTENT_NAME_KEY: "ka[pa[opi[opj[oj[oija"}
     _, response = rasa_app.post(
         f"/conversations/{test_sender}/trigger_intent", json=data
     )

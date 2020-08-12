@@ -16,6 +16,7 @@ from rasa.core.training.dsl import EndToEndReader
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
 from rasa.data import MARKDOWN_FILE_EXTENSIONS
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
@@ -209,7 +210,7 @@ class MarkdownStoryReader(StoryReader):
         utterance = UserUttered(
             message, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
-        intent_name = utterance.intent.get("name")
+        intent_name = utterance.intent.get(INTENT_NAME_KEY)
         if self.domain and intent_name not in self.domain.intents:
             raise_warning(
                 f"Found unknown intent '{intent_name}' on line {line_num}. "

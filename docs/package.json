@@ -5,17 +5,23 @@
   "scripts": {
     "start": "yarn run pre-build && docusaurus start",
     "pre-build": "yarn run copy-md-files && yarn run variables && yarn run program-outputs && yarn run included-sources",
+    "serve": "netlify dev -d build",
     "build": "docusaurus build",
+    "swizzle": "docusaurus swizzle",
     "new-version": "docusaurus docs:version",
-    "variables": "node compile_variables.js",
-    "program-outputs": "node compile_program_outputs.js",
-    "copy-md-files": "node copy_md_files.js",
-    "included-sources": "node compile_included_sources.js",
-    "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}"
+    "variables": "node scripts/compile_variables.js",
+    "program-outputs": "node scripts/compile_program_outputs.js",
+    "copy-md-files": "node scripts/copy_md_files.js",
+    "included-sources": "node scripts/compile_included_sources.js",
+    "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}",
+    "ci": "yarn install --frozen-lockfile"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-alpha.60",
-    "@docusaurus/preset-classic": "^2.0.0-alpha.60",
+    "@docusaurus/core": "^2.0.0-alpha.61",
+    "@docusaurus/plugin-client-redirects": "^2.0.0-alpha.61",
+    "@docusaurus/plugin-content-docs": "^2.0.0-alpha.61",
+    "@docusaurus/plugin-sitemap": "^2.0.0-alpha.61",
+    "@docusaurus/theme-classic": "^2.0.0-alpha.61",
     "@fortawesome/fontawesome-svg-core": "^1.2.30",
     "@fortawesome/free-solid-svg-icons": "^5.14.0",
     "@fortawesome/react-fontawesome": "^0.1.11",
@@ -29,6 +35,7 @@
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
     "react-live": "^2.2.2",
+    "react-promise": "^3.0.2",
     "redoc": "^2.0.0-rc.31",
     "remark": "^12.0.0",
     "remark-collapse": "^0.1.2",
@@ -49,6 +56,7 @@
     ]
   },
   "devDependencies": {
+    "netlify-cli": "^2.59.0",
     "toml": "^3.0.0"
   }
 }
