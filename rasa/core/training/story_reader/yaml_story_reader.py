@@ -13,6 +13,7 @@ from rasa.core.events import UserUttered, SlotSet, Form
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.data import YAML_FILE_EXTENSIONS
+from rasa.nlu.constants import INTENT_NAME_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -255,7 +256,7 @@ class YAMLStoryReader(StoryReader):
             self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
-        intent_name = utterance.intent.get("name")
+        intent_name = utterance.intent.get(INTENT_NAME_KEY)
 
         if not self.domain:
             logger.debug(
