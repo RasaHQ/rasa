@@ -247,8 +247,19 @@ async def test_load_multi_file_training_data(
     )
 
     assert hashed == hashed_mul
-
-    assert np.all(data.X.sort(axis=0) == data_mul.X.sort(axis=0))
+    # we check for intents, action names and entities -- the features which
+    # are included in the story files
+    data_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data.X])
+    data_mul_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data_mul.X])
+    data_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data.X])
+    data_mul_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data_mul.X])
+    data_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data.X])
+    data_mul_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data_mul.X])
+    assert np.all(data_X_intent.sort(axis=0) == data_mul_X_intent.sort(axis=0))
+    assert np.all(
+        data_X_action_name.sort(axis=0) == data_mul_X_action_name.sort(axis=0)
+    )
+    assert np.all(data_X_entities.sort(axis=0) == data_mul_X_entities.sort(axis=0))
     assert np.all(data.y.sort(axis=0) == data_mul.y.sort(axis=0))
 
 
