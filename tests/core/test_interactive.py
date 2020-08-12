@@ -530,9 +530,7 @@ async def test_filter_intents_before_save_nlu_file():
     # Test method interactive._filter_messages
     from random import choice
 
-    greet = {"intent": "greet", "text_features": [0.5]}
-    greet1 = greet.copy()
-    greet1.update({"text": "How are you?"})
+    greet = {"text": "How are you?", "intent": "greet", "text_features": [0.5]}
     goodbye = {"intent": "goodbye", "text_features": [0.5]}
     goodbye1 = goodbye.copy()
     goodbye1.update({"text": "I am inevitable"})
