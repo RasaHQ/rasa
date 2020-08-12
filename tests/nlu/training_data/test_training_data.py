@@ -557,6 +557,7 @@ def test_custom_attributes(tmp_path):
     td = training_data.load_data(str(f))
     assert len(td.training_examples) == 1
     example = td.training_examples[0]
+    print(example.as_dict())
     assert example.get("sentiment") == 0.8
 
 

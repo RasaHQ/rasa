@@ -160,7 +160,7 @@ def test_lowercase(
     lookup: List[Dict[Text, List[Text]]],
     expected_entities: List[Dict[Text, Any]],
 ):
-    message = Message(text)
+    message = Message(data={TEXT: text})
     training_data = TrainingData()
     training_data.lookup_tables = lookup
     training_data.training_examples = [
