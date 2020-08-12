@@ -176,4 +176,5 @@ async def test_e2e_warning_if_no_nlu_model(
 
     agent_load.assert_called_once()
     _, _, kwargs = agent_load.mock_calls[0]
+
     assert isinstance(kwargs["interpreter"], RegexInterpreter)

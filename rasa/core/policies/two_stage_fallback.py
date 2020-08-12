@@ -124,7 +124,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         nlu_data = tracker.latest_message.parse_data
         last_intent_name = nlu_data["intent"].get(INTENT_NAME_KEY, None)
         should_nlu_fallback = self.should_nlu_fallback(
-            nlu_data, tracker.latest_action_name
+            nlu_data, tracker.latest_action.get("action_name")
         )
         user_rephrased = has_user_rephrased(tracker)
 
@@ -180,7 +180,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         return result
 
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
-        action_requires_input = tracker.latest_action_name in [
+        action_requires_input = tracker.latest_action.get("action_name") in [
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
             ACTION_DEFAULT_ASK_REPHRASE_NAME,
             self.fallback_action_name,

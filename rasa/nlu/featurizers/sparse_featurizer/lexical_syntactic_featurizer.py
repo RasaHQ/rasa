@@ -102,7 +102,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         for example in training_data.training_examples:
             self._create_sparse_features(example)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
         self._create_sparse_features(message)
 
     def _create_feature_to_idx_dict(
@@ -119,7 +119,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         all_features = []
         for example in training_data.training_examples:
             tokens = example.get(TOKENS_NAMES[TEXT])
-            all_features.append(self._tokens_to_features(tokens))
+            if tokens:
+                all_features.append(self._tokens_to_features(tokens))
 
         # build vocabulary of features
         feature_vocabulary = self._build_feature_vocabulary(all_features)
@@ -167,19 +168,22 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         import scipy.sparse
 
         tokens = message.get(TOKENS_NAMES[TEXT])
+        # this check is required because there might be training data examples without TEXT,
+        # e.g., `Message("", {action_name: "action_listen"})`
+        if tokens:
 
-        sentence_features = self._tokens_to_features(tokens)
-        one_hot_seq_feature_vector = self._features_to_one_hot(sentence_features)
+            sentence_features = self._tokens_to_features(tokens)
+            one_hot_seq_feature_vector = self._features_to_one_hot(sentence_features)
 
-        sequence_features = scipy.sparse.coo_matrix(one_hot_seq_feature_vector)
+            sequence_features = scipy.sparse.coo_matrix(one_hot_seq_feature_vector)
 
-        final_sequence_features = Features(
-            sequence_features,
-            FEATURE_TYPE_SEQUENCE,
-            TEXT,
-            self.component_config[FEATURIZER_CLASS_ALIAS],
-        )
-        message.add_features(final_sequence_features)
+            final_sequence_features = Features(
+                sequence_features,
+                FEATURE_TYPE_SEQUENCE,
+                TEXT,
+                self.component_config[FEATURIZER_CLASS_ALIAS],
+            )
+            message.add_features(final_sequence_features)
 
     def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
         """Convert words into discrete features."""

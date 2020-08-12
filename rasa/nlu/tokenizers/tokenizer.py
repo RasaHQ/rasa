@@ -6,7 +6,13 @@ from typing import Text, List, Optional, Dict, Any
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
-from rasa.nlu.constants import TEXT, TOKENS_NAMES, MESSAGE_ATTRIBUTES, INTENT
+from rasa.nlu.constants import (
+    TEXT,
+    TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    INTENT,
+    ACTION_NAME,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,21 +93,28 @@ class Tokenizer(Component):
 
         for example in training_data.training_examples:
             for attribute in MESSAGE_ATTRIBUTES:
-                if example.get(attribute) is not None:
-                    if attribute == INTENT:
-                        tokens = self._split_intent(example)
+                if (
+                    example.get(attribute) is not None
+                    and not example.get(attribute) == ""
+                ):
+                    if attribute in [INTENT, ACTION_NAME]:
+                        tokens = self._split_name(example, attribute)
                     else:
                         tokens = self.tokenize(example, attribute)
                     example.set(TOKENS_NAMES[attribute], tokens)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
         """Tokenize the incoming message."""
+        if message.get(attribute):
+            if attribute in [INTENT, ACTION_NAME]:
+                tokens = self._split_name(message, attribute)
+            else:
+                tokens = self.tokenize(message, attribute)
 
-        tokens = self.tokenize(message, TEXT)
-        message.set(TOKENS_NAMES[TEXT], tokens)
+            message.set(TOKENS_NAMES[attribute], tokens)
 
-    def _split_intent(self, message: Message):
-        text = message.get(INTENT)
+    def _split_name(self, message: Message, attribute: Text) -> List[Token]:
+        text = message.get(attribute)
 
         words = (
             text.split(self.intent_split_symbol)

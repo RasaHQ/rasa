@@ -447,13 +447,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             if dense_sequence_features.shape[0] != sparse_sequence_features.shape[0]:
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense sequence features "
-                    f"don't coincide in '{message.text}' for attribute '{attribute}'."
+                    f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
                 )
         if dense_sentence_features is not None and sparse_sentence_features is not None:
             if dense_sentence_features.shape[0] != sparse_sentence_features.shape[0]:
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense sentence features "
-                    f"don't coincide in '{message.text}' for attribute '{attribute}'."
+                    f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
                 )
 
         # If we don't use the transformer and we don't want to do entity recognition,
@@ -910,7 +910,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         predicted_tags, confidence_values = self._entity_label_to_tags(predict_out)
 
         entities = self.convert_predictions_into_entities(
-            message.text,
+            message.get(TEXT),
             message.get(TOKENS_NAMES[TEXT], []),
             predicted_tags,
             confidence_values,

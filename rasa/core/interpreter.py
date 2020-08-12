@@ -14,6 +14,8 @@ from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning, class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
+from rasa.nlu.constants import TEXT
+from rasa.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +49,9 @@ class NaturalLanguageInterpreter:
             return RegexInterpreter()
         else:
             return _create_from_endpoint_config(obj)
+
+    def synchronous_parse_message(self, message: Message, attribute: Text) -> Message:
+        pass
 
 
 class RegexInterpreter(NaturalLanguageInterpreter):
@@ -274,8 +279,16 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
+
         result = self.interpreter.parse(text)
 
+        return result
+
+    def synchronous_parse_message(self, message: Message, attribute: Text) -> Message:
+        if self.lazy_init and self.interpreter is None:
+            self._load_interpreter()
+
+        result = self.interpreter.parse_message(message, attribute)
         return result
 
     def _load_interpreter(self) -> None:

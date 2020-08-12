@@ -98,14 +98,58 @@ class SklearnPolicy(Policy):
     def _extract_training_data(
         self, training_data: DialogueTrainingData
     ) -> Tuple[np.ndarray, np.ndarray]:
-        # transform y from one-hot to num_classes
-        X, y = training_data.X, training_data.y.argmax(axis=-1)
+        X, y = training_data.X, training_data.y
         if self.shuffle:
             X, y = sklearn_shuffle(X, y)
         return X, y
 
-    def _preprocess_data(self, X) -> np.ndarray:
-        return X.reshape(X.shape[0], -1)
+    def _get_max_dialogue_length(self, X: np.ndarray) -> int:
+        lengths = [row[:, 2].shape[0] for row in X]
+        return max(lengths)
+
+    def _fill_in_features(
+        self, state_features: List[np.ndarray], max_length: int
+    ) -> List[np.ndarray]:
+        if len(state_features) == max_length:
+            return state_features
+        else:
+            shape_of_input = state_features[0].shape[-1]
+            return [np.ones((1, shape_of_input)) * -1] * (
+                max_length - len(state_features)
+            ) + state_features
+
+    def _collect_features(self, X: np.ndarray) -> List[np.ndarray]:
+        max_dialogue_length = (
+            self.featurizer.max_history or self._get_max_dialogue_length(X)
+        )
+        X_intent = []
+        X_previous_action = []
+        X_slots = []
+        for row in X:
+            state_intent = [intent for intent in row[:, 2]]
+            state_intent = self._fill_in_features(state_intent, max_dialogue_length)
+            state_intent = np.hstack(state_intent)
+            X_intent.append(state_intent)
+
+            state_previous_action = [previous_action for previous_action in row[:, 6]]
+            state_previous_action = self._fill_in_features(
+                state_previous_action, max_dialogue_length
+            )
+            state_previous_action = np.hstack(state_previous_action)
+            X_previous_action.append(state_previous_action)
+
+            state_slots = [np.expand_dims(slots, 0) for slots in row[:, 8]]
+            state_slots = self._fill_in_features(state_slots, max_dialogue_length)
+            state_slots = np.hstack(state_slots)
+            X_slots.append(state_slots)
+        X_intent = np.vstack(X_intent)
+        X_previous_action = np.vstack(X_previous_action)
+        X_slots = np.vstack(X_slots)
+        return X_intent, X_previous_action, X_slots
+
+    def _preprocess_data(self, X: np.ndarray) -> np.ndarray:
+        X_intent, X_previous_action, X_slots = self._collect_features(X)
+        return np.concatenate((X_intent, X_previous_action, X_slots), axis=-1)
 
     def _search_and_score(self, model, X, y, param_grid) -> Tuple[Any, Any]:
         search = GridSearchCV(
@@ -123,7 +167,9 @@ class SklearnPolicy(Policy):
         **kwargs: Any,
     ) -> None:
 
-        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
+        training_data = self.featurize_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
 
         X, y = self._extract_training_data(training_data)
         self._train_params.update(kwargs)
@@ -166,7 +212,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> List[float]:
-        X = self.featurizer.create_X([tracker], domain)
+        X = self.featurizer.create_X([tracker], domain, interpreter)
         Xt = self._preprocess_data(X)
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)

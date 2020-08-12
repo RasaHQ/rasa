@@ -25,6 +25,7 @@ from rasa.core.actions.action import (
     RULE_SNIPPET_ACTION_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
 )
+from rasa.nlu.constants import ACTION_NAME
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
@@ -371,7 +372,7 @@ class RulePolicy(MemoizationPolicy):
         tracker: DialogueStateTracker,
     ) -> Optional[Text]:
         if (
-            not tracker.latest_action_name == ACTION_LISTEN_NAME
+            not tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
             or not tracker.latest_message
         ):
             return None
@@ -395,12 +396,12 @@ class RulePolicy(MemoizationPolicy):
         should_predict_form = (
             active_form_name
             and not active_form_rejected
-            and tracker.latest_action_name != active_form_name
+            and tracker.latest_action.get(ACTION_NAME) != active_form_name
         )
         should_predict_listen = (
             active_form_name
             and not active_form_rejected
-            and tracker.latest_action_name == active_form_name
+            and tracker.latest_action.get(ACTION_NAME) == active_form_name
         )
 
         if should_predict_form:

@@ -19,11 +19,13 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     INTENT,
+    ACTION_TEXT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     RESPONSE,
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
     FEATURIZER_CLASS_ALIAS,
+    ACTION_NAME,
 )
 
 logger = logging.getLogger(__name__)
@@ -216,13 +218,15 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
             return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
-
-        return message.get(attribute).split()
+        if attribute not in [INTENT, ACTION_NAME]:
+            return message.get(attribute).split()
+        else:
+            return []
 
     def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
         """Apply processing and cleaning steps to text"""
 
-        if attribute == INTENT:
+        if attribute in [INTENT, ACTION_NAME]:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
@@ -399,6 +403,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     ) -> Tuple[
         List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
     ]:
+        if not self.vectorizers.get(attribute):
+            return [None], [None]
+
         sequence_features = []
         sentence_features = []
 
@@ -424,7 +431,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             sequence_features.append(seq_vec.tocoo())
 
-            if attribute in [TEXT, RESPONSE]:
+            if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 tokens_text = [" ".join(tokens)]
                 sentence_vec = self.vectorizers[attribute].transform(tokens_text)
                 sentence_vec.sort_indices()
@@ -521,7 +528,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     training_data.training_examples,
                 )
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
         """Process incoming message and compute and set features"""
 
         if self.vectorizers is None:
@@ -532,7 +539,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             )
             return
 
-        attribute = TEXT
         message_tokens = self._get_processed_message_tokens_by_attribute(
             message, attribute
         )

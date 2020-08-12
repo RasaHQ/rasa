@@ -20,6 +20,8 @@ from rasa.core.constants import (
 )
 from rasa.nlu.constants import INTENT_NAME_KEY
 
+from rasa.nlu.constants import INTENT, TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES
+
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
 
@@ -63,7 +65,7 @@ def md_format_message(text, intent, entities) -> Text:
     deserialised_entities = deserialise_entities(entities)
     return MarkdownWriter.generate_message_md(
         {
-            "text": message_from_md.text,
+            "text": message_from_md.get(TEXT),
             "intent": intent,
             "entities": deserialised_entities,
         }
@@ -217,7 +219,7 @@ class UserUttered(Event):
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
-    ):
+    ) -> None:
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
@@ -258,25 +260,23 @@ class UserUttered(Event):
         )
 
     def __hash__(self) -> int:
-        return hash(
-            (
-                self.text,
-                self.intent.get(INTENT_NAME_KEY),
-                jsonpickle.encode(self.entities),
-            )
-        )
+        return hash((self.text, self.intent_name, jsonpickle.encode(self.entities)))
 
-    def __eq__(self, other) -> bool:
+    @property
+    def intent_name(self) -> Optional[Text]:
+        return self.intent.get("name")
+
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, UserUttered):
             return False
         else:
             return (
                 self.text,
-                self.intent.get(INTENT_NAME_KEY),
+                self.intent_name,
                 [jsonpickle.encode(ent) for ent in self.entities],
             ) == (
                 other.text,
-                other.intent.get(INTENT_NAME_KEY),
+                other.intent_name,
                 [jsonpickle.encode(ent) for ent in other.entities],
             )
 
@@ -301,6 +301,13 @@ class UserUttered(Event):
             }
         )
         return _dict
+
+    def as_dict_core(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+        entities = [entity.get("entity") for entity in self.entities]
+        if self.intent_name:
+            return {TEXT: None, INTENT: self.intent_name, ENTITIES: entities}
+        else:
+            return {TEXT: self.text, INTENT: None, ENTITIES: entities}
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -678,7 +685,7 @@ class ReminderScheduled(Event):
         kill_on_user_message: bool = True,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
-    ):
+    ) -> None:
         """Creates the reminder
 
         Args:
@@ -780,7 +787,7 @@ class ReminderCancelled(Event):
         entities: Optional[List[Dict]] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
-    ):
+    ) -> None:
         """Creates a ReminderCancelled event.
 
         If all arguments are `None`, this will cancel all reminders.
@@ -908,7 +915,7 @@ class StoryExported(Event):
         path: Optional[Text] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
-    ):
+    ) -> None:
         self.path = path
         super().__init__(timestamp, metadata)
 
@@ -1045,7 +1052,8 @@ class ActionExecuted(Event):
     """An operation describes an action taken + its result.
 
     It comprises an action and a list of events. operations will be appended
-    to the latest ``Turn`` in the ``Tracker.turns``."""
+    to the latest `Turn`` in `Tracker.turns`.
+    """
 
     type_name = "action"
 
@@ -1056,11 +1064,14 @@ class ActionExecuted(Event):
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
-    ):
+        e2e_text: Optional[Text] = None,
+    ) -> None:
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
         self.unpredictable = False
+        self.e2e_text = e2e_text
+
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
@@ -1075,7 +1086,14 @@ class ActionExecuted(Event):
         if not isinstance(other, ActionExecuted):
             return False
         else:
-            return self.action_name == other.action_name
+            # if both have e2e_text compare both action name and e2e text
+            if hasattr(self, "e2e_text") and hasattr(other, "e2e_text"):
+                return (
+                    self.action_name == other.action_name
+                    and self.e2e_text == other.e2e_text
+                )
+            else:
+                return self.action_name == other.action_name
 
     def as_story_string(self) -> Text:
         return self.action_name
@@ -1090,12 +1108,13 @@ class ActionExecuted(Event):
                 parameters.get("confidence"),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
+                e2e_text=parameters.get("e2e_text"),
             )
         ]
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        policy = None  # for backwards compatibility (persisted evemts)
+        policy = None  # for backwards compatibility (persisted events)
         if hasattr(self, "policy"):
             policy = self.policy
         confidence = None
@@ -1105,9 +1124,11 @@ class ActionExecuted(Event):
         d.update({"name": self.action_name, "policy": policy, "confidence": confidence})
         return d
 
-    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+    def as_dict_core(self) -> Dict[Text, Text]:
+        return {ACTION_NAME: self.action_name, ACTION_TEXT: self.e2e_text}
 
-        tracker.set_latest_action_name(self.action_name)
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        tracker.set_latest_action(self.as_dict_core())
         tracker.clear_followup_action()
 
 

@@ -13,8 +13,10 @@ from rasa.core.events import UserUttered, ActionExecuted, SessionStarted
 from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer,
+    E2ESingleStateFeaturizer,
 )
 from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.core.interpreter import RegexInterpreter
 
 
 @pytest.mark.parametrize(
@@ -103,14 +105,15 @@ async def test_read_story_file_with_cycles(stories_file: Text, default_domain: D
 async def test_generate_training_data_with_cycles(
     stories_file: Text, default_domain: Domain
 ):
-    featurizer = MaxHistoryTrackerFeaturizer(
-        BinarySingleStateFeaturizer(), max_history=4
-    )
+    featurizer = MaxHistoryTrackerFeaturizer(E2ESingleStateFeaturizer(), max_history=4)
     training_trackers = await training.load_data(
         stories_file, default_domain, augmentation_factor=0
     )
-    training_data = featurizer.featurize_trackers(training_trackers, default_domain)
-    y = training_data.y.argmax(axis=-1)
+
+    training_data = featurizer.featurize_trackers(
+        training_trackers, default_domain, interpreter=RegexInterpreter()
+    )
+    y = training_data.y
 
     # how many there are depends on the graph which is not created in a
     # deterministic way but should always be 3 or 4
@@ -210,9 +213,7 @@ async def test_load_multi_file_training_data(
 ):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
-    featurizer = MaxHistoryTrackerFeaturizer(
-        BinarySingleStateFeaturizer(), max_history=2
-    )
+    featurizer = MaxHistoryTrackerFeaturizer(E2ESingleStateFeaturizer(), max_history=2)
     trackers = await training.load_data(
         stories_resources[0], default_domain, augmentation_factor=0
     )
@@ -224,10 +225,12 @@ async def test_load_multi_file_training_data(
         hashed.append(json.dumps(sts + acts, sort_keys=True))
     hashed = sorted(hashed, reverse=True)
 
-    data = featurizer.featurize_trackers(trackers, default_domain)
+    data = featurizer.featurize_trackers(
+        trackers, default_domain, interpreter=RegexInterpreter()
+    )
 
     featurizer_mul = MaxHistoryTrackerFeaturizer(
-        BinarySingleStateFeaturizer(), max_history=2
+        E2ESingleStateFeaturizer(), max_history=2
     )
     trackers_mul = await training.load_data(
         stories_resources[1], default_domain, augmentation_factor=0
@@ -240,11 +243,24 @@ async def test_load_multi_file_training_data(
         hashed_mul.append(json.dumps(sts_mul + acts_mul, sort_keys=True))
     hashed_mul = sorted(hashed_mul, reverse=True)
 
-    data_mul = featurizer_mul.featurize_trackers(trackers_mul, default_domain)
+    data_mul = featurizer_mul.featurize_trackers(
+        trackers_mul, default_domain, interpreter=RegexInterpreter()
+    )
 
     assert hashed == hashed_mul
-
-    assert np.all(data.X.sort(axis=0) == data_mul.X.sort(axis=0))
+    # we check for intents, action names and entities -- the features which
+    # are included in the story files
+    data_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data.X])
+    data_mul_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data_mul.X])
+    data_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data.X])
+    data_mul_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data_mul.X])
+    data_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data.X])
+    data_mul_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data_mul.X])
+    assert np.all(data_X_intent.sort(axis=0) == data_mul_X_intent.sort(axis=0))
+    assert np.all(
+        data_X_action_name.sort(axis=0) == data_mul_X_action_name.sort(axis=0)
+    )
+    assert np.all(data_X_entities.sort(axis=0) == data_mul_X_entities.sort(axis=0))
     assert np.all(data.y.sort(axis=0) == data_mul.y.sort(axis=0))
 
 

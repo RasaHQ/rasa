@@ -8,6 +8,7 @@ from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer,
+    E2ESingleStateFeaturizer,
 )
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -120,6 +121,7 @@ class Policy:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> DialogueTrainingData:
         """Transform training trackers into a vector representation.
@@ -136,7 +138,9 @@ class Policy:
             the :class:`rasa.core.training.data.DialogueTrainingData`
         """
 
-        training_data = self.featurizer.featurize_trackers(training_trackers, domain)
+        training_data = self.featurizer.featurize_trackers(
+            training_trackers, domain, interpreter
+        )
 
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:

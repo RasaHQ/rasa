@@ -36,6 +36,7 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
 from rasa.utils import common as common_utils
+from rasa.nlu.constants import ACTION_NAME, ACTION_TEXT
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,9 @@ class PolicyEnsemble:
             for event in t.events:
                 tracker.update(event)
                 if not isinstance(event, ActionExecuted):
-                    action_name = tracker.latest_action_name
+                    action_name = tracker.latest_action.get(
+                        ACTION_NAME
+                    ) or tracker.latest_action.get(ACTION_TEXT)
                     events_metadata[action_name].add(event)
 
         return events_metadata
@@ -681,7 +684,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         )
 
         if (
-            tracker.latest_action_name == ACTION_LISTEN_NAME
+            tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
             and probabilities is not None
             and probabilities.index(max(probabilities))
             == domain.index_for_action(ACTION_LISTEN_NAME)

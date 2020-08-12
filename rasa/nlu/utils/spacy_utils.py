@@ -184,7 +184,10 @@ class SpacyNLP(Component):
     ) -> Dict[Text, List[Any]]:
         attribute_docs = {}
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-            texts = [self.get_text(e, attribute) for e in training_data.intent_examples]
+
+            texts = [
+                self.get_text(e, attribute) for e in training_data.training_examples
+            ]
             # Index and freeze indices of the training samples for preserving the order
             # after processing the data.
             indexed_training_samples = [(idx, text) for idx, text in enumerate(texts)]
@@ -224,9 +227,11 @@ class SpacyNLP(Component):
                     # in preprocess method
                     example.set(SPACY_DOCS[attribute], example_attribute_doc)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-
-        message.set(SPACY_DOCS[TEXT], self.doc_for_text(message.text))
+    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
+        if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            message.set(
+                SPACY_DOCS[attribute], self.doc_for_text(message.get(attribute))
+            )
 
     @classmethod
     def load(

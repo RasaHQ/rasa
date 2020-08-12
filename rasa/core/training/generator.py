@@ -7,6 +7,7 @@ from tqdm import tqdm
 from typing import Optional, List, Text, Set, Dict, Tuple
 
 from rasa.constants import DOCS_URL_STORIES
+from rasa.core.constants import SHOULD_NOT_BE_SET
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -131,14 +132,15 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         tracker._states = copy.copy(self._states)
 
-        return tracker  # yields the final state
+        return tracker
 
     def _append_current_state(self) -> None:
         if self._states is None:
             self._states = self.past_states(self.domain)
         else:
             state = self.domain.get_active_states(self)
-            self._states.append(frozenset(state.items()))
+            frozen_state = self.freeze_current_state(state)
+            self._states.append(frozen_state)
 
     def update(self, event: Event, skip_states: bool = False) -> None:
         """Modify the state of the tracker according to an ``Event``. """
@@ -591,12 +593,13 @@ class TrainingDataGenerator:
                 ):
                     end_trackers.append(tracker.copy(tracker.sender_id))
                 if step.is_rule:
-                    # TODO: this is a hack to make a rule know
-                    #  that slot or form should not be set
+                    # The rules can specify that a form or a slot shouldn't be set,
+                    # therefore we need to distinguish between not set
+                    # and explicitly set to None
                     if isinstance(event, Form) and event.name is None:
-                        event.name = "None"
+                        event.name = SHOULD_NOT_BE_SET
                     if isinstance(event, SlotSet) and event.value is None:
-                        event.value = "None"
+                        event.value = SHOULD_NOT_BE_SET
 
                 tracker.update(event)
 

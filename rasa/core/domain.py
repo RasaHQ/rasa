@@ -33,6 +33,11 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
     SLOT_LISTED_ITEMS,
+    USER,
+    PREVIOUS_ACTION,
+    FORM,
+    SLOTS,
+    SHOULD_NOT_BE_SET,
 )
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
@@ -67,6 +72,7 @@ ALL_DOMAIN_KEYS = [
     KEY_RESPONSES,
 ]
 
+STATE = Dict[Text, Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]]
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -613,7 +619,7 @@ class Domain:
         """Returns all available slot state strings."""
 
         return [
-            f"slot_{s.name}_{i}"
+            f"{s.name}_{i}"
             for s in self.slots
             for i in range(0, s.feature_dimensionality())
         ]
@@ -623,26 +629,26 @@ class Domain:
     def prev_action_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return [PREV_PREFIX + a for a in self.action_names]
+        return self.action_names
 
     # noinspection PyTypeChecker
     @lazy_property
     def intent_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return [f"intent_{i}" for i in self.intents]
+        return self.intents
 
     # noinspection PyTypeChecker
     @lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return [f"entity_{e}" for e in self.entities]
+        return self.entities
 
     # noinspection PyTypeChecker
     @lazy_property
     def form_states(self) -> List[Text]:
-        return [f"active_form_{f}" for f in self.form_names]
+        return self.form_names
 
     def index_of_state(self, state_name: Text) -> Optional[int]:
         """Provide the index of a state."""
@@ -666,47 +672,28 @@ class Domain:
             + self.form_states
         )
 
-    def get_parsing_states(self, tracker: "DialogueStateTracker") -> Dict[Text, float]:
+    def _get_user_states(
+        self, tracker: "DialogueStateTracker"
+    ) -> Dict[Text, Dict[Text, Union[Text, Tuple[Text]]]]:
         state_dict = {}
 
         # Set all found entities with the state value 1.0, unless they should
         # be ignored for the current intent
         latest_message = tracker.latest_message
 
-        if not latest_message:
+        if not latest_message or latest_message == UserUttered.empty():
             return state_dict
 
-        intent_name = latest_message.intent.get(INTENT_NAME_KEY)
+        state_dict[USER] = latest_message.as_dict_core()
 
-        if intent_name:
-            for entity_name in self._get_featurized_entities(latest_message):
-                key = f"entity_{entity_name}"
-                state_dict[key] = 1.0
-
-        # Set all set slots with the featurization of the stored value
-        for key, slot in tracker.slots.items():
-            if slot is not None:
-                if slot.value == "None" and slot.as_feature():
-                    # TODO: this is a hack to make a rule know
-                    #  that slot or form should not be set
-                    #  but only if the slot is featurized
-                    slot_id = f"slot_{key}_None"
-                    state_dict[slot_id] = 1
-                else:
-                    for i, slot_value in enumerate(slot.as_feature()):
-                        if slot_value != 0:
-                            slot_id = f"slot_{key}_{i}"
-                            state_dict[slot_id] = slot_value
-
-        if "intent_ranking" in latest_message.parse_data:
-            for intent in latest_message.parse_data["intent_ranking"]:
-                if intent.get(INTENT_NAME_KEY):
-                    intent_id = "intent_{}".format(intent[INTENT_NAME_KEY])
-                    state_dict[intent_id] = intent["confidence"]
-
-        elif intent_name:
-            intent_id = "intent_{}".format(latest_message.intent[INTENT_NAME_KEY])
-            state_dict[intent_id] = latest_message.intent.get("confidence", 1.0)
+        # filter entities based on intent config
+        entities = tuple(
+            [
+                entity_name
+                for entity_name in self._get_featurized_entities(latest_message)
+            ]
+        )
+        state_dict[USER]["entities"] = entities
 
         return state_dict
 
@@ -714,48 +701,74 @@ class Domain:
         intent_name = latest_message.intent.get(INTENT_NAME_KEY)
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
-        entity_names = {
+        entity_names = set(
             entity["entity"] for entity in entities if "entity" in entity.keys()
-        }
+        )
 
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
         return entity_names.intersection(wanted_entities)
 
-    def get_prev_action_states(
-        self, tracker: "DialogueStateTracker"
-    ) -> Dict[Text, float]:
-        """Turn the previous taken action into a state name."""
+    @staticmethod
+    def _get_slots_states(
+        tracker: "DialogueStateTracker",
+    ) -> Dict[Text, Dict[Text, Union[Text, Tuple[float]]]]:
+        # Set all set slots with the featurization of the stored value
 
-        latest_action = tracker.latest_action_name
+        # proceed with values only if the user of a bot have done something at the previous step
+        # i.e., when the state is not empty.
+        if not tracker.latest_message == UserUttered.empty() and tracker.latest_action:
+            slots = {}
+            for key, slot in tracker.slots.items():
+                if slot is not None and slot.as_feature():
+                    if slot.value == SHOULD_NOT_BE_SET:
+                        slots[key] = SHOULD_NOT_BE_SET
+                    else:
+                        slots[key] = tuple(slot.as_feature())
+            if slots:
+                return {SLOTS: slots}
+
+        return {}
+
+    def _get_prev_action_states(
+        self, tracker: "DialogueStateTracker"
+    ) -> Dict[Text, Dict[Text, Text]]:
+        """Turn the previous taken action into a state name."""
+        latest_action = tracker.latest_action
+
         if latest_action:
-            prev_action_name = PREV_PREFIX + latest_action
+            prev_action_name = latest_action.get("action_name") or latest_action.get(
+                "action_text"
+            )
             if prev_action_name in self.input_state_map:
-                return {prev_action_name: 1.0}
+                return {PREVIOUS_ACTION: latest_action}
             else:
                 return {}
         else:
             return {}
 
     @staticmethod
-    def get_active_form(tracker: "DialogueStateTracker") -> Dict[Text, float]:
+    def _get_active_form(
+        tracker: "DialogueStateTracker",
+    ) -> Dict[Text, Dict[Text, Text]]:
         """Turn tracker's active form into a state name."""
         form = tracker.active_loop.get("name")
         if form is not None:
-            return {ACTIVE_FORM_PREFIX + form: 1.0}
+            return {FORM: {"name": form}}
         else:
             return {}
 
-    def get_active_states(self, tracker: "DialogueStateTracker") -> Dict[Text, float]:
+    def get_active_states(self, tracker: "DialogueStateTracker") -> STATE:
         """Return a bag of active states from the tracker state."""
-        state_dict = self.get_parsing_states(tracker)
-        state_dict.update(self.get_prev_action_states(tracker))
-        state_dict.update(self.get_active_form(tracker))
+        state_dict = self._get_user_states(tracker)
+        state_dict.update(self._get_slots_states(tracker))
+        state_dict.update(self._get_prev_action_states(tracker))
+        state_dict.update(self._get_active_form(tracker))
         return state_dict
 
     def states_for_tracker_history(
         self, tracker: "DialogueStateTracker"
-    ) -> List[Dict[Text, float]]:
+    ) -> List[STATE]:
         """Array of states for each state of the trackers history."""
         return [
             self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()

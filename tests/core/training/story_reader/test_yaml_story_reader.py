@@ -4,6 +4,7 @@ import pytest
 
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.training import loading
@@ -272,3 +273,36 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
         reader.read_from_parsed_yaml(yaml_content)
 
     assert not len(record)
+
+
+async def test_parsing_of_e2e_stories(default_domain: Domain):
+    yaml_file = "data/test_yaml_stories/stories_hybrid_e2e.yml"
+    tracker = await training.load_data(
+        yaml_file,
+        default_domain,
+        use_story_concatenation=False,
+        tracker_limit=1000,
+        remove_duplicates=False,
+    )
+
+    assert len(tracker) == 1
+
+    assert list(tracker[0].events) == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("simple", {"name": "simple"}),
+        ActionExecuted("utter_greet"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            "I am looking for a Kenyan restaurant",
+            {"name": None},
+            entities=[{"start": 19, "end": 25, "value": "Kenyan", "entity": "cuisine"}],
+        ),
+        ActionExecuted("", e2e_text="good for you"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("goodbye", {"name": "goodbye"}),
+        ActionExecuted("utter_goodbye"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("One more thing", {"name": None}),
+        ActionExecuted("", e2e_text="What?"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]

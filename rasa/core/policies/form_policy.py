@@ -9,7 +9,8 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import FORM_POLICY_PRIORITY
+from rasa.core.constants import FORM_POLICY_PRIORITY, PREVIOUS_ACTION, FORM
+from rasa.nlu.constants import ACTION_NAME
 
 from rasa.utils import common as common_utils
 
@@ -44,20 +45,17 @@ class FormPolicy(MemoizationPolicy):
 
     @staticmethod
     def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
-        found_forms = [
-            state_name[len(ACTIVE_FORM_PREFIX) :]
-            for state_name, prob in state.items()
-            if ACTIVE_FORM_PREFIX in state_name and prob > 0
-        ]
-        # by construction there is only one active form
-        return found_forms[0] if found_forms else None
+        found_form = state.get(FORM)
+        if found_form:
+            return found_form.get("name")
+        return found_form
 
     @staticmethod
     def _prev_action_listen_in_state(state: Dict[Text, float]) -> bool:
-        return any(
-            PREV_PREFIX + ACTION_LISTEN_NAME in state_name and prob > 0
-            for state_name, prob in state.items()
-        )
+        prev_action = state.get(PREVIOUS_ACTION)
+        if prev_action:
+            return prev_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
+        return False
 
     @staticmethod
     def _modified_states(
@@ -67,14 +65,10 @@ class FormPolicy(MemoizationPolicy):
             - capture previous meaningful action before action_listen
             - ignore previous intent
         """
-        if states[0] is None:
+        if len(states) == 1 or states[0] == {}:
             action_before_listen = None
         else:
-            action_before_listen = {
-                state_name: prob
-                for state_name, prob in states[0].items()
-                if PREV_PREFIX in state_name and prob > 0
-            }
+            action_before_listen = {PREVIOUS_ACTION: states[0][PREVIOUS_ACTION]}
 
         return [action_before_listen, states[-1]]
 
@@ -143,7 +137,7 @@ class FormPolicy(MemoizationPolicy):
             logger.debug(
                 "There is an active form '{}'".format(tracker.active_loop["name"])
             )
-            if tracker.latest_action_name == ACTION_LISTEN_NAME:
+            if tracker.latest_action.get("action_name") == ACTION_LISTEN_NAME:
                 # predict form action after user utterance
 
                 if tracker.active_loop.get("rejected"):
@@ -155,7 +149,9 @@ class FormPolicy(MemoizationPolicy):
                     tracker.active_loop["name"], tracker, domain
                 )
 
-            elif tracker.latest_action_name == tracker.active_loop.get("name"):
+            elif tracker.latest_action.get("action_name") == tracker.active_loop.get(
+                "name"
+            ):
                 # predict action_listen after form action
                 result = self._prediction_result(ACTION_LISTEN_NAME, tracker, domain)
 
