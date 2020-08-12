@@ -115,7 +115,7 @@ def test_duckling_entity_extractor(component_builder):
             0, dimensions=["time"], timezone="UTC", url="http://localhost:8000"
         )
         duckling = component_builder.create_component(_config.for_component(0), _config)
-        message = Message(data = {TEXT: "Today is the 5th of May. Let us meet tomorrow."})
+        message = Message(data={TEXT: "Today is the 5th of May. Let us meet tomorrow."})
         duckling.process(message)
         entities = message.get("entities")
         assert len(entities) == 4
@@ -150,7 +150,7 @@ def test_duckling_entity_extractor(component_builder):
         )
 
         # 1381536182 == 2013/10/12 02:03:02
-        message = Message(data = {TEXT: "Let us meet tomorrow."}, time="1381536182")
+        message = Message(data={TEXT: "Let us meet tomorrow."}, time="1381536182")
         duckling.process(message)
         entities = message.get("entities")
         assert len(entities) == 1
@@ -199,7 +199,7 @@ def test_duckling_entity_extractor(component_builder):
             ],
         )
 
-        message = Message(data = {TEXT: "Yesterday there were 5 people in a room"})
+        message = Message(data={TEXT: "Yesterday there were 5 people in a room"})
         duckling_number.process(message)
         entities = message.get("entities")
 
@@ -220,7 +220,7 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
     _config.set_component_attr(0, dimensions=["number"])
     duckling = component_builder.create_component(_config.for_component(0), _config)
     synonyms = component_builder.create_component(_config.for_component(1), _config)
-    message = Message(data = {TEXT: "He was 6 feet away"})
+    message = Message(data={TEXT: "He was 6 feet away"})
     duckling.process(message)
     # checks that the synonym processor
     # can handle entities that have int values

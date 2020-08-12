@@ -12,7 +12,7 @@ def test_mitie_featurizer(mitie_feature_extractor):
     featurizer = MitieFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today"
-    message = Message(data = {TEXT: sentence})
+    message = Message(data={TEXT: sentence})
     MitieTokenizer().process(message)
     tokens = message.get(TOKENS_NAMES[TEXT])
 
@@ -33,7 +33,7 @@ def test_mitie_featurizer_train(mitie_feature_extractor):
     featurizer = MitieFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today"
-    message = Message(data = {TEXT: sentence})
+    message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
     MitieTokenizer().train(TrainingData([message]))

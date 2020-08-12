@@ -39,7 +39,7 @@ def test_train_tokenizer(
 ):
     tk = WhitespaceTokenizer()
 
-    message = Message.build(text = text)
+    message = Message.build(text=text)
     message.set(RESPONSE, text)
     message.set(INTENT, text)
 
@@ -70,7 +70,7 @@ def test_train_tokenizer_e2e_actions(
 ):
     tk = WhitespaceTokenizer()
 
-    message = Message.build(text = text)
+    message = Message.build(text=text)
     message.set(ACTION_TEXT, text)
     message.set(ACTION_NAME, text)
 
@@ -96,7 +96,7 @@ def test_train_tokenizer_action_name(
 ):
     tk = WhitespaceTokenizer()
 
-    message = Message.build(text = text)
+    message = Message.build(text=text)
     message.set(ACTION_NAME, text)
 
     training_data = TrainingData()
@@ -119,7 +119,7 @@ def test_process_tokenizer(
 ):
     tk = WhitespaceTokenizer()
 
-    message = Message.build(text = text)
+    message = Message.build(text=text)
 
     tk.process(message)
 
@@ -136,7 +136,7 @@ def test_process_tokenizer(
 def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
     tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
-    message = Message.build(text = text)
+    message = Message.build(text=text)
     message.set(ACTION_NAME, text)
 
     tk.process(message, ACTION_NAME)
@@ -152,7 +152,7 @@ def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
 def test_process_tokenizer_action_test(text: Text, expected_tokens: List[Text]):
     tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
 
-    message = Message.build(text = text)
+    message = Message.build(text=text)
     message.set(ACTION_NAME, text)
     message.set(ACTION_TEXT, text)
 
@@ -179,7 +179,7 @@ def test_split_intent(text: Text, expected_tokens: List[Text]):
 
     tk = WhitespaceTokenizer(component_config)
 
-    message = Message.build(text = text)
+    message = Message.build(text=text)
     message.set(INTENT, text)
 
     assert [t.text for t in tk._split_name(message, INTENT)] == expected_tokens
@@ -248,7 +248,7 @@ def test_split_action_name(text: Text, expected_tokens: List[Text]):
 
     tk = WhitespaceTokenizer(component_config)
 
-    message = Message.build(text = text)
+    message = Message.build(text=text)
     message.set(ACTION_NAME, text)
 
     assert [t.text for t in tk._split_name(message, ACTION_NAME)] == expected_tokens

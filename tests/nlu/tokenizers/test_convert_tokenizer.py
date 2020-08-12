@@ -26,7 +26,7 @@ def test_convert_tokenizer_edge_cases(
 ):
     tk = component_builder.create_component_from_class(ConveRTTokenizer)
 
-    tokens = tk.tokenize(Message(data = {TEXT: text}), attribute=TEXT)
+    tokens = tk.tokenize(Message(data={TEXT: text}), attribute=TEXT)
 
     assert [t.text for t in tokens] == expected_tokens
     assert [t.start for t in tokens] == [i[0] for i in expected_indices]
@@ -46,7 +46,7 @@ def test_custom_intent_symbol(component_builder, text, expected_tokens):
         ConveRTTokenizer, intent_tokenization_flag=True, intent_split_symbol="+"
     )
 
-    message = Message(data = {TEXT: text})
+    message = Message(data={TEXT: text})
     message.set(INTENT, text)
 
     tk.train(TrainingData([message]))
@@ -64,7 +64,7 @@ def test_convert_tokenizer_number_of_sub_tokens(
 ):
     tk = component_builder.create_component_from_class(ConveRTTokenizer)
 
-    message = Message(data = {TEXT: text})
+    message = Message(data={TEXT: text})
     message.set(INTENT, text)
 
     tk.train(TrainingData([message]))

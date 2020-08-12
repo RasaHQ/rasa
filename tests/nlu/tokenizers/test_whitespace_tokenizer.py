@@ -81,7 +81,7 @@ def test_whitespace(text, expected_tokens, expected_indices):
 
     tk = WhitespaceTokenizer()
 
-    tokens = tk.tokenize(Message.build(text = text), attribute=TEXT)
+    tokens = tk.tokenize(Message.build(text=text), attribute=TEXT)
 
     assert [t.text for t in tokens] == expected_tokens
     assert [t.start for t in tokens] == [i[0] for i in expected_indices]
@@ -100,7 +100,7 @@ def test_custom_intent_symbol(text, expected_tokens):
 
     tk = WhitespaceTokenizer(component_config)
 
-    message = Message.build(text = text)
+    message = Message.build(text=text)
     message.set(INTENT, text)
 
     tk.train(TrainingData([message]))
@@ -111,7 +111,8 @@ def test_custom_intent_symbol(text, expected_tokens):
 def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
     examples = [
         Message(
-            data = {TEXT: "Any Mexican restaurant will do",
+            data={
+                TEXT: "Any Mexican restaurant will do",
                 "intent": "restaurant_search",
                 "entities": [
                     {"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}
@@ -119,16 +120,21 @@ def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
             },
         ),
         Message(
-            data = {TEXT: "I want Tacos!",
+            data={
+                TEXT: "I want Tacos!",
                 "intent": "restaurant_search",
                 "entities": [
                     {"start": 7, "end": 12, "value": "Mexican", "entity": "cuisine"}
                 ],
             },
         ),
-        Message(data = {TEXT: "action_restart", "action_name": "action_restart"},),
+        Message(data={TEXT: "action_restart", "action_name": "action_restart"},),
         Message(
-            data = {TEXT: "Where are you going?",ACTION_NAME: "Where are you going?", ACTION_TEXT: "Where are you going?",},
+            data={
+                TEXT: "Where are you going?",
+                ACTION_NAME: "Where are you going?",
+                ACTION_TEXT: "Where are you going?",
+            },
         ),
     ]
 
@@ -163,7 +169,7 @@ def test_whitespace_does_not_throw_error():
     tk = WhitespaceTokenizer()
 
     for text in texts:
-        tk.tokenize(Message.build(text = text), attribute=TEXT)
+        tk.tokenize(Message.build(text=text), attribute=TEXT)
 
 
 @pytest.mark.parametrize("language, error", [("en", False), ("zh", True)])
@@ -183,7 +189,8 @@ def test_whitespace_processing_with_attribute(
     supervised_embeddings_config: RasaNLUModelConfig,
 ):
     message = Message(
-        data = {TEXT: "Any Mexican restaurant will do",
+        data={
+            TEXT: "Any Mexican restaurant will do",
             "intent": "restaurant_search",
             "entities": [
                 {"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}
@@ -202,7 +209,11 @@ def test_whitespace_processing_with_attribute(
     assert [t.text for t in tokens_text] == expected_tokens_text
 
     message = Message(
-        data = {TEXT: "Where are you going?", ACTION_NAME: "Where are you going?", ACTION_TEXT: "Where are you going?",},
+        data={
+            TEXT: "Where are you going?",
+            ACTION_NAME: "Where are you going?",
+            ACTION_TEXT: "Where are you going?",
+        },
     )
     expected_action_tokens_text = ["Where", "are", "you", "going"]
     component_config = {"case_sensitive": False}

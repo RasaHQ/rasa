@@ -7,7 +7,8 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
     _config = RasaNLUModelConfig({"pipeline": [{"name": "SpacyEntityExtractor"}]})
     ext = component_builder.create_component(_config.for_component(0), _config)
     example = Message(
-        data = {TEXT: "anywhere in the U.K.",
+        data={
+            TEXT: "anywhere in the U.K.",
             "intent": "restaurant_search",
             "entities": [],
             "text_spacy_doc": spacy_nlp("anywhere in the west"),
@@ -28,8 +29,9 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
 
     # Test dimension filtering includes only specified dimensions
 
-    example = Message(      
-        data = {TEXT: "anywhere in the West with Sebastian Thrun",
+    example = Message(
+        data={
+            TEXT: "anywhere in the West with Sebastian Thrun",
             "intent": "example_intent",
             "entities": [],
             "text_spacy_doc": spacy_nlp("anywhere in the West with Sebastian Thrun"),

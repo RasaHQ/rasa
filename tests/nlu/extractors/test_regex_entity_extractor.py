@@ -80,14 +80,19 @@ def test_process(
     lookup: List[Dict[Text, List[Text]]],
     expected_entities: List[Dict[Text, Any]],
 ):
-    message = Message(data = {TEXT: text})
+    message = Message(data={TEXT: text})
 
     training_data = TrainingData()
     training_data.lookup_tables = lookup
     training_data.training_examples = [
-        Message(data={TEXT: "Hi Max!", "entities": [{"entity": "person", "value": "Max"}]}),
         Message(
-            data={TEXT: "I live in Berlin", "entities": [{"entity": "city", "value": "Berlin"}]},
+            data={TEXT: "Hi Max!", "entities": [{"entity": "person", "value": "Max"}]}
+        ),
+        Message(
+            data={
+                TEXT: "I live in Berlin",
+                "entities": [{"entity": "city", "value": "Berlin"}],
+            },
         ),
     ]
 
@@ -159,9 +164,14 @@ def test_lowercase(
     training_data = TrainingData()
     training_data.lookup_tables = lookup
     training_data.training_examples = [
-        Message(data={TEXT: "Hi Max!", "entities": [{"entity": "person", "value": "Max"}]}),
         Message(
-            data={TEXT: "I live in Berlin", "entities": [{"entity": "city", "value": "Berlin"}]},
+            data={TEXT: "Hi Max!", "entities": [{"entity": "person", "value": "Max"}]}
+        ),
+        Message(
+            data={
+                TEXT: "I live in Berlin",
+                "entities": [{"entity": "city", "value": "Berlin"}],
+            },
         ),
     ]
 
@@ -174,14 +184,19 @@ def test_lowercase(
 
 
 def test_do_not_overwrite_any_entities():
-    message = Message(data = {TEXT: "Max lives in Berlin."})
+    message = Message(data={TEXT: "Max lives in Berlin."})
     message.set(ENTITIES, [{"entity": "person", "value": "Max", "start": 0, "end": 3}])
 
     training_data = TrainingData()
     training_data.training_examples = [
-        Message(data={TEXT: "Hi Max!","entities": [{"entity": "person", "value": "Max"}]}),
         Message(
-            data={TEXT: "I live in Berlin","entities": [{"entity": "city", "value": "Berlin"}]},
+            data={TEXT: "Hi Max!", "entities": [{"entity": "person", "value": "Max"}]}
+        ),
+        Message(
+            data={
+                TEXT: "I live in Berlin",
+                "entities": [{"entity": "city", "value": "Berlin"}],
+            },
         ),
     ]
     training_data.lookup_tables = [

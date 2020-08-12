@@ -98,7 +98,7 @@ class TestKeywordClassifier(ClassifierTestCollection):
         ],
     )
     def test_classification(self, trained_classifier, message, intent):
-        text = Message(data = {TEXT: message})
+        text = Message(data={TEXT: message})
         trained_classifier.process(text)
         assert text.get("intent").get("name", "NOT_CLASSIFIED") == intent
 

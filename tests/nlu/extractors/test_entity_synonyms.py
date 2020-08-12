@@ -30,7 +30,8 @@ def test_unintentional_synonyms_capitalized(
 
     examples = [
         Message(
-            data = {TEXT: "Any Mexican restaurant will do",
+            data={
+                TEXT: "Any Mexican restaurant will do",
                 "intent": "restaurant_search",
                 "entities": [
                     {"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}
@@ -38,7 +39,8 @@ def test_unintentional_synonyms_capitalized(
             },
         ),
         Message(
-            data = {TEXT: "I want Tacos!",
+            data={
+                TEXT: "I want Tacos!",
                 "intent": "restaurant_search",
                 "entities": [
                     {"start": 7, "end": 12, "value": "Mexican", "entity": "cuisine"}
