@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Text
 
 import pytest
@@ -20,7 +21,7 @@ from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
     ],
 )
 async def test_simple_story(
-    tmpdir, default_domain: Domain, input_md_file: Text, input_yaml_file: Text
+    tmpdir: Path, default_domain: Domain, input_md_file: Text, input_yaml_file: Text
 ):
 
     original_md_reader = MarkdownStoryReader(
@@ -56,3 +57,20 @@ async def test_simple_story(
         processed_yaml_story_steps, original_yaml_story_steps
     ):
         assert len(processed_step.events) == len(original_step.events)
+
+
+async def test_forms_are_skipped_with_warning(default_domain: Domain):
+    original_md_reader = MarkdownStoryReader(
+        RegexInterpreter(), default_domain, None, False, unfold_or_utterances=False,
+    )
+    original_md_story_steps = await original_md_reader.read_from_file(
+        "data/test_stories/stories_form.md"
+    )
+
+    writer = YAMLStoryWriter()
+
+    with pytest.warns(UserWarning) as record:
+        writer.dumps(original_md_story_steps)
+
+    # We skip 5 stories with the forms and warn users
+    assert len(record) == 5

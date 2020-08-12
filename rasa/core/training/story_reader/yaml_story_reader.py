@@ -60,9 +60,10 @@ class YAMLStoryReader(StoryReader):
             reader.template_variables,
             reader.use_e2e,
             reader.source_name,
+            reader.unfold_or_utterances,
         )
 
-    async def read_from_file(self, filename: Text) -> List[StoryStep]:
+    async def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
         """Read stories or rules from file.
 
         Args:
@@ -335,21 +336,21 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_slot(self, step: Dict[Text, Any]) -> None:
 
-        slot_name = step.get(KEY_SLOT_NAME, "")
-
-        if not slot_name or KEY_SLOT_VALUE not in step:
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': \n"
-                f"Slots should have a name and a value. "
-                f"This {self._get_item_title()} step will be skipped:\n"
-                f"{step}",
-                docs=self._get_docs_link(),
-            )
-            return
-
-        slot_value = step.get(KEY_SLOT_VALUE, "")
-
-        self._add_event(SlotSet.type_name, {slot_name: slot_value})
+        for slot in step.get(KEY_CHECKPOINT_SLOTS, []):
+            if isinstance(slot, dict):
+                for key, value in slot.items():
+                    self._add_event(SlotSet.type_name, {key: value})
+            elif isinstance(slot, str):
+                self._add_event(SlotSet.type_name, {slot: None})
+            else:
+                common_utils.raise_warning(
+                    f"Issue found in '{self.source_name}':\n"
+                    f"Invalid slot: \n{slot}\n"
+                    f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be "
+                    f"YAML dictionaries or Strings. The checkpoint will be skipped.",
+                    docs=self._get_docs_link(),
+                )
+                return
 
     def _parse_action(self, step: Dict[Text, Any]) -> None:
 

@@ -41,25 +41,23 @@ mapping:
                 type: "str"
                 allowempty: False
           - type: "map"
-            mapping: &slot_was_set_map
-              slot_was_set:
-                type: "str"
-                allowempty: False
-              value:
-                type: "str"
-                allowempty: False
-          - type: "map"
             mapping: &slot_was_set_seq
               slot_was_set: &slot_was_set_seq_value
                 type: "seq"
+                matching: "any"
                 sequence:
                   - type: "map"
                     mapping:
                       regex;(.*):
                         type: "str"
+                  - type: "map"
+                    mapping:
+                      regex;(.*):
+                        type: "bool"
+                  - type: "str"
           - type: "map"
             matching-rule: 'any'
-            mapping: &checkpoint
+            mapping:
               checkpoint:
                 type: "str"
                 allowempty: False
@@ -95,8 +93,6 @@ mapping:
                 type: "str"
                 allowempty: False
           - type: "map"
-            mapping: *slot_was_set_map
-          - type: "map"
             mapping: *slot_was_set_seq
         condition:
           type: "seq"
@@ -105,8 +101,6 @@ mapping:
           - type: "map"
             mapping: *active_loop
           - type: "map"
-            mapping: *slot_was_set_map
-          - type: "map"
             mapping: *slot_was_set_seq
         conversation_start:
           type: "bool"
@@ -114,5 +108,3 @@ mapping:
         wait_for_user_input:
           type: "bool"
           allowempty: False
-
-

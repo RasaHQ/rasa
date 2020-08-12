@@ -188,7 +188,7 @@ class StoryStep:
 
     def explicit_events(
         self, domain: Domain, should_append_final_listen: bool = True
-    ) -> List[Event]:
+    ) -> List[Union[Event, List[Event]]]:
         """Returns events contained in the story step including implicit events.
 
         Not all events are always listed in the story dsl. This
