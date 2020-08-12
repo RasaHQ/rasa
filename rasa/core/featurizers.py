@@ -355,24 +355,24 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         binary_features = np.zeros(
             (len(self.slot_states + self.form_states + self.entities))
         )
-        if state.get(SLOTS):
-            # collect slot features
-            current_slot_names = state.get(SLOTS, {})
-            current_slot_names = current_slot_names.keys()
-            slot_values = [
-                np.array(state.get(SLOTS)[slot_name])
-                for slot_name in self.slot_names
-                if slot_name in current_slot_names
-            ]
-            slot_values = np.hstack(slot_values)
-            binary_features[: len(self.slot_states)] = slot_values
-        if state.get(FORM):
-            # featurize forms
-            form_values = np.zeros((len(self.form_states)))
-            form_values[self.form_states.index(state.get(FORM).get("name"))] += 1
-            binary_features[
-                len(self.slot_states) : len(self.slot_states + self.form_states)
-            ] = form_values
+        # collect slot features
+        current_slot_names = state.get(SLOTS, {})
+        current_slot_names = current_slot_names.keys()
+        slot_values = [
+            np.array(state.get(SLOTS)[slot_name])
+            for slot_name in self.slot_names
+            if slot_name in current_slot_names
+        ]
+        slot_values = np.hstack(slot_values)
+        binary_features[: len(self.slot_states)] = slot_values
+        # featurize forms
+        form = state.get(FORM, {})
+        form_values = np.zeros((len(self.form_states)))
+        form_values[self.form_states.index(form.get("name"))] += 1
+        binary_features[
+            len(self.slot_states) : len(self.slot_states + self.form_states)
+        ] = form_values
+        # featurize entities
         if state.get(USER):
             if state[USER].get(ENTITIES):
                 entities = state[USER].get(ENTITIES)
