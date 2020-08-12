@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import tempfile
-from typing import List, Text, Dict, Any
+from typing import List, Text, Dict, Any, Type
 
 import fakeredis
 import pytest
@@ -21,6 +21,7 @@ from rasa.core.events import (
     UserUtteranceReverted,
     SessionStarted,
 )
+from rasa.core.slots import FloatSlot, BooleanSlot, ListSlot, TextSlot, DataSlot, Slot
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     RedisTrackerStore,
@@ -687,3 +688,30 @@ def test_tracker_without_slots(key, value, caplog):
         v = tracker.get_slot(key)
         assert v == value
     assert len(caplog.records) == 0
+
+
+@pytest.mark.parametrize(
+    "slot_type, initial_value, value_to_set",
+    [
+        (FloatSlot, 4.234, 2.5),
+        (BooleanSlot, True, False),
+        (ListSlot, [1, 2, 3], [4, 5, 6]),
+        (TextSlot, "some string", "another string"),
+        (DataSlot, {"a": "nice dict"}, {"b": "better dict"}),
+    ],
+)
+def test_tracker_does_not_modify_slots(
+    slot_type: Type[Slot], initial_value: Any, value_to_set: Any
+):
+    slot_name = "some-slot"
+    slot = slot_type(slot_name, initial_value)
+    tracker = DialogueStateTracker("some-conversation-id", [slot])
+
+    # change the slot value in the tracker
+    tracker._set_slot(slot_name, value_to_set)
+
+    # assert that the tracker contains the slot with the modified value
+    assert tracker.get_slot(slot_name) == value_to_set
+
+    # assert that the initial slot has not been affected
+    assert slot.value == initial_value
