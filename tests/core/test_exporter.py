@@ -28,7 +28,7 @@ def _write_endpoint_config_to_yaml(path: Path, data: Dict[Text, Any]) -> Path:
     endpoints_path = path / "endpoints.yml"
 
     # write endpoints config to file
-    io_utils.write_yaml_file(data, endpoints_path)
+    io_utils.write_yaml(data, endpoints_path)
     return endpoints_path
 
 

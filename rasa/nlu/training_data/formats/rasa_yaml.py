@@ -1,13 +1,31 @@
 import logging
+from collections import OrderedDict
 from pathlib import Path
-from typing import Text, Any, List, Dict, Tuple, TYPE_CHECKING, Union, Iterator
+from typing import (
+    Text,
+    Any,
+    List,
+    Dict,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+    Iterator,
+    Optional,
+)
 
-from ruamel.yaml import YAMLError
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
+from ruamel.yaml import YAMLError, StringIO
 
 import rasa.utils.io as io_utils
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.constants import (
+    DOCS_URL_TRAINING_DATA_NLU,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.data import YAML_FILE_EXTENSIONS
-from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
+from rasa.nlu.training_data.formats.readerwriter import (
+    TrainingDataReader,
+    TrainingDataWriter,
+)
 from rasa.utils.common import raise_warning
 
 if TYPE_CHECKING:
@@ -29,6 +47,10 @@ KEY_LOOKUP_EXAMPLES = "examples"
 KEY_METADATA = "metadata"
 
 MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL = "-"
+
+NLU_SCHEMA_FILE = "nlu/schemas/nlu.yml"
+
+STRIP_SYMBOLS = "\n\r "
 
 
 class RasaYAMLReader(TrainingDataReader):
@@ -55,6 +77,11 @@ class RasaYAMLReader(TrainingDataReader):
         from rasa.nlu.training_data import TrainingData
         from rasa.validator import Validator
 
+        try:
+            validate_yaml_schema(string, NLU_SCHEMA_FILE)
+        except InvalidYamlFileError as e:
+            raise ValueError from e
+
         yaml_content = io_utils.read_yaml(string)
 
         if not Validator.validate_training_data_format_version(
@@ -76,7 +103,10 @@ class RasaYAMLReader(TrainingDataReader):
             self.responses,
         )
 
-    def _parse_nlu(self, nlu_data: List[Dict[Text, Any]]) -> None:
+    def _parse_nlu(self, nlu_data: Optional[List[Dict[Text, Any]]]) -> None:
+
+        if not nlu_data:
+            return
 
         for nlu_item in nlu_data:
             if not isinstance(nlu_item, dict):
@@ -133,11 +163,11 @@ class RasaYAMLReader(TrainingDataReader):
         examples = data.get(KEY_INTENT_EXAMPLES, "")
         for example, entities in self._parse_training_examples(examples, intent):
 
-            synonyms_parser.add_synonyms_from_entities(
-                example, entities, self.entity_synonyms
-            )
-
             plain_text = entities_parser.replace_entities(example)
+
+            synonyms_parser.add_synonyms_from_entities(
+                plain_text, entities, self.entity_synonyms
+            )
 
             message = Message.build(plain_text, intent)
             if entities:
@@ -152,7 +182,7 @@ class RasaYAMLReader(TrainingDataReader):
         if isinstance(examples, list):
             example_strings = [
                 # pytype: disable=attribute-error
-                example.get(KEY_INTENT_TEXT, "")
+                example.get(KEY_INTENT_TEXT, "").strip(STRIP_SYMBOLS)
                 for example in examples
                 if example
             ]
@@ -304,7 +334,7 @@ class RasaYAMLReader(TrainingDataReader):
                     docs=DOCS_URL_TRAINING_DATA_NLU,
                 )
                 continue
-            yield example[1:].strip()
+            yield example[1:].strip(STRIP_SYMBOLS)
 
     @staticmethod
     def is_yaml_nlu_file(filename: Text) -> bool:
@@ -337,3 +367,109 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Error: {e}"
             )
             return False
+
+
+class RasaYAMLWriter(TrainingDataWriter):
+    """Writes training data into a file in a YAML format."""
+
+    def dumps(self, training_data: "TrainingData") -> Text:
+        """Turns TrainingData into a string."""
+        stream = StringIO()
+        self.dump(stream, training_data)
+        return stream.getvalue()
+
+    def dump(
+        self, target: Union[Text, Path, StringIO], training_data: "TrainingData"
+    ) -> None:
+        """Writes training data into a file in a YAML format.
+
+        Args:
+            target: Name of the target object to write the YAML to.
+            training_data: TrainingData object.
+        """
+        from rasa.validator import KEY_TRAINING_DATA_FORMAT_VERSION
+        from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+
+        nlu_items = []
+        nlu_items.extend(self.process_intents(training_data))
+        nlu_items.extend(self.process_synonyms(training_data))
+        nlu_items.extend(self.process_regexes(training_data))
+        nlu_items.extend(self.process_lookup_tables(training_data))
+
+        result = OrderedDict()
+        result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
+            LATEST_TRAINING_DATA_FORMAT_VERSION
+        )
+        result[KEY_NLU] = nlu_items
+
+        io_utils.write_yaml(result, target, True)
+
+    @classmethod
+    def process_intents(cls, training_data: "TrainingData") -> List[OrderedDict]:
+        training_data = cls.prepare_training_examples(training_data)
+        return RasaYAMLWriter.process_training_examples_by_key(
+            training_data,
+            KEY_INTENT,
+            KEY_INTENT_EXAMPLES,
+            TrainingDataWriter.generate_message,
+        )
+
+    @classmethod
+    def process_synonyms(cls, training_data: "TrainingData") -> List[OrderedDict]:
+        inverted_synonyms = OrderedDict()
+        for example, synonym in training_data.entity_synonyms.items():
+            if not inverted_synonyms.get(synonym):
+                inverted_synonyms[synonym] = []
+            inverted_synonyms[synonym].append(example)
+
+        return cls.process_training_examples_by_key(
+            inverted_synonyms, KEY_SYNONYM, KEY_SYNONYM_EXAMPLES
+        )
+
+    @classmethod
+    def process_regexes(cls, training_data: "TrainingData") -> List[OrderedDict]:
+        inverted_regexes = OrderedDict()
+        for regex in training_data.regex_features:
+            if not inverted_regexes.get(regex["name"]):
+                inverted_regexes[regex["name"]] = []
+            inverted_regexes[regex["name"]].append(regex["pattern"])
+
+        return cls.process_training_examples_by_key(
+            inverted_regexes, KEY_REGEX, KEY_REGEX_EXAMPLES
+        )
+
+    @classmethod
+    def process_lookup_tables(cls, training_data: "TrainingData") -> List[OrderedDict]:
+        prepared_lookup_tables = OrderedDict()
+        for lookup_table in training_data.lookup_tables:
+            prepared_lookup_tables[lookup_table["name"]] = lookup_table["elements"]
+
+        return cls.process_training_examples_by_key(
+            prepared_lookup_tables, KEY_LOOKUP, KEY_LOOKUP_EXAMPLES
+        )
+
+    @staticmethod
+    def process_training_examples_by_key(
+        training_examples: Dict,
+        key_name: Text,
+        key_examples: Text,
+        example_extraction_predicate=lambda x: x,
+    ) -> List[OrderedDict]:
+        from ruamel.yaml.scalarstring import LiteralScalarString
+
+        result = []
+        for entity_key, examples in training_examples.items():
+
+            converted_examples = [
+                TrainingDataWriter.generate_list_item(
+                    example_extraction_predicate(example).strip(STRIP_SYMBOLS)
+                )
+                for example in examples
+            ]
+
+            next_item = OrderedDict()
+            next_item[key_name] = entity_key
+            next_item[key_examples] = LiteralScalarString("".join(converted_examples))
+            result.append(next_item)
+
+        return result

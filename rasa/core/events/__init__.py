@@ -57,11 +57,12 @@ def deserialise_entities(entities: Union[Text, List[Any]]) -> List[Dict[Text, An
 
 
 def md_format_message(text, intent, entities) -> Text:
-    from rasa.nlu.training_data.formats import MarkdownWriter, MarkdownReader
+    from rasa.nlu.training_data.formats import MarkdownReader
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     message_from_md = MarkdownReader().parse_training_example(text)
     deserialised_entities = deserialise_entities(entities)
-    return MarkdownWriter.generate_message_md(
+    return TrainingDataWriter.generate_message(
         {
             "text": message_from_md.text,
             "intent": intent,
