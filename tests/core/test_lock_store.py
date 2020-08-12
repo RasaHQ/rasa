@@ -276,4 +276,4 @@ async def test_redis_lock_store_timeout(monkeypatch: MonkeyPatch):
 
     with pytest.raises(LockError):
         async with lock_store.lock("some sender"):
-            assert False
+            pass

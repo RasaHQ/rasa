@@ -1,4 +1,4 @@
-Added more debugging logs to the :ref:`lock-stores` to ease debugging in case of
+Added more debugging logs to the :ref:`lock-stores` to simplify debugging in case of
 connection problems.
 
 Added a new parameter ``socket_timeout`` to the ``RedisLockStore``. If Redis doesn't
