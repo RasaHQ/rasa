@@ -38,9 +38,14 @@ than one of a certain key in a single file. The available keys are:
 - `rules`
 - `e2e_tests`
 
-All YAML training data files should specify the `version` key
-to be parsed correctly. If you don't specify a version key in your training data file, Rasa will assume you are using the latest training data format specification. Training data files with a version greater than is currently
-available will be skipped.
+All YAML training data files should specify the `version` key to be parsed
+correctly. If you don't specify a version key in your training data file, Rasa
+will assume you are using the latest training data format specification supported
+by the version of Rasa Open Source you have installed.
+Training data files with a version greater than is currently available in 
+the version of Rasa Open Source you have installed will be
+skipped.
+Currently, the latest training data format specification for Rasa 2.x is 2.0.
 
 ### Example
 
