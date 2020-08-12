@@ -440,6 +440,7 @@ paths:
         name: save_to_default_model_directory
         schema:
           type: boolean
+          default: True
           description: >-
             If `true` (default) the trained model will be saved in the default model
             directory, if `false` it will be saved in a temporary directory
@@ -447,6 +448,7 @@ paths:
         name: force_training
         schema:
           type: boolean
+          default: False
           description: Force a model training even if the data has not changed
       requestBody:
         required: true
