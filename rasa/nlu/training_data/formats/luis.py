@@ -48,5 +48,6 @@ class LuisReader(JsonTrainingDataReader):
             data = {"entities": entities}
             if intent:
                 data["intent"] = intent
-            training_examples.append(Message(text, data))
+            data["text"] = text
+            training_examples.append(Message(data=data))
         return TrainingData(training_examples, regex_features=regex_features)

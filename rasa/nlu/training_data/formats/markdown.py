@@ -221,7 +221,7 @@ class MarkdownReader(TrainingDataReader):
             lambda m: f'<{m.groupdict()["entity"]}>',
             example,
         )
-        message = Message(plain_text.replace(":", ""))
+        message = Message.build(text=plain_text.replace(":", ""))
 
         return message
 

@@ -39,5 +39,6 @@ class WitReader(JsonTrainingDataReader):
                 data["intent"] = intent
             if entities is not None:
                 data["entities"] = entities
-            training_examples.append(Message(text, data))
+            data["text"] = text
+            training_examples.append(Message(data=data))
         return TrainingData(training_examples)
