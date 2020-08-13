@@ -442,10 +442,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         dense_sequence_features, dense_sentence_features = message.get_dense_features(
             attribute, self.component_config[FEATURIZERS]
         )
-        sparse_sequence_features = sparse_sequence_features.features
-        sparse_sentence_features = sparse_sentence_features.features
-        dense_sequence_features = dense_sequence_features.features
-        dense_sentence_features = dense_sentence_features.features
+        if sparse_sequence_features is not None:
+            sparse_sequence_features = sparse_sequence_features.features
+        if sparse_sentence_features is not None:
+            sparse_sentence_features = sparse_sentence_features.features
+        if dense_sequence_features is not None:
+            dense_sequence_features = dense_sequence_features.features
+        if dense_sentence_features is not None:
+            dense_sentence_features = dense_sentence_features.features
 
         if dense_sequence_features is not None and sparse_sequence_features is not None:
             if dense_sequence_features.shape[0] != sparse_sequence_features.shape[0]:

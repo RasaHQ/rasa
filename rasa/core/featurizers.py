@@ -1,38 +1,29 @@
-import io
 import jsonpickle
 import logging
 import numpy as np
 import os
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Any, Union
-import copy
+from typing import Tuple, List, Optional, Dict, Text, Union
 from collections import deque
-import scipy.sparse
 from collections import defaultdict
 
 import rasa.utils.io
-from rasa.core import utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, Domain, STATE
-from rasa.core.events import ActionExecuted, UserUttered, Form, SlotSet
+from rasa.utils import common as common_utils
+from rasa.core.domain import Domain, STATE
+from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.features import Features
-from rasa.core.interpreter import (
-    NaturalLanguageInterpreter,
-    RegexInterpreter,
-    RasaNLUInterpreter,
-)
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER, PREVIOUS_ACTION, FORM, SLOTS, ACTION
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.constants import (
     TEXT,
     INTENT,
     ACTION_NAME,
     ACTION_TEXT,
     ENTITIES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-    FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.training_data.message import Message
@@ -41,255 +32,6 @@ logger = logging.getLogger(__name__)
 
 
 class SingleStateFeaturizer:
-    """Base class for mechanisms to transform the conversations state into ML formats.
-
-    Subclasses of SingleStateFeaturizer decide how the bot will transform
-    the conversation state to a format which a classifier can read:
-    feature vector.
-    """
-
-    def prepare_from_domain(self, domain: Domain) -> None:
-        """Helper method to init based on domain."""
-
-        pass
-
-    def encode_state(
-        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
-    ) -> Dict[Text, List["Features"]]:
-        """Encode user input."""
-
-        raise NotImplementedError(
-            "SingleStateFeaturizer must have "
-            "the capacity to "
-            "encode states to a feature vector"
-        )
-
-    def encode_action(
-        self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
-    ) -> Dict[Text, List["Features"]]:
-        """Encode user input."""
-
-        raise NotImplementedError(
-            "SingleStateFeaturizer must have "
-            "the capacity to "
-            "encode actions to a feature vector"
-        )
-
-    def create_encoded_all_actions(
-        self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
-    ) -> List[Dict[Text, List["Features"]]]:
-        """Create matrix with all actions from domain encoded in rows."""
-
-        raise NotImplementedError("Featurizer must implement encoding actions.")
-
-
-class BinarySingleStateFeaturizer(SingleStateFeaturizer):
-    """Assumes all features are binary.
-
-    All features should be either on or off, denoting them with 1 or 0.
-    """
-
-    def __init__(self) -> None:
-        """Declares instant variables."""
-
-        super().__init__()
-
-        self.num_features = None
-        self.input_state_map = None
-
-    def prepare_from_domain(self, domain: Domain) -> None:
-        """Use Domain to prepare featurizer."""
-
-        self.num_features = domain.num_states
-        self.input_state_map = domain.input_state_map
-
-    def encode_state(
-        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
-    ) -> np.ndarray:
-        """Returns a binary vector indicating which features are active.
-
-        Given a dictionary of states (e.g. 'intent_greet',
-        'prev_action_listen',...) return a binary vector indicating which
-        features of `self.input_features` are in the bag. NB it's a
-        regular double precision float array type.
-
-        For example with two active features out of five possible features
-        this would return a vector like `[0 0 1 0 1]`
-
-        If intent features are given with a probability, for example
-        with two active features and two uncertain intents out
-        of five possible features this would return a vector
-        like `[0.3, 0.7, 1.0, 0, 1.0]`.
-
-        If this is just a padding vector we set all values to `-1`.
-        padding vectors are specified by a `None` or `[None]`
-        value for states.
-        """
-
-        if not self.num_features:
-            raise Exception(
-                "BinarySingleStateFeaturizer was not prepared before encoding."
-            )
-
-        if state is None or None in state:
-            return np.ones(self.num_features, dtype=np.int32) * -1
-
-        # we are going to use floats and convert to int later if possible
-        used_features = np.zeros(self.num_features, dtype=np.float)
-        using_only_ints = True
-        for state_name, prob in state.items():
-            if state_name in self.input_state_map:
-                idx = self.input_state_map[state_name]
-                used_features[idx] = prob
-                using_only_ints = using_only_ints and utils.is_int(prob)
-            else:
-                logger.debug(
-                    "Feature '{}' (value: '{}') could not be found in "
-                    "feature map. Make sure you added all intents and "
-                    "entities to the domain".format(state_name, prob)
-                )
-
-        if using_only_ints:
-            # this is an optimization - saves us a bit of memory
-            return used_features.astype(np.int32)
-        else:
-            return used_features
-
-    def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
-        """Create matrix with all actions from domain encoded in rows as bag of words"""
-
-        return np.eye(domain.num_actions)
-
-
-class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
-    """Creates bag-of-words feature vectors.
-
-    User intents and bot action names are split into tokens
-    and used to create bag-of-words feature vectors.
-
-    Args:
-        split_symbol: The symbol that separates words in
-            intets and action names.
-
-        use_shared_vocab: The flag that specifies if to create
-            the same vocabulary for user intents and bot actions.
-    """
-
-    def __init__(
-        self, use_shared_vocab: bool = False, split_symbol: Text = "_"
-    ) -> None:
-        """inits vocabulary for label bag of words representation"""
-        super().__init__()
-
-        self.use_shared_vocab = use_shared_vocab
-        self.split_symbol = split_symbol
-
-        self.num_features = None
-        self.user_labels = []
-        self.slot_labels = []
-        self.bot_labels = []
-
-        self.bot_vocab = None
-        self.user_vocab = None
-
-    @staticmethod
-    def _create_label_token_dict(labels, split_symbol="_") -> Dict[Text, int]:
-        """Splits labels into tokens by using provided symbol.
-
-        Creates the lookup dictionary for this tokens.
-        Values in this dict are used for featurization.
-        """
-
-        distinct_tokens = {
-            token for label in labels for token in label.split(split_symbol)
-        }
-        return {token: idx for idx, token in enumerate(sorted(distinct_tokens))}
-
-    def prepare_from_domain(self, domain: Domain) -> None:
-        """Creates internal vocabularies for user intents and bot actions."""
-
-        self.user_labels = domain.intents + domain.entities
-        self.slot_labels = domain.slot_states + domain.form_names
-        self.bot_labels = domain.action_names
-
-        if self.use_shared_vocab:
-            self.bot_vocab = self._create_label_token_dict(
-                self.bot_labels + self.user_labels, self.split_symbol
-            )
-            self.user_vocab = self.bot_vocab
-        else:
-            self.bot_vocab = self._create_label_token_dict(
-                self.bot_labels, self.split_symbol
-            )
-            self.user_vocab = self._create_label_token_dict(
-                self.user_labels, self.split_symbol
-            )
-
-        self.num_features = (
-            len(self.user_vocab) + len(self.slot_labels) + len(self.bot_vocab)
-        )
-
-    def encode_state(
-        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
-    ) -> np.ndarray:
-        """Returns a binary vector indicating which tokens are present."""
-
-        if not self.num_features:
-            raise Exception(
-                "LabelTokenizerSingleStateFeaturizer "
-                "was not prepared before encoding."
-            )
-
-        if state is None or None in state:
-            return np.ones(self.num_features, dtype=np.int32) * -1
-
-        # we are going to use floats and convert to int later if possible
-        used_features = np.zeros(self.num_features, dtype=np.float)
-        using_only_ints = True
-        for state_name, prob in state.items():
-            using_only_ints = using_only_ints and utils.is_int(prob)
-            if state_name in self.user_labels:
-                if PREV_PREFIX + ACTION_LISTEN_NAME in state:
-                    # else we predict next action from bot action and memory
-                    for t in state_name.split(self.split_symbol):
-                        used_features[self.user_vocab[t]] += prob
-
-            elif state_name in self.slot_labels:
-                offset = len(self.user_vocab)
-                idx = self.slot_labels.index(state_name)
-                used_features[offset + idx] += prob
-
-            elif state_name[len(PREV_PREFIX) :] in self.bot_labels:
-                action_name = state_name[len(PREV_PREFIX) :]
-                for t in action_name.split(self.split_symbol):
-                    offset = len(self.user_vocab) + len(self.slot_labels)
-                    idx = self.bot_vocab[t]
-                    used_features[offset + idx] += prob
-
-            else:
-                logger.warning(
-                    f"Feature '{state_name}' could not be found in feature map."
-                )
-
-        if using_only_ints:
-            # this is an optimization - saves us a bit of memory
-            return used_features.astype(np.int32)
-        else:
-            return used_features
-
-    def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
-        """Create matrix with all actions from domain encoded in rows as bag of words"""
-
-        encoded_all_actions = np.zeros(
-            (domain.num_actions, len(self.bot_vocab)), dtype=np.int32
-        )
-        for idx, name in enumerate(domain.action_names):
-            for t in name.split(self.split_symbol):
-                encoded_all_actions[idx, self.bot_vocab[t]] = 1
-        return encoded_all_actions
-
-
-class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self) -> None:
 
         super().__init__()
@@ -378,25 +120,26 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         self,
         sub_state: Dict[Text, Union[Text, Tuple[float], Tuple[Text]]],
         state_type: Text,
-        interpreter: NaturalLanguageInterpreter,
+        interpreter: Optional[NaturalLanguageInterpreter],
     ) -> Dict[Text, List["Features"]]:
 
+        output = defaultdict(list)
         message, attribute = self._construct_message(sub_state, state_type)
 
-        parsed_message = interpreter.synchronous_parse_message(message, attribute)
-        all_features = (
-            parsed_message.get_sparse_features(attribute)
-            + parsed_message.get_dense_features(attribute)
-            if parsed_message is not None
-            else ()
-        )
+        if interpreter is not None:
+            parsed_message = interpreter.synchronous_parse_message(message, attribute)
+            all_features = (
+                parsed_message.get_sparse_features(attribute)
+                + parsed_message.get_dense_features(attribute)
+                if parsed_message is not None
+                else ()
+            )
 
-        output = defaultdict(list)
-        for features in all_features:
-            if features is not None:
-                output[attribute].append(features)
+            for features in all_features:
+                if features is not None:
+                    output[attribute].append(features)
+
         output = dict(output)
-
         if not output.get(attribute) and attribute in {INTENT, ACTION_NAME}:
             # there can only be either TEXT or INTENT
             # or ACTION_TEXT or ACTION_NAME
@@ -406,7 +149,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         return output
 
     def encode_state(
-        self, state: STATE, interpreter: NaturalLanguageInterpreter
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
 
         featurized_state = {}
@@ -423,7 +166,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         return featurized_state
 
     def encode_action(
-        self, action: Text, interpreter: NaturalLanguageInterpreter
+        self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
 
         if action in self.e2e_action_texts:
@@ -434,12 +177,56 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         return self._extract_features(action_as_sub_state, ACTION, interpreter)
 
     def create_encoded_all_actions(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+        self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> List[Dict[Text, List["Features"]]]:
 
         return [
             self.encode_action(action, interpreter) for action in domain.action_names
         ]
+
+
+class BinarySingleStateFeaturizer(SingleStateFeaturizer):
+    def __init__(self) -> None:
+        super().__init__()
+        common_utils.raise_warning(
+            f"'{self.__class__.__name__}' is deprecated and "
+            f"will be removed in the future. "
+            f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
+    def encode_state(
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
+    ) -> Dict[Text, List["Features"]]:
+        # ignore nlu interpreter to create binary features
+        return super().encode_state(state, None)
+
+    def encode_action(
+        self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
+    ) -> Dict[Text, List["Features"]]:
+        # ignore nlu interpreter to create binary features
+        return super().encode_action(action, None)
+
+    def create_encoded_all_actions(
+        self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
+    ) -> List[Dict[Text, List["Features"]]]:
+        # ignore nlu interpreter to create binary features
+        return super().create_encoded_all_actions(domain, None)
+
+
+class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__()
+        # it is hard to fully mimic old behavior, but SingleStateFeaturizer
+        # does the same thing if nlu pipeline is configured correctly
+        common_utils.raise_warning(
+            f"'{self.__class__.__name__}' is deprecated and "
+            f"will be removed in the future. "
+            f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
 
 
 class TrackerFeaturizer:

@@ -61,11 +61,10 @@ class Features:
 
         if self.is_dense() and additional_features.is_dense():
             self._combine_dense_features(additional_features)
-
-        if self.is_sparse() and additional_features.is_sparse():
+        elif self.is_sparse() and additional_features.is_sparse():
             self._combine_sparse_features(additional_features)
-
-        raise ValueError("Cannot combine sparse and dense features.")
+        else:
+            raise ValueError("Cannot combine sparse and dense features.")
 
     def _combine_dense_features(self, additional_features: "Features") -> None:
         if self.features.ndim != additional_features.features.ndim:

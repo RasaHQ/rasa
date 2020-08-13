@@ -17,7 +17,7 @@ from rasa.core.featurizers import (
     FullDialogueTrackerFeaturizer,
     LabelTokenizerSingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
-    E2ESingleStateFeaturizer,
+    SingleStateFeaturizer,
 )
 from rasa.nlu.constants import ACTION_NAME, INTENT, ACTION_TEXT
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -187,7 +187,7 @@ class TEDPolicy(Policy):
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
-            E2ESingleStateFeaturizer(), max_history=max_history
+            SingleStateFeaturizer(), max_history=max_history
         )
 
     def __init__(

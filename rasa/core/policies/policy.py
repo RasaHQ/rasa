@@ -7,8 +7,7 @@ import rasa.utils.common
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
-    BinarySingleStateFeaturizer,
-    E2ESingleStateFeaturizer,
+    SingleStateFeaturizer,
 )
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -75,7 +74,7 @@ class Policy:
 
     @staticmethod
     def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
+        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
 
     @classmethod
     def _create_featurizer(
