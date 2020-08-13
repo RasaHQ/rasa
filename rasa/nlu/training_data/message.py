@@ -100,7 +100,7 @@ class Message:
         **kwargs,
     ) -> "Message":
         """
-        Builds a Message from UserUttered data
+        Build a Message from `UserUttered` data.
         Args:
             text: text of a user's utterance
             intent: an intent of the user utterance
