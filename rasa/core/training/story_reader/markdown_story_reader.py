@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from pathlib import PurePath
-from typing import Dict, Text, List, Any
+from typing import Dict, Text, List, Any, Tuple
 
 import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_STORIES
