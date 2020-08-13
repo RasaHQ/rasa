@@ -30,7 +30,7 @@ class Message:
         output_properties: Optional[Set] = None,
         time: Optional[Text] = None,
         features: Optional[List["Features"]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         self.time = time
         self.data = data.copy() if data else {}
@@ -95,10 +95,10 @@ class Message:
         text: Text,
         intent: Optional[Text] = None,
         entities: List[Dict[Text, Any]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Message":
         """
-        Builds a Message from UserUttered data
+        Build a Message from `UserUttered` data.
         Args:
             text: text of a user's utterance
             intent: an intent of the user utterance
@@ -122,10 +122,10 @@ class Message:
         cls,
         action_text: Optional[Text] = "",
         action_name: Optional[Text] = "",
-        **kwargs,
+        **kwargs: Any,
     ) -> "Message":
         """
-        Builds a Message from ActionExecuted data
+        Build a `Message` from `ActionExecuted` data.
         Args:
             action_text: text of a bot's utterance
             action_name: name of an action executed

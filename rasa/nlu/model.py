@@ -16,7 +16,9 @@ from rasa.nlu.featurizers.featurizer import Featurizer  # pytype: disable=pyi-er
 from rasa.nlu.tokenizers import tokenizer  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
-from rasa.nlu.constants import INTENT_NAME_KEY, TEXT
+
+from rasa.nlu.constants import INTENT_NAME_KEY, TEXT, INTENT, ENTITIES
+
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
@@ -265,9 +267,9 @@ class Interpreter:
     @staticmethod
     def default_output_attributes() -> Dict[Text, Any]:
         return {
-            "text": "",
-            "intent": {INTENT_NAME_KEY: None, "confidence": 0.0},
-            "entities": [],
+            TEXT: "",
+            INTENT: {INTENT_NAME_KEY: None, "confidence": 0.0},
+            ENTITIES: [],
         }
 
     @staticmethod
