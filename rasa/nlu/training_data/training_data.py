@@ -335,7 +335,7 @@ class TrainingData:
             .with_name("nlg_" + Path(nlu_filename).name)
             .with_suffix("." + extension)
         )
-        return filename
+        return str(filename)
 
     def persist(
         self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
