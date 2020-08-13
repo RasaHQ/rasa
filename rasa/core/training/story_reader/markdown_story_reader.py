@@ -204,8 +204,8 @@ class MarkdownStoryReader(StoryReader):
     async def add_user_messages_e2e(self, messages: List[Text], line_num: int):
         if not self.current_step_builder:
             raise StoryParseError(
-                "User message '{}' at invalid location. "
-                "Expected story start.".format(messages)
+                f"User message '{messages}' at invalid location. "
+                f"Expected story start."
             )
         parsed_messages = await asyncio.gather(
             *[self._parse_message_e2e(m, line_num) for m in messages]
