@@ -969,6 +969,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             idx = 0
             for event in tracker.applied_events():
                 if isinstance(event, ActionExecuted):
+                    if event.action_name == "action_listen":
+                        continue
                     if not event.unpredictable:
                         # only actions which can be
                         # predicted at a stories start

@@ -186,6 +186,8 @@ class KnowledgeBasePolicy(TEDPolicy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
+        rule_to_id_mapping: Optional[Dict[Text, int]] = None,
+        id_to_rule_mapping: Optional[Dict[int, Text]] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
@@ -203,8 +205,10 @@ class KnowledgeBasePolicy(TEDPolicy):
 
         self.model = model
 
-        self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
+
+        self.rule_to_id_mapping = rule_to_id_mapping
+        self.id_to_rule_mapping = id_to_rule_mapping
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         self.config = copy.deepcopy(self.defaults)
@@ -215,7 +219,7 @@ class KnowledgeBasePolicy(TEDPolicy):
         self.config = train_utils.update_similarity_type(self.config)
         self.config = train_utils.update_evaluation_parameters(self.config)
 
-    def _create_rule_features(self, domain: Domain) -> Dict[Text, int]:
+    def _rule_id_mapping(self, domain: Domain) -> Dict[Text, int]:
         grammar = Grammar(domain.database_schema)
         rules = grammar.rules
         rules += grammar.build_instance_production()
@@ -225,6 +229,144 @@ class KnowledgeBasePolicy(TEDPolicy):
             rule_to_feature_map[str(rule)] = i
 
         return rule_to_feature_map
+
+    @staticmethod
+    def _invert_mapping(mapping: Dict) -> Dict:
+        return {value: key for key, value in mapping.items()}
+
+    # noinspection PyPep8Naming
+    def _label_features_for_Y(
+        self, label_ids: np.ndarray, domain: Domain
+    ) -> Tuple[np.ndarray, List[int]]:
+        """Prepare Y data for training: features for label_ids.
+        Returns Y_sparse, Y_dense, Y_action_name:
+         - Y_sparse -- sparse features for action text
+         - Y_dense -- dense_features for action text
+         - Y_action_name -- features for action names
+        """
+        sql_converter = SQLConverter(domain.database_schema)
+
+        all_features = []
+        final_label_ids = []
+        max_seq = 0
+
+        for label_id in label_ids:
+            query = domain.action_names[label_id]
+            if not query.startswith("SELECT"):
+                continue
+
+            final_label_ids.append(label_id)
+
+            # TODO why is it replaced in the first place?
+            query = query.replace("<U>", "*")
+
+            # TODO: check if SELECT * FROM x is converted correctly
+            rules = sql_converter.convert_to_grammar_rules(query)
+
+            if len(rules) > max_seq:
+                max_seq = len(rules)
+
+            features = []
+            for rule in rules:
+                idx = self.rule_to_id_mapping[str(rule)]
+                f = np.zeros(len(self.rule_to_id_mapping))
+                f[idx] = 1
+                features.append(f)
+
+            all_features.append(features)
+
+        final_features = np.zeros(
+            [len(all_features), max_seq, len(self.rule_to_id_mapping)]
+        )
+        for i, rules_features in enumerate(all_features):
+            for j, f in enumerate(rules_features):
+                final_features[i][j] = f
+
+        return final_features, final_label_ids
+
+    def _create_model_data(
+        self,
+        data_X: np.ndarray,
+        dialog_lengths: Optional[np.ndarray] = None,
+        label_ids: Optional[np.ndarray] = None,
+        domain: Optional[Domain] = None,
+    ) -> RasaModelData:
+        """Combine all model related data into RasaModelData."""
+
+        Y_grammar_rules = np.array([])
+
+        if label_ids is not None:
+            Y_grammar_rules, label_ids = self._label_features_for_Y(label_ids, domain)
+            # explicitly add last dimension to label_ids
+            # to track correctly dynamic sequences
+            label_ids = np.expand_dims(label_ids, -1)
+        else:
+            label_ids = np.array([])
+
+        model_data = RasaModelData(label_key=LABEL_IDS)
+
+        X_user_sparse = []
+        X_user_dense = []
+        X_intent = []
+        X_user_if_text = []
+        X_action_sparse = []
+        X_action_dense = []
+        X_action_name = []
+        X_action_if_text = []
+        X_entities = []
+
+        for dial in data_X:
+            (
+                state_user_sparse,
+                state_user_dense,
+                state_intent,
+                state_user_if_text,
+            ) = self._process_user_and_action_features(dial[:, :4])
+            (
+                state_action_sparse,
+                state_action_dense,
+                state_action_name,
+                state_action_if_text,
+            ) = self._process_user_and_action_features(dial[:, 4:8])
+            state_entites = self._process_entities(dial[:, 8])
+
+            X_user_sparse.append(state_user_sparse)
+            X_user_dense.append(state_user_dense)
+            X_intent.append(state_intent)
+            X_user_if_text.append(state_user_if_text)
+            X_action_sparse.append(state_action_sparse)
+            X_action_dense.append(state_action_dense)
+            X_action_name.append(state_action_name)
+            X_action_if_text.append(state_action_if_text)
+            X_entities.append(state_entites)
+
+        model_data.add_features(
+            f"{DIALOGUE_FEATURES}_user",
+            [np.array(X_user_sparse), np.array(X_user_dense)],
+        )
+        model_data.add_features(f"{DIALOGUE_FEATURES}_entities", [np.array(X_entities)])
+        model_data.add_features(f"{DIALOGUE_FEATURES}_user_name", [np.array(X_intent)])
+        model_data.add_features(
+            f"{DIALOGUE_FEATURES}_action",
+            [np.array(X_action_sparse), np.array(X_action_dense)],
+        )
+        model_data.add_features(
+            f"{DIALOGUE_FEATURES}_action_name", [np.array(X_action_name)]
+        )
+        model_data.add_features(
+            f"{DIALOGUE_FEATURES}_action_if_text", [np.array(X_action_if_text)]
+        )
+        model_data.add_features(
+            f"{DIALOGUE_FEATURES}_user_if_text", [np.array(X_user_if_text)]
+        )
+
+        model_data.add_features(f"{LABEL_FEATURES}_{ACTION_NAME}", [Y_grammar_rules])
+        model_data.add_features(LABEL_IDS, [label_ids])
+
+        if dialog_lengths is not None:
+            model_data.add_features("dialog_lengths", [dialog_lengths])
+
+        return model_data
 
     def train(
         self,
@@ -242,12 +384,15 @@ class KnowledgeBasePolicy(TEDPolicy):
             training_trackers, domain, interpreter, **kwargs
         )
 
-        rule_to_id_map = self._create_rule_features(domain)
-        label_features = self._create_label_features(domain, rule_to_id_map)
+        self.rule_to_id_mapping = self._rule_id_mapping(domain)
+        self.id_to_rule_mapping = self._invert_mapping(self.rule_to_id_mapping)
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(
-            training_data.X, np.array(training_data.true_length), training_data.y
+            training_data.X,
+            np.array(training_data.true_length),
+            training_data.y,
+            domain=domain,
         )
         if model_data.is_empty():
             logger.error(
@@ -263,7 +408,8 @@ class KnowledgeBasePolicy(TEDPolicy):
             model_data.get_signature(),
             self.config,
             isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
-            self._label_data,
+            self.rule_to_id_mapping,
+            self.id_to_rule_mapping,
         )
 
         self.model.fit(
@@ -382,24 +528,6 @@ class KnowledgeBasePolicy(TEDPolicy):
 
         return cls(featurizer=featurizer, priority=priority, model=model, **meta)
 
-    def _create_label_features(
-        self, domain: Domain, rule_to_id_map: Dict[Text, int]
-    ) -> np.ndarray:
-        converter = SQLConverter(domain.database_schema)
-
-        features = np.zeros([len(domain.action_names), len(rule_to_id_map)])
-        for i, action in enumerate(domain.action_names):
-            if not action.startswith("SELECT"):
-                continue
-
-            action = action.replace("<U>", "*")
-            grammar = converter.convert_to_grammar_rules(action)
-
-            for rule in grammar:
-                features[i][rule_to_id_map[str(rule)]] = 1
-
-        return features
-
 
 # accessing _tf_layers with any key results in key-error, disable it
 # pytype: disable=key-error
@@ -411,10 +539,11 @@ class KnowledgeBaseModel(RasaModel):
         data_signature: Dict[Text, List[FeatureSignature]],
         config: Dict[Text, Any],
         max_history_tracker_featurizer_used: bool,
-        label_data: RasaModelData,
+        rule_to_id_mapping: Dict[Text, int],
+        id_to_rule_mapping: Dict[int, Text],
     ) -> None:
         super().__init__(
-            name="TED",
+            name="KnowledgeBase",
             random_seed=config[RANDOM_SEED],
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
             tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
@@ -425,7 +554,6 @@ class KnowledgeBaseModel(RasaModel):
 
         # data
         self.data_signature = data_signature
-        self._check_data()
 
         self.predict_data_signature = {
             feature_name: features
@@ -438,10 +566,8 @@ class KnowledgeBaseModel(RasaModel):
 
         self.all_labels_embed = None
 
-        label_batch = label_data.prepare_batch()
-        self.tf_label_data = self.batch_to_model_data_format(
-            label_batch, label_data.get_signature()
-        )
+        self.id_to_rule_mapping = id_to_rule_mapping
+        self.rule_to_id_mapping = rule_to_id_mapping
 
         # metrics
         self.action_loss = tf.keras.metrics.Mean(name="loss")
