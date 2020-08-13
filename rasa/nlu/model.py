@@ -17,7 +17,13 @@ from rasa.nlu.tokenizers import tokenizer  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 
-from rasa.nlu.constants import INTENT_NAME_KEY, TEXT, INTENT, ENTITIES
+from rasa.nlu.constants import (
+    INTENT_NAME_KEY,
+    TEXT,
+    INTENT,
+    ENTITIES,
+    INTENT_CONFIDENCE_KEY,
+)
 
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import Message, TrainingData
@@ -268,7 +274,7 @@ class Interpreter:
     def default_output_attributes() -> Dict[Text, Any]:
         return {
             TEXT: "",
-            INTENT: {INTENT_NAME_KEY: None, "confidence": 0.0},
+            INTENT: {INTENT_NAME_KEY: None, INTENT_CONFIDENCE_KEY: 0.0},
             ENTITIES: [],
         }
 
