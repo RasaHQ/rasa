@@ -37,7 +37,7 @@ def test_x_help(run: Callable[..., RunResult]):
 def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path):
     credentials_path = str(tmpdir / "credentials.yml")
 
-    io_utils.write_yaml_file({}, credentials_path)
+    io_utils.write_yaml({}, credentials_path)
 
     tmp_credentials = x._prepare_credentials_for_rasa_x(
         credentials_path, "http://localhost:5002"
@@ -55,7 +55,7 @@ def test_prepare_credentials_if_already_valid(tmpdir: Path):
         "rasa": {"url": "my-custom-url"},
         "another-channel": {"url": "some-url"},
     }
-    io_utils.write_yaml_file(credentials, credentials_path)
+    io_utils.write_yaml(credentials, credentials_path)
 
     x._prepare_credentials_for_rasa_x(credentials_path)
 
