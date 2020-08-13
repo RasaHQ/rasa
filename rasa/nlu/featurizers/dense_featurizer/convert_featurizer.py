@@ -216,13 +216,14 @@ class ConveRTFeaturizer(DenseFeaturizer):
     ) -> None:
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-            sequence_features, sentence_features = self._compute_features(
-                [message], tf_hub_module, attribute=attribute
-            )
+            if message.get(attribute):
+                sequence_features, sentence_features = self._compute_features(
+                    [message], tf_hub_module, attribute=attribute
+                )
 
-            self._set_features(
-                [message], sequence_features, sentence_features, attribute
-            )
+                self._set_features(
+                    [message], sequence_features, sentence_features, attribute
+                )
 
     def _set_features(
         self,
