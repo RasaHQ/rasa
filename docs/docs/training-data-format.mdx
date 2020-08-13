@@ -404,6 +404,9 @@ Each step can be one of the following:
 
 #### User Messages
 
+All user messages are specified with the `intent:`
+key and an optional `entities:` key.
+
 While writing stories, you do not have to deal with the specific
 contents of the messages that the users send. Instead, you can take
 advantage of the output from the NLU pipeline, which lets you use
@@ -414,14 +417,13 @@ User messages follow the format:
 
 ```yaml
   steps:
-    - intent: <intent name> 
-      entities:
-      - <entity_name>: <entity value>
+    - intent: <intent name>  # Required
+      entities: # Optional
+      - <entity_name>: <entity value> 
 ```
 
-Intent names can be prefixed with `/` or not; it makes no difference.
-
-For example:
+For example, to represent the sentence
+`I want to check my credit balance`, where `credit` is an entity:
 
 ```yaml
   steps:
@@ -471,6 +473,7 @@ While writing stories, you will encounter three types of actions:
 
 #### Forms
 
+
 A [form](../glossary#form) is a specific kind of custom action that contains the logic to loop over
 a set of required slots and ask the user for this information. You [define a form](../core/forms#defining-a-form) in the `forms` section in your domain.
 Once defined, the [happy path](../glossary#happy--unhappy-paths)
@@ -515,6 +518,8 @@ An interruption of a form could look like this:
 
 #### Slots
 
+A slot event is specified with the key `slot_was_set:`.
+
 **[Slots](../core/slots)** act as the bots memory. Slots are **set** by entities or by custom actions and **referenced** by stories in `slot_was_set` steps. For example.
 
 ```yaml
@@ -534,6 +539,10 @@ Stories do not **set** slots. The slot must be set by an entity or custom action
 
 
 #### Checkpoints
+
+Checkpoints are specified with the `checkpoint:` key, either at the beginning
+or the end of a story. 
+
 
 Checkpoints are ways to connect stories together. They can be either the first
 or the last step in a story. If they are the last step in a story, that story
