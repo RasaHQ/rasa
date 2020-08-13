@@ -89,18 +89,17 @@ class LockStore:
         ticket = None
         try:
             ticket = self.issue_ticket(conversation_id, lock_lifetime)
-
             yield await self._acquire_lock(
                 conversation_id, ticket, wait_time_in_seconds
             )
         except Exception as e:
             logger.error(
-                f"The lock for conversation '{conversation_id}' could not be"
+                f"The lock for conversation '{conversation_id}' could not be "
                 f"acquired. Error:\n{e}"
             )
             raise LockError(e)
         finally:
-            if ticket:
+            if ticket is not None:
                 self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
