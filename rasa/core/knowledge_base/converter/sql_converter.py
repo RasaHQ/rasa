@@ -1352,7 +1352,7 @@ if __name__ == "__main__":
     print(query)
     table_column1 = TableColumn("name", "name", "text", is_primary_key=True)
     table_column2 = TableColumn("location", "location", "text")
-    table_column5 = TableColumn("prof", "prof", "text", foreign_key=["prof:name"])
+    table_column5 = TableColumn("prof", "prof", "text", foreign_key=["prof.name"])
     table_column3 = TableColumn("age", "age", "number")
     table_column4 = TableColumn("name", "name", "text", is_primary_key=True)
     table1 = Table("class", "class")

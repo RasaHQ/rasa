@@ -10,6 +10,7 @@ from collections import deque
 import scipy.sparse
 
 import rasa.utils.io
+from core.knowledge_base.converter.sql_converter import SQLConverter
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain, STATE
@@ -482,9 +483,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         self.output_shapes[ACTION_NAME] = action_name_features.shape[-1]
         return user_features + action_features
 
-    def encode(
-        self, state: STATE, interpreter: NaturalLanguageInterpreter,
-    ):
+    def encode(self, state: STATE, interpreter: NaturalLanguageInterpreter):
         slot_and_entity_features = self._get_slot_and_entity_features(state)
         if state == {}:
             return np.array(
@@ -614,7 +613,7 @@ class TrackerFeaturizer:
         ]
 
     def _create_states(
-        self, tracker: DialogueStateTracker, domain: Domain,
+        self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[STATE]:
         """Create states: a list of dictionaries.
 
@@ -884,7 +883,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def slice_state_history(
-        states: List[STATE], slice_length: Optional[int],
+        states: List[STATE], slice_length: Optional[int]
     ) -> List[STATE]:
         """Slices states from the trackers history.
         If the slice is at the array borders, padding will be added to ensure
@@ -901,7 +900,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def _hash_example(
-        states: List[STATE], action: Text, tracker: DialogueStateTracker,
+        states: List[STATE], action: Text, tracker: DialogueStateTracker
     ) -> int:
         """Hash states for efficient deduplication."""
         frozen_states = tuple(

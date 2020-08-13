@@ -12,7 +12,7 @@ class Table:
     def __init__(self, name: str, alias: str):
         self.name = name
         self.alias = alias
-        self.columns = [TableColumn("*", "*", "any")]
+        self.columns = []
 
     def set_columns(self, columns: List["TableColumn"]) -> None:
         self.columns.extend(columns)
@@ -54,7 +54,12 @@ class DatabaseSchema:
     def __init__(self, name: Text, tables: Optional[List[Table]]):
         self.name = name
         self.tables = tables or []
-        self.columns = [column for table in tables for column in table.columns]
+        self.columns = []
+        for table in tables:
+            self.columns.append(TableColumn("*", "*", "any", refer_table=table))
+            for column in table.columns:
+                self.columns.append(column)
+
         self.knowledge_graph = self.get_db_knowledge_graph()
 
         self.id_to_tables = {i: table for i, table in enumerate(self.tables)}

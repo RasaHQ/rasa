@@ -11,6 +11,8 @@ from scipy import sparse
 from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
 import rasa.utils.io as io_utils
+from core.knowledge_base.converter.sql_converter import SQLConverter
+from core.knowledge_base.grammar.grammar import Grammar, GrammarRule
 from core.knowledge_base.schema.database_featurizer import DatabaseSchemaFeaturizer
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.domain import Domain
@@ -213,6 +215,17 @@ class KnowledgeBasePolicy(TEDPolicy):
         self.config = train_utils.update_similarity_type(self.config)
         self.config = train_utils.update_evaluation_parameters(self.config)
 
+    def _create_rule_features(self, domain: Domain) -> Dict[Text, int]:
+        grammar = Grammar(domain.database_schema)
+        rules = grammar.rules
+        rules += grammar.build_instance_production()
+
+        rule_to_feature_map = {"C -> *": 0}
+        for i, rule in enumerate(rules, 1):
+            rule_to_feature_map[str(rule)] = i
+
+        return rule_to_feature_map
+
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
@@ -225,15 +238,13 @@ class KnowledgeBasePolicy(TEDPolicy):
         database_features = DatabaseSchemaFeaturizer.featurize(domain.database_schema)
 
         # dealing with training data
-        # TODO we also need to featurize the database schema
-        # TODO labels are the grammar rules
         training_data = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
-
-        self._label_data = self._create_label_data(domain, interpreter)
-
         training_data_X = self._fill_in_features(training_data.X)
+
+        rule_to_id_map = self._create_rule_features(domain)
+        label_features = self._create_label_features(domain, rule_to_id_map)
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(
@@ -371,6 +382,24 @@ class KnowledgeBasePolicy(TEDPolicy):
         model.build_for_predict(predict_data_example)
 
         return cls(featurizer=featurizer, priority=priority, model=model, **meta)
+
+    def _create_label_features(
+        self, domain: Domain, rule_to_id_map: Dict[Text, int]
+    ) -> np.ndarray:
+        converter = SQLConverter(domain.database_schema)
+
+        features = np.zeros([len(domain.action_names), len(rule_to_id_map)])
+        for i, action in enumerate(domain.action_names):
+            if not action.startswith("SELECT"):
+                continue
+
+            action = action.replace("<U>", "*")
+            grammar = converter.convert_to_grammar_rules(action)
+
+            for rule in grammar:
+                features[i][rule_to_id_map[str(rule)]] = 1
+
+        return features
 
 
 # accessing _tf_layers with any key results in key-error, disable it
