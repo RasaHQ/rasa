@@ -16,6 +16,7 @@ from rasa.core.policies.ensemble import (
 from rasa.core.domain import Domain
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.events import UserUttered, Form, Event
 
 from tests.core import utilities
@@ -40,7 +41,7 @@ class WorkingPolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -83,7 +84,7 @@ class ConstantPolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -306,7 +307,7 @@ class LoadReturnsWrongTypePolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,

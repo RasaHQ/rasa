@@ -8,13 +8,15 @@ from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
+import rasa.utils.common as common_utils
 
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, STATE
 from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.utils.common import is_logging_disabled
 from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
@@ -55,16 +57,14 @@ class MemoizationPolicy(Policy):
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(
-            state_featurizer=None,
-            max_history=max_history,
-            use_intent_probabilities=False,
+            state_featurizer=None, max_history=max_history
         )
 
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = MEMOIZATION_POLICY_PRIORITY,
-        max_history: Optional[int] = None,
+        max_history: Optional[int] = -1,
         lookup: Optional[Dict] = None,
     ) -> None:
         """Initialize the policy.
@@ -77,6 +77,16 @@ class MemoizationPolicy(Policy):
                 predicted actions for them
         """
 
+        if max_history == -1:
+            max_history = 5  # old default value
+            common_utils.raise_warning(
+                f"Please configure the max history in your configuration file, "
+                f"currently 'max_history' is set to old default value of "
+                f"'{max_history}'. If you want to have infinite max history "
+                f"set it to 'None' explicitly. We will change the default value of "
+                f"'max_history' in the future to 'None'."
+            )
+
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
@@ -87,7 +97,7 @@ class MemoizationPolicy(Policy):
 
     def _create_lookup_from_states(
         self,
-        trackers_as_states: List[List[Dict]],
+        trackers_as_states: List[List[STATE]],
         trackers_as_actions: List[List[Text]],
     ) -> Dict[Text, Text]:
         """Creates lookup dictionary from the tracker represented as states.
@@ -121,6 +131,8 @@ class MemoizationPolicy(Policy):
             action = actions[0]
 
             feature_key = self._create_feature_key(states)
+            if not feature_key:
+                continue
 
             if feature_key not in ambiguous_feature_keys:
                 if feature_key in lookup.keys():
@@ -135,7 +147,7 @@ class MemoizationPolicy(Policy):
 
         return lookup
 
-    def _create_feature_key(self, states: List[Dict]) -> Text:
+    def _create_feature_key(self, states: List[STATE]) -> Text:
         from rasa.utils import io
 
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
@@ -147,7 +159,7 @@ class MemoizationPolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -167,15 +179,12 @@ class MemoizationPolicy(Policy):
         )
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
 
-    def _recall_states(self, states: List[Dict[Text, float]]) -> Optional[Text]:
+    def _recall_states(self, states: List[STATE]) -> Optional[Text]:
 
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
-        self,
-        states: List[Dict[Text, float]],
-        tracker: DialogueStateTracker,
-        domain: Domain,
+        self, states: List[STATE], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
 
         return self._recall_states(states)
@@ -325,10 +334,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         return None
 
     def recall(
-        self,
-        states: List[Dict[Text, float]],
-        tracker: DialogueStateTracker,
-        domain: Domain,
+        self, states: List[STATE], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
 
         predicted_action_name = self._recall_states(states)

@@ -1,0 +1,86 @@
+---
+id: custom-actions
+sidebar_label: Custom Actions
+title: Custom Actions
+---
+
+An action can run any code you want. Custom actions can turn on the lights,
+add an event to a calendar, check a user's bank balance, or anything
+else you can imagine.
+
+The `Action` class is the base class for any custom action. It has two methods
+that both need to be overwritten, `name()` and `run()`.
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="custom-action-example"></a>
+
+In a restaurant bot, if the user says “show me a Mexican restaurant”,
+your bot could execute the action `ActionCheckRestaurants`,
+which might look like this:
+
+```python
+from rasa_sdk import Action
+from rasa_sdk.events import SlotSet
+
+class ActionCheckRestaurants(Action):
+   def name(self) -> Text:
+      return "action_check_restaurants"
+
+   def run(self,
+           dispatcher: CollectingDispatcher,
+           tracker: Tracker,
+           domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+      cuisine = tracker.get_slot('cuisine')
+      q = "select * from restaurants where cuisine='{0}' limit 1".format(cuisine)
+      result = db.query(q)
+
+      return [SlotSet("matches", result if result is not None else [])]
+```
+
+You should add the action name `action_check_restaurants` to
+the actions in your domain file. The action's `run()` method receives
+three arguments. You can access the values of slots and the latest message
+sent by the user using the `tracker` object, and you can send messages
+back to the user with the `dispatcher` object, by calling
+`dispatcher.utter_message`.
+
+Details of the `run()` method:
+
+
+#### Action.run
+``async Action.run(dispatcher, tracker, domain):``
+
+Execute the side effects of this action.
+
+
+* **Parameters**
+
+  * **dispatcher** – the dispatcher which is used to
+    send messages back to the user. Use
+    `dispatcher.utter_message()` or any other
+    `rasa_sdk.executor.CollectingDispatcher`
+    method.
+
+  * **tracker** – the state tracker for the current
+    user. You can access slot values using
+    `tracker.get_slot(slot_name)`, the most recent user message
+    is `tracker.latest_message.text` and any other
+    `rasa_sdk.Tracker` property.
+
+  * **domain** – the bot's domain
+
+
+
+* **Returns**
+
+  A dictionary of `rasa_sdk.events.Event` instances that is
+
+    returned through the endpoint
+
+
+
+
+* **Return type**
+
+  `List`[`Dict`[`str`, `Any`]]
+

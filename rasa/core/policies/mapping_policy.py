@@ -6,7 +6,7 @@ from typing import Any, List, Text, Optional
 
 from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 import rasa.utils.io
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.nlu.constants import INTENT_NAME_KEY, ACTION_NAME
 from rasa.utils import common as common_utils
 
 from rasa.core.actions.action import (
@@ -25,6 +25,7 @@ from rasa.core.events import ActionExecuted
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
 from rasa.utils.common import raise_warning
 
@@ -85,7 +86,7 @@ class MappingPolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -119,7 +120,7 @@ class MappingPolicy(Policy):
         else:
             action = domain.intent_properties.get(intent, {}).get("triggers")
 
-        if tracker.latest_action.get("action_name") == ACTION_LISTEN_NAME:
+        if tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME:
             # predict mapped action
             if action:
                 idx = domain.index_for_action(action)
@@ -139,7 +140,7 @@ class MappingPolicy(Policy):
                     " action '{}' in the domain."
                     "".format(intent, action)
                 )
-        elif tracker.latest_action.get("action_name") == action and action is not None:
+        elif tracker.latest_action.get(ACTION_NAME) == action and action is not None:
             # predict next action_listen after mapped action
             latest_action = tracker.get_last_event_for(ActionExecuted)
             assert latest_action.action_name == action

@@ -22,6 +22,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
+    ACTION_NAME,
 )
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
@@ -207,10 +208,10 @@ class DialogueStateTracker:
     def freeze_current_state(state) -> frozenset:
         frozen_state = frozenset(
             {
-                key: frozenset(state[key].items())
-                if isinstance(state[key], Dict)
-                else frozenset(state[key])
-                for key in state.keys()
+                key: frozenset(values.items())
+                if isinstance(values, Dict)
+                else frozenset(values)
+                for key, values in state.items()
             }.items()
         )
         return frozen_state
@@ -250,7 +251,7 @@ class DialogueStateTracker:
         if self.active_loop.get("name"):
             # reset form validation if some form is active
             self.active_loop["validate"] = True
-        if action.get("action_name") == self.active_loop.get("name"):
+        if action.get(ACTION_NAME) == self.active_loop.get("name"):
             # reset form rejection if it was predicted again
             self.active_loop["rejected"] = False
 

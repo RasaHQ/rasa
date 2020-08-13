@@ -18,9 +18,16 @@ from rasa.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
 )
-from rasa.nlu.constants import INTENT_NAME_KEY
 
-from rasa.nlu.constants import INTENT, TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES
+
+from rasa.nlu.constants import (
+    INTENT,
+    TEXT,
+    ACTION_NAME,
+    ACTION_TEXT,
+    ENTITIES,
+    INTENT_NAME_KEY,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -260,7 +267,13 @@ class UserUttered(Event):
         )
 
     def __hash__(self) -> int:
-        return hash((self.text, self.intent_name, jsonpickle.encode(self.entities)))
+        return hash(
+            (
+                self.text,
+                self.intent.get(INTENT_NAME_KEY),
+                jsonpickle.encode(self.entities),
+            )
+        )
 
     @property
     def intent_name(self) -> Optional[Text]:
@@ -272,11 +285,11 @@ class UserUttered(Event):
         else:
             return (
                 self.text,
-                self.intent_name,
+                self.intent.get(INTENT_NAME_KEY),
                 [jsonpickle.encode(ent) for ent in self.entities],
             ) == (
                 other.text,
-                other.intent_name,
+                other.intent.get(INTENT_NAME_KEY),
                 [jsonpickle.encode(ent) for ent in other.entities],
             )
 
@@ -305,9 +318,9 @@ class UserUttered(Event):
     def as_dict_core(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         entities = [entity.get("entity") for entity in self.entities]
         if self.intent_name:
-            return {TEXT: None, INTENT: self.intent_name, ENTITIES: entities}
+            return {INTENT: self.intent_name, ENTITIES: entities}
         else:
-            return {TEXT: self.text, INTENT: None, ENTITIES: entities}
+            return {TEXT: self.text, ENTITIES: entities}
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -1125,7 +1138,10 @@ class ActionExecuted(Event):
         return d
 
     def as_dict_core(self) -> Dict[Text, Text]:
-        return {ACTION_NAME: self.action_name, ACTION_TEXT: self.e2e_text}
+        if self.action_name:
+            return {ACTION_NAME: self.action_name}
+        else:
+            return {ACTION_TEXT: self.e2e_text}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.set_latest_action(self.as_dict_core())

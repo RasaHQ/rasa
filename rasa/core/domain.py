@@ -44,6 +44,7 @@ from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
+from rasa.nlu.constants import ENTITIES
 
 logger = logging.getLogger(__name__)
 
@@ -640,32 +641,6 @@ class Domain:
             for i in range(0, s.feature_dimensionality())
         ]
 
-    # noinspection PyTypeChecker
-    @lazy_property
-    def prev_action_states(self) -> List[Text]:
-        """Returns all available previous action state strings."""
-
-        return self.action_names
-
-    # noinspection PyTypeChecker
-    @lazy_property
-    def intent_states(self) -> List[Text]:
-        """Returns all available previous action state strings."""
-
-        return self.intents
-
-    # noinspection PyTypeChecker
-    @lazy_property
-    def entity_states(self) -> List[Text]:
-        """Returns all available previous action state strings."""
-
-        return self.entities
-
-    # noinspection PyTypeChecker
-    @lazy_property
-    def form_states(self) -> List[Text]:
-        return self.form_names
-
     def index_of_state(self, state_name: Text) -> Optional[int]:
         """Provide the index of a state."""
 
@@ -681,11 +656,11 @@ class Domain:
         """Returns all available states."""
 
         return (
-            self.intent_states
-            + self.entity_states
+            self.intents
+            + self.entities
             + self.slot_states
-            + self.prev_action_states
-            + self.form_states
+            + self.action_names
+            + self.form_names
         )
 
     def _get_user_states(
@@ -704,12 +679,13 @@ class Domain:
 
         # filter entities based on intent config
         entities = tuple(
-            [
-                entity_name
-                for entity_name in self._get_featurized_entities(latest_message)
-            ]
+            entity_name for entity_name in self._get_featurized_entities(latest_message)
         )
-        state_dict[USER]["entities"] = entities
+
+        if entities:
+            state_dict[USER][ENTITIES] = entities
+        else:
+            del state_dict[USER][ENTITIES]
 
         return state_dict
 
@@ -735,12 +711,13 @@ class Domain:
         # i.e., when the state is not empty.
         if not tracker.latest_message == UserUttered.empty() and tracker.latest_action:
             slots = {}
-            for key, slot in tracker.slots.items():
+            for slot_name, slot in tracker.slots.items():
                 if slot is not None and slot.as_feature():
                     if slot.value == SHOULD_NOT_BE_SET:
-                        slots[key] = SHOULD_NOT_BE_SET
-                    else:
-                        slots[key] = tuple(slot.as_feature())
+                        slots[slot_name] = SHOULD_NOT_BE_SET
+                    elif any(slot.as_feature()):
+                        # only add slot if some of the features are not zero
+                        slots[slot_name] = tuple(slot.as_feature())
             if slots:
                 return {SLOTS: slots}
 

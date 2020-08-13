@@ -51,9 +51,7 @@ class SingleStateFeaturizer:
         pass
 
     def encode(
-        self,
-        state: Dict[Text, float],
-        interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Encode user input."""
 
@@ -99,9 +97,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         self.input_state_map = domain.input_state_map
 
     def encode(
-        self,
-        state: Dict[Text, float],
-        interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Returns a binary vector indicating which features are active.
 
@@ -205,8 +201,8 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     def prepare_from_domain(self, domain: Domain) -> None:
         """Creates internal vocabularies for user intents and bot actions."""
 
-        self.user_labels = domain.intent_states + domain.entity_states
-        self.slot_labels = domain.slot_states + domain.form_states
+        self.user_labels = domain.intents + domain.entities
+        self.slot_labels = domain.slot_states + domain.form_names
         self.bot_labels = domain.action_names
 
         if self.use_shared_vocab:
@@ -227,9 +223,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         )
 
     def encode(
-        self,
-        state: Dict[Text, float],
-        interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Returns a binary vector indicating which tokens are present."""
 
@@ -304,36 +298,80 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         # storing slot names so that the features are always added in the same order
         self.slot_names = [slot.name for slot in domain.slots]
         self.slot_states = domain.slot_states
-        self.form_states = domain.form_states
+        self.form_states = domain.form_names
         self.entities = domain.entities
         self.action_names = domain.action_names
-        self.intents = domain.intent_states
+        self.intents = domain.intents
 
         self.output_shapes[ENTITIES] = len(
             self.slot_states + self.form_states + self.entities
         )
 
+    def fill_in_features(self, features: List) -> List:
+        shapes = self.output_shapes
+
+        for feature in features:
+            intent_rows_to_fill = np.where(feature[:, 3] != -1)[0]
+            user_text_rows_to_fill = np.where(feature[:, 3] != 1)[0]
+            action_names_rows_to_fill = np.where(feature[:, 7] != -1)[0]
+            action_text_rows_to_fill = np.where(feature[:, 7] != 1)[0]
+
+            for key in shapes.keys():
+                if INTENT in key:
+                    feature[np.array(intent_rows_to_fill), 2] = [
+                        np.ones((1, shapes.get(key))) * -1
+                    ] * len(intent_rows_to_fill)
+                elif ACTION_NAME in key:
+                    feature[np.array(action_names_rows_to_fill), 6] = [
+                        np.ones((1, shapes.get(key))) * -1
+                    ] * len(action_names_rows_to_fill)
+                elif ACTION_TEXT in key:
+                    if "sparse" in key:
+                        feature[np.array(action_text_rows_to_fill), 4] = [
+                            scipy.sparse.coo_matrix((1, shapes.get(key)))
+                        ] * len(action_text_rows_to_fill)
+                    elif "dense" in key:
+                        feature[np.array(action_text_rows_to_fill), 5] = [
+                            np.ones((1, shapes.get(key))) * -1
+                        ] * len(action_text_rows_to_fill)
+                else:
+                    if "sparse" in key:
+                        feature[np.array(user_text_rows_to_fill), 0] = [
+                            scipy.sparse.coo_matrix((1, shapes.get(key)))
+                        ] * len(user_text_rows_to_fill)
+                    elif "dense" in key:
+                        feature[np.array(user_text_rows_to_fill), 1] = [
+                            np.ones((1, shapes.get(key))) * -1
+                        ] * len(user_text_rows_to_fill)
+
+        return features
+
     def _get_slot_and_entity_features(self, state: STATE) -> np.ndarray:
         binary_features = np.zeros(
             (len(self.slot_states + self.form_states + self.entities))
         )
-        if state.get(SLOTS):
-            # collect slot features
-            current_slot_names = state.get(SLOTS).keys()
-            slot_values = [
-                np.array(state.get(SLOTS)[slot_name])
-                for slot_name in self.slot_names
-                if slot_name in current_slot_names
-            ]
+        # collect slot features
+        current_slot_names = state.get(SLOTS, {})
+        current_slot_names = current_slot_names.keys()
+        slot_values = [
+            np.array(state.get(SLOTS)[slot_name])
+            for slot_name in self.slot_names
+            if slot_name in current_slot_names
+        ]
+        if slot_values:
             slot_values = np.hstack(slot_values)
-            binary_features[: len(self.slot_states)] = slot_values
-        if state.get(FORM):
-            # featurize forms
-            form_values = np.zeros((len(self.form_states)))
-            form_values[self.form_states.index(state.get(FORM).get("name"))] += 1
-            binary_features[
-                len(self.slot_states) : len(self.slot_states + self.form_states)
-            ] = form_values
+        else:
+            slot_values = np.empty(0)
+        binary_features[: len(self.slot_states)] = slot_values
+        # featurize forms
+        form = state.get(FORM, {})
+        form_values = np.zeros((len(self.form_states)))
+        if form:
+            form_values[self.form_states.index(form.get("name"))] += 1
+        binary_features[
+            len(self.slot_states) : len(self.slot_states + self.form_states)
+        ] = form_values
+        # featurize entities
         if state.get(USER):
             if state[USER].get(ENTITIES):
                 entities = state[USER].get(ENTITIES)
@@ -469,21 +507,23 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def process_state_without_trained_nlu(self, state: STATE):
         intent_features = np.zeros((1, len(self.intents)))
         action_name_features = np.zeros((1, len(self.action_names)))
-        if state.get(USER):
-            intent = state.get(USER).get(INTENT)
-            if intent:
-                intent_features[0, self.intents.index(intent)] += 1
-        if state.get(PREVIOUS_ACTION):
-            action_name = state.get(PREVIOUS_ACTION).get(ACTION_NAME)
-            if action_name:
-                action_name_features[0, self.action_names.index(action_name)] += 1
+        user = state.get(USER, {})
+        intent = user.get(INTENT)
+        if intent:
+            intent_features[0, self.intents.index(intent)] += 1
+        prev_action = state.get(PREVIOUS_ACTION, {})
+        action_name = prev_action.get(ACTION_NAME)
+        if action_name:
+            action_name_features[0, self.action_names.index(action_name)] += 1
         user_features = [None, None, intent_features, -1]
         action_features = [None, None, action_name_features, -1]
         self.output_shapes[INTENT] = intent_features.shape[-1]
         self.output_shapes[ACTION_NAME] = action_name_features.shape[-1]
         return user_features + action_features
 
-    def encode(self, state: STATE, interpreter: NaturalLanguageInterpreter):
+    def encode(
+        self, state: STATE, interpreter: NaturalLanguageInterpreter
+    ) -> np.ndarray:
         slot_and_entity_features = self._get_slot_and_entity_features(state)
         if state == {}:
             return np.array(
@@ -598,16 +638,13 @@ class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
     def __init__(
-        self,
-        state_featurizer: Optional[SingleStateFeaturizer] = None,
-        use_intent_probabilities: bool = False,
+        self, state_featurizer: Optional[SingleStateFeaturizer] = None
     ) -> None:
 
         self.state_featurizer = state_featurizer
-        self.use_intent_probabilities = use_intent_probabilities
 
     @staticmethod
-    def _unfreeze_states(states: deque,) -> List[STATE]:
+    def _unfreeze_states(states: deque) -> List[STATE]:
         return [
             {key: dict(value) for key, value in dict(state).items()} for state in states
         ]
@@ -633,7 +670,7 @@ class TrackerFeaturizer:
 
     def _featurize_states(
         self,
-        trackers_as_states: List[List[Dict[Text, float]]],
+        trackers_as_states: List[List[STATE]],
         interpreter: NaturalLanguageInterpreter,
     ) -> Tuple[np.ndarray, List[int]]:
         """Create X."""
@@ -656,6 +693,9 @@ class TrackerFeaturizer:
             if not story_features == []:
                 features.append(np.stack(story_features))
                 true_lengths.append(dialogue_len)
+
+        if isinstance(self.state_featurizer, E2ESingleStateFeaturizer):
+            features = self.state_featurizer.fill_in_features(features)
 
         # noinspection PyPep8Naming
         X = np.array(features)
@@ -689,7 +729,7 @@ class TrackerFeaturizer:
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[Dict]], List[List[Text]]]:
+    ) -> Tuple[List[List[STATE]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions."""
 
         raise NotImplementedError(
@@ -724,7 +764,7 @@ class TrackerFeaturizer:
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[Dict[Text, float]]]:
+    ) -> List[List[STATE]]:
         """Transforms list of trackers to lists of states for prediction."""
 
         raise NotImplementedError(
@@ -773,13 +813,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest dialogue with -1.
     """
 
-    def __init__(
-        self,
-        state_featurizer: SingleStateFeaturizer,
-        use_intent_probabilities: bool = False,
-    ) -> None:
-
-        super().__init__(state_featurizer, use_intent_probabilities)
+    def __init__(self, state_featurizer: SingleStateFeaturizer) -> None:
+        super().__init__(state_featurizer)
         self.max_len = None
 
     @staticmethod
@@ -874,10 +909,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         state_featurizer: Optional[SingleStateFeaturizer] = None,
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
-        use_intent_probabilities: bool = False,
     ) -> None:
 
-        super().__init__(state_featurizer, use_intent_probabilities)
+        super().__init__(state_featurizer)
         self.max_history = max_history
         self.remove_duplicates = remove_duplicates
 

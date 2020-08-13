@@ -241,14 +241,13 @@ class KnowledgeBasePolicy(TEDPolicy):
         training_data = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
-        training_data_X = self._fill_in_features(training_data.X)
 
         rule_to_id_map = self._create_rule_features(domain)
         label_features = self._create_label_features(domain, rule_to_id_map)
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(
-            training_data_X, np.array(training_data.true_length), training_data.y
+            training_data.X, np.array(training_data.true_length), training_data.y
         )
         if model_data.is_empty():
             logger.error(
