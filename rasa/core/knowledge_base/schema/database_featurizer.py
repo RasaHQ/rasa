@@ -10,15 +10,14 @@ from rasa.core.knowledge_base.schema.database_schema import DatabaseSchema
 
 
 class DatabaseSchemaFeaturizer:
-    def __init__(self):
-        self.featurizer = CountVectorsFeaturizer()
-
-    def featurize(self, database_schema: DatabaseSchema):
-        messages = self._convert_to_messages(database_schema)
+    @staticmethod
+    def featurize(database_schema: DatabaseSchema):
+        messages = DatabaseSchemaFeaturizer._convert_to_messages(database_schema)
 
         training_data = TrainingData(messages)
 
-        self.featurizer.train(training_data)
+        featurizer = CountVectorsFeaturizer()
+        featurizer.train(training_data)
 
         all_features = []
         for message in training_data.training_examples:
@@ -29,7 +28,8 @@ class DatabaseSchemaFeaturizer:
 
         return all_features
 
-    def _convert_to_messages(self, database_schema: DatabaseSchema) -> List[Message]:
+    @staticmethod
+    def _convert_to_messages(database_schema: DatabaseSchema) -> List[Message]:
         texts = [
             f"{column.refer_table.name}_{column.name}_{column.column_type}"
             for column in database_schema.columns

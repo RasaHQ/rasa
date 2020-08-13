@@ -222,8 +222,7 @@ class KnowledgeBasePolicy(TEDPolicy):
     ) -> None:
         """Train the policy on given training trackers."""
 
-        database_featurizer = DatabaseSchemaFeaturizer()
-        database_featurizer.featurize(domain.database_schema)
+        database_features = DatabaseSchemaFeaturizer.featurize(domain.database_schema)
 
         # dealing with training data
         # TODO we also need to featurize the database schema
