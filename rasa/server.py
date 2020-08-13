@@ -14,7 +14,7 @@ from typing import Any, Callable, List, Optional, Text, Union, Dict
 
 from sanic.exceptions import InvalidUsage
 
-from nlu.training_data.formats import RasaYAMLReader
+from rasa.nlu.training_data.formats import RasaYAMLReader
 import rasa
 import rasa.core.utils
 from rasa.utils import common as common_utils
