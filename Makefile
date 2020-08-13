@@ -58,8 +58,6 @@ install-full-windows: install install-mitie
 	poetry install -E spacy -E transformers -E jieba
 
 install-docs:
-	# FIXME: poetry doesn't support installing from a git subdirectory
-	poetry run pip install git+https://github.com/RasaHQ/pydoc-markdown.git@23d825f#subdirectory=pydoc-markdown
 	cd docs/ && yarn install
 
 formatter:
