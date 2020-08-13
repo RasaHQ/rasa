@@ -266,7 +266,7 @@ class Interpreter:
     def default_output_attributes() -> Dict[Text, Any]:
         return {
             TEXT: "",
-            INTENT: {INTENT_NAME_KEY: None, "confidence": 0.0},
+            INTENT: {INTENT_NAME_KEY: None, INTENT_CONFIDENCE_KEY: 0.0},
             ENTITIES: [],
         }
 
