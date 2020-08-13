@@ -132,15 +132,19 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Print Poetry cache dir
-      run: |
-        poetry config --list
-      shell: bash
-
-    - name: Load Poetry Cached Libraries ⬇
+    - name: Load Poetry Cached Libraries (Linux) ⬇
       uses: actions/cache@v1
+      if: matrix.os == 'ubuntu-latest'
       with:
         path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
+
+    - name: Load Poetry Cached Libraries (Windows) ⬇
+      uses: actions/cache@v1
+      if: matrix.os == 'windows-latest'
+      with:
+        path: C:\Users\runneradmin\AppData\Local\pypoetry\Cache\virtualenvs
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
