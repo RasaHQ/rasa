@@ -8,6 +8,7 @@ from typing import Tuple, List, Optional, Dict, Text, Any, Union
 import copy
 from collections import deque
 import scipy.sparse
+from collections import defaultdict
 
 import rasa.utils.io
 from rasa.core import utils
@@ -17,12 +18,13 @@ from rasa.core.events import ActionExecuted, UserUttered, Form, SlotSet
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
+from rasa.utils.features import Features
 from rasa.core.interpreter import (
     NaturalLanguageInterpreter,
     RegexInterpreter,
     RasaNLUInterpreter,
 )
-from rasa.core.constants import USER, PREVIOUS_ACTION, FORM, SLOTS
+from rasa.core.constants import USER, PREVIOUS_ACTION, FORM, SLOTS, ACTION
 from rasa.nlu.constants import (
     TEXT,
     INTENT,
@@ -30,6 +32,8 @@ from rasa.nlu.constants import (
     ACTION_TEXT,
     ENTITIES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
+    FEATURE_TYPE_SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.training_data.message import Message
 
@@ -49,9 +53,9 @@ class SingleStateFeaturizer:
 
         pass
 
-    def encode(
+    def encode_state(
         self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
-    ) -> np.ndarray:
+    ) -> Dict[Text, List["Features"]]:
         """Encode user input."""
 
         raise NotImplementedError(
@@ -60,16 +64,20 @@ class SingleStateFeaturizer:
             "encode states to a feature vector"
         )
 
-    @staticmethod
-    def action_as_index(action: Text, domain: Domain) -> Optional[int]:
-        """Encode system action as one-hot vector."""
+    def encode_action(
+        self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
+    ) -> Dict[Text, List["Features"]]:
+        """Encode user input."""
 
-        if action is None:
-            return -1
+        raise NotImplementedError(
+            "SingleStateFeaturizer must have "
+            "the capacity to "
+            "encode actions to a feature vector"
+        )
 
-        return domain.index_for_action(action)
-
-    def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
+    def create_encoded_all_actions(
+        self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
+    ) -> List[Dict[Text, List["Features"]]]:
         """Create matrix with all actions from domain encoded in rows."""
 
         raise NotImplementedError("Featurizer must implement encoding actions.")
@@ -95,7 +103,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         self.num_features = domain.num_states
         self.input_state_map = domain.input_state_map
 
-    def encode(
+    def encode_state(
         self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Returns a binary vector indicating which features are active.
@@ -221,7 +229,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
             len(self.user_vocab) + len(self.slot_labels) + len(self.bot_vocab)
         )
 
-    def encode(
+    def encode_state(
         self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Returns a binary vector indicating which tokens are present."""
@@ -285,348 +293,153 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self) -> None:
 
         super().__init__()
-        self.output_shapes = {}
-        self.slot_names = []
-        self.slot_states = []
-        self.form_states = []
-        self.entities = []
-        self.action_names = []
-        self.intents = []
+        self._default_feature_states = {}
+        self.e2e_action_texts = []
 
     def prepare_from_domain(self, domain: Domain) -> None:
-        # storing slot names so that the features are always added in the same order
-        self.slot_names = [slot.name for slot in domain.slots]
-        self.slot_states = domain.slot_states
-        self.form_states = domain.form_names
-        self.entities = domain.entities
-        self.action_names = domain.action_names
-        self.intents = domain.intents
+        # store feature states for each attribute in order to create binary features
+        self._default_feature_states[INTENT] = {
+            f: i for i, f in enumerate(domain.intents)
+        }
+        self._default_feature_states[ACTION_NAME] = {
+            f: i for i, f in enumerate(domain.action_names)
+        }
+        self._default_feature_states[ENTITIES] = {
+            f: i for i, f in enumerate(domain.entities)
+        }
+        self._default_feature_states[SLOTS] = {
+            f: i for i, f in enumerate(domain.slot_states)
+        }
+        self._default_feature_states[FORM] = {
+            f: i for i, f in enumerate(domain.form_names)
+        }
+        self.e2e_action_texts = domain.e2e_action_texts
 
-        self.output_shapes[ENTITIES] = len(
-            self.slot_states + self.form_states + self.entities
-        )
-
-    def fill_in_features(self, features: List) -> List:
-        shapes = self.output_shapes
-
-        for feature in features:
-            intent_rows_to_fill = np.where(feature[:, 3] != -1)[0]
-            user_text_rows_to_fill = np.where(feature[:, 3] != 1)[0]
-            action_names_rows_to_fill = np.where(feature[:, 7] != -1)[0]
-            action_text_rows_to_fill = np.where(feature[:, 7] != 1)[0]
-
-            for key in shapes.keys():
-                if INTENT in key:
-                    feature[np.array(intent_rows_to_fill), 2] = [
-                        np.ones((1, shapes.get(key))) * -1
-                    ] * len(intent_rows_to_fill)
-                elif ACTION_NAME in key:
-                    feature[np.array(action_names_rows_to_fill), 6] = [
-                        np.ones((1, shapes.get(key))) * -1
-                    ] * len(action_names_rows_to_fill)
-                elif ACTION_TEXT in key:
-                    if "sparse" in key:
-                        feature[np.array(action_text_rows_to_fill), 4] = [
-                            scipy.sparse.coo_matrix((1, shapes.get(key)))
-                        ] * len(action_text_rows_to_fill)
-                    elif "dense" in key:
-                        feature[np.array(action_text_rows_to_fill), 5] = [
-                            np.ones((1, shapes.get(key))) * -1
-                        ] * len(action_text_rows_to_fill)
-                else:
-                    if "sparse" in key:
-                        feature[np.array(user_text_rows_to_fill), 0] = [
-                            scipy.sparse.coo_matrix((1, shapes.get(key)))
-                        ] * len(user_text_rows_to_fill)
-                    elif "dense" in key:
-                        feature[np.array(user_text_rows_to_fill), 1] = [
-                            np.ones((1, shapes.get(key))) * -1
-                        ] * len(user_text_rows_to_fill)
-
-        return features
-
-    def _get_slot_and_entity_features(self, state: STATE) -> np.ndarray:
-        binary_features = np.zeros(
-            (len(self.slot_states + self.form_states + self.entities))
-        )
-        # collect slot features
-        current_slot_names = state.get(SLOTS, {})
-        current_slot_names = current_slot_names.keys()
-        slot_values = [
-            np.array(state.get(SLOTS)[slot_name])
-            for slot_name in self.slot_names
-            if slot_name in current_slot_names
-        ]
-        slot_values = np.hstack(slot_values)
-        binary_features[: len(self.slot_states)] = slot_values
-        # featurize forms
-        form = state.get(FORM, {})
-        form_values = np.zeros((len(self.form_states)))
-        form_values[self.form_states.index(form.get("name"))] += 1
-        binary_features[
-            len(self.slot_states) : len(self.slot_states + self.form_states)
-        ] = form_values
-        # featurize entities
-        if state.get(USER):
-            if state[USER].get(ENTITIES):
-                entities = state[USER].get(ENTITIES)
-                for entity in entities:
-                    binary_features[
-                        len(self.slot_states + self.form_states)
-                        + self.entities.index(entity)
-                    ] += 1
-
-        return binary_features
-
-    def _check_dense_features(
-        self, dense_features: Tuple[np.ndarray, np.ndarray]
-    ) -> bool:
-        if dense_features[1] is None:
-            return False
-        if dense_features[1].size == 0:
-            return False
-        return True
-
-    def _record_shape(
-        self,
-        attribute: Text,
-        sparse_features: Tuple[scipy.sparse.spmatrix, scipy.sparse.spmatrix],
-        dense_features: Tuple[np.ndarray, np.ndarray],
-    ) -> None:
-        if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-            if not sparse_features[1] is None:
-                if f"{attribute}_sparse" not in self.output_shapes.keys():
-                    self.output_shapes[f"{attribute}_sparse"] = sparse_features[
-                        1
-                    ].shape[-1]
-
-            if self._check_dense_features(dense_features):
-                if f"{attribute}_dense" not in self.output_shapes.keys():
-                    self.output_shapes[f"{attribute}_dense"] = dense_features[1].shape[
-                        -1
-                    ]
-        else:
-            if not sparse_features[0] is None:
-                if f"{attribute}" not in self.output_shapes.keys():
-                    self.output_shapes[f"{attribute}"] = sparse_features[0].shape[-1]
-
-    def _construct_message(self, state: Dict[Text, Text], state_comes_from: Text):
-        if state_comes_from == USER:
-            if state.get(INTENT):
-                message = Message(data={INTENT: state.get(INTENT)})
+    @staticmethod
+    def _construct_message(
+        sub_state: Dict[Text, Union[Text, Tuple[float], Tuple[Text]]], state_type: Text
+    ) -> Tuple["Message", Text]:
+        if state_type == USER:
+            if sub_state.get(INTENT):
+                message = Message(data={INTENT: sub_state.get(INTENT)})
                 attribute = INTENT
             else:
-                message = Message(state.get(TEXT))
+                message = Message(sub_state.get(TEXT))
                 attribute = TEXT
-        else:
-            if state.get(ACTION_NAME):
-                message = Message(data={ACTION_NAME: state.get(ACTION_NAME)})
+        elif state_type in {PREVIOUS_ACTION, ACTION}:
+            if sub_state.get(ACTION_NAME):
+                message = Message(data={ACTION_NAME: sub_state.get(ACTION_NAME)})
                 attribute = ACTION_NAME
             else:
-                message = Message(data={ACTION_TEXT: state.get(ACTION_TEXT)})
+                message = Message(data={ACTION_TEXT: sub_state.get(ACTION_TEXT)})
                 attribute = ACTION_TEXT
+        else:
+            raise ValueError(
+                f"Given state_type '{state_type}' is not supported. "
+                f"It must be either '{USER}' or '{PREVIOUS_ACTION}'."
+            )
+
         return message, attribute
+
+    def _create_features(
+        self,
+        sub_state: Dict[Text, Union[Text, Tuple[float], Tuple[Text]]],
+        attribute: Text,
+    ) -> Dict[Text, List["Features"]]:
+        if attribute in {INTENT, ACTION_NAME}:
+            state_features = {sub_state[attribute]: 1}
+        elif attribute == ENTITIES:
+            state_features = {entity: 1 for entity in sub_state.get(ENTITIES, [])}
+        elif attribute == FORM:
+            state_features = {sub_state["name"]: 1}
+        elif attribute == SLOTS:
+            state_features = {
+                f"{slot_name}_{i}": value
+                for slot_name, slot_as_feature in sub_state.items()
+                for i, value in enumerate(slot_as_feature)
+            }
+        else:
+            raise ValueError(
+                f"Given attribute '{attribute}' is not supported. "
+                f"It must be one of '{self._default_feature_states.keys()}'."
+            )
+
+        # TODO consider using bool or int to save memory
+        features = np.zeros(len(self._default_feature_states[attribute]), np.float32)
+        for state_feature, value in state_features.items():
+            features[self._default_feature_states[attribute][state_feature]] = value
+
+        features = Features(
+            features, FEATURE_TYPE_SENTENCE, attribute, self.__class__.__name__
+        )
+        return {attribute: [features]}
 
     def _extract_features(
         self,
-        state: Dict[str, Union[str, Tuple[Union[float, str]]]],
-        state_comes_from: Text,
+        sub_state: Dict[Text, Union[Text, Tuple[float], Tuple[Text]]],
+        state_type: Text,
         interpreter: NaturalLanguageInterpreter,
-    ) -> List[Union[scipy.sparse.spmatrix, np.ndarray]]:
+    ) -> Dict[Text, List["Features"]]:
 
-        message, attribute = self._construct_message(state, state_comes_from)
+        message, attribute = self._construct_message(sub_state, state_type)
 
         parsed_message = interpreter.synchronous_parse_message(message, attribute)
-        sparse_features = parsed_message.get_sparse_features(attribute)
-        dense_features = parsed_message.get_dense_features(attribute)
-
-        self._record_shape(attribute, sparse_features, dense_features)
-
-        # output_features = [sparse_features_for_text, dense_features_for_text, sparse_features_for_name, 1 for text OR -1 for name]
-        if attribute.endswith(TEXT):
-            output_features = [sparse_features[1], dense_features[1], None, 1]
-        else:
-            output_features = [None, None, sparse_features[0].sum(0), -1]
-        return output_features
-
-    def _tokenizer_in_pipeline(self, interpreter: RasaNLUInterpreter) -> bool:
-        from rasa.nlu.tokenizers.tokenizer import Tokenizer
-
-        tokenizer_in_pipeline = any(
-            [
-                isinstance(component, Tokenizer)
-                for component in interpreter.interpreter.pipeline
-            ]
-        )
-        if tokenizer_in_pipeline:
-            return tokenizer_in_pipeline
-        else:
-            # TODO: do these warnings make sense? or are they confusing and it is better to remove them?
-            # logger.warning(
-            #     "No tokenizer is included in the NLU pipeline. Features for intents and actions will be featurized on the fly."
-            # )
-            return tokenizer_in_pipeline
-
-    def _count_featurizer_in_pipeline(self, interpreter: RasaNLUInterpreter) -> bool:
-        from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
-            CountVectorsFeaturizer,
+        all_features = (
+            parsed_message.get_sparse_features(attribute)
+            + parsed_message.get_dense_features(attribute)
+            if parsed_message is not None
+            else ()
         )
 
-        count_featurizer_in_pipeline = any(
-            [
-                isinstance(component, CountVectorsFeaturizer)
-                for component in interpreter.interpreter.pipeline
-            ]
-        )
-        if count_featurizer_in_pipeline:
-            return count_featurizer_in_pipeline
-        else:
-            # logger.warning(
-            #     "No count vectors featurizer is included in the NLU pipeline. Features for intents and actions will be featurized on the fly."
-            # )
-            return count_featurizer_in_pipeline
+        output = defaultdict(list)
+        for features in all_features:
+            if features is not None:
+                output[attribute].append(features)
+        output = dict(output)
 
-    def _interpreter_is_suitable_for_core_featurization(
-        self, interpreter: NaturalLanguageInterpreter
-    ) -> bool:
-        if isinstance(interpreter, RasaNLUInterpreter):
-            return self._tokenizer_in_pipeline(
-                interpreter
-            ) and self._count_featurizer_in_pipeline(interpreter)
-        else:
-            # logger.warning(
-            #     "No trained NLU model was loaded. Features for intents and actions will be featurized on the fly."
-            # )
-            return False
+        if not output.get(attribute) and attribute in {INTENT, ACTION_NAME}:
+            # there can only be either TEXT or INTENT
+            # or ACTION_TEXT or ACTION_NAME
+            # therefore nlu pipeline didn't create features for user or action
+            output = self._create_features(sub_state, attribute)
 
-    def process_state_without_trained_nlu(self, state: STATE):
-        intent_features = np.zeros((1, len(self.intents)))
-        action_name_features = np.zeros((1, len(self.action_names)))
-        user = state.get(USER, {})
-        intent = user.get(INTENT)
-        if intent:
-            intent_features[0, self.intents.index(intent)] += 1
-        prev_action = state.get(PREVIOUS_ACTION, {})
-        action_name = prev_action.get(ACTION_NAME)
-        if action_name:
-            action_name_features[0, self.action_names.index(action_name)] += 1
-        user_features = [None, None, intent_features, -1]
-        action_features = [None, None, action_name_features, -1]
-        self.output_shapes[INTENT] = intent_features.shape[-1]
-        self.output_shapes[ACTION_NAME] = action_name_features.shape[-1]
-        return user_features + action_features
+        return output
 
-    def encode(
+    def encode_state(
         self, state: STATE, interpreter: NaturalLanguageInterpreter
-    ) -> np.ndarray:
-        slot_and_entity_features = self._get_slot_and_entity_features(state)
-        if state == {}:
-            return np.array(
-                [None, None, None, 0, None, None, None, 0, slot_and_entity_features]
-            )
+    ) -> Dict[Text, List["Features"]]:
 
-        if not self._interpreter_is_suitable_for_core_featurization(interpreter):
-            return np.array(
-                self.process_state_without_trained_nlu(state)
-                + [slot_and_entity_features]
-            )
+        featurized_state = {}
+        for state_type, sub_state in state.items():
+            if state_type in {USER, PREVIOUS_ACTION}:
+                featurized_state.update(
+                    self._extract_features(sub_state, state_type, interpreter)
+                )
+            if state_type == USER:
+                featurized_state.update(self._create_features(sub_state, ENTITIES))
+            if state_type in {SLOTS, FORM}:
+                featurized_state.update(self._create_features(sub_state, state_type))
 
-        state_extracted_features = {
-            key: self._extract_features(state.get(key), key, interpreter)
-            for key in [USER, PREVIOUS_ACTION]
-            if state.get(key)
-        }
+        return featurized_state
 
-        if USER not in state_extracted_features.keys():
-            state_extracted_features[USER] = [None, None, None, 0]
-
-        # unify features into a list
-        return np.array(
-            state_extracted_features[USER]
-            + state_extracted_features[PREVIOUS_ACTION]
-            + [slot_and_entity_features]
-        )
-
-    def _is_action_text(
+    def encode_action(
         self, action: Text, interpreter: NaturalLanguageInterpreter
-    ) -> Tuple[bool, Any, Any]:
-        """
-        Checking whether a given action name from the domain is text or action_name
-        """
+    ) -> Dict[Text, List["Features"]]:
 
-        # check that there is a featurizer trained for the action name,
-        # i.e., that we have encountered action_names in the dataset
-        if ACTION_NAME in self.output_shapes.keys():
-            action_name_features = self._extract_features(
-                {ACTION_NAME: action}, PREVIOUS_ACTION, interpreter
-            )
-            num_name_elements = np.count_nonzero(action_name_features[2])
+        if action in self.e2e_action_texts:
+            action_as_sub_state = {ACTION_TEXT: action}
         else:
-            action_name_features = None
-            num_name_elements = -1
+            action_as_sub_state = {ACTION_NAME: action}
 
-        if (
-            f"{ACTION_TEXT}_sparse" in self.output_shapes.keys()
-            or f"{ACTION_TEXT}_dense" in self.output_shapes.keys()
-        ):
-            action_text_features = self._extract_features(
-                {ACTION_TEXT: action}, PREVIOUS_ACTION, interpreter
-            )
-            if f"{ACTION_TEXT}_sparse" in self.output_shapes.keys():
-                num_text_elements = action_text_features[0].nnz
-            elif f"{ACTION_TEXT}_dense" in self.output_shapes.keys():
-                num_text_elements = np.count_nonzero(action_text_features[1])
-        else:
-            action_text_features = None
-            num_text_elements = -1
-
-        return (
-            num_text_elements > num_name_elements,
-            action_name_features,
-            action_text_features,
-        )
+        return self._extract_features(action_as_sub_state, ACTION, interpreter)
 
     def create_encoded_all_actions(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
-    ):
+    ) -> List[Dict[Text, List["Features"]]]:
 
-        label_data = []
-        # if we're doing rasa trin core without trained NLU model
-        if not self._interpreter_is_suitable_for_core_featurization(interpreter):
-            label_features = np.expand_dims(np.eye(len(domain.action_names)), 1)
-            label_data = [
-                (j, [None, None, label_features[j]])
-                for j, action in enumerate(domain.action_names)
-            ]
-            return label_data
-
-        for j, action in enumerate(domain.action_names):
-            (
-                is_action_text,
-                action_name_features,
-                action_text_features,
-            ) = self._is_action_text(action, interpreter)
-
-            if is_action_text:
-                action_features = action_text_features
-                if self.output_shapes.get(f"{ACTION_NAME}"):
-                    action_features[2] = (
-                        np.ones((1, self.output_shapes.get(f"{ACTION_NAME}"))) * -1
-                    )
-            else:
-                action_features = action_name_features
-                if self.output_shapes.get(f"{ACTION_TEXT}_sparse"):
-                    action_features[0] = scipy.sparse.coo_matrix(
-                        (1, self.output_shapes.get(f"{ACTION_TEXT}_sparse"))
-                    )
-                if self.output_shapes.get(f"{ACTION_TEXT}_dense"):
-                    action_features[1] = (
-                        np.ones((1, self.output_shapes.get(f"{ACTION_TEXT}_dense")))
-                        * -1
-                    )
-            label_data.append((j, action_features))
-
-        return label_data
+        return [
+            self.encode_action(action, interpreter) for action in domain.action_names
+        ]
 
 
 class TrackerFeaturizer:
@@ -658,69 +471,31 @@ class TrackerFeaturizer:
 
         return self._unfreeze_states(states)
 
-    def _pad_states(self, states: List[Any]) -> List[Any]:
-        """Pads states."""
-
-        return states
-
     def _featurize_states(
         self,
         trackers_as_states: List[List[STATE]],
         interpreter: NaturalLanguageInterpreter,
-    ) -> Tuple[np.ndarray, List[int]]:
-        """Create X."""
-
-        features = []
-        true_lengths = []
-
-        for tracker_states in trackers_as_states:
-
-            # len(trackers_as_states) = 1 means
-            # it is called during prediction or we have
-            # only one story, so no padding is needed
-
-            story_features = [
-                self.state_featurizer.encode(state, interpreter)
+    ) -> List[List[Dict[Text, List["Features"]]]]:
+        return [
+            [
+                self.state_featurizer.encode_state(state, interpreter)
                 for state in tracker_states
             ]
-            dialogue_len = len(story_features)
-
-            if not story_features == []:
-                features.append(np.stack(story_features))
-                true_lengths.append(dialogue_len)
-
-        if isinstance(self.state_featurizer, E2ESingleStateFeaturizer):
-            features = self.state_featurizer.fill_in_features(features)
-
-        # noinspection PyPep8Naming
-        X = np.array(features)
-
-        return X, true_lengths
+            for tracker_states in trackers_as_states
+        ]
 
     def _featurize_labels(
-        self, trackers_as_actions: List[List[Text]], domain: Domain
-    ) -> np.ndarray:
-        """Create y."""
-
-        labels = []
-        for tracker_actions in trackers_as_actions:
-
-            if len(trackers_as_actions) > 1:
-                tracker_actions = self._pad_states(tracker_actions)
-
-            story_labels = [
-                self.state_featurizer.action_as_index(action, domain)
+        self,
+        trackers_as_actions: List[List[Text]],
+        interpreter: NaturalLanguageInterpreter,
+    ) -> List[List[Dict[Text, List["Features"]]]]:
+        return [
+            [
+                self.state_featurizer.encode_action(action, interpreter)
                 for action in tracker_actions
             ]
-
-            labels.append(story_labels)
-
-        y = np.array(labels)
-        if y.ndim == 2 and isinstance(self, MaxHistoryTrackerFeaturizer):
-            # if it is MaxHistoryFeaturizer, remove time axis
-            y = y.squeeze(-1)
-
-        return y
+            for tracker_actions in trackers_as_actions
+        ]
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -747,15 +522,15 @@ class TrackerFeaturizer:
 
         self.state_featurizer.prepare_from_domain(domain)
 
-        (trackers_as_states, trackers_as_actions) = self.training_states_and_actions(
+        trackers_as_states, trackers_as_actions = self.training_states_and_actions(
             trackers, domain
         )
 
         # noinspection PyPep8Naming
-        X, true_lengths = self._featurize_states(trackers_as_states, interpreter)
-        y = self._featurize_labels(trackers_as_actions, domain)
+        X = self._featurize_states(trackers_as_states, interpreter)
+        y = self._featurize_labels(trackers_as_actions, interpreter)
 
-        return DialogueTrainingData(X, y, true_lengths)
+        return DialogueTrainingData(X, y)
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -772,12 +547,11 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> np.ndarray:
+    ) -> List[List[Dict[Text, List["Features"]]]]:
         """Create X for prediction."""
 
         trackers_as_states = self.prediction_states(trackers, domain)
-        X, _ = self._featurize_states(trackers_as_states, interpreter)
-        return X
+        return self._featurize_states(trackers_as_states, interpreter)
 
     def persist(self, path) -> None:
         featurizer_file = os.path.join(path, "featurizer.json")
@@ -807,27 +581,6 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Creates training data that uses each time output for prediction.
     Training data is padded up to the length of the longest dialogue with -1.
     """
-
-    def __init__(self, state_featurizer: SingleStateFeaturizer) -> None:
-        super().__init__(state_featurizer)
-        self.max_len = None
-
-    @staticmethod
-    def _calculate_max_len(trackers_as_actions) -> Optional[int]:
-        """Calculate the length of the longest dialogue."""
-
-        if trackers_as_actions:
-            return max([len(states) for states in trackers_as_actions])
-        else:
-            return None
-
-    def _pad_states(self, states: List[Any]) -> List[Any]:
-        """Pads states up to max_len."""
-
-        if len(states) < self.max_len:
-            states += [None] * (self.max_len - len(states))
-
-        return states
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -875,9 +628,6 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers_as_states.append(states[:-1])
             trackers_as_actions.append(actions)
 
-        self.max_len = self._calculate_max_len(trackers_as_actions)
-        logger.debug(f"The longest dialogue has {self.max_len} actions.")
-
         return trackers_as_states, trackers_as_actions
 
     def prediction_states(
@@ -912,20 +662,16 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def slice_state_history(
-        states: List[STATE], slice_length: Optional[int],
+        states: List[STATE], slice_length: Optional[int]
     ) -> List[STATE]:
         """Slices states from the trackers history.
         If the slice is at the array borders, padding will be added to ensure
         the slice length.
         """
-        slice_end = len(states)
-        if slice_length is None:
-            slice_start = 0
-        else:
-            slice_start = max(0, slice_end - slice_length)
+        if not slice_length:
+            return states
 
-        state_features = states[slice_start:]
-        return state_features
+        return states[-slice_length:]
 
     @staticmethod
     def _hash_example(

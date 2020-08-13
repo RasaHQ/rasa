@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import scipy.sparse
 
-from rasa.nlu.featurizers.featurizer import Features
+from rasa.utils.features import Features
 from rasa.nlu.constants import (
     TEXT,
     FEATURE_TYPE_SEQUENCE,

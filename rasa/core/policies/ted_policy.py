@@ -458,8 +458,6 @@ class TEDPolicy(Policy):
             model_data.add_features("dialog_lengths", [dialog_lengths])
         return model_data
 
-        return model_data
-
     def _collect_label_features(self, label_features):
         sparse_features_text = []
         dense_features_text = []

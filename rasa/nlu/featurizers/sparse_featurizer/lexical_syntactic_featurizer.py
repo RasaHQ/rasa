@@ -10,7 +10,8 @@ from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.utils.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (

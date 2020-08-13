@@ -17,7 +17,8 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.utils.features import Features
 from rasa.nlu.constants import (
     TEXT,
     FEATURIZER_CLASS_ALIAS,

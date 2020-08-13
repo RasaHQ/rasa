@@ -3,6 +3,7 @@ from typing import Any, Optional, Tuple, Text, Dict, Set, List, Union
 import numpy as np
 import scipy.sparse
 import typing
+import copy
 
 from rasa.exceptions import RasaException
 from rasa.nlu.constants import (
@@ -20,7 +21,7 @@ from rasa.nlu.constants import (
 from rasa.nlu.utils import ordered
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.featurizers.featurizer import Features
+    from rasa.utils.features import Features
 
 
 class Message:
@@ -165,7 +166,7 @@ class Message:
 
     def get_sparse_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
-    ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[scipy.sparse.spmatrix]]:
+    ) -> Tuple[Optional["Features"], Optional["Features"]]:
         """Get all sparse features for the given attribute that are coming from the
         given list of featurizers.
         If no featurizers are provided, all available features will be considered.
@@ -182,14 +183,14 @@ class Message:
             attribute, featurizers
         )
 
-        sequence_features = self._combine_features(sequence_features)
-        sentence_features = self._combine_features(sentence_features)
+        sequence_features = self._combine_features(sequence_features, featurizers)
+        sentence_features = self._combine_features(sentence_features, featurizers)
 
         return sequence_features, sentence_features
 
     def get_dense_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
-    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    ) -> Tuple[Optional["Features"], Optional["Features"]]:
         """Get all dense features for the given attribute that are coming from the given
         list of featurizers.
         If no featurizers are provided, all available features will be considered.
@@ -206,8 +207,8 @@ class Message:
             attribute, featurizers
         )
 
-        sequence_features = self._combine_features(sequence_features)
-        sentence_features = self._combine_features(sentence_features)
+        sequence_features = self._combine_features(sequence_features, featurizers)
+        sentence_features = self._combine_features(sentence_features, featurizers)
 
         return sequence_features, sentence_features
 
@@ -247,7 +248,7 @@ class Message:
         sentence_features = [
             f
             for f in self.features
-            if f.message_attribute == attribute
+            if f.attribute == attribute
             and f.is_dense()
             and f.type == FEATURE_TYPE_SENTENCE
             and (f.origin in featurizers or not featurizers)
@@ -255,7 +256,7 @@ class Message:
         sequence_features = [
             f
             for f in self.features
-            if f.message_attribute == attribute
+            if f.attribute == attribute
             and f.is_dense()
             and f.type == FEATURE_TYPE_SEQUENCE
             and (f.origin in featurizers or not featurizers)
@@ -268,7 +269,7 @@ class Message:
         sentence_features = [
             f
             for f in self.features
-            if f.message_attribute == attribute
+            if f.attribute == attribute
             and f.is_sparse()
             and f.type == FEATURE_TYPE_SENTENCE
             and (f.origin in featurizers or not featurizers)
@@ -276,7 +277,7 @@ class Message:
         sequence_features = [
             f
             for f in self.features
-            if f.message_attribute == attribute
+            if f.attribute == attribute
             and f.is_sparse()
             and f.type == FEATURE_TYPE_SEQUENCE
             and (f.origin in featurizers or not featurizers)
@@ -286,11 +287,15 @@ class Message:
 
     @staticmethod
     def _combine_features(
-        features: List["Features"],
-    ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
+        features: List["Features"], featurizers: Optional[List[Text]] = None
+    ) -> Optional["Features"]:
         combined_features = None
 
         for f in features:
-            combined_features = f.combine_with_features(combined_features)
+            if combined_features is None:
+                combined_features = copy.deepcopy(f)
+                combined_features.origin = featurizers
+            else:
+                combined_features.combine_with_features(f)
 
         return combined_features
