@@ -17,6 +17,7 @@ from rasa.nlu.tokenizers import tokenizer  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 
+
 from rasa.nlu.constants import (
     INTENT_NAME_KEY,
     TEXT,

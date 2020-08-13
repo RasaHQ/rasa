@@ -22,7 +22,8 @@ from rasa.core.training import interactive
 from rasa.importers.rasa import TrainingDataImporter
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data.loading import RASA, MARKDOWN
-from rasa.nlu.constants import TEXT, RESPONSE_IDENTIFIER_DELIMITER
+from rasa.nlu.constants import TEXT
+from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.utils.endpoints import EndpointConfig
 from tests import utilities
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
@@ -542,7 +543,7 @@ async def test_filter_intents_before_save_nlu_file():
     msgs = test_msgs.copy()
     if intents:
         another_greet = greet.copy()
-        another_greet[TEXT] = RESPONSE_IDENTIFIER_DELIMITER + choice(intents)
+        another_greet[TEXT] = INTENT_MESSAGE_PREFIX + choice(intents)
         msgs.append(Message(data=another_greet))
 
     assert test_msgs == interactive._filter_messages(msgs)
