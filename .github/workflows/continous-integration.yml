@@ -132,6 +132,11 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
+    - name: Print Poetry cache dir
+      run: |
+        poetry config --list
+      shell: bash
+
     - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
