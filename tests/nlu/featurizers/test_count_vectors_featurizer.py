@@ -357,7 +357,6 @@ def test_count_vector_featurizer_persist_load(tmp_path):
     # check if vocaculary was loaded correctly
     assert hasattr(test_ftr.vectorizers[TEXT], "vocabulary_")
 
-
     test_message1 = Message(data={TEXT: sentence1})
     WhitespaceTokenizer().process(test_message1)
     test_ftr.process(test_message1)
