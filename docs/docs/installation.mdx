@@ -9,39 +9,42 @@ import TabItem from '@theme/TabItem';
 
 ## Quick Installation
 
-You can install Rasa Open Source using pip (requires Python 3.6 or 3.7).
+You can install Rasa Open Source using pip (requires Python 3.6, 3.7 or 3.8).
 
+<!-- TODO: REMOVE VERSION NUMBER FOR RASA 2.0 RELEASE -->
 ```bash
-$ pip3 install rasa
+pip3 install rasa==2.0.0a2
 ```
 
-* Having trouble installing? Read our [step-by-step installation guide](./installation.mdx#installation-guide).
+You are now ready to go! So what's next?
+You can create a new project by running
 
-* You can also [build Rasa Open Source from source](./installation.mdx#build-from-source).
+```bash
+rasa init
+```
 
-* For advanced installation options such as building from source and installation instructions for
-  custom pipelines, head over [here](./installation.mdx#pipeline-dependencies).
-
-* Prefer following video instructions? Watch our installation series on [Youtube](https://www.youtube.com/playlist?list=PL75e0qA87dlEWUA5ToqLLR026wIkk2evk).
-
-When you're done installing, you can head over to the tutorial!
-
-
-<a className="button button--outline button--secondary button--lg" href="prototype-an-assistant">Next Step: Tutorial</a>
-
----
+:::note Want to explore first?
+You can explore Rasa Open Source online using our prototyper without any installation.
+At the end of the tutorial you can download the resulting assistant, install Rasa on
+your machine and continue development locally.
+<a className="button button--outline button button" href="prototype-an-assistant">Prototype an Assistant</a>
+:::
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="installation-guide"></a>
 
 ## Step-by-step Installation Guide
+
+Prefer following video instructions? Watch our installation series on
+[Youtube](https://www.youtube.com/playlist?list=PL75e0qA87dlEWUA5ToqLLR026wIkk2evk),
+it explains the installation in walkthroughs for all major platforms.
 
 ### 1. Install the Python development environment
 
 Check if your Python environment is already configured:
 
 ```bash
-$ python3 --version
-$ pip3 --version
+python3 --version
+pip3 --version
 ```
 
 If these packages are already installed, these commands should display version
@@ -49,14 +52,14 @@ numbers for each step, and you can skip to the next step.
 
 Otherwise, proceed with the instructions below to install them.
 
-<Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]} defaultValue="ubuntu">
+<Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
   <TabItem value="ubuntu">
 
   Fetch the relevant packages using `apt`, and install virtualenv using `pip`.
 
   ```bash
-  $ sudo apt update
-  $ sudo apt install python3-dev python3-pip
+  sudo apt update
+  sudo apt install python3-dev python3-pip
   ```
 
   </TabItem>
@@ -67,8 +70,8 @@ Otherwise, proceed with the instructions below to install them.
   Once you're done, you can install Python3.
 
   ```bash
-  $ brew update
-  $ brew install python
+  brew update
+  brew install python
   ```
 
   </TabItem>
@@ -87,29 +90,38 @@ Otherwise, proceed with the instructions below to install them.
   </TabItem>
 </Tabs>
 
-:::note
-Note that pip in this refers to pip3 as Rasa Open Source requires python3. To see which version
-the pip command on your machine calls use pip –version.
-
-:::
-
 ### 2. Create a virtual environment (strongly recommended)
 
 Tools like [virtualenv](https://virtualenv.pypa.io/en/latest/) and [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) provide isolated Python environments, which are cleaner than installing packages systemwide (as they prevent dependency conflicts). They also let you install packages without root privileges.
 
-<Tabs values={[{"label": "Ubuntu / macOS", "value": "ubuntu/macos"}, {"label": "Windows", "value": "windows"}]} defaultValue="ubuntu/macos">
-  <TabItem value="ubuntu/macos">
+<Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
+  <TabItem value="ubuntu">
 
   Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
 
   ```bash
-  $ python3 -m venv ./venv
+  python3 -m venv ./venv
   ```
 
   Activate the virtual environment:
 
   ```bash
-  $ source ./venv/bin/activate
+  source ./venv/bin/activate
+  ```
+
+  </TabItem>
+  <TabItem value="macos">
+
+  Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+
+  ```bash
+  python3 -m venv ./venv
+  ```
+
+  Activate the virtual environment:
+
+  ```bash
+  source ./venv/bin/activate
   ```
 
   </TabItem>
@@ -138,13 +150,13 @@ Tools like [virtualenv](https://virtualenv.pypa.io/en/latest/) and [virtualenvwr
   First make sure your `pip` version is up to date:
 
   ```bash
-  $ pip install -U pip
+  pip3 install -U pip
   ```
 
   To install Rasa Open Source:
 
   ```bash
-  $ pip install rasa
+  pip3 install rasa
   ```
 
   </TabItem>
@@ -152,10 +164,10 @@ Tools like [virtualenv](https://virtualenv.pypa.io/en/latest/) and [virtualenvwr
 
 **Congratulations! You have successfully installed Rasa Open Source!**
 
-You can now start prototyping your first assistant
+Next step: Start prototyping your first assistant online and download it afterwards
 
 
-<a className="button button--outline button--secondary button--lg" href="prototype-an-assistant">Next Step: Prototype an Assistant</a>
+<a className="button button--outline button--secondary button--lg" href="prototype-an-assistant">Prototype an Assistant</a>
 
 ---
 
@@ -166,10 +178,10 @@ You can now start prototyping your first assistant
 If you want to use the development version of Rasa Open Source, you can get it from GitHub:
 
 ```bash
-$ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-$ git clone https://github.com/RasaHQ/rasa.git
-$ cd rasa
-$ poetry install
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+git clone https://github.com/RasaHQ/rasa.git
+cd rasa
+poetry install
 ```
 
 
@@ -177,48 +189,37 @@ $ poetry install
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="pipeline-dependencies"></a>
 
-## NLU Pipeline Dependencies
+## Additional Dependencies
 
-Several NLU components have additional dependencies that need to
-be installed separately.
+For some machine learning algorithms you need to install additional python packages.
+They aren't installed by default to keep the footprint small.
 
-Here, you will find installation instructions for each of them below.
-
-### How do I choose a pipeline?
-
-The page on [Tuning Your Model](./tuning-your-model.mdx) will help you pick the right pipeline
-for your assistant.
-
-### I have decided on a pipeline. How do I install the dependencies for it?
-
-When you install Rasa Open Source, the dependencies for the `supervised_embeddings` - TensorFlow
-and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need to be separately installed if you want to use pipelines containing components from those libraries.
+The page on [Tuning Your Model](./tuning-your-model.mdx) will help you pick the right
+configuration for your assistant and alert you to additional dependencies.
 
 :::tip Just give me everything!
 If you don't mind the additional dependencies lying around, you can use
-this to install everything.
-
-You'll first need to clone the repository and then run the following
-command to install all the packages:
 
 ```bash
-$ poetry install --extras full
+pip3 install rasa[full]
 ```
+
+to install all needed dependencies for every configuration.
 
 :::
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="install-spacy"></a>
 
-#### Dependencies for spaCy
+### Dependencies for spaCy
 
 For more information on spaCy, check out the [spaCy docs](https://spacy.io/usage/models).
 
 You can install it with the following commands:
 
 ```bash
-$ pip install rasa[spacy]
-$ python -m spacy download en_core_web_md
-$ python -m spacy link en_core_web_md en
+pip3 install rasa[spacy]
+python3 -m spacy download en_core_web_md
+python3 -m spacy link en_core_web_md en
 ```
 
 This will install Rasa Open Source as well as spaCy and its language model
@@ -229,13 +230,13 @@ memory to run, but will somewhat reduce intent classification performance.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="install-mitie"></a>
 
-#### Dependencies for MITIE
+### Dependencies for MITIE
 
 First, run
 
 ```bash
-$ pip install git+https://github.com/mit-nlp/MITIE.git
-$ pip install rasa[mitie]
+pip3 install git+https://github.com/mit-nlp/MITIE.git
+pip3 install rasa[mitie]
 ```
 
 and then download the
@@ -245,7 +246,7 @@ anywhere. If you want to use MITIE, you need to
 tell it where to find this file (in this example it was saved in the
 `data` folder of the project directory).
 
-:::caution
+:::caution Deprecation Warning
 Mitie support is likely to be deprecated in a future release.
 
 :::
