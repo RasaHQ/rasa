@@ -1,9 +1,9 @@
 from collections import defaultdict
-from typing import List, Optional, Text, Dict, Set
+from typing import List, Optional, Text, Dict, Set, Any
 
 from sqlalchemy.util import OrderedSet
 
-from core.knowledge_base.schema.knowledge_graph_filed import KnowledgeGraph
+from rasa.core.knowledge_base.schema.knowledge_graph_filed import KnowledgeGraph
 
 
 class Table:
@@ -134,7 +134,7 @@ class DatabaseSchema:
                     continue
 
                 for foreign_key in column.foreign_key:
-                    other_column_table, other_column_name = foreign_key.split(":")
+                    other_column_table, other_column_name = foreign_key.split(".")
 
                     # must have exactly one by design
                     other_column = [
@@ -158,3 +158,36 @@ class DatabaseSchema:
         return KnowledgeGraph(
             entities, dict(neighbors), dict(neighbors_with_table), entity_text
         )
+
+    @classmethod
+    def from_dict(cls, database_schema_dict: Dict[Text, Any]) -> "DatabaseSchema":
+        database_name = database_schema_dict["name"]
+        tables = []
+        for table_dict in database_schema_dict["tables"]:
+            table_name = table_dict["name"]
+
+            table = Table(table_name, table_name)
+
+            columns = []
+            for column_dict in table_dict["columns"]:
+                primary_key = False
+                if "primary_key" in column_dict:
+                    primary_key = column_dict["primary_key"]
+                foreign_key = []
+                if "foreign_key" in column_dict:
+                    foreign_key = [column_dict["foreign_key"]]
+
+                columns.append(
+                    TableColumn(
+                        column_dict["name"],
+                        column_dict["name"],
+                        column_dict["type"],
+                        primary_key,
+                        foreign_key=foreign_key,
+                    )
+                )
+
+            table.set_columns(columns)
+            tables.append(table)
+
+        return DatabaseSchema(database_name, tables)

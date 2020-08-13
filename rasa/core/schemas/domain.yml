@@ -53,3 +53,15 @@ mapping:
           min: 0
       carry_over_slots_to_new_session:
         type: "bool"
+  database_schema:
+    type: "map"
+    allowempty: True
+    mapping:
+      name:
+        type: "str"
+      tables:
+        type: "seq"
+        sequence:
+          - type: "str"
+          - type: "map"
+            allowempty: True

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Unio
 from ruamel.yaml import YAMLError
 
 import rasa.core.constants
+from rasa.core.knowledge_base.schema.database_schema import DatabaseSchema
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import (
     raise_warning,
@@ -52,6 +53,7 @@ ACTIVE_FORM_PREFIX = "active_form_"
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
 SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
 SESSION_CONFIG_KEY = "session_config"
+DATABASE_SCHEMA_KEY = "database_schema"
 USED_ENTITIES_KEY = "used_entities"
 USE_ENTITIES_KEY = "use_entities"
 IGNORE_ENTITIES_KEY = "ignore_entities"
@@ -184,6 +186,7 @@ class Domain:
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
+        database_schema = cls._get_database_schema(data.get(DATABASE_SCHEMA_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
 
         return cls(
@@ -194,6 +197,7 @@ class Domain:
             data.get(KEY_ACTIONS, []),
             data.get(KEY_FORMS, []),
             session_config=session_config,
+            database_schema=database_schema,
             **additional_arguments,
         )
 
@@ -210,6 +214,13 @@ class Domain:
         )
 
         return SessionConfig(session_expiration_time_min, carry_over_slots)
+
+    @staticmethod
+    def _get_database_schema(database_schema_dict: Dict) -> Optional[DatabaseSchema]:
+        if not database_schema_dict:
+            return None
+
+        return DatabaseSchema.from_dict(database_schema_dict)
 
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
@@ -445,6 +456,7 @@ class Domain:
         forms: List[Union[Text, Dict]],
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
+        database_schema: Optional[DatabaseSchema] = None,
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
@@ -462,6 +474,7 @@ class Domain:
         self.slots = slots
         self.templates = templates
         self.session_config = session_config
+        self.database_schema = database_schema
 
         # only includes custom actions and utterance actions
         self.user_actions = action.combine_with_templates(action_names, templates)

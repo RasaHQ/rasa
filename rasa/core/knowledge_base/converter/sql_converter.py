@@ -11,13 +11,13 @@ from copy import deepcopy
 import logging
 import re
 
-from core.knowledge_base.converter.process_sql import parse_sql, tokenize
-from core.knowledge_base.schema.database_schema import (
+from rasa.core.knowledge_base.converter.process_sql import parse_sql, tokenize
+from rasa.core.knowledge_base.schema.database_schema import (
     DatabaseSchema,
     TableColumn,
     Table,
 )
-from core.knowledge_base.grammar.grammar import (
+from rasa.core.knowledge_base.grammar.grammar import (
     GrammarRule,
     A,
     C,
@@ -32,7 +32,7 @@ from core.knowledge_base.grammar.grammar import (
     GrammarRuleTreeNode,
     Statement,
 )
-from core.knowledge_base.grammar.graph import Graph
+from rasa.core.knowledge_base.grammar.graph import Graph
 
 
 class SparcType:
