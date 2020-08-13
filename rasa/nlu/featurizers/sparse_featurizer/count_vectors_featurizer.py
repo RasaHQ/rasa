@@ -218,8 +218,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
             return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
-        if attribute not in [INTENT, ACTION_NAME]:
-            return message.get(attribute).split()
         else:
             return []
 
