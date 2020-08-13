@@ -279,7 +279,19 @@ def test_trigger_without_mapping_policy(
 
 @pytest.mark.parametrize(
     "domain, policy_config",
-    [({"intents": ["affirm"]}, {"policies": [{"name": "TwoStageFallbackPolicy"}]})],
+    [
+        (
+            {"intents": ["affirm"]},
+            {
+                "policies": [
+                    {
+                        "name": "TwoStageFallbackPolicy",
+                        "deny_suggestion_intent_name": "deny",
+                    }
+                ]
+            },
+        )
+    ],
 )
 def test_two_stage_fallback_without_deny_suggestion(
     domain: Dict[Text, Any], policy_config: Dict[Text, Any]
@@ -289,7 +301,7 @@ def test_two_stage_fallback_without_deny_suggestion(
             domain=Domain.from_dict(domain),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
-    assert "The intent 'out_of_scope' must be present" in str(execinfo.value)
+    assert "The intent 'deny' must be present" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(
