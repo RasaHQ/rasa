@@ -776,6 +776,8 @@ def create_app(
 
             from rasa import train as train_model
 
+            # Declare `model_path` upfront to avoid pytype `name-error`
+            model_path: Optional[Text] = None
             # pass `None` to run in default executor
             model_path = await loop.run_in_executor(
                 None, functools.partial(train_model, **training_payload)
@@ -1207,6 +1209,6 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
         raise ErrorResponse(
             400,
             "BadRequest",
-            f"The request body does not contain valid YAML." f"Error: {e}",
+            f"The request body does not contain valid YAML. Error: {e}",
             help_url=DOCS_URL_TRAINING_DATA_NLU,
         )
