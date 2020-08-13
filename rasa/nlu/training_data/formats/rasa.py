@@ -37,16 +37,11 @@ class RasaReader(JsonTrainingDataReader):
         training_examples = []
         for ex in common_examples:
             # taking care of custom entries
-            other_values = {
-                key: value
-                for key, value in ex.items()
-                if key not in [TEXT, INTENT, ENTITIES]
-            }
             msg = Message.build(
-                text=ex.get(TEXT) or "",
-                intent=ex.get(INTENT),
-                entities=ex.get(ENTITIES),
-                **other_values,
+                text=ex.pop(TEXT, ""),
+                intent=ex.pop(INTENT, None),
+                entities=ex.pop(ENTITIES, None),
+                **ex,
             )
             training_examples.append(msg)
 
