@@ -75,8 +75,7 @@ class LockStore:
 
             return ticket
         except Exception as e:
-            logger.error(f"Error while acquiring lock. Error:\n{e}")
-            raise LockError(e)
+            raise LockError(f"Error while acquiring lock. Error:\n{e}")
 
     @asynccontextmanager
     async def lock(
