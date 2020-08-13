@@ -2,8 +2,8 @@ rules:
 - rule: rule 1
   condition:
   - active_loop: loop_q_form
-  - slot_was_set: requested_slot
-    value: some_slot
+  - slot_was_set:
+    - requested_slot: some_slot
   steps:
   - intent: inform
     entities:
@@ -13,8 +13,8 @@ rules:
 - rule: rule 2
   condition:
   - active_loop: loop_q_form
-  - slot_was_set: requested_slot
-    value: some_slot
+  - slot_was_set:
+    - requested_slot: some_slot
   steps:
   - intent: explain
   - action: utter_explain_some_slot
@@ -25,7 +25,6 @@ rules:
   steps:
   - action: loop_q_form
   - active_loop: null
-  - slot_was_set: null
   - action: stop_q_form
 
 stories:
@@ -45,6 +44,6 @@ stories:
   steps:
   - intent: hello
   - action: utter_greet
-  - slot_was_set: name
-    value: peter
+  - slot_was_set:
+    - name: peter
   - checkpoint: check_greet # checkpoint defining the end of this turn

@@ -7,15 +7,11 @@ stories:
 
 - story: simple_story_with_only_end
   steps:
-  - intent: greet
-  - action: utter_greet
-  - checkpoint: check_greet # checkpoint defining the end of this turn
-
-- story: simple_story_with_only_end
-  steps:
-  - intent: greet
-    entities:
-    - name: Peter
+  - or:
+    - intent: greet
+    - intent: greet
+      entities:
+      - name: Peter
   - action: utter_greet
   - checkpoint: check_greet # checkpoint defining the end of this turn
 
