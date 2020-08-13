@@ -415,7 +415,7 @@ class KnowledgeBaseModel(RasaModel):
         label_data: RasaModelData,
     ) -> None:
         super().__init__(
-            name="KnowledgeBaseModel",
+            name="TED",
             random_seed=config[RANDOM_SEED],
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
             tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
@@ -453,4 +453,277 @@ class KnowledgeBaseModel(RasaModel):
         self._tf_layers: Dict[Text : tf.keras.layers.Layer] = {}
         self._prepare_layers()
 
-        # TODO
+    def _prepare_sparse_dense_layers(
+        self,
+        data_signature: List[FeatureSignature],
+        name: Text,
+        reg_lambda: float,
+        dense_dim: int,
+    ) -> None:
+        sparse = False
+        dense = False
+        for is_sparse, shape in data_signature:
+            if is_sparse:
+                sparse = True
+            else:
+                dense = True
+
+        if sparse:
+            self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
+                units=dense_dim, reg_lambda=reg_lambda, name=name
+            )
+            if not dense:
+                # create dense labels for the input to use in negative sampling
+                self._tf_layers[f"sparse_to_dense_ids.{name}"] = layers.DenseForSparse(
+                    units=2, trainable=False, name=f"sparse_to_dense_ids.{name}"
+                )
+
+    def _prepare_layers(self) -> None:
+        self._tf_layers[f"loss.{LABEL}"] = layers.DotProductLoss(
+            self.config[NUM_NEG],
+            self.config[LOSS_TYPE],
+            self.config[MAX_POS_SIM],
+            self.config[MAX_NEG_SIM],
+            self.config[USE_MAX_NEG_SIM],
+            self.config[NEGATIVE_MARGIN_SCALE],
+            self.config[SCALE_LOSS],
+            # set to 1 to get deterministic behaviour
+            parallel_iterations=1 if self.random_seed is not None else 1000,
+        )
+
+        for feature_name in self.data_signature.keys():
+            if feature_name.startswith(DIALOGUE_FEATURES) or feature_name.startswith(
+                LABEL_FEATURES
+            ):
+                self._prepare_sparse_dense_layers(
+                    self.data_signature[feature_name],
+                    feature_name,
+                    self.config[REGULARIZATION_CONSTANT],
+                    100,
+                )
+
+            if feature_name.startswith(DIALOGUE_FEATURES) and not feature_name.endswith(
+                "if_text"
+            ):
+                self._tf_layers[f"ffnn.{feature_name}"] = layers.Ffnn(
+                    self.config[HIDDEN_LAYERS_SIZES][f"{DIALOGUE}_name_text"],
+                    self.config[DROP_RATE_DIALOGUE],
+                    self.config[REGULARIZATION_CONSTANT],
+                    self.config[WEIGHT_SPARSITY],
+                    layer_name_suffix=feature_name,
+                )
+
+        self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
+            self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
+            self.config[DROP_RATE_DIALOGUE],
+            self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
+            layer_name_suffix=DIALOGUE,
+        )
+        self._tf_layers[f"ffnn.{LABEL}"] = layers.Ffnn(
+            self.config[HIDDEN_LAYERS_SIZES][LABEL],
+            self.config[DROP_RATE_LABEL],
+            self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
+            layer_name_suffix=LABEL,
+        )
+        self._tf_layers["transformer"] = TransformerEncoder(
+            self.config[NUM_TRANSFORMER_LAYERS],
+            self.config[TRANSFORMER_SIZE],
+            self.config[NUM_HEADS],
+            self.config[TRANSFORMER_SIZE] * 4,
+            self.config[REGULARIZATION_CONSTANT],
+            dropout_rate=self.config[DROP_RATE_DIALOGUE],
+            attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+            sparsity=self.config[WEIGHT_SPARSITY],
+            unidirectional=True,
+            use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+            use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+            max_relative_position=self.config[MAX_RELATIVE_POSITION],
+            name=DIALOGUE + "_encoder",
+        )
+        self._tf_layers[f"embed.{DIALOGUE}"] = layers.Embed(
+            self.config[EMBEDDING_DIMENSION],
+            self.config[REGULARIZATION_CONSTANT],
+            DIALOGUE,
+            self.config[SIMILARITY_TYPE],
+        )
+        self._tf_layers[f"embed.{LABEL}"] = layers.Embed(
+            self.config[EMBEDDING_DIMENSION],
+            self.config[REGULARIZATION_CONSTANT],
+            LABEL,
+            self.config[SIMILARITY_TYPE],
+        )
+
+    def _combine_sparse_dense_features(
+        self,
+        features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]],
+        name: Text,
+        sparse_dropout: bool = False,
+    ) -> tf.Tensor:
+
+        dense_features = []
+
+        for f in features:
+            if isinstance(f, tf.SparseTensor):
+                if sparse_dropout:
+                    _f = self._tf_layers[f"sparse_dropout.{name}"](f, self._training)
+                else:
+                    _f = f
+                dense_features.append(self._tf_layers[f"sparse_to_dense.{name}"](_f))
+            else:
+                dense_features.append(f)
+
+        return tf.concat(dense_features, axis=-1)
+
+    def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
+        all_labels = []
+        for key in self.tf_label_data.keys():
+            if key.startswith(LABEL_FEATURES):
+                all_labels.append(
+                    self._combine_sparse_dense_features(self.tf_label_data[key], key)
+                )
+
+        all_labels = tf.concat(all_labels, axis=-1)
+        all_labels = tf.squeeze(all_labels, axis=1)
+        all_labels_embed = self._embed_label(all_labels)
+
+        return all_labels, all_labels_embed
+
+    @staticmethod
+    def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
+        mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
+        return mask
+
+    @staticmethod
+    def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
+        last_sequence_index = tf.maximum(0, sequence_lengths - 1)
+        batch_index = tf.range(tf.shape(last_sequence_index)[0])
+
+        indices = tf.stack([batch_index, last_sequence_index], axis=1)
+        return tf.expand_dims(tf.gather_nd(x, indices), 1)
+
+    def _emebed_dialogue(
+        self, dialogue_in: tf.Tensor, sequence_lengths
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Create dialogue level embedding and mask."""
+
+        mask = self._compute_mask(sequence_lengths)
+
+        dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
+        dialogue_transformed = self._tf_layers["transformer"](
+            dialogue, 1 - tf.expand_dims(mask, axis=-1), self._training
+        )
+        dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
+
+        if self.max_history_tracker_featurizer_used:
+            # pick last label if max history featurizer is used
+            # dialogue_transformed = dialogue_transformed[:, -1:, :]
+            dialogue_transformed = self._last_token(
+                dialogue_transformed, sequence_lengths
+            )
+            mask = self._last_token(mask, sequence_lengths)
+
+        dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
+
+        return dialogue_embed, mask
+
+    def _embed_label(self, label_in: Union[tf.Tensor, np.ndarray]) -> tf.Tensor:
+        label = self._tf_layers[f"ffnn.{LABEL}"](label_in, self._training)
+        return self._tf_layers[f"embed.{LABEL}"](label)
+
+    def _preprocess_batch(self, batch: Dict[Text, List[tf.Tensor]]) -> tf.Tensor:
+        name_features = None
+        text_features = None
+        batch_features = []
+        feats_to_combine = [f"{DIALOGUE_FEATURES}_user", f"{DIALOGUE_FEATURES}_action"]
+        for feature in feats_to_combine:
+            if not batch[feature] == []:
+                text_features = self._combine_sparse_dense_features(
+                    batch[feature], feature
+                )
+                text_features = self._tf_layers[f"ffnn.{feature}"](text_features)
+                mask = tf.cast(
+                    tf.math.equal(batch[f"{feature}_if_text"], 1), tf.float32
+                )
+                text_features = text_features * mask
+            if not batch[f"{feature}_name"] == []:
+                name_features = self._combine_sparse_dense_features(
+                    batch[f"{feature}_name"], f"{feature}_name"
+                )
+                name_features = self._tf_layers[f"ffnn.{feature}_name"](name_features)
+                mask = tf.cast(
+                    tf.math.equal(batch[f"{feature}_if_text"], -1), tf.float32
+                )
+                name_features = name_features * mask
+
+            if text_features is not None and name_features is not None:
+                batch_features.append(text_features + name_features)
+            else:
+                batch_features.append(
+                    text_features if text_features is not None else name_features
+                )
+
+        if not batch[f"{DIALOGUE_FEATURES}_entities"] == []:
+            batch_features.append(batch[f"{DIALOGUE_FEATURES}_entities"])
+
+        batch_features = tf.squeeze(tf.concat(batch_features, axis=-1), 0)
+        return batch_features
+
+    def batch_loss(
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> tf.Tensor:
+        batch = self.batch_to_model_data_format(batch_in, self.data_signature)
+        sequence_lengths = tf.cast(
+            tf.squeeze(batch["dialog_lengths"], axis=0), tf.int32
+        )
+
+        label_in = []
+        for key in batch.keys():
+            if key.startswith(LABEL_FEATURES):
+                label_in.append(self._combine_sparse_dense_features(batch[key], key))
+        label_in = tf.concat(label_in, axis=-1)
+
+        all_labels, all_labels_embed = self._create_all_labels_embed()
+
+        dialogue_in = self._preprocess_batch(batch)
+
+        dialogue_embed, mask = self._emebed_dialogue(dialogue_in, sequence_lengths)
+        label_embed = self._embed_label(label_in)
+
+        loss, acc = self._tf_layers[f"loss.{LABEL}"](
+            dialogue_embed, label_embed, label_in, all_labels_embed, all_labels, mask
+        )
+
+        self.action_loss.update_state(loss)
+        self.action_acc.update_state(acc)
+
+        return loss
+
+    def batch_predict(
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> Dict[Text, tf.Tensor]:
+        batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
+
+        dialogue_in = self._preprocess_batch(batch)
+        sequence_lengths = tf.expand_dims(tf.shape(dialogue_in)[1], axis=0)
+
+        if self.all_labels_embed is None:
+            _, self.all_labels_embed = self._create_all_labels_embed()
+
+        dialogue_embed, mask = self._emebed_dialogue(dialogue_in, sequence_lengths)
+
+        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+            dialogue_embed[:, :, tf.newaxis, :],
+            self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
+            mask,
+        )
+
+        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
+            sim_all, self.config[SIMILARITY_TYPE]
+        )
+
+        return {"action_scores": scores}
+
+
+# pytype: enable=key-error
