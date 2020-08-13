@@ -52,7 +52,7 @@ class WorkingPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         pass
@@ -95,7 +95,7 @@ class ConstantPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         result = [0.0] * domain.num_actions
@@ -113,7 +113,9 @@ def test_policy_priority():
     policy_ensemble_0 = SimplePolicyEnsemble([priority_1, priority_2])
     policy_ensemble_1 = SimplePolicyEnsemble([priority_2, priority_1])
 
-    priority_2_result = priority_2.predict_action_probabilities(tracker, domain)
+    priority_2_result = priority_2.predict_action_probabilities(
+        tracker, domain, RegexInterpreter()
+    )
 
     i = 1  # index of priority_2 in ensemble_0
     result, best_policy = policy_ensemble_0.probabilities_using_best_policy(
@@ -282,7 +284,7 @@ class LoadReturnsNonePolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         pass
@@ -318,7 +320,7 @@ class LoadReturnsWrongTypePolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         pass

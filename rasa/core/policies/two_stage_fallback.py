@@ -116,7 +116,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         """Predicts the next action if NLU confidence is low."""

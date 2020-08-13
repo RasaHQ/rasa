@@ -14,7 +14,6 @@ from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
-from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import raise_warning
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
@@ -96,14 +95,6 @@ class SklearnPolicy(Policy):
         train_params = self._get_valid_params(self.model.__init__, **kwargs)
         return self.model.set_params(**train_params)
 
-    def _extract_training_data(
-        self, training_data: DialogueTrainingData
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        X, y = training_data.X, training_data.y
-        if self.shuffle:
-            X, y = sklearn_shuffle(X, y)
-        return X, y
-
     def _get_max_dialogue_length(self, X: np.ndarray) -> int:
         lengths = [row[:, 2].shape[0] for row in X]
         return max(lengths)
@@ -167,12 +158,13 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-
-        training_data = self.featurize_for_training(
+        # TODO sklearn policy is broken
+        X, y = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
+        if self.shuffle:
+            X, y = sklearn_shuffle(X, y)
 
-        X, y = self._extract_training_data(training_data)
         self._train_params.update(kwargs)
         model = self.model_architecture(**self._train_params)
         score = None
@@ -210,7 +202,7 @@ class SklearnPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         X = self.featurizer.create_X([tracker], domain, interpreter)

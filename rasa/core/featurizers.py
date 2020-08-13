@@ -1,6 +1,7 @@
 import jsonpickle
 import logging
 import numpy as np
+import scipy.sparse
 import os
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union
@@ -12,7 +13,6 @@ from rasa.utils import common as common_utils
 from rasa.core.domain import Domain, STATE
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -87,6 +87,7 @@ class SingleStateFeaturizer:
         self,
         sub_state: Dict[Text, Union[Text, Tuple[float], Tuple[Text]]],
         attribute: Text,
+        sparse: bool = False,
     ) -> Dict[Text, List["Features"]]:
         if attribute in {INTENT, ACTION_NAME}:
             state_features = {sub_state[attribute]: 1}
@@ -111,6 +112,12 @@ class SingleStateFeaturizer:
         for state_feature, value in state_features.items():
             features[self._default_feature_states[attribute][state_feature]] = value
 
+        if sparse:
+            print(features)
+            features = scipy.sparse.coo_matrix(features)
+            print(features)
+            exit()
+
         features = Features(
             features, FEATURE_TYPE_SENTENCE, attribute, self.__class__.__name__
         )
@@ -121,6 +128,7 @@ class SingleStateFeaturizer:
         sub_state: Dict[Text, Union[Text, Tuple[float], Tuple[Text]]],
         state_type: Text,
         interpreter: Optional[NaturalLanguageInterpreter],
+        sparse: bool = False,
     ) -> Dict[Text, List["Features"]]:
 
         output = defaultdict(list)
@@ -144,7 +152,7 @@ class SingleStateFeaturizer:
             # there can only be either TEXT or INTENT
             # or ACTION_TEXT or ACTION_NAME
             # therefore nlu pipeline didn't create features for user or action
-            output = self._create_features(sub_state, attribute)
+            output = self._create_features(sub_state, attribute, sparse)
 
         return output
 
@@ -156,16 +164,22 @@ class SingleStateFeaturizer:
         for state_type, sub_state in state.items():
             if state_type in {USER, PREVIOUS_ACTION}:
                 featurized_state.update(
-                    self._extract_features(sub_state, state_type, interpreter)
+                    self._extract_features(
+                        sub_state, state_type, interpreter, sparse=True
+                    )
                 )
             if state_type == USER:
-                featurized_state.update(self._create_features(sub_state, ENTITIES))
+                featurized_state.update(
+                    self._create_features(sub_state, ENTITIES, sparse=True)
+                )
             if state_type in {SLOTS, FORM}:
-                featurized_state.update(self._create_features(sub_state, state_type))
+                featurized_state.update(
+                    self._create_features(sub_state, state_type, sparse=True)
+                )
 
         return featurized_state
 
-    def encode_action(
+    def _encode_action(
         self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
 
@@ -181,7 +195,7 @@ class SingleStateFeaturizer:
     ) -> List[Dict[Text, List["Features"]]]:
 
         return [
-            self.encode_action(action, interpreter) for action in domain.action_names
+            self._encode_action(action, interpreter) for action in domain.action_names
         ]
 
 
@@ -201,12 +215,6 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     ) -> Dict[Text, List["Features"]]:
         # ignore nlu interpreter to create binary features
         return super().encode_state(state, None)
-
-    def encode_action(
-        self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
-    ) -> Dict[Text, List["Features"]]:
-        # ignore nlu interpreter to create binary features
-        return super().encode_action(action, None)
 
     def create_encoded_all_actions(
         self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
@@ -271,16 +279,12 @@ class TrackerFeaturizer:
             for tracker_states in trackers_as_states
         ]
 
-    def _featurize_labels(
-        self,
-        trackers_as_actions: List[List[Text]],
-        interpreter: NaturalLanguageInterpreter,
-    ) -> List[List[Dict[Text, List["Features"]]]]:
+    @staticmethod
+    def _convert_labels_to_ids(
+        trackers_as_actions: List[List[Text]], domain: Domain,
+    ) -> List[List[int]]:
         return [
-            [
-                self.state_featurizer.encode_action(action, interpreter)
-                for action in tracker_actions
-            ]
+            [domain.index_for_action(action) for action in tracker_actions]
             for tracker_actions in trackers_as_actions
         ]
 
@@ -298,9 +302,9 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> DialogueTrainingData:
-        """Create training data."""
-
+    ) -> Tuple[
+        List[List[Dict[Text, List["Features"]]]], List[List[int]],
+    ]:
         if self.state_featurizer is None:
             raise ValueError(
                 "Variable 'state_featurizer' is not set. Provide "
@@ -315,9 +319,9 @@ class TrackerFeaturizer:
 
         # noinspection PyPep8Naming
         X = self._featurize_states(trackers_as_states, interpreter)
-        y = self._featurize_labels(trackers_as_actions, interpreter)
+        label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
 
-        return DialogueTrainingData(X, y)
+        return X, label_ids
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain

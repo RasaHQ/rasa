@@ -132,7 +132,7 @@ class PolicyTestCollection:
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
-                tracker, default_domain
+                tracker, default_domain, RegexInterpreter()
             )
             actual_probabilities = trained_policy.predict_action_probabilities(
                 tracker, default_domain
@@ -163,7 +163,9 @@ class PolicyTestCollection:
     def _get_next_action(policy, events, domain):
         tracker = get_tracker(events)
 
-        scores = policy.predict_action_probabilities(tracker, domain)
+        scores = policy.predict_action_probabilities(
+            tracker, domain, RegexInterpreter()
+        )
         index = scores.index(max(scores))
         return domain.action_names[index]
 
@@ -260,7 +262,7 @@ class TestSklearnPolicy(PolicyTestCollection):
             new_trackers, domain=default_domain, interpreter=RegexInterpreter()
         )
         predicted_probabilities = policy.predict_action_probabilities(
-            tracker, default_domain
+            tracker, default_domain, RegexInterpreter()
         )
 
         assert len(predicted_probabilities) == default_domain.num_actions
@@ -740,7 +742,9 @@ class TestMappingPolicy(PolicyTestCollection):
             ActionExecuted(intent_mapping[1], policy="policy_0_MappingPolicy"),
         ]
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(tracker, domain_with_mapping)
+        scores = policy.predict_action_probabilities(
+            tracker, domain_with_mapping, RegexInterpreter()
+        )
         index = scores.index(max(scores))
         action_planned = domain_with_mapping.action_names[index]
         assert action_planned == ACTION_LISTEN_NAME
@@ -756,7 +760,9 @@ class TestMappingPolicy(PolicyTestCollection):
             ActionExecuted(intent_mapping[1], policy="other_policy"),
         ]
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(tracker, domain_with_mapping)
+        scores = policy.predict_action_probabilities(
+            tracker, domain_with_mapping, RegexInterpreter()
+        )
         assert scores == [0] * domain_with_mapping.num_actions
 
 

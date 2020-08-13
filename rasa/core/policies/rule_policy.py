@@ -10,7 +10,7 @@ from rasa.core.domain import (
     STATE,
 )
 from rasa.core.featurizers import TrackerFeaturizer
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
 from rasa.core.trackers import DialogueStateTracker
@@ -458,7 +458,7 @@ class RulePolicy(MemoizationPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
 

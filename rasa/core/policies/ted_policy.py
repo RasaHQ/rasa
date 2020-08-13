@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
 from scipy import sparse
-
+import typing
 from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
 import rasa.utils.io as io_utils
@@ -15,7 +15,6 @@ from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
-    LabelTokenizerSingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
     SingleStateFeaturizer,
 )
@@ -66,6 +65,9 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
 )
+
+if typing.TYPE_CHECKING:
+    from rasa.utils.features import Features
 
 
 logger = logging.getLogger(__name__)
@@ -376,10 +378,7 @@ class TEDPolicy(Policy):
 
     # noinspection PyPep8Naming
     def _create_model_data(
-        self,
-        data_X: np.ndarray,
-        dialog_lengths: Optional[np.ndarray] = None,
-        label_ids: Optional[np.ndarray] = None,
+        self, X: List[List[Dict[Text, List["Features"]]]], label_ids: List[List[int]],
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData."""
 
@@ -482,11 +481,9 @@ class TEDPolicy(Policy):
     ) -> RasaModelData:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        labels_idx_examples = state_featurizer.create_encoded_all_actions(
-            domain, interpreter
-        )
-        labels_idx_examples = sorted(labels_idx_examples, key=lambda x: x[0])
-        labels_example = [example for (_, example) in labels_idx_examples]
+        all_labels = state_featurizer.create_encoded_all_actions(domain, interpreter)
+        print(all_labels)
+        exit()
         label_features = self._collect_label_features(labels_example)
 
         label_data = RasaModelData()
@@ -507,16 +504,14 @@ class TEDPolicy(Policy):
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        training_data = self.featurize_for_training(
+        X, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
 
         self._label_data = self._create_label_data(domain, interpreter)
 
         # extract actual training data to feed to model
-        model_data = self._create_model_data(
-            training_data.X, np.array(training_data.true_length), training_data.y
-        )
+        model_data = self._create_model_data(X, label_ids)
         if model_data.is_empty():
             logger.error(
                 f"Can not train '{self.__class__.__name__}'. No data was provided. "
@@ -547,7 +542,7 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         """Predict the next action the bot should take.

@@ -613,7 +613,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 "adapt your custom `Policy` implementation.",
                 category=DeprecationWarning,
             )
-            probabilities = policy.predict_action_probabilities(tracker, domain)
+            probabilities = policy.predict_action_probabilities(
+                tracker, domain, RegexInterpreter()
+            )
 
         return Prediction(probabilities, policy.priority)
 
