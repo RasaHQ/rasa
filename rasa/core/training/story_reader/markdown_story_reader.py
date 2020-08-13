@@ -189,7 +189,7 @@ class MarkdownStoryReader(StoryReader):
         action_as_message = MarkdownReader().parse_e2e_training_example(line)
         return "", {"e2e_text": action_as_message.get(TEXT).strip()}
 
-    async def _add_user_messages(self, messages: List[Text], line_num: int):
+    async def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "User message '{}' at invalid location. "
@@ -201,11 +201,11 @@ class MarkdownStoryReader(StoryReader):
         self.current_step_builder.add_user_messages(parsed_messages)
 
     # TODO: Hack by Genie for temporary Markdown support
-    async def add_user_messages_e2e(self, messages: List[Text], line_num: int):
+    async def add_user_messages_e2e(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
-                "User message '{}' at invalid location. "
-                "Expected story start.".format(messages)
+                f"User message '{messages}' at invalid location. "
+                f"Expected story start."
             )
         parsed_messages = await asyncio.gather(
             *[self._parse_message_e2e(m, line_num) for m in messages]
