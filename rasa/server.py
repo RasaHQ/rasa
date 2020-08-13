@@ -752,17 +752,6 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-    def _write_as_yaml_or_md(
-        content: Union[Text, Dict[Text, Any]], path_prefix: Text
-    ) -> Path:
-        if isinstance(content, str):
-            full_path = Path(path_prefix).with_suffix(".md")
-            rasa.utils.io.write_text_file(content, full_path)
-        else:
-            full_path = Path(path_prefix).with_suffix(".yml")
-            rasa.utils.io.write_yaml_file(content, full_path)
-        return full_path
-
     @app.post("/model/train")
     @requires_auth(app, auth_token)
     async def train(request: Request) -> HTTPResponse:

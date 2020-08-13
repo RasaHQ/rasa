@@ -122,7 +122,7 @@ def test_demo_data(files):
     td = training_data_from_paths(files, language="en")
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert set(td.responses.keys()) == {"I am Mr. Bot", "It's sunny where I live"}
+    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
     assert len(td.response_examples) == 4
@@ -185,7 +185,7 @@ def test_train_test_split(filepaths):
 
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert set(td.responses.keys()) == {"I am Mr. Bot", "It's sunny where I live"}
+    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
 
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46

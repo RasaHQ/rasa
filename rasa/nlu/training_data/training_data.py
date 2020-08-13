@@ -424,7 +424,8 @@ class TrainingData:
         test, train = self.split_nlu_examples(train_frac, random_seed)
 
         # collect all nlg stories
-        test_responses, train_responses = self.split_nlg_responses(test, train)
+        test_responses = self._needed_responses_for_examples(test)
+        train_responses = self._needed_responses_for_examples(train)
 
         data_train = TrainingData(
             train,
@@ -444,21 +445,16 @@ class TrainingData:
 
         return data_train, data_test
 
-    def split_nlg_responses(
-        self, test, train
-    ) -> Tuple[Dict[Text, list], Dict[Text, list]]:
-
-        train_responses = self.build_responses_from_examples(train)
-        test_responses = self.build_responses_from_examples(test)
-        return test_responses, train_responses
-
-    @staticmethod
-    def build_responses_from_examples(examples) -> Dict[Text, list]:
+    def _needed_responses_for_examples(
+        self, examples: List[Message]
+    ) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Get all responses used in any of the examples."""
 
         responses = {}
         for ex in examples:
             if ex.get(RESPONSE_KEY_ATTRIBUTE) and ex.get(RESPONSE):
-                responses[ex.get_combined_intent_response_key()] = [ex.get(RESPONSE)]
+                key = ex.get_combined_intent_response_key()
+                responses[key] = self.responses[key]
         return responses
 
     def split_nlu_examples(
