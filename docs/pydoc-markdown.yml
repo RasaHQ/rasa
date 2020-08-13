@@ -10,4 +10,4 @@ processors:
 renderer:
   type: docusaurus
   docs_base_path: docs/
-  sidebar_top_level_label: 'Source'
+  sidebar_top_level_label: 'Code reference'
