@@ -885,6 +885,9 @@ class Domain:
         intents_for_file = []
 
         for intent_name, intent_props in intent_properties.items():
+            if intent_name in DEFAULT_INTENTS:
+                # Default intents should be not dumped with the domain
+                continue
             use_entities = set(intent_props[USED_ENTITIES_KEY])
             ignore_entities = set(self.entities) - use_entities
             if len(use_entities) == len(self.entities):
