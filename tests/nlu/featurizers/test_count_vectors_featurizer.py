@@ -322,6 +322,8 @@ def test_count_vector_featurizer_persist_load(tmp_path):
     sentence2 = "abababalidcn 123123 13xcdc лаомтгцу sfjv oö aà"
     train_message1 = Message(sentence1)
     train_message2 = Message(sentence2)
+    WhitespaceTokenizer().process(train_message1)
+    WhitespaceTokenizer().process(train_message2)
 
     data = TrainingData([train_message1, train_message2])
     train_ftr.train(data)
@@ -355,8 +357,10 @@ def test_count_vector_featurizer_persist_load(tmp_path):
     assert hasattr(test_ftr.vectorizers[TEXT], "vocabulary_")
 
     test_message1 = Message(sentence1)
+    WhitespaceTokenizer().process(test_message1)
     test_ftr.process(test_message1)
     test_message2 = Message(sentence2)
+    WhitespaceTokenizer().process(test_message2)
     test_ftr.process(test_message2)
 
     test_seq_vec_1, test_sen_vec_1 = test_message1.get_sparse_features(TEXT, [])
