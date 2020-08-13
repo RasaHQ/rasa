@@ -16,11 +16,11 @@ and every file can contain any kind of data.
 The training data parser will read the top level keys in each file to decide
 what kind of data is in a section at training time.
 
-The [domain](../glossary#domain) uses
+The [domain](glossary.mdx#domain) uses
 the same YAML format as the training data and can also be split across
-multiple files or combined with training data in one file. The domain includes
-the definitions for [responses](../core/domains#responses) and [forms](../core/forms).
-See the [documentation for domains](../core/domains) for information on how to format your domain file.
+multiple files or combined in one file. The domain includes
+the definitions for [responses](domain.mdx#responses) and [forms](forms.mdx).
+See the [documentation for the domain](domain.mdx) for information on how to format your domain file.
 
 :::note
 See the documentation for Rasa Open Source 1.x for the previous (now deprecated) formats for [NLU](https://rasa.com/docs/rasa/nlu/training-data-format/) and [stories](https://rasa.com/docs/rasa/core/stories/).
@@ -94,7 +94,7 @@ e2e_tests:
 
 ## NLU Training Data
 
-[NLU](../glossary#nlu) training data consists of example user utterances categorized by
+[NLU](glossary.mdx#nlu) training data consists of example user utterances categorized by
 **intent**, i.e. what the user is trying to convey or accomplish with their
 message. Training examples can also include **entities**. Entities are structured
 pieces of information that can be extracted from a user's message. You can also
@@ -142,7 +142,7 @@ NLU training data is defined under the `nlu` key. Items that can be added under 
 
 ### Training Examples
 
-Training examples are grouped by [intent](../glossary#intent) and listed under the
+Training examples are grouped by [intent](glossary.mdx#intent) and listed under the
 `examples` key. Usually, you'll list one example per line as follows:
 
 ```yaml
@@ -174,7 +174,7 @@ the example could be used by a custom component in the pipeline for sentiment an
 
 ### Entities
 
-[Entities](../glossary#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](../nlu/components#regexentityextractor) based on a character pattern.
+[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) based on a character pattern.
 
 Entities are annotated in training examples with minimally the entity's name. 
 In addition to the entity name, you can annotate an entity with synonyms, roles, or groups.
@@ -188,7 +188,7 @@ The syntax for annotating an entity is:
 The keywords `role`, `group`, and `value` are optional in this notation.
 The `value` keyword refers to synonyms, which are explained in the
 following section. To understand what the labels `role` and `group` are
-for, see the section on (entity roles and groups)[nlu/entity-extraction#entities-roles-and-groups].
+for, see the section on [entity roles and groups](nlu-training-data.mdx#entities-roles-and-groups).
 
 In training examples, entity annotation would look like this:
 
@@ -228,7 +228,7 @@ nlu:
 
 To use the synonyms defined in your training data, you need to make sure the
 pipeline in your configuration file contains the
-[`EntitySynonymMapper`](../nlu/components#entitysynonymmapper) component. You
+[`EntitySynonymMapper`](components/entity-extractors.mdx#entitysynonymmapper) component. You
 should define synonyms when there are multiple ways users refer to the same
 thing.
 
@@ -252,7 +252,7 @@ That means that your training examples should include the synonym examples (`cre
 ### Regular Expressions
 
 You can use regular expressions to improve intent classification and 
-entity extraction in combination with the [`RegexFeaturizer`](../nlu/components#regexfeaturizer) and [`RegexEntityExtractor`](../nlu/components#regexentityextractor) components in the pipeline.
+entity extraction in combination with the [`RegexFeaturizer`](components/featurizers.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) components in the pipeline.
 
 #### Regular Expressions for Intent Classification 
 
@@ -279,7 +279,7 @@ matches a single word.
 
 If your entity has a deterministic structure (like an account number), you can use regular expressions in one of two ways:
 
-1. As features for the [`RegexFeaturizer`](../nlu/components#regexfeaturizer) component in the pipeline.
+1. As features for the [`RegexFeaturizer`](components/featurizers.mdx#regexfeaturizer) component in the pipeline.
 
   When used as as features for the `RegexFeaturizer` the
   name of the regular expression does not matter.
@@ -291,7 +291,7 @@ If your entity has a deterministic structure (like an account number), you can u
   features and their presence will not improve entity recognition for
   these extractors. 
 
-2. For rule-based entity extraction using the [`RegexEntityExtractor`](../nlu/components#regexentityextractor) component in the pipeline.
+2. For rule-based entity extraction using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) component in the pipeline.
 
   When using the `RegexEntityExtractor`, the name of the regular expression should
   match the name of the entity you want to extract.
@@ -337,8 +337,8 @@ lookup table.
 
 Lookup table regexes are processed identically to the regular
 regex patterns directly specified in the training data and can be used
-either with the [RegexFeaturizer](../nlu/components#regexfeaturizer)
-or with the [RegexEntityExtractor](../nlu/components#regexentityextractor).
+either with the [RegexFeaturizer](components/featurizers.mdx#regexfeaturizer)
+or with the [RegexEntityExtractor](components/featurizers.mdx#regexentityextractor).
 
 :::note
 
@@ -362,9 +362,9 @@ Stories and rules are both representations of conversations between a user and a
 assistant. They are used to train the dialogue management
 model. [**Stories**](stories.mdx) are used to train a machine learning model to identify patterns
 in conversations and generalize to unseen conversation paths.
-**[Rules](../core/rules)** describe parts of conversations that should always
+**[Rules](rules.mdx)** describe parts of conversations that should always
 follow the same path and are used to train the
-[RulePolicy](../core/policies#rule-policy). 
+[RulePolicy](policies.mdx#rule-policy). 
 
 
 ### Stories
@@ -446,7 +446,7 @@ by the name of the action.
 While writing stories, you will encounter three types of actions:
 
 
-1. [**Responses**](#responses): start with `utter_` and send a specific message
+1. [**Responses**](domain.mdx#responses): start with `utter_` and send a specific message
    to the user. e.g.
 
 ```yaml
@@ -455,7 +455,7 @@ While writing stories, you will encounter three types of actions:
     - action: utter_greet
 ```
 
-2. [**Retrieval actions**](../core/retrieval-actions): start with `respond_` and send a message selected by a retrieval model. e.g.
+2. [**Retrieval actions**](retrieval-actions.mdx): start with `respond_` and send a message selected by a retrieval model. e.g.
 
 ```yaml
     steps:
@@ -463,7 +463,7 @@ While writing stories, you will encounter three types of actions:
     - action: respond_faq
 ```
 
-3. [**Custom actions**](../core/actions#custom-actions): start with `action_`, run arbitrary code and send any number of messages (or none).
+3. [**Custom actions**](custom-actions.mdx): start with `action_`, run arbitrary code and send any number of messages (or none).
 
 ```yaml
     steps:
@@ -474,10 +474,10 @@ While writing stories, you will encounter three types of actions:
 #### Forms
 
 
-A [form](../glossary#form) is a specific kind of custom action that contains the logic to loop over
-a set of required slots and ask the user for this information. You [define a form](../core/forms#defining-a-form) in the `forms` section in your domain.
-Once defined, the [happy path](../glossary#happy--unhappy-paths)
-for a form should be specified as a [rule](../core/forms), but interruptions of forms or 
+A [form](glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
+a set of required slots and ask the user for this information. You [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
+Once defined, the [happy path](glossary.mdx#happy-unhappy-paths)
+for a form should be specified as a [rule](forms.mdx), but interruptions of forms or 
 other "unhappy paths" should be included in stories so that the model can 
 generalize to unseen conversation sequences.
 As a step in a story, a form takes the following basic format:
@@ -521,7 +521,7 @@ An interruption of a form could look like this:
 A slot event is specified under the key `slot_was_set:` with the 
 slot name and optionally the slot's value.
 
-**[Slots](../core/slots)** act as the bots memory. 
+**[Slots](domain.mdx#slots)** act as the bots memory. 
 Slots are **set** by entities or by custom actions and **referenced** by stories in `slot_was_set` steps. For example:
 
 ```yaml
@@ -645,7 +645,7 @@ rules:
   - action: utter_greet
 ```
 
-Read more about writing rules [here](../core/rules#writing-a-rule).
+Read more about writing rules [here](rules.mdx#writing-a-rule).
 
 ## Test Conversations
 
