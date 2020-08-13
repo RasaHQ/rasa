@@ -107,16 +107,12 @@ class SingleStateFeaturizer:
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )
 
-        # TODO consider using bool or int to save memory
         features = np.zeros(len(self._default_feature_states[attribute]), np.float32)
         for state_feature, value in state_features.items():
             features[self._default_feature_states[attribute][state_feature]] = value
 
         if sparse:
-            print(features)
             features = scipy.sparse.coo_matrix(features)
-            print(features)
-            exit()
 
         features = Features(
             features, FEATURE_TYPE_SENTENCE, attribute, self.__class__.__name__
