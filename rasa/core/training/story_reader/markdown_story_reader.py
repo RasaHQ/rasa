@@ -201,7 +201,7 @@ class MarkdownStoryReader(StoryReader):
         self.current_step_builder.add_user_messages(parsed_messages)
 
     # TODO: Hack by Genie for temporary Markdown support
-    async def add_user_messages_e2e(self, messages: List[Text], line_num: int):
+    async def add_user_messages_e2e(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 f"User message '{messages}' at invalid location. "
