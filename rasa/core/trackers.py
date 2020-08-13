@@ -206,10 +206,10 @@ class DialogueStateTracker:
     def freeze_current_state(state) -> frozenset:
         frozen_state = frozenset(
             {
-                key: frozenset(state[key].items())
-                if isinstance(state[key], Dict)
-                else frozenset(state[key])
-                for key in state.keys()
+                key: frozenset(values.items())
+                if isinstance(values, Dict)
+                else frozenset(values)
+                for key, values in state.items()
             }.items()
         )
         return frozen_state
