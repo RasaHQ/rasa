@@ -3,5 +3,5 @@ stories:
   steps:
   - intent: hello
   - action: utter_greet
-  - slot_was_set: name
-    value: peter
+  - slot_was_set:
+    - name: peter
