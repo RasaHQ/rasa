@@ -26,15 +26,15 @@ Building NLU models is hard, and building ones that are production-ready is even
 Conversation-Driven Development (CDD) means letting real user conversations guide your development. For building a great NLU model, this means:
 
 
-### Gather real data (vs. generating synthetic data)
+### Gather Real Data
 When it comes to building out NLU training data, developers often rely on text generation tools to quickly increase the number of training examples. While this approach can be time-saving, it makes NLU models prone to overfit data that is not representative of things a real user would say.
 
 
 To avoid such a problem, it is always a good idea to collect as much real user data as possible to use as training data. Even though your bot will make mistakes initially, this process of training & evaluating on user data will enable your model to generalize much more effectively in real-world scenarios.
 
-### Share with test users early (vs. only trying it out yourself)
+### Share with Test Users Early
 
-In order to gather real data, you’re going to need real user messages. This means sharing your bot with test users outside the development team early on. See [these guidelines](./cdd) for more details.
+In order to gather real data, you’re going to need real user messages. A bot developer can only come up with a limited range of examples, and users will always surprise you with what they say. This means you should share your bot with test users outside the development team as early as possible. See the full [CDD guidelines](./conversation-driven-development.mdx) for more details.
 
 
 ## Avoiding Intent Confusion
@@ -56,29 +56,27 @@ TODO: replace with new story format
    - utter_cats_are_cool_too
 ```
 
-## Extracting Entities
+## Improving Entity Extraction
 
-### Using Synonyms Wisely
+### Pre-trained Entity Extractors
+
+Common entities such as names, addresses, and cities require a large amount of training data for an NLU model to generalize effectively. Rasa provides two great options for pre-trained extraction: [SpacyEntityExtractor](./components/entity-extractors/#SpacyEntityExtractor) and [DucklingEntityExtractor](./components/entity-extractors/#DucklingHTTPExtractor). Because these extractors have been pre-trained on a large corpus of data, you can use them to extract the entities they support without annotating them in your training data.
+
+### Regexes
+
+Regexes are useful for performing entity extraction on structured patterns such as 5-digit U.S. zip codes. Regex patterns can be used to generate features for the NLU model to learn, or as a method of direct entity matching. See [Regular Expression Features](./training-data-format/#regular-expression-features) for more information.
+
+### Lookup Tables
+
+Lookup tables are processed as a regex pattern that checks if any of the lookup table entries exist in the training example. Similar to regexes, lookup tables can be used to provide features to the model to improve entity recognition, or used to perform match-based entity recognition. Examples of useful applications of lookup tables are flavors of ice cream, brands of bottled water, and even sock length styles (see [Lookup Tables](./training-data-format/#lookup-tables)).
+
+
+### Synonyms
 
 Adding synonyms to the training data is useful for mapping certain entity values to a single normalized entity. Synonyms, however, are not meant for improving your model's entity recognition and has no effect on NLU performance.
 
 A good use case for synonyms is when normalizing entities belonging to distinct groups. For example, in an assistant that asks users what insurance policies they're interested in, they might respond with "my truck," "a car," or "I drive a batmobile." It would be a good idea to map `truck`, `car`, and `batmobile` to the normalized value `auto` so that the processing logic will only need to account for a narrow set of possibilities (see [Entity Synonyms](./training-data-format/#entity-synonyms)).
 
-
-### Regexes
-
-Regexes are useful for performing entity extraction on structured patterns such as 5 digits in US zip codes. Regex patterns are used to generate features for the NLU model to learn, not as a method of direct entity matching (see [Regular Expression Features](./training-data-format/#regular-expression-features)).
-
-
-### Lookup Tables
-
-Lookup tables are not used to perform match-based entity recognition, but rather are processed as a Regex pattern if any of the lookup table entries exist in the training example. Examples of useful applications of lookup tables are flavors of ice cream, brands of bottled water, and even sock length styles (see [Lookup Tables](./training-data-format/#lookup-tables)).
-
-
-
-### Pre-trained Entity Extractors
-
-Common entities such as names, addresses, and cities require a large amount of training data for an NLU model to generalize effectively. Rasa provides two great options for pre-trained extraction: [SpacyEntityExtractor](./components/entity-extractors/#SpacyEntityExtractor) and [DucklingEntityExtractor](./components/entity-extractors/#DucklingHTTPExtractor). Because these extractors have been pre-trained on a large corpus of data, you won't need to provide as many training examples for them to make accurate predictions.
 
 
 ## Handling Edge Cases
@@ -95,7 +93,7 @@ Adding a character-level featurizer provides an effective defense against spelli
   max_ngram: 4
 ```
 
-In addition to character level featurization, you can add common misspellings to your training data.
+In addition to character-level featurization, you can add common misspellings to your training data.
 
 
 ### Defining an Out-of-scope Intent
