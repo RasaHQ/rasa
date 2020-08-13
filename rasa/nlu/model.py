@@ -406,5 +406,5 @@ class Interpreter:
 
         for component in self.pipeline:
             if not isinstance(component, (EntityExtractor, IntentClassifier)):
-                component.process(message, attribute, **self.context)
+                component.process(message, **self.context)
         return message

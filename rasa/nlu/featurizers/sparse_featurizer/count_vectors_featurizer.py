@@ -526,7 +526,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     training_data.training_examples,
                 )
 
-    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> None:
         """Process incoming message and compute and set features"""
 
         if self.vectorizers is None:
@@ -536,19 +536,20 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 "didn't receive enough training data"
             )
             return
+        for attribute in self._attributes:
 
-        message_tokens = self._get_processed_message_tokens_by_attribute(
-            message, attribute
-        )
+            message_tokens = self._get_processed_message_tokens_by_attribute(
+                message, attribute
+            )
 
-        # features shape (1, seq, dim)
-        sequence_features, sentence_features = self._create_features(
-            attribute, [message_tokens]
-        )
+            # features shape (1, seq, dim)
+            sequence_features, sentence_features = self._create_features(
+                attribute, [message_tokens]
+            )
 
-        self._set_attribute_features(
-            attribute, sequence_features, sentence_features, [message]
-        )
+            self._set_attribute_features(
+                attribute, sequence_features, sentence_features, [message]
+            )
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""

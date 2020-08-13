@@ -198,9 +198,9 @@ def test_whitespace_processing_with_attribute(
     expected_tokens_text = ["Any", "Mexican", "restaurant", "will", "do"]
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
-    tk.process(message, INTENT)
+    tk.process(message)
     tokens_intent = message.get(TOKENS_NAMES[INTENT])
-    tk.process(message, TEXT)
+    tk.process(message)
     tokens_text = message.get(TOKENS_NAMES[TEXT])
     assert [t.text for t in tokens_intent] == expected_tokens_intent
     assert [t.text for t in tokens_text] == expected_tokens_text
@@ -212,9 +212,9 @@ def test_whitespace_processing_with_attribute(
     expected_action_tokens_text = ["Where", "are", "you", "going"]
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
-    tk.process(message, ACTION_TEXT)
+    tk.process(message)
     tokens_action_text = message.get(TOKENS_NAMES[ACTION_TEXT])
-    tk.process(message, TEXT)
+    tk.process(message)
     tokens_text = message.get(TOKENS_NAMES[TEXT])
     assert [t.text for t in tokens_action_text] == expected_action_tokens_text
     assert [t.text for t in tokens_text] == expected_action_tokens_text

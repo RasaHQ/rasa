@@ -34,6 +34,8 @@ class SpacyTokenizer(Tokenizer):
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         doc = self.get_doc(message, attribute)
+        if not doc:
+            return
 
         tokens = [
             Token(

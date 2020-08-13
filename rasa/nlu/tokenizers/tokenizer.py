@@ -103,15 +103,16 @@ class Tokenizer(Component):
                         tokens = self.tokenize(example, attribute)
                     example.set(TOKENS_NAMES[attribute], tokens)
 
-    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> None:
         """Tokenize the incoming message."""
-        if message.get(attribute):
-            if attribute in [INTENT, ACTION_NAME]:
-                tokens = self._split_name(message, attribute)
-            else:
-                tokens = self.tokenize(message, attribute)
+        for attribute in MESSAGE_ATTRIBUTES:
+            if message.get(attribute):
+                if attribute in [INTENT, ACTION_NAME]:
+                    tokens = self._split_name(message, attribute)
+                else:
+                    tokens = self.tokenize(message, attribute)
 
-            message.set(TOKENS_NAMES[attribute], tokens)
+                message.set(TOKENS_NAMES[attribute], tokens)
 
     def _split_name(self, message: Message, attribute: Text) -> List[Token]:
         text = message.get(attribute)

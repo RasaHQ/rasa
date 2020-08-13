@@ -139,7 +139,7 @@ def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
     message = Message(text)
     message.set(ACTION_NAME, text)
 
-    tk.process(message, ACTION_NAME)
+    tk.process(message)
 
     tokens = message.get(TOKENS_NAMES[ACTION_NAME])
 
@@ -156,13 +156,13 @@ def test_process_tokenizer_action_test(text: Text, expected_tokens: List[Text]):
     message.set(ACTION_NAME, text)
     message.set(ACTION_TEXT, text)
 
-    tk.process(message, ACTION_TEXT)
+    tk.process(message)
 
     tokens = message.get(TOKENS_NAMES[ACTION_TEXT])
     assert [t.text for t in tokens] == expected_tokens
 
     message.set(ACTION_TEXT, "")
-    tk.process(message, ACTION_NAME)
+    tk.process(message)
     tokens = message.get(TOKENS_NAMES[ACTION_NAME])
     assert [t.text for t in tokens] == [text]
 

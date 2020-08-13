@@ -529,13 +529,13 @@ class HFTransformersNLP(Component):
 
                 batch_start_index += batch_size
 
-    def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> None:
         """Process an incoming message by computing its tokens and dense features.
 
         Args:
             message: Incoming message object
         """
-        if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
             message.set(
                 LANGUAGE_MODEL_DOCS[attribute],
                 self._get_docs_for_batch([message], attribute=attribute)[0],

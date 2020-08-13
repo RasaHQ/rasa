@@ -61,10 +61,8 @@ class SpacyFeaturizer(DenseFeaturizer):
         return message.get(SPACY_DOCS[attribute])
 
     def process(self, message: Message, attribute: Text = TEXT, **kwargs: Any) -> None:
-        if attribute not in DENSE_FEATURIZABLE_ATTRIBUTES:
-            return
-
-        self._set_spacy_features(message, attribute)
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            self._set_spacy_features(message, attribute)
 
     def _set_spacy_features(self, message: Message, attribute: Text = TEXT) -> None:
         """Adds the spacy word vectors to the messages features."""

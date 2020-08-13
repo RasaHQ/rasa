@@ -502,9 +502,8 @@ def test_count_vector_featurizer_process_by_attribute(
     test_message.set(ACTION_NAME, action_name)
     test_message.set(ACTION_TEXT, action_text)
 
-    for attribute in [TEXT, ACTION_NAME, ACTION_TEXT]:
-        for module in [tk, ftr]:
-            module.process(test_message, attribute=attribute)
+    for module in [tk, ftr]:
+        module.process(test_message)
 
     action_name_seq_vecs, action_name_sen_vecs = test_message.get_sparse_features(
         ACTION_NAME, []
