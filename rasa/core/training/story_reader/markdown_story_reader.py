@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from pathlib import PurePath
-from typing import Dict, Text, List, Any
+from typing import Dict, Text, List, Any, Tuple
 
 import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_STORIES
@@ -163,7 +163,7 @@ class MarkdownStoryReader(StoryReader):
         return re.sub(r"<!--.*?-->", "", line).strip()
 
     @staticmethod
-    def _parse_event_line(line: Text):
+    def _parse_event_line(line: Text) -> Tuple[Text, Dict[Text, Text]]:
         """Tries to parse a single line as an event with arguments."""
 
         # the regex matches "slot{"a": 1}"
@@ -183,7 +183,7 @@ class MarkdownStoryReader(StoryReader):
             return "", {}
 
     @staticmethod
-    def _parse_bot_message_e2e(line: Text):
+    def _parse_bot_message_e2e(line: Text) -> Tuple[Text, Dict[Text, Text]]:
         from rasa.nlu.training_data.formats.markdown import MarkdownReader
 
         action_as_message = MarkdownReader().parse_e2e_training_example(line)
