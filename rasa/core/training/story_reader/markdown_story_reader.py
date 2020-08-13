@@ -189,7 +189,7 @@ class MarkdownStoryReader(StoryReader):
         action_as_message = MarkdownReader().parse_e2e_training_example(line)
         return "", {"e2e_text": action_as_message.get(TEXT).strip()}
 
-    async def _add_user_messages(self, messages: List[Text], line_num: int):
+    async def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "User message '{}' at invalid location. "
