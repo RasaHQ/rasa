@@ -11,14 +11,10 @@ on:
 # - GH_DOCS_WRITE_KEY: generated locally, added to github repo (public key)
 #                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
 # - GITHUB_TOKEN: (default, from github actions)
-# - RASA_PYPI_PASSWORD: password for https://pypi.rasa.com, used for installing private packages
 
 env:
   DOCS_FOLDER: docs
   DOCS_BRANCH: documentation
-  RASA_PYPI_URL: https://pypi.rasa.com/simple/
-  RASA_PYPI_USER: github-ci
-  RASA_PYPI_PASSWORD: ${{ secrets.RASA_PYPI_PASSWORD }}
 
 jobs:
   docs:
@@ -49,11 +45,6 @@ jobs:
       uses: Gr1N/setup-poetry@v1
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
-
-    - name: Configure poetry ⚙️
-      run: |
-        poetry config repositories.rasa-pypi $RASA_PYPI_URL
-        poetry config http-basic.rasa-pypi $RASA_PYPI_USER $RASA_PYPI_PASSWORD
 
     - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1

@@ -8,9 +8,6 @@ on:
 
 env:
   GKE_ZONE: us-central1-a
-  RASA_PYPI_URL: https://pypi.rasa.com/simple/
-  RASA_PYPI_USER: github-ci
-  RASA_PYPI_PASSWORD: ${{ secrets.RASA_PYPI_PASSWORD }}
 
 jobs:
   read_test_configuration:
@@ -135,11 +132,6 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
-
-      - name: Configure poetry ⚙️
-        run: |
-          poetry config repositories.rasa-pypi $RASA_PYPI_URL
-          poetry config http-basic.rasa-pypi $RASA_PYPI_USER $RASA_PYPI_PASSWORD
 
       - name: Load Poetry Cached Libraries ⬇
         uses: actions/cache@v1
