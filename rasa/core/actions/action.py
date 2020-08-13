@@ -15,13 +15,13 @@ from rasa.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     UTTER_PREFIX,
     RESPOND_PREFIX,
-    RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
     OPEN_UTTERANCE_PREDICTION_KEY,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     INTENT_RANKING_KEY,
+    INTENT_NAME_KEY,
 )
 
 from rasa.core.events import (
@@ -62,6 +62,8 @@ ACTION_DEFAULT_ASK_AFFIRMATION_NAME = "action_default_ask_affirmation"
 ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
 
 ACTION_BACK_NAME = "action_back"
+
+RULE_SNIPPET_ACTION_NAME = "..."
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
@@ -721,14 +723,14 @@ class ActionDefaultAskAffirmation(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        intent_to_affirm = tracker.latest_message.intent.get("name")
+        intent_to_affirm = tracker.latest_message.intent.get(INTENT_NAME_KEY)
 
         intent_ranking = tracker.latest_message.intent.get(INTENT_RANKING_KEY, [])
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1]["name"]
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 

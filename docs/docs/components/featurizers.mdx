@@ -4,8 +4,6 @@ sidebar_label: Text Featurizers
 title: Text Featurizers
 ---
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="text-featurizers"></a>
-
 Text featurizers are divided into two different categories: sparse featurizers and dense featurizers.
 Sparse featurizers are featurizers that return feature vectors with a lot of missing values, e.g. zeros.
 As those feature vectors would normally take up a lot of memory, we store them as sparse features.
@@ -21,8 +19,6 @@ It contains the feature vector for the complete utterance.
 The sentence features can be used in any bag-of-words model.
 The corresponding classifier can therefore decide what kind of features to use.
 Note: The `feature-dimension` for sequence and sentence features does not have to be the same.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="mitiefeaturizer"></a>
 
 ## MitieFeaturizer
 
@@ -41,7 +37,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [MitieNLP](./components#mitienlp)
+  [MitieNLP](../components/language-models.mdx#mitienlp)
 
 
 
@@ -79,8 +75,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="spacyfeaturizer"></a>
-
 ## SpacyFeaturizer
 
 
@@ -98,7 +92,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [SpacyNLP](./components#spacynlp)
+  [SpacyNLP](../components/language-models.mdx#spacynlp)
 
 
 
@@ -130,8 +124,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="convertfeaturizer"></a>
-
 ## ConveRTFeaturizer
 
 
@@ -150,7 +142,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [ConveRTTokenizer](./components#converttokenizer)
+  [ConveRTTokenizer](../components/tokenizers.mdx#converttokenizer)
 
 
 
@@ -187,8 +179,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="languagemodelfeaturizer"></a>
-
 ## LanguageModelFeaturizer
 
 
@@ -206,7 +196,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [HFTransformersNLP](./components#hftransformersnlp) and [LanguageModelTokenizer](./components#languagemodeltokenizer)
+  [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer)
 
 
 
@@ -219,7 +209,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 * **Description**
 
   Creates features for entity extraction, intent classification, and response selection.
-  Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components#hftransformersnlp) component to compute vector
+  Uses the pre-trained language model specified in upstream [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) component to compute vector
   representations of input text.
 
   :::note
@@ -232,16 +222,14 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Configuration**
 
-  Include [HFTransformersNLP](./components#hftransformersnlp) and [LanguageModelTokenizer](./components#languagemodeltokenizer) components before this component. Use
-  [LanguageModelTokenizer](./components#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
+  Include [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) components before this component. Use
+  [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
 
   ```yaml
   pipeline:
   - name: "LanguageModelFeaturizer"
   ```
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="regexfeaturizer"></a>
 
 ## RegexFeaturizer
 
@@ -278,8 +266,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   For each regex, a feature will be set marking whether this expression was found in the user message or not.
   All features will later be fed into an intent classifier / entity extractor to simplify classification (assuming
   the classifier has learned during the training phase, that this set feature indicates a certain intent / entity).
-  Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](./components#crfentityextractor) and the
-  [DIETClassifier](./components#diet-classifier) components!
+  Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](../components/entity-extractors.mdx#crfentityextractor) and the
+  [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier) components!
 
 
 
@@ -295,8 +283,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "case_sensitive": True
   ```
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="countvectorsfeaturizer"></a>
 
 ## CountVectorsFeaturizer
 
@@ -329,14 +315,14 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   Creates features for intent classification and response selection.
   Creates bag-of-words representation of user message, intent, and response using
-  [sklearn’s CountVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html).
+  [sklearn's CountVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html).
   All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
 
 
 * **Configuration**
 
-  See [sklearn’s CountVectorizer docs](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html)
+  See [sklearn's CountVectorizer docs](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html)
   for detailed description of the configuration parameters.
 
   This featurizer can be configured to use word or character n-grams, using the `analyzer` configuration parameter.
@@ -432,7 +418,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     |                   |                         | and user message.                                            |
     +-------------------+-------------------------+--------------------------------------------------------------+
     | analyzer          | word                    | Whether the features should be made of word n-gram or        |
-    |                   |                         | character n-grams. Option ‘char_wb’ creates character        |
+    |                   |                         | character n-grams. Option 'char_wb' creates character        |
     |                   |                         | n-grams only from text inside word boundaries;               |
     |                   |                         | n-grams at the edges of words are padded with space.         |
     |                   |                         | Valid values: 'word', 'char', 'char_wb'.                     |
@@ -474,8 +460,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   </details>
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="lexicalsyntacticfeaturizer"></a>
-
 ## LexicalSyntacticFeaturizer
 
 
@@ -507,7 +491,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   Creates features for entity extraction.
   Moves with a sliding window over every token in the user message and creates features according to the
-  configuration (see below). As a default configuration is present, you don’t need to specify a configuration.
+  configuration (see below). As a default configuration is present, you don't need to specify a configuration.
 
 
 

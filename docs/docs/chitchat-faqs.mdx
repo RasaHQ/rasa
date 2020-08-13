@@ -4,34 +4,33 @@ sidebar_label: Chitchat and FAQs
 title: Chitchat and FAQs
 ---
 
-TODO: Restructure all conversations patterns pages to not depend
-on one another
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
-After following the basics of setting up an assistant in the [Rasa Tutorial](https://rasa.com/docs/rasa/user-guide/rasa-tutorial/), we’ll
+<!-- TODO: Restructure all conversations patterns pages to not depend on one another -->
+
+After following the basics of [prototyping an assistant](./prototype-an-assistant.mdx), we'll
 now walk through building a basic FAQ chatbot and then build a bot that can handle
 contextual conversations.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="build-faq-assistant"></a>
 
-## Building a simple FAQ assistant
-
 FAQ assistants are the simplest assistants to build and a good place to get started.
-These assistants allow the user to ask a simple question and get a response. We’re going to
+These assistants allow the user to ask a simple question and get a response. We're going to
 build a basic FAQ assistant using features of Rasa designed specifically for this type of assistant.
 
-In this section we’re going to cover the following topics:
+In this section we're going to cover the following topics:
 
-* [Responding to simple intents](respond-with-memoization-policy) with the MemoizationPolicy
+* [Responding to simple intents](./chitchat-faqs.mdx#respond-with-memoization-policy) with the MemoizationPolicy
 
-* [Handling FAQs](faqs-response-selector) using the ResponseSelector
+* [Handling FAQs](./chitchat-faqs.mdx#faqs-response-selector) using the ResponseSelector
 
-We’re going to use content from [Sara](https://github.com/RasaHQ/rasa-demo), the Rasa
+We're going to use content from [Sara](https://github.com/RasaHQ/rasa-demo), the Rasa
 assistant that, amongst other things, helps the user get started with the Rasa products.
-You should first install Rasa using the [Step-by-step Installation Guide](https://rasa.com/docs/rasa/user-guide/installation/#step-by-step-installation-guide)
-and then follow the [Rasa Tutorial](https://rasa.com/docs/rasa/user-guide/rasa-tutorial/)
+You should first install Rasa using the [Step-by-step Installation Guide](./installation.mdx#step-by-step-installation-guide)
+and then [prototype an assistant](./prototype-an-assistant.mdx)
 to make sure you know the basics.
 
-To prepare for this tutorial, we’re going to create a new directory and start a
+To prepare for this tutorial, we're going to create a new directory and start a
 new Rasa project.
 
 ```bash
@@ -39,17 +38,17 @@ mkdir rasa-assistant
 rasa init
 ```
 
-Let’s remove the default content from this bot, so that the `data/nlu.md`, `data/stories.md`
+Let's remove the default content from this bot, so that the `data/nlu.md`, `data/stories.md`
 and `domain.yml` files are empty.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="respond-with-memoization-policy"></a>
 
-### Memoization Policy
+## Memoization Policy
 
 The MemoizationPolicy remembers examples from training stories for up to a `max_history`
 of turns. The number of “turns” includes messages the user sent, and actions the
 assistant performed. For the purpose of a simple, context-less FAQ bot, we only need
-to pay attention to the last message the user sent, and therefore we’ll set that to `1`.
+to pay attention to the last message the user sent, and therefore we'll set that to `1`.
 
 You can do this by editing your `config.yml` file as follows (you can remove `TEDPolicy` for now):
 
@@ -66,7 +65,7 @@ which allows you to clear the conversation history and start fresh.
 
 :::
 
-Now that we’ve defined our policies, we can add some stories for the `goodbye`, `thank` and `greet`
+Now that we've defined our policies, we can add some stories for the `goodbye`, `thank` and `greet`
 intents to the `data/stories.md` file:
 
 ```md
@@ -83,7 +82,7 @@ intents to the `data/stories.md` file:
   - utter_bye
 ```
 
-We’ll also need to add the intents, actions and responses to our `domain.yml` file in the following sections:
+We'll also need to add the intents, actions and responses to our `domain.yml` file in the following sections:
 
 ```md
 intents:
@@ -100,7 +99,7 @@ responses:
     - text: Bye!
 ```
 
-Finally, we’ll copy over some NLU data from Sara into our `data/nlu.md` file
+Finally, we'll copy over some NLU data from Sara into our `data/nlu.md` file
 (more can be found [here](https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md)):
 
 ```md
@@ -147,9 +146,9 @@ For example:
 
 
 
-<img alt="Memoization Policy Conversation" src="../../img/memoization_policy_convo.png" />
+<img alt="Memoization Policy Conversation" src={useBaseUrl("/img/memoization_policy_convo.png")} />
 
-While it’s good to test the bot interactively, we should also add end to end test cases that
+While it's good to test the bot interactively, we should also add end to end test cases that
 can later be included as part of a [CI/CD system](./setting-up-ci-cd). End-to-end [test conversations](./testing-your-assistant#end-to-end-testing)
 include NLU data, so that both components of Rasa can be tested. The file
 `tests/conversation_tests.md` contains example test conversations. Delete all the test conversations and replace
@@ -191,18 +190,18 @@ an exception that stops the pipeline.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="faqs-response-selector"></a>
 
-### Response Selectors
+## Response Selectors
 
-The [ResponseSelector](../nlu/components#response-selector) NLU component is designed to make it easier to handle dialogue
-elements like [Small Talk](../dialogue-elements/small-talk) and FAQ messages in a simple manner. By using the ResponseSelector,
+The [ResponseSelector](./components/selectors.mdx#responseselector) NLU component is designed to make it easier to handle
+conversation patterns like small talk and FAQ messages in a simple manner. By using the ResponseSelector,
 you only need one story to handle all FAQs, instead of adding new stories every time you
-want to increase your bot’s scope.
+want to increase your bot's scope.
 
-People often ask Sara different questions surrounding the Rasa products, so let’s
+People often ask Sara different questions surrounding the Rasa products, so let's
 start with three intents: `ask_channels`, `ask_languages`, and `ask_rasax`.
-We’re going to copy over some NLU data from the [Sara training data](https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md)
-into our `nlu.md`. It’s important that these intents have an `faq/` prefix, so they’re
-recognised as the faq intent by the ResponseSelector:
+We're going to copy over some NLU data from the [Sara training data](https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md)
+into our `nlu.md`. It's important that these intents have an `faq/` prefix, so they're
+recognized as the faq intent by the ResponseSelector:
 
 ```md
 ## intent: faq/ask_channels
@@ -228,14 +227,14 @@ recognised as the faq intent by the ResponseSelector:
 - tell me what is rasa x
 ```
 
-Next, we’ll need to define the responses associated with these FAQs in a new file called `responses.md` in the `data/` directory:
+Next, we'll need to define the responses associated with these FAQs in a new file called `responses.md` in the `data/` directory:
 
 ```md
 ## ask channels
 * faq/ask_channels
   - We have a comprehensive list of [supported connectors](https://rasa.com/docs/core/connectors/), but if
     you don't see the one you're looking for, you can always create a custom connector by following
-    [this guide](https://rasa.com/docs/rasa/user-guide/connectors/custom-connectors/).
+    [this guide](./connectors/custom-connectors.mdx).
 
 ## ask languages
 * faq/ask_languages
@@ -266,7 +265,7 @@ pipeline:
     epochs: 100
 ```
 
-Now that we’ve defined the NLU side, we need to make Core aware of these changes. Open your `domain.yml` file and add the `faq` intent:
+Now that we've defined the NLU side, we need to make Core aware of these changes. Open your `domain.yml` file and add the `faq` intent:
 
 ```yaml
 intents:
@@ -276,7 +275,7 @@ intents:
   - faq
 ```
 
-We’ll also need to add a [retrieval action](https://rasa.com/docs/rasa/core/retrieval-actions/),
+We'll also need to add a [retrieval action](./retrieval-actions.mdx),
 which takes care of sending the response predicted from the ResponseSelector back to the user,
 to the list of actions. These actions always have to start with the `respond_` prefix:
 
@@ -285,7 +284,7 @@ actions:
   - respond_faq
 ```
 
-Next we’ll write a story so that Core knows which action to predict:
+Next we'll write a story so that Core knows which action to predict:
 
 ```md
 ## Some question from FAQ
@@ -314,24 +313,23 @@ At this stage it makes sense to add a few test cases to your `test_stories.md` f
   - respond_faq
 
 ## ask rasa x
-* faq: What’s Rasa X?
+* faq: What's Rasa X?
   - respond_faq
 ```
 
 You can read more in this [blog post](https://blog.rasa.com/response-retrieval-models/) and the
-[Retrieval Actions](https://rasa.com/docs/rasa/core/retrieval-actions/) page.
+[Retrieval Actions](./retrieval-actions.mdx) page.
 
 Using the features we described in this tutorial, you can easily build a context-less assistant.
-When you’re ready to enhance your assistant with context, check out [Building a contextual assistant](./building-assistants#tutorial-contextual-assistants).
 
 :::note
-Here’s a minimal checklist of files we modified to build a basic FAQ assistant:
+Here's a minimal checklist of files we modified to build a basic FAQ assistant:
 
 * `data/nlu.md`: Add NLU training data for `faq/` intents
 
 * `data/responses.md`: Add responses associated with `faq/` intents
 
-* `config.yml`: Add `ReponseSelector` in your NLU pipeline
+* `config.yml`: Add `ResponseSelector` in your NLU pipeline
 
 * `domain.yml`: Add a retrieval action `respond_faq` and intent `faq`
 

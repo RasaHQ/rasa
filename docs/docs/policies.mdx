@@ -2,9 +2,10 @@
 id: policies
 sidebar_label: Policies
 title: Policies
+description: Define and train customized policy configurations to optimize your contextual assistant for longer contexts or unseen utterances which require generalization.
 ---
 
-TODO: replace with 2 files for ML policies and RulePolicy
+<!-- TODO: replace with 2 files for ML policies and RulePolicy -->
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="policy-file"></a>
 
@@ -14,7 +15,7 @@ The `rasa.core.policies.Policy` class decides which action to take
 at every step in the conversation.
 
 There are different policies to choose from, and you can include
-multiple policies in a single [`rasa.core.agent.Agent`](../api/agent#rasa.core.agent.Agent).
+multiple policies in a single configuration.
 
 :::note
 Per default a maximum of 10 next actions can be predicted
@@ -24,10 +25,14 @@ to the desired number of maximum predictions.
 
 :::
 
-Your project’s `config.yml` file takes a `policies` key
+Your project's `config.yml` file takes a `policies` key
 which you can use to customize the policies your assistant uses.
-In the example below, the last two lines show how to use a custom
-policy class and pass arguments to it.
+You can also leave this key out or empty. Then the
+[Suggested Config](.//model-configuration.mdx#suggested-config)
+feature will choose some default policies for you.
+
+You can also reference custom policies in your configuration. In the example below, the
+last two lines show how to use a custom policy class and pass arguments to it.
 
 ```yaml
 policies:
@@ -37,12 +42,7 @@ policies:
       max_history: 5
       state_featurizer:
         - name: BinarySingleStateFeaturizer
-  - name: "MemoizationPolicy"
-    max_history: 5
-  - name: "FallbackPolicy"
-    nlu_threshold: 0.4
-    core_threshold: 0.3
-    fallback_action_name: "my_fallback_action"
+  - name: "RulePolicy"
   - name: "path.to.your.policy.class"
     arg1: "..."
 ```
@@ -53,17 +53,17 @@ One important hyperparameter for Rasa Core policies is the `max_history`.
 This controls how much dialogue history the model looks at to decide which
 action to take next.
 
-You can set the `max_history` by passing it to your policy’s `Featurizer`
+You can set the `max_history` by passing it to your policy's `Featurizer`
 in the policy configuration yaml file.
 
 :::note
 Only the `MaxHistoryTrackerFeaturizer` uses a max history,
 whereas the `FullDialogueTrackerFeaturizer` always looks at
-the full conversation history. See [Featurization of Conversations](../api/core-featurization#featurization-conversations) for details.
+the full conversation history. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for details.
 
 :::
 
-As an example, let’s say you have an `out_of_scope` intent which
+As an example, let's say you have an `out_of_scope` intent which
 describes off-topic user messages. If your bot sees this intent multiple
 times in a row, you might want to tell the user what you can help them
 with. So your story might look like this:
@@ -103,7 +103,7 @@ This is because if you have stories like:
 ```
 
 You actually want to teach your policy to **ignore** the dialogue history
-when it isn’t relevant and just respond with the same action no matter
+when it isn't relevant and just respond with the same action no matter
 what happened before.
 
 You can alter this behavior with the `--augmentation` flag.
@@ -123,8 +123,8 @@ ignore all augmented stories.
 
 At every turn, each policy defined in your configuration will
 predict a next action with a certain confidence level. For more information
-about how each policy makes its decision, read into the policy’s description below.
-The bot’s next action is then decided by the policy that predicts with the highest confidence.
+about how each policy makes its decision, read into the policy's description below.
+The bot's next action is then decided by the policy that predicts with the highest confidence.
 
 In the case that two policies predict with equal confidence (for example, the Memoization
 and Mapping Policies always predict with confidence of either 0 or 1), the priority of the
@@ -139,7 +139,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 
 4. `FallbackPolicy` and `TwoStageFallbackPolicy`
 
-5. `FormPolicy`
+5. `RulePolicy` and `FormPolicy`
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
 above the `nlu_threshold`, the bot will still fall back. In general, it is not recommended to have more
@@ -162,7 +162,7 @@ Doing so can lead to unexpected and undesired bot behavior.
 ## Embedding Policy
 
 :::caution
-`EmbeddingPolicy` was renamed to `TEDPolicy`. Please use [TED Policy](./policies#ted-policy) instead of `EmbeddingPolicy`
+`EmbeddingPolicy` was renamed to `TEDPolicy`. Please use [TED Policy](./policies.mdx#ted-policy) instead of `EmbeddingPolicy`
 in your policy configuration. The functionality of the policy stayed the same.
 
 :::
@@ -190,7 +190,7 @@ following steps:
   This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
 
 It is recommended to use `state_featurizer=LabelTokenizerSingleStateFeaturizer(...)`
-(see [Featurization of Conversations](../api/core-featurization#featurization-conversations) for details).
+(see [Featurization of Conversations](./policies.mdx#featurization-conversations) for details).
 
 **Configuration:**
 
@@ -201,7 +201,7 @@ If you want to adapt your model, start by modifying the following parameters:
   This parameter sets the number of times the algorithm will see the training data (default: `1`).
   One `epoch` is equals to one forward pass and one backward pass of all the training examples.
   Sometimes the model needs more epochs to properly learn.
-  Sometimes more epochs don’t influence the performance.
+  Sometimes more epochs don't influence the performance.
   The lower the number of epochs the faster the model is trained.
 
 * `hidden_layers_sizes`:
@@ -239,9 +239,9 @@ be trained only for `1` epoch.
 :::
 
 :::caution
-Default `max_history` for this policy is `None` which means it’ll use the
+Default `max_history` for this policy is `None` which means it'll use the
 `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to some finite value in order to
-use `MaxHistoryTrackerFeaturizer` for **faster training**. See [Featurization of Conversations](../api/core-featurization#featurization-conversations) for
+use `MaxHistoryTrackerFeaturizer` for **faster training**. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for
 details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
 (e.g. `"batch_size": [32, 64]`)
 
@@ -374,9 +374,46 @@ for details.
 
 :::
 
+## Rule Policy
+
+The `Rule Policy` is a policy that handles conversation parts that follow
+a fixed behavior. Please see [Rules](./rules.mdx) for further information.
+
+## Memoization Policy
+
+The `MemoizationPolicy` just memorizes the conversations in your
+training data. It predicts the next action with confidence `1.0`
+if this exact conversation exists in the training data, otherwise it
+predicts `None` with confidence `0.0`.
+
+## Augmented Memoization Policy
+
+The `AugmentedMemoizationPolicy` remembers examples from training
+stories for up to `max_history` turns, just like the `MemoizationPolicy`.
+Additionally, it has a forgetting mechanism that will forget a certain amount
+of steps in the conversation history and try to find a match in your stories
+with the reduced history. It predicts the next action with confidence `1.0`
+if a match is found, otherwise it predicts `None` with confidence `0.0`.
+
+:::note
+If you have dialogues where some slots that are set during
+prediction time might not be set in training stories (e.g. in training
+stories starting with a reminder not all previous slots are set),
+make sure to add the relevant stories without slots to your training
+data as well.
+
+:::
+
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="mapping-policy"></a>
 
 ## Mapping Policy
+
+:::caution
+The `MappingPolicy` is deprecated. Please see [Rules](./rules.mdx) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `MappingPolicy`, see the
+[migration guide](./migration-guide.mdx#migrating-from-the-mapping-policy).
+:::
 
 The `MappingPolicy` can be used to directly map intents to actions. The
 mappings are assigned by giving an intent the property `triggers`, e.g.:
@@ -394,13 +431,13 @@ user message, normal prediction will resume.
 
 If you do not want your intent-action mapping to affect the dialogue
 history, the mapped action must return a `UserUtteranceReverted()`
-event. This will delete the user’s latest message, along with any events that
+event. This will delete the user's latest message, along with any events that
 happened after it, from the dialogue history. This means you should not
 include the intent-action interaction in your stories.
 
 For example, if a user asks “Are you a bot?” off-topic in the middle of the
 flow, you probably want to answer without that interaction affecting the next
-action prediction. A triggered custom action can do anything, but here’s a
+action prediction. A triggered custom action can do anything, but here's a
 simple example that dispatches a bot utterance and then reverts the interaction:
 
 ```python
@@ -430,36 +467,18 @@ in your policy example these intents will not work.
 
 :::
 
-## Memoization Policy
-
-The `MemoizationPolicy` just memorizes the conversations in your
-training data. It predicts the next action with confidence `1.0`
-if this exact conversation exists in the training data, otherwise it
-predicts `None` with confidence `0.0`.
-
-## Augmented Memoization Policy
-
-The `AugmentedMemoizationPolicy` remembers examples from training
-stories for up to `max_history` turns, just like the `MemoizationPolicy`.
-Additionally, it has a forgetting mechanism that will forget a certain amount
-of steps in the conversation history and try to find a match in your stories
-with the reduced history. It predicts the next action with confidence `1.0`
-if a match is found, otherwise it predicts `None` with confidence `0.0`.
-
-:::note
-If you have dialogues where some slots that are set during
-prediction time might not be set in training stories (e.g. in training
-stories starting with a reminder not all previous slots are set),
-make sure to add the relevant stories without slots to your training
-data as well.
-
-:::
-
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="fallback-policy"></a>
 
 ## Fallback Policy
 
-The `FallbackPolicy` invokes a [fallback action](./fallback-actions) if at least one of the following occurs:
+:::caution
+The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `FallbackPolicy`, see the
+[migration guide](./migration-guide.mdx#migrating-from-the-fallback-policy).
+:::
+
+The `FallbackPolicy` invokes a predefined action if at least one of the following occurs:
 
 1. The intent recognition has a confidence below `nlu_threshold`.
 
@@ -482,12 +501,17 @@ policies:
     fallback_action_name: 'action_default_fallback'
 ```
 
-|                       |                                                                                                                                                |
-|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-|`nlu_threshold`        |Min confidence needed to accept an NLU prediction                                                                                               |
-|`ambiguity_threshold`  |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.                                      |
-|`core_threshold`       |Min confidence needed to accept an action prediction from Rasa Core                                                                             |
-|`fallback_action_name` |Name of the [fallback action](./fallback-actions) to be called if the confidence of intent or action is below the respective threshold |
+|                       |                                                                                                                 |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------|
+|`nlu_threshold`        |Min confidence needed to accept an NLU prediction                                                                |
+|`ambiguity_threshold`  |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.       |
+|`core_threshold`       |Min confidence needed to accept an action prediction from Rasa Core                                              |
+|`fallback_action_name` |Name of the fallback action to be called if the confidence of intent or action is below the respective threshold |
+
+`action_default_fallback` is a default action in Rasa Core which sends the
+`utter_default` response to the user (you will have to define this response
+in the `responses:` section of your domain file). You can also choose your
+`fallback_action_name` to be one of your custom actions.
 
 You can also configure the `FallbackPolicy` in your python code:
 
@@ -513,6 +537,13 @@ You can include either the `FallbackPolicy` or the
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="two-stage-fallback-policy"></a>
 
 ## Two-Stage Fallback Policy
+
+:::caution
+The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `TwoStageFallbackPolicy`, see the
+[migration guide](./migration-guide.mdx#migrating-from-the-two-stage-fallback-policy).
+:::
 
 The `TwoStageFallbackPolicy` handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.
@@ -543,30 +574,38 @@ by trying to disambiguate the user input.
       `deny_suggestion_intent_name`, and an ultimate fallback action
       is triggered (e.g. a handoff to a human).
 
-**Configuration:**
+### Configuration
 
-To use the `TwoStageFallbackPolicy`, include the following in your
-policy configuration.
+Rasa provides the default implementations of
+`action_default_ask_affirmation` and `action_default_ask_rephrase`.
+The default implementation of `action_default_ask_rephrase` action utters
+the response `utter_ask_rephrase`, so be sure to specify this
+response in your domain file.
+The implementation of both actions can be overwritten with [custom actions](./actions#custom-actions).
+
+You can specify the core fallback action as well as the ultimate NLU
+fallback action as parameters to `TwoStageFallbackPolicy` in your
+policy configuration file.
 
 ```yaml
 policies:
   - name: TwoStageFallbackPolicy
     nlu_threshold: 0.3
-    ambiguity_threshold: 0.1
     core_threshold: 0.3
+    ambiguity_threshold: 0.1
     fallback_core_action_name: "action_default_fallback"
     fallback_nlu_action_name: "action_default_fallback"
     deny_suggestion_intent_name: "out_of_scope"
 ```
 
-|                              |                                                                                                                                                                                                                     |
-|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|`nlu_threshold`               |Min confidence needed to accept an NLU prediction                                                                                                                                                                    |
-|`ambiguity_threshold`         |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.                                                                                                           |
-|`core_threshold`              |Min confidence needed to accept an action prediction from Rasa Core                                                                                                                                                  |
-|`fallback_core_action_name`   |Name of the [fallback action](./fallback-actions) to be called if the confidence of Rasa Core action prediction is below the `core_threshold`. This action is to propose the recognized intents             |
-|`fallback_nlu_action_name`    |Name of the [fallback action](./fallback-actions) to be called if the confidence of Rasa NLU intent classification is below the `nlu_threshold`. This action is called when the user denies the second time |
-|`deny_suggestion_intent_name` |The name of the intent which is used to detect that the user denies the suggested intents                                                                                                                            |
+|                              |                                                                                                                                                                                      |
+|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|`nlu_threshold`               |Min confidence needed to accept an NLU prediction                                                                                                                                     |
+|`ambiguity_threshold`         |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.                                                                            |
+|`core_threshold`              |Min confidence needed to accept an action prediction from Rasa Core                                                                                                                   |
+|`fallback_core_action_name`   |Name of the fallback action to be called if the confidence of Rasa Core action prediction is below the `core_threshold`. This action is to propose the recognized intents             |
+|`fallback_nlu_action_name`    |Name of the fallback action to be called if the confidence of Rasa NLU intent classification is below the `nlu_threshold`. This action is called when the user denies the second time |
+|`deny_suggestion_intent_name` |The name of the intent which is used to detect that the user denies the suggested intents                                                                                             |
 
 :::note
 You can include either the `FallbackPolicy` or the
@@ -578,13 +617,20 @@ You can include either the `FallbackPolicy` or the
 
 ## Form Policy
 
+:::caution
+The `FormPolicy` is deprecated. Please see [Forms](./forms.mdx) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `FormPolicy`, see the
+[migration guide](./migration-guide.mdx#form-policy).
+:::
+
 The `FormPolicy` is an extension of the `MemoizationPolicy` which
 handles the filling of forms. Once a `FormAction` is called, the
 `FormPolicy` will continually predict the `FormAction` until all required
-slots in the form are filled. For more information, see [Forms](./forms).
+slots in the form are filled.
 
 
-## Featurization
+## Conversation Featurization
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="featurization-conversations"></a>
 
@@ -603,13 +649,13 @@ of the tracker has a couple steps:
 1. **Tracker provides a bag of active features**:
 
        * features indicating intents and entities, if this is the first
-         state in a turn, e.g. it’s the first action we will take after
-         parsing the user’s message. (e.g.
+         state in a turn, e.g. it's the first action we will take after
+         parsing the user's message. (e.g.
          `[intent_restaurant_search, entity_cuisine]` )
 
        * features indicating which slots are currently defined, e.g.
          `slot_location` if the user previously mentioned the area
-         they’re searching for restaurants.
+         they're searching for restaurants.
 
        * features indicating the results of any API calls stored in
          slots, e.g. `slot_matches`
@@ -619,7 +665,7 @@ of the tracker has a couple steps:
 
 2. **Convert all the features into numeric vectors**:
 
-   We use the `X, y` notation that’s common for supervised learning,
+   We use the `X, y` notation that's common for supervised learning,
    where `X` is an array of shape
    `(num_data_points, time_dimension, num_input_features)`,
    and `y` is an array of shape `(num_data_points, num_bot_features)`
@@ -666,7 +712,7 @@ default restart, label `2` a greeting and `3` indicates goodbye.
 
 ### Tracker Featurizers
 
-It’s often useful to include a bit more history than just the current state
+It's often useful to include a bit more history than just the current state
 when predicting an action. The `TrackerFeaturizer` iterates over tracker
 states and calls a `SingleStateFeaturizer` for each state. There are two
 different tracker featurizers:

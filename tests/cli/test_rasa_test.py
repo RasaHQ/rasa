@@ -3,7 +3,7 @@ from shutil import copyfile
 
 from rasa.core.test import CONFUSION_MATRIX_STORIES_FILE
 from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
-from rasa.utils.io import list_files, write_yaml_file
+from rasa.utils.io import list_files, write_yaml
 from typing import Callable
 from _pytest.pytester import RunResult
 
@@ -102,11 +102,11 @@ def test_test_core_comparison(
 def test_test_core_comparison_after_train(
     run_in_simple_project: Callable[..., RunResult]
 ):
-    write_yaml_file(
+    write_yaml(
         {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_1.yml"
     )
 
-    write_yaml_file(
+    write_yaml(
         {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_2.yml"
     )
 
@@ -117,7 +117,7 @@ def test_test_core_comparison_after_train(
         "config_1.yml",
         "config_2.yml",
         "--stories",
-        "data/stories.md",
+        "data/stories.yml",
         "--runs",
         "2",
         "--percentages",

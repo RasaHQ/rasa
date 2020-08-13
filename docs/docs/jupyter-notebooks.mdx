@@ -2,6 +2,7 @@
 id: jupyter-notebooks
 sidebar_label: Jupyter Notebooks
 title: Jupyter Notebooks
+description: Learn how to integrate open source chatbot platform Rasa into Jupyter notebooks, alongside all your machine learning code.
 ---
 
 This page contains the most important methods for using Rasa in a Jupyter notebook.
@@ -22,7 +23,7 @@ import nest_asyncio
 nest_asyncio.apply()
 print("Event loop ready.")
 ```
-First, you need to create a project if you don’t already have one.
+First, you need to create a project if you don't already have one.
 To do this, run this cell, which will create the `test-project` directory and make it
 your working directory:
 
@@ -63,16 +64,18 @@ print(model_path)
 ## Chat with your assistant
 
 To start chatting to an assistant, call the `chat` function, passing
-in the path to your saved model:
+in the path to your saved model. If you do not have custom actions you can set `endpoints = None` or omit it:
 
 ```bash
 from rasa.jupyter import chat
-chat(model_path)
+
+endpoints = "endpoints.yml"
+chat(model_path, endpoints)
 ```
 ## Evaluate your model against test data
 
 Rasa has a convenience function for getting your training data.
-Rasa’s `get_core_nlu_directories` is a function which
+Rasa's `get_core_nlu_directories` is a function which
 recursively finds all the stories and NLU data files in a directory
 and copies them into two temporary directories.
 The return values are the paths to these newly created directories.
@@ -92,7 +95,7 @@ print("Done testing.")
 ```
 The results of the core evaluation will be written to a file called `results`.
 NLU errors will be reported to `errors.json`.
-Together, they contain information about the accuracy of your model’s
+Together, they contain information about the accuracy of your model's
 predictions and other metrics.
 
 ```bash

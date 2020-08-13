@@ -4,8 +4,6 @@ sidebar_label: Tokenizers
 title: Tokenizers
 ---
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="tokenizers"></a>
-
 Tokenizers split text into tokens.
 If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
 modeling hierarchical intent structure, use the following flags with any tokenizer:
@@ -16,7 +14,6 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 * `intent_split_symbol` sets the delimiter string to split the intent labels, default is underscore
   (`_`).
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="whitespacetokenizer"></a>
 
 ## WhitespaceTokenizer
 
@@ -94,7 +91,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Configuration**
 
-  User’s custom dictionary files can be auto loaded by specifying the files’ directory path via `dictionary_path`.
+  User's custom dictionary files can be auto loaded by specifying the files' directory path via `dictionary_path`.
   If the `dictionary_path` is `None` (the default), then no custom dictionary will be used.
 
   ```yaml
@@ -127,7 +124,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Requires**
 
-  [MitieNLP](./components#mitienlp)
+  [MitieNLP](../components/language-models.mdx#mitienlp)
 
 
 
@@ -168,7 +165,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Requires**
 
-  [SpacyNLP](./components#spacynlp)
+  [SpacyNLP](../components/language-models.mdx#spacynlp)
 
 
 
@@ -191,8 +188,6 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
     "token_pattern": None
   ```
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="converttokenizer"></a>
 
 ## ConveRTTokenizer
 
@@ -217,7 +212,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Description**
 
-  Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](./components#convertfeaturizer) is used.
+  Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](../components/featurizers.mdx#convertfeaturizer) is used.
 
   :::note
   Since `ConveRT` model is trained only on an English corpus of conversations, this tokenizer should only
@@ -246,8 +241,6 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
   ```
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="languagemodeltokenizer"></a>
-
 ## LanguageModelTokenizer
 
 
@@ -265,14 +258,14 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Requires**
 
-  [HFTransformersNLP](./components#hftransformersnlp)
+  [HFTransformersNLP](../components/language-models.mdx#hftransformersnlp)
 
 
 
 * **Description**
 
-  Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components#hftransformersnlp) component.
-  Must be used whenever the [LanguageModelFeaturizer](./components#languagemodelfeaturizer) is used.
+  Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](../components/language-models.mdx#hftransformersnlp) component.
+  Must be used whenever the [LanguageModelFeaturizer](../components/featurizers.mdx#languagemodelfeaturizer) is used.
 
 
 

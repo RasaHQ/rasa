@@ -33,6 +33,7 @@ from rasa.core.domain import Domain
 from rasa.core.events import SessionStarted
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 import rasa.cli.utils as rasa_cli_utils
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import class_from_module_path, raise_warning, arguments_of
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
@@ -337,7 +338,9 @@ class DynamoTrackerStore(TrackerStore):
         import boto3
 
         dynamo = boto3.resource("dynamodb", region_name=self.region)
-        if self.table_name not in self.client.list_tables()["TableNames"]:
+        try:
+            self.client.describe_table(TableName=table_name)
+        except self.client.exceptions.ResourceNotFoundException:
             table = dynamo.create_table(
                 TableName=self.table_name,
                 KeySchema=[
@@ -908,7 +911,9 @@ class SQLTrackerStore(TrackerStore):
 
             for event in events:
                 data = event.as_dict()
-                intent = data.get("parse_data", {}).get("intent", {}).get("name")
+                intent = (
+                    data.get("parse_data", {}).get("intent", {}).get(INTENT_NAME_KEY)
+                )
                 action = data.get("name")
                 timestamp = data.get("timestamp")
 
@@ -1055,14 +1060,16 @@ def _create_from_endpoint_config(
             domain=domain, event_broker=event_broker, **endpoint_config.kwargs
         )
     else:
-        tracker_store = _load_from_module_string(domain, endpoint_config, event_broker)
+        tracker_store = _load_from_module_name_in_endpoint_config(
+            domain, endpoint_config, event_broker
+        )
 
     logger.debug(f"Connected to {tracker_store.__class__.__name__}.")
 
     return tracker_store
 
 
-def _load_from_module_string(
+def _load_from_module_name_in_endpoint_config(
     domain: Domain, store: EndpointConfig, event_broker: Optional[EventBroker] = None
 ) -> "TrackerStore":
     """Initializes a custom tracker.

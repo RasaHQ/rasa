@@ -24,7 +24,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 * **Requires**
 
-  `tokens` for user message and [MitieNLP](./components#mitienlp)
+  `tokens` for user message and [MitieNLP](../components/language-models.mdx#mitienlp)
 
 
 
@@ -137,8 +137,6 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   ```
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="keyword-intent-classifier"></a>
-
 ## KeywordIntentClassifier
 
 
@@ -181,7 +179,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   :::note
   This classifier is intended only for small projects or to get started. If
   you have few NLU training data, you can take a look at the recommended pipelines in
-  [Choosing a Pipeline](./choosing-a-pipeline).
+  [Tuning Your Model](./tuning-your-model.mdx).
 
   :::
 
@@ -195,8 +193,6 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     case_sensitive: True
   ```
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="diet-classifier"></a>
 
 ## DIETClassifier
 
@@ -264,7 +260,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   :::note
   If during prediction time a message contains **only** words unseen during training
   and no Out-Of-Vocabulary preprocessor was used, an empty intent `None` is predicted with confidence
-  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](./components#countvectorsfeaturizer) with a `word` analyzer
+  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](../components/featurizers.mdx#countvectorsfeaturizer) with a `word` analyzer
   as featurizer. If you use the `char_wb` analyzer, you should always get an intent with a confidence
   value `> 0.0`.
 
@@ -286,7 +282,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     This parameter sets the number of times the algorithm will see the training data (default: `300`).
     One `epoch` is equals to one forward pass and one backward pass of all the training examples.
     Sometimes the model needs more epochs to properly learn.
-    Sometimes more epochs don’t influence the performance.
+    Sometimes more epochs don't influence the performance.
     The lower the number of epochs the faster the model is trained.
 
   * `hidden_layers_sizes`:
@@ -472,3 +468,83 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     :::
 
   </details>
+
+## FallbackClassifier
+
+* **Short**
+
+  Classifies a message with the intent `nlu_fallback` if the NLU intent classification
+  scores are ambiguous.
+
+* **Outputs**
+
+  `entities`, `intent` and `intent_ranking`
+
+* **Requires**
+
+  `intent` and `intent_ranking` output from a previous intent classifier
+
+* **Output-Example**
+
+    ```json
+
+        {
+            "intent": {"name": "nlu_fallback", "confidence": 1.0},
+            "intent_ranking": [
+                {
+                    "confidence": 1.0,
+                    "name": "nlu_fallback"
+                },
+                {
+                    "confidence": 0.28161531595656784,
+                    "name": "restaurant_search"
+                }
+            ],
+            "entities": [{
+                "end": 53,
+                "entity": "time",
+                "start": 48,
+                "value": "2017-04-10T00:00:00.000+02:00",
+                "confidence": 1.0,
+                "extractor": "DIETClassifier"
+            }]
+        }
+    ```
+
+* **Description**
+
+    The `FallbackClassifier` classifies a user message with the intent `nlu_fallback`
+    in case the previous intent classifier wasn't
+    able to classify an intent with a confidence greater or equal than the `threshold`
+    of the `FallbackClassifier`. It can also predict the fallback intent in the
+    case when the confidence scores of the two top ranked intents are closer than the the
+    `ambiguity_threshold`.
+
+    You can use the `FallbackClassifier` to implement a
+    [Fallback Action](./fallback-handoff.mdx#fallbackactions) which handles message with uncertain
+    NLU predictions.
+
+    ```yaml
+    rules:
+
+    - rule: Ask the user to rephrase in case of low NLU confidence
+      steps:
+      - intent: nlu_fallback
+      - action: utter_please_rephrase
+    ```
+* **Configuration**
+
+    The `FallbackClassifier` will only add its prediction for the `nlu_fallback`
+    intent in case no other intent was predicted with a confidence greater or equal
+    than `threshold`.
+
+    - `threshold`:
+      This parameter sets the threshold for predicting the `nlu_fallback` intent.
+      If no intent predicted by a previous
+      intent classifier has a confidence
+      level greater or equal than `threshold` the `FallbackClassifier` will add
+      a prediction of the `nlu_fallback` intent with a confidence `1.0`.
+    - `ambiguity_threshold`: If you configure an `ambiguity_threshold`, the
+      `FallbackClassifier` will also predict the `nlu_fallback` intent in case
+      the difference of the confidence scores for the two highest ranked intents is
+      smaller than the `ambiguity_threshold`.

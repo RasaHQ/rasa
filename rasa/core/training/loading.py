@@ -120,7 +120,7 @@ async def load_data_from_files(
     for story_file in story_files:
 
         reader = _get_reader(
-            story_file, domain, interpreter, template_variables, use_e2e,
+            story_file, domain, interpreter, template_variables, use_e2e
         )
 
         steps = await reader.read_from_file(story_file)

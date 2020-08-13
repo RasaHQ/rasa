@@ -2,7 +2,9 @@
 id: knowledge-bases
 sidebar_label: Knowledge Base Actions
 title: Knowledge Base Actions
+description: Leverage information from knowledge bases inside conversations using ActionQueryKnowledgeBase in open source bot framework Rasa.
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="knowledge-base-actions"></a>
 
@@ -18,7 +20,7 @@ Knowledge base actions enable you to handle the following kind of conversations:
 
 
 
-<img alt="image" src="../../img/knowledge-base-example.png" />
+<img alt="image" src={useBaseUrl("/img/knowledge-base-example.png")} />
 
 A common problem in conversational AI is that users do not only refer to certain objects by their names,
 but also use reference terms such as “the first one” or “it”.
@@ -28,7 +30,7 @@ the correct object.
 In addition, users may want to obtain detailed information about objects during a conversation –
 for example, whether a restaurant has outside seating, or how expensive it is.
 In order to respond to those user requests, knowledge about the restaurant domain is needed.
-Since the information is subject to change, hard-coding the information isn’t the solution.
+Since the information is subject to change, hard-coding the information isn't the solution.
 
 To handle the above challenges, Rasa can be integrated with knowledge bases. To use this integration, you can create a
 custom action that inherits from `ActionQueryKnowledgeBase`, a pre-written custom action that contains
@@ -44,11 +46,11 @@ for implementing this custom action below.
 
 ### Create a Knowledge Base
 
-The data used to answer the user’s requests will be stored in a knowledge base.
+The data used to answer the user's requests will be stored in a knowledge base.
 A knowledge base can be used to store complex data structures.
 We suggest you get started by using the `InMemoryKnowledgeBase`.
 Once you want to start working with a large amount of data, you can switch to a custom knowledge base
-(see [Creating Your Own Knowledge Base](./knowledge-bases#custom-knowledge-base)).
+(see [Creating Your Own Knowledge Base](./knowledge-bases.mdx#custom-knowledge-base)).
 
 To initialize an `InMemoryKnowledgeBase`, you need to provide the data in a json file.
 The following example contains data about restaurants and hotels.
@@ -119,7 +121,7 @@ Once the data is defined in a json file, called, for example, `data.json`, you w
 `InMemoryKnowledgeBase`, which will be passed to the action that queries the knowledge base.
 
 Every object in your knowledge base should have at least the `"name"` and `"id"` fields to use the default implementation.
-If it doesn’t, you’ll have to [customize your InMemoryKnowledgeBase](./knowledge-bases#customize-in-memory-knowledge-base).
+If it doesn't, you'll have to [customize your InMemoryKnowledgeBase](./knowledge-bases.mdx#customize-in-memory-knowledge-base).
 
 ### Define the NLU Data
 
@@ -130,7 +132,7 @@ In this section:
 * we will annotate `mention` entities so that our model detects indirect mentions of objects like “the
   first one”
 
-* we will use [synonyms](../nlu/training-data-format#entity-synonyms) extensively
+* we will use [synonyms](./training-data-format.mdx#entity-synonyms) extensively
 
 For the bot to understand that the user wants to retrieve information from the knowledge base, you need to define
 a new intent. We will call it `query_knowledge_base`.
@@ -165,12 +167,12 @@ In addition to adding a variety of training examples for each query type,
 you need to specify and annotate the following entities in your training examples:
 
 * `object_type`: Whenever a training example references a specific object type from your knowledge base, the object type should
-  be marked as an entity. Use [synonyms](../nlu/training-data-format#entity-synonyms) to map e.g. `restaurants` to `restaurant`, the correct
+  be marked as an entity. Use [synonyms](./training-data-format.mdx#entity-synonyms) to map e.g. `restaurants` to `restaurant`, the correct
   object type listed as a key in the knowledge base.
 
 * `mention`: If the user refers to an object via “the first one”, “that one”, or “it”, you should mark those terms
   as `mention`. We also use synonyms to map some of the mentions to symbols. You can learn about that
-  in [resolving mentions](./knowledge-bases#resolve-mentions).
+  in [resolving mentions](./knowledge-bases.mdx#resolve-mentions).
 
 * `attribute`: All attribute names defined in your knowledge base should be identified as `attribute` in the
   NLU data. Again, use synonyms to map variations of an attribute name to the one used in the
@@ -212,11 +214,11 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
 Whenever you create an `ActionQueryKnowledgeBase`, you need to pass a `KnowledgeBase` to the constructor.
 It can be either an `InMemoryKnowledgeBase` or your own implementation of a `KnowledgeBase`
-(see [Creating Your Own Knowledge Base](./knowledge-bases#custom-knowledge-base)).
+(see [Creating Your Own Knowledge Base](./knowledge-bases.mdx#custom-knowledge-base)).
 You can only pull information from one knowledge base, as the usage of multiple knowledge bases at the same time is not supported.
 
 This is the entirety of the code for this action! The name of the action is `action_query_knowledge_base`.
-Don’t forget to add it to your domain file:
+Don't forget to add it to your domain file:
 
 ```yaml
 actions:
@@ -246,7 +248,7 @@ the action `action_query_knowledge_base`. For example:
 ```
 
 The last thing you need to do is to define the response `utter_ask_rephrase` in your domain file.
-If the action doesn’t know how to handle the user’s request, it will use this response to ask the user to rephrase.
+If the action doesn't know how to handle the user's request, it will use this response to ask the user to rephrase.
 For example, add the following responses to your domain file:
 
 ```md
@@ -264,8 +266,8 @@ previously set slots to decide what to query for.
 
 ### Query the Knowledge Base for Objects
 
-In order to query the knowledge base for any kind of object, the user’s request needs to include the object type.
-Let’s look at an example:
+In order to query the knowledge base for any kind of object, the user's request needs to include the object type.
+Let's look at an example:
 
 Can you please name some restaurants?
 
@@ -324,11 +326,11 @@ mentions such as “it” or “that one”.
 
 **Ordinal Mentions**
 
-When a user refers to an object by its position in a list, it is called an ordinal mention. Here’s an example:
+When a user refers to an object by its position in a list, it is called an ordinal mention. Here's an example:
 
 * User: What restaurants in Berlin do you know?
 
-* Bot: Found the following objects of type ‘restaurant’:  1: I due forni  2: PastaBar  3: Berlin Burrito Company
+* Bot: Found the following objects of type 'restaurant':  1: I due forni  2: PastaBar  3: Berlin Burrito Company
 
 * User: Does the first one have outside seating?
 
@@ -361,7 +363,7 @@ The ordinal mention mapping maps a string, such as “1”, to the object in a l
 object at index `0`.
 
 As the ordinal mention mapping does not, for example, include an entry for “the first one”,
-it is important that you use [Entity Synonyms](../nlu/training-data-format#entity-synonyms) to map “the first one” in your NLU data to “1”:
+it is important that you use [Entity Synonyms](./training-data-format.mdx#entity-synonyms) to map “the first one” in your NLU data to “1”:
 
 ```md
 Does the [first one](mention:1) have [outside seating](attribute:outside-seating)?
@@ -372,7 +374,7 @@ Thus, our action can take the `mention` slot together with the ordinal mention m
 the actual object “I due forni”.
 
 You can overwrite the ordinal mention mapping by calling the function `set_ordinal_mention_mapping()` on your
-`KnowledgeBase` implementation (see [Customizing the InMemoryKnowledgeBase](./knowledge-bases#customize-in-memory-knowledge-base)).
+`KnowledgeBase` implementation (see [Customizing the InMemoryKnowledgeBase](./knowledge-bases.mdx#customize-in-memory-knowledge-base)).
 
 **Other Mentions**
 
@@ -403,7 +405,7 @@ You can disable this behavior by setting `use_last_object_mention` to `False` wh
 
 ### Customizing `ActionQueryKnowledgeBase`
 
-You can overwrite the following two functions of `ActionQueryKnowledgeBase` if you’d like to customize what the bot
+You can overwrite the following two functions of `ActionQueryKnowledgeBase` if you'd like to customize what the bot
 says to the user:
 
 * `utter_objects()`
@@ -413,14 +415,14 @@ says to the user:
 `utter_objects()` is used when the user has requested a list of objects.
 Once the bot has retrieved the objects from the knowledge base, it will respond to the user by default with a message, formatted like:
 
-Found the following objects of type ‘restaurant’:
+Found the following objects of type 'restaurant':
 1: I due forni
 2: PastaBar
 3: Berlin Burrito Company
 
 Or, if no objects are found,
 
-I could not find any objects of type ‘restaurant’.
+I could not find any objects of type 'restaurant'.
 
 If you want to change the utterance format, you can overwrite the method `utter_objects()` in your action.
 
@@ -429,11 +431,11 @@ an object.
 
 If the attribute of interest was found in the knowledge base, the bot will respond with the following utterance:
 
-‘Berlin Burrito Company’ has the value ‘Mexican’ for attribute ‘cuisine’.
+'Berlin Burrito Company' has the value 'Mexican' for attribute 'cuisine'.
 
 If no value for the requested attribute was found, the bot will respond with
 
-Did not find a valid value for attribute ‘cuisine’ for object ‘Berlin Burrito Company’.
+Did not find a valid value for attribute 'cuisine' for object 'Berlin Burrito Company'.
 
 If you want to change the bot utterance, you can overwrite the method `utter_attribute_value()`.
 
@@ -479,7 +481,7 @@ You can customize your `InMemoryKnowledgeBase` by overwriting the following func
   is set to `id`. You can overwrite the name of the key attribute for a specific object type by calling
   `set_key_attribute_of_object()`.
 
-* `get_representation_function_of_object()`: Let’s focus on the following restaurant:
+* `get_representation_function_of_object()`: Let's focus on the following restaurant:
 
   ```json
   {
@@ -491,7 +493,7 @@ You can customize your `InMemoryKnowledgeBase` by overwriting the following func
   }
   ```
 
-  When the user asks the bot to list any Italian restaurant, it doesn’t need all of the details of the restaurant.
+  When the user asks the bot to list any Italian restaurant, it doesn't need all of the details of the restaurant.
   Instead, you want to provide a meaningful name that identifies the restaurant – in most cases, the name of the object will do.
   The function `get_representation_function_of_object()` returns a lambda function that maps the
   above restaurant object to its name.
@@ -529,7 +531,7 @@ You can customize your `InMemoryKnowledgeBase` by overwriting the following func
   ```
 
   You can overwrite it by calling the function `set_ordinal_mention_mapping()`.
-  If you want to learn more about how this mapping is used, check out [Resolve Mentions](./knowledge-bases#resolve-mentions).
+  If you want to learn more about how this mapping is used, check out [Resolve Mentions](./knowledge-bases.mdx#resolve-mentions).
 
 See the [example bot](https://github.com/RasaHQ/rasa/blob/master/examples/knowledgebasebot/actions.py) for an
 example implementation of an `InMemoryKnowledgeBase` that uses the method `set_representation_function_of_object()`
@@ -548,7 +550,7 @@ Just inherit `KnowledgeBase` and implement the methods `get_objects()`, `get_obj
 provides more information on what those methods should do.
 
 You can also customize your knowledge base further, by adapting the methods mentioned in the section
-[Customizing the InMemoryKnowledgeBase](./knowledge-bases#customize-in-memory-knowledge-base).
+[Customizing the InMemoryKnowledgeBase](./knowledge-bases.mdx#customize-in-memory-knowledge-base).
 
 :::note
 We wrote a [blog post](https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/)

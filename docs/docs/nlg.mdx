@@ -4,10 +4,9 @@ sidebar_label: NLG
 title: NLG Servers
 ---
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="custom-nlg-service"></a>
 
 Retraining the bot just to change the text copy can be suboptimal for
-some workflows. That’s why Core also allows you to outsource the
+some workflows. That's why Core also allows you to outsource the
 response generation and separate it from the dialogue learning.
 
 The assistant will still learn to predict actions and to react to user input
@@ -107,3 +106,10 @@ The endpoint then needs to respond with the generated response:
 ```
 
 Rasa will then use this response and sent it back to the user.
+
+:::note
+If you use an external NLG service, you don't need to specify the
+responses in the domain, but you still need to add the utterance names
+to the actions list of the domain.
+
+:::

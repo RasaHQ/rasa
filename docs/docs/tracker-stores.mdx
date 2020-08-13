@@ -2,6 +2,7 @@
 id: tracker-stores
 sidebar_label: Tracker Stores
 title: Tracker Stores
+description: All conversations are stored within a tracker store. Read how Rasa Open Source provides implementations for different store types out of the box.
 ---
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from './variables.json';
@@ -30,8 +31,6 @@ extending the `TrackerStore` class.
 
   To use the `InMemoryTrackerStore` no configuration is needed.
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="sql-tracker-store"></a>
 
 ## SQLTrackerStore
 
@@ -140,7 +139,7 @@ extending the `TrackerStore` class.
 
   Next you have to extend the Rasa Open Source image to include the necessary drivers and clients.
   First download the Oracle Instant Client from [here](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html),
-  rename it to `oracle.rpm` and store it in the directory from where you’ll be building the docker image.
+  rename it to `oracle.rpm` and store it in the directory from where you'll be building the docker image.
   Copy the following into a file called `Dockerfile`:
 
 <pre><code parentName="pre" className="language-bash">
@@ -170,10 +169,8 @@ USER 1001`}</code></pre>
 
   Now you can configure the tracker store in the `endpoints.yml` as described above,
   and start the container. The `dialect` parameter with this setup will be `oracle+cx_oracle`.
-  Read more about [Deploying Your Rasa Assistant](../user-guide/how-to-deploy#deploying-your-rasa-assistant).
+  Read more about [Deploying Your Rasa Assistant](./how-to-deploy.mdx#deploying-your-rasa-assistant).
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="redis-tracker-store"></a>
 
 ## RedisTrackerStore
 
@@ -248,8 +245,6 @@ USER 1001`}</code></pre>
   * `use_ssl` (default: `False`): whether or not to use SSL for transit encryption
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="mongo-tracker-store"></a>
-
 ## MongoTrackerStore
 
 
@@ -273,7 +268,7 @@ USER 1001`}</code></pre>
          db: <name of the db within your mongo instance, e.g. rasa>
          username: <username used for authentication>
          password: <password used for authentication>
-         auth_source: <database name associated with the user’s credentials>
+         auth_source: <database name associated with the user's credentials>
      ```
 
      You can also add more advanced configurations (like enabling ssl) by appending
@@ -313,7 +308,7 @@ USER 1001`}</code></pre>
           db: <name of the db within your mongo instance, e.g. rasa>
           username: <username used for authentication>
           password: <password used for authentication>
-          auth_source: <database name associated with the user’s credentials>
+          auth_source: <database name associated with the user's credentials>
      ```
 
 
@@ -328,13 +323,11 @@ USER 1001`}</code></pre>
 
   * `password` (default: `None`): The password which is used for authentication
 
-  * `auth_source` (default: `admin`): database name associated with the user’s credentials.
+  * `auth_source` (default: `admin`): database name associated with the user's credentials.
 
   * `collection` (default: `conversations`): The collection name which is
     used to store the conversations
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="tracker-stores-dynamo"></a>
 
 ## DynamoTrackerStore
 
@@ -375,8 +368,6 @@ USER 1001`}</code></pre>
 
   * `region` (default: `us-east-1`): name of the region associated with the client
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="custom-tracker-store"></a>
 
 ## Custom Tracker Store
 

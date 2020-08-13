@@ -5,10 +5,7 @@ import pytest
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.validator import Validator, KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.importers.rasa import RasaFileImporter
-from tests.core.conftest import (
-    DEFAULT_STORIES_FILE,
-    DEFAULT_NLU_DATA,
-)
+from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
 import rasa.utils.io as io_utils
 
 
@@ -70,7 +67,7 @@ async def test_verify_bad_story_structure_ignore_warnings():
 async def test_fail_on_invalid_utterances(tmpdir):
     # domain and stories are from different domain and should produce warnings
     invalid_domain = str(tmpdir / "invalid_domain.yml")
-    io_utils.write_yaml_file(
+    io_utils.write_yaml(
         {
             "responses": {"utter_greet": {"text": "hello"}},
             "actions": [

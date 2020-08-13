@@ -20,6 +20,7 @@ from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
+from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
@@ -109,7 +110,7 @@ class EvaluationStore:
             self.action_targets
             + self.intent_targets
             + [
-                MarkdownWriter.generate_entity_md(gold.get("text"), gold)
+                TrainingDataWriter.generate_entity(gold.get("text"), gold)
                 for gold in self.entity_targets
             ]
         )
@@ -117,7 +118,7 @@ class EvaluationStore:
             self.action_predictions
             + self.intent_predictions
             + [
-                MarkdownWriter.generate_entity_md(predicted.get("text"), predicted)
+                TrainingDataWriter.generate_entity(predicted.get("text"), predicted)
                 for predicted in self.entity_predictions
             ]
         )
@@ -556,7 +557,7 @@ async def test(
     """Run the evaluation of the stories, optionally plot the results.
 
     Args:
-        stories: the stories to evaulate on
+        stories: the stories to evaluate on
         agent: the agent
         max_stories: maximum number of stories to consider
         out_directory: path to directory to results to

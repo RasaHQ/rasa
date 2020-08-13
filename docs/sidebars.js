@@ -2,101 +2,131 @@ module.exports = {
   someSidebar: [
     {
       type: 'category',
-      label: 'Getting Started',
+      label: 'Building Assistants',
       collapsed: false,
       items: [
-        'index',
-        'prototype-an-assistant',
-        'installation',
-        'cheatsheet',
-        'migrate-from',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Best Practices',
-      collapsed: false,
-      items: [
-        'cdd',
-        'generating-nlu-data',
-        'writing-stories',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Conversation Patterns',
-      collapsed: false,
-      items: [
-        'chitchat-faqs',
-        'business-logic',
-        'fallback-handoff',
-        'unexpected-input',
-        'contextual-conversations',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Preparing For Production',
-      collapsed: false,
-      items: [
-        'tuning-your-model',
-        'testing-your-assistant',
-        'setting-up-ci-cd',
-        'how-to-deploy',
-        'messaging-and-voice-channels',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Reference',
-      collapsed: false,
-      items: [
-        'glossary',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'NLU',
-      collapsed: false,
-      items: [
-        'training-data-format',
         {
           type: 'category',
-          label: 'Components',
+          label: 'Getting Started',
+          collapsed: true,
           items: [
-            'components/language-models',
-            'components/tokenizers',
-            'components/featurizers',
-            'components/intent-classifiers',
-            'components/entity-extractors',
-            'components/selectors',
-            'components/custom-nlu-components',
+            'index',
+            'prototype-an-assistant',
+            'installation',
+            // 'cheatsheet',
+            'migrate-from',
           ],
         },
-      ],
+        {
+          type: 'category',
+          label: 'Best Practices',
+          collapsed: true,
+          items: [
+            'conversation-driven-development',
+            'generating-nlu-data',
+            'writing-stories',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Conversation Patterns',
+          collapsed: true,
+          items: [
+            'chitchat-faqs',
+            'business-logic',
+            'fallback-handoff',
+            'unexpected-input',
+            'contextual-conversations',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Preparing For Production',
+          collapsed: true,
+          items: [
+            'messaging-and-voice-channels',
+            'tuning-your-model',
+            'testing-your-assistant',
+            'setting-up-ci-cd',
+            'how-to-deploy',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Reference',
+          collapsed: true,
+          items: [
+            'glossary',
+          ],
+        },
+      ]
     },
     {
       type: 'category',
-      label: 'Dialogue Management',
+      label: 'Concepts',
       collapsed: false,
       items: [
-        'stories',
-        'domains',
         {
           type: 'category',
-          label: 'Policies',
+          label: 'Training Data',
           items: [
+            'training-data-format',
+            'stories',
+            'rules',
+          ],
+        },
+        'domain',
+        {
+          type: 'category',
+          label: 'Config',
+          items: [
+            'model-configuration',
+            {
+              type: 'category',
+              label: 'Pipeline Components',
+              items: [
+                'components/language-models',
+                'components/tokenizers',
+                'components/featurizers',
+                'components/intent-classifiers',
+                'components/entity-extractors',
+                'components/selectors',
+                'components/custom-nlu-components',
+              ],
+            },
             'policies',
+            'training-data-importers',
           ],
         },
         {
           type: 'category',
           label: 'Actions',
           items: [
+            // 'actions',
             'responses',
+            {
+              type: 'category',
+              label: 'Custom Actions',
+              items: [
+                'custom-actions',
+                'knowledge-bases',
+                {
+                  type: 'category',
+                  label: 'Rasa SDK',
+                  collapsed: true,
+                  items: [
+                    'running-action-server',
+                    'tracker-dispatcher',
+                    // 'events',
+                    // 'rasa-sdk-changelog'
+                  ],
+                },
+              ],
+            },
             'retrieval-actions',
             'forms',
             'reminders-and-external-events',
+            'default-actions',
           ],
         },
         {
@@ -121,70 +151,39 @@ module.exports = {
           items: [
             'tracker-stores',
             'event-brokers',
+            'model-storage',
             'lock-stores',
             'nlg',
-            'cloud-storage',
           ],
         },
-      ],
+      ]
     },
     {
       type: 'category',
-      label: 'Rasa SDK',
-      collapsed: false,
+      label: 'APIs',
+      collapsed: true,
       items: [
-        {
-          type: 'category',
-          label: 'Custom Actions',
-          items: [
-            'actions',
-            'knowledge-bases',
-          ],
-        },
-        'tracker',
-        'events',
-        {
-          type: 'category',
-          label: 'Reference',
-          items: [
-            'action-server',
-          ],
-        },
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Reference',
-      collapsed: false,
-      items: [
-        'architecture',
         'command-line-interface',
-        'http-api',
-        'jupyter-notebooks',
         {
           type: 'category',
-          label: 'Versioning',
+          label: 'HTTP API',
+          collapsed: true,
           items: [
-            'changelog',
-            'migration-guide',
+            'http-api',
+            'http-api-spec',
           ],
         },
+        'jupyter-notebooks',
       ],
     },
     {
       type: 'category',
-      label: 'Old Content',
+      label: 'Change Log',
+      collapsed: true,
       items: [
-        'configuring-http-api',
-        'using-nlu-only',
-        'language-support',
-        'entity-extraction',
-        'slots',
-        'interactive-learning',
-        'fallback-actions',
-        'rasa-sdk',
-        'training-data-importers',
-        ]
+        'changelog',
+        'migration-guide',
+      ],
     },
   ],
 };
