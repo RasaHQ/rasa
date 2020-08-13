@@ -191,3 +191,21 @@ class DatabaseSchema:
             tables.append(table)
 
         return DatabaseSchema(database_name, tables)
+
+    def to_dict(self) -> Dict[Text, Any]:
+        database_schema_dict = {"name": self.name, "tables": []}
+
+        for table in self.tables:
+            table_dict = {"name": table.name, "columns": []}
+            for column in table.columns:
+                column_dict = {"name": column.name, "type": column.column_type}
+                if column.is_primary_key:
+                    column_dict["primary_key"] = True
+                if column.foreign_key:
+                    column_dict["foreign_key"] = column.foreign_key[0]
+
+                table_dict["columns"].append(column_dict)
+
+            database_schema_dict["tables"].append(table_dict)
+
+        return database_schema_dict

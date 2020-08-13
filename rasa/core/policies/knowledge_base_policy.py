@@ -11,6 +11,7 @@ from scipy import sparse
 from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
 import rasa.utils.io as io_utils
+from core.knowledge_base.schema.database_featurizer import DatabaseSchemaFeaturizer
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
@@ -220,6 +221,9 @@ class KnowledgeBasePolicy(TEDPolicy):
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
+
+        database_featurizer = DatabaseSchemaFeaturizer()
+        database_featurizer.featurize(domain.database_schema)
 
         # dealing with training data
         # TODO we also need to featurize the database schema

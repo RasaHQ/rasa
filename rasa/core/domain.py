@@ -282,6 +282,9 @@ class Domain:
         if override or self.session_config == SessionConfig.default():
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
+        if override or self.database_schema is None:
+            combined[DATABASE_SCHEMA_KEY] = domain_dict[DATABASE_SCHEMA_KEY]
+
         combined[KEY_INTENTS] = merge_lists_of_dicts(
             combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
         )
@@ -861,6 +864,9 @@ class Domain:
             KEY_RESPONSES: self.templates,
             KEY_ACTIONS: self.user_actions,  # class names of the actions
             KEY_FORMS: self.forms,
+            DATABASE_SCHEMA_KEY: self.database_schema.to_dict()
+            if self.database_schema
+            else None,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:
