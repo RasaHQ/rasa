@@ -18,6 +18,7 @@ from rasa.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
 )
+from rasa.nlu.constants import INTENT_NAME_KEY
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -56,11 +57,12 @@ def deserialise_entities(entities: Union[Text, List[Any]]) -> List[Dict[Text, An
 
 
 def md_format_message(text, intent, entities) -> Text:
-    from rasa.nlu.training_data.formats import MarkdownWriter, MarkdownReader
+    from rasa.nlu.training_data.formats import MarkdownReader
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     message_from_md = MarkdownReader().parse_training_example(text)
     deserialised_entities = deserialise_entities(entities)
-    return MarkdownWriter.generate_message_md(
+    return TrainingDataWriter.generate_message(
         {
             "text": message_from_md.text,
             "intent": intent,
@@ -258,7 +260,11 @@ class UserUttered(Event):
 
     def __hash__(self) -> int:
         return hash(
-            (self.text, self.intent.get("name"), jsonpickle.encode(self.entities))
+            (
+                self.text,
+                self.intent.get(INTENT_NAME_KEY),
+                jsonpickle.encode(self.entities),
+            )
         )
 
     def __eq__(self, other) -> bool:
@@ -267,11 +273,11 @@ class UserUttered(Event):
         else:
             return (
                 self.text,
-                self.intent.get("name"),
+                self.intent.get(INTENT_NAME_KEY),
                 [jsonpickle.encode(ent) for ent in self.entities],
             ) == (
                 other.text,
-                other.intent.get("name"),
+                other.intent.get(INTENT_NAME_KEY),
                 [jsonpickle.encode(ent) for ent in other.entities],
             )
 
@@ -324,11 +330,11 @@ class UserUttered(Event):
                 ent_string = ""
 
             parse_string = "{intent}{entities}".format(
-                intent=self.intent.get("name", ""), entities=ent_string
+                intent=self.intent.get(INTENT_NAME_KEY, ""), entities=ent_string
             )
             if e2e:
                 message = md_format_message(self.text, self.intent, self.entities)
-                return "{}: {}".format(self.intent.get("name"), message)
+                return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
             else:
                 return parse_string
         else:
@@ -344,7 +350,7 @@ class UserUttered(Event):
     ) -> "UserUttered":
         return UserUttered(
             text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
-            intent={"name": intent_name},
+            intent={INTENT_NAME_KEY: intent_name},
             metadata={IS_EXTERNAL: True},
             entities=entity_list or [],
         )
