@@ -273,7 +273,7 @@ async def test_redis_lock_store_timeout(monkeypatch: MonkeyPatch):
     lock_store = FakeRedisLockStore()
     monkeypatch.setattr(
         lock_store,
-        lock_store.issue_ticket.__name__,
+        lock_store.get_or_create_lock.__name__,
         Mock(side_effect=redis.exceptions.TimeoutError),
     )
 

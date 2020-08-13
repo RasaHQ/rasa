@@ -68,11 +68,15 @@ class LockStore:
         Creates a new lock if none is found.
         """
         logger.debug(f"Issuing ticket for conversation '{conversation_id}'.")
-        lock = self.get_or_create_lock(conversation_id)
-        ticket = lock.issue_ticket(lock_lifetime)
-        self.save_lock(lock)
+        try:
+            lock = self.get_or_create_lock(conversation_id)
+            ticket = lock.issue_ticket(lock_lifetime)
+            self.save_lock(lock)
 
-        return ticket
+            return ticket
+        except Exception as e:
+            logger.error(f"Error while acquiring lock. Error:\n{e}")
+            raise LockError(e)
 
     @asynccontextmanager
     async def lock(
@@ -86,21 +90,14 @@ class LockStore:
         Try acquiring lock with a wait time of `wait_time_in_seconds` seconds
         between attempts. Raise a `LockError` if lock has expired.
         """
-        ticket = None
+        ticket = self.issue_ticket(conversation_id, lock_lifetime)
         try:
-            ticket = self.issue_ticket(conversation_id, lock_lifetime)
+
             yield await self._acquire_lock(
                 conversation_id, ticket, wait_time_in_seconds
             )
-        except Exception as e:
-            logger.error(
-                f"The lock for conversation '{conversation_id}' could not be "
-                f"acquired. Error:\n{e}"
-            )
-            raise LockError(e)
         finally:
-            if ticket is not None:
-                self.cleanup(conversation_id, ticket)
+            self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
         self, conversation_id: Text, ticket: int, wait_time_in_seconds: float
