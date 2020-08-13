@@ -518,9 +518,11 @@ An interruption of a form could look like this:
 
 #### Slots
 
-A slot event is specified with the key `slot_was_set:`.
+A slot event is specified with the key `slot_was_set:` and optionally
+the `value:` key.
 
-**[Slots](../core/slots)** act as the bots memory. Slots are **set** by entities or by custom actions and **referenced** by stories in `slot_was_set` steps. For example.
+**[Slots](../core/slots)** act as the bots memory. 
+Slots are **set** by entities or by custom actions and **referenced** by stories in `slot_was_set` steps. For example.
 
 ```yaml
     steps:
@@ -532,6 +534,10 @@ A slot event is specified with the key `slot_was_set:`.
 
 This means the story requires that the current value for the `feedback_value`
 slot be `positive` for the conversation to continue as specified.
+
+Whether or not you need to include the `value:` depends on the
+[slot type](domain.mdx#slot-types) and whether the value can or should
+influence the dialogue.
 
 :::note
 Stories do not **set** slots. The slot must be set by an entity or custom action **before** the `slot_was_set` step.
