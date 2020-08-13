@@ -7,7 +7,6 @@ import time
 
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempdirFactory
-from typing import Text
 from unittest.mock import patch, Mock
 
 from rasa.core.agent import Agent
@@ -272,7 +271,11 @@ async def test_redis_lock_store_timeout(monkeypatch: MonkeyPatch):
     import redis.exceptions
 
     lock_store = FakeRedisLockStore()
-    lock_store.issue_ticket = Mock(side_effect=redis.exceptions.TimeoutError)
+    monkeypatch.setattr(
+        lock_store,
+        lock_store.issue_ticket.__name__,
+        Mock(side_effect=redis.exceptions.TimeoutError),
+    )
 
     with pytest.raises(LockError):
         async with lock_store.lock("some sender"):
