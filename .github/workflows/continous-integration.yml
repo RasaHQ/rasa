@@ -21,6 +21,10 @@ env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   BOTO_CONFIG: /dev/null
+  RASA_PYPI_URL: https://pypi.rasa.com/simple/
+  RASA_PYPI_USER: github-ci
+  RASA_PYPI_PASSWORD: ${{ secrets.RASA_PYPI_PASSWORD }}
+
 
 jobs:
   api:
@@ -69,6 +73,11 @@ jobs:
       uses: Gr1N/setup-poetry@v1
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Configure poetry ⚙️
+      run: |
+        poetry config repositories.rasa-pypi $RASA_PYPI_URL
+        poetry config http-basic.rasa-pypi $RASA_PYPI_USER $RASA_PYPI_PASSWORD
 
     - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
@@ -133,6 +142,11 @@ jobs:
       uses: Gr1N/setup-poetry@v1
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Configure poetry ⚙️
+      run: |
+        poetry config repositories.rasa-pypi $RASA_PYPI_URL
+        poetry config http-basic.rasa-pypi $RASA_PYPI_USER $RASA_PYPI_PASSWORD
 
     - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
@@ -254,6 +268,11 @@ jobs:
       uses: Gr1N/setup-poetry@v1
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Configure poetry ⚙️
+      run: |
+        poetry config repositories.rasa-pypi $RASA_PYPI_URL
+        poetry config http-basic.rasa-pypi $RASA_PYPI_USER $RASA_PYPI_PASSWORD
 
     - name: Build ⚒️ Distributions
       run: poetry build
