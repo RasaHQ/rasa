@@ -64,6 +64,16 @@ class RasaYAMLReader(TrainingDataReader):
         self.lookup_tables: List[Dict[Text, Any]] = []
         self.responses: Dict[Text, List[Dict[Text, Any]]] = {}
 
+    @staticmethod
+    def validate(string: Text) -> None:
+        """Check if the string adheres to the NLU yaml data schema.
+
+        If the string is not in the right format, an exception will be raised."""
+        try:
+            validate_yaml_schema(string, NLU_SCHEMA_FILE)
+        except InvalidYamlFileError as e:
+            raise ValueError from e
+
     def reads(self, string: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData in YAML format from a string.
 
@@ -77,10 +87,7 @@ class RasaYAMLReader(TrainingDataReader):
         from rasa.nlu.training_data import TrainingData
         from rasa.validator import Validator
 
-        try:
-            validate_yaml_schema(string, NLU_SCHEMA_FILE)
-        except InvalidYamlFileError as e:
-            raise ValueError from e
+        self.validate(string)
 
         yaml_content = io_utils.read_yaml(string)
 

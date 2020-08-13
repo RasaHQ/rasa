@@ -14,6 +14,7 @@ from typing import Any, Callable, List, Optional, Text, Union, Dict
 
 from sanic.exceptions import InvalidUsage
 
+from nlu.training_data.formats import RasaYAMLReader
 import rasa
 import rasa.core.utils
 from rasa.utils import common as common_utils
@@ -26,6 +27,7 @@ from rasa.constants import (
     DEFAULT_RESPONSE_TIMEOUT,
     DOCS_BASE_URL,
     MINIMUM_COMPATIBLE_VERSION,
+    DOCS_URL_TRAINING_DATA_NLU,
 )
 from rasa.core import agent
 from rasa.core.agent import Agent
@@ -832,21 +834,17 @@ def create_app(
             "evaluate your model.",
         )
 
-        try:
-            # might throw an error, if that is the case we will assume user submitted md
-            content = rasa.utils.io.write_yaml(request.json)
-            stories = rasa.utils.io.create_temporary_file(
-                content, mode="w", suffix=".yml"
-            )
-        except InvalidUsage:
-            stories = rasa.utils.io.create_temporary_file(
+        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+            test_data = _training_payload_from_yaml(request).get("training_files")
+        else:
+            test_data = rasa.utils.io.create_temporary_file(
                 request.body, mode="w+b", suffix=".md"
             )
 
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = await test(stories, app.agent, e2e=use_e2e)
+            evaluation = await test(test_data, app.agent, e2e=use_e2e)
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -866,6 +864,13 @@ def create_app(
             "evaluate your model.",
         )
 
+        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+            test_data = _training_payload_from_yaml(request).get("training_files")
+        else:
+            test_data = rasa.utils.io.create_temporary_file(
+                request.body, mode="w+b", suffix=".md"
+            )
+
         eval_agent = app.agent
 
         model_path = request.args.get("model", None)
@@ -877,18 +882,7 @@ def create_app(
                 model_path, model_server, app.agent.remote_storage
             )
 
-        try:
-            # might throw an error, if that is the case we will assume user submitted md
-            content = rasa.utils.io.write_yaml(request.json)
-            nlu_data = rasa.utils.io.create_temporary_file(
-                content, mode="w", suffix=".yml"
-            )
-        except InvalidUsage:
-            nlu_data = rasa.utils.io.create_temporary_file(
-                request.body, mode="w+b", suffix=".md"
-            )
-
-        data_path = os.path.abspath(nlu_data)
+        data_path = os.path.abspath(test_data)
 
         if not os.path.exists(eval_agent.model_directory):
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
@@ -1218,14 +1212,12 @@ def _model_output_directory(save_to_default_model_directory: bool) -> Text:
 
 
 def _validate_yaml_training_payload(yaml_text: Text) -> None:
-    # TODO: Use NLU schema validation once it's merged
     try:
-        rasa.utils.io.read_yaml(yaml_text)
-    except Exception:
+        RasaYAMLReader.validate(yaml_text)
+    except Exception as e:
         raise ErrorResponse(
             400,
             "BadRequest",
-            "The request body does not contain valid YAML.",
-            # TODO: Add training data docs url
-            help_url=None,
+            f"The request body does not contain valid YAML." f"Error: {e}",
+            help_url=DOCS_URL_TRAINING_DATA_NLU,
         )
