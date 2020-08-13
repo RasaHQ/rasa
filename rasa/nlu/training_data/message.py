@@ -127,7 +127,7 @@ class Message:
         **kwargs,
     ) -> "Message":
         """
-        Builds a Message from ActionExecuted data
+        Build a `Message` from `ActionExecuted` data.
         Args:
             action_text: text of a bot's utterance
             action_name: name of an action executed
