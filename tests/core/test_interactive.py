@@ -543,7 +543,7 @@ async def test_filter_intents_before_save_nlu_file():
     msgs = test_msgs.copy()
     if intents:
         another_greet = greet.copy()
-        another_greet[TEXT] = RESPONSE_IDENTIFIER_DELIMITER + choice(intents)
+        another_greet[TEXT] = INTENT_MESSAGE_PREFIX + choice(intents)
         msgs.append(Message(data=another_greet))
 
     assert test_msgs == interactive._filter_messages(msgs)
