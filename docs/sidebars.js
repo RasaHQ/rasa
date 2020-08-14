@@ -72,6 +72,7 @@ module.exports = {
           label: 'Training Data',
           items: [
             'training-data-format',
+            'nlu-training-data',
             'stories',
             'rules',
           ],
