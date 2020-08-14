@@ -409,6 +409,9 @@ class RasaYAMLWriter(TrainingDataWriter):
         )
         result[KEY_NLU] = nlu_items
 
+        if training_data.responses:
+            result[KEY_RESPONSES] = training_data.responses
+
         io_utils.write_yaml(result, target, True)
 
     @classmethod

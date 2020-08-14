@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import random
 from collections import Counter, OrderedDict
-from copy import deepcopy
+import copy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
@@ -64,17 +64,17 @@ class TrainingData:
     def merge(self, *others: "TrainingData") -> "TrainingData":
         """Return merged instance of this data with other training data."""
 
-        training_examples = deepcopy(self.training_examples)
+        training_examples = copy.deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
-        regex_features = deepcopy(self.regex_features)
-        lookup_tables = deepcopy(self.lookup_tables)
-        responses = deepcopy(self.responses)
+        regex_features = copy.deepcopy(self.regex_features)
+        lookup_tables = copy.deepcopy(self.lookup_tables)
+        responses = copy.deepcopy(self.responses)
         others = [other for other in others if other]
 
         for o in others:
-            training_examples.extend(deepcopy(o.training_examples))
-            regex_features.extend(deepcopy(o.regex_features))
-            lookup_tables.extend(deepcopy(o.lookup_tables))
+            training_examples.extend(copy.deepcopy(o.training_examples))
+            regex_features.extend(copy.deepcopy(o.regex_features))
+            lookup_tables.extend(copy.deepcopy(o.lookup_tables))
 
             for text, syn in o.entity_synonyms.items():
                 check_duplicate_synonym(
@@ -273,9 +273,14 @@ class TrainingData:
     def nlg_as_yaml(self) -> Text:
         """Generates yaml representation of the response phrases (NLG) of
         TrainingData."""
+        from rasa.nlu.training_data.formats.rasa_yaml import (  # pytype: disable=pyi-error
+            RasaYAMLWriter,
+        )
 
-        raise NotImplementedError("Needs to be implemented using the NLU YAML writer")
-        # return NLGYAMLWriter().dumps(self)
+        # only dump responses. at some point it might make sense to remove the
+        # differentiation between dumping NLU and dumping responses. but we
+        # can't do that until after we remove markdown support.
+        return RasaYAMLWriter().dumps(TrainingData(responses=self.responses))
 
     def nlu_as_markdown(self) -> Text:
         """Generates the markdown representation of the NLU part of TrainingData."""
@@ -290,7 +295,13 @@ class TrainingData:
             RasaYAMLWriter,
         )
 
-        return RasaYAMLWriter().dumps(self)
+        # avoid dumping NLG data (responses). this is a workaround until we
+        # can remove the distinction between nlu & nlg when converting to a string
+        # (so until after we remove markdown support)
+        no_responses_training_data = copy.copy(self)
+        no_responses_training_data.responses = {}
+
+        return RasaYAMLWriter().dumps(no_responses_training_data)
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
 
