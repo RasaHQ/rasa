@@ -22,7 +22,7 @@ from rasa.core.training import interactive
 from rasa.importers.rasa import TrainingDataImporter
 from rasa.nlu.training_data import Message
 
-from rasa.nlu.training_data.loading import RASA, MARKDOWN
+from rasa.nlu.training_data.loading import RASA, MARKDOWN, UNK
 from rasa.nlu.constants import TEXT
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 
