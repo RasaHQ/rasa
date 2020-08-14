@@ -39,7 +39,11 @@ class SingleStateFeaturizer:
         self.e2e_action_texts = []
 
     def prepare_from_domain(self, domain: Domain) -> None:
-        # store feature states for each attribute in order to create binary features
+        """
+        Creates feature states for each attribute; used in creation of binary features
+        Args:
+            domain: Domain
+        """
         self._default_feature_states[INTENT] = {
             f: i for i, f in enumerate(domain.intents)
         }
@@ -61,6 +65,16 @@ class SingleStateFeaturizer:
     def _construct_message(
         sub_state: Dict[Text, Union[Text, Tuple[float], Tuple[Text]]], state_type: Text
     ) -> Tuple["Message", Text]:
+        """
+        Constructs a message from current User or Previous Action data;
+        Args:
+            substate: dictionary which contains (intent or text) for USER and (action name or action text) 
+            for PREVIOUS_ACTION
+            state_type: sustate is USER or PREVIOUS ACTION
+        Returns:
+            message: Message containing the data
+            attribute: attribute to be featurized;
+        """
         if state_type == USER:
             if sub_state.get(INTENT):
                 message = Message(data={INTENT: sub_state.get(INTENT)})

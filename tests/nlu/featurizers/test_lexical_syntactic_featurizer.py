@@ -58,6 +58,10 @@ def test_text_featurizer(sentence, expected_features):
     featurizer.process(test_message)
 
     seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
+    if seq_vec:
+        seq_vec = seq_vec.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert isinstance(seq_vec, scipy.sparse.coo_matrix)
     assert sen_vec is None
@@ -85,6 +89,10 @@ def test_text_featurizer_window_size(sentence, expected):
     featurizer.process(test_message)
 
     seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
+    if seq_vec:
+        seq_vec = seq_vec.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert isinstance(seq_vec, scipy.sparse.coo_matrix)
     assert sen_vec is None
@@ -123,6 +131,10 @@ def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
     featurizer.process(test_message)
 
     seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
+    if seq_vec:
+        seq_vec = seq_vec.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert isinstance(seq_vec, scipy.sparse.coo_matrix)
     assert sen_vec is None
@@ -166,6 +178,10 @@ def test_text_featurizer_using_pos_with_action_text(
     featurizer.process(test_message, attribute=TEXT)
 
     seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
+    if seq_vec:
+        seq_vec = seq_vec.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert isinstance(seq_vec, scipy.sparse.coo_matrix)
     assert sen_vec is None
@@ -176,6 +192,10 @@ def test_text_featurizer_using_pos_with_action_text(
     featurizer.process(test_message, attribute=ACTION_TEXT)
 
     seq_vec, sen_vec = test_message.get_sparse_features(ACTION_TEXT, [])
+    if seq_vec:
+        seq_vec = seq_vec.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert seq_vec is None
     assert sen_vec is None

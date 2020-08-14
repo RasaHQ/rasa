@@ -469,7 +469,9 @@ class CRFEntityExtractor(EntityExtractor):
             TEXT, self.component_config["featurizers"]
         )
 
-        if features is None:
+        if features:
+            features = features.features
+        else:
             return None
 
         tokens = message.get(TOKENS_NAMES[TEXT])

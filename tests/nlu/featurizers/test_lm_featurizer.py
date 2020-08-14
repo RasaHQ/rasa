@@ -191,6 +191,10 @@ def test_lm_featurizer_shape_values(
         computed_sequence_vec, computed_sentence_vec = messages[
             index
         ].get_dense_features(TEXT, [])
+        if computed_sequence_vec:
+            computed_sequence_vec = computed_sequence_vec.features
+        if computed_sentence_vec:
+            computed_sentence_vec = computed_sentence_vec.features
 
         assert computed_sequence_vec.shape[0] == expected_shape[index][0] - 1
         assert computed_sequence_vec.shape[1] == expected_shape[index][1]
@@ -212,6 +216,10 @@ def test_lm_featurizer_shape_values(
         intent_sequence_vec, intent_sentence_vec = messages[index].get_dense_features(
             INTENT, []
         )
+        if intent_sequence_vec:
+            intent_sequence_vec = intent_sequence_vec.features
+        if intent_sentence_vec:
+            intent_sentence_vec = intent_sentence_vec.features
 
         assert intent_sequence_vec is None
         assert intent_sentence_vec is None

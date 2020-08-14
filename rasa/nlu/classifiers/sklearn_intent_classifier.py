@@ -124,7 +124,9 @@ class SklearnIntentClassifier(IntentClassifier):
     @staticmethod
     def _get_sentence_features(message: Message) -> np.ndarray:
         _, sentence_features = message.get_dense_features(TEXT)
-        return sentence_features[0]
+        if sentence_features is not None:
+            sentence_features = sentence_features.features
+        return sentence_features
 
     def _num_cv_splits(self, y) -> int:
         folds = self.component_config["max_cross_validation_folds"]

@@ -156,6 +156,8 @@ def test_crf_use_dense_features(spacy_nlp: Any):
 
     assert "0:text_dense_features" in features[0]
     dense_features, _ = message.get_dense_features(TEXT, [])
+    if dense_features:
+        dense_features = dense_features.features
 
     for i in range(0, len(dense_features[0])):
         assert (
