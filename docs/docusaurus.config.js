@@ -11,6 +11,11 @@ try {
   // one version of the doc is available
 }
 
+const legacyVersion = {
+  label: 'Legacy 1.x',
+  to: 'https://legacy-docs-v1.rasa.com',
+};
+
 module.exports = {
   title: 'Rasa Open Source Documentation',
   tagline: 'The tagline of my site',
@@ -48,11 +53,15 @@ module.exports = {
               to: 'next/',
               activeBaseRegex: `next`,
             },
-          ] : [{
+            legacyVersion,
+          ] : [
+            {
               label: 'Master/Unreleased',
               to: '/',
               activeBaseRegex: `/`,
-            },],
+            },
+            legacyVersion,
+          ],
         },
         {
           href: 'https://github.com/rasahq/rasa',

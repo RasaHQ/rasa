@@ -2,8 +2,8 @@ rules:
 - rule: Rule with condition
   condition:
   - active_loop: loop_q_form
-  - slot_was_set: requested_slot
-    value: some_slot
+  - slot_was_set:
+    - requested_slot: some_slot
   steps:
   - intent: inform
     entities:
