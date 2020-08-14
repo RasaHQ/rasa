@@ -29,7 +29,7 @@ class SpacyTokenizer(Tokenizer):
         "token_pattern": None,
     }
 
-    def get_doc(self, message: Message, attribute: Text) -> "Doc":
+    def get_doc(self, message: Message, attribute: Text) -> Optional["Doc"]:
         return message.get(SPACY_DOCS[attribute])
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
