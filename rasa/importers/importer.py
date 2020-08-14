@@ -7,7 +7,7 @@ from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, UserUttered, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
-from rasa.nlu.constants import MESSAGE_ACTION_NAME, MESSAGE_INTENT_NAME
+from rasa.nlu.constants import ACTION_NAME, INTENT_NAME, ACTION_TEXT, TEXT
 from rasa.nlu.training_data import TrainingData, Message
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
@@ -220,7 +220,7 @@ class CoreDataImporter(TrainingDataImporter):
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         return await self._importer.get_stories(
-            interpreter, template_variables, use_e2e, exclusion_percentage
+            interpreter, template_variables, use_e2e, exclusion_percentage,
         )
 
     async def get_config(self) -> Dict:
@@ -287,6 +287,7 @@ class E2EImporter(TrainingDataImporter):
     """
 
     def __init__(self, importer: TrainingDataImporter) -> None:
+
         self.importer = importer
         self._cached_stories: Optional[StoryGraph] = None
 
@@ -301,13 +302,17 @@ class E2EImporter(TrainingDataImporter):
 
         stories = await self.get_stories()
 
-        additional_e2e_action_names = []
+        additional_e2e_action_names = set()
         for story_step in stories.story_steps:
-            additional_e2e_action_names += [
-                event.action_name
-                for event in story_step.events
-                if isinstance(event, ActionExecuted) and event.e2e_text
-            ]
+            additional_e2e_action_names.update(
+                {
+                    event.e2e_text
+                    for event in story_step.events
+                    if isinstance(event, ActionExecuted) and event.e2e_text
+                }
+            )
+
+        additional_e2e_action_names = list(additional_e2e_action_names)
 
         return Domain(
             [], [], [], {}, action_names=additional_e2e_action_names, forms=[]
@@ -332,6 +337,7 @@ class E2EImporter(TrainingDataImporter):
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         training_datasets = [_additional_training_data_from_default_actions()]
+
         training_datasets += await asyncio.gather(
             self.importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
@@ -368,11 +374,13 @@ def _message_from_conversation_event(event: Event) -> Optional[Message]:
 
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
-    return Message(event.text, data={MESSAGE_INTENT_NAME: event.intent_name})
+    return Message(event.text, data={INTENT_NAME: event.intent_name})
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
-    return Message(event.e2e_text or "", data={MESSAGE_ACTION_NAME: event.action_name})
+    return Message.build_from_action(
+        action_name=event.action_name, action_text=event.e2e_text or "",
+    )
 
 
 def _additional_training_data_from_default_actions() -> TrainingData:
@@ -380,7 +388,7 @@ def _additional_training_data_from_default_actions() -> TrainingData:
     from rasa.core.actions import action
 
     additional_messages_from_default_actions = [
-        Message("", data={MESSAGE_ACTION_NAME: action_name})
+        Message.build_from_action(action_name=action_name)
         for action_name in action.default_action_names()
     ]
 

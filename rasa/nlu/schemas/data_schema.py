@@ -28,7 +28,6 @@ def rasa_nlu_data_schema() -> Dict[Text, Any]:
     training_example_schema = {
         "type": "object",
         "properties": {
-            "text": {"type": "string"},
             "intent": {"type": "string"},
             "entities": {
                 "type": "array",
@@ -39,7 +38,6 @@ def rasa_nlu_data_schema() -> Dict[Text, Any]:
                 },
             },
         },
-        "required": ["text"],
     }
 
     regex_feature_schema = {

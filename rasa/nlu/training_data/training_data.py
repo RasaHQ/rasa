@@ -17,8 +17,8 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     INTENT,
     ENTITIES,
-    MESSAGE_ACTION_NAME,
-    MESSAGE_INTENT_NAME,
+    ACTION_NAME,
+    INTENT_NAME,
 )
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
@@ -550,6 +550,5 @@ class TrainingData:
         return [
             example
             for example in self.training_examples
-            if not example.get(MESSAGE_ACTION_NAME)
-            and not example.get(MESSAGE_INTENT_NAME)
+            if not example.get(ACTION_NAME) and not example.get(INTENT_NAME)
         ]

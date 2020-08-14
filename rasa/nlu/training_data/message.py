@@ -14,6 +14,8 @@ from rasa.nlu.constants import (
     RESPONSE_IDENTIFIER_DELIMITER,
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
+    ACTION_TEXT,
+    ACTION_NAME,
 )
 from rasa.nlu.utils import ordered
 
@@ -24,16 +26,16 @@ if typing.TYPE_CHECKING:
 class Message:
     def __init__(
         self,
-        text: Text,
+        text: Optional[Text] = "",
         data: Optional[Dict[Text, Any]] = None,
         output_properties: Optional[Set] = None,
         time: Optional[Text] = None,
         features: Optional[List["Features"]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
-        self.text = text
         self.time = time
-        self.data = data if data else {}
+        self.data = data.copy() if data else {}
+        self.data.update({TEXT: text})
         self.features = features if features else []
 
         self.data.update(**kwargs)
@@ -42,22 +44,18 @@ class Message:
             self.output_properties = output_properties
         else:
             self.output_properties = set()
+        self.output_properties.add(TEXT)
 
     def add_features(self, features: Optional["Features"]) -> None:
         if features is not None:
             self.features.append(features)
 
     def set(self, prop, info, add_to_output=False) -> None:
-        if prop == TEXT:
-            self.text = info
-        else:
-            self.data[prop] = info
-            if add_to_output:
-                self.output_properties.add(prop)
+        self.data[prop] = info
+        if add_to_output:
+            self.output_properties.add(prop)
 
     def get(self, prop, default=None) -> Any:
-        if prop == TEXT:
-            return self.text
         return self.data.get(prop, default)
 
     def as_dict_nlu(self) -> dict:
@@ -82,18 +80,16 @@ class Message:
 
         # Filter all keys with None value. These could have come while building the
         # Message object in markdown format
-        d = {key: value for key, value in d.items() if value is not None}
-
-        return dict(d, text=self.text)
+        return {key: value for key, value in d.items() if value is not None}
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Message):
             return False
         else:
-            return (other.text, ordered(other.data)) == (self.text, ordered(self.data))
+            return ordered(other.data) == ordered(self.data)
 
     def __hash__(self) -> int:
-        return hash((self.text, str(ordered(self.data))))
+        return hash(str(ordered(self.data)))
 
     @classmethod
     def build(
@@ -101,8 +97,17 @@ class Message:
         text: Text,
         intent: Optional[Text] = None,
         entities: List[Dict[Text, Any]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Message":
+        """
+        Build a Message from `UserUttered` data.
+        Args:
+            text: text of a user's utterance
+            intent: an intent of the user utterance
+            entities: entities in the user's utterance
+        Returns:
+            Message
+        """
         data = {}
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(intent)
@@ -113,6 +118,24 @@ class Message:
         if entities:
             data[ENTITIES] = entities
         return cls(text, data, **kwargs)
+
+    @classmethod
+    def build_from_action(
+        cls,
+        action_text: Optional[Text] = "",
+        action_name: Optional[Text] = "",
+        **kwargs: Any,
+    ) -> "Message":
+        """
+        Build a `Message` from `ActionExecuted` data.
+        Args:
+            action_text: text of a bot's utterance
+            action_name: name of an action executed
+        Returns:
+            Message
+        """
+        action_data = {ACTION_TEXT: action_text, ACTION_NAME: action_name}
+        return cls(data=action_data, **kwargs)
 
     def get_combined_intent_response_key(self) -> Text:
         """Get intent as it appears in training data"""
@@ -145,13 +168,10 @@ class Message:
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[scipy.sparse.spmatrix]]:
         """Get all sparse features for the given attribute that are coming from the
         given list of featurizers.
-
         If no featurizers are provided, all available features will be considered.
-
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
-
         Returns:
             Sparse features.
         """
@@ -172,13 +192,10 @@ class Message:
     ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         """Get all dense features for the given attribute that are coming from the given
         list of featurizers.
-
         If no featurizers are provided, all available features will be considered.
-
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
-
         Returns:
             Dense features.
         """
@@ -199,13 +216,10 @@ class Message:
     ) -> bool:
         """Check if there are any features present for the given attribute and
         featurizers.
-
         If no featurizers are provided, all available features will be considered.
-
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
-
         Returns:
             ``True``, if features are present, ``False`` otherwise
         """

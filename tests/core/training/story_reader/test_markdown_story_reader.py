@@ -14,6 +14,7 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training import loading
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.structures import Story
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 
 
 async def test_persist_and_read_test_story_graph(tmpdir, default_domain: Domain):
@@ -141,7 +142,9 @@ async def test_persist_form_story():
         ActionExecuted("utter_goodbye"),
         ActionExecuted("action_listen"),
     ]
-    [tracker.update(e) for e in events]
+
+    for event in events:
+        tracker.update(event)
 
     assert story in tracker.export_stories()
 
@@ -219,3 +222,36 @@ async def test_read_rules_without_stories(default_domain: Domain):
         [{"entity": "some_slot", "start": 6, "end": 25, "value": "bla"}],
     )
     assert events[4] == ActionExecuted("loop_q_form")
+
+
+async def test_parsing_of_e2e_stories(default_domain: Domain):
+    md_file = "data/test_stories/stories_hybrid_e2e.md"
+    tracker = await training.load_data(
+        md_file,
+        default_domain,
+        use_story_concatenation=False,
+        tracker_limit=1000,
+        remove_duplicates=False,
+    )
+
+    assert len(tracker) == 1
+
+    assert list(tracker[0].events) == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("simple", {"name": "simple"}),
+        ActionExecuted("utter_greet"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            "I am looking for a Kenyan restaurant",
+            {"name": None},
+            entities=[{"start": 19, "end": 25, "value": "Kenyan", "entity": "cuisine"}],
+        ),
+        ActionExecuted("", e2e_text="good for you"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("goodbye", {"name": "goodbye"}),
+        ActionExecuted("utter_goodbye"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("One more thing", {"name": None}),
+        ActionExecuted("", e2e_text="What?"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]

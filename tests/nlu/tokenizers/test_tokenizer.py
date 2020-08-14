@@ -1,9 +1,18 @@
-from typing import List, Text
+from typing import Any, Optional, Tuple, Text, Dict, Set, List, Union
 
 import pytest
 
+
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.constants import TEXT, INTENT, RESPONSE, TOKENS_NAMES
+
+from rasa.nlu.constants import (
+    TEXT,
+    INTENT,
+    RESPONSE,
+    TOKENS_NAMES,
+    ACTION_NAME,
+    ACTION_TEXT,
+)
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
@@ -25,7 +34,9 @@ def test_tokens_comparison():
     "text, expected_tokens, expected_indices",
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
-def test_train_tokenizer(text, expected_tokens, expected_indices):
+def test_train_tokenizer(
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+):
     tk = WhitespaceTokenizer()
 
     message = Message(text)
@@ -54,7 +65,58 @@ def test_train_tokenizer(text, expected_tokens, expected_indices):
     "text, expected_tokens, expected_indices",
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
-def test_process_tokenizer(text, expected_tokens, expected_indices):
+def test_train_tokenizer_e2e_actions(
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+):
+    tk = WhitespaceTokenizer()
+
+    message = Message(text)
+    message.set(ACTION_TEXT, text)
+    message.set(ACTION_NAME, text)
+
+    training_data = TrainingData()
+    training_data.training_examples = [message]
+
+    tk.train(training_data)
+
+    for attribute in [ACTION_TEXT, TEXT]:
+        tokens = training_data.training_examples[0].get(TOKENS_NAMES[attribute])
+
+        assert [t.text for t in tokens] == expected_tokens
+        assert [t.start for t in tokens] == [i[0] for i in expected_indices]
+        assert [t.end for t in tokens] == [i[1] for i in expected_indices]
+
+
+@pytest.mark.parametrize(
+    "text, expected_tokens, expected_indices",
+    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
+)
+def test_train_tokenizer_action_name(
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+):
+    tk = WhitespaceTokenizer()
+
+    message = Message(text)
+    message.set(ACTION_NAME, text)
+
+    training_data = TrainingData()
+    training_data.training_examples = [message]
+
+    tk.train(training_data)
+
+    # check action_name attribute
+    tokens = training_data.training_examples[0].get(TOKENS_NAMES[ACTION_NAME])
+
+    assert [t.text for t in tokens] == [text]
+
+
+@pytest.mark.parametrize(
+    "text, expected_tokens, expected_indices",
+    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
+)
+def test_process_tokenizer(
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+):
     tk = WhitespaceTokenizer()
 
     message = Message(text)
@@ -69,13 +131,50 @@ def test_process_tokenizer(text, expected_tokens, expected_indices):
 
 
 @pytest.mark.parametrize(
+    "text, expected_tokens", [("action_listen", ["action", "listen"])],
+)
+def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
+    tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
+
+    message = Message(text)
+    message.set(ACTION_NAME, text)
+
+    tk.process(message, ACTION_NAME)
+
+    tokens = message.get(TOKENS_NAMES[ACTION_NAME])
+
+    assert [t.text for t in tokens] == expected_tokens
+
+
+@pytest.mark.parametrize(
+    "text, expected_tokens", [("I am hungry", ["I", "am", "hungry"])],
+)
+def test_process_tokenizer_action_test(text: Text, expected_tokens: List[Text]):
+    tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
+
+    message = Message(text)
+    message.set(ACTION_NAME, text)
+    message.set(ACTION_TEXT, text)
+
+    tk.process(message, ACTION_TEXT)
+
+    tokens = message.get(TOKENS_NAMES[ACTION_TEXT])
+    assert [t.text for t in tokens] == expected_tokens
+
+    message.set(ACTION_TEXT, "")
+    tk.process(message, ACTION_NAME)
+    tokens = message.get(TOKENS_NAMES[ACTION_NAME])
+    assert [t.text for t in tokens] == [text]
+
+
+@pytest.mark.parametrize(
     "text, expected_tokens",
     [
         ("Forecast_for_LUNCH", ["Forecast_for_LUNCH"]),
         ("Forecast for LUNCH", ["Forecast for LUNCH"]),
     ],
 )
-def test_split_intent(text, expected_tokens):
+def test_split_intent(text: Text, expected_tokens: List[Text]):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
     tk = WhitespaceTokenizer(component_config)
@@ -83,7 +182,7 @@ def test_split_intent(text, expected_tokens):
     message = Message(text)
     message.set(INTENT, text)
 
-    assert [t.text for t in tk._split_intent(message)] == expected_tokens
+    assert [t.text for t in tk._split_name(message, INTENT)] == expected_tokens
 
 
 @pytest.mark.parametrize(
@@ -134,3 +233,22 @@ def test_apply_token_pattern(
         assert actual_token.text == expected_token.text
         assert actual_token.start == expected_token.start
         assert actual_token.end == expected_token.end
+
+
+@pytest.mark.parametrize(
+    "text, expected_tokens",
+    [
+        ("Forecast_for_LUNCH", ["Forecast_for_LUNCH"]),
+        ("Forecast for LUNCH", ["Forecast for LUNCH"]),
+        ("Forecast+for+LUNCH", ["Forecast", "for", "LUNCH"]),
+    ],
+)
+def test_split_action_name(text: Text, expected_tokens: List[Text]):
+    component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
+
+    tk = WhitespaceTokenizer(component_config)
+
+    message = Message(text)
+    message.set(ACTION_NAME, text)
+
+    assert [t.text for t in tk._split_name(message, ACTION_NAME)] == expected_tokens

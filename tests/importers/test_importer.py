@@ -18,7 +18,7 @@ from rasa.importers.rasa import RasaFileImporter
 
 from rasa.importers.multi_project import MultiProjectImporter
 
-from rasa.nlu.constants import MESSAGE_ACTION_NAME, MESSAGE_INTENT_NAME
+from rasa.nlu.constants import ACTION_NAME, INTENT_NAME, ACTION_TEXT
 from rasa.nlu.training_data import Message
 
 
@@ -187,7 +187,7 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
             ),
             StoryStep(
                 events=[
-                    UserUttered("how are you doing?", {"name": "greet_from_stories"}),
+                    UserUttered("how are you doing?"),
                     ActionExecuted("utter_greet_from_stories", e2e_text="Hi Joey."),
                 ]
             ),
@@ -213,10 +213,13 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
 
     # Check if the NLU training data was added correctly from the story training data
     expected_additional_messages = [
-        Message("greet_from_stories", data={MESSAGE_INTENT_NAME: "greet_from_stories"}),
-        Message("", data={MESSAGE_ACTION_NAME: "utter_greet_from_stories"}),
-        Message("how are you doing?", data={MESSAGE_INTENT_NAME: "greet_from_stories"}),
-        Message("Hi Joey.", data={MESSAGE_ACTION_NAME: "utter_greet_from_stories"}),
+        Message("greet_from_stories", data={INTENT_NAME: "greet_from_stories"}),
+        Message("", data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: ""}),
+        Message("how are you doing?", data={INTENT_NAME: None}),
+        Message(
+            "",
+            data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: "Hi Joey.",},
+        ),
     ]
 
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)
@@ -244,7 +247,7 @@ async def test_import_nlu_training_data_with_default_actions(project: Text):
 
     extended_training_data = await importer.get_nlu_data()
     assert all(
-        Message("", data={MESSAGE_ACTION_NAME: action_name})
+        Message(data={ACTION_NAME: action_name, ACTION_TEXT: ""})
         in extended_training_data.training_examples
         for action_name in action.default_action_names()
     )
@@ -272,6 +275,9 @@ async def test_adding_e2e_actions_to_domain(project: Text):
                     UserUttered("how are you doing?", {"name": "greet_from_stories"}),
                     ActionExecuted(
                         additional_actions[0], e2e_text=additional_actions[0]
+                    ),
+                    ActionExecuted(
+                        additional_actions[1], e2e_text=additional_actions[1]
                     ),
                     ActionExecuted(
                         additional_actions[1], e2e_text=additional_actions[1]

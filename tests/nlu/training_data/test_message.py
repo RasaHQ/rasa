@@ -5,7 +5,13 @@ import numpy as np
 import scipy.sparse
 
 from rasa.nlu.featurizers.featurizer import Features
-from rasa.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
+from rasa.nlu.constants import (
+    TEXT,
+    FEATURE_TYPE_SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
+    ACTION_TEXT,
+    ACTION_NAME,
+)
 from rasa.nlu.training_data import Message
 
 
@@ -232,3 +238,11 @@ def test_features_present(
     actual = message.features_present(attribute, featurizers)
 
     assert actual == expected
+
+
+def test_build_from_action():
+    test_action_name = "test_action_name"
+    test_action_text = "test action text"
+    assert Message.build_from_action(
+        action_text=test_action_text, action_name=test_action_name
+    ) == Message(data={ACTION_NAME: test_action_name, ACTION_TEXT: test_action_text})

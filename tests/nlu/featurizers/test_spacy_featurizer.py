@@ -124,8 +124,8 @@ def test_spacy_featurizer_casing(spacy_nlp):
 
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
     for e in td.intent_examples:
-        doc = spacy_nlp(e.text)
-        doc_capitalized = spacy_nlp(e.text.capitalize())
+        doc = spacy_nlp(e.get(TEXT))
+        doc_capitalized = spacy_nlp(e.get(TEXT).capitalize())
 
         vecs = ftr._features_for_doc(doc)
         vecs_capitalized = ftr._features_for_doc(doc_capitalized)

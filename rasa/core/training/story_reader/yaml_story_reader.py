@@ -392,7 +392,7 @@ class YAMLStoryReader(StoryReader):
             )
             return
 
-        self._add_event(bot_message, {"e2e_text": bot_message})
+        self._add_event("", {"e2e_text": bot_message})
 
     def _parse_form(self, form_name: Optional[Text]) -> None:
         self._add_event(Form.type_name, {"name": form_name})

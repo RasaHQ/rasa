@@ -18,7 +18,8 @@ from rasa.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
 )
-from rasa.nlu.constants import INTENT_NAME_KEY
+
+from rasa.nlu.constants import TEXT, INTENT_NAME_KEY
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -63,7 +64,7 @@ def md_format_message(text, intent, entities) -> Text:
     deserialised_entities = deserialise_entities(entities)
     return MarkdownWriter.generate_message_md(
         {
-            "text": message_from_md.text,
+            "text": message_from_md.get(TEXT),
             "intent": intent,
             "entities": deserialised_entities,
         }
@@ -1021,7 +1022,10 @@ class ActionExecuted(Event):
         if not isinstance(other, ActionExecuted):
             return False
         else:
-            return self.action_name == other.action_name
+            return (
+                self.action_name == other.action_name
+                and self.e2e_text == other.e2e_text
+            )
 
     def as_story_string(self) -> Text:
         return self.action_name

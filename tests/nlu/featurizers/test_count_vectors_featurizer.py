@@ -1,10 +1,18 @@
 import numpy as np
 import pytest
 import scipy.sparse
+from typing import Text
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT, RESPONSE
+from rasa.nlu.constants import (
+    TOKENS_NAMES,
+    TEXT,
+    INTENT,
+    RESPONSE,
+    ACTION_NAME,
+    ACTION_TEXT,
+)
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
@@ -314,6 +322,8 @@ def test_count_vector_featurizer_persist_load(tmp_path):
     sentence2 = "abababalidcn 123123 13xcdc лаомтгцу sfjv oö aà"
     train_message1 = Message(sentence1)
     train_message2 = Message(sentence2)
+    WhitespaceTokenizer().process(train_message1)
+    WhitespaceTokenizer().process(train_message2)
 
     data = TrainingData([train_message1, train_message2])
     train_ftr.train(data)
@@ -347,8 +357,10 @@ def test_count_vector_featurizer_persist_load(tmp_path):
     assert hasattr(test_ftr.vectorizers[TEXT], "vocabulary_")
 
     test_message1 = Message(sentence1)
+    WhitespaceTokenizer().process(test_message1)
     test_ftr.process(test_message1)
     test_message2 = Message(sentence2)
+    WhitespaceTokenizer().process(test_message2)
     test_ftr.process(test_message2)
 
     test_seq_vec_1, test_sen_vec_1 = test_message1.get_sparse_features(TEXT, [])
@@ -397,3 +409,110 @@ def test_count_vectors_featurizer_train():
     assert sen_vec is None
     assert (1, 1) == seq_vec.shape
     assert np.all(seq_vec.toarray()[0] == np.array([1]))
+
+
+@pytest.mark.parametrize(
+    "sentence, action_name, action_text, action_name_features, response_features",
+    [
+        ("hello", "greet", None, [[1]], None),
+        ("hello", "greet", "hi", [[1]], [[1]]),
+        ("hello", "", "hi", None, [[1]]),
+    ],
+)
+def test_count_vector_featurizer_action_attribute_featurization(
+    sentence: Text,
+    action_name: Text,
+    action_text: Text,
+    action_name_features: np.ndarray,
+    response_features: np.ndarray,
+):
+    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    tk = WhitespaceTokenizer()
+
+    train_message = Message(sentence)
+    # this is needed for a valid training example
+    train_message.set(ACTION_NAME, action_name)
+    train_message.set(ACTION_TEXT, action_text)
+
+    # add a second example that has some response, so that the vocabulary for
+    # response exists
+    second_message = Message("hello")
+    second_message.set(ACTION_TEXT, "hi")
+    second_message.set(ACTION_NAME, "greet")
+
+    data = TrainingData([train_message, second_message])
+
+    tk.train(data)
+    ftr.train(data)
+
+    action_name_seq_vecs, action_name_sen_vecs = train_message.get_sparse_features(
+        ACTION_NAME, []
+    )
+    response_seq_vecs, response_sen_vecs = train_message.get_sparse_features(
+        ACTION_TEXT, []
+    )
+
+    if action_name_features:
+        assert action_name_seq_vecs.toarray()[0] == action_name_features
+        assert action_name_sen_vecs is None
+    else:
+        assert action_name_seq_vecs is None
+        assert action_name_sen_vecs is None
+
+    if response_features:
+        assert response_seq_vecs.toarray()[0] == response_features
+        assert response_sen_vecs is not None
+    else:
+        assert response_seq_vecs is None
+        assert response_sen_vecs is None
+
+
+@pytest.mark.parametrize(
+    "sentence, action_name, action_text, action_name_features, response_features",
+    [
+        ("hello", "greet", None, [[1]], None),
+        ("hello", "greet", "hi", [[1]], [[1]]),
+        ("hello", "", "hi", None, [[1]]),
+    ],
+)
+def test_count_vector_featurizer_process_by_attribute(
+    sentence: Text,
+    action_name: Text,
+    action_text: Text,
+    action_name_features: np.ndarray,
+    response_features: np.ndarray,
+):
+    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    tk = WhitespaceTokenizer()
+
+    # add a second example that has some response, so that the vocabulary for
+    # response exists
+    train_message = Message("hello")
+    train_message.set(ACTION_NAME, "greet")
+
+    train_message1 = Message("hello")
+    train_message1.set(ACTION_TEXT, "hi")
+
+    data = TrainingData([train_message, train_message1])
+
+    tk.train(data)
+    ftr.train(data)
+
+    test_message = Message(sentence)
+    test_message.set(ACTION_NAME, action_name)
+    test_message.set(ACTION_TEXT, action_text)
+
+    for attribute in [TEXT, ACTION_NAME, ACTION_TEXT]:
+        for module in [tk, ftr]:
+            module.process(test_message, attribute=attribute)
+
+    action_name_seq_vecs, action_name_sen_vecs = test_message.get_sparse_features(
+        ACTION_NAME, []
+    )
+
+    if action_name_features:
+        assert action_name_seq_vecs.toarray()[0] == action_name_features
+        assert action_name_sen_vecs is None
+    else:
+        assert action_name_seq_vecs is None
+        assert action_name_sen_vecs is None

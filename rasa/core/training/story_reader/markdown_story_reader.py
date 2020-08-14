@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from pathlib import PurePath
-from typing import Dict, Text, List, Any
+from typing import Dict, Text, List, Any, Tuple
 
 import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_STORIES
@@ -18,6 +18,7 @@ from rasa.core.training.structures import StoryStep, FORM_PREFIX
 from rasa.data import MARKDOWN_FILE_EXTENSION
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning
+from rasa.nlu.constants import TEXT
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,14 @@ class MarkdownStoryReader(StoryReader):
                         await self._add_e2e_messages(user_messages, line_num)
                     else:
                         await self._add_user_messages(user_messages, line_num)
+                    # end-to-end BOT message
+                elif line.startswith("<B>"):
+                    event_name, parameters = self._parse_bot_message_e2e(line[3:])
+                    self._add_event(event_name, parameters)
+                # end-to-end USER message
+                elif line.startswith("<U>"):
+                    user_messages = [el.strip() for el in line[3:].split(" OR ")]
+                    await self.add_user_messages_e2e(user_messages, line_num)
                 else:
                     # reached an unknown type of line
                     logger.warning(
@@ -154,7 +163,7 @@ class MarkdownStoryReader(StoryReader):
         return re.sub(r"<!--.*?-->", "", line).strip()
 
     @staticmethod
-    def _parse_event_line(line):
+    def _parse_event_line(line: Text) -> Tuple[Text, Dict[Text, Text]]:
         """Tries to parse a single line as an event with arguments."""
 
         # the regex matches "slot{"a": 1}"
@@ -173,7 +182,14 @@ class MarkdownStoryReader(StoryReader):
             )
             return "", {}
 
-    async def _add_user_messages(self, messages, line_num):
+    @staticmethod
+    def _parse_bot_message_e2e(line: Text) -> Tuple[Text, Dict[Text, Text]]:
+        from rasa.nlu.training_data.formats.markdown import MarkdownReader
+
+        action_as_message = MarkdownReader().parse_e2e_training_example(line)
+        return "", {"e2e_text": action_as_message.get(TEXT).strip()}
+
+    async def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "User message '{}' at invalid location. "
@@ -181,6 +197,18 @@ class MarkdownStoryReader(StoryReader):
             )
         parsed_messages = await asyncio.gather(
             *[self._parse_message(m, line_num) for m in messages]
+        )
+        self.current_step_builder.add_user_messages(parsed_messages)
+
+    # TODO: Hack by Genie for temporary Markdown support
+    async def add_user_messages_e2e(self, messages: List[Text], line_num: int) -> None:
+        if not self.current_step_builder:
+            raise StoryParseError(
+                f"User message '{messages}' at invalid location. "
+                f"Expected story start."
+            )
+        parsed_messages = await asyncio.gather(
+            *[self._parse_message_e2e(m, line_num) for m in messages]
         )
         self.current_step_builder.add_user_messages(parsed_messages)
 
@@ -195,7 +223,7 @@ class MarkdownStoryReader(StoryReader):
         parsed_messages = []
         for m in e2e_messages:
             message = e2e_reader._parse_item(m)
-            parsed = await self._parse_message(message.text, line_num)
+            parsed = await self._parse_message(message.get(TEXT), line_num)
 
             parsed.parse_data["true_intent"] = message.data["true_intent"]
             parsed.parse_data["true_entities"] = message.data.get("entities") or []
@@ -203,14 +231,14 @@ class MarkdownStoryReader(StoryReader):
         self.current_step_builder.add_user_messages(parsed_messages)
 
     async def _parse_message(self, message: Text, line_num: int) -> UserUttered:
-        if message.startswith(INTENT_MESSAGE_PREFIX):
-            parse_data = await RegexInterpreter().parse(message)
-        else:
-            parse_data = await self.interpreter.parse(message)
+
+        parse_data = await RegexInterpreter().parse(message)
         utterance = UserUttered(
             message, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
+
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
+
         if self.domain and intent_name not in self.domain.intents:
             raise_warning(
                 f"Found unknown intent '{intent_name}' on line {line_num}. "
@@ -219,6 +247,17 @@ class MarkdownStoryReader(StoryReader):
                 UserWarning,
                 docs=DOCS_URL_DOMAINS,
             )
+        return utterance
+
+    # TODO: Hack by Genie for temporary Markdown support
+    async def _parse_message_e2e(self, text: Text, line_num: int) -> UserUttered:
+        from rasa.nlu.training_data.formats.markdown import MarkdownReader
+
+        message_processed = MarkdownReader().parse_training_example(text)
+
+        utterance = UserUttered(
+            message_processed.get(TEXT), None, message_processed.get("entities"),
+        )
         return utterance
 
     @staticmethod
