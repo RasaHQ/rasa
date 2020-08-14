@@ -77,6 +77,7 @@ logger = logging.getLogger(__name__)
 DIALOGUE_FEATURES = f"{DIALOGUE}_features"
 LABEL_FEATURES = f"{LABEL}_features"
 LABEL_IDS = f"{LABEL}_ids"
+RULES = "rules"
 
 SAVE_MODEL_FILE_NAME = "knowledge_base_policy"
 
@@ -384,10 +385,9 @@ class KnowledgeBasePolicy(TEDPolicy):
             f"{DIALOGUE_FEATURES}_user_if_text", [np.array(X_user_if_text)]
         )
 
-        model_data.add_features(f"{LABEL_FEATURES}_so_far", [np.array(rules_so_far)])
+        model_data.add_features(f"{RULES}_so_far", [np.array(rules_so_far)])
         model_data.add_features(
-            f"{LABEL_FEATURES}_possible_next_rules",
-            [np.array(possible_rules_to_predict)],
+            f"{RULES}_possible_next_rules", [np.array(possible_rules_to_predict)]
         )
         model_data.add_features(LABEL_IDS, [np.array(next_rule_to_predict)])
 
@@ -438,13 +438,15 @@ class KnowledgeBasePolicy(TEDPolicy):
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
 
+        # TODO move database features to model data
+
         self.model = KnowledgeBaseModel(
             model_data.get_signature(),
             self.config,
             isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
             self.rule_to_id_mapping,
             self.id_to_rule_mapping,
-            database_features,
+            # database_features,
         )
 
         self.model.fit(
@@ -501,8 +503,9 @@ class KnowledgeBasePolicy(TEDPolicy):
         io_utils.pickle_dump(
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
         )
-        io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl", self._label_data
+        io_utils.json_pickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.rule_to_id.pkl",
+            self.rule_to_id_mapping,
         )
 
     @classmethod
@@ -528,8 +531,8 @@ class KnowledgeBasePolicy(TEDPolicy):
         loaded_data = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl"
         )
-        label_data = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
+        rule_to_id = io_utils.json_unpickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.rule_to_id.pkl"
         )
         meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
         priority = io_utils.json_unpickle(
@@ -547,7 +550,8 @@ class KnowledgeBasePolicy(TEDPolicy):
             max_history_tracker_featurizer_used=isinstance(
                 featurizer, MaxHistoryTrackerFeaturizer
             ),
-            label_data=label_data,
+            rule_to_id_mapping=rule_to_id,
+            id_to_rule_mapping=cls._invert_mapping(rule_to_id),
         )
 
         # build the graph for prediction
@@ -561,7 +565,14 @@ class KnowledgeBasePolicy(TEDPolicy):
         )
         model.build_for_predict(predict_data_example)
 
-        return cls(featurizer=featurizer, priority=priority, model=model, **meta)
+        return cls(
+            featurizer=featurizer,
+            priority=priority,
+            model=model,
+            rule_to_id_mapping=rule_to_id,
+            id_to_rule_mapping=cls._invert_mapping(rule_to_id),
+            **meta,
+        )
 
 
 # accessing _tf_layers with any key results in key-error, disable it
@@ -576,7 +587,7 @@ class KnowledgeBaseModel(RasaModel):
         max_history_tracker_featurizer_used: bool,
         rule_to_id_mapping: Dict[Text, int],
         id_to_rule_mapping: Dict[int, Text],
-        database_features: np.ndarray,
+        # database_features: np.ndarray,
     ) -> None:
         super().__init__(
             name="KnowledgeBase",
@@ -605,7 +616,7 @@ class KnowledgeBaseModel(RasaModel):
         self.id_to_rule_mapping = id_to_rule_mapping
         self.rule_to_id_mapping = rule_to_id_mapping
 
-        self.database_features = database_features
+        # self.database_features = database_features
 
         # metrics
         self.action_loss = tf.keras.metrics.Mean(name="loss")
@@ -763,20 +774,6 @@ class KnowledgeBaseModel(RasaModel):
 
         return tf.concat(dense_features, axis=-1)
 
-    def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
-        all_labels = []
-        for key in self.tf_label_data.keys():
-            if key.startswith(LABEL_FEATURES):
-                all_labels.append(
-                    self._combine_sparse_dense_features(self.tf_label_data[key], key)
-                )
-
-        all_labels = tf.concat(all_labels, axis=-1)
-        all_labels = tf.squeeze(all_labels, axis=1)
-        all_labels_embed = self._embed_label(all_labels)
-
-        return all_labels, all_labels_embed
-
     @staticmethod
     def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
         mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
@@ -870,26 +867,25 @@ class KnowledgeBaseModel(RasaModel):
 
         rule_to_predict = tf.cast(tf.squeeze(batch[f"{LABEL_IDS}"], axis=0), tf.float32)
         output_so_far = tf.cast(
-            tf.squeeze(batch[f"{LABEL_FEATURES}_so_far"], axis=0), tf.float32
+            tf.squeeze(batch[f"{RULES}_so_far"], axis=0), tf.float32
         )
         possible_next_rules = tf.cast(
-            tf.squeeze(batch[f"{LABEL_FEATURES}_possible_next_rules"], axis=0),
-            tf.float32,
+            tf.squeeze(batch[f"{RULES}_possible_next_rules"], axis=0), tf.float32
         )
 
         dialogue_in = self._preprocess_batch(batch)
 
         dialogue_encoded, mask = self._encoded_dialogue(dialogue_in, sequence_lengths)
 
-        database_features = tf.convert_to_tensor(
-            self.database_features, dtype=tf.float32
-        )
-        database_features = self._tf_layers[f"ffnn.{DATABASE}"](
-            database_features, self._training
-        )
+        # database_features = tf.convert_to_tensor(
+        #     self.database_features, dtype=tf.float32
+        # )
+        # database_features = self._tf_layers[f"ffnn.{DATABASE}"](
+        #     database_features, self._training
+        # )
 
-        # TODO
-        in_features = tf.concat([database_features, dialogue_encoded], axis=0)
+        # TODO concat dialogue features with database features
+        # in_features = tf.concat([database_features, dialogue_encoded], axis=0)
 
         output_so_far = tf.expand_dims(output_so_far, axis=1)
         output_so_far = self._tf_layers[f"ffnn.{LABEL}"](output_so_far, self._training)
@@ -929,14 +925,31 @@ class KnowledgeBaseModel(RasaModel):
         dialogue_in = self._preprocess_batch(batch)
         sequence_lengths = tf.expand_dims(tf.shape(dialogue_in)[1], axis=0)
 
-        if self.all_labels_embed is None:
-            _, self.all_labels_embed = self._create_all_labels_embed()
+        output_so_far = tf.cast(
+            tf.squeeze(batch[f"{RULES}_so_far"], axis=0), tf.float32
+        )
+        possible_next_rules = tf.cast(
+            tf.squeeze(batch[f"{RULES}_possible_next_rules"], axis=0), tf.float32
+        )
+
+        all_labels_embed = self._embed_label(possible_next_rules)
 
         dialogue_embed, mask = self._encoded_dialogue(dialogue_in, sequence_lengths)
 
+        output_so_far = tf.expand_dims(output_so_far, axis=1)
+        output_so_far = self._tf_layers[f"ffnn.{LABEL}"](output_so_far, self._training)
+
+        dialogue_transformed = self._tf_layers["transformer_decoder"](
+            output_so_far,
+            dialogue_in,
+            1 - tf.expand_dims(mask, axis=-1),
+            self._training,
+        )
+        dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
+
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
-            dialogue_embed[:, :, tf.newaxis, :],
-            self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
+            dialogue_transformed[:, :, tf.newaxis, :],
+            all_labels_embed[tf.newaxis, tf.newaxis, :, :],
             mask,
         )
 
