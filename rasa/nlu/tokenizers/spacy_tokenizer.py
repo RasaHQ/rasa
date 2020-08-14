@@ -1,5 +1,5 @@
 import typing
-from typing import Text, List, Any, Type
+from typing import Text, List, Any, Type, Optional
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.components import Component
