@@ -202,11 +202,11 @@ class EntityExtractor(Component):
         return entities
 
     def convert_bilou_tagging_predictions_into_entities(
-            self,
-            text: Text,
-            tokens: List[Token],
-            tags: Dict[Text, List[Text]],
-            confidences: Optional[Dict[Text, List[float]]] = None,
+        self,
+        text: Text,
+        tokens: List[Token],
+        tags: Dict[Text, List[Text]],
+        confidences: Optional[Dict[Text, List[float]]] = None,
     ) -> List[Dict[Text, Any]]:
         """
         Convert bilou tagging predictions into entities.
@@ -239,13 +239,19 @@ class EntityExtractor(Component):
             current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
 
             new_tag_found = (
-
-                    (last_entity_tag != current_entity_tag and
-                     (bilou_utils.LAST != bilou_utils.bilou_prefix_from_tag(current_entity_tag) and
-                      bilou_utils.INSIDE != bilou_utils.bilou_prefix_from_tag(current_entity_tag) ) )
-                    or last_group_tag != current_group_tag
-                    or last_role_tag != current_role_tag
-                    or bilou_utils.BEGINNING == bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                (
+                    last_entity_tag != current_entity_tag
+                    and (
+                        bilou_utils.LAST
+                        != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                        and bilou_utils.INSIDE
+                        != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                    )
+                )
+                or last_group_tag != current_group_tag
+                or last_role_tag != current_role_tag
+                or bilou_utils.BEGINNING
+                == bilou_utils.bilou_prefix_from_tag(current_entity_tag)
             )
             last_entity_tag = current_entity_tag
 
@@ -289,10 +295,11 @@ class EntityExtractor(Component):
 
         for entity in entities:
             entity[ENTITY_ATTRIBUTE_VALUE] = text[
-                                             entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
-                                             ]
+                entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
+            ]
 
         return entities
+
     @staticmethod
     def _update_confidence_values(
         entities: List[Dict[Text, Any]], confidences: Dict[Text, List[float]], idx: int
