@@ -13,7 +13,12 @@ from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
-LOCK_LIFETIME = int(os.environ.get("TICKET_LOCK_LIFETIME", 0)) or DEFAULT_LOCK_LIFETIME
+
+def _get_lock_lifetime() -> int:
+    return int(os.environ.get("TICKET_LOCK_LIFETIME", 0)) or DEFAULT_LOCK_LIFETIME
+
+
+LOCK_LIFETIME = _get_lock_lifetime()
 DEFAULT_SOCKET_TIMEOUT_IN_SECONDS = 10
 
 
