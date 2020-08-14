@@ -71,14 +71,13 @@ the response depend on the value of a categorical `product` slot that comes from
 This also makes it easy to handle the case when no entity is provided,
 e.g. "How do I migrate to Rasa?" For example:
 
-
 ```yaml
 stories:
 - story: migrate from IBM Watson
   steps:
     - intent: migration
       entities:
-      - product: IBM Watson
+      - product
     - slot_was_set:
       - product: Watson
     - action: utter_watson_migration
@@ -87,7 +86,7 @@ stories:
   steps:
     - intent: migration
       entities:
-      - product: Dialogflow
+      - product
     - slot_was_set:
       - product: Dialogflow
     - action: utter_dialogflow_migration
