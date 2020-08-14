@@ -374,7 +374,7 @@ def _message_from_conversation_event(event: Event) -> Optional[Message]:
 
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
-    return Message(event.text, data={INTENT_NAME: event.intent_name})
+    return Message(data={TEXT: event.text, INTENT_NAME: event.intent_name})
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:

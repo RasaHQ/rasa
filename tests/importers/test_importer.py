@@ -18,7 +18,7 @@ from rasa.importers.rasa import RasaFileImporter
 
 from rasa.importers.multi_project import MultiProjectImporter
 
-from rasa.nlu.constants import ACTION_NAME, INTENT_NAME, ACTION_TEXT
+from rasa.nlu.constants import ACTION_NAME, INTENT_NAME, ACTION_TEXT, TEXT
 from rasa.nlu.training_data import Message
 
 
@@ -213,11 +213,10 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
 
     # Check if the NLU training data was added correctly from the story training data
     expected_additional_messages = [
-        Message("greet_from_stories", data={INTENT_NAME: "greet_from_stories"}),
-        Message("", data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: ""}),
-        Message("how are you doing?", data={INTENT_NAME: None}),
+        Message(data={TEXT: "greet_from_stories", INTENT_NAME: "greet_from_stories"}),
+        Message(data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: ""}),
+        Message(data={TEXT: "how are you doing?", INTENT_NAME: None}),
         Message(
-            "",
             data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: "Hi Joey.",},
         ),
     ]

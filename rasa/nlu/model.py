@@ -16,6 +16,8 @@ from rasa.nlu.featurizers.featurizer import Featurizer  # pytype: disable=pyi-er
 from rasa.nlu.tokenizers import tokenizer  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
+
+
 from rasa.nlu.constants import (
     INTENT_NAME_KEY,
     TEXT,
@@ -23,6 +25,7 @@ from rasa.nlu.constants import (
     ENTITIES,
     INTENT_CONFIDENCE_KEY,
 )
+
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
@@ -391,7 +394,10 @@ class Interpreter:
             output["text"] = ""
             return output
 
-        message = Message(text, self.default_output_attributes(), time=time)
+        data = self.default_output_attributes()
+        data[TEXT] = text
+
+        message = Message(data=data, time=time)
 
         for component in self.pipeline:
             component.process(message, **self.context)
