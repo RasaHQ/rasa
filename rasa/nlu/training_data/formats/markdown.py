@@ -6,26 +6,17 @@ from json import JSONDecodeError
 from typing import Any, Text, Optional, Tuple, Dict, Match
 
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.core.constants import INTENT_MESSAGE_PREFIX
-from rasa.nlu.constants import (
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_START,
-)
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
 from rasa.utils.common import raise_warning
+from rasa.utils.io import encode_string
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
 GROUP_ENTITY_DICT = "entity_dict"
 GROUP_ENTITY_TEXT = "entity_text"
-GROUP_COMPLETE_MATCH = 0
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -40,20 +31,6 @@ MARKDOWN_SECTION_MARKERS = [f"## {s}:" for s in AVAILABLE_SECTIONS]
 item_regex = re.compile(r"\s*[-*+]\s*(.+)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
-
-ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
-
-ESCAPE = re.compile(r"[\b\f\n\r\t]")
-
-
-def encode_string(s: Text) -> Text:
-    """Return an encoded python string."""
-
-    def replace(match: Match) -> Text:
-        return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
-
-    return ESCAPE.sub(replace, s)
-
 
 logger = logging.getLogger(__name__)
 
@@ -276,7 +253,7 @@ class MarkdownWriter(TrainingDataWriter):
             prepend_newline = True
 
             lines += [
-                self._generate_item_md(self.generate_message_md(example))
+                self.generate_list_item(self.generate_message(example))
                 for example in examples
             ]
 
@@ -293,7 +270,7 @@ class MarkdownWriter(TrainingDataWriter):
             if i == 0 or entity_synonyms[i - 1][1] != synonym[1]:
                 md += self._generate_section_header_md(SYNONYM, synonym[1])
 
-            md += self._generate_item_md(synonym[0])
+            md += self.generate_list_item(synonym[0])
 
         return md
 
@@ -307,7 +284,7 @@ class MarkdownWriter(TrainingDataWriter):
             if i == 0 or regex_features[i - 1]["name"] != regex_feature["name"]:
                 md += self._generate_section_header_md(REGEX, regex_feature["name"])
 
-            md += self._generate_item_md(regex_feature["pattern"])
+            md += self.generate_list_item(regex_feature["pattern"])
 
         return md
 
@@ -322,7 +299,7 @@ class MarkdownWriter(TrainingDataWriter):
             elements = lookup_table["elements"]
             if isinstance(elements, list):
                 for e in elements:
-                    md += self._generate_item_md(e)
+                    md += self.generate_list_item(e)
             else:
                 md += self._generate_fname_md(elements)
         return md
@@ -339,71 +316,7 @@ class MarkdownWriter(TrainingDataWriter):
         return f"{prefix}## {section_type}:{title}\n"
 
     @staticmethod
-    def _generate_item_md(text: Text) -> Text:
-        """Generates markdown for a list item."""
-
-        return f"- {encode_string(text)}\n"
-
-    @staticmethod
     def _generate_fname_md(text: Text) -> Text:
         """Generates markdown for a lookup table file path."""
 
         return f"  {encode_string(text)}\n"
-
-    @staticmethod
-    def generate_message_md(message: Dict[Text, Any]) -> Text:
-        """Generates markdown for a message object."""
-
-        md = ""
-        text = message.get("text", "")
-
-        pos = 0
-
-        # If a message was prefixed with `INTENT_MESSAGE_PREFIX` (this can only happen
-        # in end-to-end stories) then potential entities were provided in the json
-        # format (e.g. `/greet{"name": "Rasa"}) and we don't have to add the NLU
-        # entity annotation
-        if not text.startswith(INTENT_MESSAGE_PREFIX):
-            entities = sorted(message.get("entities", []), key=lambda k: k["start"])
-
-            for entity in entities:
-                md += text[pos : entity["start"]]
-                md += MarkdownWriter.generate_entity_md(text, entity)
-                pos = entity["end"]
-
-        md += text[pos:]
-
-        return md
-
-    @staticmethod
-    def generate_entity_md(text: Text, entity: Dict[Text, Any]) -> Text:
-        """Generates markdown for an entity object."""
-        import json
-
-        entity_text = text[
-            entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
-        ]
-        entity_type = entity.get(ENTITY_ATTRIBUTE_TYPE)
-        entity_value = entity.get(ENTITY_ATTRIBUTE_VALUE)
-        entity_role = entity.get(ENTITY_ATTRIBUTE_ROLE)
-        entity_group = entity.get(ENTITY_ATTRIBUTE_GROUP)
-
-        if entity_value and entity_value == entity_text:
-            entity_value = None
-
-        use_short_syntax = (
-            entity_value is None and entity_role is None and entity_group is None
-        )
-
-        if use_short_syntax:
-            return f"[{entity_text}]({entity_type})"
-
-        entity_dict = {
-            ENTITY_ATTRIBUTE_TYPE: entity_type,
-            ENTITY_ATTRIBUTE_ROLE: entity_role,
-            ENTITY_ATTRIBUTE_GROUP: entity_group,
-            ENTITY_ATTRIBUTE_VALUE: entity_value,
-        }
-        entity_dict = {k: v for k, v in entity_dict.items() if v is not None}
-
-        return f"[{entity_text}]{json.dumps(entity_dict)}"

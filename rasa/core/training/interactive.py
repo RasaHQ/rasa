@@ -6,14 +6,15 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
 
 import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
 
+from rasa.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.nlu.training_data.loading import MARKDOWN, RASA
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from terminaltables import AsciiTable, SingleTable
@@ -832,7 +833,9 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
     # need to guess the format of the file before opening it to avoid a read
     # in a write
     nlu_format = _get_nlu_target_format(export_nlu_path)
-    if nlu_format == MARKDOWN:
+    if nlu_format == RASA_YAML:
+        stringified_training_data = nlu_data.nlu_as_yaml()
+    elif nlu_format == MARKDOWN:
         stringified_training_data = nlu_data.nlu_as_markdown()
     else:
         stringified_training_data = nlu_data.nlu_as_json()
@@ -841,13 +844,21 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:
+    from rasa.data import (
+        YAML_FILE_EXTENSIONS,
+        MARKDOWN_FILE_EXTENSION,
+        JSON_FILE_EXTENSION,
+    )
+
     guessed_format = loading.guess_format(export_path)
 
-    if guessed_format not in {MARKDOWN, RASA}:
-        if export_path.endswith(".json"):
+    if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
+        if export_path.endswith(JSON_FILE_EXTENSION):
             guessed_format = RASA
-        else:
+        elif export_path.endswith(MARKDOWN_FILE_EXTENSION):
             guessed_format = MARKDOWN
+        elif Path(export_path).suffix in YAML_FILE_EXTENSIONS:
+            guessed_format = RASA_YAML
 
     return guessed_format
 
@@ -1111,7 +1122,7 @@ async def _validate_action(
 
 def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
-    from rasa.nlu.training_data.formats import MarkdownWriter
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data["text"]
@@ -1119,7 +1130,7 @@ def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     if not parse_data.get("entities"):
         parse_data["entities"] = []
 
-    return MarkdownWriter.generate_message_md(parse_data)
+    return TrainingDataWriter.generate_message(parse_data)
 
 
 def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -> bool:

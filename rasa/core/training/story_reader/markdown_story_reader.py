@@ -198,7 +198,9 @@ class MarkdownStoryReader(StoryReader):
         parsed_messages = await asyncio.gather(
             *[self._parse_message(m, line_num) for m in messages]
         )
-        self.current_step_builder.add_user_messages(parsed_messages)
+        self.current_step_builder.add_user_messages(
+            parsed_messages, self.unfold_or_utterances
+        )
 
     # TODO: Hack by Genie for temporary Markdown support
     async def add_user_messages_e2e(self, messages: List[Text], line_num: int) -> None:
