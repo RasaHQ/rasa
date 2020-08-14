@@ -103,15 +103,21 @@ class EvaluationStore:
             or self.action_predictions != self.action_targets
         )
 
-    def find_predicted_entity_from_target(self, target_entity: Dict[Text, Any]) -> Dict[Text, Any]:
+    def find_predicted_entity_from_target(
+        self, target_entity: Dict[Text, Any]
+    ) -> Dict[Text, Any]:
         """
         Return the predicted entity associated with the target one if the entity was predicted correctly, None otherwise.
         """
-        predicted_entities = list(filter(lambda predicted_entity:
-                                         target_entity.get('text') == predicted_entity.get('text')
-                                         and target_entity.get('start') == predicted_entity.get('start')
-                                         and target_entity.get('end') == predicted_entity.get('end'),
-                                         self.entity_predictions))
+        predicted_entities = list(
+            filter(
+                lambda predicted_entity: target_entity.get("text")
+                == predicted_entity.get("text")
+                and target_entity.get("start") == predicted_entity.get("start")
+                and target_entity.get("end") == predicted_entity.get("end"),
+                self.entity_predictions,
+            )
+        )
         return predicted_entities[0] if len(predicted_entities) > 0 else None
 
     def serialise(self) -> Tuple[List[Text], List[Text]]:
@@ -130,13 +136,13 @@ class EvaluationStore:
         for gold in self.entity_targets:
             predicted = self.find_predicted_entity_from_target(gold)
             predicted_entities.append(
-                TrainingDataWriter.generate_entity(predicted.get("text"), predicted) if predicted else "None"
+                TrainingDataWriter.generate_entity(predicted.get("text"), predicted)
+                if predicted
+                else "None"
             )
 
         predictions = (
-            self.action_predictions
-            + self.intent_predictions
-            + predicted_entities
+            self.action_predictions + self.intent_predictions + predicted_entities
         )
 
         # sklearn does not cope with lists of unequal size, nor None values
