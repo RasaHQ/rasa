@@ -58,6 +58,7 @@ KEY_ENTITIES = "entities"
 KEY_RESPONSES = "responses"
 KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
+KEY_E2E_ACTIONS = "e2e_actions"
 
 ALL_DOMAIN_KEYS = [
     KEY_SLOTS,
@@ -66,6 +67,7 @@ ALL_DOMAIN_KEYS = [
     KEY_ENTITIES,
     KEY_INTENTS,
     KEY_RESPONSES,
+    KEY_E2E_ACTIONS,
 ]
 
 
@@ -188,6 +190,7 @@ class Domain:
             utter_templates,
             data.get(KEY_ACTIONS, []),
             data.get(KEY_FORMS, []),
+            data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             **additional_arguments,
         )
@@ -278,7 +281,7 @@ class Domain:
             if form in domain_dict[KEY_ACTIONS]:
                 domain_dict[KEY_ACTIONS].remove(form)
 
-        for key in [KEY_ENTITIES, KEY_ACTIONS]:
+        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_RESPONSES, KEY_SLOTS]:
@@ -463,6 +466,7 @@ class Domain:
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         forms: List[Union[Text, Dict]],
+        e2e_action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
@@ -481,6 +485,7 @@ class Domain:
 
         self.slots = slots
         self.templates = templates
+        self.e2e_action_texts = e2e_action_texts or []
         self.session_config = session_config
 
         # only includes custom actions and utterance actions
@@ -490,6 +495,7 @@ class Domain:
         self.action_names = (
             action.combine_user_with_default_actions(self.user_actions)
             + self.form_names
+            + self.e2e_action_texts
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -669,11 +675,6 @@ class Domain:
     @lazy_property
     def form_states(self) -> List[Text]:
         return [f"active_form_{f}" for f in self.form_names]
-
-    def index_of_state(self, state_name: Text) -> Optional[int]:
-        """Provide the index of a state."""
-
-        return self.input_state_map.get(state_name)
 
     @lazy_property
     def input_state_map(self) -> Dict[Text, int]:
@@ -861,6 +862,7 @@ class Domain:
             KEY_RESPONSES: self.templates,
             KEY_ACTIONS: self.user_actions,  # class names of the actions
             KEY_FORMS: self.forms,
+            KEY_E2E_ACTIONS: self.e2e_action_texts,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:
