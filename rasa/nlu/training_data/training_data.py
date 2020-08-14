@@ -23,6 +23,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     INTENT,
     ENTITIES,
+    TEXT,
 )
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
@@ -250,7 +251,7 @@ class TrainingData:
             assistant_utterances = self.responses.get(story_lookup_intent, [])
             if assistant_utterances:
                 # selecting only first assistant utterance for now
-                example.set(RESPONSE, assistant_utterances[0].get("text"))
+                example.set(RESPONSE, assistant_utterances[0].get(TEXT))
 
     def nlu_as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
@@ -303,14 +304,14 @@ class TrainingData:
 
         return RasaYAMLWriter().dumps(no_responses_training_data)
 
-    def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
+    def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
 
         if Path(filename).suffix in JSON_FILE_EXTENSIONS:
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_json(indent=2))
         elif Path(filename).suffix in MARKDOWN_FILE_EXTENSIONS:
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_markdown())
         elif Path(filename).suffix in YAML_FILE_EXTENSIONS:
-            rasa.nlu.utils.write_to_file(filename, self.nlu_as_markdown())
+            rasa.nlu.utils.write_to_file(filename, self.nlu_as_yaml())
         else:
             ValueError(
                 "Unsupported file format detected. Supported file formats are 'json' "
@@ -417,7 +418,7 @@ class TrainingData:
 
         # emit warnings for response intents without a response template
         for example in self.training_examples:
-            if example.get(RESPONSE_KEY_ATTRIBUTE) and not example.get(RESPONSE):
+            if example.get(RESPONSE_KEY_ATTRIBUTE):
                 raise_warning(
                     f"Your training data contains an example '{example.text[:20]}...' "
                     f"for the {example.get_combined_intent_response_key()} intent. "
@@ -459,7 +460,14 @@ class TrainingData:
     def _needed_responses_for_examples(
         self, examples: List[Message]
     ) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Get all responses used in any of the examples."""
+        """Get all responses used in any of the examples.
+
+        Args:
+            examples: messages to select responses by.
+
+        Returns:
+            All responses that appear at least once in the list of examples.
+        """
 
         responses = {}
         for ex in examples:

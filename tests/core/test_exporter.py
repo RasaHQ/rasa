@@ -144,7 +144,7 @@ def test_fetch_events_within_time_range_tracker_contains_no_events():
         exporter._fetch_events_within_time_range()
 
 
-def test_fetch_events_within_time_range_with_session_events(tmp_path):
+def test_fetch_events_within_time_range_with_session_events(tmp_path: Path):
     conversation_id = "test_fetch_events_within_time_range_with_sessions"
 
     tracker_store = SQLTrackerStore(
