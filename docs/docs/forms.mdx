@@ -59,11 +59,11 @@ triggering a form, you can for example use the following rule:
   steps:
   - intent: intent_which_activates_form
   - action: your_form
-  - form: your_form
+  - active_loop: your_form
 ```
 
 :::note
-The `form: your_form` step indicates that the form should be activated after
+The `active_loop: your_form` step indicates that the form should be activated after
 `your_form` was run.
 :::
 
@@ -80,11 +80,11 @@ The following example runs the utterance `utter_all_slots_filled` as soon as the
 - rule: Submit form
   condition:
   # Condition that form is active.
-  - form: your_form
+  - active_loop: your_form
   steps:
   # Form is deactivated
   - action: your_form
-  - form: null
+  - active_loop: null
   - slot: requested_slot
     value: null
   # The action we want to run when the form is submitted.
@@ -199,14 +199,14 @@ you could add a story like this:
 - rule: Example of an unhappy path
   condition:
   # Condition that form is active.
-  - form: your_form
+  - active_loop: your_form
   steps:
   # This unhappy path handles the case of an intent `chitchat`.
   - intent: chitchat
   - action: utter_chitchat
   # Return to form after handling the `chitchat` intent
   - action: your_form
-  - form: your_form
+  - active_loop: your_form
 ```
 
 In some situations, users may change their mind in the middle of the form action
@@ -220,13 +220,13 @@ look as follows:
 - rule: Example of an unhappy path
   condition:
   # Condition that form is active.
-  - form: your_form
+  - active_loop: your_form
   steps:
   - intent: stop
   - action: utter_ask_continue
   - intent: stop
   - action: action_deactivate_form
-  - form: null
+  - active_loop: null
 ```
 
 It is **strongly** recommended that you build these rules or stories using 
