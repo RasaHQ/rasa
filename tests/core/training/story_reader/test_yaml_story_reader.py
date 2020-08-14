@@ -286,3 +286,22 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
         reader.read_from_parsed_yaml(yaml_content)
 
     assert not len(record)
+
+
+async def test_active_loop_is_parsed(default_domain: Domain):
+    stories = (
+        f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
+        f"stories:\n"
+        f"- story: name\n"
+        f"  steps:\n"
+        f"  - intent: greet\n"
+        f"  - active_loop: null"
+    )
+
+    reader = YAMLStoryReader(RegexInterpreter(), default_domain)
+    yaml_content = io_utils.read_yaml(stories)
+
+    with pytest.warns(None) as record:
+        reader.read_from_parsed_yaml(yaml_content)
+
+    assert not len(record)

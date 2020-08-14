@@ -30,6 +30,23 @@ how you can migrate from one version to another.
   component in your `policies` configuration (`config.yml`) you can replace it
   with `TEDPolicy`. It accepts the same configuration parameters.
 
+### Training data files
+
+You can convert existing NLU and Stories training data files in the `Markdown` format
+to the new `YAML` format using following commands:
+
+```bash
+rasa data convert nlu -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
+rasa data convert core -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
+```
+
+Converted files will have the same names as the original ones but with a
+`_converted.yml` suffix.
+
+Please note, that it's not currently possible to convert stories that contain forms
+automatically, these stories will be skipped and should be converted manually, see
+`Rule Policy` below.
+
 ### Rule Policy
 
 With the introduction of [Rules](./rules.mdx), the following policies are
