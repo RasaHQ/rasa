@@ -197,6 +197,7 @@ class Domain:
             utter_templates,
             data.get(KEY_ACTIONS, []),
             data.get(KEY_FORMS, []),
+            data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             **additional_arguments,
         )

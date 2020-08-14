@@ -341,6 +341,7 @@ class E2EImporter(TrainingDataImporter):
         training_datasets += await asyncio.gather(
             self.importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
+            #self._additional_training_data_from_action_names_in_domain()
         )
 
         return reduce(
@@ -362,6 +363,19 @@ class E2EImporter(TrainingDataImporter):
             f"from the story training data."
         )
         return TrainingData(additional_messages_from_stories)
+
+    async def _additional_training_data_from_action_names_in_domain(self) -> TrainingData:
+        from rasa.nlu.training_data import Message
+        from rasa.core.actions import action
+
+        domain = await self.get_domain()
+
+        additional_messages_from_actions_in_domain = [
+            Message.build_from_action(action_name=action_name)
+            for action_name in domain.action_names if action_name not in domain.e2e_action_texts
+        ]
+
+        return TrainingData(additional_messages_from_actions_in_domain)
 
 
 def _message_from_conversation_event(event: Event) -> Optional[Message]:
