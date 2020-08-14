@@ -825,12 +825,7 @@ def create_app(
             "evaluate your model.",
         )
 
-        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-            test_data = _training_payload_from_yaml(request).get("training_files")
-        else:
-            test_data = rasa.utils.io.create_temporary_file(
-                request.body, mode="w+b", suffix=".md"
-            )
+        test_data = _test_data_file_from_payload(request)
 
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
@@ -855,12 +850,7 @@ def create_app(
             "evaluate your model.",
         )
 
-        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-            test_data = _training_payload_from_yaml(request).get("training_files")
-        else:
-            test_data = rasa.utils.io.create_temporary_file(
-                request.body, mode="w+b", suffix=".md"
-            )
+        test_data = _test_data_file_from_payload(request)
 
         eval_agent = app.agent
 
@@ -1082,6 +1072,15 @@ def _get_output_channel(
         matching_channels,
         CollectingOutputChannel(),
     )
+
+
+def _test_data_file_from_payload(request: Request) -> Text:
+    if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+        return _training_payload_from_yaml(request).get("training_files")
+    else:
+        return rasa.utils.io.create_temporary_file(
+            request.body, mode="w+b", suffix=".md"
+        )
 
 
 def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool]]:

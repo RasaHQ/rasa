@@ -2,6 +2,7 @@ import logging
 import typing
 from typing import Any, Dict, List, Text
 
+from rasa.nlu.constants import TEXT
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
@@ -56,7 +57,7 @@ class NLGMarkdownReader(TrainingDataReader):
                     utterance = "-".join(line.split("- ")[1:])
                     # utterance might contain escaped newlines that we want to unescape
                     utterance = utterance.replace("\\n", "\n")
-                    story_bot_utterances.append({"text": utterance})
+                    story_bot_utterances.append({TEXT: utterance})
 
                 elif line.startswith("*"):
                     # reached a user intent

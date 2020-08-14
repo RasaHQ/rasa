@@ -361,6 +361,9 @@ def test_nlg_multimedia_load_dump_roundtrip():
         - text: Where do you want to check the weather?
           image: https://example.com/weather.jpg
           temperature: 25°C
+
+        chitchat/ask_name:
+        - text: My name is Sara.
     """
     )
 

@@ -13,7 +13,7 @@ from typing import (
     Optional,
 )
 
-from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
+from rasa.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 
 import rasa.utils.io as io_utils
@@ -70,8 +70,8 @@ class RasaYAMLReader(TrainingDataReader):
 
         If the string is not in the right format, an exception will be raised."""
         try:
-            validate_yaml_schema(string, NLU_SCHEMA_FILE)
-        except InvalidYamlFileError as e:
+            validation.validate_yaml_schema(string, NLU_SCHEMA_FILE)
+        except validation.InvalidYamlFileError as e:
             raise ValueError from e
 
     def reads(self, string: Text, **kwargs: Any) -> "TrainingData":
@@ -359,12 +359,8 @@ class RasaYAMLReader(TrainingDataReader):
 
         try:
             content = io_utils.read_yaml_file(filename)
-            if KEY_NLU in content:
-                return True
-            elif KEY_RESPONSES in content:
-                return True
-            else:
-                return False
+
+            return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
         except (YAMLError, Warning) as e:
             logger.error(
                 f"Tried to check if '{filename}' is an NLU file, but failed to "
@@ -407,7 +403,9 @@ class RasaYAMLWriter(TrainingDataWriter):
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
             LATEST_TRAINING_DATA_FORMAT_VERSION
         )
-        result[KEY_NLU] = nlu_items
+
+        if nlu_items:
+            result[KEY_NLU] = nlu_items
 
         if training_data.responses:
             result[KEY_RESPONSES] = training_data.responses

@@ -2,7 +2,7 @@ from typing import Any, Text, List, Dict
 
 
 def add_item_to_lookup_tables(
-    title: Text, item: Text, existing_lookup_tables: List[Dict[Text, Any]]
+    title: Text, item: Text, existing_lookup_tables: List[Dict[Text, List[Text]]]
 ) -> None:
     """Takes a list of lookup table dictionaries.  Finds the one associated
     with the current lookup, then adds the item to the list.

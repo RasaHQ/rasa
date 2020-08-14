@@ -327,10 +327,19 @@ class ResponseSelector(DIETClassifier):
         return model_data
 
     def _full_response(self, label: Dict[Text, Any]) -> Optional[Dict[Text, Any]]:
-        """Given a label return the full response based on the labels id."""
+        """Given a label return the full response based on the labels id.
+
+        Args:
+            label: predicted label by the selector
+
+        Returns:
+            The match for the label that was found in the known responses. In
+            contrast to the predicted label, the response doesn't only contain
+            the text but also buttons, images, ...
+        """
         for key, responses in self.responses.items():
             for response in responses:
-                if hash(response.get("text", "")) == label.get("id"):
+                if hash(response.get(TEXT, "")) == label.get("id"):
                     return response
         return None
 
@@ -357,7 +366,7 @@ class ResponseSelector(DIETClassifier):
         )
 
         prediction_dict = {
-            "response": self._full_response(label) or {"text": label.get("name")},
+            "response": self._full_response(label) or {TEXT: label.get("name")},
             "ranking": label_ranking,
             "full_retrieval_intent": retrieval_intent_name,
         }

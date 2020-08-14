@@ -272,8 +272,11 @@ class TrainingData:
         return NLGMarkdownWriter().dumps(self)
 
     def nlg_as_yaml(self) -> Text:
-        """Generates yaml representation of the response phrases (NLG) of
-        TrainingData."""
+        """Generates yaml representation of the response phrases (NLG) of TrainingData.
+
+        Returns:
+            responses in yaml format as a string
+        """
         from rasa.nlu.training_data.formats.rasa_yaml import (  # pytype: disable=pyi-error
             RasaYAMLWriter,
         )

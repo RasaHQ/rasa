@@ -65,6 +65,8 @@ ACTION_BACK_NAME = "action_back"
 
 RULE_SNIPPET_ACTION_NAME = "..."
 
+FULL_RETRIEVAL_INTENT = "full_retrieval_intent"
+
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
@@ -245,7 +247,7 @@ class ActionRetrieveResponse(Action):
         logger.debug(f"Picking response from selector of type {query_key}")
         selected = response_selector_properties[query_key]
         message = selected[OPEN_UTTERANCE_PREDICTION_KEY]
-        message["template_name"] = selected["full_retrieval_intent"]
+        message["template_name"] = selected[FULL_RETRIEVAL_INTENT]
 
         return [create_bot_utterance(message)]
 
