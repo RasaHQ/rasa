@@ -542,6 +542,30 @@ python-versions = "*"
 version = "0.6.2"
 
 [[package]]
+category = "dev"
+description = "Docspec is a JSON object specification for representing API documentation of programming languages."
+name = "docspec"
+optional = false
+python-versions = "*"
+version = "0.2.0"
+
+[package.dependencies]
+"nr.databind.core" = ">=0.0.19,<0.1.0"
+"nr.databind.json" = ">=0.0.9,<0.1.0"
+
+[[package]]
+category = "dev"
+description = "A parser based on lib2to3 producing docspec data from Python source code."
+name = "docspec-python"
+optional = false
+python-versions = "*"
+version = "0.0.7"
+
+[package.dependencies]
+docspec = ">=0.2.0,<0.3.0"
+"nr.sumtype" = ">=0.0.3,<0.1.0"
+
+[[package]]
 category = "main"
 description = "Docutils -- Python Documentation Utilities"
 name = "docutils"
@@ -1386,6 +1410,150 @@ python-versions = "*"
 version = "1.10.0.post1"
 
 [[package]]
+category = "dev"
+description = "Useful container datatypes for Python 2 and 3."
+name = "nr.collections"
+optional = false
+python-versions = "*"
+version = "0.0.1"
+
+[package.dependencies]
+"nr.metaclass" = ">=0.0.1,<0.1.0"
+six = ">=1.11.0,<2.0.0"
+
+[package.extras]
+test = ["nr.fs (>=1.5.0,<2.0.0)"]
+
+[[package]]
+category = "dev"
+description = "Bind structured data directly to typed objects."
+name = "nr.databind.core"
+optional = false
+python-versions = "*"
+version = "0.0.21"
+
+[package.dependencies]
+"nr.collections" = ">=0.0.1,<1.0.0"
+"nr.interface" = ">=0.0.1,<0.1.0"
+"nr.pylang.utils" = ">=0.0.3,<0.1.0"
+"nr.stream" = ">=0.0.1,<0.1.0"
+
+[package.extras]
+test = ["pytest", "pyyaml"]
+
+[[package]]
+category = "dev"
+description = "Deserialize JSON into Python objects and reverse."
+name = "nr.databind.json"
+optional = false
+python-versions = "*"
+version = "0.0.13"
+
+[package.dependencies]
+"nr.collections" = ">=0.0.1,<1.0.0"
+"nr.databind.core" = ">=0.0.16,<0.1.0"
+"nr.interface" = ">=0.0.1,<0.1.0"
+"nr.parsing.date" = ">=0.1.0,<1.0.0"
+"nr.pylang.utils" = ">=0.0.1,<0.1.0"
+
+[package.extras]
+test = ["pytest", "pyyaml", "flask"]
+
+[[package]]
+category = "dev"
+description = "Filesystem and path manipulation tools."
+name = "nr.fs"
+optional = false
+python-versions = "*"
+version = "1.6.2"
+
+[package.dependencies]
+six = ">=1.11.0,<2.0.0"
+
+[[package]]
+category = "dev"
+description = "Interface definitions for Python."
+name = "nr.interface"
+optional = false
+python-versions = "*"
+version = "0.0.3"
+
+[package.dependencies]
+"nr.collections" = ">=0.0.1,<1.0.0"
+"nr.metaclass" = ">=0.0.1,<0.1.0"
+"nr.pylang.utils" = ">=0.0.1,<0.1.0"
+six = ">=1.11.0,<2.0.0"
+
+[[package]]
+category = "dev"
+description = "Metaclass utilities."
+name = "nr.metaclass"
+optional = false
+python-versions = "*"
+version = "0.0.5"
+
+[[package]]
+category = "dev"
+description = "A simple and fast date parsing library. Uses dateutil for timezone offset support."
+name = "nr.parsing.date"
+optional = false
+python-versions = "*"
+version = "0.3.0"
+
+[package.dependencies]
+"nr.utils.re" = ">=0.1.0,<0.2.0"
+
+[package.extras]
+test = ["pytest", "python-dateutil"]
+
+[[package]]
+category = "dev"
+description = "Package description here."
+name = "nr.pylang.utils"
+optional = false
+python-versions = "*"
+version = "0.0.3"
+
+[package.dependencies]
+"nr.collections" = ">=0.0.1,<1.0.0"
+
+[[package]]
+category = "dev"
+description = "Use iterators like Java streams."
+name = "nr.stream"
+optional = false
+python-versions = "*"
+version = "0.0.4"
+
+[package.dependencies]
+"nr.collections" = ">=0.0.1,<1.0.0"
+"nr.pylang.utils" = ">=0.0.1,<1.0.0"
+six = ">=1.11.0,<2.0.0"
+
+[[package]]
+category = "dev"
+description = "Sumtypes in Python."
+name = "nr.sumtype"
+optional = false
+python-versions = "*"
+version = "0.0.3"
+
+[package.dependencies]
+"nr.metaclass" = ">=0.0.4,<1.0.0"
+"nr.stream" = ">=0.0.2,<1.0.0"
+
+[[package]]
+category = "dev"
+description = "This module provides some utility functions for applying regular expressions."
+name = "nr.utils.re"
+optional = false
+python-versions = "*"
+version = "0.1.0"
+
+[package.extras]
+test = ["pytest"]
+
+[[package]]
 category = "main"
 description = "NumPy is the fundamental package for array computing with Python."
 name = "numpy"
@@ -1455,6 +1623,14 @@ name = "pathspec"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "0.8.0"
+
+[[package]]
+category = "dev"
+description = "File system general utilities"
+name = "pathtools"
+optional = false
+python-versions = "*"
+version = "0.1.2"
 
 [[package]]
 category = "dev"
@@ -1589,6 +1765,34 @@ name = "pycparser"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.20"
+
+[[package]]
+category = "dev"
+description = "Create Python API documentation in Markdown format."
+name = "pydoc-markdown"
+optional = false
+python-versions = "*"
+version = "3.3.0.post1"
+
+[package.dependencies]
+PyYAML = ">=5.3,<6.0.0"
+click = ">=7.0,<8.0.0"
+docspec = ">=0.2.0,<0.3.0"
+docspec-python = ">=0.0.7,<0.1.0"
+"nr.collections" = ">=0.0.1,<0.1.0"
+"nr.databind.core" = ">=0.0.18,<0.1.0"
+"nr.databind.json" = ">=0.0.9,<0.1.0"
+"nr.fs" = ">=1.6.0,<2.0.0"
+"nr.interface" = ">=0.0.3,<0.1.0"
+requests = ">=2.23.0,<3.0.0"
+six = ">=1.11.0,<2.0.0"
+toml = ">=0.10.1,<1.0.0"
+watchdog = ">=0.10.2,<1.0.0"
+
+[package.source]
+reference = "rasa-pypi"
+type = "legacy"
+url = "https://pypi.rasa.com/simple"
 
 [[package]]
 category = "main"
@@ -2756,6 +2960,20 @@ python-versions = "*"
 version = "0.7.1"
 
 [[package]]
+category = "dev"
+description = "Filesystem events monitoring"
+name = "watchdog"
+optional = false
+python-versions = "*"
+version = "0.10.3"
+
+[package.dependencies]
+pathtools = ">=0.1.1"
+
+[package.extras]
+watchmedo = ["PyYAML (>=3.10)", "argh (>=0.24.1)"]
+
+[[package]]
 category = "main"
 description = "Measures the displayed width of unicode strings in a terminal"
 name = "wcwidth"
@@ -2872,7 +3090,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "3ddf9f1a5df8806cd286a71c4d1fd6061b357a078e4e87dace5de9d61a42a2f1"
+content-hash = "ea58e7e93693e2027a6c2bd7b6f0131472a8367df4962b9ca676a5388c95350e"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
@@ -3158,6 +3376,14 @@ docker = [
 ]
 docopt = [
     {file = "docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"},
+]
+docspec = [
+    {file = "docspec-0.2.0-py3-none-any.whl", hash = "sha256:a5bf4bfe5e940de080b282045db4f2a6aea3e745f639d34262f59791fb18107c"},
+    {file = "docspec-0.2.0.tar.gz", hash = "sha256:058894861bff860f7053188c94cbd55d1777d5d0f39f3f8487960965ab098191"},
+]
+docspec-python = [
+    {file = "docspec-python-0.0.7.tar.gz", hash = "sha256:13af366a2dc0efdc7488f7560ad169ee80992f7f792a6b8d7ad0097bba7a27ab"},
+    {file = "docspec_python-0.0.7-py3-none-any.whl", hash = "sha256:9949eda3f964aacdf39d5c84e24a72464e7e190d982cbb2714e661124fa03524"},
 ]
 docutils = [
     {file = "docutils-0.15.2-py2-none-any.whl", hash = "sha256:9e4d7ecfc600058e07ba661411a2b7de2fd0fafa17d1a7f7361cd47b1175c827"},
@@ -3463,16 +3689,19 @@ kiwisolver = [
     {file = "kiwisolver-1.2.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:443c2320520eda0a5b930b2725b26f6175ca4453c61f739fef7a5847bd262f74"},
     {file = "kiwisolver-1.2.0-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:efcf3397ae1e3c3a4a0a0636542bcad5adad3b1dd3e8e629d0b6e201347176c8"},
     {file = "kiwisolver-1.2.0-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:fccefc0d36a38c57b7bd233a9b485e2f1eb71903ca7ad7adacad6c28a56d62d2"},
+    {file = "kiwisolver-1.2.0-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:be046da49fbc3aa9491cc7296db7e8d27bcf0c3d5d1a40259c10471b014e4e0c"},
     {file = "kiwisolver-1.2.0-cp36-none-win32.whl", hash = "sha256:60a78858580761fe611d22127868f3dc9f98871e6fdf0a15cc4203ed9ba6179b"},
     {file = "kiwisolver-1.2.0-cp36-none-win_amd64.whl", hash = "sha256:556da0a5f60f6486ec4969abbc1dd83cf9b5c2deadc8288508e55c0f5f87d29c"},
     {file = "kiwisolver-1.2.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:7cc095a4661bdd8a5742aaf7c10ea9fac142d76ff1770a0f84394038126d8fc7"},
     {file = "kiwisolver-1.2.0-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:c955791d80e464da3b471ab41eb65cf5a40c15ce9b001fdc5bbc241170de58ec"},
     {file = "kiwisolver-1.2.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:603162139684ee56bcd57acc74035fceed7dd8d732f38c0959c8bd157f913fec"},
+    {file = "kiwisolver-1.2.0-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:63f55f490b958b6299e4e5bdac66ac988c3d11b7fafa522800359075d4fa56d1"},
     {file = "kiwisolver-1.2.0-cp37-none-win32.whl", hash = "sha256:03662cbd3e6729f341a97dd2690b271e51a67a68322affab12a5b011344b973c"},
     {file = "kiwisolver-1.2.0-cp37-none-win_amd64.whl", hash = "sha256:4eadb361baf3069f278b055e3bb53fa189cea2fd02cb2c353b7a99ebb4477ef1"},
     {file = "kiwisolver-1.2.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:c31bc3c8e903d60a1ea31a754c72559398d91b5929fcb329b1c3a3d3f6e72113"},
     {file = "kiwisolver-1.2.0-cp38-cp38-manylinux1_i686.whl", hash = "sha256:d52b989dc23cdaa92582ceb4af8d5bcc94d74b2c3e64cd6785558ec6a879793e"},
     {file = "kiwisolver-1.2.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:e586b28354d7b6584d8973656a7954b1c69c93f708c0c07b77884f91640b7657"},
+    {file = "kiwisolver-1.2.0-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:38d05c9ecb24eee1246391820ed7137ac42a50209c203c908154782fced90e44"},
     {file = "kiwisolver-1.2.0-cp38-none-win32.whl", hash = "sha256:d069ef4b20b1e6b19f790d00097a5d5d2c50871b66d10075dab78938dc2ee2cf"},
     {file = "kiwisolver-1.2.0-cp38-none-win_amd64.whl", hash = "sha256:18d749f3e56c0480dccd1714230da0f328e6e4accf188dd4e6884bdd06bf02dd"},
     {file = "kiwisolver-1.2.0.tar.gz", hash = "sha256:247800260cd38160c362d211dcaf4ed0f7816afb5efe56544748b21d6ad6d17f"},
@@ -3615,6 +3844,46 @@ ninja = [
     {file = "ninja-1.10.0.post1-py3-none-win_amd64.whl", hash = "sha256:39f9ab35f52b540777b77cc889ffed37182c7d55bec00f658f6f74bd5b1a4377"},
     {file = "ninja-1.10.0.post1.tar.gz", hash = "sha256:ddfac074ae408e42c617cd44f90a95bf6db94f0c846c95ef2a3a9a03438027a1"},
 ]
+"nr.collections" = [
+    {file = "nr.collections-0.0.1.tar.gz", hash = "sha256:ddf38cd6379cac546ce7abdadf024fc01cca75540e11b1d5f1aa701a33817f1c"},
+]
+"nr.databind.core" = [
+    {file = "nr.databind.core-0.0.21-py2.py3-none-any.whl", hash = "sha256:fcee082fbf24be6db90e4c5a852a8c4d305f3ab226e09d9938dbee777d8e803c"},
+    {file = "nr.databind.core-0.0.21.tar.gz", hash = "sha256:5f61f63294dea0fca8b71be6aec6df4b960bac25a7a74fbec666fadfd2b79968"},
+]
+"nr.databind.json" = [
+    {file = "nr.databind.json-0.0.13-py2.py3-none-any.whl", hash = "sha256:82af968a0eeb2c2ba2bc6f840c34b64eb4278035b9e3dfb9904e4e4ba519821d"},
+    {file = "nr.databind.json-0.0.13.tar.gz", hash = "sha256:264c489a1c99228b47f290cd9523e44b348c63ef78515e2b9ca90b3deff5658b"},
+]
+"nr.fs" = [
+    {file = "nr.fs-1.6.2.tar.gz", hash = "sha256:9a9ae664d5ac1bd2b740d458a39378dd312d8054cfb8ec5c3aed09ea036fbaa8"},
+]
+"nr.interface" = [
+    {file = "nr.interface-0.0.3-py2.py3-none-any.whl", hash = "sha256:c2b806b82cfc23e871e3364e262da015c6bd99755a649d0da01ce31f9836b4a9"},
+    {file = "nr.interface-0.0.3.tar.gz", hash = "sha256:58a99b5ec4d29edd32569a674c1a5cf929ebc34faec1bbb47edfc021821763e3"},
+]
+"nr.metaclass" = [
+    {file = "nr.metaclass-0.0.5.tar.gz", hash = "sha256:2a172e552fd1e799cdb0ecb8fd26eac8f6c22164d8dd4386f9315bfcefeb988b"},
+]
+"nr.parsing.date" = [
+    {file = "nr.parsing.date-0.3.0-py2.py3-none-any.whl", hash = "sha256:753a7b8890391aad7d7016621bcd7e5859e6f9cbf5e45fe2884d5de72d8f0b7c"},
+    {file = "nr.parsing.date-0.3.0.tar.gz", hash = "sha256:02d91e12df4482109e1538c190ac9a11cbf9c680d0760813909747bc85654c9d"},
+]
+"nr.pylang.utils" = [
+    {file = "nr.pylang.utils-0.0.3-py3-none-any.whl", hash = "sha256:5346086992162981349ca73911d90bc17540f66e71584bdab25f926f3fb843a8"},
+    {file = "nr.pylang.utils-0.0.3.tar.gz", hash = "sha256:b20b731b28dab81c8d498d7955a45afa3aa02e18c7b7398408985d53b5bb2a28"},
+]
+"nr.stream" = [
+    {file = "nr.stream-0.0.4-py2.py3-none-any.whl", hash = "sha256:3692a373e28890884657d21b4527318d98c47ba77de5bd248a7c227ef16e5045"},
+    {file = "nr.stream-0.0.4.tar.gz", hash = "sha256:6a90c6bcb3a96ee1d11c0ababfe2fbacb0b5587a5b6c54dffb8c2c29ab5d7582"},
+]
+"nr.sumtype" = [
+    {file = "nr.sumtype-0.0.3.tar.gz", hash = "sha256:9c9e943e4ca10d158bd34a6a86d27799c01464651161f9e905de2f93f588eb64"},
+]
+"nr.utils.re" = [
+    {file = "nr.utils.re-0.1.0-py2.py3-none-any.whl", hash = "sha256:f9345351462e973a0991f17470f73e911cb226fd659d01d5178b166767a495fd"},
+    {file = "nr.utils.re-0.1.0.tar.gz", hash = "sha256:7aad941dd92609a227c774ae21518fc804d613e1e6a787225a56b70075753388"},
+]
 numpy = [
     {file = "numpy-1.18.5-cp35-cp35m-macosx_10_9_intel.whl", hash = "sha256:e91d31b34fc7c2c8f756b4e902f901f856ae53a93399368d9a0dc7be17ed2ca0"},
     {file = "numpy-1.18.5-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:7d42ab8cedd175b5ebcb39b5208b25ba104842489ed59fbb29356f671ac93583"},
@@ -3657,6 +3926,9 @@ packaging = [
 pathspec = [
     {file = "pathspec-0.8.0-py2.py3-none-any.whl", hash = "sha256:7d91249d21749788d07a2d0f94147accd8f845507400749ea19c1ec9054a12b0"},
     {file = "pathspec-0.8.0.tar.gz", hash = "sha256:da45173eb3a6f2a5a487efba21f050af2b41948be6ab52b6a1e3ff22bb8b7061"},
+]
+pathtools = [
+    {file = "pathtools-0.1.2.tar.gz", hash = "sha256:7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0"},
 ]
 pep440-version-utils = [
     {file = "pep440-version-utils-0.3.0.tar.gz", hash = "sha256:ceb8c8da63b54cc555946d91829f72fe323f8d635b22fa54ef0a9800c37f50df"},
@@ -3791,6 +4063,7 @@ pycparser = [
     {file = "pycparser-2.20-py2.py3-none-any.whl", hash = "sha256:7582ad22678f0fcd81102833f60ef8d0e57288b6b5fb00323d101be910e35705"},
     {file = "pycparser-2.20.tar.gz", hash = "sha256:2d475327684562c3a96cc71adf7dc8c4f0565175cf86b6d7a404ff4c771f15f0"},
 ]
+pydoc-markdown = []
 pydot = [
     {file = "pydot-1.4.1-py2.py3-none-any.whl", hash = "sha256:67be714300c78fda5fd52f79ec994039e3f76f074948c67b5ff539b433ad354f"},
     {file = "pydot-1.4.1.tar.gz", hash = "sha256:d49c9d4dd1913beec2a997f831543c8cbd53e535b1a739e921642fe416235f01"},
@@ -4468,6 +4741,9 @@ uvloop = [
 ]
 wasabi = [
     {file = "wasabi-0.7.1.tar.gz", hash = "sha256:ee3809f4ce00e1e7f424b1572c753cff0dcaca2ca684e67e31f985033a9f070b"},
+]
+watchdog = [
+    {file = "watchdog-0.10.3.tar.gz", hash = "sha256:4214e1379d128b0588021880ccaf40317ee156d4603ac388b9adcf29165e0c04"},
 ]
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
