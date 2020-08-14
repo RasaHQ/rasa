@@ -211,7 +211,7 @@ def dump_obj_as_yaml_to_file(
         obj: Object to dump.
         should_preserve_key_order: Whether to preserve key order in `obj`.
     """
-    io_utils.write_yaml_file(
+    io_utils.write_yaml(
         obj, filename, should_preserve_key_order=should_preserve_key_order
     )
 

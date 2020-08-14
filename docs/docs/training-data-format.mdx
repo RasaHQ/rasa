@@ -1,355 +1,681 @@
 ---
 id: training-data-format
-sidebar_label: NLU Data
-title: NLU Data
-description: Read more about how to format training data with Rasa NLU for open source natural language processing.
+sidebar_label: Training Data Format
+title: Training Data Format
+description: Description of the YAML format for training data
 ---
 
-<!-- TODO: describe each different piece of the training data in a processable format. move usage information about e.g. improving classification to NLU best practices. -->
+## Overview
 
-## Data Formats
+Rasa Open Source uses [YAML](https://yaml.org/spec/1.2/spec.html) as
+a unified and extendable way to manage all training data,
+including NLU data, stories and rules. 
 
-You can provide training data as Markdown or as JSON, as a single file or as a directory containing multiple files.
-Note that Markdown is usually easier to work with.
+With the YAML format, training data can be split over any number of YAML files,
+and every file can contain any kind of data. 
+The training data parser will read the top level keys in each file to decide
+what kind of data is in a section at training time.
 
-### Markdown Format
+The [domain](glossary.mdx#domain) uses
+the same YAML format as the training data and can also be split across
+multiple files or combined in one file. The domain includes
+the definitions for [responses](domain.mdx#responses) and [forms](forms.mdx).
+See the [documentation for the domain](domain.mdx) for information on how to format your domain file.
 
-Markdown is the easiest Rasa NLU format for humans to read and write.
-Examples are listed using the unordered list syntax, e.g. minus `-`, asterisk `\*`, or plus `+`.
-Examples are grouped by intent, and entities are annotated as Markdown links,
-e.g. `[<entity text>](<entity name>)`, or by using the following syntax `[<entity-text>]{"entity": "<entity name>"}`.
-Using the latter syntax, you can also assign synonyms, roles, or groups to an entity, e.g.
-`[<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}`.
+:::note
+See the documentation for Rasa Open Source 1.x for the previous (now deprecated) formats for [NLU](https://rasa.com/docs/rasa/nlu/training-data-format/) and [stories](https://rasa.com/docs/rasa/core/stories/).
+:::
+
+### High-Level Structure
+
+Each file can contain one or more **keys** with corresponding training
+data. One file can contain multiple keys, as long as there is not more
+than one of a certain key in a single file. The available keys are:
+
+- `version`
+- `nlu`
+- `stories`
+- `rules`
+- `e2e_tests`
+
+All YAML training data files should specify the `version` key to be parsed
+correctly. If you don't specify a version key in your training data file, Rasa
+will assume you are using the latest training data format specification supported
+by the version of Rasa Open Source you have installed.
+Training data files with a version greater than is currently available in 
+the version of Rasa Open Source you have installed will be
+skipped.
+Currently, the latest training data format specification for Rasa 2.x is 2.0.
+
+### Example
+
+Here's a short example which keeps all training data in a single file:
+
+```yaml
+version: "2.0"
+
+stories:
+- story: greet and faq
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: faq
+  - action: respond_faq
+
+rules:
+- rule: Greet user
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+nlu:
+- intent: greet
+  examples: |
+  - Hey
+  - Hi
+  - hey there [Sara](name)
+
+- intent: faq/language
+  examples: |
+  - What language do you speak?
+  - Do you only handle english?
+
+e2e_tests:
+- user: |
+    hey
+  intent: greet
+- action: utter_greet
+- user: |
+    what language do you speak
+  intent: faq/language
+- action: respond_faq
+```
+
+
+## NLU Training Data
+
+[NLU](glossary.mdx#nlu) training data consists of example user utterances categorized by
+**intent**, i.e. what the user is trying to convey or accomplish with their
+message. Training examples can also include **entities**. Entities are structured
+pieces of information that can be extracted from a user's message. You can also
+add extra information such as regular expressions and lookup tables to your 
+training data to help the model identify intents and entities correctly.
+
+NLU training data is defined under the `nlu` key. Items that can be added under this key are:
+
+- [Training examples](#training-examples) grouped by user intent e.g.
+  optionally with annotated [entities](#entities)
+
+```yaml
+- intent: check_balance
+  examples: |
+  - What's my [credit](account) balance?
+  - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
+```
+
+- [Synonyms](#synonyms)
+
+```yaml
+- synonym: credit
+  examples: |
+  - credit card account
+  - credit account
+```
+
+- [Regular expressions](#regular-expression-features)
+
+```yaml
+- regex: account_number
+  examples: |
+  - \d{10:12}
+```
+
+- [Lookup tables](#lookup-tables)
+
+```yaml
+- lookup: banks
+  examples: |
+  - JPMC
+  - Comerica
+  - Bank of America
+```
+
+### Training Examples
+
+Training examples are grouped by [intent](glossary.mdx#intent) and listed under the
+`examples` key. Usually, you'll list one example per line as follows:
+
+```yaml
+nlu:
+- intent: greet
+  examples: |
+  - hey
+  - hi
+  - whats up
+```
+
+However, it's also possible to use an extended format if you have a custom NLU component and need metadata for your examples:
+
+
+```yaml
+nlu:
+- intent: greet
+  examples: 
+  - text: |
+      hi
+    metadata:
+      sentiment: neutral
+  - text: |
+      hey there!
+```
+
+The `metadata` key can contain arbitrary key-value data that stays with an example and is accessible by the componenets in the NLU pipeline. In the example above, the sentiment of 
+the example could be used by a custom component in the pipeline for sentiment analysis.
+
+### Entities
+
+[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) based on a character pattern.
+
+Entities are annotated in training examples with minimally the entity's name. 
+In addition to the entity name, you can annotate an entity with synonyms, roles, or groups.
+
+The syntax for annotating an entity is: 
+
+```yaml
+[<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}
+```
+
 The keywords `role`, `group`, and `value` are optional in this notation.
-To understand what the labels `role` and `group` are for, see section [Entities Roles and Groups](./training-data-format.mdx#entities-roles-groups).
+The `value` keyword refers to synonyms, which are explained in the
+following section. To understand what the labels `role` and `group` are
+for, see the section on [entity roles and groups](nlu-training-data.mdx#entities-roles-and-groups).
 
-```md
-## intent:check_balance
-- what is my balance <!-- no entity -->
-- how much do I have on my [savings](source_account) <!-- entity "source_account" has value "savings" -->
-- how much do I have on my [savings account]{"entity": "source_account", "value": "savings"} <!-- synonyms, method 1-->
-- Could I pay in [yen](currency)?  <!-- entity matched by lookup table -->
+In training examples, entity annotation would look like this:
 
-## intent:greet
-- hey
-- hello
+```yaml
+nlu:
+- intent: check_balance
+  examples: |
+  - how much do I have on my [savings]("account") account
+  - how much money is in my [checking]{"entity": "account"} account
+  - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
 
-## synonym:savings   <!-- synonyms, method 2 -->
-- pink pig
-
-## regex:zipcode
-- [0-9]{5}
-
-## lookup:additional_currencies  <!-- specify lookup tables in an external file -->
-path/to/currencies.txt
 ```
 
-The training data for Rasa NLU is structured into different parts:
 
-* common examples
+### Synonyms
 
-* synonyms
+Synonyms provide a way to normalize your training data by mapping an
+extracted entity to a value other than the literal text extracted.
+Synonyms can be defined in the format:
 
-* regex features and
+```yaml
+- synonym: credit
+  examples: |
+  - credit card account
+  - credit account
+```
 
-* lookup tables
+Synonyms can also be defined in-line in your training examples by
+specifying the `value` of the entity:
 
-While common examples is the only part that is mandatory, including the others will help the NLU model
-learn the domain with fewer examples and also help it be more confident of its predictions.
+```yaml
+nlu:
+- intent: check_balance
+  examples: |
+  - how much do I have on my [credit card account]{"entity": "account", "value": "credit"}
+  - how much do I owe on my [credit account]{"entity": "account", "value": "credit"}
+```
 
-Synonyms will map extracted entities to the same name, for example mapping “my savings account” to simply “savings”.
-However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms
-present so that Rasa can learn to pick them up.
+To use the synonyms defined in your training data, you need to make sure the
+pipeline in your configuration file contains the
+[`EntitySynonymMapper`](components/entity-extractors.mdx#entitysynonymmapper) component. You
+should define synonyms when there are multiple ways users refer to the same
+thing.
 
-Lookup tables may be specified as plain text files containing newline-separated words or
-phrases. Upon loading the training data, these files are used to generate
-case-insensitive regex patterns that are added to the regex features.
+#### Example 
+
+Let's say you had an entity `account`, and you expect the
+value "credit". Your users also refer to their "credit" account as "credit
+account" and "credit card account".
+
+In this case, you could define "credit card account" and "credit account" as
+**synonyms** to "credit", as in the examples above.
+
+Then, if either of these phrases is extracted as an entity, it will be
+mapped to the **value** `credit`.
 
 :::note
-The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU
-model by providing additional features to the machine learning algorithm during training. Therefore, it must not be
-assumed that having a single example would be enough for the model to robustly identify intents and/or entities
-across all variants of that example.
-
+Synonym mapping only happens **after** entities have been extracted.
+That means that your training examples should include the synonym examples (`credit card account` and `credit account`) so that the model will learn to recognize these as entities and replace them with `credit`. 
 :::
+
+### Regular Expressions
+
+You can use regular expressions to improve intent classification and 
+entity extraction in combination with the [`RegexFeaturizer`](components/featurizers.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) components in the pipeline.
+
+#### Regular Expressions for Intent Classification 
+
+You can use regular expressions to improve intent classification by including the `RegexFeaturizer` component in your pipeline. When using the `RegexFeaturizer`, a regex does not act as a rule for classifying an intent. It only provides a feature that the intent classifier will use 
+to learn patterns for intent classification.
+Currently, all intent classifiers make use of available regex features. 
+
+The name of a regex in this case is a human readable description. It can help you remember what a regex is used for, and it is the title of the corresponding pattern feature. It does not have to match any intent or entity name. A regex for greeting might look like this: 
+
+```yaml
+- regex: greet
+  examples: |
+  - hey[^\\s]*
+```
+
+The intent being matched could be `greet`,`say_hi`, `hallo` or anything else.
+
+Try to create your regular epressions in a way that they match as few
+words as possible. E.g. using `hey[^\\s]*` instead of `hey.*`, as the
+later one might match the whole message whereas the first one only
+matches a single word.
+
+#### Regular Expressions for Entity Extraction
+
+If your entity has a deterministic structure (like an account number), you can use regular expressions in one of two ways:
+
+1. As features for the [`RegexFeaturizer`](components/featurizers.mdx#regexfeaturizer) component in the pipeline.
+
+  When used as as features for the `RegexFeaturizer` the
+  name of the regular expression does not matter.
+
+  Regex features for entity extraction
+  are currently only supported by the `CRFEntityExtractor` and the
+  `DIETClassifier` component. Other entity extractors, like
+  `MitieEntityExtractor` or `SpacyEntityExtractor`, won't use the generated
+  features and their presence will not improve entity recognition for
+  these extractors. 
+
+2. For rule-based entity extraction using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) component in the pipeline.
+
+  When using the `RegexEntityExtractor`, the name of the regular expression should
+  match the name of the entity you want to extract.
+
+In both cases, the format for defining the regex is the same.
+For example, a regex for extracting a bank account number that is 10-12 digits long mightlook like this:
+
+```yaml
+- regex: account_number
+  examples: |
+  - \d{10:12}
+```
+
 
 :::note
-`/` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not
-to use it in the name of your intents.
 
+When using the `RegexFeaturizer`, a regular expression only provides a feature
+that helps the model learn an association between intents/entities and inputs
+that fit the regular expression. In order for the model to learn this association,
+you must provide example inputs that include that regular expression! 
 :::
 
-:::caution
-The synonym format to specify synonyms `[savings account](source_account:savings)` is deprecated. Please use the
-new format `[savings account]{"entity": "source_account", "value": "savings"}`.
-
-To update your training data file execute the following command on the terminal of your choice:
-`sed -i -E 's/\\[([^)]+)\\]\\(([^)]+):([^)]+)\\)/[\\1]{"entity": "\\2", "value": "\\3"}/g' <nlu training data file>`
-Your NLU training data file will contain the new training data format after you executed the above command.
-Depending on your OS you might need to update the syntax of the sed command.
-
-:::
-
-### JSON Format
-
-The JSON format consists of a top-level object called `rasa_nlu_data`, with the keys
-`common_examples`, `entity_synonyms` and `regex_features`.
-The most important one is `common_examples`.
-
-```json
-{
-    "rasa_nlu_data": {
-        "common_examples": [],
-        "regex_features" : [],
-        "lookup_tables"  : [],
-        "entity_synonyms": []
-    }
-}
-```
-
-The `common_examples` are used to train your model. You should put all of your training
-examples in the `common_examples` array.
-Regex features are a tool to help the classifier detect entities or intents and improve the performance.
-
-## Improving Intent Classification and Entity Recognition
-
-### Common Examples
-
-Common examples have three components: `text`, `intent` and `entities`. The first two are strings while the last
-one is an array.
-
-* The *text* is the user message [required]
-
-* The *intent* is the intent that should be associated with the text [optional]
-
-* The *entities* are specific parts of the text which need to be identified [optional]
-
-Entities are specified with a `start` and an `end` value, which together make a range
-to apply to the string, e.g. in the example below, with `text="show me chinese restaurants"`, then
-`text[8:15] == 'chinese'`. Entities can span multiple words, and in
-fact the `value` field does not have to correspond exactly to the substring in your example.
-That way you can map synonyms, or misspellings, to the same `value`.
-
-```md
-## intent:restaurant_search
-- show me [chinese](cuisine) restaurants
-```
-
-### Regular Expression Features (regex)
-
-For example, the names of German streets often end in `strasse`. By adding this as a regex,
-we are telling the model to pay attention to words ending this way, and will quickly learn to
-associate that with a location entity.
-
-
-Regular expressions can be used in two different ways:
-
-1. They can be used to support the intent classification and entity extraction when using the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) component in the pipeline.
-   Each of the regexes then provide the intent classifier or entity extractor with an extra binary feature, which says if the regex was found or not.
-
-2. They can be used to directly extract entities from a user messages when using the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor) component in the pipeline.
-
-For example, if your entity has a deterministic structure (like a zipcode or an email address), you can use a regular
-expression to ease detection of that entity (using the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer)) or to directly extract the entities from
-the user message (using the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor)). For the zipcode example it might look like this:
-
-```md
-## regex:zipcode
-- [0-9]{5}
-```
-
-In case you are using the regular expressions for the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) the name of the regular expression does
-not matter. If does not define the entity nor the intent, it is just a human readable description for you to remember
-what this regex is used for and is the title of the corresponding pattern feature.
-If you want to use the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) you can also use the regex features to improve the intent
-classification performance, for example, by defining a greet clause:
-
-```md
-## regex:greet
-- hey[^\\s]*
-```
-
-If you are using the regular expressions to directly extract entities using the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor),
-the name of the regular expression should match the name of the entity you want to extract.
-
-Try to create your regular expressions in a way that they match as few words as possible. E.g. using `hey[^\\s]*`
-instead of `hey.\*`, as the later one might match the whole message whereas the first one only matches a single word.
-
-When using the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer), the regex features for entity extraction are currently only supported by the
-`CRFEntityExtractor` and the `DIETClassifier` component! Hence, other entity extractors, like
-`MitieEntityExtractor` or `SpacyEntityExtractor` won't use the generated features and their
-presence will not improve entity recognition for these extractors. Currently, all intent classifiers make use of
-available regex features.
-
-:::note
-Regex features only define entities when used in combination with the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor).
-Otherwise they don't define entities nor intents! They simply provide patterns to help the classifier
-recognize entities and related intents. Hence, you still need to provide intent & entity examples as part of your
-training data!
-
-:::
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="lookup-tables"></a>
 
 ### Lookup Tables
 
-Lookup tables provide a convenient way to supply a list of entity examples.
-The supplied lookup table files must be in a newline-delimited format.
-For example, `data/test/lookup_tables/plates.txt` may contain:
+Lookup tables provide a convenient way to supply a list of entity
+examples. The format is as follows:
 
-```python (docs/sources/data/test/lookup_tables/plates.txt)
+```yaml
+- lookup: banks
+  examples: |
+  - JPMC
+  - Bank of America
 ```
 
-And can be loaded and used as shown here:
+The name of the lookup table is subject to the same constraints as the
+name of a regex feature.
 
-```md
-## lookup:plates
-data/test/lookup_tables/plates.txt
+When you supply a lookup table in your training data, the contents of that table
+are combined into one large regular expression. This regex is used to check
+each training example to see if it contains matches for entries in the
+lookup table.
 
-## intent:food_request
-- I'd like beef [tacos](plates) and a [burrito](plates)
-- How about some [mapo tofu](plates)
-```
-
-When lookup tables are supplied in training data, the contents are combined
-into a large regex pattern that looks for exact matches in
-the training examples. These regexes match over multiple tokens, so
-`lettuce wrap` would match `get me a lettuce wrap ASAP` as `[0 0 0 1 1 0]`.
-These regexes are processed identically to the regular regex patterns
-directly specified in the training data.
+Lookup table regexes are processed identically to the regular
+regex patterns directly specified in the training data and can be used
+either with the [RegexFeaturizer](components/featurizers.mdx#regexfeaturizer)
+or with the [RegexEntityExtractor](components/featurizers.mdx#regexentityextractor).
 
 :::note
-If you are using lookup tables in combination with [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer), there must be a few examples of matches
-in your training data. Otherwise the model will not learn to use the lookup table match features.
 
+If you are using lookup tables in combination with the `RegexFeaturizer`, there must be a few examples of matches  
+in your training data. Otherwise the model will not learn to use the
+lookup table match features.
 :::
 
-:::caution
-You have to be careful when you add data to the lookup table.
-For example if there are false positives or other noise in the table,
+:::warning
+
+You have to be careful when you add data to the lookup table.  
+For example, if there are false positives or other noise in the table,
 this can hurt performance. So make sure your lookup tables contain
 clean data.
-
 :::
 
-## Normalizing Data
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="entity-synonyms"></a>
+## Conversation Training Data
 
-### Entity Synonyms
+Stories and rules are both representations of conversations between a user and a conversational
+assistant. They are used to train the dialogue management
+model. [**Stories**](stories.mdx) are used to train a machine learning model to identify patterns
+in conversations and generalize to unseen conversation paths.
+**[Rules](rules.mdx)** describe parts of conversations that should always
+follow the same path and are used to train the
+[RulePolicy](policies.mdx#rule-policy). 
 
-If you define entities as having the same value they will be treated as synonyms. Here is an example of that:
 
-```md
-## intent:search
-- in the center of [NYC]{"entity": "city", "value": "New York City"}
-- in the centre of [New York City](city)
+### Stories
+
+Stories are composed of:
+  
+  - `story`: The story's name. The name is arbitrary and not used in training; 
+    you can use it as a human-readable reference for the story.
+  - `metadata`: arbitrary and optional, not used in training, 
+    you can use it to store relevant information about the story
+    like e.g. the author
+  - a list of `steps`: The user messages and actions that make up the story
+
+For example:
+
+```yaml
+stories:
+- story: Greet the user
+  metadata:
+    author: Somebody
+    key: value
+  steps:
+  # list of steps
+  - intent: greet
+  - action: utter_greet
 ```
 
-As you can see, the entity `city` has the value `New York City` in both examples, even though the text in the first
-example states `NYC`. By defining the value attribute to be different from the value found in the text between start
-and end index of the entity, you can define a synonym. Whenever the same text will be found, the value will use the
-synonym instead of the actual text in the message.
+Each step can be one of the following:
 
-To use the synonyms defined in your training data, you need to make sure the pipeline contains the
-`EntitySynonymMapper` component (see [Components](./components/entity-extractors.mdx#entity-synonym-mapper)).
+  - A [user message](#user-messages), represented by **intent** and **entities**.
+  - An [or statement](#or), which includes two or more user messages under it
+  - A bot [action](#actions)
+  - A [form](#forms)
+  - A [slot was set](#slots) event
+  - A [checkpoint](#checkpoints), which connects the story to another story
 
-Alternatively, you can add an “entity_synonyms” array to define several synonyms to one entity value. Here is an
-example of that:
 
-```md
-## synonym:New York City
-- NYC
-- nyc
-- the big apple
+#### User Messages
+
+All user messages are specified with the `intent:`
+key and an optional `entities:` key.
+
+While writing stories, you do not have to deal with the specific
+contents of the messages that the users send. Instead, you can take
+advantage of the output from the NLU pipeline, which lets you use
+the combination of an intent and entities to refer to all the possible
+messages the users can send to mean the same thing.
+
+User messages follow the format:
+
+```yaml
+  steps:
+    - intent: <intent name>  # Required
+      entities: # Optional
+      - <entity_name>: <entity value> 
 ```
+
+For example, to represent the sentence
+`I want to check my credit balance`, where `credit` is an entity:
+
+```yaml
+  steps:
+    - intent: account_balance
+      entities:
+      - account_type: credit
+    - action: action_credit_account_balance
+```
+
+It is important to include the entities here as well because the
+policies learn to predict the next action based on a *combination* of
+both the intent and entities (you can, however, change this behavior
+using the [`use_entities`](#use-entities) attribute).
+
+
+#### Actions
+
+All actions executed by the bot are specified with the `action:` key followed
+by the name of the action.
+While writing stories, you will encounter three types of actions:
+
+
+1. [**Responses**](domain.mdx#responses): start with `utter_` and send a specific message
+   to the user. e.g.
+
+```yaml
+    steps:
+    - intent: greet
+    - action: utter_greet
+```
+
+2. [**Retrieval actions**](retrieval-actions.mdx): start with `respond_` and send a message selected by a retrieval model. e.g.
+
+```yaml
+    steps:
+    - intent: faq
+    - action: respond_faq
+```
+
+3. [**Custom actions**](custom-actions.mdx): start with `action_`, run arbitrary code and send any number of messages (or none).
+
+```yaml
+    steps:
+    - intent: feedback
+    - action: action_store_feedback
+```
+
+#### Forms
+
+
+A [form](glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
+a set of required slots and ask the user for this information. You [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
+Once defined, the [happy path](glossary.mdx#happy-unhappy-paths)
+for a form should be specified as a [rule](forms.mdx), but interruptions of forms or 
+other "unhappy paths" should be included in stories so that the model can 
+generalize to unseen conversation sequences.
+As a step in a story, a form takes the following basic format:
+
+
+```yaml
+    steps:
+    - intent: find_restaurant
+    - action: restaurant_form <!--Activate the form-->
+    - form: restaurant_form   <!--This form is currently active-->
+    - form: null              <!--Form complete, no form is active-->
+    - action: utter_restaurant_found
+```
+
+
+The `action` step activates the form and begins looping over the required slots. The `form: restaurant_form`
+step indicates that there is a currently active form. Much like a `slot_was_set` step,
+a `form` step doesn't **set** a form to active but indicates that it should already be activated.
+In the same way, the  `form: null` step indicates that no form should be active before the subsequent
+steps are taken. 
+
+A form can be interrupted and remain active; in this case the interruption should come after the 
+`action: <form to activate>` step and be followed by the `form: <active form>` step. 
+An interruption of a form could look like this:
+
+```yaml
+  - rule: interrupted food
+    steps:
+      - intent: request_restaurant
+      - action: restaurant_form
+      - intent: chitchat
+      - action: utter_chitchat
+      - form: restaurant_form
+      - form: null
+      - action: utter_slots_values
+```
+
+
+#### Slots
+
+A slot event is specified under the key `slot_was_set:` with the 
+slot name and optionally the slot's value.
+
+**[Slots](domain.mdx#slots)** act as the bots memory. 
+Slots are **set** by entities or by custom actions and **referenced** by stories in `slot_was_set` steps. For example:
+
+```yaml
+    steps:
+    - intent: celebrate_bot
+    - slot_was_set:
+      - feedback_value: positive
+    - action: utter_yay
+```
+
+This means the story requires that the current value for the `feedback_value`
+slot be `positive` for the conversation to continue as specified.
+
+Whether or not you need to include the slot's value depends on the
+[slot type](domain.mdx#slot-types) and whether the value can or should
+influence the dialogue. If the value doesn't matter, list only
+the slot's name:
+
+```yaml
+    steps:
+    - intent: greet
+    - slot_was_set:
+      - name
+    - action: utter_greet_user_by_name
+```
+
 
 :::note
-Please note that adding synonyms using the above format does not improve the model's classification of those entities.
-**Entities must be properly classified before they can be replaced with the synonym value.**
-
+Stories do not **set** slots. The slot must be set by an entity or custom action **before** the `slot_was_set` step.
 :::
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="entities-roles-groups"></a>
+#### Checkpoints
 
-### Entities Roles and Groups
+Checkpoints are specified with the `checkpoint:` key, either at the beginning
+or the end of a story. 
 
-:::caution
-This feature is experimental.
-We introduce experimental features to get feedback from our community, so we encourage you to try it out!
-However, the functionality might be changed or removed in the future.
-If you have feedback (positive or negative) please share it with us on the [forum](https://forum.rasa.com).
 
+Checkpoints are ways to connect stories together. They can be either the first
+or the last step in a story. If they are the last step in a story, that story
+will be connected to each other story that starts with the checkpoint of the
+same name when the model is trained. Here is an example of a story that ends
+with a checkpoint, and one that starts with the same checkpoint:
+
+```yaml
+- story: story_with_a_checkpoint_1
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - checkpoint: greet_checkpoint
+
+- story: story_with_a_checkpoint_2
+  steps:
+  - checkpoint: greet_checkpoint
+  - intent: book_flight
+  - action: action_book_flight
+```
+
+Checkpoints at the beginning of stories can also be conditional on slots being set, for example:
+
+```yaml
+- story: story_with_a_conditional_checkpoint
+  steps:
+  - checkpoint: greet_checkpoint
+    # This checkpoint should only apply if slots are set to the specified value
+    slots: 
+    - context_scenario: holiday
+    - holiday_name: thanksgiving
+  - intent: greet
+  - action: utter_greet_thanksgiving
+```
+
+
+Checkpoints can help simplify your training data and reduce redundancy in it,
+but **do not overuse them**. Using lots of checkpoints can quickly make your
+stories hard to understand. It makes sense to use them if a sequence of steps
+is repeated often in different stories, but stories without checkpoints
+are easier to read and write. 
+
+#### OR statement
+
+`or` steps are ways to handle multiple intents the same way,
+without writing a separate story for each intent. For example, if you ask the user to confirm something, you might want to treat the `affirm` and `thankyou` intents in the same way. Stories with `or` steps will be converted into multiple
+separate stories at training time. For example, the following story would be converted to two stories at training time:
+
+```yaml
+- story: story with OR
+  steps:
+  - intent: signup_newsletter
+  - action: utter_ask_confirm
+  - or:
+    - intent: affirm
+    - intent: thanks
+  - action: action_signup_newsletter
+```
+
+Just like checkpoints, OR statements can be useful, but if you are using a lot of them, it is probably better to restructure your domain and/or intents.
+
+:::warning
+Overusing these features (both checkpoints and OR statements) will slow down training.
 :::
 
-Assigning custom entity labels to words, allow you to define certain concepts in the data.
-For example, we can define what a city is:
+### Rules
 
-```
-I want to fly from [Berlin](city) to [San Francisco](city).
-```
+Rules are listed under the `rules` key and look similar to stories. A rule also has a `steps`
+key, which contains a list of the same steps as stories do. Rules can additionally
+contain the `conversation_started` and `conditions` keys. These are used to specify conditions
+under which the rule should apply.
 
-However, sometimes you want to specify entities even further.
-Let's assume we want to build an assistant that should book a flight for us.
-The assistant needs to know which of the two cities in the example above is the departure city and which is the
-destination city.
-`Berlin` and `San Francisco` are still cities, but they play a different role in our example.
-To distinguish between the different roles, you can assign a role label in addition to the entity label.
+A rule that with a condition looks like this:
 
-```
-- I want to fly from [Berlin]{"entity": "city", "role": "departure"} to [San Francisco]{"entity": "city", "role": "destination"}.
-```
+```yaml
+rules:
 
-You can also group different entities by specifying a group label next to the entity label.
-The group label can, for example, be used to define different orders.
-In the following example we use the group label to reference what toppings goes with which pizza and
-what size which pizza has.
-
-```
-Give me a [small]{"entity": "size", "group": "1"} pizza with [mushrooms]{"entity": "topping", "group": "1"} and
-a [large]{"entity": "size", "group": "2"} [pepperoni]{"entity": "topping", "group": "2"}
+- rule: Only say `hey` when the user provided a name
+  condition:
+  - slot: user_provided_name
+    value: true
+  steps:
+  - intent: greet
+  - action: utter_greet
 ```
 
-See [Training Data Format](./training-data-format) for details on how to define entities with roles and groups in your training data.
+Read more about writing rules [here](rules.mdx#writing-a-rule).
 
-The entity object returned by the extractor will include the detected role/group label.
+## Test Conversations
 
-```json
-{
-  "text": "Book a flight from Berlin to SF",
-  "intent": "book_flight",
-  "entities": [
-    {
-      "start": 19,
-      "end": 25,
-      "value": "Berlin",
-      "entity": "city",
-      "role": "departure",
-      "extractor": "DIETClassifier",
-    },
-    {
-      "start": 29,
-      "end": 31,
-      "value": "San Francisco",
-      "entity": "city",
-      "role": "destination",
-      "extractor": "DIETClassifier",
-    }
-  ]
-}
-```
+Test conversations combine both NLU and Core training data into a end-to-end story for evaluation. 
 
-:::note
-Composite entities are currently only supported by the [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) and [CRFEntityExtractor](./components/entity-extractors.mdx#crfentityextractor).
-
+:::warning
+This format is only used for end-to-end evaluation and cannot be used for training.
 :::
 
-In order to properly train your model with entities that have roles/groups, make sure to include enough training data
-examples for every combination of entity and role/group label.
-Also make sure to have some variations in your training data, so that the model is able to generalize.
-For example, you should not only have example like `fly FROM x TO y`, but also include examples like
-`fly TO y FROM x`.
+Test conversations are listed under the `e2e_tests` key. 
+Their format is similar to the [story](#stories) format,
+except that user message steps can include a `user` key which specifies the actual text and entity annotation of the user message. 
 
-To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
-[Forms](./forms) or use [Custom Actions](./actions#custom-actions) to extract the corresponding entity directly from the tracker.
+Here's an example of a test conversation:
+
+```yaml
+e2e_tests:
+- story: A basic end-to-end test
+  steps:
+  - user: |
+     hey
+    intent: greet
+  - action: utter_ask_howcanhelp
+  - user: |
+     show me [chinese]{"entity": "cuisine"} restaurants
+    intent: inform
+  - action: utter_ask_location
+  - user: |
+     in [Paris]{"entity": "location"}
+    intent: inform
+  - action: utter_ask_price
+```

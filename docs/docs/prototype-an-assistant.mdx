@@ -42,24 +42,24 @@ you can also add or change examples for any of the other intents.
 nlu:
 - intent: greet
   examples: |
-       Hi
-       Hey!
-       Hallo
-       Good day
-       Good morning
+    - Hi
+    - Hey!
+    - Hallo
+    - Good day
+    - Good morning
 
 - intent: subscribe
   examples: |
-       I want to get the newsletter
-       Can you send me the newsletter?
-       Can you sign me up for the newsletter?
+    - I want to get the newsletter
+    - Can you send me the newsletter?
+    - Can you sign me up for the newsletter?
 
 - intent: inform
   examples: |
-       My email is example@example.com
-       random@example.com
-       Please send it to anything@example.com
-       Email is something@example.com
+    - My email is example@example.com
+    - random@example.com
+    - Please send it to anything@example.com
+    - Email is something@example.com
 ```
 
 [Read about best practices for NLU](./training-data-format.mdx)
@@ -81,18 +81,16 @@ forms:
 
 ## 4. Write a rule
 
-Rules are conversation snippets that should always proceed in exactly the same way. The ellipsis in the
-first step of the rule tells the bot that regardless of what precedes, the next steps should always
-follow one another. Update the rule below for running the form you defined above.
+Rules are conversation snippets that should always proceed in exactly the same way.
+Update the rule below for running the form you defined above.
 
 ```yaml live noResult name=rules
 rules:
  - rule: activate subscribe form
    steps:
-   - ...
    - intent: subscribe
    - action: newsletter_form
-   - active_loop: newsletter_form
+   - form: newsletter_form
 ```
 
 ## 5. Write some stories
@@ -115,7 +113,7 @@ stories:
    - action: utter_greet
    - intent: subscribe
    - action: newsletter_form
-   - active_loop: newsletter_form
+   - form: newsletter_form
 ```
 
 [Read about best practices for writing stories](./stories.mdx)
@@ -180,7 +178,10 @@ and your [model configuration](./model-configuration.mdx).
 
 <br/><br/>
 
-*Your prototype was created using a Rasa Open Source alpha release. Please make sure
-you're running* `rasa==2.0.0a1` *to develop your project further.*
+<!-- TODO: REMOVE THIS NOTE FOR THE 2.0 release -->
+
+*Your prototype was created using a Rasa Open Source alpha release.
+Please make sure you've [installed at least Rasa Open Source 2.0.0a2](installation.mdx) to develop
+your project further.*
 
 </Prototyper>

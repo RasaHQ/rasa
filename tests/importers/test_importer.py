@@ -104,9 +104,7 @@ def test_load_from_config(tmpdir: Path):
 
     config_path = str(tmpdir / "config.yml")
 
-    io_utils.write_yaml_file(
-        {"importers": [{"name": "MultiProjectImporter"}]}, config_path
-    )
+    io_utils.write_yaml({"importers": [{"name": "MultiProjectImporter"}]}, config_path)
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, CombinedDataImporter)
