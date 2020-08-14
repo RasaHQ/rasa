@@ -50,9 +50,7 @@ class SingleStateFeaturizer:
         pass
 
     def encode(
-        self,
-        state: Dict[Text, float],
-        interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Encode user input."""
 
@@ -98,9 +96,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         self.input_state_map = domain.input_state_map
 
     def encode(
-        self,
-        state: Dict[Text, float],
-        interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Returns a binary vector indicating which features are active.
 
@@ -226,9 +222,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         )
 
     def encode(
-        self,
-        state: Dict[Text, float],
-        interpreter: Optional[NaturalLanguageInterpreter],
+        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> np.ndarray:
         """Returns a binary vector indicating which tokens are present."""
 
@@ -523,8 +517,8 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         return user_features + action_features
 
     def encode(
-        self, state: STATE, interpreter: NaturalLanguageInterpreter,
-    ):
+        self, state: STATE, interpreter: NaturalLanguageInterpreter
+    ) -> np.ndarray:
         slot_and_entity_features = self._get_slot_and_entity_features(state)
         if state == {}:
             return np.array(
@@ -639,16 +633,13 @@ class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
     def __init__(
-        self,
-        state_featurizer: Optional[SingleStateFeaturizer] = None,
-        use_intent_probabilities: bool = False,
+        self, state_featurizer: Optional[SingleStateFeaturizer] = None
     ) -> None:
 
         self.state_featurizer = state_featurizer
-        self.use_intent_probabilities = use_intent_probabilities
 
     @staticmethod
-    def _unfreeze_states(states: deque,) -> List[STATE]:
+    def _unfreeze_states(states: deque) -> List[STATE]:
         return [
             {key: dict(value) for key, value in dict(state).items()} for state in states
         ]
@@ -674,7 +665,7 @@ class TrackerFeaturizer:
 
     def _featurize_states(
         self,
-        trackers_as_states: List[List[Dict[Text, float]]],
+        trackers_as_states: List[List[STATE]],
         interpreter: NaturalLanguageInterpreter,
     ) -> Tuple[np.ndarray, List[int]]:
         """Create X."""
@@ -733,7 +724,7 @@ class TrackerFeaturizer:
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[Dict]], List[List[Text]]]:
+    ) -> Tuple[List[List[STATE]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions."""
 
         raise NotImplementedError(
@@ -768,7 +759,7 @@ class TrackerFeaturizer:
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[Dict[Text, float]]]:
+    ) -> List[List[STATE]]:
         """Transforms list of trackers to lists of states for prediction."""
 
         raise NotImplementedError(
@@ -817,13 +808,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest dialogue with -1.
     """
 
-    def __init__(
-        self,
-        state_featurizer: SingleStateFeaturizer,
-        use_intent_probabilities: bool = False,
-    ) -> None:
-
-        super().__init__(state_featurizer, use_intent_probabilities)
+    def __init__(self, state_featurizer: SingleStateFeaturizer) -> None:
+        super().__init__(state_featurizer)
         self.max_len = None
 
     @staticmethod
@@ -918,10 +904,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         state_featurizer: Optional[SingleStateFeaturizer] = None,
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
-        use_intent_probabilities: bool = False,
     ) -> None:
 
-        super().__init__(state_featurizer, use_intent_probabilities)
+        super().__init__(state_featurizer)
         self.max_history = max_history
         self.remove_duplicates = remove_duplicates
 

@@ -1,21 +1,28 @@
 import logging
 from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
-import re
-from collections import defaultdict
+import json
 
 from rasa.core.events import FormValidation
-from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
+from rasa.core.domain import (
+    Domain,
+    InvalidDomain,
+    STATE,
+)
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import (
     FORM_POLICY_PRIORITY,
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
+    FORM,
+    SHOULD_NOT_BE_SET,
+    PREVIOUS_ACTION,
 )
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -84,16 +91,15 @@ class RulePolicy(MemoizationPolicy):
             enable_fallback_prediction: If `True` `core_fallback_action_name` is
                 predicted in case no rule matched.
         """
-        if not featurizer:
-            # max history is set to `None` in order to capture lengths of rule stories
-            featurizer = self._standard_featurizer()
-            featurizer.max_history = None
 
         self._core_fallback_threshold = core_fallback_threshold
         self._fallback_action_name = core_fallback_action_name
         self._enable_fallback_prediction = enable_fallback_prediction
 
-        super().__init__(featurizer=featurizer, priority=priority, lookup=lookup)
+        # max history is set to `None` in order to capture any lengths of rule stories
+        super().__init__(
+            featurizer=featurizer, priority=priority, max_history=None, lookup=lookup
+        )
 
     @classmethod
     def validate_against_domain(
@@ -118,43 +124,35 @@ class RulePolicy(MemoizationPolicy):
                 f"domain."
             )
 
-    def _create_feature_key(self, states: List[Dict]) -> Text:
+    @staticmethod
+    def _is_rule_snippet_state(state: STATE) -> bool:
+        prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
+        return prev_action_name == RULE_SNIPPET_ACTION_NAME
 
-        feature_str = ""
-        for state in states:
-            if state:
-                feature_str += "|"
-                for feature in state.keys():
-                    feature_str += feature + " "
-                feature_str = feature_str.strip()
+    def _create_feature_key(self, states: List[STATE]) -> Optional[Text]:
+        new_states = []
+        for state in reversed(states):
+            if self._is_rule_snippet_state(state):
+                # remove all states before `...`
+                break
+            new_states.insert(0, state)
 
-        return feature_str
+        if not new_states or new_states == [{}]:
+            return
+
+        return json.dumps(new_states, sort_keys=True)
 
     @staticmethod
-    def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
-        # by construction there is only one active form
-        return next(
-            (
-                state_name[len(ACTIVE_FORM_PREFIX) :]
-                for state_name, prob in state.items()
-                if ACTIVE_FORM_PREFIX in state_name
-                and state_name != ACTIVE_FORM_PREFIX + "None"
-                and prob > 0
-            ),
-            None,
-        )
+    def _get_active_form_name(state: STATE) -> Optional[Text]:
+        return state.get(FORM, {}).get("name")
 
     @staticmethod
-    def _prev_action_listen_in_state(state: Dict[Text, float]) -> bool:
-        return any(
-            PREV_PREFIX + ACTION_LISTEN_NAME in state_name and prob > 0
-            for state_name, prob in state.items()
-        )
+    def _prev_action_listen_in_state(state: STATE) -> bool:
+        prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
+        return prev_action_name == ACTION_LISTEN_NAME
 
     @staticmethod
-    def _modified_states(
-        states: List[Dict[Text, float]]
-    ) -> List[Optional[Dict[Text, float]]]:
+    def _modified_states(states: List[STATE]) -> List[STATE]:
         """Modifies the states to create feature keys for form unhappy path conditions.
 
         Args:
@@ -165,54 +163,28 @@ class RulePolicy(MemoizationPolicy):
             modified states
         """
 
-        indicator = PREV_PREFIX + RULE_SNIPPET_ACTION_NAME
-        state_only_with_action = {indicator: 1}
         # leave only last 2 dialogue turns to
         # - capture previous meaningful action before action_listen
         # - ignore previous intent
-        if len(states) > 2 and states[-2] is not None:
-            state_only_with_action = {
-                state_name: prob
-                for state_name, prob in states[-2].items()
-                if PREV_PREFIX in state_name and prob > 0
-            }
-
-        # add `prev_...` to show that it should not be a first turn
-        if indicator not in state_only_with_action and indicator not in states[-1]:
-            return [{indicator: 1}, state_only_with_action, states[-1]]
-
-        return [state_only_with_action, states[-1]]
+        if len(states) == 1 or not states[-2].get(PREVIOUS_ACTION):
+            return [states[-1]]
+        else:
+            return [{PREVIOUS_ACTION: states[-2][PREVIOUS_ACTION]}, states[-1]]
 
     @staticmethod
     def _clean_feature_keys(lookup: Dict[Text, Text]) -> Dict[Text, Text]:
         # remove action_listens that were added after conditions
         updated_lookup = lookup.copy()
         for feature_key, action in lookup.items():
-            # Delete rules if there is no prior action or if it would predict
-            # the `...` action
-            if PREV_PREFIX not in feature_key or action == RULE_SNIPPET_ACTION_NAME:
-                del updated_lookup[feature_key]
-            elif RULE_SNIPPET_ACTION_NAME in feature_key:
-                # If the previous action is `...` -> remove any specific state
-                # requirements for that state (anything can match this state)
-                new_feature_key = re.sub(
-                    rf".*{PREV_PREFIX}\.\.\.[^|]*", "", feature_key
-                )
-
-                if new_feature_key:
-                    if new_feature_key.startswith("|"):
-                        new_feature_key = new_feature_key[1:]
-                    if new_feature_key.endswith("|"):
-                        new_feature_key = new_feature_key[:-1]
-                    updated_lookup[new_feature_key] = action
-
+            # Delete rules if it would predict the `...` action
+            if action == RULE_SNIPPET_ACTION_NAME:
                 del updated_lookup[feature_key]
 
         return updated_lookup
 
     def _create_form_unhappy_lookup_from_states(
         self,
-        trackers_as_states: List[List[Dict]],
+        trackers_as_states: List[List[STATE]],
         trackers_as_actions: List[List[Text]],
     ) -> Dict[Text, Text]:
         """Creates lookup dictionary from the tracker represented as states.
@@ -232,9 +204,11 @@ class RulePolicy(MemoizationPolicy):
             # even if there are two identical feature keys
             # their form will be the same
             # because of `active_form_...` feature
-            if active_form:
+            if active_form and active_form != SHOULD_NOT_BE_SET:
                 states = self._modified_states(states)
                 feature_key = self._create_feature_key(states)
+                if not feature_key:
+                    continue
 
                 # Since rule snippets and stories inside the form contain
                 # only unhappy paths, notify the form that
@@ -259,7 +233,7 @@ class RulePolicy(MemoizationPolicy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -281,7 +255,6 @@ class RulePolicy(MemoizationPolicy):
         rules_lookup = self._create_lookup_from_states(
             rule_trackers_as_states, rule_trackers_as_actions
         )
-
         self.lookup[RULES] = self._clean_feature_keys(rules_lookup)
 
         story_trackers = [t for t in training_trackers if not t.is_rule_tracker]
@@ -295,11 +268,10 @@ class RulePolicy(MemoizationPolicy):
         trackers_as_actions = rule_trackers_as_actions + story_trackers_as_actions
 
         # negative rules are not anti-rules, they are auxiliary to actual rules
-        form_unhappy_lookup = self._create_form_unhappy_lookup_from_states(
+        self.lookup[
+            RULES_FOR_FORM_UNHAPPY_PATH
+        ] = self._create_form_unhappy_lookup_from_states(
             trackers_as_states, trackers_as_actions
-        )
-        self.lookup[RULES_FOR_FORM_UNHAPPY_PATH] = self._clean_feature_keys(
-            form_unhappy_lookup
         )
 
         # TODO use story_trackers and rule_trackers
@@ -308,56 +280,57 @@ class RulePolicy(MemoizationPolicy):
         logger.debug(f"Memorized '{len(self.lookup[RULES])}' unique rules.")
 
     @staticmethod
-    def _features_in_state(features: List[Text], state: Dict[Text, float]) -> bool:
+    def _check_rule_state(rule_state: STATE, state: STATE) -> bool:
 
-        state_slots = defaultdict(set)
-        for s in state.keys():
-            if s.startswith("slot"):
-                state_slots[s[: s.rfind("_")]].add(s)
+        for state_type, rule_sub_state in rule_state.items():
+            sub_state = state.get(state_type, {})
+            for key, value in rule_sub_state.items():
+                if isinstance(value, list):
+                    # json dumps and loads tuples as lists,
+                    # so we need to convert them back
+                    value = tuple(value)
 
-        f_slots = defaultdict(set)
-        for f in features:
-            # TODO: this is a hack to make a rule know
-            #  that slot or form should not be set;
-            #  `_None` is added inside domain to indicate that
-            #  the feature should not be present
-            if f.endswith("_None"):
-                if any(f[: f.rfind("_")] in key for key in state.keys()):
+                if (
+                    # value should be set, therefore
+                    # check whether it is the same as in the state
+                    value
+                    and value != SHOULD_NOT_BE_SET
+                    and sub_state.get(key) != value
+                ) or (
+                    # value shouldn't be set, therefore
+                    # it should be None or non existent in the state
+                    value == SHOULD_NOT_BE_SET
+                    and sub_state.get(key)
+                ):
                     return False
-            elif f not in state:
-                return False
-            elif f.startswith("slot"):
-                f_slots[f[: f.rfind("_")]].add(f)
-
-        for k, v in f_slots.items():
-            if state_slots[k] != v:
-                return False
 
         return True
 
-    def _rule_is_good(
-        self, rule_key: Text, turn_index: int, state: Dict[Text, float]
-    ) -> bool:
+    @staticmethod
+    def _rule_key_to_state(rule_key: Text) -> List[STATE]:
+        return json.loads(rule_key)
+
+    def _rule_is_good(self, rule_key: Text, turn_index: int, state: STATE) -> bool:
         """Check if rule is satisfied with current state at turn."""
 
         # turn_index goes back in time
-        rule_turns = list(reversed(rule_key.split("|")))
+        reversed_rule_states = list(reversed(self._rule_key_to_state(rule_key)))
 
         return bool(
             # rule is shorter than current turn index
-            turn_index >= len(rule_turns)
+            turn_index >= len(reversed_rule_states)
             # current rule and state turns are empty
-            or (not rule_turns[turn_index] and not state)
+            or (not reversed_rule_states[turn_index] and not state)
             # check that current rule turn features are present in current state turn
             or (
-                rule_turns[turn_index]
+                reversed_rule_states[turn_index]
                 and state
-                and self._features_in_state(rule_turns[turn_index].split(), state)
+                and self._check_rule_state(reversed_rule_states[turn_index], state)
             )
         )
 
     def _get_possible_keys(
-        self, lookup: Dict[Text, Text], states: List[Dict[Text, float]]
+        self, lookup: Dict[Text, Text], states: List[STATE]
     ) -> Set[Text]:
         possible_keys = set(lookup.keys())
         for i, state in enumerate(reversed(states)):
@@ -427,9 +400,9 @@ class RulePolicy(MemoizationPolicy):
         predicted_action_name = None
         best_rule_key = ""
         if rule_keys:
-            # TODO check that max is correct
             # if there are several rules,
             # it should mean that some rule is a subset of another rule
+            # therefore we pick a rule of maximum length
             best_rule_key = max(rule_keys, key=len)
             predicted_action_name = self.lookup[RULES].get(best_rule_key)
 
@@ -451,7 +424,9 @@ class RulePolicy(MemoizationPolicy):
             # Hence, we have to take care of that.
             predicted_listen_from_general_rule = (
                 predicted_action_name == ACTION_LISTEN_NAME
-                and ACTIVE_FORM_PREFIX + active_form_name not in best_rule_key
+                and not self._get_active_form_name(
+                    self._rule_key_to_state(best_rule_key)[-1]
+                )
             )
             if predicted_listen_from_general_rule:
                 if DO_NOT_PREDICT_FORM_ACTION not in unhappy_path_conditions:

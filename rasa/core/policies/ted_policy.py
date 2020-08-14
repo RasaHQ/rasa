@@ -24,6 +24,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -185,12 +186,9 @@ class TEDPolicy(Policy):
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
-        if max_history is None:
-            return FullDialogueTrackerFeaturizer(E2ESingleStateFeaturizer())
-        else:
-            return MaxHistoryTrackerFeaturizer(
-                E2ESingleStateFeaturizer(), max_history=max_history
-            )
+        return MaxHistoryTrackerFeaturizer(
+            E2ESingleStateFeaturizer(), max_history=max_history
+        )
 
     def __init__(
         self,
@@ -503,7 +501,7 @@ class TEDPolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
