@@ -1,0 +1,7 @@
+Added more debugging logs to the :ref:`lock-stores` to simplify debugging in case of
+connection problems.
+
+Added a new parameter ``socket_timeout`` to the ``RedisLockStore``. If Redis doesn't
+answer within ``socket_timeout`` seconds to requests from Rasa Open Source, an error
+is raised. This avoids seemingly infinitely blocking connections and exposes connection
+problems early.
