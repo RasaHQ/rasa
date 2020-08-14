@@ -27,16 +27,14 @@ if typing.TYPE_CHECKING:
 class Message:
     def __init__(
         self,
-        text: Optional[Text] = "",
         data: Optional[Dict[Text, Any]] = None,
         output_properties: Optional[Set] = None,
         time: Optional[Text] = None,
         features: Optional[List["Features"]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         self.time = time
         self.data = data.copy() if data else {}
-        self.data.update({TEXT: text})
         self.features = features if features else []
 
         self.data.update(**kwargs)
@@ -98,10 +96,10 @@ class Message:
         text: Text,
         intent: Optional[Text] = None,
         entities: List[Dict[Text, Any]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Message":
         """
-        Builds a Message from UserUttered data
+        Build a Message from `UserUttered` data.
         Args:
             text: text of a user's utterance
             intent: an intent of the user utterance
@@ -109,7 +107,7 @@ class Message:
         Returns:
             Message
         """
-        data = {}
+        data = {TEXT: text}
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(intent)
             if split_intent:
@@ -118,17 +116,17 @@ class Message:
                 data[RESPONSE_KEY_ATTRIBUTE] = response_key
         if entities:
             data[ENTITIES] = entities
-        return cls(text, data, **kwargs)
+        return cls(data, **kwargs)
 
     @classmethod
     def build_from_action(
         cls,
         action_text: Optional[Text] = "",
         action_name: Optional[Text] = "",
-        **kwargs,
+        **kwargs: Any,
     ) -> "Message":
         """
-        Builds a Message from ActionExecuted data
+        Build a `Message` from `ActionExecuted` data.
         Args:
             action_text: text of a bot's utterance
             action_name: name of an action executed

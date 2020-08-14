@@ -33,8 +33,8 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
 def test_count_vector_featurizer(sentence, expected, expected_cls):
     ftr = CountVectorsFeaturizer()
 
-    train_message = Message(sentence)
-    test_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
+    test_message = Message(data={TEXT: sentence})
 
     WhitespaceTokenizer().process(train_message)
     WhitespaceTokenizer().process(test_message)
@@ -65,14 +65,14 @@ def test_count_vector_featurizer_response_attribute_featurization(
     ftr = CountVectorsFeaturizer()
     tk = WhitespaceTokenizer()
 
-    train_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
     # this is needed for a valid training example
     train_message.set(INTENT, intent)
     train_message.set(RESPONSE, response)
 
     # add a second example that has some response, so that the vocabulary for
     # response exists
-    second_message = Message("hello")
+    second_message = Message(data={TEXT: "hello"})
     second_message.set(RESPONSE, "hi")
     second_message.set(INTENT, "greet")
 
@@ -115,7 +115,7 @@ def test_count_vector_featurizer_attribute_featurization(
     ftr = CountVectorsFeaturizer()
     tk = WhitespaceTokenizer()
 
-    train_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
     # this is needed for a valid training example
     train_message.set(INTENT, intent)
     train_message.set(RESPONSE, response)
@@ -164,7 +164,7 @@ def test_count_vector_featurizer_shared_vocab(
     ftr = CountVectorsFeaturizer({"use_shared_vocab": True})
     tk = WhitespaceTokenizer()
 
-    train_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
     # this is needed for a valid training example
     train_message.set(INTENT, intent)
     train_message.set(RESPONSE, response)
@@ -195,13 +195,13 @@ def test_count_vector_featurizer_shared_vocab(
 )
 def test_count_vector_featurizer_oov_token(sentence, expected):
     ftr = CountVectorsFeaturizer({"OOV_token": "__oov__"})
-    train_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
 
     data = TrainingData([train_message])
     ftr.train(data)
 
-    test_message = Message(sentence)
+    test_message = Message(data={TEXT: sentence})
     ftr.process(test_message)
 
     seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
@@ -223,13 +223,13 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     ftr = CountVectorsFeaturizer(
         {"OOV_token": "__oov__", "OOV_words": ["oov_word0", "OOV_word1"]}
     )
-    train_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
 
     data = TrainingData([train_message])
     ftr.train(data)
 
-    test_message = Message(sentence)
+    test_message = Message(data={TEXT: sentence})
     ftr.process(test_message)
 
     seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
@@ -259,14 +259,14 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
     tokens_feature = [Token(i, 0) for i in tokens]
 
-    train_message = Message("")
+    train_message = Message(data={TEXT: ""})
     train_message.set(TOKENS_NAMES[TEXT], tokens_feature)
 
     data = TrainingData([train_message])
 
     ftr.train(data)
 
-    test_message = Message("")
+    test_message = Message(data={TEXT: ""})
     test_message.set(TOKENS_NAMES[TEXT], tokens_feature)
 
     ftr.process(test_message)
@@ -287,13 +287,13 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 def test_count_vector_featurizer_char(sentence, expected):
     ftr = CountVectorsFeaturizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char"})
 
-    train_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
 
     data = TrainingData([train_message])
     ftr.train(data)
 
-    test_message = Message(sentence)
+    test_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(test_message)
     ftr.process(test_message)
 
@@ -320,8 +320,11 @@ def test_count_vector_featurizer_persist_load(tmp_path):
 
     sentence1 = "ababab 123 13xc лаомтгцу sfjv oö aà"
     sentence2 = "abababalidcn 123123 13xcdc лаомтгцу sfjv oö aà"
-    train_message1 = Message(sentence1)
-    train_message2 = Message(sentence2)
+
+    train_message1 = Message(data={TEXT: sentence1})
+    train_message2 = Message(data={TEXT: sentence2})
+    WhitespaceTokenizer().process(train_message1)
+    WhitespaceTokenizer().process(train_message2)
 
     data = TrainingData([train_message1, train_message2])
     train_ftr.train(data)
@@ -354,9 +357,11 @@ def test_count_vector_featurizer_persist_load(tmp_path):
     # check if vocaculary was loaded correctly
     assert hasattr(test_ftr.vectorizers[TEXT], "vocabulary_")
 
-    test_message1 = Message(sentence1)
+    test_message1 = Message(data={TEXT: sentence1})
+    WhitespaceTokenizer().process(test_message1)
     test_ftr.process(test_message1)
-    test_message2 = Message(sentence2)
+    test_message2 = Message(data={TEXT: sentence2})
+    WhitespaceTokenizer().process(test_message2)
     test_ftr.process(test_message2)
 
     test_seq_vec_1, test_sen_vec_1 = test_message1.get_sparse_features(TEXT, [])
@@ -376,7 +381,7 @@ def test_count_vectors_featurizer_train():
     featurizer = CountVectorsFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today ?"
-    message = Message(sentence)
+    message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
     WhitespaceTokenizer().train(TrainingData([message]))
@@ -425,14 +430,14 @@ def test_count_vector_featurizer_action_attribute_featurization(
     ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
     tk = WhitespaceTokenizer()
 
-    train_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
     # this is needed for a valid training example
     train_message.set(ACTION_NAME, action_name)
     train_message.set(ACTION_TEXT, action_text)
 
     # add a second example that has some response, so that the vocabulary for
     # response exists
-    second_message = Message("hello")
+    second_message = Message(data={TEXT: "hello"})
     second_message.set(ACTION_TEXT, "hi")
     second_message.set(ACTION_NAME, "greet")
 
@@ -483,10 +488,10 @@ def test_count_vector_featurizer_process_by_attribute(
 
     # add a second example that has some response, so that the vocabulary for
     # response exists
-    train_message = Message("hello")
+    train_message = Message(data={TEXT: "hello"})
     train_message.set(ACTION_NAME, "greet")
 
-    train_message1 = Message("hello")
+    train_message1 = Message(data={TEXT: "hello"})
     train_message1.set(ACTION_TEXT, "hi")
 
     data = TrainingData([train_message, train_message1])
@@ -494,7 +499,7 @@ def test_count_vector_featurizer_process_by_attribute(
     tk.train(data)
     ftr.train(data)
 
-    test_message = Message(sentence)
+    test_message = Message(data={TEXT: sentence})
     test_message.set(ACTION_NAME, action_name)
     test_message.set(ACTION_TEXT, action_text)
 

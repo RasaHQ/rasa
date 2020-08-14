@@ -4,7 +4,7 @@ from collections import deque, defaultdict
 
 import uuid
 import typing
-from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
+from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView, Union
 
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
@@ -79,7 +79,7 @@ class StoryStep:
         block_name: Optional[Text] = None,
         start_checkpoints: Optional[List[Checkpoint]] = None,
         end_checkpoints: Optional[List[Checkpoint]] = None,
-        events: Optional[List[Event]] = None,
+        events: Optional[List[Union[Event, List[Event]]]] = None,
         source_name: Optional[Text] = None,
         is_rule: bool = None,
     ) -> None:
@@ -113,6 +113,9 @@ class StoryStep:
 
     def add_event(self, event: Event) -> None:
         self.events.append(event)
+
+    def add_events(self, events: List[Event]) -> None:
+        self.events.append(events)
 
     @staticmethod
     def _checkpoint_string(story_step_element: Checkpoint) -> Text:
@@ -185,7 +188,7 @@ class StoryStep:
 
     def explicit_events(
         self, domain: Domain, should_append_final_listen: bool = True
-    ) -> List[Event]:
+    ) -> List[Union[Event, List[Event]]]:
         """Returns events contained in the story step including implicit events.
 
         Not all events are always listed in the story dsl. This

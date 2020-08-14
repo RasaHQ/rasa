@@ -117,7 +117,7 @@ def test_convert_tags_to_entities(
     extractor = EntityExtractor()
     tokenizer = WhitespaceTokenizer()
 
-    message = Message(text)
+    message = Message(data={TEXT: text})
     tokens = tokenizer.tokenize(message, TEXT)
 
     actual_entities = extractor.convert_predictions_into_entities(

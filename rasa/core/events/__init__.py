@@ -66,11 +66,12 @@ def deserialise_entities(entities: Union[Text, List[Any]]) -> List[Dict[Text, An
 
 
 def md_format_message(text, intent, entities) -> Text:
-    from rasa.nlu.training_data.formats import MarkdownWriter, MarkdownReader
+    from rasa.nlu.training_data.formats import MarkdownReader
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     message_from_md = MarkdownReader().parse_training_example(text)
     deserialised_entities = deserialise_entities(entities)
-    return MarkdownWriter.generate_message_md(
+    return TrainingDataWriter.generate_message(
         {
             "text": message_from_md.get(TEXT),
             "intent": intent,
@@ -1037,14 +1038,10 @@ class ActionExecuted(Event):
         if not isinstance(other, ActionExecuted):
             return False
         else:
-            # if both have e2e_text compare both action name and e2e text
-            if hasattr(self, "e2e_text") and hasattr(other, "e2e_text"):
-                return (
-                    self.action_name == other.action_name
-                    and self.e2e_text == other.e2e_text
-                )
-            else:
-                return self.action_name == other.action_name
+            return (
+                self.action_name == other.action_name
+                and self.e2e_text == other.e2e_text
+            )
 
     def as_story_string(self) -> Text:
         return self.action_name
