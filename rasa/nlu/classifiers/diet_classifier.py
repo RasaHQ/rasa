@@ -909,20 +909,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         predicted_tags, confidence_values = self._entity_label_to_tags(predict_out)
 
-        if self.component_config[BILOU_FLAG]:
-            entities=self.convert_bilou_tagging_predictions_into_entities(
-                message.text,
-                message.get(TOKENS_NAMES[TEXT],[]),
-                predicted_tags,
-                confidence_values,
-            )
-        else:
-            entities = self.convert_predictions_into_entities(
-                message.text,
-                message.get(TOKENS_NAMES[TEXT], []),
-                predicted_tags,
-                confidence_values,
-            )
+        entities = self.convert_predictions_into_entities(
+            message.text,
+            message.get(TOKENS_NAMES[TEXT], []),
+            predicted_tags,
+            confidence_values,
+        )
 
         entities = self.add_extractor_name(entities)
         entities = message.get(ENTITIES, []) + entities
@@ -943,7 +935,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             if self.component_config[BILOU_FLAG]:
                 tags = bilou_utils.ensure_consistent_bilou_tagging(tags)
-                tags = bilou_utils.remove_bilou_prefixes(tags)
 
             predicted_tags[tag_spec.tag_name] = tags
             confidence_values[tag_spec.tag_name] = confidences
