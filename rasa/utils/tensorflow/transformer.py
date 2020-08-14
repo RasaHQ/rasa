@@ -192,7 +192,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         # add zeros so that the result of back reshape is still a matrix
         pad_flat = tf.zeros_like(
-            x[:, :, : (width - 1) - width * length % (width - 1), :]
+            x[:, :, : ((width - 1) - width * length % (width - 1)) % (width - 1), :]
         )
         x = tf.concat([x, pad_flat], axis=-2)
 

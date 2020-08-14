@@ -10,7 +10,7 @@ import os
 from _pytest.pytester import Testdir, RunResult
 
 from rasa.cli import scaffold
-from rasa.utils.io import write_yaml_file
+from rasa.utils.io import write_yaml
 
 
 @pytest.fixture
@@ -37,7 +37,7 @@ def create_simple_project(path: Path):
     # create a config file
     # for the cli test the resulting model is not important, use components that are
     # fast to train
-    write_yaml_file(
+    write_yaml(
         {
             "language": "en",
             "pipeline": [{"name": "KeywordIntentClassifier"}],
