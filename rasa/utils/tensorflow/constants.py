@@ -1,6 +1,7 @@
 # constants for configuration parameters of our tensorflow models
 
 LABEL = "label"
+DATABASE = "database"
 HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"
 

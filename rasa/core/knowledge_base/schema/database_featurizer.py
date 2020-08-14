@@ -1,4 +1,5 @@
 from typing import List
+import numpy as np
 
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, FEATURE_TYPE_SENTENCE
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
@@ -11,7 +12,7 @@ from rasa.core.knowledge_base.schema.database_schema import DatabaseSchema
 
 class DatabaseSchemaFeaturizer:
     @staticmethod
-    def featurize(database_schema: DatabaseSchema):
+    def featurize(database_schema: DatabaseSchema) -> np.ndarray:
         messages = DatabaseSchemaFeaturizer._convert_to_messages(database_schema)
 
         training_data = TrainingData(messages)
@@ -24,9 +25,9 @@ class DatabaseSchemaFeaturizer:
             sentence_features = [
                 f.features for f in message.features if f.type == FEATURE_TYPE_SENTENCE
             ][0]
-            all_features.append(sentence_features)
+            all_features.append(sentence_features.toarray())
 
-        return all_features
+        return np.array(all_features)
 
     @staticmethod
     def _convert_to_messages(database_schema: DatabaseSchema) -> List[Message]:

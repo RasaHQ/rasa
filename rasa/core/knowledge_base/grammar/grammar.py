@@ -95,6 +95,10 @@ class GrammarRule(object):
         return self.__repr__() == other.__repr__()
 
     @staticmethod
+    def from_nonterminal(rule_string: Text) -> "GrammarRule":
+        return eval(rule_string)
+
+    @staticmethod
     def from_string(rule_string: Text) -> "GrammarRule":
         """Create a GrammarRule from a string.
 

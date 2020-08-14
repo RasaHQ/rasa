@@ -11,9 +11,9 @@ from scipy import sparse
 from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
 import rasa.utils.io as io_utils
-from core.knowledge_base.converter.sql_converter import SQLConverter
-from core.knowledge_base.grammar.grammar import Grammar, GrammarRule
-from core.knowledge_base.schema.database_featurizer import DatabaseSchemaFeaturizer
+from rasa.core.knowledge_base.converter.sql_converter import SQLConverter
+from rasa.core.knowledge_base.grammar.grammar import Grammar, GrammarRule
+from rasa.core.knowledge_base.schema.database_featurizer import DatabaseSchemaFeaturizer
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
@@ -30,11 +30,12 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.utils.tensorflow.transformer import TransformerEncoder, TransformerDecoder
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     LABEL,
+    DATABASE,
     HIDDEN_LAYERS_SIZES,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
@@ -90,7 +91,12 @@ class KnowledgeBasePolicy(TEDPolicy):
         # Hidden layer sizes for layers before the dialogue and label embedding layers.
         # The number of hidden layers is equal to the length of the corresponding
         # list.
-        HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: [], f"{DIALOGUE}_name_text": [100]},
+        HIDDEN_LAYERS_SIZES: {
+            DIALOGUE: [],
+            LABEL: [],
+            f"{DIALOGUE}_name_text": [100],
+            DATABASE: [128],
+        },
         # Number of units in transformer
         TRANSFORMER_SIZE: 128,
         # Number of transformer layers
@@ -224,9 +230,15 @@ class KnowledgeBasePolicy(TEDPolicy):
         rules = grammar.rules
         rules += grammar.build_instance_production()
 
-        rule_to_feature_map = {"C -> *": 0}
-        for i, rule in enumerate(rules, 1):
-            rule_to_feature_map[str(rule)] = i
+        rule_to_feature_map = {}
+        index = 0
+        for rule in rules:
+            if rule.nonterminal not in rule_to_feature_map:
+                rule_to_feature_map[rule.nonterminal] = index
+                index += 1
+            rule_to_feature_map[rule.rule] = index
+            index += 1
+        rule_to_feature_map["C *"] = index
 
         return rule_to_feature_map
 
@@ -237,25 +249,25 @@ class KnowledgeBasePolicy(TEDPolicy):
     # noinspection PyPep8Naming
     def _label_features_for_Y(
         self, label_ids: np.ndarray, domain: Domain
-    ) -> Tuple[np.ndarray, List[int]]:
-        """Prepare Y data for training: features for label_ids.
-        Returns Y_sparse, Y_dense, Y_action_name:
-         - Y_sparse -- sparse features for action text
-         - Y_dense -- dense_features for action text
-         - Y_action_name -- features for action names
+    ) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], List[int]]:
+        """Prepare Y data for training:
+
+        - feature vector for the output produced so far
+        - feature vector for the next token to predict
+        - possible options for the next token to predict
         """
         sql_converter = SQLConverter(domain.database_schema)
 
-        all_features = []
-        final_label_ids = []
-        max_seq = 0
+        rules_so_far = []
+        next_rule_to_predict = []
+        possible_rules_to_predict = []
+        steps_per_dialogue = []
 
         for label_id in label_ids:
             query = domain.action_names[label_id]
+            # ignore other actions like action listen
             if not query.startswith("SELECT"):
                 continue
-
-            final_label_ids.append(label_id)
 
             # TODO why is it replaced in the first place?
             query = query.replace("<U>", "*")
@@ -263,26 +275,39 @@ class KnowledgeBasePolicy(TEDPolicy):
             # TODO: check if SELECT * FROM x is converted correctly
             rules = sql_converter.convert_to_grammar_rules(query)
 
-            if len(rules) > max_seq:
-                max_seq = len(rules)
+            steps_per_dialogue.append(len(rules))
 
             features = []
             for rule in rules:
-                idx = self.rule_to_id_mapping[str(rule)]
+                # output so far
+                if rules_so_far:
+                    f = rules_so_far[-1]
+                else:
+                    f = np.zeros(len(self.rule_to_id_mapping))
+                idx = self.rule_to_id_mapping[rule.nonterminal]
+                f[idx] = 1
+                rules_so_far.append(f)
+                # next rule to predict at this stage
+                idx = self.rule_to_id_mapping[rule.rule]
                 f = np.zeros(len(self.rule_to_id_mapping))
                 f[idx] = 1
-                features.append(f)
+                next_rule_to_predict.append(f)
+                # possible next actions
+                next_rules = list(
+                    GrammarRule.from_nonterminal(rule.nonterminal).grammar_dict.values()
+                )
+                f = np.zeros([len(next_rules), len(self.rule_to_id_mapping)])
+                for i, r in enumerate(next_rules):
+                    idx = self.rule_to_id_mapping[r]
+                    f[i][idx] = 1
+                possible_rules_to_predict.append(f)
 
-            all_features.append(features)
-
-        final_features = np.zeros(
-            [len(all_features), max_seq, len(self.rule_to_id_mapping)]
+        return (
+            rules_so_far,
+            next_rule_to_predict,
+            possible_rules_to_predict,
+            steps_per_dialogue,
         )
-        for i, rules_features in enumerate(all_features):
-            for j, f in enumerate(rules_features):
-                final_features[i][j] = f
-
-        return final_features, final_label_ids
 
     def _create_model_data(
         self,
@@ -293,15 +318,13 @@ class KnowledgeBasePolicy(TEDPolicy):
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData."""
 
-        Y_grammar_rules = np.array([])
-
         if label_ids is not None:
-            Y_grammar_rules, label_ids = self._label_features_for_Y(label_ids, domain)
-            # explicitly add last dimension to label_ids
-            # to track correctly dynamic sequences
-            label_ids = np.expand_dims(label_ids, -1)
+            rules_so_far, next_rule_to_predict, possible_rules_to_predict, steps_per_dialogue = self._label_features_for_Y(
+                label_ids, domain
+            )
         else:
-            label_ids = np.array([])
+            rules_so_far, next_rule_to_predict, possible_rules_to_predict = np.array([])
+            steps_per_dialogue = 1
 
         model_data = RasaModelData(label_key=LABEL_IDS)
 
@@ -315,7 +338,7 @@ class KnowledgeBasePolicy(TEDPolicy):
         X_action_if_text = []
         X_entities = []
 
-        for dial in data_X:
+        for dial, steps in zip(data_X, steps_per_dialogue):
             (
                 state_user_sparse,
                 state_user_dense,
@@ -330,15 +353,16 @@ class KnowledgeBasePolicy(TEDPolicy):
             ) = self._process_user_and_action_features(dial[:, 4:8])
             state_entites = self._process_entities(dial[:, 8])
 
-            X_user_sparse.append(state_user_sparse)
-            X_user_dense.append(state_user_dense)
-            X_intent.append(state_intent)
-            X_user_if_text.append(state_user_if_text)
-            X_action_sparse.append(state_action_sparse)
-            X_action_dense.append(state_action_dense)
-            X_action_name.append(state_action_name)
-            X_action_if_text.append(state_action_if_text)
-            X_entities.append(state_entites)
+            for _ in range(steps):
+                X_user_sparse.append(state_user_sparse)
+                X_user_dense.append(state_user_dense)
+                X_intent.append(state_intent)
+                X_user_if_text.append(state_user_if_text)
+                X_action_sparse.append(state_action_sparse)
+                X_action_dense.append(state_action_dense)
+                X_action_name.append(state_action_name)
+                X_action_if_text.append(state_action_if_text)
+                X_entities.append(state_entites)
 
         model_data.add_features(
             f"{DIALOGUE_FEATURES}_user",
@@ -360,11 +384,21 @@ class KnowledgeBasePolicy(TEDPolicy):
             f"{DIALOGUE_FEATURES}_user_if_text", [np.array(X_user_if_text)]
         )
 
-        model_data.add_features(f"{LABEL_FEATURES}_{ACTION_NAME}", [Y_grammar_rules])
-        model_data.add_features(LABEL_IDS, [label_ids])
+        model_data.add_features(f"{LABEL_FEATURES}_so_far", [np.array(rules_so_far)])
+        model_data.add_features(
+            f"{LABEL_FEATURES}_possible_next_rules",
+            [np.array(possible_rules_to_predict)],
+        )
+        model_data.add_features(LABEL_IDS, [np.array(next_rule_to_predict)])
 
         if dialog_lengths is not None:
-            model_data.add_features("dialog_lengths", [dialog_lengths])
+            final_dialogue_lengths = []
+            for l, s in zip(dialog_lengths, steps_per_dialogue):
+                for _ in range(s):
+                    final_dialogue_lengths.append(l)
+            model_data.add_features(
+                "dialog_lengths", [np.array(final_dialogue_lengths)]
+            )
 
         return model_data
 
@@ -410,6 +444,7 @@ class KnowledgeBasePolicy(TEDPolicy):
             isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
             self.rule_to_id_mapping,
             self.id_to_rule_mapping,
+            database_features,
         )
 
         self.model.fit(
@@ -541,6 +576,7 @@ class KnowledgeBaseModel(RasaModel):
         max_history_tracker_featurizer_used: bool,
         rule_to_id_mapping: Dict[Text, int],
         id_to_rule_mapping: Dict[int, Text],
+        database_features: np.ndarray,
     ) -> None:
         super().__init__(
             name="KnowledgeBase",
@@ -568,6 +604,8 @@ class KnowledgeBaseModel(RasaModel):
 
         self.id_to_rule_mapping = id_to_rule_mapping
         self.rule_to_id_mapping = rule_to_id_mapping
+
+        self.database_features = database_features
 
         # metrics
         self.action_loss = tf.keras.metrics.Mean(name="loss")
@@ -652,7 +690,15 @@ class KnowledgeBaseModel(RasaModel):
             self.config[WEIGHT_SPARSITY],
             layer_name_suffix=LABEL,
         )
-        self._tf_layers["transformer"] = TransformerEncoder(
+        self._tf_layers[f"ffnn.{DATABASE}"] = layers.Ffnn(
+            self.config[HIDDEN_LAYERS_SIZES][DATABASE],
+            self.config[DROP_RATE_DIALOGUE],
+            self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
+            layer_name_suffix=DATABASE,
+        )
+
+        self._tf_layers["transformer_encoder"] = TransformerEncoder(
             self.config[NUM_TRANSFORMER_LAYERS],
             self.config[TRANSFORMER_SIZE],
             self.config[NUM_HEADS],
@@ -667,6 +713,22 @@ class KnowledgeBaseModel(RasaModel):
             max_relative_position=self.config[MAX_RELATIVE_POSITION],
             name=DIALOGUE + "_encoder",
         )
+        self._tf_layers["transformer_decoder"] = TransformerDecoder(
+            self.config[NUM_TRANSFORMER_LAYERS],
+            self.config[TRANSFORMER_SIZE],
+            self.config[NUM_HEADS],
+            self.config[TRANSFORMER_SIZE] * 4,
+            self.config[REGULARIZATION_CONSTANT],
+            dropout_rate=self.config[DROP_RATE_DIALOGUE],
+            attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+            sparsity=self.config[WEIGHT_SPARSITY],
+            unidirectional=True,
+            use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+            use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+            max_relative_position=self.config[MAX_RELATIVE_POSITION],
+            name=DIALOGUE + "_decoder",
+        )
+
         self._tf_layers[f"embed.{DIALOGUE}"] = layers.Embed(
             self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
@@ -728,7 +790,7 @@ class KnowledgeBaseModel(RasaModel):
         indices = tf.stack([batch_index, last_sequence_index], axis=1)
         return tf.expand_dims(tf.gather_nd(x, indices), 1)
 
-    def _emebed_dialogue(
+    def _encoded_dialogue(
         self, dialogue_in: tf.Tensor, sequence_lengths
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Create dialogue level embedding and mask."""
@@ -736,7 +798,7 @@ class KnowledgeBaseModel(RasaModel):
         mask = self._compute_mask(sequence_lengths)
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
-        dialogue_transformed = self._tf_layers["transformer"](
+        dialogue_transformed = self._tf_layers["transformer_encoder"](
             dialogue, 1 - tf.expand_dims(mask, axis=-1), self._training
         )
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
@@ -749,9 +811,7 @@ class KnowledgeBaseModel(RasaModel):
             )
             mask = self._last_token(mask, sequence_lengths)
 
-        dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
-
-        return dialogue_embed, mask
+        return dialogue_transformed, mask
 
     def _embed_label(self, label_in: Union[tf.Tensor, np.ndarray]) -> tf.Tensor:
         label = self._tf_layers[f"ffnn.{LABEL}"](label_in, self._training)
@@ -795,29 +855,65 @@ class KnowledgeBaseModel(RasaModel):
         batch_features = tf.squeeze(tf.concat(batch_features, axis=-1), 0)
         return batch_features
 
+    def _embed_label(self, label_in: Union[tf.Tensor, np.ndarray]) -> tf.Tensor:
+        label = self._tf_layers[f"ffnn.{LABEL}"](label_in, self._training)
+        return self._tf_layers[f"embed.{LABEL}"](label)
+
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         batch = self.batch_to_model_data_format(batch_in, self.data_signature)
+
         sequence_lengths = tf.cast(
             tf.squeeze(batch["dialog_lengths"], axis=0), tf.int32
         )
 
-        label_in = []
-        for key in batch.keys():
-            if key.startswith(LABEL_FEATURES):
-                label_in.append(self._combine_sparse_dense_features(batch[key], key))
-        label_in = tf.concat(label_in, axis=-1)
-
-        all_labels, all_labels_embed = self._create_all_labels_embed()
+        rule_to_predict = tf.cast(tf.squeeze(batch[f"{LABEL_IDS}"], axis=0), tf.float32)
+        output_so_far = tf.cast(
+            tf.squeeze(batch[f"{LABEL_FEATURES}_so_far"], axis=0), tf.float32
+        )
+        possible_next_rules = tf.cast(
+            tf.squeeze(batch[f"{LABEL_FEATURES}_possible_next_rules"], axis=0),
+            tf.float32,
+        )
 
         dialogue_in = self._preprocess_batch(batch)
 
-        dialogue_embed, mask = self._emebed_dialogue(dialogue_in, sequence_lengths)
-        label_embed = self._embed_label(label_in)
+        dialogue_encoded, mask = self._encoded_dialogue(dialogue_in, sequence_lengths)
+
+        database_features = tf.convert_to_tensor(
+            self.database_features, dtype=tf.float32
+        )
+        database_features = self._tf_layers[f"ffnn.{DATABASE}"](
+            database_features, self._training
+        )
+
+        # TODO
+        in_features = tf.concat([database_features, dialogue_encoded], axis=0)
+
+        output_so_far = tf.expand_dims(output_so_far, axis=1)
+        output_so_far = self._tf_layers[f"ffnn.{LABEL}"](output_so_far, self._training)
+
+        dialogue_transformed = self._tf_layers["transformer_decoder"](
+            output_so_far,
+            dialogue_encoded,
+            1 - tf.expand_dims(mask, axis=-1),
+            self._training,
+        )
+        dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
+
+        label_embed = self._embed_label(rule_to_predict)
+        all_labels_embed = self._embed_label(possible_next_rules)
+
+        dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
         loss, acc = self._tf_layers[f"loss.{LABEL}"](
-            dialogue_embed, label_embed, label_in, all_labels_embed, all_labels, mask
+            dialogue_embed,
+            label_embed,
+            rule_to_predict,
+            all_labels_embed,
+            possible_next_rules,
+            mask,
         )
 
         self.action_loss.update_state(loss)
@@ -836,7 +932,7 @@ class KnowledgeBaseModel(RasaModel):
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
 
-        dialogue_embed, mask = self._emebed_dialogue(dialogue_in, sequence_lengths)
+        dialogue_embed, mask = self._encoded_dialogue(dialogue_in, sequence_lengths)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
             dialogue_embed[:, :, tf.newaxis, :],
