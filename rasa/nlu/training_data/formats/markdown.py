@@ -11,7 +11,7 @@ from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataWriter,
 )
 from rasa.utils.common import raise_warning
-from rasa.utils.io import encode_string
+from rasa.utils.io import encode_string, decode_string
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -31,31 +31,6 @@ MARKDOWN_SECTION_MARKERS = [f"## {s}:" for s in AVAILABLE_SECTIONS]
 item_regex = re.compile(r"\s*[-*+]\s*((?:.+\s*)*)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
-
-ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
-UNESCAPE_DCT = {espaced_char: char for char, espaced_char in ESCAPE_DCT.items()}
-
-ESCAPE = re.compile(r"[\b\f\n\r\t]")
-UNESCAPE = re.compile(r"\\[bfnrt]")
-
-
-def encode_string(s: Text) -> Text:
-    """Return an encoded python string."""
-
-    def replace(match: Match) -> Text:
-        return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
-
-    return ESCAPE.sub(replace, s)
-
-
-def decode_string(s: Text) -> Text:
-    """Return a decoded python string."""
-
-    def replace(match: Match) -> Text:
-        return UNESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
-
-    return UNESCAPE.sub(replace, s)
-
 
 logger = logging.getLogger(__name__)
 
