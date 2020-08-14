@@ -96,14 +96,14 @@ from rasa.nlu.training_data.formats import MarkdownReader
         (
             "Amsterdam Berlin and London",
             {
-                "entity": ["city", "city", "O", "city"],
+                "entity": ["U-city", "U-city", "O", "U-city"],
                 "role": ["O", "O", "O", "O"],
                 "group": ["O", "O", "O", "O"],
             },
             None,
             [
                 {"entity": "city", "start": 0, "end": 9, "value": "Amsterdam"},
-                {"entity": "city", "start": 11, "end": 17, "value": "Berlin"},
+                {"entity": "city", "start": 10, "end": 16, "value": "Berlin"},
                 {"entity": "city", "start": 21, "end": 27, "value": "London"},
             ],
         ),
