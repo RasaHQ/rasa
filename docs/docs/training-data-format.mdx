@@ -22,8 +22,11 @@ multiple files or combined in one file. The domain includes
 the definitions for [responses](domain.mdx#responses) and [forms](forms.mdx).
 See the [documentation for the domain](domain.mdx) for information on how to format your domain file.
 
-:::note
-See the documentation for Rasa Open Source 1.x for the previous (now deprecated) formats for [NLU](https://rasa.com/docs/rasa/nlu/training-data-format/) and [stories](https://rasa.com/docs/rasa/core/stories/).
+:::note Legacy Formats
+Looking for Rasa Open Source 1.x data formats? They are now deprecated, but
+you can still find the documentation for
+[markdown NLU data](https://legacy-docs-v1.rasa.com/rasa/nlu/training-data-format/) and
+[markdown stories](https://legacy-docs-v1.rasa.com/rasa/core/stories/).
 :::
 
 ### High-Level Structure
@@ -202,6 +205,7 @@ nlu:
 
 ```
 
+
 ### Synonyms
 
 Synonyms provide a way to normalize your training data by mapping an
@@ -244,9 +248,11 @@ In this case, you could define "credit card account" and "credit account" as
 Then, if either of these phrases is extracted as an entity, it will be
 mapped to the **value** `credit`.
 
-:::note
+:::note Needs Training Examples
 Synonym mapping only happens **after** entities have been extracted.
-That means that your training examples should include the synonym examples (`credit card account` and `credit account`) so that the model will learn to recognize these as entities and replace them with `credit`. 
+That means that your training examples should include the synonym examples
+(`credit card account` and `credit account`) so that the model will learn to
+recognize these as entities and replace them with `credit`.
 :::
 
 ### Regular Expressions
@@ -306,7 +312,7 @@ For example, a regex for extracting a bank account number that is 10-12 digits l
 ```
 
 
-:::note
+:::note Combining with Regexes
 
 When using the `RegexFeaturizer`, a regular expression only provides a feature
 that helps the model learn an association between intents/entities and inputs
@@ -340,28 +346,27 @@ regex patterns directly specified in the training data and can be used
 either with the [RegexFeaturizer](components/featurizers.mdx#regexfeaturizer)
 or with the [RegexEntityExtractor](components/featurizers.mdx#regexentityextractor).
 
-:::note
+:::note Combining with Regexes
 
-If you are using lookup tables in combination with the `RegexFeaturizer`, there must be a few examples of matches  
-in your training data. Otherwise the model will not learn to use the
-lookup table match features.
+If you are using lookup tables in combination with the `RegexFeaturizer`,
+there must be a few examples of matches in your training data. Otherwise the
+model will not learn to use the lookup table match features.
 :::
 
-:::warning
+:::warning Keep your lookup tables clean
 
-You have to be careful when you add data to the lookup table.  
-For example, if there are false positives or other noise in the table,
-this can hurt performance. So make sure your lookup tables contain
-clean data.
+You have to be careful when you add data to the lookup table. For example, if there
+are false positives or other noise in the table, this can hurt performance. So make
+sure your lookup tables contain clean data.
 :::
 
 
 ## Conversation Training Data
 
-Stories and rules are both representations of conversations between a user and a conversational
-assistant. They are used to train the dialogue management
-model. [**Stories**](stories.mdx) are used to train a machine learning model to identify patterns
-in conversations and generalize to unseen conversation paths.
+Stories and rules are both representations of conversations between a user
+and a conversational assistant. They are used to train the dialogue management
+model. [**Stories**](stories.mdx) are used to train a machine learning model
+to identify patterns in conversations and generalize to unseen conversation paths.
 **[Rules](rules.mdx)** describe parts of conversations that should always
 follow the same path and are used to train the
 [RulePolicy](policies.mdx#rule-policy). 
@@ -425,12 +430,13 @@ User messages follow the format:
 For example, to represent the sentence
 `I want to check my credit balance`, where `credit` is an entity:
 
-```yaml
+```yaml {3-5}
+- story: story with entities
   steps:
-    - intent: account_balance
-      entities:
-      - account_type: credit
-    - action: action_credit_account_balance
+  - intent: account_balance
+    entities:
+    - account_type: credit
+  - action: action_credit_account_balance
 ```
 
 It is important to include the entities here as well because the
@@ -446,36 +452,42 @@ by the name of the action.
 While writing stories, you will encounter three types of actions:
 
 
-1. [**Responses**](domain.mdx#responses): start with `utter_` and send a specific message
-   to the user. e.g.
+1. [**Responses**](domain.mdx#responses): start with `utter_` and
+   send a specific message to the user. e.g.
 
-```yaml
-    steps:
-    - intent: greet
-    - action: utter_greet
+```yaml {4}
+- story: story with a response
+  steps:
+  - intent: greet
+  - action: utter_greet
 ```
 
-2. [**Retrieval actions**](retrieval-actions.mdx): start with `respond_` and send a message selected by a retrieval model. e.g.
+2. [**Retrieval actions**](retrieval-actions.mdx): start with `respond_`
+   and send a message selected by a retrieval model. e.g.
 
-```yaml
-    steps:
-    - intent: faq
-    - action: respond_faq
+```yaml {4}
+- story: story with a retrieval action
+  steps:
+  - intent: faq
+  - action: respond_faq
 ```
 
-3. [**Custom actions**](custom-actions.mdx): start with `action_`, run arbitrary code and send any number of messages (or none).
+3. [**Custom actions**](custom-actions.mdx): start with `action_`, run
+   arbitrary code and send any number of messages (or none).
 
-```yaml
-    steps:
-    - intent: feedback
-    - action: action_store_feedback
+```yaml {4}
+- story: story with a custom action
+  steps:
+  - intent: feedback
+  - action: action_store_feedback
 ```
 
 #### Forms
 
 
 A [form](glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
-a set of required slots and ask the user for this information. You [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
+a set of required slots and ask the user for this information. You
+[define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
 Once defined, the [happy path](glossary.mdx#happy-unhappy-paths)
 for a form should be specified as a [rule](forms.mdx), but interruptions of forms or 
 other "unhappy paths" should be included in stories so that the model can 
@@ -484,12 +496,13 @@ As a step in a story, a form takes the following basic format:
 
 
 ```yaml
-    steps:
-    - intent: find_restaurant
-    - action: restaurant_form <!--Activate the form-->
-    - form: restaurant_form   <!--This form is currently active-->
-    - form: null              <!--Form complete, no form is active-->
-    - action: utter_restaurant_found
+- story: story with a form
+  steps:
+  - intent: find_restaurant
+  - action: restaurant_form         # Activate the form
+  - form: restaurant_form           # This form is currently active
+  - form: null                      # Form complete, no form is active
+  - action: utter_restaurant_found
 ```
 
 
@@ -504,15 +517,15 @@ A form can be interrupted and remain active; in this case the interruption shoul
 An interruption of a form could look like this:
 
 ```yaml
-  - rule: interrupted food
-    steps:
-      - intent: request_restaurant
-      - action: restaurant_form
-      - intent: chitchat
-      - action: utter_chitchat
-      - form: restaurant_form
-      - form: null
-      - action: utter_slots_values
+- rule: interrupted food
+  steps:
+    - intent: request_restaurant
+    - action: restaurant_form
+    - intent: chitchat
+    - action: utter_chitchat
+    - form: restaurant_form
+    - form: null
+    - action: utter_slots_values
 ```
 
 
@@ -522,14 +535,16 @@ A slot event is specified under the key `slot_was_set:` with the
 slot name and optionally the slot's value.
 
 **[Slots](domain.mdx#slots)** act as the bots memory. 
-Slots are **set** by entities or by custom actions and **referenced** by stories in `slot_was_set` steps. For example:
+Slots are **set** by entities or by custom actions and **referenced**
+by stories in `slot_was_set` steps. For example:
 
-```yaml
-    steps:
-    - intent: celebrate_bot
-    - slot_was_set:
-      - feedback_value: positive
-    - action: utter_yay
+```yaml {4-5}
+- story: story with a slot
+  steps:
+  - intent: celebrate_bot
+  - slot_was_set:
+    - feedback_value: positive
+  - action: utter_yay
 ```
 
 This means the story requires that the current value for the `feedback_value`
@@ -540,17 +555,19 @@ Whether or not you need to include the slot's value depends on the
 influence the dialogue. If the value doesn't matter, list only
 the slot's name:
 
-```yaml
-    steps:
-    - intent: greet
-    - slot_was_set:
-      - name
-    - action: utter_greet_user_by_name
+```yaml {4-5}
+- story: story with a slot
+  steps:
+  - intent: greet
+  - slot_was_set:
+    - name
+  - action: utter_greet_user_by_name
 ```
 
 
-:::note
-Stories do not **set** slots. The slot must be set by an entity or custom action **before** the `slot_was_set` step.
+:::note How slots work
+Stories do not **set** slots. The slot must be set by an entity or custom
+action **before** the `slot_was_set` step.
 :::
 
 
@@ -580,9 +597,10 @@ with a checkpoint, and one that starts with the same checkpoint:
   - action: action_book_flight
 ```
 
-Checkpoints at the beginning of stories can also be conditional on slots being set, for example:
+Checkpoints at the beginning of stories can also be conditional on
+slots being set, for example:
 
-```yaml
+```yaml {5-7}
 - story: story_with_a_conditional_checkpoint
   steps:
   - checkpoint: greet_checkpoint
@@ -604,10 +622,13 @@ are easier to read and write.
 #### OR statement
 
 `or` steps are ways to handle multiple intents the same way,
-without writing a separate story for each intent. For example, if you ask the user to confirm something, you might want to treat the `affirm` and `thankyou` intents in the same way. Stories with `or` steps will be converted into multiple
-separate stories at training time. For example, the following story would be converted to two stories at training time:
+without writing a separate story for each intent. For example, if you ask the user to
+confirm something, you might want to treat the `affirm` and `thankyou` intents in the
+same way. Stories with `or` steps will be converted into multiple
+separate stories at training time. For example, the following story would be converted
+to two stories at training time:
 
-```yaml
+```yaml {5-7}
 - story: story with OR
   steps:
   - intent: signup_newsletter
@@ -618,9 +639,10 @@ separate stories at training time. For example, the following story would be con
   - action: action_signup_newsletter
 ```
 
-Just like checkpoints, OR statements can be useful, but if you are using a lot of them, it is probably better to restructure your domain and/or intents.
+Just like checkpoints, OR statements can be useful, but if you are using a lot of them,
+it is probably better to restructure your domain and/or intents.
 
-:::warning
+:::warning Don't overuse
 Overusing these features (both checkpoints and OR statements) will slow down training.
 :::
 
@@ -635,7 +657,6 @@ A rule that with a condition looks like this:
 
 ```yaml
 rules:
-
 - rule: Only say `hey` when the user provided a name
   condition:
   - slot: user_provided_name
@@ -649,15 +670,17 @@ Read more about writing rules [here](rules.mdx#writing-a-rule).
 
 ## Test Conversations
 
-Test conversations combine both NLU and Core training data into a end-to-end story for evaluation. 
+Test conversations combine both NLU and Core training data into a end-to-end story
+for evaluation.
 
-:::warning
+:::info Test Only
 This format is only used for end-to-end evaluation and cannot be used for training.
 :::
 
 Test conversations are listed under the `e2e_tests` key. 
 Their format is similar to the [story](#stories) format,
-except that user message steps can include a `user` key which specifies the actual text and entity annotation of the user message. 
+except that user message steps can include a `user` key which specifies the actual
+text and entity annotation of the user message.
 
 Here's an example of a test conversation:
 
