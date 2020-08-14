@@ -26,9 +26,9 @@ if TYPE_CHECKING:
 
 DEFAULT_ENCODING = "utf-8"
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
-ESCAPE = re.compile(f'[{"".join([key for key in ESCAPE_DCT.values()])}]')
+ESCAPE = re.compile(f'[{"".join(ESCAPE_DCT.values())}]')
 UNESCAPE_DCT = {espaced_char: char for char, espaced_char in ESCAPE_DCT.items()}
-UNESCAPE = re.compile(f'[{"".join([key for key in UNESCAPE_DCT.values()])}]')
+UNESCAPE = re.compile(f'[{"".join(UNESCAPE_DCT.values())}]')
 GROUP_COMPLETE_MATCH = 0
 
 YAML_LINE_MAX_WIDTH = 4096
