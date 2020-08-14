@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 #   "numpy array containing dense features for every training example",
 #   "numpy array containing sparse features for every training example"
 # ]
-Data = Dict[Text, List[np.ndarray]]
+# TODO support dicts as well as lists
+Data = Dict[Text, Union[List[np.ndarray], Dict[Text, List[np.ndarray]]]]
 
 
 class FeatureSignature(NamedTuple):
@@ -99,7 +100,16 @@ class RasaModelData:
         if not data:
             return 0
 
-        example_lengths = [v.shape[0] for values in data.values() for v in values]
+        # example_lengths = [v.shape[0] for values in data.values() for v in values]
+        example_lengths = []
+        for values in data.values():
+            if isinstance(values, list):
+                for v in values:
+                    example_lengths.append(v.shape[0])
+            else:
+                for vs in values.values():
+                    for v in vs:
+                        example_lengths.append(v.shape[0])
 
         # check if number of examples is the same for all values
         if not all(length == example_lengths[0] for length in example_lengths):
@@ -123,7 +133,9 @@ class RasaModelData:
 
         return number_of_features
 
-    def add_features(self, key: Text, features: List[np.ndarray]):
+    def add_features(
+        self, key: Text, features: Union[List[np.ndarray], Dict[Text, List[np.ndarray]]]
+    ):
         """Add list of features to data under specified key.
 
         Should update number of examples.
@@ -135,11 +147,17 @@ class RasaModelData:
         if key in self.data:
             raise ValueError(f"Key '{key}' already exists in RasaModelData.")
 
-        self.data[key] = []
-
-        for data in features:
-            if data.size > 0:
-                self.data[key].append(data)
+        if isinstance(features, list):
+            self.data[key] = []
+            for data in features:
+                if data.size > 0:
+                    self.data[key].append(data)
+        else:
+            self.data[key] = defaultdict(list)
+            for sub_key, list_of_data in features.items():
+                for data in list_of_data:
+                    if data.size > 0:
+                        self.data[key][sub_key].append(data)
 
         if not self.data[key]:
             del self.data[key]

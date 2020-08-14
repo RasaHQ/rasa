@@ -316,7 +316,16 @@ class TrackerFeaturizer:
         # noinspection PyPep8Naming
         X = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
-
+        # X is number of examples (trackers), numberof dialogue turns,
+        # dict of attribute to list of Features
+        # attributes are:
+        # INTENT
+        # TEXT
+        # ACTION_NAME
+        # ACTION_TEXT
+        # ENTITIES
+        # SLOTS
+        # FORM
         return X, label_ids
 
     def prediction_states(
