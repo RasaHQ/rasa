@@ -18,7 +18,6 @@ from rasa.core.training.story_reader.yaml_story_reader import (
     KEY_STEPS,
     KEY_CHECKPOINT,
     KEY_SLOT_NAME,
-    KEY_SLOT_VALUE,
     KEY_CHECKPOINT_SLOTS,
     KEY_OR,
 )
