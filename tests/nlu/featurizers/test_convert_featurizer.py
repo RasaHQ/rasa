@@ -84,8 +84,8 @@ def test_convert_featurizer_train(component_builder):
     seq_vecs, sent_vecs = message.get_dense_features(INTENT, [])
     if seq_vecs:
         seq_vecs = seq_vecs.features
-    if sen_vecs:
-        sen_vecs = sen_vecs.features
+    if sent_vecs:
+        sent_vecs = sent_vecs.features
 
     assert seq_vecs is None
     assert sent_vecs is None
