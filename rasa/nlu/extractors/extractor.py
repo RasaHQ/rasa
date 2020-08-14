@@ -23,6 +23,7 @@ from rasa.nlu.constants import (
 )
 from rasa.nlu.training_data import Message
 import rasa.utils.common as common_utils
+import rasa.nlu.utils.bilou_utils as bilou_utils
 
 
 class EntityExtractor(Component):
@@ -200,6 +201,98 @@ class EntityExtractor(Component):
 
         return entities
 
+    def convert_bilou_tagging_predictions_into_entities(
+            self,
+            text: Text,
+            tokens: List[Token],
+            tags: Dict[Text, List[Text]],
+            confidences: Optional[Dict[Text, List[float]]] = None,
+    ) -> List[Dict[Text, Any]]:
+        """
+        Convert bilou tagging predictions into entities.
+
+        Args:
+            text: The text message.
+            tokens: Message tokens without CLS token.
+            tags: Predicted tags.
+            confidences: Confidences of predicted tags.
+
+        Returns:
+            Entities.
+        """
+        entities = []
+
+        last_entity_tag = NO_ENTITY_TAG
+        last_role_tag = NO_ENTITY_TAG
+        last_group_tag = NO_ENTITY_TAG
+        last_token_end = -1
+
+        for idx, token in enumerate(tokens):
+            current_entity_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
+
+            if current_entity_tag == NO_ENTITY_TAG:
+                last_entity_tag = NO_ENTITY_TAG
+                last_token_end = token.end
+                continue
+
+            current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
+            current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
+
+            new_tag_found = (
+
+                    (last_entity_tag != current_entity_tag and
+                     (bilou_utils.LAST != bilou_utils.bilou_prefix_from_tag(current_entity_tag) and
+                      bilou_utils.INSIDE != bilou_utils.bilou_prefix_from_tag(current_entity_tag) ) )
+                    or last_group_tag != current_group_tag
+                    or last_role_tag != current_role_tag
+                    or bilou_utils.BEGINNING == bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+            )
+            last_entity_tag = current_entity_tag
+
+            if new_tag_found:
+                # new entity found
+                entity = self._create_new_entity(
+                    list(tags.keys()),
+                    bilou_utils.tag_without_prefix(current_entity_tag),
+                    current_group_tag,
+                    current_role_tag,
+                    token,
+                    idx,
+                    confidences,
+                )
+                entities.append(entity)
+            elif token.start - last_token_end <= 1:
+                # current token has the same entity tag as the token before and
+                # the two tokens are only separated by at most one symbol (e.g. space,
+                # dash, etc.)
+                entities[-1][ENTITY_ATTRIBUTE_END] = token.end
+                if confidences is not None:
+                    self._update_confidence_values(entities, confidences, idx)
+            else:
+                # the token has the same entity tag as the token before but the two
+                # tokens are separated by at least 2 symbols (e.g. multiple spaces,
+                # a comma and a space, etc.)
+                entity = self._create_new_entity(
+                    list(tags.keys()),
+                    current_entity_tag,
+                    current_group_tag,
+                    current_role_tag,
+                    token,
+                    idx,
+                    confidences,
+                )
+                entities.append(entity)
+
+            last_group_tag = current_group_tag
+            last_role_tag = current_role_tag
+            last_token_end = token.end
+
+        for entity in entities:
+            entity[ENTITY_ATTRIBUTE_VALUE] = text[
+                                             entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
+                                             ]
+
+        return entities
     @staticmethod
     def _update_confidence_values(
         entities: List[Dict[Text, Any]], confidences: Dict[Text, List[float]], idx: int

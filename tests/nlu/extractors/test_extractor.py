@@ -102,7 +102,8 @@ from rasa.nlu.training_data.formats import MarkdownReader
             },
             None,
             [
-                {"entity": "city", "start": 0, "end": 16, "value": "Amsterdam Berlin"},
+                {"entity": "city", "start": 0, "end": 9, "value": "Amsterdam"},
+                {"entity": "city", "start": 11, "end": 17, "value": "Berlin"},
                 {"entity": "city", "start": 21, "end": 27, "value": "London"},
             ],
         ),
