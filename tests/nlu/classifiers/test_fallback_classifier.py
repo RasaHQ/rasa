@@ -16,6 +16,7 @@ from rasa.nlu.constants import (
     INTENT,
     INTENT_CONFIDENCE_KEY,
     INTENT_NAME_KEY,
+    TEXT,
 )
 
 
@@ -24,8 +25,8 @@ from rasa.nlu.constants import (
     [
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {
                         INTENT_NAME_KEY: "greet",
                         INTENT_CONFIDENCE_KEY: 0.234891876578331,
@@ -49,8 +50,8 @@ from rasa.nlu.constants import (
         ),
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
                         {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
@@ -62,8 +63,8 @@ from rasa.nlu.constants import (
         ),
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
                         {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
@@ -99,8 +100,8 @@ def test_predict_fallback_intent(message: Message, component_config: Dict):
     [
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 0.5},
                     INTENT_RANKING_KEY: [
                         {
@@ -121,8 +122,8 @@ def test_predict_fallback_intent(message: Message, component_config: Dict):
         ),
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
                         {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},

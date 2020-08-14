@@ -525,6 +525,23 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
         return p
 
 
+class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
+
+    max_history = 1
+
+    def create_policy(self, featurizer, priority):
+        p = TEDPolicy(
+            featurizer=featurizer,
+            priority=priority,
+            **{
+                KEY_RELATIVE_ATTENTION: True,
+                VALUE_RELATIVE_ATTENTION: True,
+                MAX_RELATIVE_POSITION: 5,
+            },
+        )
+        return p
+
+
 class TestMemoizationPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
         max_history = None

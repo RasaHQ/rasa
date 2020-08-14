@@ -164,5 +164,6 @@ excluded_words:
   - prototyper
   - hallo
   - crypto
+  - regexes
 
 spellcheck_filenames: false

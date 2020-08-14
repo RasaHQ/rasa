@@ -43,7 +43,7 @@ def test_bilou_from_tag(tag, expected):
 
 
 def test_tags_to_ids():
-    message = Message("Germany is part of the European Union")
+    message = Message.build(text="Germany is part of the European Union")
     message.set(
         BILOU_ENTITIES,
         ["U-location", "O", "O", "O", "O", "B-organisation", "L-organisation"],
@@ -65,13 +65,13 @@ def test_remove_bilou_prefixes():
 
 
 def test_build_tag_id_dict():
-    message_1 = Message("Germany is part of the European Union")
+    message_1 = Message.build(text="Germany is part of the European Union")
     message_1.set(
         BILOU_ENTITIES,
         ["U-location", "O", "O", "O", "O", "B-organisation", "L-organisation"],
     )
 
-    message_2 = Message("Berlin is the capital of Germany")
+    message_2 = Message.build(text="Berlin is the capital of Germany")
     message_2.set(BILOU_ENTITIES, ["U-location", "O", "O", "O", "O", "U-location"])
 
     training_data = TrainingData([message_1, message_2])
@@ -94,7 +94,7 @@ def test_build_tag_id_dict():
 def test_apply_bilou_schema():
     tokenizer = WhitespaceTokenizer()
 
-    message_1 = Message("Germany is part of the European Union")
+    message_1 = Message.build(text="Germany is part of the European Union")
     message_1.set(
         ENTITIES,
         [
@@ -108,7 +108,7 @@ def test_apply_bilou_schema():
         ],
     )
 
-    message_2 = Message("Berlin is the capital of Germany")
+    message_2 = Message.build(text="Berlin is the capital of Germany")
     message_2.set(
         ENTITIES,
         [
