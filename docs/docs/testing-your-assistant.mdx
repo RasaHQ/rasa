@@ -95,7 +95,7 @@ By default Rasa Open Source saves conversation tests to `tests/conversation_test
 You can test your assistant against them by running:
 
 ```bash
-$ rasa test
+rasa test
 ```
 
 :::note
@@ -154,7 +154,7 @@ By passing multiple pipeline configurations (or a folder containing them) to the
 a comparative examination between the pipelines.
 
 ```bash
-$ rasa test nlu --config pretrained_embeddings_spacy.yml supervised_embeddings.yml
+rasa test nlu --config pretrained_embeddings_spacy.yml supervised_embeddings.yml
   --nlu data/nlu.md --runs 3 --percentages 0 25 50 70 90
 ```
 
@@ -277,7 +277,7 @@ configurations. Create two (or more) config files including the policies you wan
 compare, and then use the `compare` mode of the train script to train your models:
 
 ```bash
-$ rasa train core -c config_1.yml config_2.yml \
+rasa train core -c config_1.yml config_2.yml \
   -d domain.yml -s stories_folder --out comparison_models --runs 3 \
   --percentages 0 5 25 50 70 95
 ```
@@ -290,8 +290,8 @@ Once this script has finished, you can use the evaluate script in `compare`
 mode to evaluate the models you just trained:
 
 ```bash
-$ rasa test core -m comparison_models --stories stories_folder
---out comparison_results --evaluate-model-directory
+rasa test core -m comparison_models --stories stories_folder
+  --out comparison_results --evaluate-model-directory
 ```
 
 This will evaluate each of the models on the provided stories
