@@ -5,7 +5,7 @@ title: NLU Training Data
 description: Read more about how to format training data with Rasa NLU for open source natural language processing.
 ---
 
-The training data for Rasa NLU is structured into different parts:
+NLU training data is structured into different parts:
 
 * training examples
 
@@ -126,7 +126,7 @@ Give me a [small]{"entity": "size", "group": "1"} pizza with [mushrooms]{"entity
 a [large]{"entity": "size", "group": "2"} [pepperoni]{"entity": "topping", "group": "2"}
 ```
 
-See [Training Data Format](./training-data-format) for details on how to define entities with roles and groups in your training data.
+See [Training Data Format](training-data-format.mdx#entities) for details on how to define entities with roles and groups in your training data.
 
 The entity object returned by the extractor will include the detected role/group label.
 
@@ -167,4 +167,4 @@ For example, you should not only have example like `fly FROM x TO y`, but also i
 `fly TO y FROM x`.
 
 To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
-[Forms](./forms) or use [Custom Actions](./actions#custom-actions) to extract the corresponding entity directly from the tracker.
+[Forms](forms.mdx) or use [Custom Actions](custom-actions.mdx) to extract the corresponding entity directly from the tracker.
