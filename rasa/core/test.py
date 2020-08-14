@@ -108,9 +108,9 @@ class EvaluationStore:
         Return the predicted entity associated with the target one if the entity was predicted correctly, None otherwise.
         """
         predicted_entities = list(filter(lambda predicted_entity:
-                                         target_entity.get('text') == predicted_entity.get('text') and
-                                         target_entity.get('start') == predicted_entity.get('start') and
-                                         target_entity.get('end') == predicted_entity.get('end'),
+                                         target_entity.get('text') == predicted_entity.get('text')
+                                         and target_entity.get('start') == predicted_entity.get('start')
+                                         and target_entity.get('end') == predicted_entity.get('end'),
                                          self.entity_predictions))
         return predicted_entities[0] if len(predicted_entities) > 0 else None
 
