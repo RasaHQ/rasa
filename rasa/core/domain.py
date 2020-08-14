@@ -33,6 +33,7 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
     SLOT_LISTED_ITEMS,
+    DEFAULT_INTENTS,
 )
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
@@ -369,17 +370,14 @@ class Domain:
         intents = copy.deepcopy(intents)
         intent_properties = {}
         duplicates = set()
+
         for intent in intents:
-            if not isinstance(intent, dict):
-                intent = {intent: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
+            intent_name, properties = cls._intent_properties(intent, entities)
 
-            name = list(intent.keys())[0]
-            if name in intent_properties.keys():
-                duplicates.add(name)
+            if intent_name in intent_properties.keys():
+                duplicates.add(intent_name)
 
-            intent = cls._transform_intent_properties_for_internal_use(intent, entities)
-
-            intent_properties.update(intent)
+            intent_properties.update(properties)
 
         if duplicates:
             raise InvalidDomain(
@@ -387,7 +385,35 @@ class Domain:
                 f"Either rename or remove the duplicate ones."
             )
 
+        cls._add_default_intents(intent_properties, entities)
+
         return intent_properties
+
+    @classmethod
+    def _intent_properties(
+        cls, intent: Union[Text, Dict[Text, Any]], entities: List[Text]
+    ) -> Tuple[Text, Dict[Text, Any]]:
+        if not isinstance(intent, dict):
+            intent_name = intent
+            intent = {intent_name: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
+        else:
+            intent_name = list(intent.keys())[0]
+
+        return (
+            intent_name,
+            cls._transform_intent_properties_for_internal_use(intent, entities),
+        )
+
+    @classmethod
+    def _add_default_intents(
+        cls,
+        intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
+        entities: List[Text],
+    ) -> None:
+        for intent_name in DEFAULT_INTENTS:
+            if intent_name not in intent_properties:
+                _, properties = cls._intent_properties(intent_name, entities)
+                intent_properties.update(properties)
 
     @staticmethod
     def collect_templates(
@@ -859,6 +885,9 @@ class Domain:
         intents_for_file = []
 
         for intent_name, intent_props in intent_properties.items():
+            if intent_name in DEFAULT_INTENTS:
+                # Default intents should be not dumped with the domain
+                continue
             use_entities = set(intent_props[USED_ENTITIES_KEY])
             ignore_entities = set(self.entities) - use_entities
             if len(use_entities) == len(self.entities):

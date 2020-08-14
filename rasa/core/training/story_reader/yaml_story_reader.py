@@ -2,10 +2,11 @@ import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from ruamel.yaml.parser import ParserError
 
 import rasa.utils.common as common_utils
-import rasa.utils.io
+import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_STORIES, DOCS_URL_RULES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
@@ -39,6 +40,9 @@ KEY_WAIT_FOR_USER_INPUT_AFTER_RULE = "wait_for_user_input"
 KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
 
 
+CORE_SCHEMA_FILE = "core/schemas/stories.yml"
+
+
 class YAMLStoryReader(StoryReader):
     """Class that reads Core training data and rule data in YAML format."""
 
@@ -58,9 +62,10 @@ class YAMLStoryReader(StoryReader):
             reader.template_variables,
             reader.use_e2e,
             reader.source_name,
+            reader.unfold_or_utterances,
         )
 
-    async def read_from_file(self, filename: Text) -> List[StoryStep]:
+    async def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
         """Read stories or rules from file.
 
         Args:
@@ -69,19 +74,19 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `StoryStep`s read from `filename`.
         """
+        self.source_name = filename
+
         try:
-            yaml_content = rasa.utils.io.read_yaml_file(filename)
+            file_content = io_utils.read_file(filename, io_utils.DEFAULT_ENCODING)
+            validate_yaml_schema(file_content, CORE_SCHEMA_FILE)
+            yaml_content = io_utils.read_yaml(file_content)
         except (ValueError, ParserError) as e:
             common_utils.raise_warning(
                 f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
             )
             return []
-
-        if not isinstance(yaml_content, dict):
-            common_utils.raise_warning(
-                f"Failed to read '{filename}'. It should be a YAML dictionary."
-            )
-            return []
+        except InvalidYamlFileError as e:
+            raise ValueError from e
 
         return self.read_from_parsed_yaml(yaml_content)
 
@@ -131,7 +136,7 @@ class YAMLStoryReader(StoryReader):
             return False
 
         try:
-            content = rasa.utils.io.read_yaml_file(file_path)
+            content = io_utils.read_yaml_file(file_path)
             return any(key in content for key in [KEY_STORIES, KEY_RULES])
         except Exception as e:
             # Using broad `Exception` because yaml library is not exposing all Errors
@@ -348,21 +353,21 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_slot(self, step: Dict[Text, Any]) -> None:
 
-        slot_name = step.get(KEY_SLOT_NAME, "")
-
-        if not slot_name or KEY_SLOT_VALUE not in step:
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': \n"
-                f"Slots should have a name and a value. "
-                f"This {self._get_item_title()} step will be skipped:\n"
-                f"{step}",
-                docs=self._get_docs_link(),
-            )
-            return
-
-        slot_value = step.get(KEY_SLOT_VALUE, "")
-
-        self._add_event(SlotSet.type_name, {slot_name: slot_value})
+        for slot in step.get(KEY_CHECKPOINT_SLOTS, []):
+            if isinstance(slot, dict):
+                for key, value in slot.items():
+                    self._add_event(SlotSet.type_name, {key: value})
+            elif isinstance(slot, str):
+                self._add_event(SlotSet.type_name, {slot: None})
+            else:
+                common_utils.raise_warning(
+                    f"Issue found in '{self.source_name}':\n"
+                    f"Invalid slot: \n{slot}\n"
+                    f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be "
+                    f"YAML dictionaries or Strings. The checkpoint will be skipped.",
+                    docs=self._get_docs_link(),
+                )
+                return
 
     def _parse_action(self, step: Dict[Text, Any]) -> None:
 

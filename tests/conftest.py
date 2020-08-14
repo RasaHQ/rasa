@@ -270,7 +270,7 @@ def write_endpoint_config_to_yaml(
     endpoints_path = path / endpoints_filename
 
     # write endpoints config to file
-    io_utils.write_yaml_file(data, endpoints_path)
+    io_utils.write_yaml(data, endpoints_path)
     return endpoints_path
 
 

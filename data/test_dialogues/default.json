@@ -54,7 +54,7 @@
     {
       "py/object": "rasa.core.events.ActionExecuted",
       "action_name": "utter_greet",
-      "e2e_text":null,
+      "e2e_text": null,
       "confidence": null,
       "policy": null,
       "timestamp": 1551953040.607782,

@@ -105,7 +105,7 @@ def test_calculate_cls_vector(pooling, features, expected):
 
 
 def test_flexible_nlu_pipeline():
-    message = Message("This is a test message.", data={"intent": "test"})
+    message = Message(data={TEXT: "This is a test message.", "intent": "test"})
     training_data = TrainingData([message, message, message, message, message])
 
     tokenizer = WhitespaceTokenizer()
