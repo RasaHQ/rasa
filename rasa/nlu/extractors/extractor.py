@@ -162,7 +162,7 @@ class EntityExtractor(Component):
                     )
                     or last_group_tag != current_group_tag
                     or last_role_tag != current_role_tag
-                    or bilou_utils.BEGINNING
+                    or bilou_utils.UNIT
                     == bilou_utils.bilou_prefix_from_tag(current_entity_tag)
                 )
                 last_entity_tag = current_entity_tag
