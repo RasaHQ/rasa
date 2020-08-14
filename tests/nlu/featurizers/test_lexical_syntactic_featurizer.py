@@ -47,8 +47,8 @@ def test_text_featurizer(sentence, expected_features):
         }
     )
 
-    train_message = Message(sentence)
-    test_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
+    test_message = Message(data={TEXT: sentence})
 
     WhitespaceTokenizer().process(train_message)
     WhitespaceTokenizer().process(test_message)
@@ -78,8 +78,8 @@ def test_text_featurizer_window_size(sentence, expected):
         {"features": [["upper"], ["digit"], ["low"], ["digit"]]}
     )
 
-    train_message = Message(sentence)
-    test_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
+    test_message = Message(data={TEXT: sentence})
 
     WhitespaceTokenizer().process(train_message)
     WhitespaceTokenizer().process(test_message)
@@ -117,8 +117,8 @@ def test_text_featurizer_window_size(sentence, expected):
 def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
     featurizer = LexicalSyntacticFeaturizer({"features": [["pos", "pos2"]]})
 
-    train_message = Message(sentence)
-    test_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
+    test_message = Message(data={TEXT: sentence})
 
     train_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     test_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
@@ -161,8 +161,8 @@ def test_text_featurizer_using_pos_with_action_text(
 ):
     featurizer = LexicalSyntacticFeaturizer({"features": [["pos", "pos2"]]})
 
-    train_message = Message(sentence, {ACTION_TEXT: sentence})
-    test_message = Message(sentence, {ACTION_TEXT: sentence})
+    train_message = Message(data={TEXT: sentence, ACTION_TEXT: sentence})
+    test_message = Message(data={TEXT: sentence, ACTION_TEXT: sentence})
 
     train_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     train_message.set(SPACY_DOCS[ACTION_TEXT], spacy_nlp(sentence))

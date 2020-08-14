@@ -1,6 +1,7 @@
 import copy
 import json
 from pathlib import Path
+from typing import Dict
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -11,6 +12,7 @@ from rasa.core.constants import (
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
+    DEFAULT_INTENTS,
 )
 from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
@@ -145,7 +147,7 @@ def test_domain_from_template():
     domain = Domain.load(domain_file)
 
     assert not domain.is_empty()
-    assert len(domain.intents) == 10
+    assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
     assert len(domain.action_names) == 15
 
 
@@ -313,7 +315,7 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     # lists should be deduplicated and merged
-    assert domain.intents == ["greet"]
+    assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
     assert domain.entities == ["cuisine"]
     assert isinstance(domain.slots[0], TextSlot)
     assert domain.slots[0].name == "cuisine"
@@ -427,6 +429,8 @@ def test_merge_domain_with_forms():
     ],
 )
 def test_collect_intent_properties(intents, entities, intent_properties):
+    Domain._add_default_intents(intent_properties, entities)
+
     assert Domain.collect_intent_properties(intents, entities) == intent_properties
 
 
@@ -825,3 +829,12 @@ def test_domain_from_dict_does_not_change_input():
     Domain.from_dict(input_after)
 
     assert input_after == input_before
+
+
+@pytest.mark.parametrize(
+    "domain", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
+)
+def test_add_default_intents(domain: Dict):
+    domain = Domain.from_dict(domain)
+
+    assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)

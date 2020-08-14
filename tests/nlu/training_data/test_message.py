@@ -58,7 +58,7 @@ def test_get_dense_features(
     expected_sen_features: Optional[List[Features]],
 ):
 
-    message = Message("This is a test sentence.", features=features)
+    message = Message(data={TEXT: "This is a test sentence."}, features=features)
 
     actual_seq_features, actual_sen_features = message.get_dense_features(
         attribute, featurizers
@@ -151,7 +151,7 @@ def test_get_sparse_features(
     expected_seq_features: Optional[List[Features]],
     expected_sen_features: Optional[List[Features]],
 ):
-    message = Message("This is a test sentence.", features=features)
+    message = Message(data={TEXT: "This is a test sentence."}, features=features)
 
     actual_seq_features, actual_sen_features = message.get_sparse_features(
         attribute, featurizers
@@ -241,7 +241,7 @@ def test_features_present(
     featurizers: List[Text],
     expected: bool,
 ):
-    message = Message("This is a test sentence.", features=features)
+    message = Message(data={TEXT: "This is a test sentence."}, features=features)
 
     actual = message.features_present(attribute, featurizers)
 
