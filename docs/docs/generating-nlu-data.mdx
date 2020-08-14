@@ -71,18 +71,31 @@ the response depend on the value of a categorical `product` slot that comes from
 This also makes it easy to handle the case when no entity is provided,
 e.g. "How do I migrate to Rasa?" For example:
 
-TODO: replace with new story format
-```story
-- migration{"product": "IBM Watson"}
-    - slot{"product": "Watson"}
-    - utter_watson_migration
 
-- migration{"product": "Dialogflow"}
-    - slot{"product": "Dialogflow"}
-    - utter_dialogflow_migration
+```yaml
+stories:
+- story: migrate from IBM Watson
+  steps:
+    - intent: migration
+      entities:
+      - product: IBM Watson
+    - slot_was_set:
+      - product: Watson
+    - action: utter_watson_migration
 
-- migration
-   - ask_migration_product
+- story: migrate from Dialogflow
+  steps:
+    - intent: migration
+      entities:
+      - product: Dialogflow
+    - slot_was_set:
+      - product: Dialogflow
+    - action: utter_dialogflow_migration
+
+- story: migrate from unspecified
+  steps:
+    - intent: migration
+    - action: utter_ask_migration_product
 ```
 
 ## Improving Entity Recognition
