@@ -151,7 +151,8 @@ class EntityExtractor(Component):
 
             if bilou_utils.bilou_prefix_from_tag(current_entity_tag):
                 new_tag_found = (
-                    (
+                    last_entity_tag == NO_ENTITY_TAG
+                    or (
                         last_entity_tag != current_entity_tag
                         and (
                             bilou_utils.LAST
