@@ -105,7 +105,7 @@ class EvaluationStore:
 
     def find_predicted_entity_from_target(
         self, target_entity: Dict[Text, Any]
-    ) -> Dict[Text, Any]:
+    ) -> Union[Dict[Text, Any], None]:
         """
         Return the predicted entity associated with the target one if the entity was predicted correctly, None otherwise.
         """
