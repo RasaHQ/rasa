@@ -171,11 +171,8 @@ class RasaModelData:
 
         Should update number of examples.
         """
-        if not features:
-            return
-
-        if key in self.data and sub_key in self.data[key]:
-            raise ValueError(f"Key '{key}.{sub_key}' already exists in RasaModelData.")
+        # if key in self.data and sub_key in self.data[key]:
+        #    raise ValueError(f"Key '{key}.{sub_key}' already exists in RasaModelData.")
 
         for data in features:
             if data.size > 0:
@@ -199,7 +196,7 @@ class RasaModelData:
         for data in self.data[from_key][from_sub_key]:
             if data.size > 0:
                 lengths = np.array([x.shape[0] for x in data])
-                self.data[key][sub_key].append(lengths)
+                self.data[key][sub_key].extend([lengths])
                 break
 
     def split(
