@@ -3,9 +3,8 @@
 language: en
 
 pipeline:
-  - name: SpacyNLP
-  - name: SpacyTokenizer
-  - name: SpacyFeaturizer
+  - name: ConveRTTokenizer
+  - name: ConveRTFeaturizer
   - name: RegexFeaturizer
   - name: LexicalSyntacticFeaturizer
   - name: CountVectorsFeaturizer
@@ -26,5 +25,4 @@ policies:
   - name: TEDPolicy
     max_history: 5
     epochs: 100
-  - name: MappingPolicy
-  - name: FormPolicy
+  - name: RulePolicy

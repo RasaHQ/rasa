@@ -138,6 +138,9 @@ def test_nlg_fill_template_custom(slot_name: Text, slot_value: Any):
         "custom": {
             "field": f"{{{slot_name}}}",
             "properties": {"field_prefixed": f"prefix_{{{slot_name}}}"},
+            "bool_field": True,
+            "int_field:": 42,
+            "empty_field": None,
         }
     }
     t = TemplatedNaturalLanguageGenerator(templates=dict())
@@ -146,7 +149,10 @@ def test_nlg_fill_template_custom(slot_name: Text, slot_value: Any):
     assert result == {
         "custom": {
             "field": str(slot_value),
-            "properties": {"field_prefixed": f"prefix_{str(slot_value)}"},
+            "properties": {"field_prefixed": f"prefix_{slot_value}"},
+            "bool_field": True,
+            "int_field:": 42,
+            "empty_field": None,
         }
     }
 

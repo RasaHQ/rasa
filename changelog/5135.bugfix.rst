@@ -1,1 +1,0 @@
-Fixed Rasa shell skipping button messages if buttons are attached to a message previous to the latest.

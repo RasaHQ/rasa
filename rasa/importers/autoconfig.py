@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+import sys
 
 from typing import Text, Dict, Any, List, Set
 
@@ -86,9 +87,14 @@ def _auto_configure(
             f"Values will be provided from the default configuration."
         )
 
-    default_config_file = pkg_resources.resource_filename(
-        __name__, "default_config.yml"
-    )
+    if sys.platform == "win32":
+        default_config_file = pkg_resources.resource_filename(
+            __name__, "default_config_windows.yml"
+        )
+    else:
+        default_config_file = pkg_resources.resource_filename(
+            __name__, "default_config.yml"
+        )
 
     default_config = io_utils.read_config_file(default_config_file)
 
@@ -155,7 +161,7 @@ def _dump_config(
 
 
 def _is_config_file_as_expected(
-    config_file_path: Text, missing_keys: Set[Text], auto_configured_keys: Set[Text],
+    config_file_path: Text, missing_keys: Set[Text], auto_configured_keys: Set[Text]
 ) -> bool:
     try:
         content = io_utils.read_config_file(config_file_path)
@@ -180,7 +186,7 @@ def _add_missing_config_keys_to_file(
 
 
 def _get_lines_including_autoconfig(
-    lines: List[Text], autoconfig_lines: Dict[Text, List[Text]],
+    lines: List[Text], autoconfig_lines: Dict[Text, List[Text]]
 ) -> List[Text]:
     auto_configured_keys = autoconfig_lines.keys()
 

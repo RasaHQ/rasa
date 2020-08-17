@@ -157,9 +157,9 @@ def test_core(
 
     _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 
-    kwargs = utils.minimal_kwargs(
-        additional_arguments, rasa.core.test, ["stories", "agent"]
-    )
+    from rasa.core.test import test
+
+    kwargs = utils.minimal_kwargs(additional_arguments, test, ["stories", "agent"])
 
     _test_core(stories, _agent, output, **kwargs)
 
@@ -167,11 +167,11 @@ def test_core(
 def _test_core(
     stories: Optional[Text], agent: "Agent", output_directory: Text, **kwargs: Any
 ) -> None:
-    import rasa.core.test
+    from rasa.core.test import test
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
-        rasa.core.test(stories, agent, out_directory=output_directory, **kwargs)
+        test(stories, agent, out_directory=output_directory, **kwargs)
     )
 
 

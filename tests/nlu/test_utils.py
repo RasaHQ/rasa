@@ -6,6 +6,7 @@ import tempfile
 import shutil
 import rasa.utils.io as io_utils
 from rasa.nlu import utils
+from pathlib import Path
 
 
 @pytest.fixture(scope="function")
@@ -32,7 +33,7 @@ def fake_model_dir(empty_model_dir):
 
 def test_relative_normpath():
     test_file = "/my/test/path/file.txt"
-    assert utils.relative_normpath(test_file, "/my/test") == "path/file.txt"
+    assert utils.relative_normpath(test_file, "/my/test") == Path("path/file.txt")
     assert utils.relative_normpath(None, "/my/test") is None
 
 

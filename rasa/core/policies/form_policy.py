@@ -78,10 +78,13 @@ class FormPolicy(MemoizationPolicy):
 
         return [action_before_listen, states[-1]]
 
-    def _add_states_to_lookup(
-        self, trackers_as_states, trackers_as_actions, domain, online=False
-    ):
+    def _create_lookup_from_states(
+        self,
+        trackers_as_states: List[List[Dict]],
+        trackers_as_actions: List[List[Text]],
+    ) -> Dict[Text, Text]:
         """Add states to lookup dict"""
+        lookup = {}
         for states in trackers_as_states:
             active_form = self._get_active_form_name(states[-1])
             if active_form and self._prev_action_listen_in_state(states[-1]):
@@ -91,14 +94,15 @@ class FormPolicy(MemoizationPolicy):
                 # even if there are two identical feature keys
                 # their form will be the same
                 # because of `active_form_...` feature
-                self.lookup[feature_key] = active_form
+                lookup[feature_key] = active_form
+        return lookup
 
     def recall(
         self,
         states: List[Dict[Text, float]],
         tracker: DialogueStateTracker,
         domain: Domain,
-    ) -> Optional[int]:
+    ) -> Optional[Text]:
         # modify the states
         return self._recall_states(self._modified_states(states))
 
@@ -147,13 +151,14 @@ class FormPolicy(MemoizationPolicy):
                         tracker.update(FormValidation(False))
                         return result
 
-                idx = domain.index_for_action(tracker.active_loop["name"])
-                result[idx] = 1.0
+                result = self._prediction_result(
+                    tracker.active_loop["name"], tracker, domain
+                )
 
             elif tracker.latest_action_name == tracker.active_loop.get("name"):
                 # predict action_listen after form action
-                idx = domain.index_for_action(ACTION_LISTEN_NAME)
-                result[idx] = 1.0
+                result = self._prediction_result(ACTION_LISTEN_NAME, tracker, domain)
+
         else:
             logger.debug("There is no active form")
 

@@ -13,7 +13,7 @@ from typing import Text, Optional, Dict, List
 
 from rasa.cli import utils as cli_utils
 from rasa.core import utils
-from rasa.core.channels.channel import RestInput
+from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_SERVER_URL
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.utils.io import DEFAULT_ENCODING
