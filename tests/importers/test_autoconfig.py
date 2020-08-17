@@ -125,7 +125,7 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
         (
             "config_empty.yml",
             "config_empty_after_dumping.yml",
-            "config_empty_after_dumping.yml",
+            "config_empty_after_dumping_windows.yml",
             {"policies", "pipeline"},
         ),  # no empty lines
         (
