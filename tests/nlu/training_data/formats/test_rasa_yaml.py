@@ -1,7 +1,9 @@
+import textwrap
 from typing import Text
 
 import pytest
 
+from rasa.core.domain import InvalidDomain
 import rasa.utils.io as io_utils
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.nlu.constants import INTENT
@@ -280,3 +282,100 @@ def test_minimal_yaml_nlu_file(tmp_path):
     target_file = tmp_path / "test_nlu_file.yaml"
     io_utils.write_yaml(MINIMAL_VALID_EXAMPLE, target_file, True)
     assert RasaYAMLReader.is_yaml_nlu_file(target_file)
+
+
+def test_nlg_reads_text():
+    responses_yml = textwrap.dedent(
+        """
+      responses:
+        chitchat/ask_weather:
+        - text: Where do you want to check the weather?
+    """
+    )
+
+    reader = RasaYAMLReader()
+    result = reader.reads(responses_yml)
+
+    assert result.responses == {
+        "chitchat/ask_weather": [{"text": "Where do you want to check the weather?"}]
+    }
+
+
+def test_nlg_reads_any_multimedia():
+    responses_yml = textwrap.dedent(
+        """
+      responses:
+        chitchat/ask_weather:
+        - text: Where do you want to check the weather?
+          image: https://example.com/weather.jpg
+          temperature: 25°C
+    """
+    )
+
+    reader = RasaYAMLReader()
+    result = reader.reads(responses_yml)
+
+    assert result.responses == {
+        "chitchat/ask_weather": [
+            {
+                "text": "Where do you want to check the weather?",
+                "image": "https://example.com/weather.jpg",
+                "temperature": "25°C",
+            }
+        ]
+    }
+
+
+def test_nlg_fails_to_read_empty():
+    responses_yml = textwrap.dedent(
+        """
+      responses:
+    """
+    )
+
+    reader = RasaYAMLReader()
+
+    with pytest.raises(ValueError):
+        reader.reads(responses_yml)
+
+
+def test_nlg_fails_on_empty_response():
+    responses_yml = textwrap.dedent(
+        """
+      responses:
+        chitchat/ask_weather:
+    """
+    )
+
+    reader = RasaYAMLReader()
+
+    with pytest.raises(InvalidDomain):
+        reader.reads(responses_yml)
+
+
+def test_nlg_multimedia_load_dump_roundtrip():
+    responses_yml = textwrap.dedent(
+        """
+      responses:
+        chitchat/ask_weather:
+        - text: Where do you want to check the weather?
+          image: https://example.com/weather.jpg
+          temperature: 25°C
+
+        chitchat/ask_name:
+        - text: My name is Sara.
+    """
+    )
+
+    reader = RasaYAMLReader()
+    result = reader.reads(responses_yml)
+
+    dumped = RasaYAMLWriter().dumps(result)
+
+    validation_reader = RasaYAMLReader()
+    dumped_result = validation_reader.reads(dumped)
+
+    assert dumped_result.responses == result.responses
+
+    # dumping again should also not change the format
+    assert dumped == RasaYAMLWriter().dumps(dumped_result)
