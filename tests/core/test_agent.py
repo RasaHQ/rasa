@@ -58,7 +58,7 @@ def model_server(
 
 
 async def test_training_data_is_reproducible():
-    training_data_file = "examples/moodbot/data/stories.md"
+    training_data_file = "examples/moodbot/data/stories.yml"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )
@@ -90,7 +90,7 @@ async def test_agent_train(trained_moodbot_path: Text):
     assert [type(p) for p in loaded.policy_ensemble.policies] == [
         TEDPolicy,
         MemoizationPolicy,
-        MappingPolicy,
+        RulePolicy,
     ]
 
 
@@ -144,7 +144,7 @@ async def test_agent_handle_message(default_agent: Agent):
 
 
 def test_agent_wrong_use_of_load():
-    training_data_file = "examples/moodbot/data/stories.md"
+    training_data_file = "examples/moodbot/data/stories.yml"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )

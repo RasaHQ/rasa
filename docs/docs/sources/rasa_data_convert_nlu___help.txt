@@ -1,5 +1,5 @@
 usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data DATA --out OUT
-                             [-l LANGUAGE] -f {json,md}
+                             [-l LANGUAGE] -f {json,md,yaml}
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -9,9 +9,10 @@ optional arguments:
                         (default: None)
   -l LANGUAGE, --language LANGUAGE
                         Language of data. (default: en)
-  -f {json,md}, --format {json,md}
+  -f {json,md,yaml}, --format {json,md,yaml}
                         Output format the training data should be converted
-                        into. (default: None)
+                        into. Note: currently training data can be converted
+                        to 'yaml' format only from 'md' format (default: None)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:

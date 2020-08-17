@@ -36,6 +36,11 @@ mapping:
                       type: "str"
                 - type: "str"
           - type: "map"
+            mapping: &active_loop
+              active_loop:
+                type: "str"
+                allowempty: False
+          - type: "map"
             mapping: &action
               action:
                 type: "str"
@@ -88,10 +93,7 @@ mapping:
           - type: "map"
             mapping: *action
           - type: "map"
-            mapping: &active_loop
-              active_loop:
-                type: "str"
-                allowempty: False
+            mapping: *active_loop
           - type: "map"
             mapping: *slot_was_set_seq
         condition:
