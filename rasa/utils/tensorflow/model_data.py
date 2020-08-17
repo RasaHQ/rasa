@@ -5,7 +5,19 @@ import scipy.sparse
 import tensorflow as tf
 
 from sklearn.model_selection import train_test_split
-from typing import Optional, Dict, Text, List, Tuple, Any, Union, Generator, NamedTuple
+from typing import (
+    Optional,
+    Dict,
+    Text,
+    List,
+    Tuple,
+    Any,
+    Union,
+    Generator,
+    NamedTuple,
+    ValuesView,
+    ItemsView,
+)
 from collections import defaultdict
 from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 
@@ -19,7 +31,7 @@ logger = logging.getLogger(__name__)
 #   "numpy array containing sparse features for every training example"
 # ]
 # TODO support dicts as well as lists
-Data = Dict[Text, Union[List[np.ndarray], Dict[Text, List[np.ndarray]]]]
+Data = Dict[Text, Dict[Text, List[np.ndarray]]]
 
 
 class FeatureSignature(NamedTuple):
@@ -51,35 +63,50 @@ class RasaModelData:
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
 
-    def get_only(self, key: Text) -> Optional[np.ndarray]:
-        if key in self.data:
-            return self.data[key][0]
+    def get_only(self, key: Text, sub_key: Text) -> Optional[np.ndarray]:
+        if key in self.data and sub_key in self.data[key]:
+            return self.data[key][sub_key][0]
         else:
             return None
 
-    def get(self, key: Text) -> List[np.ndarray]:
+    def get(self, key: Text, sub_key: Text) -> List[np.ndarray]:
         if key in self.data:
-            return self.data[key]
+            return self.data[key][sub_key]
         else:
             return []
 
-    def items(self):
+    def items(self) -> ItemsView:
         return self.data.items()
 
-    def values(self):
+    def values(self) -> ValuesView[Dict[Text, List[np.ndarray]]]:
         return self.data.values()
 
-    def keys(self):
-        return self.data.keys()
+    def keys(self) -> List[Text]:
+        return list(self.data.keys())
+
+    def keys_for(self, key: Text) -> List[Text]:
+        if key in self.data:
+            return list(self.data[key].keys())
 
     def first_data_example(self) -> Data:
-        return {
-            feature_name: [feature[:1] for feature in features]
-            for feature_name, features in self.data.items()
-        }
+        out_data = {}
+        for feature_name, values in self.data.items():
+            out_data[feature_name] = {}
+            for feature_sub_name, features in values.items():
+                out_data[feature_name][feature_sub_name] = [
+                    feature[:1] for feature in features
+                ]
+        return out_data
 
-    def feature_not_exist(self, key: Text) -> bool:
+    def feature_not_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
         """Check if feature key is present and features are available."""
+        if sub_key:
+            return (
+                key not in self.data
+                or not self.data[key]
+                or sub_key not in self.data[key]
+                or not self.data[key][sub_key]
+            )
 
         return key not in self.data or not self.data[key]
 
@@ -93,23 +120,18 @@ class RasaModelData:
 
         Raises: A ValueError if number of examples differ for different features.
         """
-
         if not data:
             data = self.data
 
         if not data:
             return 0
 
-        # example_lengths = [v.shape[0] for values in data.values() for v in values]
-        example_lengths = []
-        for values in data.values():
-            if isinstance(values, list):
-                for v in values:
-                    example_lengths.append(v.shape[0])
-            else:
-                for vs in values.values():
-                    for v in vs:
-                        example_lengths.append(v.shape[0])
+        example_lengths = [
+            f.shape[0]
+            for values in data.values()
+            for features in values.values()
+            for f in features
+        ]
 
         # check if number of examples is the same for all values
         if not all(length == example_lengths[0] for length in example_lengths):
@@ -120,22 +142,20 @@ class RasaModelData:
 
         return example_lengths[0]
 
-    def feature_dimension(self, key: Text) -> int:
+    def feature_dimension(self, key: Text, sub_key: Text) -> int:
         """Get the feature dimension of the given key."""
 
-        if key not in self.data:
+        if key not in self.data or sub_key not in self.data[key]:
             return 0
 
         number_of_features = 0
-        for data in self.data[key]:
+        for data in self.data[key][sub_key]:
             if data.size > 0:
                 number_of_features += data[0].shape[-1]
 
         return number_of_features
 
-    def add_features(
-        self, key: Text, features: Union[List[np.ndarray], Dict[Text, List[np.ndarray]]]
-    ):
+    def add_features(self, key: Text, features: Dict[Text, List[np.ndarray]]):
         """Add list of features to data under specified key.
 
         Should update number of examples.
@@ -147,17 +167,11 @@ class RasaModelData:
         if key in self.data:
             raise ValueError(f"Key '{key}' already exists in RasaModelData.")
 
-        if isinstance(features, list):
-            self.data[key] = []
-            for data in features:
+        self.data[key] = defaultdict(list)
+        for sub_key, list_of_data in features.items():
+            for data in list_of_data:
                 if data.size > 0:
-                    self.data[key].append(data)
-        else:
-            self.data[key] = defaultdict(list)
-            for sub_key, list_of_data in features.items():
-                for data in list_of_data:
-                    if data.size > 0:
-                        self.data[key][sub_key].append(data)
+                    self.data[key][sub_key].append(data)
 
         if not self.data[key]:
             del self.data[key]
@@ -165,17 +179,19 @@ class RasaModelData:
         # update number of examples
         self.num_examples = self.number_of_examples()
 
-    def add_lengths(self, key: Text, from_key: Text) -> None:
+    def add_lengths(
+        self, key: Text, sub_key: Text, from_key: Text, from_sub_key: Text
+    ) -> None:
         """Adds np.array of lengths of sequences to data under given key."""
-        if not self.data.get(from_key):
+        if not self.data.get(from_key) or not self.data.get(from_key, from_sub_key):
             return
 
-        self.data[key] = []
+        self.data[key][sub_key] = []
 
-        for data in self.data[from_key]:
+        for data in self.data[from_key][from_sub_key]:
             if data.size > 0:
                 lengths = np.array([x.shape[0] for x in data])
-                self.data[key].append(lengths)
+                self.data[key][sub_key].append(lengths)
                 break
 
     def split(
