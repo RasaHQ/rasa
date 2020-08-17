@@ -232,6 +232,13 @@ class TEDPolicy(Policy):
     # noinspection PyPep8Naming
     @staticmethod
     def _surface_attributes(list_of_list_of_dicts):
+        """
+        1. collects attributes present in the dataset; it is a subset of [TEXT, INTENT, ACTION_NAME, ACTION_TEXT, SLOTS, FORM, ENTITIES]
+        2. where one attribute is absent, fill it in with `None`
+
+        Args:
+            list_of_list_of_dicts: all of the core data 
+        """
         # collect all attributes
         attributes = set(
             attribute
@@ -239,7 +246,9 @@ class TEDPolicy(Policy):
             for label in list_of_dicts
             for attribute in label.keys()
         )
-
+        # List [intent: List[Features], text: List[Features], action_name: List[Features], action_text: List[Features]]
+        # ->
+        # Dict[intent: List1[List2[Features]]]; len(List1) = len of dialogue history; len(List2) = number of different features
         out = defaultdict(list)
         for list_of_dicts in list_of_list_of_dicts:
             seq_out = defaultdict(list)
@@ -255,6 +264,12 @@ class TEDPolicy(Policy):
     @staticmethod
     def _create_zero_features(list_of_all_features):
         # all features should have the same types
+        """
+        Computes default feature values for an attribute;
+        Args:
+            list_of_all_features: list containing all feature values encountered 
+            in the dataset for an attribute;
+        """
 
         example_features = next(
             iter(
@@ -286,11 +301,7 @@ class TEDPolicy(Policy):
         list_of_dicts: List[List[Dict[Text, List["Features"]]]],
         double_list: bool = False,
     ) -> Dict[Text, Dict[Text, List[Union[scipy.sparse.spmatrix, np.ndarray]]]]:
-        # TODO list of dicts can actually either be a
-        #  List[List[Dict[Text, List["Features"]]]] or List[Dict[Text, List["Features"]]]
-        #  we should unify it maybe
 
-        # we might have either a dict of lists or a dict of of list of lists
         list_of_list_of_dicts = []
         if not double_list:
             for dicts in list_of_dicts:
@@ -303,18 +314,20 @@ class TEDPolicy(Policy):
         attribute_data = {}
         for attribute, list_of_all_features in dict_of_lists_lists.items():
 
-            attribute_mask = np.ones(len(list_of_all_features), np.float32)
-
             zero_features = self._create_zero_features(list_of_all_features)
             sparse_features = defaultdict(list)
             dense_features = defaultdict(list)
             feature_types = set()
-            for i, all_features in enumerate(list_of_all_features):
+            attribute_masks = []
+            for all_features in list_of_all_features:
 
                 seq_sparse_features = defaultdict(list)
                 seq_dense_features = defaultdict(list)
+                # create a mask for every state
+                # to capture which turn has which input
+                attribute_mask = np.ones(len(all_features), np.float32)
 
-                for example_features in all_features:
+                for i, example_features in enumerate(all_features):
 
                     if example_features is None:
                         # use zero features and set mask to zero
@@ -329,10 +342,14 @@ class TEDPolicy(Policy):
                         else:
                             seq_dense_features[features.type].append(features.features)
 
-                for key, value in seq_sparse_features.items():
-                    sparse_features[key].append(value)
-                for key, value in seq_dense_features.items():
-                    dense_features[key].append(value)
+                if double_list:
+                    # we need to vstack to make sure that the input to RasaModelData().add_features is
+                    # np.ndarray[Union[np.ndarray, scipy.sparse.matrix]]
+                    for key, value in seq_sparse_features.items():
+                        sparse_features[key].append(scipy.sparse.vstack(value))
+                    for key, value in seq_dense_features.items():
+                        dense_features[key].append(np.vstack(value))
+                attribute_masks.append(attribute_mask)
 
             if not double_list:
                 # remove added sequence dimension
@@ -340,15 +357,15 @@ class TEDPolicy(Policy):
                     new_values = []
                     for value in values:
                         new_values.append(value[0])
-                    sparse_features[key] = new_values
+                    sparse_features[key] = scipy.sparse.vstack(new_values)
                 for key, values in dense_features.items():
                     new_values = []
                     for value in values:
                         new_values.append(value[0])
-                    dense_features[key] = new_values
+                    dense_features[key] = np.vstack(new_values)
 
             # TODO not sure about expand_dims
-            attribute_features = {"mask": [np.expand_dims(attribute_mask, -1)]}
+            attribute_features = {"mask": [np.array(attribute_masks)]}
             for feature_type in feature_types:
                 attribute_features[feature_type] = [
                     np.array(sparse_features[feature_type]),
@@ -364,16 +381,17 @@ class TEDPolicy(Policy):
         state_featurizer = self.featurizer.state_featurizer
         all_labels = state_featurizer.create_encoded_all_actions(domain, interpreter)
 
-        attribute_data = self._convert_to_data(all_labels)
+        attribute_data = self._convert_to_data(all_labels, double_list=False)
 
         label_data = RasaModelData()
         for attribute, attribute_features in attribute_data.items():
-            label_data.add_features(attribute, attribute_features)
+            for subkey, features in attribute_features.items():
+                label_data.add_features(attribute, subkey, features)
 
         label_ids = np.arange(domain.num_actions)
         # TODO not sure about expand_dims
         # TODO add length of text sequence
-        label_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
+        label_data.add_features(LABEL_IDS, LABEL_IDS, [np.expand_dims(label_ids, -1)])
 
         return label_data
 
@@ -389,11 +407,14 @@ class TEDPolicy(Policy):
 
         model_data = RasaModelData(label_key=LABEL_IDS)
         for attribute, attribute_features in attribute_data.items():
-            model_data.add_features(attribute, attribute_features)
+            for subkey, features in attribute_features.items():
+                model_data.add_features(attribute, subkey, features)
 
-        model_data.add_features(LABEL_IDS, [np.array(label_ids)])
+        model_data.add_features(LABEL_IDS, LABEL_IDS, [np.array(label_ids)])
         # TODO add dialogue and text lengths
-        # model_data.add_features("dialog_lengths", [dialog_lengths])
+        model_data.add_lengths(
+            "dialog", "lengths", next(iter(list(attribute_data.keys()))), "mask"
+        )
         return model_data
 
     def train(
@@ -409,7 +430,6 @@ class TEDPolicy(Policy):
         X, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
-
         self._label_data = self._create_label_data(domain, interpreter)
 
         # extract actual training data to feed to model

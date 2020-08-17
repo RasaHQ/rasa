@@ -66,7 +66,7 @@ class SingleStateFeaturizer:
                 message = Message(data={INTENT: sub_state.get(INTENT)})
                 attribute = INTENT
             else:
-                message = Message(data = {TEXT: sub_state.get(TEXT)})
+                message = Message(data={TEXT: sub_state.get(TEXT)})
                 attribute = TEXT
         elif state_type in {PREVIOUS_ACTION, ACTION}:
             if sub_state.get(ACTION_NAME):
