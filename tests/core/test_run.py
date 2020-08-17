@@ -72,7 +72,7 @@ async def test_load_agent_on_start_with_bad_model_file(
         assert any(
             "fake_model.tar.gz' could not be loaded" in str(w.message) for w in warnings
         )
-    
+
     # Fallback agent was loaded even if model was unusable
     assert isinstance(agent.interpreter, interpreter.RegexInterpreter)
     assert agent.policy_ensemble is None
