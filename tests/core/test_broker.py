@@ -208,10 +208,11 @@ def test_kafka_broker_from_config():
 def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
     from rasa.core.brokers import pika
 
-    with pytest.raises(Exception):
-        pika.initialise_pika_connection(
-            "localhost", "user", "password", connection_attempts=1
-        )
+    with caplog.at_level(logging.INFO):
+        with pytest.raises(Exception):
+            pika.initialise_pika_connection(
+                "localhost", "user", "password", connection_attempts=1
+            )
 
     assert len(caplog.records) == 0
 

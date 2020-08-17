@@ -10,4 +10,6 @@ def test_markdownnlg_read_newlines():
     reader = NLGMarkdownReader()
     result = reader.reads(md)
 
-    assert result.nlg_stories == {"faq/ask_something": ["Super answer in 2\nlines"]}
+    assert result.responses == {
+        "faq/ask_something": [{"text": "Super answer in 2\nlines"}]
+    }

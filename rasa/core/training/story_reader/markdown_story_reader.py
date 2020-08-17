@@ -15,7 +15,7 @@ from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.dsl import EndToEndReader
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
-from rasa.data import MARKDOWN_FILE_EXTENSION
+from rasa.data import MARKDOWN_FILE_EXTENSIONS
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning
 
@@ -236,7 +236,7 @@ class MarkdownStoryReader(StoryReader):
         """
         suffix = PurePath(file_path).suffix
 
-        if suffix and suffix != MARKDOWN_FILE_EXTENSION:
+        if suffix not in MARKDOWN_FILE_EXTENSIONS:
             return False
 
         try:
