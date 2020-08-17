@@ -25,6 +25,7 @@ from rasa.core.events import (
     ActiveLoop,
     ActionExecutionRejected,
     BotUttered,
+    Form,
 )
 from rasa.core.slots import FloatSlot, BooleanSlot, ListSlot, TextSlot, DataSlot, Slot
 from rasa.core.tracker_store import (
@@ -1072,3 +1073,32 @@ def test_applied_events_with_loop_unhappy_path(
     applied = tracker.applied_events()
 
     assert applied == expected_applied_events
+
+
+def test_reading_of_trackers_with_legacy_form_events():
+    loop_name1 = "my loop"
+    loop_name2 = "my form"
+    tracker = DialogueStateTracker.from_dict(
+        "sender",
+        events_as_dict=[
+            {"event": ActiveLoop.type_name, "name": loop_name1},
+            {"event": Form.type_name, "name": None},
+            {"event": Form.type_name, "name": loop_name2},
+        ],
+    )
+
+    expected_events = [ActiveLoop(loop_name1), Form(None), Form(loop_name2)]
+    assert list(tracker.events) == expected_events
+    assert tracker.active_loop["name"] == loop_name2
+
+
+def test_writing_trackers_with_legacy_form_events():
+    loop_name = "my loop"
+    tracker = DialogueStateTracker.from_events(
+        "sender", evts=[ActiveLoop(loop_name), Form(None), Form("some")]
+    )
+
+    events_as_dict = [event.as_dict() for event in tracker.events]
+
+    for event in events_as_dict:
+        assert event["event"] == ActiveLoop.type_name

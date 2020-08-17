@@ -1166,6 +1166,23 @@ class ActiveLoop(Event):
         tracker.change_form_to(self.name)
 
 
+class Form(ActiveLoop):
+    """Legacy handler of old `Form` events.
+
+    The `ActiveLoop` event used to be called `Form`. This class is there to handle old
+    legacy events which were stored with the old type name `form`.
+    """
+
+    type_name = "form"
+
+    def as_dict(self) -> Dict[Text, Any]:
+        d = super().as_dict()
+        # Dump old `Form` events as `ActiveLoop` events instead of keeping the old
+        # event type.
+        d["event"] = ActiveLoop.type_name
+        return d
+
+
 class FormValidation(Event):
     """Event added by FormPolicy to notify form action
         whether or not to validate the user input"""
