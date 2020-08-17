@@ -13,6 +13,7 @@ from typing import (
     List,
     Deque,
     Iterable,
+    Union,
 )
 
 from rasa.nlu.constants import (
@@ -35,6 +36,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     BotUttered,
     Form,
     SessionStarted,
+    ActionExecutionRejected,
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
@@ -117,6 +119,7 @@ class DialogueStateTracker:
         slots: Optional[Iterable[Slot]],
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
+        is_rule_tracker: bool = False,
     ) -> None:
         """Initialize the tracker.
 
@@ -137,6 +140,8 @@ class DialogueStateTracker:
             self.slots = AnySlotDict()
         # file source of the messages
         self.sender_source = sender_source
+        # whether the tracker belongs to a rule-based data
+        self.is_rule_tracker = is_rule_tracker
 
         ###
         # current state of the tracker - MUST be re-creatable by processing
@@ -152,7 +157,7 @@ class DialogueStateTracker:
         self.latest_message = None
         self.latest_bot_utterance = None
         self._reset()
-        self.active_form = {}
+        self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
 
     ###
     # Public tracker interface
@@ -162,15 +167,9 @@ class DialogueStateTracker:
     ) -> Dict[Text, Any]:
         """Return the current tracker state as an object."""
 
-        if event_verbosity == EventVerbosity.ALL:
-            evts = [e.as_dict() for e in self.events]
-        elif event_verbosity == EventVerbosity.AFTER_RESTART:
-            evts = [e.as_dict() for e in self.events_after_latest_restart()]
-        elif event_verbosity == EventVerbosity.APPLIED:
-            evts = [e.as_dict() for e in self.applied_events()]
-        else:
-            evts = None
-
+        _events = self._events_for_verbosity(event_verbosity)
+        if _events:
+            _events = [e.as_dict() for e in _events]
         latest_event_time = None
         if len(self.events) > 0:
             latest_event_time = self.events[-1].timestamp
@@ -182,11 +181,24 @@ class DialogueStateTracker:
             "latest_event_time": latest_event_time,
             "followup_action": self.followup_action,
             "paused": self.is_paused(),
-            "events": evts,
+            "events": _events,
             "latest_input_channel": self.get_latest_input_channel(),
-            "active_form": self.active_form,
+            # TODO: Should we add a `active_loop` key and provide both keys for a while?
+            "active_form": self.active_loop,
             "latest_action_name": self.latest_action_name,
         }
+
+    def _events_for_verbosity(
+        self, event_verbosity: EventVerbosity
+    ) -> Optional[List[Event]]:
+        if event_verbosity == EventVerbosity.ALL:
+            return list(self.events)
+        if event_verbosity == EventVerbosity.AFTER_RESTART:
+            return self.events_after_latest_restart()
+        if event_verbosity == EventVerbosity.APPLIED:
+            return self.applied_events()
+
+        return None
 
     def past_states(self, domain) -> deque:
         """Generate the past states of this tracker based on the history."""
@@ -197,35 +209,35 @@ class DialogueStateTracker:
     def change_form_to(self, form_name: Text) -> None:
         """Activate or deactivate a form"""
         if form_name is not None:
-            self.active_form = {
+            self.active_loop = {
                 "name": form_name,
                 "validate": True,
                 "rejected": False,
                 "trigger_message": self.latest_message.parse_data,
             }
         else:
-            self.active_form = {}
+            self.active_loop = {}
 
     def set_form_validation(self, validate: bool) -> None:
         """Toggle form validation"""
-        self.active_form["validate"] = validate
+        self.active_loop["validate"] = validate
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active form that it was rejected"""
-        if action_name == self.active_form.get("name"):
-            self.active_form["rejected"] = True
+        if action_name == self.active_loop.get("name"):
+            self.active_loop["rejected"] = True
 
     def set_latest_action_name(self, action_name: Text) -> None:
         """Set latest action name
             and reset form validation and rejection parameters
         """
         self.latest_action_name = action_name
-        if self.active_form.get("name"):
+        if self.active_loop.get("name"):
             # reset form validation if some form is active
-            self.active_form["validate"] = True
-        if action_name == self.active_form.get("name"):
+            self.active_loop["validate"] = True
+        if action_name == self.active_loop.get("name"):
             # reset form rejection if it was predicted again
-            self.active_form["rejected"] = False
+            self.active_loop["rejected"] = False
 
     def current_slot_values(self) -> Dict[Text, Any]:
         """Return the currently set values of the slots"""
@@ -314,100 +326,125 @@ class DialogueStateTracker:
 
         tracker = self.init_copy()
 
-        ignored_trackers = []
-        latest_message = tracker.latest_message
+        for event in self.applied_events():
 
-        for i, event in enumerate(self.applied_events()):
-            if isinstance(event, UserUttered):
-                if tracker.active_form.get("name") is None:
-                    # store latest user message before the form
-                    latest_message = event
-
-            elif isinstance(event, Form):
-                # form got either activated or deactivated, so override
-                # tracker's latest message
-                tracker.latest_message = latest_message
-
-            elif isinstance(event, ActionExecuted):
-                # yields the intermediate state
-                if tracker.active_form.get("name") is None:
-                    # no form is active, just yield as is
-                    yield tracker
-
-                elif tracker.active_form.get("rejected"):
-                    yield from ignored_trackers
-                    ignored_trackers = []
-
-                    if not tracker.active_form.get(
-                        "validate"
-                    ) or event.action_name != tracker.active_form.get("name"):
-                        # persist latest user message
-                        # that was rejected by the form
-                        latest_message = tracker.latest_message
-                    else:
-                        # form was called with validation, so
-                        # override tracker's latest message
-                        tracker.latest_message = latest_message
-
-                    yield tracker
-
-                elif event.action_name != tracker.active_form.get("name"):
-                    # it is not known whether the form will be
-                    # successfully executed, so store this tracker for later
-                    tr = tracker.copy()
-                    # form was called with validation, so
-                    # override tracker's latest message
-                    tr.latest_message = latest_message
-                    ignored_trackers.append(tr)
-
-                if event.action_name == tracker.active_form.get("name"):
-                    # the form was successfully executed, so
-                    # remove all stored trackers
-                    ignored_trackers = []
+            if isinstance(event, ActionExecuted):
+                yield tracker
 
             tracker.update(event)
 
-        # yields the final state
-        if tracker.active_form.get("name") is None:
-            # no form is active, just yield as is
-            yield tracker
-        elif (
-            tracker.active_form.get("rejected")
-            or tracker.latest_action_name == ACTION_LISTEN_NAME
-        ):
-            # either a form was rejected or user uttered smth yield trackers
-            yield from ignored_trackers
-            yield tracker
+        yield tracker
 
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events."""
 
-        def undo_till_previous(event_type, done_events):
-            """Removes events from `done_events` until the first
-               occurrence `event_type` is found which is also removed."""
-            # list gets modified - hence we need to copy events!
-            for e in reversed(done_events[:]):
-                del done_events[-1]
-                if isinstance(e, event_type):
-                    break
+        form_names = [
+            event.name
+            for event in self.events
+            if isinstance(event, Form) and event.name
+        ]
 
         applied_events = []
+
         for event in self.events:
             if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
-                undo_till_previous(ActionExecuted, applied_events)
+                self._undo_till_previous(ActionExecuted, applied_events)
             elif isinstance(event, UserUtteranceReverted):
                 # Seeing a user uttered event automatically implies there was
                 # a listen event right before it, so we'll first rewind the
                 # user utterance, then get the action right before it (also removes
                 # the `action_listen` action right before it).
-                undo_till_previous(UserUttered, applied_events)
-                undo_till_previous(ActionExecuted, applied_events)
+                self._undo_till_previous(UserUttered, applied_events)
+                self._undo_till_previous(ActionExecuted, applied_events)
+            elif (
+                isinstance(event, ActionExecuted)
+                and event.action_name in form_names
+                and not self._first_loop_execution_or_unhappy_path(
+                    event.action_name, applied_events
+                )
+            ):
+                self._undo_till_previous_loop_execution(
+                    event.action_name, applied_events
+                )
             else:
                 applied_events.append(event)
 
         return applied_events
+
+    @staticmethod
+    def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:
+        """Removes events from `done_events` until the first occurrence `event_type`
+        is found which is also removed."""
+        # list gets modified - hence we need to copy events!
+        for e in reversed(done_events[:]):
+            del done_events[-1]
+            if isinstance(e, event_type):
+                break
+
+    def _first_loop_execution_or_unhappy_path(
+        self, loop_action_name: Text, applied_events: List[Event]
+    ) -> bool:
+        next_action: Optional[Text] = None
+
+        for event in reversed(applied_events):
+            # Stop looking for a previous form execution if there is a form deactivation
+            # event because it means that the current form is running for the first
+            # time and previous form events belong to different forms.
+            if isinstance(event, Form) and event.name is None:
+                return True
+
+            if self._is_within_unhappy_path(loop_action_name, event, next_action):
+                return True
+
+            if isinstance(event, ActionExecuted):
+                # We found a previous execution of the form and we are not within an
+                # unhappy path.
+                if event.action_name == loop_action_name:
+                    return False
+
+                # Remember the action as we need that to check whether we might be
+                # within an unhappy path.
+                next_action = event.action_name
+
+        return True
+
+    @staticmethod
+    def _is_within_unhappy_path(
+        loop_action_name: Text, event: Event, next_action_in_the_future: Optional[Text]
+    ) -> bool:
+        # When actual users are talking to the action has to return an
+        # `ActionExecutionRejected` in order to enter an unhappy path.
+        form_was_rejected_previously = (
+            isinstance(event, ActionExecutionRejected)
+            and event.action_name == loop_action_name
+        )
+        # During the policy training there are no `ActionExecutionRejected` events
+        # which let us see whether we are within an unhappy path. Hence, we check if a
+        # different action was executed instead of the form after last user utterance.
+        other_action_after_latest_user_utterance = (
+            isinstance(event, UserUttered)
+            and next_action_in_the_future is not None
+            and next_action_in_the_future != loop_action_name
+        )
+
+        return form_was_rejected_previously or other_action_after_latest_user_utterance
+
+    @staticmethod
+    def _undo_till_previous_loop_execution(
+        loop_action_name: Text, done_events: List[Event]
+    ) -> None:
+        offset = 0
+        for e in reversed(done_events[:]):
+            if isinstance(e, ActionExecuted) and e.action_name == loop_action_name:
+                break
+
+            if isinstance(e, (ActionExecuted, UserUttered)):
+                del done_events[-1 - offset]
+            else:
+                # Remember events which aren't unfeaturized to get the index right
+                offset += 1
 
     def replay_events(self) -> None:
         """Update the tracker based on a list of events."""
@@ -502,6 +539,7 @@ class DialogueStateTracker:
         event_type: Type[Event],
         action_names_to_exclude: List[Text] = None,
         skip: int = 0,
+        event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
     ) -> Optional[Event]:
         """Gets the last event of a given type which was actually applied.
 
@@ -511,6 +549,7 @@ class DialogueStateTracker:
                 should be excluded from the results. Can be used to skip
                 `action_listen` events.
             skip: Skips n possible results before return an event.
+            event_verbosity: Which `EventVerbosity` should be used to search for events.
 
         Returns:
             event which matched the query or `None` if no event matched.
@@ -523,14 +562,16 @@ class DialogueStateTracker:
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
             return has_instance and not excluded
 
-        filtered = filter(filter_function, reversed(self.applied_events()))
+        filtered = filter(
+            filter_function, reversed(self._events_for_verbosity(event_verbosity) or [])
+        )
 
         for i in range(skip):
             next(filtered, None)
 
         return next(filtered, None)
 
-    def last_executed_action_has(self, name: Text, skip=0) -> bool:
+    def last_executed_action_has(self, name: Text, skip: int = 0) -> bool:
         """Returns whether last `ActionExecuted` event had a specific name.
 
         Args:
@@ -560,7 +601,7 @@ class DialogueStateTracker:
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
-        self.active_form = {}
+        self.active_loop = {}
 
     def _reset_slots(self) -> None:
         """Set all the slots to their initial value."""
@@ -621,3 +662,13 @@ class DialogueStateTracker:
             if e["entity"] in self.slots.keys()
         ]
         return new_slots
+
+    def active_form_name(self) -> Optional[Text]:
+        """Get the name of the currently active form.
+
+        Returns: `None` if no active form or the name of the currenly active form.
+        """
+        if not self.active_loop:
+            return None
+
+        return self.active_loop.get("name")

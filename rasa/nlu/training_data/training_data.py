@@ -103,16 +103,6 @@ class TrainingData:
             self.lookup_tables,
         )
 
-    def filter_by_intent(self, intent: Text) -> "TrainingData":
-        """Filter training examples."""
-        raise_warning(
-            "The `filter_by_intent` function is deprecated. "
-            "Please use `filter_training_examples` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.filter_training_examples(lambda ex: intent == ex.get(INTENT))
-
     def __hash__(self) -> int:
         from rasa.core import utils as core_utils
 
@@ -170,15 +160,18 @@ class TrainingData:
         }
 
     @lazy_property
-    def examples_per_intent(self) -> Dict[Text, int]:
+    def number_of_examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
         intents = [ex.get(INTENT) for ex in self.training_examples]
         return dict(Counter(intents))
 
     @lazy_property
-    def examples_per_response(self) -> Dict[Text, int]:
+    def number_of_examples_per_response(self) -> Dict[Text, int]:
         """Calculates the number of examples per response."""
-        return dict(Counter(self.responses))
+        responses = [
+            ex.get(RESPONSE) for ex in self.training_examples if ex.get(RESPONSE)
+        ]
+        return dict(Counter(responses))
 
     @lazy_property
     def entities(self) -> Set[Text]:
@@ -215,7 +208,7 @@ class TrainingData:
         return entity_groups_used or entity_roles_used
 
     @lazy_property
-    def examples_per_entity(self) -> Dict[Text, int]:
+    def number_of_examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
 
         entities = []
@@ -269,16 +262,6 @@ class TrainingData:
 
         return RasaWriter().dumps(self, **kwargs)
 
-    def as_json(self) -> Text:
-
-        raise_warning(
-            "Function 'as_json()' is deprecated and will be removed "
-            "in future versions. Use 'nlu_as_json()' instead.",
-            DeprecationWarning,
-        )
-
-        return self.nlu_as_json()
-
     def nlg_as_markdown(self) -> Text:
         """Generates the markdown representation of the response phrases(NLG) of
         TrainingData."""
@@ -297,16 +280,12 @@ class TrainingData:
 
         return MarkdownWriter().dumps(self)
 
-    def as_markdown(self) -> Text:
-
-        raise_warning(
-            "Function 'as_markdown()' is deprecated and will be removed "
-            "in future versions. Use 'nlu_as_markdown()' and 'nlg_as_markdown()' "
-            "instead.",
-            DeprecationWarning,
+    def nlu_as_yaml(self) -> Text:
+        from rasa.nlu.training_data.formats.rasa_yaml import (  # pytype: disable=pyi-error
+            RasaYAMLWriter,
         )
 
-        return self.nlu_as_markdown()
+        return RasaYAMLWriter().dumps(self)
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
 
@@ -389,7 +368,7 @@ class TrainingData:
             )
 
         # emit warnings for intents with only a few training samples
-        for intent, count in self.examples_per_intent.items():
+        for intent, count in self.number_of_examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
                 raise_warning(
                     f"Intent '{intent}' has only {count} training examples! "
@@ -397,7 +376,7 @@ class TrainingData:
                 )
 
         # emit warnings for entities with only a few training samples
-        for entity, count in self.examples_per_entity.items():
+        for entity, count in self.number_of_examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
                 raise_warning(
                     f"Entity {entity} has only {count} training examples! "
@@ -457,25 +436,70 @@ class TrainingData:
     def split_nlu_examples(
         self, train_frac: float, random_seed: Optional[int] = None
     ) -> Tuple[list, list]:
-        train, test = [], []
-        for intent, count in self.examples_per_intent.items():
-            ex = [e for e in self.intent_examples if e.data[INTENT] == intent]
-            if random_seed is not None:
-                random.Random(random_seed).shuffle(ex)
-            else:
-                random.shuffle(ex)
+        """Split the training data into a train and test set.
 
-            n_train = int(count * train_frac)
-            train.extend(ex[:n_train])
-            test.extend(ex[n_train:])
+        Args:
+            train_frac: percentage of examples to add to the training set.
+            random_seed: random seed
+
+        Returns:
+            Test and training examples.
+        """
+        train, test = [], []
+        training_examples = set(self.training_examples)
+
+        def _split(_examples: List[Message], _count: int) -> None:
+            if random_seed is not None:
+                random.Random(random_seed).shuffle(_examples)
+            else:
+                random.shuffle(_examples)
+
+            n_train = int(_count * train_frac)
+            train.extend(_examples[:n_train])
+            test.extend(_examples[n_train:])
+
+        # to make sure we have at least one example per response and intent in the
+        # training/test data, we first go over the response examples and then go over
+        # intent examples
+
+        for response, count in self.number_of_examples_per_response.items():
+            examples = [
+                e
+                for e in training_examples
+                if RESPONSE in e.data and e.data[RESPONSE] == response
+            ]
+            _split(examples, count)
+            training_examples = training_examples - set(examples)
+
+        for intent, count in self.number_of_examples_per_intent.items():
+            examples = [
+                e
+                for e in training_examples
+                if INTENT in e.data and e.data[INTENT] == intent
+            ]
+            _split(examples, count)
+            training_examples = training_examples - set(examples)
+
         return test, train
 
     def print_stats(self) -> None:
+        number_of_examples_for_each_intent = []
+        for intent_name, example_count in self.number_of_examples_per_intent.items():
+            number_of_examples_for_each_intent.append(
+                f"intent: {intent_name}, training examples: {example_count}   "
+            )
+        newline = "\n"
+
         logger.info("Training data stats:")
         logger.info(
             f"Number of intent examples: {len(self.intent_examples)} "
             f"({len(self.intents)} distinct intents)"
+            "\n"
         )
+        # log the number of training examples per intent
+
+        logger.debug(f"{newline.join(number_of_examples_for_each_intent)}")
+
         if self.intents:
             logger.info(f"  Found intents: {list_to_str(self.intents)}")
         logger.info(

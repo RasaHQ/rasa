@@ -1,3 +1,4 @@
+from typing import Type
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -23,22 +24,24 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
 )
+from rasa.core.interpreter import RegexInterpreter
+from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.policy import SupportedData, Policy
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.keras_policy import KerasPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     RANKING_LENGTH,
     LOSS_TYPE,
     SCALE_LOSS,
     EVAL_NUM_EXAMPLES,
-    EPOCHS,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
@@ -99,7 +102,7 @@ class PolicyTestCollection:
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
         policy = self.create_policy(featurizer, priority)
         training_trackers = await train_trackers(default_domain, augmentation_factor=20)
-        policy.train(training_trackers, default_domain)
+        policy.train(training_trackers, default_domain, RegexInterpreter())
         return policy
 
     def test_featurizer(self, trained_policy, tmpdir):
@@ -159,12 +162,6 @@ class PolicyTestCollection:
         return domain.action_names[index]
 
 
-class TestKerasPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = KerasPolicy(featurizer, priority)
-        return p
-
-
 class TestSklearnPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority, **kwargs):
         p = SklearnPolicy(featurizer, priority, **kwargs)
@@ -186,13 +183,18 @@ class TestSklearnPolicy(PolicyTestCollection):
         self, default_domain, trackers, featurizer, priority
     ):
         policy = self.create_policy(featurizer=featurizer, priority=priority, cv=None)
-        policy.train(trackers, domain=default_domain, this_is_not_a_feature=True)
+        policy.train(
+            trackers,
+            domain=default_domain,
+            interpreter=RegexInterpreter(),
+            this_is_not_a_feature=True,
+        )
 
     def test_cv_none_does_not_trigger_search(
         self, mock_search, default_domain, trackers, featurizer, priority
     ):
         policy = self.create_policy(featurizer=featurizer, priority=priority, cv=None)
-        policy.train(trackers, domain=default_domain)
+        policy.train(trackers, domain=default_domain, interpreter=RegexInterpreter())
 
         assert mock_search.call_count == 0
         assert policy.model != "mockmodel"
@@ -202,7 +204,7 @@ class TestSklearnPolicy(PolicyTestCollection):
     ):
 
         policy = self.create_policy(featurizer=featurizer, priority=priority, cv=3)
-        policy.train(trackers, domain=default_domain)
+        policy.train(trackers, domain=default_domain, interpreter=RegexInterpreter())
 
         assert mock_search.call_count > 0
         assert mock_search.call_args_list[0][1]["cv"] == 3
@@ -216,7 +218,7 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy = self.create_policy(
             featurizer=featurizer, priority=priority, cv=3, param_grid=param_grid
         )
-        policy.train(trackers, domain=default_domain)
+        policy.train(trackers, domain=default_domain, interpreter=RegexInterpreter())
 
         assert mock_search.call_count > 0
         assert mock_search.call_args_list[0][1]["cv"] == 3
@@ -248,7 +250,9 @@ class TestSklearnPolicy(PolicyTestCollection):
 
             new_trackers.append(new_tracker)
 
-        policy.train(new_trackers, domain=default_domain)
+        policy.train(
+            new_trackers, domain=default_domain, interpreter=RegexInterpreter()
+        )
         predicted_probabilities = policy.predict_action_probabilities(
             tracker, default_domain
         )
@@ -267,7 +271,7 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy = self.create_policy(
             featurizer=featurizer, priority=priority, cv=None, C=123
         )
-        policy.train(trackers, domain=default_domain)
+        policy.train(trackers, domain=default_domain, interpreter=RegexInterpreter())
         assert policy.model.C == 123
 
     def test_train_with_shuffle_false(
@@ -277,7 +281,7 @@ class TestSklearnPolicy(PolicyTestCollection):
             featurizer=featurizer, priority=priority, shuffle=False
         )
         # does not raise
-        policy.train(trackers, domain=default_domain)
+        policy.train(trackers, domain=default_domain, interpreter=RegexInterpreter())
 
 
 class TestTEDPolicy(PolicyTestCollection):
@@ -466,6 +470,23 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
         return p
 
 
+class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
+
+    max_history = 1
+
+    def create_policy(self, featurizer, priority):
+        p = TEDPolicy(
+            featurizer=featurizer,
+            priority=priority,
+            **{
+                KEY_RELATIVE_ATTENTION: True,
+                VALUE_RELATIVE_ATTENTION: True,
+                MAX_RELATIVE_POSITION: 5,
+            },
+        )
+        return p
+
+
 class TestMemoizationPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
         max_history = None
@@ -484,7 +505,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
     async def test_memorise(self, trained_policy, default_domain):
         trackers = await train_trackers(default_domain, augmentation_factor=20)
-        trained_policy.train(trackers, default_domain)
+        trained_policy.train(trackers, default_domain, RegexInterpreter())
         lookup_with_augmentation = trained_policy.lookup
 
         trackers = [
@@ -500,7 +521,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
-            assert recalled == default_domain.index_for_action(actions[0])
+            assert recalled == actions[0]
 
         nums = np.random.randn(default_domain.num_states)
         random_states = [{f: num for f, num in zip(default_domain.input_states, nums)}]
@@ -510,7 +531,9 @@ class TestMemoizationPolicy(PolicyTestCollection):
         trackers_no_augmentation = await train_trackers(
             default_domain, augmentation_factor=0
         )
-        trained_policy.train(trackers_no_augmentation, default_domain)
+        trained_policy.train(
+            trackers_no_augmentation, default_domain, RegexInterpreter()
+        )
         lookup_no_augmentation = trained_policy.lookup
 
         assert lookup_no_augmentation == lookup_with_augmentation
@@ -543,10 +566,10 @@ class TestFormPolicy(TestMemoizationPolicy):
         p = FormPolicy(priority=priority)
         return p
 
-    async def test_memorise(self, trained_policy, default_domain):
+    async def test_memorise(self, trained_policy: FormPolicy, default_domain: Domain):
         domain = Domain.load("data/test_domains/form.yml")
         trackers = await training.load_data("data/test_stories/stories_form.md", domain)
-        trained_policy.train(trackers, domain)
+        trained_policy.train(trackers, domain, RegexInterpreter())
 
         (
             all_states,
@@ -784,7 +807,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "greet" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "greet" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == (
             "## sender\n* greet\n    - utter_hello\n* greet\n"
         )
@@ -820,7 +843,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == "## sender\n* bye\n"
 
     def test_affirm_rephrased_intent(self, trained_policy, default_domain):
@@ -860,7 +883,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == "## sender\n* bye\n"
 
     def test_denied_rephrasing_affirmation(self, trained_policy, default_domain):
@@ -900,7 +923,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == (
             "## sender\n* greet\n    - utter_hello\n* bye\n"
         )
@@ -924,3 +947,60 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         next_action = self._get_next_action(trained_policy, events, default_domain)
 
         assert next_action == ACTION_LISTEN_NAME
+
+
+@pytest.mark.parametrize(
+    "policy,supported_data",
+    [
+        (TEDPolicy, SupportedData.ML_DATA),
+        (RulePolicy, SupportedData.ML_AND_RULE_DATA),
+        (MemoizationPolicy, SupportedData.ML_DATA),
+    ],
+)
+def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
+    assert policy.supported_data() == supported_data
+
+
+class OnlyRulePolicy(Policy):
+    """Test policy that supports both rule-based and ML-based training data."""
+
+    @staticmethod
+    def supported_data() -> SupportedData:
+        return SupportedData.RULE_DATA
+
+
+@pytest.mark.parametrize(
+    "policy,n_rule_trackers,n_ml_trackers",
+    [
+        (TEDPolicy(), 0, 3),
+        (RulePolicy(), 2, 3),
+        (OnlyRulePolicy, 2, 0),  # policy can be passed as a `type` as well
+    ],
+)
+def test_get_training_trackers_for_policy(
+    policy: Policy, n_rule_trackers: int, n_ml_trackers
+):
+    # create five trackers (two rule-based and three ML trackers)
+    trackers = [
+        DialogueStateTracker("id1", slots=[], is_rule_tracker=True),
+        DialogueStateTracker("id2", slots=[], is_rule_tracker=False),
+        DialogueStateTracker("id3", slots=[], is_rule_tracker=False),
+        DialogueStateTracker("id4", slots=[], is_rule_tracker=True),
+        DialogueStateTracker("id5", slots=[], is_rule_tracker=False),
+    ]
+
+    trackers = SupportedData.trackers_for_policy(policy, trackers)
+
+    rule_trackers = [tracker for tracker in trackers if tracker.is_rule_tracker]
+    ml_trackers = [tracker for tracker in trackers if not tracker.is_rule_tracker]
+
+    assert len(rule_trackers) == n_rule_trackers
+    assert len(ml_trackers) == n_ml_trackers
+
+
+@pytest.mark.parametrize(
+    "policy", [FormPolicy, MappingPolicy, FallbackPolicy, TwoStageFallbackPolicy]
+)
+def test_deprecation_warnings_for_old_rule_like_policies(policy: Type[Policy]):
+    with pytest.warns(FutureWarning):
+        policy(None)

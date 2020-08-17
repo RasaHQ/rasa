@@ -1,12 +1,13 @@
 import numpy as np
 import pytest
-
 from unittest.mock import Mock
 
+from rasa.nlu.constants import FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
+from rasa.nlu.featurizers.featurizer import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import TEXT, SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, INTENT
+from rasa.nlu.constants import TEXT, INTENT
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     RANDOM_SEED,
@@ -51,17 +52,17 @@ def test_compute_default_label_features():
             [
                 Message(
                     "test a",
-                    data={
-                        SPARSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                    },
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                    ],
                 ),
                 Message(
                     "test b",
-                    data={
-                        SPARSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                    },
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                    ],
                 ),
             ],
             True,
@@ -70,10 +71,21 @@ def test_compute_default_label_features():
             [
                 Message(
                     "test a",
-                    data={
-                        SPARSE_FEATURE_NAMES[INTENT]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[INTENT]: np.zeros(1),
-                    },
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
+                    ],
+                )
+            ],
+            False,
+        ),
+        (
+            [
+                Message(
+                    "test a",
+                    features=[
+                        Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, INTENT, "test")
+                    ],
                 )
             ],
             False,
@@ -82,31 +94,11 @@ def test_compute_default_label_features():
 )
 def test_check_labels_features_exist(messages, expected):
     attribute = TEXT
+    classifier = DIETClassifier()
+    assert classifier._check_labels_features_exist(messages, attribute) == expected
 
-    assert DIETClassifier._check_labels_features_exist(messages, attribute) == expected
 
-
-@pytest.mark.parametrize(
-    "pipeline",
-    [
-        [
-            {
-                "name": "ConveRTTokenizer",
-                "intent_tokenization_flag": True,
-                "intent_split_symbol": "+",
-            },
-            {"name": "CountVectorsFeaturizer"},
-            {"name": "ConveRTFeaturizer"},
-            {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
-        ],
-        [
-            {"name": "WhitespaceTokenizer"},
-            {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
-        ],
-    ],
-)
-async def test_train_persist_load_with_different_settings(
+async def _train_persist_load_with_different_settings(
     pipeline, component_builder, tmpdir
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
@@ -127,9 +119,37 @@ async def test_train_persist_load_with_different_settings(
     assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
 
 
-async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
-    from rasa.nlu import train
+@pytest.mark.skip_on_windows
+async def test_train_persist_load_with_different_settings_non_windows(
+    component_builder, tmpdir
+):
+    pipeline = [
+        {
+            "name": "ConveRTTokenizer",
+            "intent_tokenization_flag": True,
+            "intent_split_symbol": "+",
+        },
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "ConveRTFeaturizer"},
+        {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
+    ]
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir
+    )
 
+
+async def test_train_persist_load_with_different_settings(component_builder, tmpdir):
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
+    ]
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir
+    )
+
+
+async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [

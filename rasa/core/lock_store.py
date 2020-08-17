@@ -274,15 +274,17 @@ def _create_from_endpoint_config(
     elif endpoint_config.type == "redis":
         lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
     else:
-        lock_store = _load_from_module_string(endpoint_config)
+        lock_store = _load_from_module_name_in_endpoint_config(endpoint_config)
 
     logger.debug(f"Connected to lock store '{lock_store.__class__.__name__}'.")
 
     return lock_store
 
 
-def _load_from_module_string(endpoint_config: EndpointConfig) -> "LockStore":
-    """Given the name of a `LockStore` module tries to retrieve it."""
+def _load_from_module_name_in_endpoint_config(
+    endpoint_config: EndpointConfig,
+) -> "LockStore":
+    """Retrieve a `LockStore` based on its class name."""
 
     try:
         lock_store_class = common.class_from_module_path(endpoint_config.type)

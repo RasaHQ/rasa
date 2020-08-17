@@ -1,0 +1,63 @@
+##########
+## Available datasets
+##########
+# - "Carbon Bot"
+# - "Hermit"
+# - "Private 1"
+# - "Private 2"
+# - "Private 3"
+# - "Sara"
+
+##########
+## Available configurations
+##########
+# - "BERT + DIET(bow) + ResponseSelector(bow)"
+# - "BERT + DIET(seq) + ResponseSelector(t2t)"
+# - "ConveRT + DIET(bow) + ResponseSelector(bow)"
+# - "ConveRT + DIET(seq) + ResponseSelector(t2t)"
+# - "Spacy + DIET(bow) + ResponseSelector(bow)"
+# - "Spacy + DIET(seq) + ResponseSelector(t2t)"
+# - "Sparse + ConveRT + DIET(bow) + ResponseSelector(bow)"
+# - "Sparse + ConveRT + DIET(seq) + ResponseSelector(t2t)"
+# - "Sparse + DIET(bow) + ResponseSelector(bow)"
+# - "Sparse + DIET(seq) + ResponseSelector(t2t)"
+# - "Sparse + Spacy + DIET(bow) + ResponseSelector(bow)"
+# - "Sparse + Spacy + DIET(seq) + ResponseSelector(t2t)"
+
+## Example configuration
+#################### syntax #################
+## include:
+##   - dataset: <dataset_name>
+##     config: <configuration_name>
+#
+#include:
+#  - dataset: "Carbon Bot"
+#    config: "Sparse + EmbeddingIntent + ResponseSelector(bow)"
+###
+# matrix
+###
+# dataset: [<dataset>]
+# config: [<config>]
+
+
+dataset:
+  - "Carbon Bot"
+  - "Sara"
+  - "Hermit"
+  - "Private 1"
+  - "Private 2"
+  - "Private 3"
+
+config:
+  - "BERT + DIET(bow) + ResponseSelector(bow)"
+  - "BERT + DIET(seq) + ResponseSelector(t2t)"
+  - "ConveRT + DIET(bow) + ResponseSelector(bow)"
+  - "ConveRT + DIET(seq) + ResponseSelector(t2t)"
+  - "Spacy + DIET(bow) + ResponseSelector(bow)"
+  - "Spacy + DIET(seq) + ResponseSelector(t2t)"
+  - "Sparse + ConveRT + DIET(bow) + ResponseSelector(bow)"
+  - "Sparse + ConveRT + DIET(seq) + ResponseSelector(t2t)"
+  - "Sparse + DIET(bow) + ResponseSelector(bow)"
+  - "Sparse + DIET(seq) + ResponseSelector(t2t)"
+  - "Sparse + Spacy + DIET(bow) + ResponseSelector(bow)"
+  - "Sparse + Spacy + DIET(seq) + ResponseSelector(t2t)"

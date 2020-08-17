@@ -1,0 +1,25 @@
+name: Automatic PR Merger
+
+on:
+  push: {} # update PR when base branch is updated
+  status: {} # try to merge when other checks are completed
+  pull_request_review: # try to merge after review
+    types:
+      - submitted
+      - edited
+      - dismissed
+  pull_request: # try to merge if labels have changed (white/black list)
+    types:
+      - labeled
+      - unlabeled
+
+jobs:
+  # thats's all. single step is needed - if PR is mergeable according to
+  # branch protection rules it will be merged automatically
+  mergepal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: rasahq/merge-pal-action@master
+        with:
+          token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN || secrets.GITHUB_TOKEN}}

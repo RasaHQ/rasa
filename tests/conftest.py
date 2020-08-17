@@ -1,5 +1,7 @@
 import asyncio
 import random
+import pytest
+import sys
 import uuid
 
 from sanic.request import Request
@@ -7,7 +9,6 @@ from sanic.testing import SanicTestClient
 
 from typing import Iterator, Callable
 
-import pytest
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
 from sanic import Sanic
@@ -18,8 +19,7 @@ from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
-from rasa.core.channels import channel
-from rasa.core.channels.channel import RestInput
+from rasa.core.channels import channel, RestInput
 from rasa.core.domain import SessionConfig
 from rasa.core.events import UserUttered
 from rasa.core.exporter import Exporter
@@ -37,10 +37,8 @@ from tests.core.conftest import (
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
     END_TO_END_STORY_FILE,
-    MOODBOT_MODEL_PATH,
     INCORRECT_NLU_DATA,
 )
-
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -87,12 +85,11 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path() -> Text:
-    return await train_async(
+async def trained_moodbot_path(trained_async) -> Text:
+    return await trained_async(
         domain="examples/moodbot/domain.yml",
         config="examples/moodbot/config.yml",
         training_files="examples/moodbot/data/",
-        output_path=MOODBOT_MODEL_PATH,
     )
 
 
@@ -262,7 +259,7 @@ def write_endpoint_config_to_yaml(
     endpoints_path = path / endpoints_filename
 
     # write endpoints config to file
-    io_utils.write_yaml_file(data, endpoints_path)
+    io_utils.write_yaml(data, endpoints_path)
     return endpoints_path
 
 
@@ -271,6 +268,14 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
         uuid.uuid4().hex,
         timestamp=timestamp if timestamp is not None else random.random(),
     )
+
+
+def pytest_runtest_setup(item) -> None:
+    if (
+        "skip_on_windows" in [mark.name for mark in item.iter_markers()]
+        and sys.platform == "win32"
+    ):
+        pytest.skip("cannot run on Windows")
 
 
 class MockExporter(Exporter):

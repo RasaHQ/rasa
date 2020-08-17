@@ -5,6 +5,7 @@
     - restaurant_form
     - form{"name": "restaurant_form"}
     - form{"name": null}
+    - utter_submit
     - utter_slots_values
 * thankyou: /thankyou
     - utter_noworries
@@ -18,6 +19,7 @@
 * form: /inform{"cuisine": "afghan"} <!-- intent "inform" is ignored inside the form -->
     - form: restaurant_form
     - form{"name": null}
+    - utter_submit
     - utter_slots_values
 * thankyou: /thankyou
     - utter_noworries
@@ -32,6 +34,7 @@
     - utter_chitchat
     - restaurant_form
     - form{"name": null}
+    - utter_submit
     - utter_slots_values
 * thankyou: /thankyou
     - utter_noworries

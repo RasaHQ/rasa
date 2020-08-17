@@ -6,13 +6,15 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
 
 import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
 
-from rasa.nlu.training_data.loading import MARKDOWN, RASA
+from rasa.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.nlu.constants import INTENT_NAME_KEY
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from terminaltables import AsciiTable, SingleTable
@@ -200,9 +202,9 @@ async def send_action(
             if action_name in NEW_TEMPLATES:
                 warning_questions = questionary.confirm(
                     f"WARNING: You have created a new action: '{action_name}', "
-                    f"with matching template: '{[*NEW_TEMPLATES[action_name]][0]}'. "
+                    f"with matching response: '{[*NEW_TEMPLATES[action_name]][0]}'. "
                     f"This action will not return its message in this session, "
-                    f"but the new utterance will be saved to your domain file "
+                    f"but the new response will be saved to your domain file "
                     f"when you exit and save this session. "
                     f"You do not need to do anything further."
                 )
@@ -322,12 +324,19 @@ def _selection_choices_from_intent_prediction(
 ) -> List[Dict[Text, Any]]:
     """"Given a list of ML predictions create a UI choice list."""
 
-    sorted_intents = sorted(predictions, key=lambda k: (-k["confidence"], k["name"]))
+    sorted_intents = sorted(
+        predictions, key=lambda k: (-k["confidence"], k[INTENT_NAME_KEY])
+    )
 
     choices = []
     for p in sorted_intents:
-        name_with_confidence = f'{p.get("confidence"):03.2f} {p.get("name"):40}'
-        choice = {"name": name_with_confidence, "value": p.get("name")}
+        name_with_confidence = (
+            f'{p.get("confidence"):03.2f} {p.get(INTENT_NAME_KEY):40}'
+        )
+        choice = {
+            INTENT_NAME_KEY: name_with_confidence,
+            "value": p.get(INTENT_NAME_KEY),
+        }
         choices.append(choice)
 
     return choices
@@ -358,10 +367,8 @@ async def _request_free_text_utterance(
 ) -> Text:
 
     question = questionary.text(
-        message=(
-            f"Please type the message for your new utterance template '{action}':"
-        ),
-        validate=io_utils.not_empty_validator("Please enter a template message"),
+        message=(f"Please type the message for your new bot response '{action}':"),
+        validate=io_utils.not_empty_validator("Please enter a response"),
     )
     return await _ask_questions(question, conversation_id, endpoint)
 
@@ -418,15 +425,15 @@ async def _request_intent_from_user(
 
     predictions = latest_message.get("parse_data", {}).get("intent_ranking", [])
 
-    predicted_intents = {p["name"] for p in predictions}
+    predicted_intents = {p[INTENT_NAME_KEY] for p in predictions}
 
     for i in intents:
         if i not in predicted_intents:
-            predictions.append({"name": i, "confidence": 0.0})
+            predictions.append({INTENT_NAME_KEY: i, "confidence": 0.0})
 
     # convert intents to ui list and add <other> as a free text alternative
     choices = [
-        {"name": "<create_new_intent>", "value": OTHER_INTENT}
+        {INTENT_NAME_KEY: "<create_new_intent>", "value": OTHER_INTENT}
     ] + _selection_choices_from_intent_prediction(predictions)
 
     intent_name = await _request_selection_from_intents(
@@ -435,11 +442,12 @@ async def _request_intent_from_user(
 
     if intent_name == OTHER_INTENT:
         intent_name = await _request_free_text_intent(conversation_id, endpoint)
-        selected_intent = {"name": intent_name, "confidence": 1.0}
+        selected_intent = {INTENT_NAME_KEY: intent_name, "confidence": 1.0}
     else:
         # returns the selected intent with the original probability value
         selected_intent = next(
-            (x for x in predictions if x["name"] == intent_name), {"name": None}
+            (x for x in predictions if x[INTENT_NAME_KEY] == intent_name),
+            {INTENT_NAME_KEY: None},
         )
 
     return selected_intent
@@ -481,7 +489,7 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
     def format_user_msg(user_event: UserUttered, max_width: int) -> Text:
         intent = user_event.intent or {}
-        intent_name = intent.get("name", "")
+        intent_name = intent.get(INTENT_NAME_KEY, "")
         _confidence = intent.get("confidence", 1.0)
         _md = _as_md_message(user_event.parse_data)
 
@@ -580,9 +588,9 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
     serialised_domain = await retrieve_domain(endpoint)
     domain = Domain.from_dict(serialised_domain)
 
-    await _write_stories_to_file(story_path, events, domain)
-    await _write_nlu_to_file(nlu_path, events)
-    await _write_domain_to_file(domain_path, events, domain)
+    _write_stories_to_file(story_path, events, domain)
+    _write_nlu_to_file(nlu_path, events)
+    _write_domain_to_file(domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
@@ -747,7 +755,9 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
         if event.get("event") == UserUttered.type_name:
             data = event.get("parse_data", {})
             rasa_nlu_training_data_utils.remove_untrainable_entities_from(data)
-            msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
+            msg = Message.build(
+                data["text"], data["intent"][INTENT_NAME_KEY], data["entities"]
+            )
             messages.append(msg)
         elif event.get("event") == UserUtteranceReverted.type_name and messages:
             messages.pop()  # user corrected the nlu, remove incorrect example
@@ -761,7 +771,7 @@ def _collect_actions(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
     return [evt for evt in events if evt.get("event") == ActionExecuted.type_name]
 
 
-async def _write_stories_to_file(
+def _write_stories_to_file(
     export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the conversation_id to the file paths."""
@@ -800,9 +810,7 @@ def _filter_messages(msgs: List[Message]) -> List[Message]:
     return filtered_messages
 
 
-async def _write_nlu_to_file(
-    export_nlu_path: Text, events: List[Dict[Text, Any]]
-) -> None:
+def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> None:
     """Write the nlu data of the conversation_id to the file paths."""
     from rasa.nlu.training_data import TrainingData
 
@@ -824,7 +832,9 @@ async def _write_nlu_to_file(
     # need to guess the format of the file before opening it to avoid a read
     # in a write
     nlu_format = _get_nlu_target_format(export_nlu_path)
-    if nlu_format == MARKDOWN:
+    if nlu_format == RASA_YAML:
+        stringified_training_data = nlu_data.nlu_as_yaml()
+    elif nlu_format == MARKDOWN:
         stringified_training_data = nlu_data.nlu_as_markdown()
     else:
         stringified_training_data = nlu_data.nlu_as_json()
@@ -833,13 +843,21 @@ async def _write_nlu_to_file(
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:
+    from rasa.data import (
+        YAML_FILE_EXTENSIONS,
+        MARKDOWN_FILE_EXTENSION,
+        JSON_FILE_EXTENSION,
+    )
+
     guessed_format = loading.guess_format(export_path)
 
-    if guessed_format not in {MARKDOWN, RASA}:
-        if export_path.endswith(".json"):
+    if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
+        if export_path.endswith(JSON_FILE_EXTENSION):
             guessed_format = RASA
-        else:
+        elif export_path.endswith(MARKDOWN_FILE_EXTENSION):
             guessed_format = MARKDOWN
+        elif Path(export_path).suffix in YAML_FILE_EXTENSIONS:
+            guessed_format = RASA_YAML
 
     return guessed_format
 
@@ -858,7 +876,7 @@ def _intents_from_messages(messages: List[Message]) -> Set[Text]:
     return distinct_intents
 
 
-async def _write_domain_to_file(
+def _write_domain_to_file(
     domain_path: Text, events: List[Dict[Text, Any]], old_domain: Domain
 ) -> None:
     """Write an updated domain file to the file path."""
@@ -871,7 +889,12 @@ async def _write_domain_to_file(
 
     # TODO for now there is no way to distinguish between action and form
     collected_actions = list(
-        {e["name"] for e in actions if e["name"] not in default_action_names()}
+        {
+            e["name"]
+            for e in actions
+            if e["name"] not in default_action_names()
+            and e["name"] not in old_domain.form_names
+        }
     )
 
     new_domain = Domain(
@@ -880,7 +903,7 @@ async def _write_domain_to_file(
         slots=[],
         templates=templates,
         action_names=collected_actions,
-        form_names=[],
+        forms=[],
     )
 
     old_domain.merge(new_domain).persist_clean(domain_path)
@@ -1098,7 +1121,7 @@ async def _validate_action(
 
 def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
-    from rasa.nlu.training_data.formats import MarkdownWriter
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data["text"]
@@ -1106,7 +1129,7 @@ def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     if not parse_data.get("entities"):
         parse_data["entities"] = []
 
-    return MarkdownWriter.generate_message_md(parse_data)
+    return TrainingDataWriter.generate_message(parse_data)
 
 
 def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -> bool:
@@ -1116,7 +1139,7 @@ def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -
     `/greet`. Return `True` if the intent is a known one."""
 
     parse_data = latest_message.get("parse_data", {})
-    intent = parse_data.get("intent", {}).get("name")
+    intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
 
     if intent in intents:
         return True
@@ -1133,7 +1156,7 @@ async def _validate_user_text(
 
     parse_data = latest_message.get("parse_data", {})
     text = _as_md_message(parse_data)
-    intent = parse_data.get("intent", {}).get("name")
+    intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
     entities = parse_data.get("entities", [])
     if entities:
         message = (
@@ -1497,10 +1520,11 @@ def _serve_application(
     file_importer: TrainingDataImporter,
     skip_visualization: bool,
     conversation_id: Text,
+    port: int,
 ) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
 
-    endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
+    endpoint = EndpointConfig(url=DEFAULT_SERVER_FORMAT.format("http", port))
 
     async def run_interactive_io(running_app: Sanic) -> None:
         """Small wrapper to shut down the server once cmd io is done."""
@@ -1520,12 +1544,12 @@ def _serve_application(
 
     update_sanic_log_level()
 
-    app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT)
+    app.run(host="0.0.0.0", port=port)
 
     return app
 
 
-def start_visualization(image_path: Text = None) -> None:
+def start_visualization(image_path: Text, port: int) -> None:
     """Add routes to serve the conversation visualization files."""
 
     app = Sanic(__name__)
@@ -1551,7 +1575,7 @@ def start_visualization(image_path: Text = None) -> None:
 
     update_sanic_log_level()
 
-    app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT + 1, access_log=False)
+    app.run(host="0.0.0.0", port=port, access_log=False)
 
 
 # noinspection PyUnusedLocal
@@ -1620,16 +1644,22 @@ def run_interactive_learning(
     if server_args.get("domain"):
         PATHS["domain"] = server_args["domain"]
 
+    port = server_args.get("port", DEFAULT_SERVER_PORT)
+
     SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
-        p = Process(target=start_visualization, args=(DEFAULT_STORY_GRAPH_FILE,))
+        visualisation_port = port + 1
+        p = Process(
+            target=start_visualization,
+            args=(DEFAULT_STORY_GRAPH_FILE, visualisation_port),
+        )
         p.daemon = True
         p.start()
     else:
         p = None
 
-    app = run.configure_app(enable_api=True, conversation_id="default")
+    app = run.configure_app(port=port, conversation_id="default", enable_api=True)
     endpoints = AvailableEndpoints.read_endpoints(server_args.get("endpoints"))
 
     # before_server_start handlers make sure the agent is loaded before the
@@ -1639,7 +1669,7 @@ def run_interactive_learning(
         "before_server_start",
     )
 
-    _serve_application(app, file_importer, skip_visualization, conversation_id)
+    _serve_application(app, file_importer, skip_visualization, conversation_id, port)
 
     if not skip_visualization and p is not None:
         p.terminate()  # pytype: disable=attribute-error

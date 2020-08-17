@@ -1,4 +1,5 @@
 import argparse
+from typing import Text
 
 from rasa.cli.arguments.default_arguments import (
     add_nlu_data_param,
@@ -8,8 +9,8 @@ from rasa.cli.arguments.default_arguments import (
 )
 
 
-def set_convert_arguments(parser: argparse.ArgumentParser):
-    add_data_param(parser, required=True, default=None, data_type="Rasa NLU ")
+def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
+    add_data_param(parser, required=True, default=None, data_type=data_type)
 
     add_out_param(
         parser,
@@ -24,8 +25,10 @@ def set_convert_arguments(parser: argparse.ArgumentParser):
         "-f",
         "--format",
         required=True,
-        choices=["json", "md"],
-        help="Output format the training data should be converted into.",
+        choices=["json", "md", "yaml"],
+        help="Output format the training data should be converted into. "
+        "Note: currently training data can be converted to 'yaml' format "
+        "only from 'md' format",
     )
 
 
