@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+import sys
 
 from typing import Text, Dict, Any, List, Set
 
@@ -86,9 +87,14 @@ def _auto_configure(
             f"Values will be provided from the default configuration."
         )
 
-    default_config_file = pkg_resources.resource_filename(
-        __name__, "default_config.yml"
-    )
+    if sys.platform == "win32":
+        default_config_file = pkg_resources.resource_filename(
+            __name__, "default_config_windows.yml"
+        )
+    else:
+        default_config_file = pkg_resources.resource_filename(
+            __name__, "default_config.yml"
+        )
 
     default_config = io_utils.read_config_file(default_config_file)
 

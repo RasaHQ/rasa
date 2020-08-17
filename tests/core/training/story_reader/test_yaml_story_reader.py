@@ -131,6 +131,20 @@ async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
     assert tracker[0].latest_message == UserUttered("simple", {"name": "simple"})
 
 
+async def test_yaml_slot_without_value_is_parsed(default_domain: Domain):
+    yaml_file = "data/test_yaml_stories/story_with_slot_was_set.yml"
+
+    tracker = await training.load_data(
+        yaml_file,
+        default_domain,
+        use_story_concatenation=False,
+        tracker_limit=1000,
+        remove_duplicates=False,
+    )
+
+    assert tracker[0].events[-2] == SlotSet(key="name", value=None)
+
+
 async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/wrong_yaml.yml"
 
@@ -263,6 +277,25 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
         f"- story: I am fine 💥\n"
         f"  steps:\n"
         f"  - intent: greet"
+    )
+
+    reader = YAMLStoryReader(RegexInterpreter(), default_domain)
+    yaml_content = io_utils.read_yaml(stories)
+
+    with pytest.warns(None) as record:
+        reader.read_from_parsed_yaml(yaml_content)
+
+    assert not len(record)
+
+
+async def test_active_loop_is_parsed(default_domain: Domain):
+    stories = (
+        f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
+        f"stories:\n"
+        f"- story: name\n"
+        f"  steps:\n"
+        f"  - intent: greet\n"
+        f"  - active_loop: null"
     )
 
     reader = YAMLStoryReader(RegexInterpreter(), default_domain)

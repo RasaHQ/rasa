@@ -30,7 +30,7 @@ from rasa.core.events import (
 from rasa.core.interpreter import RasaNLUHttpInterpreter, NaturalLanguageInterpreter
 from rasa.core.policies import SimplePolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.processor import MessageProcessor, DEFAULT_INTENTS
+from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
@@ -38,7 +38,7 @@ from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request
 
-from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL
+from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL, DEFAULT_INTENTS
 
 import logging
 

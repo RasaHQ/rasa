@@ -122,6 +122,7 @@ excluded_words:
   - pika's
   - jieba
   - pretrained
+  - prototyper
   - pycodestyle
   - pykwalify
   - pymessenger
@@ -164,5 +165,8 @@ excluded_words:
   - prototyper
   - hallo
   - crypto
+  - regexes
+  - walkthroughs
+  - venv
 
 spellcheck_filenames: false

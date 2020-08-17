@@ -15,8 +15,8 @@ stories:
   steps:
   - intent: hello
   - action: utter_greet
-  - slot_was_set: name
-    value: peter
+  - slot_was_set:
+    - name: peter
   - checkpoint: check_greet # checkpoint defining the end of this turn
 
 - story: simple_story_with_multiple_turns

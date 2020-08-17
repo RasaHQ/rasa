@@ -10,8 +10,8 @@ stories:
   steps:
   - intent: hello
   - action: utter_greet
-  - slot_was_set: name
-    value: peter
+  - slot_was_set:
+    - name: peter
   - checkpoint: check_end_2
 
 - story:  simple_story_with_start
@@ -19,5 +19,5 @@ stories:
   - checkpoint: check_start
   - intent: hello
   - action: utter_greet
-  - slot_was_set: name
-    name: peter
+  - slot_was_set:
+    - name: peter
