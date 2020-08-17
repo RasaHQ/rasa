@@ -249,7 +249,7 @@ class TrackerFeaturizer:
         ]
 
     def _create_states(
-        self, tracker: DialogueStateTracker, domain: Domain,
+        self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[STATE]:
         """Create states: a list of dictionaries.
 
@@ -277,7 +277,7 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _convert_labels_to_ids(
-        trackers_as_actions: List[List[Text]], domain: Domain,
+        trackers_as_actions: List[List[Text]], domain: Domain
     ) -> List[List[int]]:
         return [
             [domain.index_for_action(action) for action in tracker_actions]
@@ -298,9 +298,22 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Tuple[
-        List[List[Dict[Text, List["Features"]]]], List[List[int]],
-    ]:
+    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], List[List[int]]]:
+        """
+        Featurize the training trackers.
+
+        Args:
+            trackers: list of training trackers
+            domain: the domain
+            interpreter: the interpreter
+
+        Returns:
+            - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+              ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
+              all training trackers
+            - the label ids (e.g. action ids) for every dialuge turn in all training
+              trackers
+        """
         if self.state_featurizer is None:
             raise ValueError(
                 "Variable 'state_featurizer' is not set. Provide "
@@ -316,16 +329,7 @@ class TrackerFeaturizer:
         # noinspection PyPep8Naming
         X = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
-        # X is number of examples (trackers), numberof dialogue turns,
-        # dict of attribute to list of Features
-        # attributes are:
-        # INTENT
-        # TEXT
-        # ACTION_NAME
-        # ACTION_TEXT
-        # ENTITIES
-        # SLOTS
-        # FORM
+
         return X, label_ids
 
     def prediction_states(
@@ -471,7 +475,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def _hash_example(
-        states: List[STATE], action: Text, tracker: DialogueStateTracker,
+        states: List[STATE], action: Text, tracker: DialogueStateTracker
     ) -> int:
         """Hash states for efficient deduplication."""
         frozen_states = tuple(

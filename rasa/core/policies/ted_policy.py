@@ -2,12 +2,12 @@ import copy
 import logging
 import os
 from pathlib import Path
-
 from collections import defaultdict
+
+import scipy.sparse
 import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
-from scipy import sparse
 import typing
 from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
@@ -274,14 +274,22 @@ class TEDPolicy(Policy):
             if features.is_dense():
                 new_features.features = np.zeros_like(features.features)
             if features.is_sparse():
-                new_features.features = sparse.coo_matrix(
+                new_features.features = scipy.sparse.coo_matrix(
                     features.features.shape, features.features.dtype
                 )
             zero_features.append(new_features)
 
         return zero_features
 
-    def _convert_to_data(self, list_of_dicts, double_list=False):
+    def _convert_to_data(
+        self,
+        list_of_dicts: List[List[Dict[Text, List["Features"]]]],
+        double_list: bool = False,
+    ) -> Dict[Text, Dict[Text, List[Union[scipy.sparse.spmatrix, np.ndarray]]]]:
+        # TODO list of dicts can actually either be a
+        #  List[List[Dict[Text, List["Features"]]]] or List[Dict[Text, List["Features"]]]
+        #  we should unify it maybe
+
         # we might have either a dict of lists or a dict of of list of lists
         list_of_list_of_dicts = []
         if not double_list:
@@ -370,7 +378,7 @@ class TEDPolicy(Policy):
         return label_data
 
     def _create_model_data(
-        self, X: List[List[Dict[Text, List["Features"]]]], label_ids: List[List[int]],
+        self, X: List[List[Dict[Text, List["Features"]]]], label_ids: List[List[int]]
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData."""
 

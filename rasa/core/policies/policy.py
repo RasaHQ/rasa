@@ -6,10 +6,7 @@ from typing import Any, List, Optional, Text, Dict, Callable, Type, Union, Tuple
 
 import rasa.utils.common
 from rasa.core.domain import Domain
-from rasa.core.featurizers import (
-    MaxHistoryTrackerFeaturizer,
-    SingleStateFeaturizer,
-)
+from rasa.core.featurizers import MaxHistoryTrackerFeaturizer, SingleStateFeaturizer
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.trackers import DialogueStateTracker
@@ -126,9 +123,7 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[
-        List[List[Dict[Text, List["Features"]]]], List[List[int]],
-    ]:
+    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], List[List[int]]]:
         """Transform training trackers into a vector representation.
 
         The trackers, consisting of multiple turns, will be transformed
@@ -141,13 +136,18 @@ class Policy:
             interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
 
         Returns:
-            the :class:`rasa.core.training.data.DialogueTrainingData`
+            - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+              ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
+              all training trackers
+            - the label ids (e.g. action ids) for every dialuge turn in all training
+              trackers
         """
 
         X, label_ids = self.featurizer.featurize_trackers(
             training_trackers, domain, interpreter
         )
 
+        # TODO: does this still fit?
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
             logger.debug(
