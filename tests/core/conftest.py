@@ -22,7 +22,6 @@ from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 
-
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS = (
@@ -34,8 +33,6 @@ DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
-
-DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.md"
 
 INCORRECT_NLU_DATA = "data/test/markdown_single_sections/incorrect_nlu_format.md"
 
@@ -126,6 +123,8 @@ def default_stack_config():
 
 @pytest.fixture(scope="session")
 def default_nlu_data():
+    from tests.conftest import DEFAULT_NLU_DATA
+
     return DEFAULT_NLU_DATA
 
 
