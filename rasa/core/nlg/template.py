@@ -108,7 +108,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             "text",
             "image",
             "custom",
-            "button",
+            "buttons",
             "attachment",
             "quick_replies",
         ]
