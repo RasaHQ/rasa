@@ -6,6 +6,7 @@ from rasa.core.interpreter import (
     RasaNLUHttpInterpreter,
     RegexInterpreter,
 )
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request, json_of_latest_request
 
@@ -21,7 +22,9 @@ async def test_regex_interpreter_intent(regex_interpreter):
     assert result["text"] == text
     assert len(result["intent_ranking"]) == 1
     assert (
-        result["intent"]["name"] == result["intent_ranking"][0]["name"] == "my_intent"
+        result["intent"][INTENT_NAME_KEY]
+        == result["intent_ranking"][0][INTENT_NAME_KEY]
+        == "my_intent"
     )
     assert (
         result["intent"]["confidence"]
@@ -37,7 +40,9 @@ async def test_regex_interpreter_entities(regex_interpreter):
     assert result["text"] == text
     assert len(result["intent_ranking"]) == 1
     assert (
-        result["intent"]["name"] == result["intent_ranking"][0]["name"] == "my_intent"
+        result["intent"][INTENT_NAME_KEY]
+        == result["intent_ranking"][0][INTENT_NAME_KEY]
+        == "my_intent"
     )
     assert (
         result["intent"]["confidence"]
@@ -55,7 +60,9 @@ async def test_regex_interpreter_confidence(regex_interpreter):
     assert result["text"] == text
     assert len(result["intent_ranking"]) == 1
     assert (
-        result["intent"]["name"] == result["intent_ranking"][0]["name"] == "my_intent"
+        result["intent"][INTENT_NAME_KEY]
+        == result["intent_ranking"][0][INTENT_NAME_KEY]
+        == "my_intent"
     )
     assert (
         result["intent"]["confidence"]
@@ -71,7 +78,9 @@ async def test_regex_interpreter_confidence_and_entities(regex_interpreter):
     assert result["text"] == text
     assert len(result["intent_ranking"]) == 1
     assert (
-        result["intent"]["name"] == result["intent_ranking"][0]["name"] == "my_intent"
+        result["intent"][INTENT_NAME_KEY]
+        == result["intent_ranking"][0][INTENT_NAME_KEY]
+        == "my_intent"
     )
     assert (
         result["intent"]["confidence"]

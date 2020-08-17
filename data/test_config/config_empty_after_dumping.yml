@@ -3,9 +3,8 @@ pipeline:
 # # No configuration for the NLU pipeline was provided. The following default pipeline was used to train your model.
 # # If you'd like to customize it, uncomment and adjust the pipeline.
 # # See https://rasa.com/docs/rasa/nlu/choosing-a-pipeline/ for more information.
-#   - name: SpacyNLP
-#   - name: SpacyTokenizer
-#   - name: SpacyFeaturizer
+#   - name: ConveRTTokenizer
+#   - name: ConveRTFeaturizer
 #   - name: RegexFeaturizer
 #   - name: LexicalSyntacticFeaturizer
 #   - name: CountVectorsFeaturizer
@@ -26,5 +25,4 @@ policies:
 #   - name: TEDPolicy
 #     max_history: 5
 #     epochs: 100
-#   - name: MappingPolicy
-#   - name: FormPolicy
+#   - name: RulePolicy

@@ -27,7 +27,7 @@ def test_create_single_input_channels():
 
 def test_create_single_input_channels_by_class():
     channels = run.create_http_input_channels(
-        "rasa.core.channels.channel.RestInput", CREDENTIALS_FILE
+        "rasa.core.channels.rest.RestInput", CREDENTIALS_FILE
     )
     assert len(channels) == 1
     assert channels[0].name() == "rest"
@@ -35,7 +35,7 @@ def test_create_single_input_channels_by_class():
 
 def test_create_single_input_channels_by_class_wo_credentials():
     channels = run.create_http_input_channels(
-        "rasa.core.channels.channel.RestInput", credentials_file=None
+        "rasa.core.channels.rest.RestInput", credentials_file=None
     )
 
     assert len(channels) == 1

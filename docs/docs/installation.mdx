@@ -1,0 +1,253 @@
+---
+id: installation
+sidebar_label: Installation
+title: Installation
+description: Install Rasa Open Source on premises to enable local and customizable Natural Lanaguage Understanding and Dialogue Management.
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Quick Installation
+
+You can install Rasa Open Source using pip (requires Python 3.6, 3.7 or 3.8).
+
+<!-- TODO: REMOVE VERSION NUMBER FOR RASA 2.0 RELEASE -->
+```bash
+pip3 install rasa==2.0.0a2
+```
+
+You are now ready to go! So what's next?
+You can create a new project by running
+
+```bash
+rasa init
+```
+
+:::note Want to explore first?
+You can explore Rasa Open Source online using our prototyper without any installation.
+At the end of the tutorial you can download the resulting assistant, install Rasa on
+your machine and continue development locally.
+<a className="button button--outline button button" href="prototype-an-assistant">Prototype an Assistant</a>
+:::
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="installation-guide"></a>
+
+## Step-by-step Installation Guide
+
+Prefer following video instructions? Watch our installation series on
+[Youtube](https://www.youtube.com/playlist?list=PL75e0qA87dlEWUA5ToqLLR026wIkk2evk),
+it explains the installation in walkthroughs for all major platforms.
+
+### 1. Python Environment Setup
+
+Check if your Python environment is already configured:
+
+```bash
+python3 --version
+pip3 --version
+```
+
+If these packages are already installed, these commands should display version
+numbers for each step, and you can skip to the next step.
+
+Otherwise, proceed with the instructions below to install them.
+
+<Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
+  <TabItem value="ubuntu">
+
+  Fetch the relevant packages using `apt`, and install virtualenv using `pip`.
+
+  ```bash
+  sudo apt update
+  sudo apt install python3-dev python3-pip
+  ```
+
+  </TabItem>
+  <TabItem value="macos">
+
+  Install the [Homebrew](https://brew.sh) package manager if you haven't already.
+
+  Once you're done, you can install Python3.
+
+  ```bash
+  brew update
+  brew install python
+  ```
+
+  </TabItem>
+  <TabItem value="windows">
+
+  Make sure the Microsoft VC++ Compiler is installed, so python can compile
+  any dependencies. You can get the compiler from <a className="reference external"
+  href="https://visualstudio.microsoft.com/visual-cpp-build-tools/"
+  target="_blank">Visual Studio</a>. Download the installer and select
+  VC++ Build tools in the list.Install [Python 3](https://www.python.org/downloads/windows/) (64-bit version) for Windows.
+
+  ```bat
+  C:\> pip3 install -U pip
+  ```
+
+  </TabItem>
+</Tabs>
+
+### 2. Virtual Environment Setup
+
+This step is optional, but we strongly recommend isolating python projects
+using virtual environments. Tools like
+[virtualenv](https://virtualenv.pypa.io/en/latest/) and
+[virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) provide
+isolated Python environments, which are cleaner than installing packages system-wide
+(as they prevent dependency conflicts). They also let you install packages
+without root privileges.
+
+<Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
+  <TabItem value="ubuntu">
+
+  Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+
+  ```bash
+  python3 -m venv ./venv
+  ```
+
+  Activate the virtual environment:
+
+  ```bash
+  source ./venv/bin/activate
+  ```
+
+  </TabItem>
+  <TabItem value="macos">
+
+  Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+
+  ```bash
+  python3 -m venv ./venv
+  ```
+
+  Activate the virtual environment:
+
+  ```bash
+  source ./venv/bin/activate
+  ```
+
+  </TabItem>
+  <TabItem value="windows">
+
+  Create a new virtual environment by choosing a Python interpreter and making a `.\\venv` directory to hold it:
+
+  ```bat
+  C:\> python3 -m venv ./venv
+  ```
+
+  Activate the virtual environment:
+
+  ```bat
+  C:\> .\venv\Scripts\activate
+  ```
+
+  </TabItem>
+</Tabs>
+
+### 3. Install Rasa Open Source
+
+<Tabs values={[{"label": "Ubuntu / macOS / Windows", "value": "ubuntu/macos/windows"}]} defaultValue="ubuntu/macos/windows">
+  <TabItem value="ubuntu/macos/windows">
+
+  First make sure your `pip` version is up to date:
+
+  ```bash
+  pip3 install -U pip
+  ```
+
+  To install Rasa Open Source:
+
+  ```bash
+  pip3 install rasa
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Congratulations! You have successfully installed Rasa Open Source!**
+
+Next step: Start prototyping your first assistant online and download it afterwards
+
+
+<a className="button button--outline button--secondary button--lg" href="prototype-an-assistant">Prototype an Assistant</a>
+
+---
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="build-from-source"></a>
+
+## Building from Source
+
+If you want to use the development version of Rasa Open Source, you can get it from GitHub:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+git clone https://github.com/RasaHQ/rasa.git
+cd rasa
+poetry install
+```
+
+
+---
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="pipeline-dependencies"></a>
+
+## Additional Dependencies
+
+For some machine learning algorithms you need to install additional python packages.
+They aren't installed by default to keep the footprint small.
+
+The page on [Tuning Your Model](./tuning-your-model.mdx) will help you pick the right
+configuration for your assistant and alert you to additional dependencies.
+
+:::tip Just give me everything!
+If you don't mind the additional dependencies lying around, you can use
+
+```bash
+pip3 install rasa[full]
+```
+
+to install all needed dependencies for every configuration.
+
+:::
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="install-spacy"></a>
+
+### Dependencies for spaCy
+
+For more information on spaCy, check out the [spaCy docs](https://spacy.io/usage/models).
+
+You can install it with the following commands:
+
+```bash
+pip3 install rasa[spacy]
+python3 -m spacy download en_core_web_md
+python3 -m spacy link en_core_web_md en
+```
+
+This will install Rasa Open Source as well as spaCy and its language model
+for the English language. We recommend using at least the
+“medium” sized models (`_md`) instead of the spaCy's
+default small `en_core_web_sm` model. Small models require less
+memory to run, but will somewhat reduce intent classification performance.
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="install-mitie"></a>
+
+### Dependencies for MITIE
+
+First, run
+
+```bash
+pip3 install git+https://github.com/mit-nlp/MITIE.git
+pip3 install rasa[mitie]
+```
+
+and then download the
+[MITIE models](https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2).
+The file you need is `total_word_feature_extractor.dat`. Save this
+anywhere. If you want to use MITIE, you need to
+tell it where to find this file (in this example it was saved in the
+`data` folder of the project directory).

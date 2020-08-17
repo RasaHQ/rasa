@@ -11,6 +11,7 @@ from rasa.constants import DOCS_URL_STORIES
 from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning, class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
 
@@ -171,8 +172,8 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
         return {
             "text": message_text,
-            "intent": {"name": intent, "confidence": confidence},
-            "intent_ranking": [{"name": intent, "confidence": confidence}],
+            "intent": {INTENT_NAME_KEY: intent, "confidence": confidence},
+            "intent_ranking": [{INTENT_NAME_KEY: intent, "confidence": confidence}],
             "entities": entities,
         }
 
@@ -195,7 +196,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         Return a default value if the parsing of the text failed."""
 
         default_return = {
-            "intent": {"name": "", "confidence": 0.0},
+            "intent": {INTENT_NAME_KEY: "", "confidence": 0.0},
             "entities": [],
             "text": "",
         }
@@ -293,10 +294,10 @@ def _create_from_endpoint_config(
     elif endpoint_config.type is None or endpoint_config.type.lower() == "http":
         return RasaNLUHttpInterpreter(endpoint_config=endpoint_config)
     else:
-        return _load_from_module_string(endpoint_config)
+        return _load_from_module_name_in_endpoint_config(endpoint_config)
 
 
-def _load_from_module_string(
+def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig,
 ) -> "NaturalLanguageInterpreter":
     """Instantiate an event channel based on its class name."""

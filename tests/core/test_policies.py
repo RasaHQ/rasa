@@ -35,6 +35,7 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     RANKING_LENGTH,
@@ -469,6 +470,23 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
         return p
 
 
+class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
+
+    max_history = 1
+
+    def create_policy(self, featurizer, priority):
+        p = TEDPolicy(
+            featurizer=featurizer,
+            priority=priority,
+            **{
+                KEY_RELATIVE_ATTENTION: True,
+                VALUE_RELATIVE_ATTENTION: True,
+                MAX_RELATIVE_POSITION: 5,
+            },
+        )
+        return p
+
+
 class TestMemoizationPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
         max_history = None
@@ -503,7 +521,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
-            assert recalled == default_domain.index_for_action(actions[0])
+            assert recalled == actions[0]
 
         nums = np.random.randn(default_domain.num_states)
         random_states = [{f: num for f, num in zip(default_domain.input_states, nums)}]
@@ -789,7 +807,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "greet" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "greet" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == (
             "## sender\n* greet\n    - utter_hello\n* greet\n"
         )
@@ -825,7 +843,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == "## sender\n* bye\n"
 
     def test_affirm_rephrased_intent(self, trained_policy, default_domain):
@@ -865,7 +883,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == "## sender\n* bye\n"
 
     def test_denied_rephrasing_affirmation(self, trained_policy, default_domain):
@@ -905,7 +923,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == (
             "## sender\n* greet\n    - utter_hello\n* bye\n"
         )
@@ -935,28 +953,28 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
     "policy,supported_data",
     [
         (TEDPolicy, SupportedData.ML_DATA),
-        (RulePolicy, SupportedData.RULE_DATA),
-        (FallbackPolicy, SupportedData.ML_DATA),
+        (RulePolicy, SupportedData.ML_AND_RULE_DATA),
+        (MemoizationPolicy, SupportedData.ML_DATA),
     ],
 )
 def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
     assert policy.supported_data() == supported_data
 
 
-class RuleAndMLPolicy(Policy):
+class OnlyRulePolicy(Policy):
     """Test policy that supports both rule-based and ML-based training data."""
 
     @staticmethod
     def supported_data() -> SupportedData:
-        return SupportedData.ML_AND_RULE_DATA
+        return SupportedData.RULE_DATA
 
 
 @pytest.mark.parametrize(
     "policy,n_rule_trackers,n_ml_trackers",
     [
-        (FallbackPolicy(), 0, 3),
-        (RulePolicy(), 2, 0),
-        (RuleAndMLPolicy, 2, 3),  # policy can be passed as a `type` as well
+        (TEDPolicy(), 0, 3),
+        (RulePolicy(), 2, 3),
+        (OnlyRulePolicy, 2, 0),  # policy can be passed as a `type` as well
     ],
 )
 def test_get_training_trackers_for_policy(

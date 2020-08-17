@@ -132,8 +132,8 @@ def test_policy_priority():
 def test_fallback_mapping_restart():
     domain = Domain.load("data/test_domains/default.yml")
     events = [
-        ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME),
-        utilities.user_uttered(USER_INTENT_RESTART, 1),
+        ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME, timestamp=1),
+        utilities.user_uttered(USER_INTENT_RESTART, 1, timestamp=2),
     ]
     tracker = DialogueStateTracker.from_events("test", events, [])
 

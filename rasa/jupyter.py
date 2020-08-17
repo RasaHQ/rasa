@@ -15,6 +15,7 @@ def pprint(obj: Any):
 
 def chat(
     model_path: Optional[Text] = None,
+    endpoints: Optional[Text] = None,
     agent: Optional["Agent"] = None,
     interpreter: Optional[NaturalLanguageInterpreter] = None,
 ) -> None:
@@ -22,6 +23,7 @@ def chat(
 
     Args:
         model_path: Path to a combined Rasa model.
+        endpoints: Path to a yaml with the action server is custom actions are defined.
         agent: Rasa Core agent (used if no Rasa model given).
         interpreter: Rasa NLU interpreter (used with Rasa Core agent if no
                      Rasa model is given).
@@ -30,7 +32,7 @@ def chat(
     if model_path:
         from rasa.run import create_agent
 
-        agent = create_agent(model_path)
+        agent = create_agent(model_path, endpoints)
 
     elif agent is not None and interpreter is not None:
         # HACK: this skips loading the interpreter and directly

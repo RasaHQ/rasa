@@ -12,11 +12,12 @@ import zipfile
 import glob
 from asyncio import AbstractEventLoop
 from collections import OrderedDict
-from io import BytesIO as IOReader
+from io import BytesIO as IOReader, StringIO
 from pathlib import Path
-from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
+from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING, Match
 
 import ruamel.yaml as yaml
+from ruamel.yaml import RoundTripRepresenter
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
 
@@ -24,6 +25,11 @@ if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
 
 DEFAULT_ENCODING = "utf-8"
+ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
+ESCAPE = re.compile(f'[{"".join([key for key in ESCAPE_DCT.values()])}]')
+GROUP_COMPLETE_MATCH = 0
+
+YAML_LINE_MAX_WIDTH = 4096
 
 
 def configure_colored_logging(loglevel: Text) -> None:
@@ -112,6 +118,7 @@ def read_yaml(content: Text) -> Any:
 
     yaml_parser = yaml.YAML(typ="safe")
     yaml_parser.version = YAML_VERSION
+    yaml_parser.preserve_quotes = True
 
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
@@ -254,31 +261,40 @@ def convert_to_ordered_dict(obj: Any) -> Any:
 
 def _enable_ordered_dict_yaml_dumping() -> None:
     """Ensure that `OrderedDict`s are dumped so that the order of keys is respected."""
-
-    def _order_rep(dumper: yaml.Representer, _data: Dict[Any, Any]) -> Any:
-        return dumper.represent_mapping(
-            "tag:yaml.org,2002:map", _data.items(), flow_style=False
-        )
-
-    yaml.add_representer(OrderedDict, _order_rep)
+    yaml.add_representer(
+        OrderedDict,
+        RoundTripRepresenter.represent_dict,
+        representer=RoundTripRepresenter,
+    )
 
 
-def write_yaml_file(
-    data: Any, filename: Union[Text, Path], should_preserve_key_order: bool = False
+def write_yaml(
+    data: Any,
+    target: Union[Text, Path, StringIO],
+    should_preserve_key_order: bool = False,
 ) -> None:
-    """Writes a yaml file.
+    """Writes a yaml to the file or to the stream
 
     Args:
         data: The data to write.
-        filename: The path to the file which should be written.
-        should_preserve_key_order: Whether to preserve key order in `data`.
+        target: The path to the file which should be written or a stream object
+        should_preserve_key_order: Whether to force preserve key order in `data`.
     """
+    _enable_ordered_dict_yaml_dumping()
+
     if should_preserve_key_order:
-        _enable_ordered_dict_yaml_dumping()
         data = convert_to_ordered_dict(data)
 
-    with Path(filename).open("w", encoding=DEFAULT_ENCODING) as outfile:
-        yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True)
+    dumper = yaml.YAML()
+    # no wrap lines
+    dumper.width = YAML_LINE_MAX_WIDTH
+
+    if isinstance(target, StringIO):
+        dumper.dump(data, target)
+        return
+
+    with Path(target).open("w", encoding=DEFAULT_ENCODING) as outfile:
+        dumper.dump(data, outfile)
 
 
 def write_text_file(
@@ -498,3 +514,12 @@ def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
     jsonpickle_numpy.register_handlers()
 
     write_text_file(jsonpickle.dumps(obj), file_name)
+
+
+def encode_string(s: Text) -> Text:
+    """Return an encoded python string."""
+
+    def replace(match: Match) -> Text:
+        return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
+
+    return ESCAPE.sub(replace, s)

@@ -1,2 +1,0 @@
-Issue : If custom utter message contains no value or integer value, then it fails returning custom utter message
-Fix : Converted template of type string
