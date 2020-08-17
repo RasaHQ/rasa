@@ -32,6 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      configuration_id: ${{ steps.fc_config.outputs.comment-id }}
     steps:
     - name: Checkout master
       uses: actions/checkout@v2
@@ -76,8 +77,8 @@ jobs:
           ${{ steps.get_help_description.outputs.help_description }}
 
     - if: steps.fc_config.outputs.comment-id == ''
-      run: (echo "::error::Cannot find a comment with the configuration" && exit 1)
-      name: Fail if a configuration can't be found
+      run: echo "::error::Cannot find a comment with the configuration"
+      name: Log a warning message if a configuration cannot be found
 
     - name: Read configuration from a PR comment
       if: steps.fc_config.outputs.comment-id != ''
@@ -87,6 +88,7 @@ jobs:
 
     - name: Update the comment with the configuration
       uses: peter-evans/create-or-update-comment@v1
+      if: steps.fc_config.outputs.comment-id != ''
       with:
         comment-id: ${{ steps.fc_config.outputs.comment-id }}
         body: |
@@ -112,7 +114,7 @@ jobs:
 
     - name: Add reaction
       uses: peter-evans/create-or-update-comment@v1
-      if: steps.fc_config.outputs.comment-id != ''
+      if: steps.fc_config_update.outputs.comment-id != ''
       with:
         edit-mode: 'replace'
         comment-id: ${{ steps.fc_config_update.outputs.comment-id }}
@@ -120,7 +122,7 @@ jobs:
 
     - name: Add a comment that the tests are in progress
       uses: RasaHQ/create-comment@v1
-      if: steps.fc_config.outputs.comment-id != ''
+      if: steps.fc_config_update.outputs.comment-id != ''
       with:
         mode: 'delete-previous'
         id: comment_tests_in_progress
@@ -135,7 +137,7 @@ jobs:
     name: Deploy Github Runner - GPU
     needs: read_test_configuration
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
       - name: Checkout
@@ -179,7 +181,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
       - name: Checkout
@@ -320,7 +322,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
-    if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
       - name: Checkout
@@ -570,7 +572,7 @@ jobs:
     - deploy_runner_gpu
     - model_regression_test_gpu
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && (github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
     steps:
       # Setup gcloud CLI

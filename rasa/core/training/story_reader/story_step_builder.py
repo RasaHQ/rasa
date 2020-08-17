@@ -57,7 +57,20 @@ class StoryStepBuilder:
             end_names = {e.name for s in self.current_steps for e in s.end_checkpoints}
             return [Checkpoint(name) for name in end_names]
 
-    def add_user_messages(self, messages: List[UserUttered]) -> None:
+    def add_user_messages(
+        self, messages: List[UserUttered], unfold_or_utterances: bool = True
+    ) -> None:
+        """Adds next story steps with the user's utterances.
+
+        Args:
+            messages: User utterances.
+            unfold_or_utterances: Identifies if the user utterance is a part of
+              OR statement. This parameter is used only to simplify the conversation
+              from MD story files. Don't use it other ways, because it ends up
+              in a invalid story that cannot be user for real training.
+              Default value is `True`, which preserves the expected behavior
+              of the reader.
+        """
         self.ensure_current_steps()
 
         if len(messages) == 1:
@@ -65,6 +78,12 @@ class StoryStepBuilder:
             for t in self.current_steps:
                 t.add_user_message(messages[0])
         else:
+            # this simplifies conversion between formats, but breaks the logic
+            if not unfold_or_utterances:
+                for t in self.current_steps:
+                    t.add_events(messages)
+                return
+
             # If there are multiple different intents the
             # user can use the express the same thing
             # we need to copy the blocks and create one

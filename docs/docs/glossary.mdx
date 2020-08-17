@@ -1,11 +1,11 @@
 ---
 id: glossary
-sidebar_label: Glossary
-title: Glossary
+sidebar_label: Rasa Glossary
+title: Rasa Glossary
 description: Glossary for all Rasa-related terms
 ---
 
-## [Action](./core/actions.mdx)
+## [Action](./actions.mdx)
 
   A single step that a bot takes in a conversation (e.g. calling an API or sending a response back to the user).
 
@@ -17,31 +17,31 @@ description: Glossary for all Rasa-related terms
 
   A Content Management System (CMS) can be used to store bot responses externally instead of directly including it as part of the domain.  This provides more flexibility in changing them as they are not tightly-coupled with the training data.
 
-## [Custom Action](./core/actions.mdx#custom-actions)
+## [Custom Action](./actions.mdx#custom-actions)
 
   An action written by a Rasa developer that can run arbitrary code mainly to interact with the outside world.
 
-## [Default Action](./core/actions.mdx#default-actions)
+## [Default Action](./actions.mdx#default-actions)
 
   A built-in action that comes with predefined functionality.
 
-## [Domain](./core/domains.mdx)
+## [Domain](./domain.mdx)
 
   Defines the inputs and outputs of an assistant.
 
   It includes a list of all the intents, entities, slots, actions, and forms that the assistant knows about.
 
-## [Entity](./nlu/entity-extraction.mdx)
+## [Entity](./domain.mdx#entities)
 
   Structured information that can be extracted from a user message.
 
-  For example a telephone number, a person’s name, a location, the name of a product
+  For example a telephone number, a person's name, a location, the name of a product
 
-## [Event](./api/events.mdx)
+## [Event](./events.mdx)
 
-  All conversations in Rasa are represented as a sequence of events. For instance, a `UserUttered` represents a user entering a message, and an `ActionExecuted` represents the assistant executing an action. You can learn more about them [here](./api/events.mdx).
+  All conversations in Rasa are represented as a sequence of events. For instance, a `UserUttered` represents a user entering a message, and an `ActionExecuted` represents the assistant executing an action. You can learn more about them [here](./events.mdx).
 
-## [Form](./core/forms.mdx)
+## [Form](./forms.mdx)
 
   A type of custom action that asks the user for multiple pieces of information.
 
@@ -55,7 +55,7 @@ description: Glossary for all Rasa-related terms
 
   Something that a user is trying to convey or accomplish (e,g., greeting, specifying a location).
 
-## [Interactive Learning](./core/interactive-learning.mdx)
+## [Interactive Learning](./writing-stories.mdx#using-interactive-learning)
 
   A mode of training the bot where the user provides feedback to the bot while talking to it.
 
@@ -71,45 +71,45 @@ description: Glossary for all Rasa-related terms
 
   Rasa uses a simple template-based approach for NLG. Data-driven approaches (such as neural NLG) can be implemented by creating a custom NLG component.
 
-## [Rasa NLU](./nlu/about.mdx#about-rasa-nlu)
+## Rasa NLU
 
   Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.
 
   Rasa NLU is the part of Rasa that performs intent classification and entity extraction.
 
-## [Pipeline](./nlu/choosing-a-pipeline.mdx)
+## [Pipeline](./tuning-your-model.mdx)
 
-  A Rasa bot’s NLU system is defined by a pipeline, which is a list of NLU components (see “Rasa NLU Component”) in a particular order. A user input is processed by each component one by one before finally giving out the structured output.
+  A Rasa bot's NLU system is defined by a pipeline, which is a list of NLU components (see “Rasa NLU Component”) in a particular order. A user input is processed by each component one by one before finally giving out the structured output.
 
-## [Policy](./core/policies.mdx)
+## [Policy](./policies.mdx)
 
   Policies make decisions on how conversation flow should proceed. At every turn, the policy which predicts the next action with the highest confidence will be used.  A Core model can have multiple policies included, and the policy whose prediction has the highest confidence decides the next action to be taken.
 
-## [Rasa Core](./core/about.mdx#about-rasa-core)
+## Rasa Core
 
   The dialogue engine that decides on what to do next in a conversation based on the context.
 
-## [Rasa NLU Component](./nlu/components.mdx)
+## Rasa NLU Component
 
   An element in the Rasa NLU pipeline (see “Pipeline”).
 
   Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.
 
-## [Rules](./core/rules.mdx)
+## [Rules](./rules.mdx)
 
   Special training data to specify rule-like behavior of the assistant, such as
-  answering FAQs, filling [Forms](./core/forms.mdx), or handling
-  [Fallbacks](./core/fallback-actions.mdx).
+  answering FAQs, filling [Forms](./forms.mdx), or handling
+  [Fallbacks](./fallback-handoff.mdx#fallbackactions).
 
-## [Slot](./core/slots.mdx)
+## [Slot](./domain.mdx#slots)
 
   A key-value store that Rasa uses to track information over the course of a conversation.
 
-## [Story](./core/stories.mdx)
+## [Story](./stories.mdx)
 
-  A conversation between a user and a bot annotated with the intent / entities of the users’ messages as well as the sequence of actions to be performed by the bot
+  A conversation between a user and a bot annotated with the intent / entities of the users' messages as well as the sequence of actions to be performed by the bot
 
-## [Template / Response / Utterance](./core/responses.mdx)
+## [Template / Response / Utterance](./responses.mdx)
 
   A message template that is used to respond to a user. This can include text, buttons, images, and other attachments.
 

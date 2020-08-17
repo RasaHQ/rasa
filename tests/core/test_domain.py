@@ -1,6 +1,7 @@
 import copy
 import json
 from pathlib import Path
+from typing import Dict
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -11,6 +12,7 @@ from rasa.core.constants import (
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
+    DEFAULT_INTENTS,
 )
 from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
@@ -163,7 +165,7 @@ def test_domain_from_template():
     domain = Domain.load(domain_file)
 
     assert not domain.is_empty()
-    assert len(domain.intents) == 10
+    assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
     assert len(domain.action_names) == 15
 
 
@@ -233,8 +235,47 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
         Domain.load(domain_path)
 
 
+def test_domain_to_dict():
+    test_yaml = """
+    actions:
+    - action_save_world
+    config:
+      store_entities_as_slots: true
+    entities: []
+    forms: []
+    intents: []
+    responses:
+      utter_greet:
+      - text: hey there!
+    session_config:
+      carry_over_slots_to_new_session: true
+      session_expiration_time: 60
+    slots: {}"""
+
+    domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
+
+    assert domain_as_dict == {
+        "actions": ["action_save_world"],
+        "config": {"store_entities_as_slots": True},
+        "entities": [],
+        "forms": [],
+        "intents": [],
+        "responses": {"utter_greet": [{"text": "hey there!"}]},
+        "session_config": {
+            "carry_over_slots_to_new_session": True,
+            "session_expiration_time": 60,
+        },
+        "slots": {},
+    }
+
+
 def test_domain_to_yaml():
-    test_yaml = f"""config:
+    test_yaml = f"""
+%YAML 1.2
+---
+actions:
+- action_save_world
+config:
   store_entities_as_slots: true
 entities: []
 forms: []
@@ -248,10 +289,10 @@ session_config:
 slots: {{}}"""
 
     domain = Domain.from_yaml(test_yaml)
-    # python 3 and 2 are different here, python 3 will have a leading set
-    # of --- at the beginning of the yml
-    assert domain.as_yaml().strip().endswith(test_yaml.strip())
-    assert Domain.from_yaml(domain.as_yaml()) is not None
+
+    actual_yaml = domain.as_yaml()
+
+    assert actual_yaml.strip() == test_yaml.strip()
 
 
 def test_domain_to_yaml_deprecated_templates():
@@ -331,7 +372,7 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     # lists should be deduplicated and merged
-    assert domain.intents == ["greet"]
+    assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
     assert domain.entities == ["cuisine"]
     assert isinstance(domain.slots[0], TextSlot)
     assert domain.slots[0].name == "cuisine"
@@ -445,6 +486,8 @@ def test_merge_domain_with_forms():
     ],
 )
 def test_collect_intent_properties(intents, entities, intent_properties):
+    Domain._add_default_intents(intent_properties, entities)
+
     assert Domain.collect_intent_properties(intents, entities) == intent_properties
 
 
@@ -657,7 +700,6 @@ def test_clean_domain_for_file():
             "utter_goodbye": [{"text": "goodbye :("}],
             "utter_default": [{"text": "default message"}],
         },
-        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
         "session_config": {
             "carry_over_slots_to_new_session": True,
             "session_expiration_time": DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
@@ -781,10 +823,7 @@ def test_are_sessions_enabled(session_config: SessionConfig, enabled: bool):
 
 
 def test_domain_utterance_actions_deprecated_templates():
-    new_yaml = f"""actions:
-- utter_greet
-- utter_goodbye
-config:
+    new_yaml = f"""config:
   store_entities_as_slots: true
 entities: []
 forms: []
@@ -843,3 +882,12 @@ def test_domain_from_dict_does_not_change_input():
     Domain.from_dict(input_after)
 
     assert input_after == input_before
+
+
+@pytest.mark.parametrize(
+    "domain", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
+)
+def test_add_default_intents(domain: Dict):
+    domain = Domain.from_dict(domain)
+
+    assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)

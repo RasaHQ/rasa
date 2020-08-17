@@ -365,7 +365,7 @@ async def test_action_utter_retrieved_response(
         parse_data={
             "response_selector": {
                 "chitchat": {
-                    "response": {"name": "I am a bot."},
+                    "response": {"text": "I am a bot."},
                     "full_retrieval_intent": "chitchat/ask_name",
                 }
             }
@@ -394,7 +394,7 @@ async def test_action_utter_default_retrieved_response(
         parse_data={
             "response_selector": {
                 "default": {
-                    "response": {"name": "I am a bot."},
+                    "response": {"text": "I am a bot."},
                     "full_retrieval_intent": "chitchat/ask_name",
                 }
             }
@@ -420,7 +420,7 @@ async def test_action_utter_retrieved_empty_response(
         parse_data={
             "response_selector": {
                 "dummy": {
-                    "response": {"name": "I am a bot."},
+                    "response": {"text": "I am a bot."},
                     "full_retrieval_intent": "chitchat/ask_name",
                 }
             }

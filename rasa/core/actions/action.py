@@ -21,6 +21,7 @@ from rasa.nlu.constants import (
     OPEN_UTTERANCE_PREDICTION_KEY,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     INTENT_RANKING_KEY,
+    INTENT_NAME_KEY,
 )
 
 from rasa.core.events import (
@@ -64,6 +65,8 @@ ACTION_BACK_NAME = "action_back"
 
 RULE_SNIPPET_ACTION_NAME = "..."
 
+FULL_RETRIEVAL_INTENT = "full_retrieval_intent"
+
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
@@ -105,7 +108,9 @@ def combine_with_templates(
     actions: List[Text], templates: Dict[Text, Any]
 ) -> List[Text]:
     """Combines actions with utter actions listed in responses section."""
-    unique_template_names = [a for a in list(templates.keys()) if a not in actions]
+    unique_template_names = [
+        a for a in sorted(list(templates.keys())) if a not in actions
+    ]
     return actions + unique_template_names
 
 
@@ -243,10 +248,8 @@ class ActionRetrieveResponse(Action):
 
         logger.debug(f"Picking response from selector of type {query_key}")
         selected = response_selector_properties[query_key]
-        message = {
-            "text": selected[OPEN_UTTERANCE_PREDICTION_KEY]["name"],
-            "template_name": selected["full_retrieval_intent"],
-        }
+        message = selected[OPEN_UTTERANCE_PREDICTION_KEY]
+        message["template_name"] = selected[FULL_RETRIEVAL_INTENT]
 
         return [create_bot_utterance(message)]
 
@@ -722,14 +725,14 @@ class ActionDefaultAskAffirmation(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        intent_to_affirm = tracker.latest_message.intent.get("name")
+        intent_to_affirm = tracker.latest_message.intent.get(INTENT_NAME_KEY)
 
         intent_ranking = tracker.latest_message.intent.get(INTENT_RANKING_KEY, [])
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1]["name"]
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 

@@ -1,3 +1,5 @@
+version: "2.0"
+
 rules:
 
 - rule: Greet
@@ -17,8 +19,8 @@ rules:
   condition:
   # Condition that form is active.
   - active_loop: loop_q_form
-  - slot_was_set: requested_slot
-    value: some_slot
+  - slot_was_set:
+    - requested_slot: some_slot
   steps:
   # This unhappy path handles the case of an intent `explain`.
   - intent: explain
@@ -33,8 +35,8 @@ rules:
   steps:
   - action: loop_q_form
   - active_loop: null
-  - slot_was_set: requested_slot
-    value: null
+  - slot_was_set:
+    - requested_slot: null
   # The action we want to run when the form is submitted.
   - action: utter_stop
 
@@ -50,16 +52,16 @@ rules:
 
 - rule: FAQ simple
   condition:
-  - slot_was_set: detailed_faq
-    value: false
+  - slot_was_set:
+    - detailed_faq: false
   steps:
   - intent: faq
   - action: utter_faq
 
 - rule: FAQ detailed
   condition:
-  - slot_was_set: detailed_faq
-    value: true
+  - slot_was_set:
+    - detailed_faq: true
   steps:
   - intent: faq
   - action: utter_faq
@@ -68,8 +70,8 @@ rules:
 
 - rule: FAQ helped - continue
   condition:
-  - slot_was_set: detailed_faq
-    value: true
+  - slot_was_set:
+    - detailed_faq: true
   steps:
   - action: utter_faq
   - action: utter_ask_did_help
@@ -78,8 +80,8 @@ rules:
 
 - rule: FAQ did not help
   condition:
-  - slot_was_set: detailed_faq
-    value: true
+  - slot_was_set:
+    - detailed_faq: true
   steps:
   - action: utter_faq
   - action: utter_ask_did_help
@@ -90,8 +92,8 @@ rules:
 
 - rule: Detailed FAQ did not help - continue
   condition:
-  - slot_was_set: detailed_faq
-    value: true
+  - slot_was_set:
+    - detailed_faq: true
   steps:
   - action: utter_detailed_faq
   - action: utter_ask_did_help
@@ -102,8 +104,8 @@ rules:
 
 - rule: Detailed FAQ did not help - stop
   condition:
-  - slot_was_set: detailed_faq
-    value: true
+  - slot_was_set:
+    - detailed_faq: true
   steps:
   - action: utter_detailed_faq
   - action: utter_ask_did_help
