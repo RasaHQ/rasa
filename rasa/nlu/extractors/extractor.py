@@ -163,7 +163,8 @@ class EntityExtractor(Component):
                     != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
                 )
 
-                # to handle bilou tags such as only I-, L- tags without B-tag and handle multiple U-tags consecutively
+                # to handle bilou tags such as only I-, L- tags without B-tag
+                # and handle multiple U-tags consecutively
                 new_unigram_bilou_tag_starts = (
                     last_entity_tag == NO_ENTITY_TAG
                     or bilou_utils.UNIT
