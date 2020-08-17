@@ -13,7 +13,13 @@ from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
-LOCK_LIFETIME = int(os.environ.get("TICKET_LOCK_LIFETIME", 0)) or DEFAULT_LOCK_LIFETIME
+
+def _get_lock_lifetime() -> int:
+    return int(os.environ.get("TICKET_LOCK_LIFETIME", 0)) or DEFAULT_LOCK_LIFETIME
+
+
+LOCK_LIFETIME = _get_lock_lifetime()
+DEFAULT_SOCKET_TIMEOUT_IN_SECONDS = 10
 
 
 # noinspection PyUnresolvedReferences
@@ -66,12 +72,15 @@ class LockStore:
 
         Creates a new lock if none is found.
         """
+        logger.debug(f"Issuing ticket for conversation '{conversation_id}'.")
+        try:
+            lock = self.get_or_create_lock(conversation_id)
+            ticket = lock.issue_ticket(lock_lifetime)
+            self.save_lock(lock)
 
-        lock = self.get_or_create_lock(conversation_id)
-        ticket = lock.issue_ticket(lock_lifetime)
-        self.save_lock(lock)
-
-        return ticket
+            return ticket
+        except Exception as e:
+            raise LockError(f"Error while acquiring lock. Error:\n{e}")
 
     @asynccontextmanager
     async def lock(
@@ -85,21 +94,19 @@ class LockStore:
         Try acquiring lock with a wait time of `wait_time_in_seconds` seconds
         between attempts. Raise a `LockError` if lock has expired.
         """
-
         ticket = self.issue_ticket(conversation_id, lock_lifetime)
-
         try:
+
             yield await self._acquire_lock(
                 conversation_id, ticket, wait_time_in_seconds
             )
-
         finally:
             self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
         self, conversation_id: Text, ticket: int, wait_time_in_seconds: float
     ) -> TicketLock:
-
+        logger.debug(f"Acquiring lock for conversation '{conversation_id}'.")
         while True:
             # fetch lock in every iteration because lock might no longer exist
             lock = self.get_lock(conversation_id)
@@ -110,6 +117,7 @@ class LockStore:
 
             # acquire lock if it isn't locked
             if not lock.is_locked(ticket):
+                logger.debug(f"Acquired lock for conversation '{conversation_id}'.")
                 return lock
 
             logger.debug(
@@ -190,11 +198,30 @@ class RedisLockStore(LockStore):
         db: int = 1,
         password: Optional[Text] = None,
         use_ssl: bool = False,
-    ):
+        socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
+    ) -> None:
+        """Create a lock store which uses Redis for persistence.
+
+        Args:
+            host: The host of the redis server.
+            port: The port of the redis server.
+            db: The name of the database within Redis which should be used by Rasa
+                Open Source.
+            password: The password which should be used for authentication with the
+                Redis database.
+            use_ssl: `True` if SSL should be used for the connection to Redis.
+            socket_timeout: Timeout in seconds after which an exception will be raised
+                in case Redis doesn't respond within `socket_timeout` seconds.
+        """
         import redis
 
         self.red = redis.StrictRedis(
-            host=host, port=int(port), db=int(db), password=password, ssl=use_ssl
+            host=host,
+            port=int(port),
+            db=int(db),
+            password=password,
+            ssl=use_ssl,
+            socket_timeout=socket_timeout,
         )
         super().__init__()
 
