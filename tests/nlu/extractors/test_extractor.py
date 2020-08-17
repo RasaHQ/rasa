@@ -107,6 +107,49 @@ from rasa.nlu.training_data.formats import MarkdownReader
                 {"entity": "city", "start": 21, "end": 27, "value": "London"},
             ],
         ),
+        (
+            "San Fransisco Amsterdam, London",
+            {
+                "entity": ["B-city", "L-city", "U-city", "U-city"],
+                "role": ["O", "O", "O", "O"],
+                "group": ["O", "O", "O", "O"],
+            },
+            None,
+            [
+                {"entity": "city", "start": 0, "end": 13, "value": "San Fransisco"},
+                {"entity": "city", "start": 14, "end": 23, "value": "Amsterdam"},
+                {"entity": "city", "start": 25, "end": 31, "value": "London"},
+            ],
+        ),
+        (
+            "New York City Los Angeles and San Diego",
+            {
+                "entity": [
+                    "B-city",
+                    "I-city",
+                    "L-city",
+                    "B-city",
+                    "L-city",
+                    "O",
+                    "B-city",
+                    "L-city",
+                ],
+                "role": ["O", "O", "O", "O", "O", "O", "O", "O"],
+                "group": ["O", "O", "O", "O", "O", "O", "O", "O"],
+            },
+            None,
+            [
+                {"entity": "city", "start": 0, "end": 13, "value": "New York City"},
+                {"entity": "city", "start": 14, "end": 25, "value": "Los Angeles"},
+                {"entity": "city", "start": 30, "end": 39, "value": "San Diego"},
+            ],
+        ),
+        (
+            "Berlin weather",
+            {"entity": ["I-city", "O"], "role": ["O", "O"], "group": ["O", "O"],},
+            None,
+            [{"entity": "city", "start": 0, "end": 6, "value": "Berlin"}],
+        ),
     ],
 )
 def test_convert_tags_to_entities(
