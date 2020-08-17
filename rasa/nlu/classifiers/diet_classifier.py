@@ -92,13 +92,16 @@ logger = logging.getLogger(__name__)
 
 SENTENCE = "sentence"
 SEQUENCE = "sequence"
+SPARSE = "sparse"
+DENSE = "dense"
 TEXT_SENTENCE_FEATURES = f"{TEXT}_{SENTENCE}_features"
 LABEL_SENTENCE_FEATURES = f"{LABEL}_{SENTENCE}_features"
 TEXT_SEQUENCE_FEATURES = f"{TEXT}_{SEQUENCE}_features"
 LABEL_SEQUENCE_FEATURES = f"{LABEL}_{SEQUENCE}_features"
 TEXT_SEQUENCE_LENGTH = f"{TEXT}_{SEQUENCE}_lengths"
 LABEL_SEQUENCE_LENGTH = f"{LABEL}_{SEQUENCE}_lengths"
-LABEL_IDS = f"{LABEL}_ids"
+LABEL_KEY = LABEL
+LABEL_SUB_KEY = "ids"
 TAG_IDS = "tag_ids"
 
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
@@ -326,7 +329,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @property
     def label_key(self) -> Optional[Text]:
-        return LABEL_IDS if self.component_config[INTENT_CLASSIFICATION] else None
+        return LABEL_KEY if self.component_config[INTENT_CLASSIFICATION] else None
+
+    @property
+    def label_sub_key(self) -> Optional[Text]:
+        return LABEL_SUB_KEY if self.component_config[INTENT_CLASSIFICATION] else None
 
     @staticmethod
     def model_class() -> Type[RasaModel]:
@@ -428,13 +435,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _extract_features(
         self, message: Message, attribute: Text
-    ) -> Tuple[
-        Optional[scipy.sparse.spmatrix],
-        Optional[scipy.sparse.spmatrix],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-    ]:
-
+    ) -> Dict[Text, Union[scipy.sparse.spmatrix, np.ndarray]]:
         (
             sparse_sequence_features,
             sparse_sentence_features,
@@ -476,38 +477,30 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             sparse_sequence_features = None
             dense_sequence_features = None
 
-        return (
-            sparse_sequence_features,
-            sparse_sentence_features,
-            dense_sequence_features,
-            dense_sentence_features,
-        )
+        out = {}
+
+        if sparse_sentence_features is not None:
+            out[f"{SPARSE}_{SENTENCE}"] = sparse_sentence_features
+        if sparse_sequence_features is not None:
+            out[f"{SPARSE}_{SEQUENCE}"] = sparse_sequence_features
+        if dense_sentence_features is not None:
+            out[f"{DENSE}_{SENTENCE}"] = dense_sentence_features
+        if dense_sequence_features is not None:
+            out[f"{DENSE}_{SEQUENCE}"] = dense_sequence_features
+
+        return out
 
     def _check_input_dimension_consistency(self, model_data: RasaModelData) -> None:
         """Checks if features have same dimensionality if hidden layers are shared."""
 
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
-            num_text_sentence_features = model_data.feature_dimension(
-                TEXT_SENTENCE_FEATURES
-            )
-            num_label_sentence_features = model_data.feature_dimension(
-                LABEL_SENTENCE_FEATURES
-            )
-            num_text_sequence_features = model_data.feature_dimension(
-                TEXT_SEQUENCE_FEATURES
-            )
-            num_label_sequence_features = model_data.feature_dimension(
-                LABEL_SEQUENCE_FEATURES
-            )
+            num_text_sentence_features = model_data.feature_dimension(TEXT, SENTENCE)
+            num_label_sentence_features = model_data.feature_dimension(LABEL, SENTENCE)
+            num_text_sequence_features = model_data.feature_dimension(TEXT, SEQUENCE)
+            num_label_sequence_features = model_data.feature_dimension(LABEL, SEQUENCE)
 
-            if (
-                num_text_sentence_features > 0
-                and num_label_sentence_features > 0
-                and num_text_sentence_features != num_label_sentence_features
-            ) or (
-                num_text_sequence_features > 0
-                and num_label_sequence_features > 0
-                and num_text_sequence_features != num_label_sequence_features
+            if (0 < num_text_sentence_features != num_label_sentence_features > 0) or (
+                0 < num_text_sequence_features != num_label_sequence_features > 0
             ):
                 raise ValueError(
                     "If embeddings are shared text features and label features "
@@ -519,36 +512,22 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """Collects precomputed encodings."""
 
-        sparse_sequence_features = []
-        sparse_sentence_features = []
-        dense_sequence_features = []
-        dense_sentence_features = []
+        features = defaultdict(list)
 
         for e in label_examples:
-            (
-                _sparse_sequence,
-                _sparse_sentence,
-                _dense_sequence,
-                _dense_sentence,
-            ) = self._extract_features(e, attribute)
-            if _sparse_sequence is not None:
-                sparse_sequence_features.append(_sparse_sequence)
-            if _sparse_sentence is not None:
-                sparse_sentence_features.append(_sparse_sentence)
-            if _dense_sequence is not None:
-                dense_sequence_features.append(_dense_sequence)
-            if _dense_sentence is not None:
-                dense_sentence_features.append(_dense_sentence)
+            label_features = self._extract_features(e, attribute)
+            for feature_key, feature_value in label_features.items():
+                features[feature_key].append(feature_value)
 
-        sparse_sequence_features = np.array(sparse_sequence_features)
-        sparse_sentence_features = np.array(sparse_sentence_features)
-        dense_sequence_features = np.array(dense_sequence_features)
-        dense_sentence_features = np.array(dense_sentence_features)
+        sequence_features = []
+        sentence_features = []
+        for feature_name, feature_value in features.items():
+            if SEQUENCE in feature_name:
+                sequence_features.append(np.array(features[feature_name]))
+            else:
+                sentence_features.append(np.array(features[feature_name]))
 
-        return (
-            [sparse_sequence_features, dense_sequence_features],
-            [sparse_sentence_features, dense_sentence_features],
-        )
+        return (sequence_features, sentence_features)
 
     @staticmethod
     def _compute_default_label_features(
@@ -599,12 +578,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             sentence_features = self._compute_default_label_features(labels_example)
 
         label_data = RasaModelData()
-        label_data.add_features(LABEL_SEQUENCE_FEATURES, sequence_features)
-        label_data.add_features(LABEL_SENTENCE_FEATURES, sentence_features)
+        label_data.add_features(LABEL, SEQUENCE, sequence_features)
+        label_data.add_features(LABEL, SENTENCE, sentence_features)
 
         if label_data.feature_not_exist(
-            LABEL_SENTENCE_FEATURES
-        ) and label_data.feature_not_exist(LABEL_SEQUENCE_FEATURES):
+            LABEL, SENTENCE
+        ) and label_data.feature_not_exist(LABEL, SEQUENCE):
             raise ValueError(
                 "No label features are present. Please check your configuration file."
             )
@@ -612,14 +591,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_ids = np.array([idx for (idx, _) in labels_idx_examples])
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
-        label_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
+        label_data.add_features(
+            LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
+        )
 
-        label_data.add_lengths(LABEL_SEQUENCE_LENGTH, LABEL_SEQUENCE_FEATURES)
+        label_data.add_lengths(LABEL, LABEL_SEQUENCE_LENGTH, LABEL, SEQUENCE)
 
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
-        all_label_features = self._label_data.get(LABEL_SENTENCE_FEATURES)[0]
+        all_label_features = self._label_data.get(LABEL, SEQUENCE)[0]
         return [np.array([all_label_features[label_id] for label_id in label_ids])]
 
     def _create_model_data(
@@ -631,50 +612,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> RasaModelData:
         """Prepare data for training and create a RasaModelData object"""
 
-        X_sparse_sequence = []
-        X_sparse_sentence = []
-        X_dense_sequence = []
-        X_dense_sentence = []
-        Y_sparse_sequence = []
-        Y_sparse_sentence = []
-        Y_dense_sequence = []
-        Y_dense_sentence = []
+        features = defaultdict(lambda: defaultdict(list))
         label_ids = []
-        tag_name_to_tag_ids = defaultdict(list)
 
         for example in training_data:
             if label_attribute is None or example.get(label_attribute):
-                (
-                    _sparse_sequence,
-                    _sparse_sentence,
-                    _dense_sequence,
-                    _dense_sentence,
-                ) = self._extract_features(example, TEXT)
-                if _sparse_sequence is not None:
-                    X_sparse_sequence.append(_sparse_sequence)
-                if _sparse_sentence is not None:
-                    X_sparse_sentence.append(_sparse_sentence)
-                if _dense_sequence is not None:
-                    X_dense_sequence.append(_dense_sequence)
-                if _dense_sentence is not None:
-                    X_dense_sentence.append(_dense_sentence)
+                text_features = self._extract_features(example, TEXT)
+                for feature_key, feature_value in text_features.items():
+                    features[TEXT][feature_key].append(feature_value)
 
             # only add features for intent labels during training
             if training and example.get(label_attribute):
-                (
-                    _sparse_sequence,
-                    _sparse_sentence,
-                    _dense_sequence,
-                    _dense_sentence,
-                ) = self._extract_features(example, label_attribute)
-                if _sparse_sequence is not None:
-                    Y_sparse_sequence.append(_sparse_sequence)
-                if _sparse_sentence is not None:
-                    Y_sparse_sentence.append(_sparse_sentence)
-                if _dense_sequence is not None:
-                    Y_dense_sequence.append(_dense_sequence)
-                if _dense_sentence is not None:
-                    Y_dense_sentence.append(_dense_sentence)
+                label_features = self._extract_features(example, label_attribute)
+                for feature_key, feature_value in label_features.items():
+                    features[label_attribute][feature_key].append(feature_value)
 
                 if label_id_dict:
                     label_ids.append(label_id_dict[example.get(label_attribute)])
@@ -682,57 +633,36 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # only add tag_ids during training
             if training and self.component_config.get(ENTITY_RECOGNITION):
                 for tag_spec in self._entity_tag_specs:
-                    tag_name_to_tag_ids[tag_spec.tag_name].append(
+                    features[ENTITIES][tag_spec.tag_name].append(
                         self._tag_ids_for_crf(example, tag_spec)
                     )
 
-        X_sparse_sequence = np.array(X_sparse_sequence)
-        X_sparse_sentence = np.array(X_sparse_sentence)
-        X_dense_sequence = np.array(X_dense_sequence)
-        X_dense_sentence = np.array(X_dense_sentence)
-        Y_sparse_sequence = np.array(Y_sparse_sequence)
-        Y_sparse_sentence = np.array(Y_sparse_sentence)
-        Y_dense_sequence = np.array(Y_dense_sequence)
-        Y_dense_sentence = np.array(Y_dense_sentence)
-        label_ids = np.array(label_ids)
-        tag_name_to_tag_ids = {
-            tag_name: np.array(tag_ids)
-            for tag_name, tag_ids in tag_name_to_tag_ids.items()
-        }
-
-        model_data = RasaModelData(label_key=self.label_key)
-        model_data.add_features(
-            TEXT_SEQUENCE_FEATURES, [X_sparse_sequence, X_dense_sequence]
+        model_data = RasaModelData(
+            label_key=self.label_key, label_sub_key=self.label_sub_key
         )
-        model_data.add_features(
-            TEXT_SENTENCE_FEATURES, [X_sparse_sentence, X_dense_sentence]
-        )
-        model_data.add_features(
-            LABEL_SEQUENCE_FEATURES, [Y_sparse_sequence, Y_dense_sequence]
-        )
-        model_data.add_features(
-            LABEL_SENTENCE_FEATURES, [Y_sparse_sentence, Y_dense_sentence]
-        )
+        for key, feature_dict in features.items():
+            for sub_key, data in feature_dict.items():
+                sub_key = sub_key.replace(f"{SPARSE}_", "").replace(f"{DENSE}_", "")
+                model_data.add_features(key, sub_key, [np.array(data)])
 
         if (
             label_attribute
-            and model_data.feature_not_exist(LABEL_SENTENCE_FEATURES)
-            and model_data.feature_not_exist(LABEL_SEQUENCE_FEATURES)
+            and model_data.feature_not_exist(LABEL, SENTENCE)
+            and model_data.feature_not_exist(LABEL, SEQUENCE)
         ):
             # no label features are present, get default features from _label_data
             model_data.add_features(
-                LABEL_SEQUENCE_FEATURES, self._use_default_label_features(label_ids)
+                LABEL, SEQUENCE, self._use_default_label_features(np.array(label_ids))
             )
 
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
-        model_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
+        model_data.add_features(
+            LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
+        )
 
-        for tag_name, tag_ids in tag_name_to_tag_ids.items():
-            model_data.add_features(f"{tag_name}_{TAG_IDS}", [tag_ids])
-
-        model_data.add_lengths(TEXT_SEQUENCE_LENGTH, TEXT_SEQUENCE_FEATURES)
-        model_data.add_lengths(LABEL_SEQUENCE_LENGTH, LABEL_SEQUENCE_FEATURES)
+        model_data.add_lengths(TEXT, TEXT_SEQUENCE_LENGTH, TEXT, SEQUENCE)
+        model_data.add_lengths(LABEL, LABEL_SEQUENCE_LENGTH, LABEL, SEQUENCE)
 
         return model_data
 
@@ -795,7 +725,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @staticmethod
     def _check_enough_labels(model_data: RasaModelData) -> bool:
-        return len(np.unique(model_data.get(LABEL_IDS))) >= 2
+        return len(np.unique(model_data.get(LABEL_KEY, LABEL_SUB_KEY))) >= 2
 
     def train(
         self,
@@ -1091,14 +1021,18 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         entity_tag_specs: List[EntityTagSpec],
         label_data: RasaModelData,
         meta: Dict[Text, Any],
-        data_example: Dict[Text, List[np.ndarray]],
+        data_example: Dict[Text, Dict[Text, List[np.ndarray]]],
         model_dir: Text,
     ):
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
-        label_key = LABEL_IDS if meta[INTENT_CLASSIFICATION] else None
-        model_data_example = RasaModelData(label_key=label_key, data=data_example)
+        label_key = LABEL_KEY if meta[INTENT_CLASSIFICATION] else None
+        label_sub_key = LABEL_SUB_KEY if meta[INTENT_CLASSIFICATION] else None
+
+        model_data_example = RasaModelData(
+            label_key=label_key, label_sub_key=label_sub_key, data=data_example
+        )
 
         model = cls.model_class().load(
             tf_model_file,
@@ -1131,7 +1065,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 class DIET(RasaModel):
     def __init__(
         self,
-        data_signature: Dict[Text, List[FeatureSignature]],
+        data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
         label_data: RasaModelData,
         entity_tag_specs: Optional[List[EntityTagSpec]],
         config: Dict[Text, Any],
@@ -1196,19 +1130,13 @@ class DIET(RasaModel):
         return ordered_tag_spec
 
     def _check_data(self) -> None:
-        if (
-            TEXT_SENTENCE_FEATURES not in self.data_signature
-            and TEXT_SEQUENCE_FEATURES not in self.data_signature
-        ):
+        if TEXT not in self.data_signature:
             raise InvalidConfigError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if self.config[INTENT_CLASSIFICATION]:
-            if (
-                LABEL_SENTENCE_FEATURES not in self.data_signature
-                and LABEL_SEQUENCE_FEATURES not in self.data_signature
-            ):
+            if LABEL not in self.data_signature:
                 raise InvalidConfigError(
                     f"No label features specified. "
                     f"Cannot train '{self.__class__.__name__}' model."
@@ -1218,20 +1146,20 @@ class DIET(RasaModel):
                 different_sentence_signatures = False
                 different_sequence_signatures = False
                 if (
-                    TEXT_SENTENCE_FEATURES in self.data_signature
-                    and LABEL_SENTENCE_FEATURES in self.data_signature
+                    SENTENCE in self.data_signature[TEXT]
+                    and SENTENCE in self.data_signature[LABEL]
                 ):
                     different_sentence_signatures = (
-                        self.data_signature[TEXT_SENTENCE_FEATURES]
-                        != self.data_signature[LABEL_SENTENCE_FEATURES]
+                        self.data_signature[TEXT][SENTENCE]
+                        != self.data_signature[LABEL][SENTENCE]
                     )
                 if (
-                    TEXT_SEQUENCE_FEATURES in self.data_signature
-                    and LABEL_SEQUENCE_FEATURES in self.data_signature
+                    SEQUENCE in self.data_signature[TEXT]
+                    and SEQUENCE in self.data_signature[LABEL]
                 ):
                     different_sequence_signatures = (
-                        self.data_signature[TEXT_SEQUENCE_FEATURES]
-                        != self.data_signature[LABEL_SEQUENCE_FEATURES]
+                        self.data_signature[TEXT][SEQUENCE]
+                        != self.data_signature[LABEL][SEQUENCE]
                     )
 
                 if different_sentence_signatures or different_sequence_signatures:
@@ -1240,9 +1168,9 @@ class DIET(RasaModel):
                         "for text_features and label_features must coincide."
                     )
 
-        if (
-            self.config[ENTITY_RECOGNITION]
-            and f"{ENTITY_ATTRIBUTE_TYPE}_{TAG_IDS}" not in self.data_signature
+        if self.config[ENTITY_RECOGNITION] and (
+            ENTITIES not in self.data_signature
+            or ENTITY_ATTRIBUTE_TYPE not in self.data_signature[ENTITIES]
         ):
             common_utils.raise_warning(
                 f"You specified '{self.__class__.__name__}' to train entities, but "
@@ -1361,7 +1289,7 @@ class DIET(RasaModel):
                 f"dense_input_dropout.{name}_{feature_type}"
             ] = tf.keras.layers.Dropout(rate=self.config[DROP_RATE])
             self._prepare_sparse_dense_layers(
-                self.data_signature[f"{name}_{feature_type}_features"],
+                self.data_signature[name][feature_type],
                 f"{name}_{feature_type}",
                 self.config[REGULARIZATION_CONSTANT],
                 self.config[DENSE_DIMENSION][name],
@@ -1653,15 +1581,13 @@ class DIET(RasaModel):
         return outputs, inputs, seq_ids, lm_mask_bool
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
-        all_label_ids = self.tf_label_data[LABEL_IDS][0]
+        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        mask_sequence_label = self._get_mask_for(
-            self.tf_label_data, LABEL_SEQUENCE_LENGTH
-        )
+        mask_sequence_label = self._get_mask_for(self.tf_label_data, LABEL, SEQUENCE)
 
         x = self._create_bow(
-            self.tf_label_data[LABEL_SEQUENCE_FEATURES],
-            self.tf_label_data[LABEL_SENTENCE_FEATURES],
+            self.tf_label_data[LABEL][SEQUENCE],
+            self.tf_label_data[LABEL][SENTENCE],
             mask_sequence_label,
             mask_sequence_label,
             self.label_name,
@@ -1757,32 +1683,38 @@ class DIET(RasaModel):
 
     @staticmethod
     def _get_sequence_lengths(
-        tf_batch_data: Dict[Text, List[tf.Tensor]], name: Text, batch_dim: int = 1
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        key: Text,
+        sub_key: Text,
+        batch_dim: int = 1,
     ) -> tf.Tensor:
         # sentence features have a sequence lengths of 1
         # if sequence features are present we add the sequence lengths of those
 
         sequence_lengths = tf.ones([batch_dim], dtype=tf.int32)
-        if name in tf_batch_data:
-            sequence_lengths += tf.cast(tf_batch_data[name][0], dtype=tf.int32)
+        if key in tf_batch_data and sub_key in tf_batch_data[key]:
+            sequence_lengths += tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
 
         return sequence_lengths
 
     def _get_mask_for(
-        self, tf_batch_data: Dict[Text, List[tf.Tensor]], name: Text
+        self,
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        key: Text,
+        sub_key: Text,
     ) -> Optional[tf.Tensor]:
-        if name not in tf_batch_data:
+        if key not in tf_batch_data or sub_key not in tf_batch_data[key]:
             return None
 
-        sequence_lengths = tf.cast(tf_batch_data[name][0], dtype=tf.int32)
+        sequence_lengths = tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
         return self._compute_mask(sequence_lengths)
 
     @staticmethod
-    def _get_batch_dim(tf_batch_data: Dict[Text, List[tf.Tensor]]) -> int:
-        if TEXT_SEQUENCE_FEATURES in tf_batch_data:
-            return tf.shape(tf_batch_data[TEXT_SEQUENCE_FEATURES][0])[0]
+    def _get_batch_dim(tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]) -> int:
+        if TEXT in tf_batch_data and SEQUENCE in tf_batch_data[TEXT]:
+            return tf.shape(tf_batch_data[TEXT][SEQUENCE][0])[0]
 
-        return tf.shape(tf_batch_data[TEXT_SENTENCE_FEATURES][0])[0]
+        return tf.shape(tf_batch_data[TEXT][SENTENCE][0])[0]
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -1790,9 +1722,9 @@ class DIET(RasaModel):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         batch_dim = self._get_batch_dim(tf_batch_data)
-        mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
+        mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE)
         sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data, TEXT_SEQUENCE_LENGTH, batch_dim
+            tf_batch_data, TEXT, SEQUENCE, batch_dim
         )
         mask_text = self._compute_mask(sequence_lengths)
 
@@ -1802,8 +1734,8 @@ class DIET(RasaModel):
             text_seq_ids,
             lm_mask_bool_text,
         ) = self._create_sequence(
-            tf_batch_data[TEXT_SEQUENCE_FEATURES],
-            tf_batch_data[TEXT_SENTENCE_FEATURES],
+            tf_batch_data[TEXT][SEQUENCE],
+            tf_batch_data[TEXT][SENTENCE],
             mask_sequence_text,
             mask_text,
             self.text_name,
@@ -1841,17 +1773,17 @@ class DIET(RasaModel):
         sequence_lengths: tf.Tensor,
         mask_text: tf.Tensor,
         text_transformed: tf.Tensor,
-        tf_batch_data: Dict[Text, List[tf.Tensor]],
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> tf.Tensor:
         # get sentence features vector for intent classification
         sentence_vector = self._last_token(text_transformed, sequence_lengths)
 
-        mask_sequence_label = self._get_mask_for(tf_batch_data, LABEL_SEQUENCE_LENGTH)
+        mask_sequence_label = self._get_mask_for(tf_batch_data, LABEL, SEQUENCE)
 
-        label_ids = tf_batch_data[LABEL_IDS][0]
+        label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
         label = self._create_bow(
-            tf_batch_data[LABEL_SEQUENCE_FEATURES],
-            tf_batch_data[LABEL_SENTENCE_FEATURES],
+            tf_batch_data[LABEL][SEQUENCE],
+            tf_batch_data[LABEL][SENTENCE],
             mask_sequence_label,
             mask_text,
             self.label_name,
@@ -1869,7 +1801,7 @@ class DIET(RasaModel):
         mask_text: tf.Tensor,
         sequence_lengths: tf.Tensor,
         text_transformed: tf.Tensor,
-        tf_batch_data: Dict[Text, List[tf.Tensor]],
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> List[tf.Tensor]:
         losses = []
 
@@ -1881,7 +1813,7 @@ class DIET(RasaModel):
             if tag_spec.num_tags == 0:
                 continue
 
-            tag_ids = tf_batch_data[f"{tag_spec.tag_name}_{TAG_IDS}"][0]
+            tag_ids = tf_batch_data[ENTITIES][tag_spec.tag_name][0]
             # add a zero (no entity) for the sentence features to match the shape of
             # inputs
             tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
@@ -1926,16 +1858,16 @@ class DIET(RasaModel):
             batch_in, self.predict_data_signature
         )
 
-        mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
+        mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE)
         sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data, TEXT_SEQUENCE_LENGTH, batch_dim=1
+            tf_batch_data, TEXT, SEQUENCE, batch_dim=1
         )
 
         mask = self._compute_mask(sequence_lengths)
 
         text_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data[TEXT_SEQUENCE_FEATURES],
-            tf_batch_data[TEXT_SENTENCE_FEATURES],
+            tf_batch_data[TEXT][SEQUENCE],
+            tf_batch_data[TEXT][SENTENCE],
             mask_sequence_text,
             mask,
             self.text_name,
