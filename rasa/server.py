@@ -1076,7 +1076,7 @@ def _get_output_channel(
 
 def _test_data_file_from_payload(request: Request) -> Text:
     if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-        return _training_payload_from_yaml(request).get("training_files")
+        return str(_training_payload_from_yaml(request)["training_files"])
     else:
         return rasa.utils.io.create_temporary_file(
             request.body, mode="w+b", suffix=".md"
