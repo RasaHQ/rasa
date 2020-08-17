@@ -19,7 +19,7 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     SingleStateFeaturizer,
 )
-from rasa.nlu.constants import ACTION_NAME, INTENT, ACTION_TEXT
+from rasa.nlu.constants import ACTION_NAME, INTENT, ACTION_TEXT, TEXT
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
@@ -76,6 +76,8 @@ logger = logging.getLogger(__name__)
 DIALOGUE_FEATURES = f"{DIALOGUE}_features"
 LABEL_FEATURES = f"{LABEL}_features"
 LABEL_IDS = f"{LABEL}_ids"
+LABEL_KEY = LABEL
+LABEL_SUB_KEY = "ids"
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
 
@@ -391,12 +393,16 @@ class TEDPolicy(Policy):
         label_ids = np.arange(domain.num_actions)
         # TODO not sure about expand_dims
         # TODO add length of text sequence
-        label_data.add_features(LABEL_IDS, LABEL_IDS, [np.expand_dims(label_ids, -1)])
+        label_data.add_features(
+            LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
+        )
 
         return label_data
 
     def _create_model_data(
-        self, X: List[List[Dict[Text, List["Features"]]]], label_ids: List[List[int]]
+        self,
+        X: List[List[Dict[Text, List["Features"]]]],
+        label_ids: Optional[List[List[int]]],
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData."""
 
@@ -410,10 +416,13 @@ class TEDPolicy(Policy):
             for subkey, features in attribute_features.items():
                 model_data.add_features(attribute, subkey, features)
 
-        model_data.add_features(LABEL_IDS, LABEL_IDS, [np.array(label_ids)])
+        model_data.add_features(LABEL_KEY, LABEL_SUB_KEY, [np.array(label_ids)])
         # TODO add dialogue and text lengths
         model_data.add_lengths(
-            "dialog", "lengths", next(iter(list(attribute_data.keys()))), "mask"
+            "dialog_lengths",
+            "dialog_lengths",
+            next(iter(list(attribute_data.keys()))),
+            "mask",
         )
         return model_data
 
@@ -633,27 +642,20 @@ class TED(RasaModel):
         self._prepare_layers()
 
     def _check_data(self) -> None:
-        if (
-            f"{DIALOGUE_FEATURES}_user" not in self.data_signature
-            and f"{DIALOGUE_FEATURES}_user_name" not in self.data_signature
-        ):
+        if not any(key in [INTENT, TEXT] for key in self.data_signature.keys()):
             raise ValueError(
                 f"No user features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
 
-        if (
-            f"{DIALOGUE_FEATURES}_action" not in self.data_signature
-            and f"{DIALOGUE_FEATURES}_action_name" not in self.data_signature
+        if not any(
+            key in [ACTION_NAME, ACTION_TEXT] for key in self.data_signature.keys()
         ):
             raise ValueError(
                 f"No action features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
-        if (
-            LABEL_FEATURES not in self.data_signature
-            and f"{LABEL_FEATURES}_action_name" not in self.data_signature
-        ):
+        if LABEL not in self.data_signature:
             raise ValueError(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
