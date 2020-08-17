@@ -35,6 +35,7 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     RANKING_LENGTH,
@@ -469,6 +470,23 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
         return p
 
 
+class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
+
+    max_history = 1
+
+    def create_policy(self, featurizer, priority):
+        p = TEDPolicy(
+            featurizer=featurizer,
+            priority=priority,
+            **{
+                KEY_RELATIVE_ATTENTION: True,
+                VALUE_RELATIVE_ATTENTION: True,
+                MAX_RELATIVE_POSITION: 5,
+            },
+        )
+        return p
+
+
 class TestMemoizationPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
         max_history = None
@@ -789,7 +807,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "greet" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "greet" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == (
             "## sender\n* greet\n    - utter_hello\n* greet\n"
         )
@@ -825,7 +843,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == "## sender\n* bye\n"
 
     def test_affirm_rephrased_intent(self, trained_policy, default_domain):
@@ -865,7 +883,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == "## sender\n* bye\n"
 
     def test_denied_rephrasing_affirmation(self, trained_policy, default_domain):
@@ -905,7 +923,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
             events, default_channel, default_nlg, default_domain
         )
 
-        assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
+        assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
         assert tracker.export_stories() == (
             "## sender\n* greet\n    - utter_hello\n* bye\n"
         )

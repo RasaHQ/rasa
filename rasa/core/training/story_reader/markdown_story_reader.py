@@ -3,8 +3,8 @@ import json
 import logging
 import os
 import re
-from pathlib import PurePath
-from typing import Dict, Text, List, Any
+from pathlib import PurePath, Path
+from typing import Dict, Text, List, Any, Union
 
 import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_STORIES
@@ -15,7 +15,8 @@ from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.dsl import EndToEndReader
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
-from rasa.data import MARKDOWN_FILE_EXTENSION
+from rasa.data import MARKDOWN_FILE_EXTENSIONS
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ class MarkdownStoryReader(StoryReader):
 
     """
 
-    async def read_from_file(self, filename: Text) -> List[StoryStep]:
+    async def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
 
         try:
@@ -181,7 +182,9 @@ class MarkdownStoryReader(StoryReader):
         parsed_messages = await asyncio.gather(
             *[self._parse_message(m, line_num) for m in messages]
         )
-        self.current_step_builder.add_user_messages(parsed_messages)
+        self.current_step_builder.add_user_messages(
+            parsed_messages, self.unfold_or_utterances
+        )
 
     async def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
@@ -209,7 +212,7 @@ class MarkdownStoryReader(StoryReader):
         utterance = UserUttered(
             message, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
-        intent_name = utterance.intent.get("name")
+        intent_name = utterance.intent.get(INTENT_NAME_KEY)
         if self.domain and intent_name not in self.domain.intents:
             raise_warning(
                 f"Found unknown intent '{intent_name}' on line {line_num}. "
@@ -221,7 +224,7 @@ class MarkdownStoryReader(StoryReader):
         return utterance
 
     @staticmethod
-    def is_markdown_story_file(file_path: Text) -> bool:
+    def is_markdown_story_file(file_path: Union[Text, Path]) -> bool:
         """Check if file contains Core training data or rule data in Markdown format.
 
         Args:
@@ -233,7 +236,7 @@ class MarkdownStoryReader(StoryReader):
         """
         suffix = PurePath(file_path).suffix
 
-        if suffix and suffix != MARKDOWN_FILE_EXTENSION:
+        if suffix not in MARKDOWN_FILE_EXTENSIONS:
             return False
 
         try:

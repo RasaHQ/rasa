@@ -11,6 +11,11 @@ try {
   // one version of the doc is available
 }
 
+const legacyVersion = {
+  label: 'Legacy 1.x',
+  to: 'https://legacy-docs-v1.rasa.com',
+};
+
 module.exports = {
   title: 'Rasa Open Source Documentation',
   tagline: 'The tagline of my site',
@@ -48,11 +53,15 @@ module.exports = {
               to: 'next/',
               activeBaseRegex: `next`,
             },
-          ] : [{
+            legacyVersion,
+          ] : [
+            {
               label: 'Master/Unreleased',
               to: '/',
               activeBaseRegex: `/`,
-            },],
+            },
+            legacyVersion,
+          ],
         },
         {
           href: 'https://github.com/rasahq/rasa',
@@ -65,25 +74,35 @@ module.exports = {
       style: 'dark',
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
+    gtm: {
+      containerID: 'GTM-PK448GB',
+    },
   },
-  presets: [
-    [
-      '@docusaurus/preset-classic',
-      {
-        docs: {
-          // It is recommended to set document id as docs home page (`docs/` path).
-          homePageId: 'index',
-          // https://v2.docusaurus.io/docs/next/docs-introduction/#docs-only-mode
-          routeBasePath: '/',
-          sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
-          remarkPlugins: [[remarkCollapse, { test: '' }], remarkSources, remarkProgramOutput],
-        },
-        theme: {
-          customCss: require.resolve('./src/css/custom.css'),
-        },
-      },
-    ],
+  themes: [
+    ['@docusaurus/theme-classic', {
+      customCss: require.resolve('./src/css/custom.css'),
+    }],
+    path.resolve(__dirname, './themes/theme-live-codeblock'),
   ],
-  themes: [path.resolve(__dirname, './themes/theme-live-codeblock')],
+  plugins: [
+    ['@docusaurus/plugin-content-docs', {
+      // https://v2.docusaurus.io/docs/next/docs-introduction/#docs-only-mode
+      routeBasePath: '/',
+      // It is recommended to set document id as docs home page (`docs/` path).
+      homePageId: 'index',
+      sidebarPath: require.resolve('./sidebars.js'),
+      editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
+      remarkPlugins: [
+        [ remarkCollapse, { test: '' }],
+        remarkSources,
+        remarkProgramOutput
+      ],
+    }],
+    ['@docusaurus/plugin-sitemap', {
+      cacheTime: 600 * 1000, // 600 sec - cache purge period
+      changefreq: 'weekly',
+      priority: 0.5,
+    }],
+    path.resolve(__dirname, './plugins/google-tagmanager'),
+  ],
 };

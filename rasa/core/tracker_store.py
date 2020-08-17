@@ -33,6 +33,7 @@ from rasa.core.domain import Domain
 from rasa.core.events import SessionStarted
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 import rasa.cli.utils as rasa_cli_utils
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import class_from_module_path, raise_warning, arguments_of
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
@@ -910,7 +911,9 @@ class SQLTrackerStore(TrackerStore):
 
             for event in events:
                 data = event.as_dict()
-                intent = data.get("parse_data", {}).get("intent", {}).get("name")
+                intent = (
+                    data.get("parse_data", {}).get("intent", {}).get(INTENT_NAME_KEY)
+                )
                 action = data.get("name")
                 timestamp = data.get("timestamp")
 

@@ -11,6 +11,7 @@ from rasa.constants import DOCS_URL_STORIES
 from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning, class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
 
@@ -171,8 +172,8 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
         return {
             "text": message_text,
-            "intent": {"name": intent, "confidence": confidence},
-            "intent_ranking": [{"name": intent, "confidence": confidence}],
+            "intent": {INTENT_NAME_KEY: intent, "confidence": confidence},
+            "intent_ranking": [{INTENT_NAME_KEY: intent, "confidence": confidence}],
             "entities": entities,
         }
 
@@ -195,7 +196,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         Return a default value if the parsing of the text failed."""
 
         default_return = {
-            "intent": {"name": "", "confidence": 0.0},
+            "intent": {INTENT_NAME_KEY: "", "confidence": 0.0},
             "entities": [],
             "text": "",
         }

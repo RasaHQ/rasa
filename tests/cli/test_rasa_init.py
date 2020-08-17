@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Callable
 from _pytest.pytester import RunResult
 
@@ -6,16 +7,20 @@ from _pytest.pytester import RunResult
 def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
     os.makedirs("./workspace")
     run_with_stdin(
-        "init", "--quiet", "--init-dir", "./workspace", stdin=b"YN"
+        "init", "--quiet", "--init-dir", "./workspace", stdin=b"N"
     )  # avoid training an initial model
 
-    assert os.path.exists("./workspace/actions.py")
-    assert os.path.exists("./workspace/domain.yml")
-    assert os.path.exists("./workspace/config.yml")
-    assert os.path.exists("./workspace/credentials.yml")
-    assert os.path.exists("./workspace/endpoints.yml")
-    assert os.path.exists("./workspace/data/nlu.md")
-    assert os.path.exists("./workspace/data/stories.md")
+    required_files = [
+        "actions.py",
+        "domain.yml",
+        "config.yml",
+        "credentials.yml",
+        "endpoints.yml",
+        "data/nlu.yml",
+        "data/stories.yml",
+        "data/rules.yml",
+    ]
+    assert all((Path("workspace") / file).exists() for file in required_files)
 
 
 def test_not_found_init_path(run: Callable[..., RunResult]):

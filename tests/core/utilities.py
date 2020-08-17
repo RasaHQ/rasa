@@ -11,6 +11,7 @@ import rasa.utils.io
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, Event
 from rasa.core.trackers import DialogueStateTracker
+from rasa.nlu.constants import INTENT_NAME_KEY
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 if typing.TYPE_CHECKING:
@@ -71,7 +72,7 @@ def user_uttered(
     metadata: Dict[Text, Any] = None,
     timestamp: Optional[float] = None,
 ) -> UserUttered:
-    parse_data = {"intent": {"name": text, "confidence": confidence}}
+    parse_data = {"intent": {INTENT_NAME_KEY: text, "confidence": confidence}}
     return UserUttered(
         text="Random",
         intent=parse_data["intent"],

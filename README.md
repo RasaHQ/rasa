@@ -147,7 +147,7 @@ make install
 First of all, install all the required dependencies:
 
 ```bash
-make install
+make install install-docs
 ```
 
 After the installation has finished, you can run and view the documentation
@@ -157,7 +157,8 @@ locally using:
 make livedocs
 ```
 
-Visit the local version of the docs at http://localhost:8000 in your browser.
+It should open a new tab with the local version of the docs in your browser;
+if not, visit http://localhost:3000 in your browser.
 You can now change the docs locally and the web page will automatically reload
 and apply your changes.
 

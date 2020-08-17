@@ -58,7 +58,7 @@ def model_server(
 
 
 async def test_training_data_is_reproducible():
-    training_data_file = "examples/moodbot/data/stories.md"
+    training_data_file = "examples/moodbot/data/stories.yml"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )
@@ -90,7 +90,7 @@ async def test_agent_train(trained_moodbot_path: Text):
     assert [type(p) for p in loaded.policy_ensemble.policies] == [
         TEDPolicy,
         MemoizationPolicy,
-        MappingPolicy,
+        RulePolicy,
     ]
 
 
@@ -144,7 +144,7 @@ async def test_agent_handle_message(default_agent: Agent):
 
 
 def test_agent_wrong_use_of_load():
-    training_data_file = "examples/moodbot/data/stories.md"
+    training_data_file = "examples/moodbot/data/stories.yml"
     agent = Agent(
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )
@@ -279,7 +279,19 @@ def test_trigger_without_mapping_policy(
 
 @pytest.mark.parametrize(
     "domain, policy_config",
-    [({"intents": ["affirm"]}, {"policies": [{"name": "TwoStageFallbackPolicy"}]})],
+    [
+        (
+            {"intents": ["affirm"]},
+            {
+                "policies": [
+                    {
+                        "name": "TwoStageFallbackPolicy",
+                        "deny_suggestion_intent_name": "deny",
+                    }
+                ]
+            },
+        )
+    ],
 )
 def test_two_stage_fallback_without_deny_suggestion(
     domain: Dict[Text, Any], policy_config: Dict[Text, Any]
@@ -289,7 +301,66 @@ def test_two_stage_fallback_without_deny_suggestion(
             domain=Domain.from_dict(domain),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
-    assert "The intent 'out_of_scope' must be present" in str(execinfo.value)
+    assert "The intent 'deny' must be present" in str(execinfo.value)
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {"actions": ["other-action"]},
+            {
+                "policies": [
+                    {"name": "RulePolicy", "core_fallback_action_name": "my_fallback"}
+                ]
+            },
+        )
+    ],
+)
+def test_rule_policy_without_fallback_action_present(
+    domain: Dict[Text, Any], policy_config: Dict[Text, Any]
+):
+    with pytest.raises(InvalidDomain) as execinfo:
+        Agent(
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
+        )
+
+    assert RulePolicy.__name__ in execinfo.value.message
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {"actions": ["other-action"]},
+            {
+                "policies": [
+                    {
+                        "name": "RulePolicy",
+                        "core_fallback_action_name": "my_fallback",
+                        "enable_fallback_prediction": False,
+                    }
+                ]
+            },
+        ),
+        (
+            {"actions": ["my-action"]},
+            {
+                "policies": [
+                    {"name": "RulePolicy", "core_fallback_action_name": "my-action"}
+                ]
+            },
+        ),
+        ({}, {"policies": [{"name": "MemoizationPolicy"}]}),
+    ],
+)
+def test_rule_policy_valid(domain: Dict[Text, Any], policy_config: Dict[Text, Any]):
+    # no exception should be thrown
+    Agent(
+        domain=Domain.from_dict(domain),
+        policies=PolicyEnsemble.from_dict(policy_config),
+    )
 
 
 async def test_agent_update_model_none_domain(trained_rasa_model: Text):
