@@ -68,7 +68,7 @@ class SingleStateFeaturizer:
         """
         Constructs a message from current User or Previous Action data;
         Args:
-            substate: dictionary which contains (intent or text) for USER and (action name or action text) 
+            substate: dictionary which contains (intent or text) for USER and (action name or action text)
             for PREVIOUS_ACTION
             state_type: sustate is USER or PREVIOUS ACTION
         Returns:
