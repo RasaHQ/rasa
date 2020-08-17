@@ -15,6 +15,28 @@ You can find more information on how to add a new change log entry at
 https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
+## [1.10.10] - 2020-08-04
+
+Bugfixes
+--------
+- [#6280](https://github.com/rasahq/rasa/issues/6280): Fixed `TypeError: expected string or bytes-like object`
+  issue caused by integer, boolean, and null values in templates.
+
+
+## [1.10.9] - 2020-07-29
+
+Improvements
+------------
+- [#6255](https://github.com/rasahq/rasa/issues/6255): Rasa Open Source will no longer add `responses` to the `actions` section of the
+  domain when persisting the domain as a file. This addresses related problems in Rasa X
+  when Integrated Version Control introduced big diffs due to the added utterances
+  in the `actions` section.
+
+Bugfixes
+--------
+- [#6160](https://github.com/rasahq/rasa/issues/6160): Consider entity roles/groups during interactive learning.
+
+
 ## [1.10.8] - 2020-07-15
 
 ### Bugfixes

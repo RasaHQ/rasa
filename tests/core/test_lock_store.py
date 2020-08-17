@@ -4,9 +4,10 @@ import os
 import numpy as np
 import pytest
 import time
+
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempdirFactory
-from typing import Text
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
@@ -250,17 +251,29 @@ async def test_lock_error(default_agent: Agent):
             await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
 
 
-async def test_lock_lifetime_environment_variable():
+async def test_lock_lifetime_environment_variable(monkeypatch: MonkeyPatch):
     import rasa.core.lock_store
-    import importlib
 
     # by default lock lifetime is `DEFAULT_LOCK_LIFETIME`
-    assert rasa.core.lock_store.LOCK_LIFETIME == DEFAULT_LOCK_LIFETIME
+    assert rasa.core.lock_store._get_lock_lifetime() == DEFAULT_LOCK_LIFETIME
 
     # set new lock lifetime as environment variable
     new_lock_lifetime = 123
-    os.environ["TICKET_LOCK_LIFETIME"] = str(new_lock_lifetime)
+    monkeypatch.setenv("TICKET_LOCK_LIFETIME", str(new_lock_lifetime))
 
-    # reload module and check value is updated
-    importlib.reload(rasa.core.lock_store)
-    assert rasa.core.lock_store.LOCK_LIFETIME == new_lock_lifetime
+    assert rasa.core.lock_store._get_lock_lifetime() == new_lock_lifetime
+
+
+async def test_redis_lock_store_timeout(monkeypatch: MonkeyPatch):
+    import redis.exceptions
+
+    lock_store = FakeRedisLockStore()
+    monkeypatch.setattr(
+        lock_store,
+        lock_store.get_or_create_lock.__name__,
+        Mock(side_effect=redis.exceptions.TimeoutError),
+    )
+
+    with pytest.raises(LockError):
+        async with lock_store.lock("some sender"):
+            pass
