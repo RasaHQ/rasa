@@ -6,7 +6,8 @@ import pytest
 from pathlib import Path
 
 import rasa.data as data
-from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
+from tests.conftest import DEFAULT_NLU_DATA
+from tests.core.conftest import DEFAULT_STORIES_FILE
 from rasa.nlu.training_data import load_data
 from rasa.nlu.utils import json_to_string
 from rasa.utils import io
@@ -91,8 +92,8 @@ def test_same_file_names_get_resolved(tmpdir):
     shutil.copy2(DEFAULT_STORIES_FILE, data_dir_one)
     shutil.copy2(DEFAULT_STORIES_FILE, data_dir_two)
 
-    nlu_dir_one = os.path.join(tmpdir.join("one").join("nlu.md").strpath)
-    nlu_dir_two = os.path.join(tmpdir.join("two").join("nlu.md").strpath)
+    nlu_dir_one = os.path.join(tmpdir.join("one").join("nlu.yml").strpath)
+    nlu_dir_two = os.path.join(tmpdir.join("two").join("nlu.yml").strpath)
     shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_one)
     shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_two)
 
@@ -101,7 +102,7 @@ def test_same_file_names_get_resolved(tmpdir):
     nlu_files = os.listdir(nlu_directory)
 
     assert len(nlu_files) == 2
-    assert all([f.endswith("nlu.md") for f in nlu_files])
+    assert all([f.endswith("nlu.yml") for f in nlu_files])
 
     stories = os.listdir(core_directory)
 
