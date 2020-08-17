@@ -1,38 +1,46 @@
-from pathlib import Path
-from typing import Text, List
+from typing import Text
 
 import pytest
 
 from rasa.importers.importer import TrainingDataImporter
-from rasa.importers.utils import story_graph_from_paths
-
-EXAMPLES_FOLDER_ROOT = "examples"
-EXAMPLES_FOLDER_SUFFIX = "data"
-CONFIG_FILE = "config.yml"
-DOMAIN_FILE = "domain.yml"
-
-
-def get_training_data_folder(bot_name: Text) -> List[Text]:
-    return [str(Path(EXAMPLES_FOLDER_ROOT) / bot_name / EXAMPLES_FOLDER_SUFFIX)]
-
-
-def get_config_file(bot_name: Text) -> Text:
-    return str(Path(EXAMPLES_FOLDER_ROOT) / bot_name / CONFIG_FILE)
-
-
-def get_domain_file(bot_name: Text) -> Text:
-    return str(Path(EXAMPLES_FOLDER_ROOT) / bot_name / DOMAIN_FILE)
 
 
 @pytest.mark.parametrize(
-    "bot_name", ["concertbot", "knowledgebasebot", "moodbot", "reminderbot", "rules"]
+    "config_file, domain_file, data_folder",
+    [
+        (
+            "examples/concertbot/config.yml",
+            "examples/concertbot/domain.yml",
+            "examples/concertbot/data",
+        ),
+        (
+            "examples/knowledgebasebot/config.yml",
+            "examples/knowledgebasebot/domain.yml",
+            "examples/knowledgebasebot/data",
+        ),
+        (
+            "examples/moodbot/config.yml",
+            "examples/moodbot/domain.yml",
+            "examples/moodbot/data",
+        ),
+        (
+            "examples/reminderbot/config.yml",
+            "examples/reminderbot/domain.yml",
+            "examples/reminderbot/data",
+        ),
+        (
+            "examples/rules/config.yml",
+            "examples/rules/domain.yml",
+            "examples/rules/data",
+        ),
+    ],
 )
-async def test_example_bot_training_data_not_raises(bot_name: Text):
+async def test_example_bot_training_data_not_raises(
+    config_file: Text, domain_file: Text, data_folder: Text
+):
 
     importer = TrainingDataImporter.load_from_config(
-        get_config_file(bot_name),
-        get_domain_file(bot_name),
-        get_training_data_folder(bot_name),
+        config_file, domain_file, data_folder
     )
 
     with pytest.warns(None) as record:
