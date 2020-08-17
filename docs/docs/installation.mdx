@@ -38,7 +38,7 @@ Prefer following video instructions? Watch our installation series on
 [Youtube](https://www.youtube.com/playlist?list=PL75e0qA87dlEWUA5ToqLLR026wIkk2evk),
 it explains the installation in walkthroughs for all major platforms.
 
-### 1. Install the Python development environment
+### 1. Python Environment Setup
 
 Check if your Python environment is already configured:
 
@@ -90,9 +90,15 @@ Otherwise, proceed with the instructions below to install them.
   </TabItem>
 </Tabs>
 
-### 2. Create a virtual environment (strongly recommended)
+### 2. Virtual Environment Setup
 
-Tools like [virtualenv](https://virtualenv.pypa.io/en/latest/) and [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) provide isolated Python environments, which are cleaner than installing packages systemwide (as they prevent dependency conflicts). They also let you install packages without root privileges.
+This step is optional, but we strongly recommend isolating python projects
+using virtual environments. Tools like
+[virtualenv](https://virtualenv.pypa.io/en/latest/) and
+[virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) provide
+isolated Python environments, which are cleaner than installing packages system-wide
+(as they prevent dependency conflicts). They also let you install packages
+without root privileges.
 
 <Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
   <TabItem value="ubuntu">

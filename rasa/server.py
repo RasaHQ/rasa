@@ -3,6 +3,7 @@ import functools
 import logging
 import multiprocessing
 import os
+from pathlib import Path
 import tempfile
 import traceback
 import typing
@@ -11,6 +12,9 @@ from inspect import isawaitable
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Text, Union, Dict
 
+from sanic.exceptions import InvalidUsage
+
+from rasa.nlu.training_data.formats import RasaYAMLReader
 import rasa
 import rasa.core.utils
 from rasa.utils import common as common_utils
@@ -23,6 +27,7 @@ from rasa.constants import (
     DEFAULT_RESPONSE_TIMEOUT,
     DOCS_BASE_URL,
     MINIMUM_COMPATIBLE_VERSION,
+    DOCS_URL_TRAINING_DATA_NLU,
 )
 from rasa.core import agent
 from rasa.core.agent import Agent
@@ -778,11 +783,20 @@ def create_app(
                 None, functools.partial(train_model, **training_payload)
             )
 
-            filename = os.path.basename(model_path) if model_path else None
+            if model_path:
+                filename = os.path.basename(model_path)
 
-            return await response.file(
-                model_path, filename=filename, headers={"filename": filename}
-            )
+                return await response.file(
+                    model_path, filename=filename, headers={"filename": filename}
+                )
+            else:
+                raise ErrorResponse(
+                    500,
+                    "TrainingError",
+                    "Ran training, but it finished without a trained model.",
+                )
+        except ErrorResponse as e:
+            raise e
         except InvalidDomain as e:
             raise ErrorResponse(
                 400,
@@ -790,7 +804,7 @@ def create_app(
                 f"Provided domain file is invalid. Error: {e}",
             )
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TrainingError",
@@ -811,14 +825,15 @@ def create_app(
             "evaluate your model.",
         )
 
-        stories = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
+        test_data = _test_data_file_from_payload(request)
+
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = await test(stories, app.agent, e2e=use_e2e)
+            evaluation = await test(test_data, app.agent, e2e=use_e2e)
             return response.json(evaluation)
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TestingError",
@@ -835,6 +850,8 @@ def create_app(
             "evaluate your model.",
         )
 
+        test_data = _test_data_file_from_payload(request)
+
         eval_agent = app.agent
 
         model_path = request.args.get("model", None)
@@ -846,8 +863,7 @@ def create_app(
                 model_path, model_server, app.agent.remote_storage
             )
 
-        nlu_data = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
-        data_path = os.path.abspath(nlu_data)
+        data_path = os.path.abspath(test_data)
 
         if not os.path.exists(eval_agent.model_directory):
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
@@ -859,7 +875,7 @@ def create_app(
             evaluation = run_evaluation(data_path, nlu_model)
             return response.json(evaluation)
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TestingError",
@@ -1058,6 +1074,15 @@ def _get_output_channel(
     )
 
 
+def _test_data_file_from_payload(request: Request) -> Text:
+    if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+        return str(_training_payload_from_yaml(request)["training_files"])
+    else:
+        return rasa.utils.io.create_temporary_file(
+            request.body, mode="w+b", suffix=".md"
+        )
+
+
 def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool]]:
     logger.debug(
         "Extracting JSON payload with Markdown training data from request body."
@@ -1177,14 +1202,12 @@ def _model_output_directory(save_to_default_model_directory: bool) -> Text:
 
 
 def _validate_yaml_training_payload(yaml_text: Text) -> None:
-    # TODO: Use NLU schema validation once it's merged
     try:
-        rasa.utils.io.read_yaml(yaml_text)
-    except Exception:
+        RasaYAMLReader.validate(yaml_text)
+    except Exception as e:
         raise ErrorResponse(
             400,
             "BadRequest",
-            "The request body does not contain valid YAML.",
-            # TODO: Add training data docs url
-            help_url=None,
+            f"The request body does not contain valid YAML. Error: {e}",
+            help_url=DOCS_URL_TRAINING_DATA_NLU,
         )
