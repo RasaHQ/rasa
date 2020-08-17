@@ -8,6 +8,7 @@ from rasa.core.events import (
     ActiveLoop,
     FormValidation,
     SlotSet,
+    Form,
 )
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.trackers import DialogueStateTracker
@@ -73,7 +74,7 @@ async def test_persist_and_read_test_story(tmpdir, default_domain: Domain):
         existing_stories.discard(story_str)
 
 
-async def test_persist_form_story():
+async def test_persist_legacy_form_story():
     domain = Domain.load("data/test_domains/form.yml")
 
     tracker = DialogueStateTracker("", domain.slots)
@@ -96,6 +97,81 @@ async def test_persist_form_story():
         "* inform\n"
         "    - some_form\n"
         '    - form{"name": null}\n'
+        "* goodbye\n"
+        "    - utter_goodbye\n"
+    )
+
+    # simulate talking to the form
+    events = [
+        UserUttered(intent={"name": "greet"}),
+        ActionExecuted("utter_greet"),
+        ActionExecuted("action_listen"),
+        # start the form
+        UserUttered(intent={"name": "start_form"}),
+        ActionExecuted("some_form"),
+        ActiveLoop("some_form"),
+        ActionExecuted("action_listen"),
+        # out of form input
+        UserUttered(intent={"name": "default"}),
+        ActionExecutionRejected("some_form"),
+        ActionExecuted("utter_default"),
+        ActionExecuted("some_form"),
+        ActionExecuted("action_listen"),
+        # out of form input
+        UserUttered(intent={"name": "stop"}),
+        ActionExecutionRejected("some_form"),
+        ActionExecuted("utter_ask_continue"),
+        ActionExecuted("action_listen"),
+        # out of form input but continue with the form
+        UserUttered(intent={"name": "affirm"}),
+        FormValidation(False),
+        ActionExecuted("some_form"),
+        ActionExecuted("action_listen"),
+        # out of form input
+        UserUttered(intent={"name": "stop"}),
+        ActionExecutionRejected("some_form"),
+        ActionExecuted("utter_ask_continue"),
+        ActionExecuted("action_listen"),
+        # form input
+        UserUttered(intent={"name": "inform"}),
+        FormValidation(True),
+        ActionExecuted("some_form"),
+        ActionExecuted("action_listen"),
+        ActiveLoop(None),
+        UserUttered(intent={"name": "goodbye"}),
+        ActionExecuted("utter_goodbye"),
+        ActionExecuted("action_listen"),
+    ]
+    [tracker.update(e) for e in events]
+
+    story = story.replace(f"- {Form.type_name}", f"- {ActiveLoop.type_name}")
+
+    assert story in tracker.export_stories()
+
+
+async def test_persist_form_story():
+    domain = Domain.load("data/test_domains/form.yml")
+
+    tracker = DialogueStateTracker("", domain.slots)
+
+    story = (
+        "* greet\n"
+        "    - utter_greet\n"
+        "* start_form\n"
+        "    - some_form\n"
+        '    - active_loop{"name": "some_form"}\n'
+        "* default\n"
+        "    - utter_default\n"
+        "    - some_form\n"
+        "* stop\n"
+        "    - utter_ask_continue\n"
+        "* affirm\n"
+        "    - some_form\n"
+        "* stop\n"
+        "    - utter_ask_continue\n"
+        "* inform\n"
+        "    - some_form\n"
+        '    - active_loop{"name": null}\n'
         "* goodbye\n"
         "    - utter_goodbye\n"
     )

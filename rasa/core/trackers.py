@@ -44,6 +44,9 @@ from rasa.core.slots import Slot
 logger = logging.getLogger(__name__)
 
 
+ACTIVE_LOOP_KEY = "active_loop"
+
+
 class EventVerbosity(Enum):
     """Filter on which events to include in tracker dumps."""
 
@@ -183,8 +186,7 @@ class DialogueStateTracker:
             "paused": self.is_paused(),
             "events": _events,
             "latest_input_channel": self.get_latest_input_channel(),
-            # TODO: Should we add a `active_loop` key and provide both keys for a while?
-            "active_form": self.active_loop,
+            ACTIVE_LOOP_KEY: self.active_loop,
             "latest_action_name": self.latest_action_name,
         }
 
