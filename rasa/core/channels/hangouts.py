@@ -6,9 +6,8 @@ from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitabl
 
 from sanic.response import HTTPResponse
 from sanic.exceptions import abort
-
-# from oauth2client import client
-# from oauth2client.crypt import AppIdentityError
+from oauth2client import client
+from oauth2client.crypt import AppIdentityError
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
