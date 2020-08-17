@@ -37,7 +37,7 @@ from rasa.core.events import (
     SlotSet,
     UserUtteranceReverted,
     BotUttered,
-    Form,
+    ActiveLoop,
     SessionStarted,
     ActionExecuted,
     Event,
@@ -286,7 +286,7 @@ async def test_remote_action_utterances_with_none_values(
         BotUttered(
             "what dou want to eat?", metadata={"template_name": "utter_ask_cuisine"}
         ),
-        Form("restaurant_form"),
+        ActiveLoop("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
     ]
 

@@ -19,7 +19,7 @@ from rasa.core.events import (
     UserUtteranceReverted,
     ActionExecuted,
     UserUttered,
-    Form,
+    ActiveLoop,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
@@ -177,7 +177,9 @@ def _last_n_intent_names(
 def _user_should_affirm(
     tracker: DialogueStateTracker, events_so_far: List[Event]
 ) -> bool:
-    form_was_just_activated = any(isinstance(event, Form) for event in events_so_far)
+    form_was_just_activated = any(
+        isinstance(event, ActiveLoop) for event in events_so_far
+    )
     if form_was_just_activated:
         return True
 

@@ -5,7 +5,7 @@ from rasa.core.events import (
     UserUttered,
     ActionExecuted,
     ActionExecutionRejected,
-    Form,
+    ActiveLoop,
     FormValidation,
     SlotSet,
 )
@@ -108,7 +108,7 @@ async def test_persist_form_story():
         # start the form
         UserUttered(intent={"name": "start_form"}),
         ActionExecuted("some_form"),
-        Form("some_form"),
+        ActiveLoop("some_form"),
         ActionExecuted("action_listen"),
         # out of form input
         UserUttered(intent={"name": "default"}),
@@ -136,7 +136,7 @@ async def test_persist_form_story():
         FormValidation(True),
         ActionExecuted("some_form"),
         ActionExecuted("action_listen"),
-        Form(None),
+        ActiveLoop(None),
         UserUttered(intent={"name": "goodbye"}),
         ActionExecuted("utter_goodbye"),
         ActionExecuted("action_listen"),
@@ -210,7 +210,7 @@ async def test_read_rules_without_stories(default_domain: Domain):
 
     assert len(events) == 5
 
-    assert events[0] == Form("loop_q_form")
+    assert events[0] == ActiveLoop("loop_q_form")
     assert events[1] == SlotSet("requested_slot", "some_slot")
     assert events[2] == ActionExecuted("...")
     assert events[3] == UserUttered(

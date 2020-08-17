@@ -10,7 +10,7 @@ import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_STORIES, DOCS_URL_RULES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
-from rasa.core.events import UserUttered, SlotSet, Form
+from rasa.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.data import YAML_FILE_EXTENSIONS
@@ -368,7 +368,7 @@ class YAMLStoryReader(StoryReader):
         self._add_event(action_name, {})
 
     def _parse_form(self, form_name: Optional[Text]) -> None:
-        self._add_event(Form.type_name, {"name": form_name})
+        self._add_event(ActiveLoop.type_name, {"name": form_name})
 
     def _parse_checkpoint(self, step: Dict[Text, Any]) -> None:
 

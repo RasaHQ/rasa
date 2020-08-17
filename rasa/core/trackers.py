@@ -34,7 +34,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     ActionReverted,
     UserUtteranceReverted,
     BotUttered,
-    Form,
+    ActiveLoop,
     SessionStarted,
     ActionExecutionRejected,
 )
@@ -341,7 +341,7 @@ class DialogueStateTracker:
         form_names = [
             event.name
             for event in self.events
-            if isinstance(event, Form) and event.name
+            if isinstance(event, ActiveLoop) and event.name
         ]
 
         applied_events = []
@@ -392,7 +392,7 @@ class DialogueStateTracker:
             # Stop looking for a previous form execution if there is a form deactivation
             # event because it means that the current form is running for the first
             # time and previous form events belong to different forms.
-            if isinstance(event, Form) and event.name is None:
+            if isinstance(event, ActiveLoop) and event.name is None:
                 return True
 
             if self._is_within_unhappy_path(loop_action_name, event, next_action):

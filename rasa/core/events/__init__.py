@@ -1115,12 +1115,11 @@ class AgentUttered(Event):
             raise ValueError(f"Failed to parse agent uttered event. {e}")
 
 
-class Form(Event):
-    """If `name` is not None: activates a form with `name`
-        else deactivates active form
+class ActiveLoop(Event):
+    """If `name` is not None: activates a loop with `name` else deactivates active loop.
     """
 
-    type_name = "form"
+    type_name = "active_loop"
 
     def __init__(
         self,
@@ -1132,26 +1131,26 @@ class Form(Event):
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
-        return f"Form({self.name})"
+        return f"Loop({self.name})"
 
     def __hash__(self) -> int:
         return hash(self.name)
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, Form):
+        if not isinstance(other, ActiveLoop):
             return False
         else:
             return self.name == other.name
 
     def as_story_string(self) -> Text:
         props = json.dumps({"name": self.name})
-        return f"{self.type_name}{props}"
+        return f"{ActiveLoop.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters) -> List["Form"]:
+    def _from_story_string(cls, parameters: Dict[Text, Any]) -> List["ActiveLoop"]:
         """Called to convert a parsed story line into an event."""
         return [
-            Form(
+            ActiveLoop(
                 parameters.get("name"),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
