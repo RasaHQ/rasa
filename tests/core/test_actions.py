@@ -707,7 +707,7 @@ def test_get_end_to_end_utterance_action():
         f"""
     actions:
     - my_action
-    
+
     {KEY_END_TO_END_UTTERANCES}:
     - {end_to_end_utterance}
     - Bye Bye

@@ -1143,6 +1143,12 @@ components:
           items:
             type: string
           example: ['action_greet', 'action_goodbye', 'action_listen']
+        end_to_end_utterances:
+          description: End-to-End bot utterances from story training data.
+          type: array
+          items:
+            type: string
+          example: ["Hi, how are you?"]
 
     BotMessage:
       type: object
