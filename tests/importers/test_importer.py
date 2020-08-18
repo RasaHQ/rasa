@@ -215,7 +215,7 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
         Message(data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: ""}),
         Message(data={TEXT: "how are you doing?", INTENT_NAME: None}),
         Message(
-            data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: "Hi Joey.",},
+            data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: "Hi Joey."}
         ),
     ]
 
@@ -291,3 +291,7 @@ async def test_adding_e2e_actions_to_domain(project: Text):
     domain = await importer.get_domain()
 
     assert all(action_name in domain.action_names for action_name in additional_actions)
+    assert set(additional_actions) == set(domain.end_to_end_utterances)
+    assert all(
+        action_name in domain.templates.keys() for action_name in additional_actions
+    )
