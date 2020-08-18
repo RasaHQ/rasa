@@ -76,7 +76,8 @@ ALL_DOMAIN_KEYS = [
     KEY_E2E_ACTIONS,
 ]
 
-STATE = Dict[Text, Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]]
+SUB_STATE = Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]
+STATE = Dict[Text, SUB_STATE]
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker

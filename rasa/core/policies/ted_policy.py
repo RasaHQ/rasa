@@ -13,12 +13,12 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
-from rasa.core.featurizers import (
+from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
-    SingleStateFeaturizer,
 )
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.nlu.constants import ACTION_NAME, INTENT, ACTION_TEXT, TEXT
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy

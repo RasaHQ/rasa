@@ -7,7 +7,7 @@ from typing import Text, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from rasa.core.policies.policy import Policy
-    from rasa.core.featurizers import TrackerFeaturizer
+    from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,8 @@ def featurizer_from_module_path(module_path: Text) -> Type["TrackerFeaturizer"]:
     from rasa.utils.common import class_from_module_path
 
     try:
-        return class_from_module_path(module_path, lookup_path="rasa.core.featurizers")
+        return class_from_module_path(
+            module_path, lookup_path="rasa.core.featurizers.tracker_featurizer"
+        )
     except ImportError:
         raise ImportError(f"Cannot retrieve featurizer from path '{module_path}'")

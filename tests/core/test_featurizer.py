@@ -1,5 +1,5 @@
-from rasa.core.featurizers import (
-    TrackerFeaturizer,
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.single_state_featurizer import (
     BinarySingleStateFeaturizer,
     LabelTokenizerSingleStateFeaturizer,
 )

@@ -6,8 +6,11 @@ from typing import Any, List, Optional, Text, Dict, Callable, Type, Union, Tuple
 
 import rasa.utils.common
 from rasa.core.domain import Domain
-from rasa.core.featurizers import MaxHistoryTrackerFeaturizer, SingleStateFeaturizer
-from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
+    TrackerFeaturizer,
+    MaxHistoryTrackerFeaturizer,
+)
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates

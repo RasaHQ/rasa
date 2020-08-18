@@ -27,7 +27,7 @@ from rasa.core.actions.action import (
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
 from rasa.core.exceptions import UnsupportedDialogueModelError
-from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.fallback import FallbackPolicy

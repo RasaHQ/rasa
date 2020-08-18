@@ -9,7 +9,10 @@ import numpy as np
 import rasa.utils.io
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.domain import Domain
-from rasa.core.featurizers import MaxHistoryTrackerFeaturizer, TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
+    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+)
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
