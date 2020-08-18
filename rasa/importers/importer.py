@@ -321,7 +321,7 @@ class E2EImporter(TrainingDataImporter):
             {},
             action_names=[],
             forms=[],
-            end_to_end_bot_utterances=e2e_action_texts,
+            end_to_end_utterances=e2e_action_texts,
         )
 
     async def get_stories(
@@ -381,7 +381,7 @@ class E2EImporter(TrainingDataImporter):
         additional_messages_from_actions_in_domain = [
             Message.build_from_action(action_name=action_name)
             for action_name in domain.action_names
-            if action_name not in domain.end_to_end_bot_utterances
+            if action_name not in domain.end_to_end_utterances
         ]
 
         return TrainingData(additional_messages_from_actions_in_domain)

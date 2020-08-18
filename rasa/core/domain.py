@@ -54,7 +54,7 @@ KEY_ENTITIES = "entities"
 KEY_RESPONSES = "responses"
 KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
-KEY_END_TO_END_BOT_UTTERANCES = "end_to_end_bot_utterances"
+KEY_END_TO_END_UTTERANCES = "end_to_end_utterances"
 
 ALL_DOMAIN_KEYS = [
     KEY_SLOTS,
@@ -63,7 +63,7 @@ ALL_DOMAIN_KEYS = [
     KEY_ENTITIES,
     KEY_INTENTS,
     KEY_RESPONSES,
-    KEY_END_TO_END_BOT_UTTERANCES,
+    KEY_END_TO_END_UTTERANCES,
 ]
 
 
@@ -186,7 +186,7 @@ class Domain:
             utter_templates,
             data.get(KEY_ACTIONS, []),
             data.get(KEY_FORMS, []),
-            data.get(KEY_END_TO_END_BOT_UTTERANCES, []),
+            data.get(KEY_END_TO_END_UTTERANCES, []),
             session_config=session_config,
             **additional_arguments,
         )
@@ -277,7 +277,7 @@ class Domain:
             if form in domain_dict[KEY_ACTIONS]:
                 domain_dict[KEY_ACTIONS].remove(form)
 
-        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_END_TO_END_BOT_UTTERANCES]:
+        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_END_TO_END_UTTERANCES]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_RESPONSES, KEY_SLOTS]:
@@ -454,6 +454,18 @@ class Domain:
             templates[template_key] = validated_variations
         return templates
 
+    @classmethod
+    def _combine_user_responses_and_end_to_end_bot_utterances(
+        cls,
+        templates: Dict[Text, List[Dict[Text, Any]]],
+        end_to_end_utterances: List[Text],
+    ) -> Dict[Text, List[Dict[Text, Any]]]:
+        end_to_end_responses = {
+            e2e_utterance: [{"text": e2e_utterance}]
+            for e2e_utterance in end_to_end_utterances
+        }
+        return {**templates, **end_to_end_responses}
+
     def __init__(
         self,
         intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
@@ -462,7 +474,7 @@ class Domain:
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         forms: List[Union[Text, Dict]],
-        end_to_end_bot_utterances: Optional[List[Text]] = None,
+        end_to_end_utterances: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
@@ -480,8 +492,11 @@ class Domain:
             self.form_names = [list(f.keys())[0] for f in forms]
 
         self.slots = slots
-        self.templates = templates
-        self.end_to_end_bot_utterances = end_to_end_bot_utterances or []
+        self._user_responses = templates
+        self.end_to_end_utterances = end_to_end_utterances or []
+        self.templates = self._combine_user_responses_and_end_to_end_bot_utterances(
+            templates, self.end_to_end_utterances
+        )
         self.session_config = session_config
 
         self._custom_actions = action_names
@@ -493,7 +508,7 @@ class Domain:
         self.action_names = (
             action.combine_user_with_default_actions(self.user_actions)
             + self.form_names
-            + self.end_to_end_bot_utterances
+            + self.end_to_end_utterances
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -862,10 +877,10 @@ class Domain:
             KEY_INTENTS: self._transform_intents_for_file(),
             KEY_ENTITIES: self.entities,
             KEY_SLOTS: self._slot_definitions(),
-            KEY_RESPONSES: self.templates,
+            KEY_RESPONSES: self._user_responses,
             KEY_ACTIONS: self._custom_actions,
             KEY_FORMS: self.forms,
-            KEY_END_TO_END_BOT_UTTERANCES: self.end_to_end_bot_utterances,
+            KEY_END_TO_END_UTTERANCES: self.end_to_end_utterances,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:
@@ -939,7 +954,7 @@ class Domain:
             del domain_data["config"]["store_entities_as_slots"]
 
         # End-to-end utterances should not be dumped in the cleaned version.
-        domain_data.pop(KEY_END_TO_END_BOT_UTTERANCES, None)
+        domain_data.pop(KEY_END_TO_END_UTTERANCES, None)
 
         # clean empty keys
         return {

@@ -18,7 +18,8 @@ from rasa.core.domain import (
     USED_ENTITIES_KEY,
     USE_ENTITIES_KEY,
     IGNORE_ENTITIES_KEY,
-    KEY_END_TO_END_BOT_UTTERANCES,
+    KEY_END_TO_END_UTTERANCES,
+    KEY_RESPONSES,
 )
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
@@ -32,7 +33,7 @@ from tests.core.conftest import (
 from rasa.utils import io as io_utils
 
 
-async def test_create_train_data_no_history(default_domain):
+async def test_create_train_data_no_history(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
@@ -242,7 +243,7 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
 
 
 def test_domain_to_dict():
-    test_yaml = """
+    test_yaml = f"""
     actions:
     - action_save_world
     config:
@@ -256,10 +257,10 @@ def test_domain_to_dict():
     session_config:
       carry_over_slots_to_new_session: true
       session_expiration_time: 60
-    end_to_end_bot_utterances:
+    {KEY_END_TO_END_UTTERANCES}:
     - Hello, dear user
     - what's up
-    slots: {}"""
+    slots: {{}}"""
 
     domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
 
@@ -275,7 +276,7 @@ def test_domain_to_dict():
             "session_expiration_time": 60,
         },
         "slots": {},
-        "end_to_end_bot_utterances": ["Hello, dear user", "what's up"],
+        KEY_END_TO_END_UTTERANCES: ["Hello, dear user", "what's up"],
     }
 
 
@@ -287,7 +288,7 @@ actions:
 - action_save_world
 config:
   store_entities_as_slots: true
-end_to_end_bot_utterances: []
+{KEY_END_TO_END_UTTERANCES}: []
 entities: []
 forms: []
 intents: []
@@ -326,7 +327,7 @@ slots: {{}}"""
 - utter_greet
 config:
   store_entities_as_slots: true
-end_to_end_bot_utterances: []
+{KEY_END_TO_END_UTTERANCES}: []
 entities: []
 forms: []
 intents: []
@@ -351,19 +352,19 @@ def test_merge_domain_if_other_none():
 
 
 def test_merge_yaml_domains():
-    test_yaml_1 = """config:
+    test_yaml_1 = f"""config:
   store_entities_as_slots: true
 entities: []
 intents: []
-slots: {}
+slots: {{}}
 responses:
   utter_greet:
   - text: hey there!
-end_to_end_bot_utterances:
+{KEY_END_TO_END_UTTERANCES}:
 - Hi
   """
 
-    test_yaml_2 = """config:
+    test_yaml_2 = f"""config:
   store_entities_as_slots: false
 session_config:
     session_expiration_time: 20
@@ -375,7 +376,7 @@ intents:
 slots:
   cuisine:
     type: text
-end_to_end_bot_utterances:
+{KEY_END_TO_END_UTTERANCES}:
 - Bye
 responses:
   utter_goodbye:
@@ -392,6 +393,8 @@ responses:
     assert domain.templates == {
         "utter_greet": [{"text": "hey there!"}],
         "utter_goodbye": [{"text": "bye!"}],
+        "Bye": [{"text": "Bye"}],
+        "Hi": [{"text": "Hi"}],
     }
     # lists should be deduplicated and merged
     assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
@@ -408,9 +411,11 @@ responses:
     assert domain.templates == {
         "utter_greet": [{"text": "hey you!"}],
         "utter_goodbye": [{"text": "bye!"}],
+        "Bye": [{"text": "Bye"}],
+        "Hi": [{"text": "Hi"}],
     }
     assert domain.session_config == SessionConfig(20, True)
-    assert domain.end_to_end_bot_utterances == ["Bye", "Hi"]
+    assert domain.end_to_end_utterances == ["Bye", "Hi"]
 
 
 def test_merge_session_config_if_first_is_not_default():
@@ -763,7 +768,7 @@ def test_clean_domain_deprecated_templates():
 
 def test_domain_cleaning_end_to_end_bot_utterances():
     domain = Domain.from_yaml(
-        """
+        f"""
 intents:
 - greet
 - bye
@@ -771,17 +776,17 @@ intents:
 actions:
 - utter_greet
 
-end_to_end_bot_utterances:
+{KEY_END_TO_END_UTTERANCES}:
 - hi
 - bye
     """
     )
 
     end_to_end_utterances = ["hi", "bye"]
-    assert domain.end_to_end_bot_utterances == end_to_end_utterances
+    assert domain.end_to_end_utterances == end_to_end_utterances
 
     cleaned = domain.cleaned_domain()
-    assert KEY_END_TO_END_BOT_UTTERANCES not in cleaned
+    assert KEY_END_TO_END_UTTERANCES not in cleaned
 
 
 def test_add_knowledge_base_slots(default_domain):
@@ -947,3 +952,42 @@ def test_load_domain_without_path():
 def test_load_domain_from_invalid_path():
     with pytest.raises(InvalidDomain):
         Domain.load(["invalid file"])
+
+
+def test_end_to_end_bot_utterances_in_templates():
+    domain = Domain.from_yaml(
+        f"""
+responses:
+  utter_greet:
+  - text: Hi
+
+{KEY_END_TO_END_UTTERANCES}:
+- hi
+- bye
+    """
+    )
+
+    expected_templates = {
+        "utter_greet": [{"text": "Hi"}],
+        "hi": [{"text": "hi"}],
+        "bye": [{"text": "bye"}],
+    }
+
+    assert domain.templates == expected_templates
+
+
+def test_end_to_end_bot_utterances_not_dumped():
+    domain = Domain.from_yaml(
+        f"""
+    responses:
+      utter_greet:
+      - text: Hi
+
+    {KEY_END_TO_END_UTTERANCES}:
+    - hi
+    - bye
+        """
+    )
+
+    serialized = domain.as_dict()
+    assert serialized[KEY_RESPONSES] == {"utter_greet": [{"text": "Hi"}]}
