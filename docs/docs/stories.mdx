@@ -123,9 +123,9 @@ forms in stories.
 
 * A form action event (e.g. `- restaurant_form`) is used in the beginning when first starting a form, and also while resuming the form action when the form is already active.
 
-* A form activation event (e.g. `- form{"name": "restaurant_form"}`) is used right after the first form action event.
+* A form activation event (e.g. `- active_loop{"name": "restaurant_form"}`) is used right after the first form action event.
 
-* A form deactivation event (e.g. `- form{"name": null}`), which is used to deactivate the form.
+* A form deactivation event (e.g. `- active_loop{"name": null}`), which is used to deactivate the form.
 
 :::note
 In order to get around the pitfall of forgetting to add events, the recommended
