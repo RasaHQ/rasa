@@ -11,11 +11,7 @@ from ruamel.yaml import YAMLError
 
 import rasa.core.constants
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import (
-    raise_warning,
-    lazy_property,
-    sort_list_of_dicts_by_first_key,
-)
+from rasa.utils import common as common_utils
 import rasa.utils.io
 from rasa.cli.utils import bcolors, wrap_with_color
 from rasa.constants import (
@@ -168,7 +164,7 @@ class Domain:
     def from_dict(cls, data: Dict) -> "Domain":
         utter_templates = cls.collect_templates(data.get(KEY_RESPONSES, {}))
         if "templates" in data:
-            raise_warning(
+            common_utils.raise_warning(
                 "Your domain file contains the key: 'templates'. This has been "
                 "deprecated and renamed to 'responses'. The 'templates' key will "
                 "no longer work in future versions of Rasa. Please replace "
@@ -342,7 +338,7 @@ class Domain:
         explicitly_included = isinstance(properties[USE_ENTITIES_KEY], list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
-            raise_warning(
+            common_utils.raise_warning(
                 f"Entities: '{ambiguous_entities}' are explicitly included and"
                 f" excluded for intent '{name}'."
                 f"Excluding takes precedence in this case. "
@@ -437,7 +433,7 @@ class Domain:
 
                 # responses should be a dict with options
                 if isinstance(t, str):
-                    raise_warning(
+                    common_utils.raise_warning(
                         f"Responses should not be strings anymore. "
                         f"Response '{template_key}' should contain "
                         f"either a '- text: ' or a '- custom: ' "
@@ -506,7 +502,7 @@ class Domain:
     def __hash__(self) -> int:
 
         self_as_dict = self.as_dict()
-        self_as_dict[KEY_INTENTS] = sort_list_of_dicts_by_first_key(
+        self_as_dict[KEY_INTENTS] = common_utils.sort_list_of_dicts_by_first_key(
             self_as_dict[KEY_INTENTS]
         )
         self_as_string = json.dumps(self_as_dict, sort_keys=True)
@@ -514,20 +510,20 @@ class Domain:
 
         return int(text_hash, 16)
 
-    @lazy_property
+    @common_utils.lazy_property
     def user_actions_and_forms(self):
         """Returns combination of user actions and forms."""
 
         return self.user_actions + self.form_names
 
-    @lazy_property
+    @common_utils.lazy_property
     def num_actions(self):
         """Returns the number of available actions."""
 
         # noinspection PyTypeChecker
         return len(self.action_names)
 
-    @lazy_property
+    @common_utils.lazy_property
     def num_states(self):
         """Number of used input states for the action prediction."""
 
@@ -642,7 +638,7 @@ class Domain:
             return None
 
     # noinspection PyTypeChecker
-    @lazy_property
+    @common_utils.lazy_property
     def slot_states(self) -> List[Text]:
         """Returns all available slot state strings."""
 
@@ -653,37 +649,37 @@ class Domain:
         ]
 
     # noinspection PyTypeChecker
-    @lazy_property
+    @common_utils.lazy_property
     def prev_action_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return [PREV_PREFIX + a for a in self.action_names]
 
     # noinspection PyTypeChecker
-    @lazy_property
+    @common_utils.lazy_property
     def intent_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return [f"intent_{i}" for i in self.intents]
 
     # noinspection PyTypeChecker
-    @lazy_property
+    @common_utils.lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return [f"entity_{e}" for e in self.entities]
 
     # noinspection PyTypeChecker
-    @lazy_property
+    @common_utils.lazy_property
     def form_states(self) -> List[Text]:
         return [f"active_form_{f}" for f in self.form_names]
 
-    @lazy_property
+    @common_utils.lazy_property
     def input_state_map(self) -> Dict[Text, int]:
         """Provide a mapping from state names to indices."""
         return {f: i for i, f in enumerate(self.input_states)}
 
-    @lazy_property
+    @common_utils.lazy_property
     def input_states(self) -> List[Text]:
         """Returns all available states."""
 
@@ -964,7 +960,7 @@ class Domain:
         """Return the configuration for an intent."""
         return self.intent_properties.get(intent_name, {})
 
-    @lazy_property
+    @common_utils.lazy_property
     def intents(self):
         return sorted(self.intent_properties.keys())
 
@@ -1153,7 +1149,7 @@ class Domain:
 
         if missing_templates:
             for template in missing_templates:
-                raise_warning(
+                common_utils.raise_warning(
                     f"Action '{template}' is listed as a "
                     f"response action in the domain file, but there is "
                     f"no matching response defined. Please "
