@@ -168,5 +168,9 @@ excluded_words:
   - regexes
   - walkthroughs
   - venv
+  - regexfeaturizer
+  - crfentityextractor
+  - Comerica
+  - entitysynonymmapper
 
 spellcheck_filenames: false
