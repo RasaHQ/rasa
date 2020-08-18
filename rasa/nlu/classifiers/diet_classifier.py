@@ -1,3 +1,4 @@
+import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
@@ -854,7 +855,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
 
-        label = {"name": None, "confidence": 0.0}
+        label = {"name": None, "id": None, "confidence": 0.0}
         label_ranking = []
 
         if predict_out is None:
@@ -880,6 +881,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # if X contains all zeros do not predict some label
         if label_ids.size > 0:
             label = {
+                "id": hash(self.index_label_id_mapping[label_ids[0]]),
                 "name": self.index_label_id_mapping[label_ids[0]],
                 "confidence": message_sim[0],
             }
@@ -895,7 +897,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ranking = list(zip(list(label_ids), message_sim))
             ranking = ranking[:output_length]
             label_ranking = [
-                {"name": self.index_label_id_mapping[label_idx], "confidence": score}
+                {
+                    "id": hash(self.index_label_id_mapping[label_idx]),
+                    "name": self.index_label_id_mapping[label_idx],
+                    "confidence": score,
+                }
                 for label_idx, score in ranking
             ]
 
@@ -981,7 +987,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.label_data.pkl", self._label_data
         )
         io_utils.json_pickle(
-            model_dir / f"{file_name}.index_label_id_mapping.pkl",
+            model_dir / f"{file_name}.index_label_id_mapping.json",
             self.index_label_id_mapping,
         )
 
@@ -1045,7 +1051,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
         index_label_id_mapping = io_utils.json_unpickle(
-            model_dir / f"{file_name}.index_label_id_mapping.pkl"
+            model_dir / f"{file_name}.index_label_id_mapping.json"
         )
         entity_tag_specs = io_utils.read_json_file(
             model_dir / f"{file_name}.entity_tag_specs.json"
@@ -1098,7 +1104,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_signature=model_data_example.get_signature(),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
-            config=meta,
+            config=copy.deepcopy(meta),
         )
 
         # build the graph for prediction

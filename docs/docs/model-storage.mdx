@@ -51,7 +51,7 @@ expects an empty response with a `204` or `304` status code.
 An example request Rasa might make to your model server looks like this:
 
 ```bash
-$ curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default@latest
+curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default@latest
 ```
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-fetch-from-remote-storage"></a>
