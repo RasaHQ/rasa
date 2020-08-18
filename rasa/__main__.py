@@ -11,6 +11,7 @@ from rasa.cli import (
     data,
     export,
     interactive,
+    plugins,
     run,
     scaffold,
     shell,
@@ -68,6 +69,8 @@ def create_argument_parser() -> argparse.ArgumentParser:
     data.add_subparser(subparsers, parents=parent_parsers)
     export.add_subparser(subparsers, parents=parent_parsers)
     x.add_subparser(subparsers, parents=parent_parsers)
+
+    plugins.add_plugin_parser(parser, subparsers, parents=parent_parsers)
 
     return parser
 
