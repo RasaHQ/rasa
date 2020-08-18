@@ -595,16 +595,7 @@ class Domain:
         if action_name not in self.action_names:
             self._raise_action_not_found_exception(action_name)
 
-        should_use_form_action = (
-            action_name in self.form_names and self.slot_mapping_for_form(action_name)
-        )
-
-        return action.action_from_name(
-            action_name,
-            action_endpoint,
-            self.user_actions_and_forms,
-            should_use_form_action,
-        )
+        return action.action_from_name(action_name, action_endpoint, self)
 
     def action_for_index(
         self, index: int, action_endpoint: Optional[EndpointConfig]

@@ -56,9 +56,7 @@ class TwoStageFallbackAction(LoopAction):
         domain: Domain,
     ) -> List[Event]:
         affirm_action = action.action_from_name(
-            ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-            self._action_endpoint,
-            domain.user_actions,
+            ACTION_DEFAULT_ASK_AFFIRMATION_NAME, self._action_endpoint, domain
         )
 
         return await affirm_action.run(output_channel, nlg, tracker, domain)
@@ -71,7 +69,7 @@ class TwoStageFallbackAction(LoopAction):
         domain: Domain,
     ) -> List[Event]:
         rephrase = action.action_from_name(
-            ACTION_DEFAULT_ASK_REPHRASE_NAME, self._action_endpoint, domain.user_actions
+            ACTION_DEFAULT_ASK_REPHRASE_NAME, self._action_endpoint, domain
         )
 
         return await rephrase.run(output_channel, nlg, tracker, domain)
@@ -139,7 +137,7 @@ class TwoStageFallbackAction(LoopAction):
         domain: Domain,
     ) -> List[Event]:
         fallback = action.action_from_name(
-            ACTION_DEFAULT_FALLBACK_NAME, self._action_endpoint, domain.user_actions
+            ACTION_DEFAULT_FALLBACK_NAME, self._action_endpoint, domain
         )
 
         return await fallback.run(output_channel, nlg, tracker, domain)

@@ -115,18 +115,27 @@ def combine_with_templates(
 
 
 def action_from_name(
-    name: Text,
-    action_endpoint: Optional[EndpointConfig],
-    user_actions: List[Text],
-    should_use_form_action: bool = False,
+    name: Text, action_endpoint: Optional[EndpointConfig], domain: "Domain"
 ) -> "Action":
-    """Return an action instance for the name."""
+    """Return an action instance for the name.
+
+    Args:
+        name: The name of the action which should be instantiated.
+        action_endpoint: An action endpoint which can be used to execute custom actions.
+        domain: The current domain of the model.
+
+    Returns:
+        An `Action` instance.
+    """
 
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
+    should_use_form_action = name in domain.form_names and domain.slot_mapping_for_form(
+        name
+    )
 
-    if name in defaults and name not in user_actions:
+    if name in defaults and name not in domain.user_actions:
         return defaults[name]
-    elif name.startswith(UTTER_PREFIX):
+    elif name.startswith(UTTER_PREFIX) or name in domain.end_to_end_utterances:
         return ActionUtterTemplate(name)
     elif name.startswith(RESPOND_PREFIX):
         return ActionRetrieveResponse(name)

@@ -31,7 +31,7 @@ from rasa.core.actions.action import (
 from rasa.core.actions.forms import FormAction
 from rasa.core.actions.two_stage_fallback import ACTION_TWO_STAGE_FALLBACK_NAME
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain, SessionConfig
+from rasa.core.domain import Domain, SessionConfig, KEY_END_TO_END_UTTERANCES
 from rasa.core.events import (
     Restarted,
     SlotSet,
@@ -698,3 +698,61 @@ def test_get_form_action_if_not_in_forms():
 
     with pytest.raises(NameError):
         assert not domain.action_for_name(form_action_name, None)
+
+
+def test_get_end_to_end_utterance_action():
+    end_to_end_utterance = "Hi"
+
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+    
+    {KEY_END_TO_END_UTTERANCES}:
+    - {end_to_end_utterance}
+    - Bye Bye
+"""
+    )
+
+    actual = domain.action_for_name("Hi", None)
+
+    assert isinstance(actual, ActionUtterTemplate)
+    assert actual.name() == end_to_end_utterance
+
+
+async def test_run_end_to_end_utterance_action():
+    end_to_end_utterance = "Hi"
+
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+
+    {KEY_END_TO_END_UTTERANCES}:
+    - {end_to_end_utterance}
+    - Bye Bye
+"""
+    )
+
+    e2e_action = domain.action_for_name("Hi", None)
+    events = await e2e_action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        DialogueStateTracker.from_events("sender", evts=[]),
+        domain,
+    )
+
+    assert events == [
+        BotUttered(
+            end_to_end_utterance,
+            {
+                "elements": None,
+                "quick_replies": None,
+                "buttons": None,
+                "attachment": None,
+                "image": None,
+                "custom": None,
+            },
+            {"template_name": "Hi"},
+        )
+    ]
