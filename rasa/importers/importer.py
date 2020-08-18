@@ -220,7 +220,7 @@ class CoreDataImporter(TrainingDataImporter):
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         return await self._importer.get_stories(
-            interpreter, template_variables, use_e2e, exclusion_percentage,
+            interpreter, template_variables, use_e2e, exclusion_percentage
         )
 
     async def get_config(self) -> Dict:
@@ -315,7 +315,13 @@ class E2EImporter(TrainingDataImporter):
         e2e_action_texts = list(e2e_action_texts)
 
         return Domain(
-            [], [], [], {}, action_names=[], forms=[], e2e_action_texts=e2e_action_texts
+            [],
+            [],
+            [],
+            {},
+            action_names=[],
+            forms=[],
+            end_to_end_bot_utterances=e2e_action_texts,
         )
 
     async def get_stories(
@@ -375,7 +381,7 @@ class E2EImporter(TrainingDataImporter):
         additional_messages_from_actions_in_domain = [
             Message.build_from_action(action_name=action_name)
             for action_name in domain.action_names
-            if action_name not in domain.e2e_action_texts
+            if action_name not in domain.end_to_end_bot_utterances
         ]
 
         return TrainingData(additional_messages_from_actions_in_domain)
@@ -396,7 +402,7 @@ def _messages_from_user_utterance(event: UserUttered) -> Message:
 
 def _messages_from_action(event: ActionExecuted) -> Message:
     return Message.build_from_action(
-        action_name=event.action_name, action_text=event.e2e_text or "",
+        action_name=event.action_name, action_text=event.e2e_text or ""
     )
 
 

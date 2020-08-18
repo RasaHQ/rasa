@@ -54,7 +54,7 @@ KEY_ENTITIES = "entities"
 KEY_RESPONSES = "responses"
 KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
-KEY_E2E_ACTIONS = "e2e_actions"
+KEY_END_TO_END_BOT_UTTERANCES = "end_to_end_bot_utterances"
 
 ALL_DOMAIN_KEYS = [
     KEY_SLOTS,
@@ -63,7 +63,7 @@ ALL_DOMAIN_KEYS = [
     KEY_ENTITIES,
     KEY_INTENTS,
     KEY_RESPONSES,
-    KEY_E2E_ACTIONS,
+    KEY_END_TO_END_BOT_UTTERANCES,
 ]
 
 
@@ -186,7 +186,7 @@ class Domain:
             utter_templates,
             data.get(KEY_ACTIONS, []),
             data.get(KEY_FORMS, []),
-            data.get(KEY_E2E_ACTIONS, []),
+            data.get(KEY_END_TO_END_BOT_UTTERANCES, []),
             session_config=session_config,
             **additional_arguments,
         )
@@ -277,7 +277,7 @@ class Domain:
             if form in domain_dict[KEY_ACTIONS]:
                 domain_dict[KEY_ACTIONS].remove(form)
 
-        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
+        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_END_TO_END_BOT_UTTERANCES]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_RESPONSES, KEY_SLOTS]:
@@ -462,7 +462,7 @@ class Domain:
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         forms: List[Union[Text, Dict]],
-        e2e_action_texts: Optional[List[Text]] = None,
+        end_to_end_bot_utterances: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
@@ -481,7 +481,7 @@ class Domain:
 
         self.slots = slots
         self.templates = templates
-        self.e2e_action_texts = e2e_action_texts or []
+        self.end_to_end_bot_utterances = end_to_end_bot_utterances or []
         self.session_config = session_config
 
         self._custom_actions = action_names
@@ -493,7 +493,7 @@ class Domain:
         self.action_names = (
             action.combine_user_with_default_actions(self.user_actions)
             + self.form_names
-            + self.e2e_action_texts
+            + self.end_to_end_bot_utterances
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -863,9 +863,9 @@ class Domain:
             KEY_ENTITIES: self.entities,
             KEY_SLOTS: self._slot_definitions(),
             KEY_RESPONSES: self.templates,
-            KEY_ACTIONS: self._custom_actions,  # class names of the actions
+            KEY_ACTIONS: self._custom_actions,
             KEY_FORMS: self.forms,
-            KEY_E2E_ACTIONS: self.e2e_action_texts,
+            KEY_END_TO_END_BOT_UTTERANCES: self.end_to_end_bot_utterances,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:

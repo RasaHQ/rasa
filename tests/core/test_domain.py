@@ -14,7 +14,12 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT_TYPE,
     DEFAULT_INTENTS,
 )
-from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
+from rasa.core.domain import (
+    USED_ENTITIES_KEY,
+    USE_ENTITIES_KEY,
+    IGNORE_ENTITIES_KEY,
+    KEY_END_TO_END_BOT_UTTERANCES,
+)
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -251,6 +256,9 @@ def test_domain_to_dict():
     session_config:
       carry_over_slots_to_new_session: true
       session_expiration_time: 60
+    end_to_end_bot_utterances:
+    - Hello, dear user
+    - what's up
     slots: {}"""
 
     domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
@@ -267,6 +275,7 @@ def test_domain_to_dict():
             "session_expiration_time": 60,
         },
         "slots": {},
+        "end_to_end_bot_utterances": ["Hello, dear user", "what's up"],
     }
 
 
@@ -278,6 +287,7 @@ actions:
 - action_save_world
 config:
   store_entities_as_slots: true
+end_to_end_bot_utterances: []
 entities: []
 forms: []
 intents: []
@@ -316,6 +326,7 @@ slots: {{}}"""
 - utter_greet
 config:
   store_entities_as_slots: true
+end_to_end_bot_utterances: []
 entities: []
 forms: []
 intents: []
@@ -334,6 +345,11 @@ slots: {{}}"""
     assert Domain.from_yaml(domain.as_yaml()) is not None
 
 
+def test_merge_domain_if_other_none():
+    domain = Domain.empty()
+    assert domain.merge(None) == domain
+
+
 def test_merge_yaml_domains():
     test_yaml_1 = """config:
   store_entities_as_slots: true
@@ -342,7 +358,10 @@ intents: []
 slots: {}
 responses:
   utter_greet:
-  - text: hey there!"""
+  - text: hey there!
+end_to_end_bot_utterances:
+- Hi
+  """
 
     test_yaml_2 = """config:
   store_entities_as_slots: false
@@ -356,6 +375,8 @@ intents:
 slots:
   cuisine:
     type: text
+end_to_end_bot_utterances:
+- Bye
 responses:
   utter_goodbye:
   - text: bye!
@@ -389,6 +410,7 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     assert domain.session_config == SessionConfig(20, True)
+    assert domain.end_to_end_bot_utterances == ["Bye", "Hi"]
 
 
 def test_merge_session_config_if_first_is_not_default():
@@ -892,3 +914,13 @@ def test_add_default_intents(domain: Dict):
     domain = Domain.from_dict(domain)
 
     assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)
+
+
+def test_load_domain_without_path():
+    with pytest.raises(InvalidDomain):
+        Domain.load([])
+
+
+def test_load_domain_from_invalid_path():
+    with pytest.raises(InvalidDomain):
+        Domain.load(["invalid file"])
