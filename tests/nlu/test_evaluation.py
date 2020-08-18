@@ -384,7 +384,6 @@ def test_run_cv_evaluation_with_response_selector():
         "data/examples/rasa/demo-rasa-responses.md"
     )
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
-    training_data_obj.fill_response_phrases()
 
     nlu_config = RasaNLUModelConfig(
         {

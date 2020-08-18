@@ -320,3 +320,22 @@ async def test_parsing_of_e2e_stories(default_domain: Domain):
         ActionExecuted("", e2e_text="What?"),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
+
+
+async def test_active_loop_is_parsed(default_domain: Domain):
+    stories = (
+        f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
+        f"stories:\n"
+        f"- story: name\n"
+        f"  steps:\n"
+        f"  - intent: greet\n"
+        f"  - active_loop: null"
+    )
+
+    reader = YAMLStoryReader(RegexInterpreter(), default_domain)
+    yaml_content = io_utils.read_yaml(stories)
+
+    with pytest.warns(None) as record:
+        reader.read_from_parsed_yaml(yaml_content)
+
+    assert not len(record)

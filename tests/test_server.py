@@ -31,10 +31,12 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
+from rasa import utils as rasa_utils
 from sanic import Sanic
 from sanic.testing import SanicTestClient
 from tests.nlu.utilities import ResponseTest
 from tests.conftest import get_test_client
+from ruamel.yaml import StringIO
 
 
 # a couple of event instances that we can use for testing
@@ -399,16 +401,23 @@ def test_train_nlu_success(
     default_nlu_data: Text,
     default_domain_path: Text,
 ):
-    with ExitStack() as stack:
-        domain_file = stack.enter_context(open(default_domain_path))
-        config_file = stack.enter_context(open(default_stack_config))
-        nlu_file = stack.enter_context(open(default_nlu_data))
+    domain_data = rasa_utils.io.read_yaml_file(default_domain_path)
+    config_data = rasa_utils.io.read_yaml_file(default_stack_config)
+    nlu_data = rasa_utils.io.read_yaml_file(default_nlu_data)
 
-        payload = dict(
-            domain=domain_file.read(), config=config_file.read(), nlu=nlu_file.read()
-        )
+    # combine all data into our payload
+    payload = {
+        key: val for d in [domain_data, config_data, nlu_data] for key, val in d.items()
+    }
 
-    _, response = rasa_app.post("/model/train", json=payload)
+    data = StringIO()
+    rasa_utils.io.write_yaml(payload, data)
+
+    _, response = rasa_app.post(
+        "/model/train",
+        data=data.getvalue(),
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
     assert response.status == 200
 
     # save model to temporary file
@@ -703,7 +712,11 @@ def test_evaluate_stories_end_to_end(
 def test_evaluate_intent(rasa_app: SanicTestClient, default_nlu_data: Text):
     nlu_data = rasa.utils.io.read_file(default_nlu_data)
 
-    _, response = rasa_app.post("/model/test/intents", data=nlu_data)
+    _, response = rasa_app.post(
+        "/model/test/intents",
+        data=nlu_data,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
 
     assert response.status == 200
     assert set(response.json.keys()) == {
@@ -718,7 +731,11 @@ def test_evaluate_intent_on_just_nlu_model(
 ):
     nlu_data = rasa.utils.io.read_file(default_nlu_data)
 
-    _, response = rasa_app_nlu.post("/model/test/intents", data=nlu_data)
+    _, response = rasa_app_nlu.post(
+        "/model/test/intents",
+        data=nlu_data,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
 
     assert response.status == 200
     assert set(response.json.keys()) == {
@@ -737,7 +754,9 @@ def test_evaluate_intent_with_query_param(
     nlu_data = rasa.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app.post(
-        f"/model/test/intents?model={trained_nlu_model}", data=nlu_data
+        f"/model/test/intents?model={trained_nlu_model}",
+        data=nlu_data,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
     )
 
     assert response.status == 200

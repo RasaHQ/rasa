@@ -488,6 +488,8 @@ class Domain:
         self.e2e_action_texts = e2e_action_texts or []
         self.session_config = session_config
 
+        self._custom_actions = action_names
+
         # only includes custom actions and utterance actions
         self.user_actions = action.combine_with_templates(action_names, templates)
 
@@ -860,7 +862,7 @@ class Domain:
             KEY_ENTITIES: self.entities,
             KEY_SLOTS: self._slot_definitions(),
             KEY_RESPONSES: self.templates,
-            KEY_ACTIONS: self.user_actions,  # class names of the actions
+            KEY_ACTIONS: self._custom_actions,  # class names of the actions
             KEY_FORMS: self.forms,
             KEY_E2E_ACTIONS: self.e2e_action_texts,
         }
