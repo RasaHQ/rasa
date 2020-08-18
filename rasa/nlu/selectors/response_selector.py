@@ -18,12 +18,7 @@ from rasa.nlu.classifiers.diet_classifier import (
     LABEL_KEY,
     LABEL_SUB_KEY,
     EntityTagSpec,
-    TEXT_SEQUENCE_LENGTH,
-    LABEL_SEQUENCE_LENGTH,
-    TEXT_SEQUENCE_FEATURES,
-    LABEL_SEQUENCE_FEATURES,
-    TEXT_SENTENCE_FEATURES,
-    LABEL_SENTENCE_FEATURES,
+    SEQUENCE_LENGTH,
     SENTENCE,
     SEQUENCE,
 )
@@ -475,10 +470,12 @@ class DIET2DIET(DIET):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        sequence_mask_label = super()._get_mask_for(self.tf_label_data, LABEL, SEQUENCE)
+        sequence_mask_label = super()._get_mask_for(
+            self.tf_label_data, LABEL, SEQUENCE_LENGTH
+        )
         batch_dim = tf.shape(self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0])[0]
         sequence_lengths_label = self._get_sequence_lengths(
-            self.tf_label_data, LABEL, SEQUENCE, batch_dim
+            self.tf_label_data, LABEL, SEQUENCE_LENGTH, batch_dim
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
@@ -524,9 +521,11 @@ class DIET2DIET(DIET):
             sequence_ids=True,
         )
 
-        sequence_mask_label = super()._get_mask_for(tf_batch_data, LABEL, SEQUENCE)
+        sequence_mask_label = super()._get_mask_for(
+            tf_batch_data, LABEL, SEQUENCE_LENGTH
+        )
         sequence_lengths_label = self._get_sequence_lengths(
-            tf_batch_data, LABEL, SEQUENCE, batch_dim
+            tf_batch_data, LABEL, SEQUENCE_LENGTH, batch_dim
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 

@@ -98,8 +98,7 @@ TEXT_SENTENCE_FEATURES = f"{TEXT}_{SENTENCE}_features"
 LABEL_SENTENCE_FEATURES = f"{LABEL}_{SENTENCE}_features"
 TEXT_SEQUENCE_FEATURES = f"{TEXT}_{SEQUENCE}_features"
 LABEL_SEQUENCE_FEATURES = f"{LABEL}_{SEQUENCE}_features"
-TEXT_SEQUENCE_LENGTH = f"{TEXT}_{SEQUENCE}_lengths"
-LABEL_SEQUENCE_LENGTH = f"{LABEL}_{SEQUENCE}_lengths"
+SEQUENCE_LENGTH = f"{SEQUENCE}_lengths"
 LABEL_KEY = LABEL
 LABEL_SUB_KEY = "ids"
 TAG_IDS = "tag_ids"
@@ -595,7 +594,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
         )
 
-        label_data.add_lengths(LABEL, LABEL_SEQUENCE_LENGTH, LABEL, SEQUENCE)
+        label_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
 
         return label_data
 
@@ -661,8 +660,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
         )
 
-        model_data.add_lengths(TEXT, TEXT_SEQUENCE_LENGTH, TEXT, SEQUENCE)
-        model_data.add_lengths(LABEL, LABEL_SEQUENCE_LENGTH, LABEL, SEQUENCE)
+        model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
+        model_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
 
         return model_data
 
@@ -1279,7 +1278,10 @@ class DIET(RasaModel):
             name,
         )
         for feature_type in [SENTENCE, SEQUENCE]:
-            if f"{name}_{feature_type}_features" not in self.data_signature:
+            if (
+                name not in self.data_signature
+                or feature_type not in self.data_signature[name]
+            ):
                 continue
 
             self._tf_layers[
@@ -1583,7 +1585,9 @@ class DIET(RasaModel):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        mask_sequence_label = self._get_mask_for(self.tf_label_data, LABEL, SEQUENCE)
+        mask_sequence_label = self._get_mask_for(
+            self.tf_label_data, LABEL, SEQUENCE_LENGTH
+        )
 
         x = self._create_bow(
             self.tf_label_data[LABEL][SEQUENCE],
@@ -1722,9 +1726,9 @@ class DIET(RasaModel):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         batch_dim = self._get_batch_dim(tf_batch_data)
-        mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE)
+        mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
         sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data, TEXT, SEQUENCE, batch_dim
+            tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
         )
         mask_text = self._compute_mask(sequence_lengths)
 
@@ -1778,7 +1782,7 @@ class DIET(RasaModel):
         # get sentence features vector for intent classification
         sentence_vector = self._last_token(text_transformed, sequence_lengths)
 
-        mask_sequence_label = self._get_mask_for(tf_batch_data, LABEL, SEQUENCE)
+        mask_sequence_label = self._get_mask_for(tf_batch_data, LABEL, SEQUENCE_LENGTH)
 
         label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
         label = self._create_bow(
@@ -1858,9 +1862,9 @@ class DIET(RasaModel):
             batch_in, self.predict_data_signature
         )
 
-        mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE)
+        mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
         sequence_lengths = self._get_sequence_lengths(
-            tf_batch_data, TEXT, SEQUENCE, batch_dim=1
+            tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim=1
         )
 
         mask = self._compute_mask(sequence_lengths)

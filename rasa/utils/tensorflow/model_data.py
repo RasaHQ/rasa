@@ -309,16 +309,16 @@ class RasaModelData:
         batch_data = []
 
         for key, values in data.items():
-            for sub_key, data in values.items():
+            for sub_key, f_data in values.items():
                 # add None for not present values during processing
-                if not data:
+                if not f_data:
                     if tuple_sizes:
                         batch_data += [None] * tuple_sizes[key]
                     else:
                         batch_data.append(None)
                     continue
 
-                for v in data:
+                for v in f_data:
                     if start is not None and end is not None:
                         _data = v[start:end]
                     elif start is not None:
