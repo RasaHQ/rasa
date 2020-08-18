@@ -938,6 +938,9 @@ class Domain:
         if domain_data["config"]["store_entities_as_slots"]:
             del domain_data["config"]["store_entities_as_slots"]
 
+        # End-to-end utterances should not be dumped in the cleaned version.
+        domain_data.pop(KEY_END_TO_END_BOT_UTTERANCES, None)
+
         # clean empty keys
         return {
             k: v

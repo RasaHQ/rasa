@@ -761,6 +761,29 @@ def test_clean_domain_deprecated_templates():
     assert hash(actual) == hash(expected)
 
 
+def test_domain_cleaning_end_to_end_bot_utterances():
+    domain = Domain.from_yaml(
+        """
+intents:
+- greet
+- bye
+
+actions:
+- utter_greet
+
+end_to_end_bot_utterances:
+- hi
+- bye
+    """
+    )
+
+    end_to_end_utterances = ["hi", "bye"]
+    assert domain.end_to_end_bot_utterances == end_to_end_utterances
+
+    cleaned = domain.cleaned_domain()
+    assert KEY_END_TO_END_BOT_UTTERANCES not in cleaned
+
+
 def test_add_knowledge_base_slots(default_domain):
     # don't modify default domain as it is used in other tests
     test_domain = copy.deepcopy(default_domain)
