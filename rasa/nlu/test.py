@@ -38,6 +38,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+    INTENT_NAME_KEY,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
@@ -173,7 +174,7 @@ def write_intent_successes(
             "text": r.message,
             "intent": r.intent_target,
             "intent_prediction": {
-                "name": r.intent_prediction,
+                INTENT_NAME_KEY: r.intent_prediction,
                 "confidence": r.confidence,
             },
         }
@@ -203,7 +204,7 @@ def write_intent_errors(
             "text": r.message,
             "intent": r.intent_target,
             "intent_prediction": {
-                "name": r.intent_prediction,
+                INTENT_NAME_KEY: r.intent_prediction,
                 "confidence": r.confidence,
             },
         }
@@ -1310,7 +1311,7 @@ def get_eval_data(
             intent_results.append(
                 IntentEvaluationResult(
                     example.get(INTENT, ""),
-                    intent_prediction.get("name"),
+                    intent_prediction.get(INTENT_NAME_KEY),
                     result.get(TEXT, {}),
                     intent_prediction.get("confidence"),
                 )
