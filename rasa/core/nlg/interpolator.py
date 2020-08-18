@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import Text, Dict, Union, Any
+from typing import Text, Dict, Union, Any, List
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +48,8 @@ def interpolate_text(template: Text, values: Dict[Text, Text]) -> Text:
 
 
 def interpolate(
-    template: Union[Dict[Text, Any], Text], values: Dict[Text, Text]
-) -> Union[Dict[Text, Any], Text]:
+    template: Union[List[Any], Dict[Text, Any], Text], values: Dict[Text, Text]
+) -> Union[List[Any], Dict[Text, Any], Text]:
     """Recursively process template and interpolate any text keys.
 
     Args:
@@ -71,4 +71,6 @@ def interpolate(
             elif isinstance(v, str):
                 template[k] = interpolate_text(v, values)
         return template
+    elif isinstance(template, list):
+        return [interpolate(i, values) for i in template]
     return template
