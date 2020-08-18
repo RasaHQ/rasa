@@ -1,8 +1,8 @@
 import sys
 
 import json
-import os
 from pathlib import Path
+from typing import Text
 
 from aioresponses import aioresponses
 
@@ -13,7 +13,7 @@ from rasa.importers.importer import TrainingDataImporter
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 
-async def test_moodbot_example(unpacked_trained_moodbot_path):
+async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
     agent = Agent.load(unpacked_trained_moodbot_path)
 
     responses = await agent.handle_text("/greet")

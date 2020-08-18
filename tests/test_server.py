@@ -154,7 +154,6 @@ def background_server(
     shared_statuses: DictProxy, tmpdir: pathlib.Path
 ) -> Generator[Process, None, None]:
     # Create a fake model archive which the mocked train function can return
-    from pathlib import Path
 
     fake_model = Path(tmpdir) / "fake_model.tar.gz"
     fake_model.touch()
@@ -969,9 +968,7 @@ def test_get_tracker_with_jwt(rasa_secured_app: SanicTestClient):
 
 
 def test_list_routes(default_agent: Agent):
-    from rasa import server
-
-    app = server.create_app(default_agent, auth_token=None)
+    app = rasa.server.create_app(default_agent, auth_token=None)
 
     routes = utils.list_routes(app)
     assert set(routes.keys()) == {
