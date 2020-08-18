@@ -165,6 +165,16 @@ def test_list_models_method_raise_exeception_in_Azure_persistor():
     assert result == []
 
 
+def test_get_external_persistor():
+    p = persistor.get_persistor("rasa.nlu.persistor.Persistor")
+    assert isinstance(p, persistor.Persistor)
+
+
+def test_raise_exception_in_get_external_persistor():
+    with pytest.raises(ImportError):
+        _ = persistor.get_persistor("unknown.persistor")
+
+
 # noinspection PyPep8Naming
 @pytest.mark.parametrize(
     "model, archive", [("model.tar.gz", "model.tar.gz"), ("model", "model.tar.gz")]
