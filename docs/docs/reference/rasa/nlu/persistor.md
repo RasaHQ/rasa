@@ -11,7 +11,7 @@ get_persistor(name: Text) -> Optional["Persistor"]
 
 Returns an instance of the requested persistor.
 
-Currently, `aws`, `gcs` and `azure` are supported
+Currently, `aws`, `gcs`, `azure` and providing module paths are supported remote storages.
 
 ## Persistor Objects
 
