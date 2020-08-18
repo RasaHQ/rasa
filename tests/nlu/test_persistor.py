@@ -170,6 +170,11 @@ def test_get_external_persistor():
     assert isinstance(p, persistor.Persistor)
 
 
+def test_raise_exception_in_get_external_persistor():
+    with pytest.raises(ImportError):
+        _ = persistor.get_persistor("unknown.persistor")
+
+
 # noinspection PyPep8Naming
 @pytest.mark.parametrize(
     "model, archive", [("model.tar.gz", "model.tar.gz"), ("model", "model.tar.gz")]
