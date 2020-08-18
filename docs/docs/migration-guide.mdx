@@ -277,8 +277,8 @@ rules:
   steps:
   - action: restaurant_form
   - active_loop: null
-  - slot: requested_slot
-    value: null
+  - slot_was_set:
+    - requested_slot: null
   # The action we want to run when the form is submitted.
   - action: utter_submit
 ```
