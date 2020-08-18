@@ -1,5 +1,6 @@
 import os
 from multiprocessing.managers import DictProxy
+from pathlib import Path
 from unittest.mock import Mock, ANY
 
 import requests
@@ -190,25 +191,22 @@ def background_server(
 @pytest.fixture()
 def training_request(shared_statuses: DictProxy) -> Generator[Process, None, None]:
     def send_request() -> None:
-
-        with ExitStack() as stack:
-            formbot_data = dict(
-                domain="examples/formbot/domain.yml",
-                config="examples/formbot/config.yml",
-                training_files=[
-                    "examples/formbot/data/rules.yml",
-                    "examples/formbot/data/stories.yml",
-                    "examples/formbot/data/nlu.yml",
-                ],
-            )
-            payload = {
-                key: stack.enter_context(open(path)).read()
-                for key, path in formbot_data.items()
-            }
+        payload = ""
+        project_path = Path("examples") / "formbot"
+        for file in [
+            "domain.yml",
+            "config.yml",
+            Path("data") / "rules.yml",
+            Path("data") / "stories.yml",
+            Path("data") / "nlu.yml",
+        ]:
+            full_path = project_path / file
+            payload += full_path.read_text()
 
         response = requests.post(
             "http://localhost:5005/model/train",
-            json=payload,
+            data=payload,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
             params={"force_training": True},
         )
         shared_statuses["training_result"] = response.status_code
