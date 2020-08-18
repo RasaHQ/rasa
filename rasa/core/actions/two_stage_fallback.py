@@ -177,10 +177,10 @@ def _last_n_intent_names(
 def _user_should_affirm(
     tracker: DialogueStateTracker, events_so_far: List[Event]
 ) -> bool:
-    form_was_just_activated = any(
+    fallback_was_just_activated = any(
         isinstance(event, ActiveLoop) for event in events_so_far
     )
-    if form_was_just_activated:
+    if fallback_was_just_activated:
         return True
 
     return _last_intent_name(tracker) == DEFAULT_NLU_FALLBACK_INTENT_NAME
