@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+import sys
 from typing import Text, Set
 from unittest.mock import Mock
 
@@ -15,6 +16,7 @@ CONFIG_FOLDER = Path("data/test_config")
 
 SOME_CONFIG = CONFIG_FOLDER / "stack_config.yml"
 DEFAULT_CONFIG = Path("rasa/importers/default_config.yml")
+DEFAULT_CONFIG_WINDOWS = Path("rasa/importers/default_config_windows.yml")
 
 
 @pytest.mark.parametrize(
@@ -61,7 +63,10 @@ def test_get_configuration_missing_file(tmp_path: Path, config_file: Text):
     "keys_to_configure", ({"policies"}, {"pipeline"}, {"policies", "pipeline"})
 )
 def test_auto_configure(keys_to_configure: Set[Text]):
-    default_config = io_utils.read_config_file(DEFAULT_CONFIG)
+    if sys.platform == "win32":
+        default_config = io_utils.read_config_file(DEFAULT_CONFIG_WINDOWS)
+    else:
+        default_config = io_utils.read_config_file(DEFAULT_CONFIG)
 
     config = autoconfig._auto_configure({}, keys_to_configure)
 
@@ -109,19 +114,22 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
 
 # Test a few cases that are known to be potentially tricky (have failed in the past)
 @pytest.mark.parametrize(
-    "input_file, expected_file, autoconfig_keys",
+    "input_file, expected_file, expected_file_windows, autoconfig_keys",
     [
         (
             "config_with_comments.yml",
+            "config_with_comments_after_dumping.yml",
             "config_with_comments_after_dumping.yml",
             {"policies"},
         ),  # comments in various positions
         (
             "config_empty.yml",
             "config_empty_after_dumping.yml",
+            "config_empty_after_dumping_windows.yml",
             {"policies", "pipeline"},
         ),  # no empty lines
         (
+            "config_with_comments_after_dumping.yml",
             "config_with_comments_after_dumping.yml",
             "config_with_comments_after_dumping.yml",
             {"policies"},
@@ -132,6 +140,7 @@ def test_dump_config(
     tmp_path: Path,
     input_file: Text,
     expected_file: Text,
+    expected_file_windows: Text,
     capsys: CaptureFixture,
     autoconfig_keys: Set[Text],
 ):
@@ -141,7 +150,11 @@ def test_dump_config(
     autoconfig.get_configuration(config_file)
 
     actual = io_utils.read_file(config_file)
-    expected = io_utils.read_file(str(CONFIG_FOLDER / expected_file))
+
+    if sys.platform == "win32":
+        expected = io_utils.read_file(str(CONFIG_FOLDER / expected_file_windows))
+    else:
+        expected = io_utils.read_file(str(CONFIG_FOLDER / expected_file))
 
     assert actual == expected
 

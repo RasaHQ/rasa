@@ -15,11 +15,10 @@ import rasa.core
 from rasa.core.interpreter import RasaNLUInterpreter
 
 from rasa.train import train_core, train_nlu, train
-from tests.conftest import DEFAULT_CONFIG_PATH
+from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STORIES_FILE,
-    DEFAULT_NLU_DATA,
 )
 from tests.core.test_model import _fingerprint
 
