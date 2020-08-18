@@ -32,21 +32,16 @@ class SingleStateFeaturizer:
 
     def prepare_from_domain(self, domain: Domain) -> None:
         # store feature states for each attribute in order to create binary features
-        self._default_feature_states[INTENT] = {
-            f: i for i, f in enumerate(domain.intents)
-        }
-        self._default_feature_states[ACTION_NAME] = {
-            f: i for i, f in enumerate(domain.action_names)
-        }
-        self._default_feature_states[ENTITIES] = {
-            f: i for i, f in enumerate(domain.entities)
-        }
-        self._default_feature_states[SLOTS] = {
-            f: i for i, f in enumerate(domain.slot_states)
-        }
-        self._default_feature_states[FORM] = {
-            f: i for i, f in enumerate(domain.form_names)
-        }
+        def convert_to_dict(feature_states: List[Text]) -> Dict[Text, int]:
+            return {
+                feature_state: idx for idx, feature_state in enumerate(feature_states)
+            }
+
+        self._default_feature_states[INTENT] = convert_to_dict(domain.intents)
+        self._default_feature_states[ACTION_NAME] = convert_to_dict(domain.action_names)
+        self._default_feature_states[ENTITIES] = convert_to_dict(domain.entities)
+        self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
+        self._default_feature_states[FORM] = convert_to_dict(domain.form_names)
         self.e2e_action_texts = domain.e2e_action_texts
 
     @staticmethod
