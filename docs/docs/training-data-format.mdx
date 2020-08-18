@@ -659,8 +659,8 @@ A rule that with a condition looks like this:
 rules:
 - rule: Only say `hey` when the user provided a name
   condition:
-  - slot: user_provided_name
-    value: true
+  - slot_was_set:
+    - user_provided_name: true
   steps:
   - intent: greet
   - action: utter_greet
