@@ -915,7 +915,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.data_example.pkl", self._data_example
         )
         io_utils.pickle_dump(
-            model_dir / f"{file_name}.label_data.pkl", self._label_data
+            model_dir / f"{file_name}.label_data.pkl", dict(self._label_data.data)
         )
         io_utils.json_pickle(
             model_dir / f"{file_name}.index_label_id_mapping.pkl",
@@ -981,6 +981,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
+        label_data = RasaModelData(data=label_data)
         index_label_id_mapping = io_utils.json_unpickle(
             model_dir / f"{file_name}.index_label_id_mapping.pkl"
         )
