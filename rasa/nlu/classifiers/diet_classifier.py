@@ -624,7 +624,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             if training and example.get(label_attribute):
                 label_features = self._extract_features(example, label_attribute)
                 for feature_key, feature_value in label_features.items():
-                    features[label_attribute][feature_key].append(feature_value)
+                    features[LABEL][feature_key].append(feature_value)
 
                 if label_id_dict:
                     label_ids.append(label_id_dict[example.get(label_attribute)])

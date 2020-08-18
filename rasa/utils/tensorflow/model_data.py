@@ -144,6 +144,9 @@ class RasaModelData:
             for f in features
         ]
 
+        if not example_lengths:
+            return 0
+
         # check if number of examples is the same for all values
         if not all(length == example_lengths[0] for length in example_lengths):
             raise ValueError(
