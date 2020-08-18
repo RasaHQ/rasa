@@ -72,7 +72,7 @@ Rasa supports using [S3](https://aws.amazon.com/s3/) ,
   An example command is:
 
   ```bash
-  rasa run --remote-storage rasa.nlu.persistor.Persistor
+  rasa run --remote-storage <your module>.<class name>
   ```
 
 Models are gzipped before they are saved in the cloud. The gzipped file naming convention
