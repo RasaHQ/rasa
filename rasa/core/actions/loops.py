@@ -47,7 +47,6 @@ class LoopAction(Action, ABC):
 
     # default implementation checks if form active
     def _default_activation_events(self) -> List[Event]:
-        # TODO if this is in the loop action, probably it should not be `Form`
         return [ActiveLoop(self.name())]
 
     async def activate(
