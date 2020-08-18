@@ -632,6 +632,11 @@ class Domain:
     def random_template_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
         import numpy as np
 
+        common_utils.raise_warning(
+            "This method is deprecated and will be removed in " "future versions.",
+            category=DeprecationWarning,
+        )
+
         if utter_action in self.templates:
             return np.random.choice(self.templates[utter_action])
         else:

@@ -188,7 +188,8 @@ def test_utter_templates():
             {"title": "super sad", "payload": "/mood_unhappy"},
         ],
     }
-    assert domain.random_template_for("utter_greet") == expected_template
+    with pytest.warns(DeprecationWarning):
+        assert domain.random_template_for("utter_greet") == expected_template
 
 
 def test_custom_slot_type(tmpdir: Path):
