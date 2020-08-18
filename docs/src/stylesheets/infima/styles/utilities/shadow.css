@@ -1,0 +1,13 @@
+.shadow {
+  &--lw {
+    box-shadow: var(--ifm-global-shadow-lw) !important;
+  }
+  
+  &--md {
+    box-shadow: var(--ifm-global-shadow-md) !important;
+  }
+  
+  &--tl {
+    box-shadow: var(--ifm-global-shadow-tl) !important;
+  } 
+}

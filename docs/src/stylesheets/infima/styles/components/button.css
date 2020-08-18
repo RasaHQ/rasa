@@ -1,0 +1,147 @@
+:root {
+  --ifm-button-background-color: inherit;
+  --ifm-button-border-color: var(--ifm-button-background-color);
+  --ifm-button-border-width: var(--ifm-global-border-width);
+  --ifm-button-color: var(--ifm-font-color-base-inverse);
+  --ifm-button-font-weight: var(--ifm-font-weight-bold);
+  --ifm-button-padding-horizontal: 1.5rem;
+  --ifm-button-padding-vertical: 0.375rem;
+  --ifm-button-size-multiplier: 1;
+  --ifm-button-transition-duration: var(--ifm-transition-fast);
+  --ifm-button-border-radius: calc(
+    var(--ifm-global-radius) * var(--ifm-button-size-multiplier)
+  );
+}
+
+.button {
+  appearance: none;
+  background-color: var(--ifm-button-background-color);
+  border-color: var(--ifm-button-border-color);
+  border-style: solid;
+  border-width: var(--ifm-button-border-width);
+  border-radius: var(--ifm-button-border-radius);
+  box-sizing: border-box;
+  color: var(--ifm-button-color);
+  cursor: pointer;
+  display: inline-block;
+  font-size: calc(0.875rem * var(--ifm-button-size-multiplier));
+  font-weight: var(--ifm-button-font-weight);
+  line-height: 1.5;
+  outline: 0;
+  padding: calc(
+      var(--ifm-button-padding-vertical) * var(--ifm-button-size-multiplier)
+    )
+    calc(
+      var(--ifm-button-padding-horizontal) * var(--ifm-button-size-multiplier)
+    );
+  text-align: center;
+  text-decoration: none;
+  transition: color var(--ifm-button-transition-duration)
+      cubic-bezier(0.08, 0.52, 0.52, 1),
+    background var(--ifm-button-transition-duration)
+      cubic-bezier(0.08, 0.52, 0.52, 1),
+    border-color var(--ifm-button-transition-duration)
+      cubic-bezier(0.08, 0.52, 0.52, 1);
+  user-select: none;
+  vertical-align: middle;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--ifm-button-color); // Override for button links.
+    outline: 0;
+    text-decoration: none;
+  }
+
+  &:focus {
+    outline: 0;
+  }
+
+  &--outline {
+    --ifm-button-background-color: transparent;
+    --ifm-button-color: var(--ifm-button-border-color);
+
+    &:hover {
+      --ifm-button-background-color: var(--ifm-button-border-color);
+    }
+
+    &:hover,
+    &:active,
+    &^&--active {
+      --ifm-button-color: var(--ifm-font-color-base-inverse);
+    }
+  }
+
+  &--link {
+    --ifm-button-background-color: transparent;
+    --ifm-button-border-color: transparent;
+
+    color: var(--ifm-link-color);
+    text-decoration: var(--ifm-link-decoration);
+
+    &:hover,
+    &:active,
+    &.^&--active {
+      color: var(--ifm-link-hover-color);
+      text-decoration: var(--ifm-link-hover-decoration);
+    }
+  }
+
+  &.disabled,
+  &:disabled,
+  &[disabled] {
+    opacity: 0.65;
+    pointer-events: none;
+  }
+
+  &--sm {
+    --ifm-button-size-multiplier: 0.8;
+  }
+
+  &--lg {
+    --ifm-button-size-multiplier: 1.35;
+  }
+
+  &--block {
+    display: block;
+    width: 100%;
+  }
+
+  &&--secondary {
+    color: var(--ifm-color-gray-900);
+
+    &.button--outline:not(.button--active):not(:hover) {
+      color: var(--ifm-font-color-base);
+    }
+  }
+}
+
+@each $color in (primary, secondary, success, info, warning, danger) {
+  .button--$(color) {
+    --ifm-button-border-color: var(--ifm-color-$(color));
+
+    &:not(.button--outline) {
+      --ifm-button-background-color: var(--ifm-color-$(color));
+
+      &:hover {
+        --ifm-button-background-color: var(--ifm-color-$(color)-dark);
+        --ifm-button-border-color: var(--ifm-color-$(color)-dark);
+      }
+    }
+  }
+
+  // Increase specificity.
+  .button--$(color) {
+    &:active,
+    &.button--active {
+      --ifm-button-border-color: var(--ifm-color-$(color)-darker);
+      --ifm-button-background-color: var(--ifm-color-$(color)-darker);
+
+      background-color: var(
+        --ifm-color-$(color)-darker
+      ); // Has to be explicitly defined because .button--outline has quite high specificity.
+      border-color: var(
+        --ifm-color-$(color)-darker
+      ); // Has to be explicitly defined because .button--outline has quite high specificity.
+    }
+  }
+}

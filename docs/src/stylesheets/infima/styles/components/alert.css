@@ -1,0 +1,41 @@
+:root {
+  --ifm-alert-background-color: inherit; // Set a default which will be overridden later.
+  --ifm-alert-border-color: inherit; // Set a default which will be overridden later.
+  --ifm-alert-border-radius: var(--ifm-global-radius);
+  --ifm-alert-border-width: var(--ifm-global-border-width);
+  --ifm-alert-color: var(--ifm-font-color-base-inverse);
+  --ifm-alert-padding-horizontal: var(--ifm-spacing-horizontal);
+  --ifm-alert-padding-vertical: var(--ifm-spacing-vertical);
+}
+
+.alert {
+  background-color: var(--ifm-alert-background-color);
+  border-color: var(--ifm-alert-border-color);
+  border-style: solid;
+  border-width: var(--ifm-alert-border-width);
+  border-radius: var(--ifm-alert-border-radius);
+  box-sizing: border-box;
+  color: var(--ifm-alert-color);
+  padding: var(--ifm-alert-padding-vertical) var(--ifm-alert-padding-horizontal);
+
+  @each $color in (primary, secondary, success, info, warning, danger) {
+    &--$(color) {
+      --ifm-alert-background-color: var(--ifm-color-$(color));
+      --ifm-alert-border-color: var(--ifm-color-$(color));
+    }
+  }
+
+  a {
+    color: var(--ifm-alert-color);
+    text-decoration: underline;
+  }
+
+  &--secondary {
+    --ifm-alert-color: var(--ifm-color-gray-900);
+  }
+
+  .close {
+    margin-right: calc(var(--ifm-alert-padding-horizontal) * -1);
+    margin-top: calc(var(--ifm-alert-padding-vertical) * -1);
+  }
+}

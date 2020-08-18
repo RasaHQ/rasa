@@ -1,0 +1,6 @@
+.menu__head {
+	display: none;
+	.menu--show & {
+		display: block;
+	}
+}

@@ -16,56 +16,89 @@ const legacyVersion = {
   to: 'https://legacy-docs-v1.rasa.com',
 };
 
+  // FIXME: when deploying this for real, change to '/docs/rasa/'
+const BASE_URL = '/docs/rasa/next/';
+const SITE_URL = 'https://rasa.com';
+
 module.exports = {
   title: 'Rasa Open Source Documentation',
-  tagline: 'Rasa Open Source Documentation',
-  url: 'https://rasa.com',
-  // FIXME: when deploying this for real, change to '/docs/rasa/'
-  baseUrl: '/docs/rasa/next/',
+  tagline: 'The tagline of my site',
+  url: SITE_URL,
+  baseUrl: BASE_URL,
   favicon: 'img/favicon.ico',
   organizationName: 'RasaHQ',
   projectName: 'rasa',
   themeConfig: {
+    colorMode: {
+      defaultMode: 'light',
+      disableSwitch: true,
+    },
+    versions: {
+      label: 'Versions',
+      to: '/', // "fake" link
+      position: 'left',
+      items: versions.length > 0 ? [
+        {
+          label: versions[0],
+          to: '/',
+          activeBaseRegex: versions[0],
+        },
+        ...versions.slice(1).map((version) => ({
+          label: version,
+          to: `${version}/`,
+          activeBaseRegex: version,
+        })),
+        {
+          label: 'Master/Unreleased',
+          to: 'next/',
+          activeBaseRegex: `next`,
+        },
+        legacyVersion,
+      ] : [
+        {
+          label: 'Master/Unreleased',
+          to: '/',
+          activeBaseRegex: `/`,
+        },
+        legacyVersion,
+      ],
+    },
     navbar: {
-      title: 'Rasa Open Source',
+      hideOnScroll: false,
+      title: 'Rasa Docs',
       logo: {
         alt: 'Rasa',
-        src: 'https://rasa.com/static/60e441f8eadef13bea0cc790c8cf188b/rasa-logo.svg',
+        src: `${SITE_URL}/static/60e441f8eadef13bea0cc790c8cf188b/rasa-logo.svg`,
       },
       items: [
         {
-          label: 'Docs',
-          to: '/', // "fake" link
+          href: 'https://blog.rasa.com/',
+          label: 'Overview',
           position: 'left',
-          items: versions.length > 0 ? [
-            {
-              label: versions[0],
-              to: '/',
-              activeBaseRegex: versions[0],
-            },
-            ...versions.slice(1).map((version) => ({
-              label: version,
-              to: `${version}/`,
-              activeBaseRegex: version,
-            })),
-            {
-              label: 'Master/Unreleased',
-              to: 'next/',
-              activeBaseRegex: `next`,
-            },
-            legacyVersion,
-          ] : [
-            {
-              label: 'Master/Unreleased',
-              to: '/',
-              activeBaseRegex: `/`,
-            },
-            legacyVersion,
-          ],
         },
         {
-          href: 'https://github.com/rasahq/rasa',
-          label: 'GitHub',
+          href: `${SITE_URL}${BASE_URL}`,
+          label: 'Rasa Open Source',
+          position: 'left',
+        },
+        {
+          href: `${SITE_URL}/docs/rasa-x/next/`,
+          label: 'Rasa X',
+          position: 'left',
+        },
+        {
+          href: `${SITE_URL}/docs/rasa-x/next/api/`,
+          label: 'API',
+          position: 'left',
+        },
+        {
+          href: 'https://blog.rasa.com/',
+          label: 'Blog',
+          position: 'right',
+        },
+        {
+          href: `${SITE_URL}/community/join/`,
+          label: 'Community',
           position: 'right',
         },
       ],
@@ -80,7 +113,7 @@ module.exports = {
   },
   themes: [
     ['@docusaurus/theme-classic', {
-      customCss: require.resolve('./src/css/custom.css'),
+      customCss: require.resolve('./src/stylesheets/custom.scss'),
     }],
     path.resolve(__dirname, './themes/theme-live-codeblock'),
   ],
@@ -98,11 +131,20 @@ module.exports = {
         remarkProgramOutput
       ],
     }],
+    ['@docusaurus/plugin-content-pages', {}],
     ['@docusaurus/plugin-sitemap', {
       cacheTime: 600 * 1000, // 600 sec - cache purge period
       changefreq: 'weekly',
       priority: 0.5,
     }],
-    path.resolve(__dirname, './plugins/google-tagmanager'),
+    [path.resolve(__dirname, './plugins/google-tagmanager'), {}],
+    [path.resolve(__dirname, './plugins/dart-sass'), {
+      sassOptions: {
+        fiber: require('fibers'),
+        includePaths: [path.join(__dirname, 'node_modules')],
+        additionalData: '$env: ' + process.env.NODE_ENV + ';',
+        webpackImporter: false,
+      }
+    }],
   ],
 };

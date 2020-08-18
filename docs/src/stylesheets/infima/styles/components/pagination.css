@@ -1,0 +1,79 @@
+:root {
+  --ifm-pagination-border-radius: calc(
+    var(--ifm-global-radius) * var(--ifm-pagination-size-multiplier)
+  );
+  --ifm-pagination-color-active: var(--ifm-color-primary);
+  --ifm-pagination-font-size: 1rem;
+  --ifm-pagination-item-active-background: var(--ifm-hover-overlay);
+  --ifm-pagination-page-spacing: 0.0625rem;
+  --ifm-pagination-padding-horizontal: calc(var(--ifm-spacing-horizontal) * 1);
+  --ifm-pagination-padding-vertical: calc(var(--ifm-spacing-vertical) * 0.25);
+  --ifm-pagination-size-multiplier: 1;
+}
+
+.pagination {
+  font-size: var(--ifm-pagination-font-size);
+  padding-left: 0;
+
+  &--sm {
+    --ifm-pagination-font-size: 0.8rem;
+    --ifm-pagination-padding-horizontal: 0.8rem;
+    --ifm-pagination-padding-vertical: 0.2rem;
+  }
+
+  &--lg {
+    --ifm-pagination-font-size: 1.2rem;
+    --ifm-pagination-padding-horizontal: 1.2rem;
+    --ifm-pagination-padding-vertical: 0.3rem;
+  }
+
+  &__item {
+    display: inline-block;
+    list-style-type: none;
+
+    &:not(:first-child) {
+      margin-left: var(--ifm-pagination-page-spacing);
+    }
+
+    &:not(:last-child) {
+      margin-right: var(--ifm-pagination-page-spacing);
+    }
+
+    & > span {
+      padding: var(--ifm-pagination-padding-vertical);
+    }
+
+    &--active {
+      & .pagination__link {
+        background: var(--ifm-pagination-item-active-background);
+        color: var(--ifm-pagination-color-active);
+      }
+    }
+
+    &:not(&--active):hover {
+      & .pagination__link {
+        background: var(--ifm-pagination-item-active-background);
+        transition: background var(--ifm-transition-fast)
+          cubic-bezier(0.08, 0.52, 0.52, 1);
+      }
+    }
+
+    &--disabled,
+    &[disabled] {
+      opacity: 0.25;
+      pointer-events: none;
+    }
+  }
+
+  &__link {
+    border-radius: var(--ifm-pagination-border-radius);
+    color: var(--ifm-font-color-base);
+    display: inline-block;
+    padding: var(--ifm-pagination-padding-vertical)
+      var(--ifm-pagination-padding-horizontal);
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+}

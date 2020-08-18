@@ -1,0 +1,23 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: var(--ifm-background-color);
+  box-sizing: border-box;
+  color: var(--ifm-font-color-base);
+  line-height: var(--ifm-line-height-base);
+  font-family: var(--ifm-font-family-base);
+  font-size: var(--ifm-font-size-base);
+  text-rendering: optimizelegibility;
+
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  word-wrap: break-word;
+}

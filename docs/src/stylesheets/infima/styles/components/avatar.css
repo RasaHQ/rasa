@@ -1,0 +1,70 @@
+:root {
+  --ifm-avatar-intro-margin: 1rem;
+  --ifm-avatar-intro-alignment: inherit;
+  --ifm-avatar-photo-size-sm: 2rem;
+  --ifm-avatar-photo-size-md: 3rem;
+  --ifm-avatar-photo-size-lg: 4rem;
+  --ifm-avatar-photo-size-xl: 6rem;
+}
+
+.avatar {
+  display: flex;
+
+  &__photo-link {
+    display: block;
+  }
+
+  &__photo {
+    overflow: hidden;
+    border-radius: 50%;
+    height: var(--ifm-avatar-photo-size-md);
+    width: var(--ifm-avatar-photo-size-md);
+
+    &--sm {
+      height: var(--ifm-avatar-photo-size-sm);
+      width: var(--ifm-avatar-photo-size-sm);
+    }
+
+    &--lg {
+      height: var(--ifm-avatar-photo-size-lg);
+      width: var(--ifm-avatar-photo-size-lg);
+    }
+
+    &--xl {
+      height: var(--ifm-avatar-photo-size-xl);
+      width: var(--ifm-avatar-photo-size-xl);
+    }
+
+    & + ^&__intro {
+      margin-left: var(--ifm-avatar-intro-margin);
+    }
+  }
+
+  &__intro {
+    display: flex;
+    flex: 1 1;
+    flex-direction: column;
+    justify-content: center;
+    text-align: var(--ifm-avatar-intro-alignment);
+  }
+
+  &__name {
+    margin: 0;
+  }
+
+  &__subtitle {
+    margin-top: 0.25rem;
+  }
+
+  &--vertical {
+    --ifm-avatar-intro-alignment: center;
+    --ifm-avatar-intro-margin: 0.5rem;
+
+    align-items: center;
+    flex-direction: column;
+
+    ^&__intro {
+      margin-left: 0; // Reset the margin added in the horizontal layout.
+    }
+  }
+}

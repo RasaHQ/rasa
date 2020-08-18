@@ -1,0 +1,241 @@
+:root {
+  --ifm-navbar-background-color: var(--ifm-background-surface-color);
+  --ifm-navbar-height: 3.75rem;
+  --ifm-navbar-item-padding-horizontal: 1rem;
+  --ifm-navbar-item-padding-vertical: 0.25rem;
+  --ifm-navbar-link-color: var(--ifm-font-color-base);
+  --ifm-navbar-link-hover-color: var(--ifm-color-primary);
+  --ifm-navbar-link-active-color: var(--ifm-link-color);
+  --ifm-navbar-padding-horizontal: var(--ifm-spacing-horizontal);
+  --ifm-navbar-padding-vertical: calc(var(--ifm-spacing-vertical) * 0.5);
+  --ifm-navbar-shadow: var(--ifm-global-shadow-lw);
+  --ifm-navbar-search-input-background-color: var(--ifm-color-emphasis-200);
+  --ifm-navbar-search-input-color: var(--ifm-color-emphasis-800);
+  --ifm-navbar-search-input-placeholder-color: var(--ifm-color-emphasis-500);
+  --ifm-navbar-search-input-icon: url('data:image/svg+xml;utf8,<svg fill="currentColor" alt="Search" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" height="16px" width="16px"><path d="M6.02945,10.20327a4.17382,4.17382,0,1,1,4.17382-4.17382A4.15609,4.15609,0,0,1,6.02945,10.20327Zm9.69195,4.2199L10.8989,9.59979A5.88021,5.88021,0,0,0,12.058,6.02856,6.00467,6.00467,0,1,0,9.59979,10.8989l4.82338,4.82338a.89729.89729,0,0,0,1.29912,0,.89749.89749,0,0,0-.00087-1.29909Z" /></svg>');
+  --ifm-navbar-sidebar-width: 80vw;
+}
+
+.navbar {
+  // TODO: Add navbar-link-active
+  background-color: var(--ifm-navbar-background-color);
+  box-shadow: var(--ifm-navbar-shadow);
+  box-sizing: border-box;
+  display: flex;
+  height: var(--ifm-navbar-height);
+  padding: var(--ifm-navbar-padding-vertical)
+    var(--ifm-navbar-padding-horizontal);
+  width: 100%;
+
+  & > .container,
+  & > .container-fluid {
+    display: flex;
+
+    @media (--ifm-narrow-window) {
+      padding: 0;
+    }
+  }
+
+  &--fixed-top {
+    position: sticky;
+    top: 0;
+    z-index: var(--ifm-z-index-fixed);
+  }
+
+  &__inner {
+    align-items: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  &__brand {
+    align-items: center;
+    color: var(--ifm-navbar-link-color);
+    display: flex;
+    font-weight: bold;
+    height: 2rem;
+    margin-right: 1rem;
+
+    &:hover {
+      text-decoration: none;
+      color: inherit;
+    }
+  }
+
+  &__title {
+    flex-shrink: 0;
+    max-width: 100%;
+  }
+
+  &__toggle {
+    cursor: pointer;
+    display: none;
+    margin-right: 0.5rem;
+
+    @media (--ifm-narrow-window) {
+      display: inherit;
+    }
+  }
+
+  &__logo {
+    height: 100%;
+    margin-right: 0.5rem;
+  }
+
+  &__items {
+    align-items: center;
+    display: flex;
+    flex: 1 1 auto;
+
+    &--center {
+      flex: 0 0 auto;
+
+      ^^&__brand {
+        margin: 0;
+      }
+    }
+
+    &--right {
+      justify-content: flex-end;
+    }
+  }
+
+  &__item {
+    display: inline-block;
+    padding: var(--ifm-navbar-item-padding-vertical)
+      var(--ifm-navbar-item-padding-horizontal);
+
+    &.dropdown {
+      padding: 0;
+
+      ^^&__link {
+        pointer-events: none;
+      }
+    }
+
+    @media (--ifm-narrow-window) {
+      display: none;
+    }
+  }
+
+  &__link {
+    color: var(--ifm-navbar-link-color);
+    cursor: pointer;
+    font-weight: var(--ifm-font-weight-semibold);
+    padding: var(--ifm-navbar-item-padding-vertical)
+      var(--ifm-navbar-item-padding-horizontal);
+    text-decoration: none;
+
+    &:hover,
+    &--active {
+      color: var(--ifm-navbar-link-hover-color);
+      text-decoration: none;
+    }
+  }
+
+  ^&__brand {
+    color: var(--ifm-navbar-link-color); // @compat
+  }
+
+  &--dark {
+    --ifm-navbar-background-color: #303846;
+    --ifm-navbar-link-color: var(--ifm-color-white);
+    --ifm-navbar-link-hover-color: var(--ifm-color-primary);
+    --ifm-navbar-search-input-background-color: rgba(255, 255, 255, 0.1);
+    --ifm-navbar-search-input-color: var(--ifm-color-white);
+    --ifm-navbar-search-input-placeholder-color: rgba(255, 255, 255, 0.5);
+  }
+
+  &--primary {
+    --ifm-navbar-background-color: var(--ifm-color-primary);
+    --ifm-navbar-link-hover-color: var(--ifm-color-white);
+    --ifm-navbar-search-input-background-color: rgba(255, 255, 255, 0.1);
+    --ifm-navbar-search-input-color: var(--ifm-color-emphasis-500);
+    --ifm-navbar-search-input-placeholder-color: rgba(255, 255, 255, 0.5);
+  }
+
+  &__search {
+    padding-left: var(--ifm-navbar-padding-horizontal);
+
+    &-input {
+      appearance: none; // Algolia will add type="search" to the input in Safari and Safari's styling will override the styling here.
+      background-color: var(--ifm-navbar-search-input-background-color);
+      background-image: var(--ifm-navbar-search-input-icon);
+      background-position-x: 0.75rem;
+      background-position-y: center;
+      background-repeat: no-repeat;
+      background-size: 1rem 1rem;
+      border-radius: 2rem;
+      border-width: 0;
+      cursor: text;
+      color: var(--ifm-navbar-search-input-color);
+      display: inline-block;
+      font-size: 0.9rem;
+      line-height: 2rem;
+      outline: none;
+      padding: 0 0.5rem 0 2.25rem;
+      width: 12.5rem;
+
+      &::placeholder {
+        color: var(--ifm-navbar-search-input-placeholder-color);
+      }
+
+      @media (--ifm-narrow-window) {
+        width: 9rem;
+      }
+    }
+  }
+
+  &-sidebar {
+    background-color: var(--ifm-navbar-background-color);
+    bottom: 0;
+    box-shadow: var(--ifm-global-shadow-md);
+    display: none;
+    left: 0;
+    position: fixed;
+    top: 0;
+    transform: translateX(-100%);
+    transition: transform var(--ifm-transition-fast) ease;
+    width: var(--ifm-navbar-sidebar-width);
+    overflow: auto;
+
+    &--show {
+      ^& {
+        transform: translateX(0);
+      }
+
+      ^&__backdrop {
+        display: block;
+      }
+    }
+
+    @media (--ifm-narrow-window) {
+      display: block;
+    }
+
+    &__backdrop {
+      background-color: rgba(0, 0, 0, 0.6);
+      bottom: 0;
+      display: none;
+      left: 0;
+      right: 0;
+      position: fixed;
+      top: 0;
+    }
+
+    &__brand {
+      align-items: center;
+      box-shadow: var(--ifm-navbar-shadow);
+      display: flex;
+      height: var(--ifm-navbar-height);
+      padding: var(--ifm-navbar-padding-vertical)
+        var(--ifm-navbar-padding-horizontal);
+    }
+
+    &__items {
+      padding: 0.5rem;
+    }
+  }
+}

@@ -1,0 +1,33 @@
+:root {
+  --ifm-button-group-margin: 2px;
+}
+
+.button-group {
+  display: inline-flex;
+
+  & > .button {
+    &:not(:first-child) {
+      border-bottom-left-radius: 0;
+      border-top-left-radius: 0;
+      margin-left: var(--ifm-button-group-margin);
+    }
+
+    &:not(:last-child) {
+      border-bottom-right-radius: 0;
+      border-top-right-radius: 0;
+    }
+    
+    &--active {
+      z-index: 1; // Make the active button's border take precedence.
+    }
+  }
+
+  &--block {
+    display: flex;
+    justify-content: stretch;
+
+    & > .button {
+      flex-grow: 1;
+    }
+  }
+}
