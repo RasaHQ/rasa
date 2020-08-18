@@ -498,7 +498,7 @@ class DIET2DIET(DIET):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         batch_dim = self._get_batch_dim(tf_batch_data)
-        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT, SEQUENCE)
+        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
         sequence_lengths_text = self._get_sequence_lengths(
             tf_batch_data, TEXT, SEQUENCE, batch_dim
         )

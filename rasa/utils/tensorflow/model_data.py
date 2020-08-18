@@ -166,13 +166,18 @@ class RasaModelData:
 
         return number_of_features
 
-    def add_features(self, key: Text, sub_key: Text, features: List[np.ndarray]):
+    def add_features(
+        self, key: Text, sub_key: Text, features: Optional[List[np.ndarray]]
+    ) -> None:
         """Add list of features to data under specified key.
 
         Should update number of examples.
         """
         # if key in self.data and sub_key in self.data[key]:
         #    raise ValueError(f"Key '{key}.{sub_key}' already exists in RasaModelData.")
+
+        if features is None:
+            return
 
         for data in features:
             if data.size > 0:
