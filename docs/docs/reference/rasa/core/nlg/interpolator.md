@@ -31,7 +31,7 @@ Block characters, making sure not to allow:
 #### interpolate
 
 ```python
-interpolate(template: Union[Dict[Text, Any], Text], values: Dict[Text, Text]) -> Union[Dict[Text, Any], Text]
+interpolate(template: Union[List[Any], Dict[Text, Any], Text], values: Dict[Text, Text]) -> Union[List[Any], Dict[Text, Any], Text]
 ```
 
 Recursively process template and interpolate any text keys.
