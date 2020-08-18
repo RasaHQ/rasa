@@ -224,12 +224,11 @@ async def load_agent_on_start(
     endpoints: AvailableEndpoints,
     remote_storage: Optional[Text],
     app: Sanic,
-    loop: Text,
 ):
     """Load an agent.
 
     Used to be scheduled on server start
-    (hence the `app` and `loop` arguments)."""
+    (hence the `app` argument)."""
 
     # noinspection PyBroadException
     try:
