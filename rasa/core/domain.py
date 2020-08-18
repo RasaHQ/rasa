@@ -478,6 +478,22 @@ class Domain:
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
+        """Instantiate a `Domain`.
+
+        Args:
+            intents: Intent labels.
+            entities: The name of the entities which might be present in user messages.
+            slots: Slots to store information during the conversation.
+            templates: Bot responses. If an action with the same name is executed, it
+                will send the matching response to the user.
+            action_names: Names of custom actions.
+            forms: Form names and their slot mappings.
+            end_to_end_utterances: End-to-End bot utterances from end-to-end stories.
+            store_entities_as_slots: If `True` Rasa will automatically create `SlotSet`
+                events for entities if there are slots with the same name as the entity.
+            session_config: Configuration for conversation sessions. Conversation are
+                restarted at the end of a session.
+        """
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
