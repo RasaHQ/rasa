@@ -313,3 +313,11 @@ encode_string(s: Text) -> Text
 
 Return an encoded python string.
 
+#### decode\_string
+
+```python
+decode_string(s: Text) -> Text
+```
+
+Return a decoded python string.
+
