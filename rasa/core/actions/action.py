@@ -138,18 +138,6 @@ def action_from_name(
         return RemoteAction(name, action_endpoint)
 
 
-def actions_from_names(
-    action_names: List[Text],
-    action_endpoint: Optional[EndpointConfig],
-    user_actions: List[Text],
-) -> List["Action"]:
-    """Converts the names of actions into class instances."""
-
-    return [
-        action_from_name(name, action_endpoint, user_actions) for name in action_names
-    ]
-
-
 def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
     """Create BotUttered event from message."""
 
