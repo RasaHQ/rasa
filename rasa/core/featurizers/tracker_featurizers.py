@@ -36,12 +36,7 @@ class TrackerFeaturizer:
     def _create_states(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[STATE]:
-        """Create states: a list of dictionaries.
-
-        If use_intent_probabilities is False (default behaviour),
-        pick the most probable intent out of all provided ones and
-        set its probability to 1.0, while all the others to 0.0.
-        """
+        """Create states: a list of dictionaries."""
 
         states = tracker.past_states(domain)
 
