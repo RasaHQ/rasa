@@ -385,6 +385,20 @@ def raise_warning(
     warnings.formatwarning = original_formatter
 
 
+def raise_deprecation_warning(
+    message: Text, warn_until_version: Text, docs: Optional[Text] = None, **kwargs: Any,
+) -> None:
+    """
+    Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
+    a version until which we'll warn, and after which the support for the feature will
+    be removed.
+    """
+    if warn_until_version not in message:
+        message = f"{message} (will be removed in {warn_until_version})"
+
+    raise_warning(message, DeprecationWarning, docs, **kwargs)
+
+
 class RepeatedLogFilter(logging.Filter):
     """Filter repeated log records."""
 
