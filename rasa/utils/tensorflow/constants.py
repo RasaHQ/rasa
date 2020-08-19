@@ -21,6 +21,7 @@ LEARNING_RATE = "learning_rate"
 DENSE_DIMENSION = "dense_dimension"
 CONCAT_DIMENSION = "concat_dimension"
 EMBEDDING_DIMENSION = "embedding_dimension"
+ENCODING_LAYER_SIZE = "encoding_dimension"
 
 SIMILARITY_TYPE = "similarity_type"
 LOSS_TYPE = "loss_type"

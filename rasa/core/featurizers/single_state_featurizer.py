@@ -132,6 +132,20 @@ class SingleStateFeaturizer:
                 if features is not None:
                     output[attribute].append(features)
 
+            for name_attribute in [INTENT, ACTION_NAME]:
+                if output.get(name_attribute):
+                    sentence_features = []
+                    for feature in output.get(name_attribute):
+                        sentence_features.append(
+                            Features(
+                                scipy.sparse.coo_matrix(feature.features.sum(0)),
+                                FEATURE_TYPE_SENTENCE,
+                                name_attribute,
+                                feature.origin,
+                            )
+                        )
+                    output[name_attribute] += sentence_features
+
         output = dict(output)
         if not output.get(attribute) and attribute in {INTENT, ACTION_NAME}:
             # there can only be either TEXT or INTENT
