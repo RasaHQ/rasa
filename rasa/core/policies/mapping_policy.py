@@ -6,6 +6,7 @@ from typing import Any, List, Text, Optional
 
 from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 import rasa.utils.io
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils
 
 from rasa.core.actions.action import (
@@ -108,7 +109,7 @@ class MappingPolicy(Policy):
 
         result = self._default_predictions(domain)
 
-        intent = tracker.latest_message.intent.get("name")
+        intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
         if intent == USER_INTENT_RESTART:
             action = ACTION_RESTART_NAME
         elif intent == USER_INTENT_BACK:

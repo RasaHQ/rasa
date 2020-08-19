@@ -38,7 +38,6 @@ def test_train_selector(pipeline, component_builder, tmpdir):
     td = load_data("data/examples/rasa/demo-rasa.md")
     td_responses = load_data("data/examples/rasa/demo-rasa-responses.md")
     td = td.merge(td_responses)
-    td.fill_response_phrases()
 
     nlu_config = RasaNLUModelConfig({"language": "en", "pipeline": pipeline})
 

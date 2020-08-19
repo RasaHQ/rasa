@@ -1,0 +1,120 @@
+---
+id: contextual-conversations
+sidebar_label: Complex Contextual Conversations
+title: Complex Contextual Conversations
+---
+
+Not every user goal you define will fall under the category of business logic. For the
+other cases you will need to use stories and context to help the user achieve their goal.
+
+If we take the example of the “getting started” skill from Sara, we want to give them
+different information based on whether they've built an AI assistant before and are
+migrating from a different tool etc. This can be done quite simply with stories and
+the concept of [max history](./policies.mdx#max-history).
+
+```md
+ ## new to rasa + built a bot before
+ * how_to_get_started
+   - utter_getstarted
+   - utter_first_bot_with_rasa
+ * affirm
+   - action_set_onboarding
+   - slot{"onboarding": true}
+   - utter_built_bot_before
+ * affirm
+   - utter_ask_migration
+ * deny
+   - utter_explain_rasa_components
+   - utter_rasa_components_details
+   - utter_ask_explain_nlucorex
+ * affirm
+   - utter_explain_nlu
+   - utter_explain_core
+   - utter_explain_x
+   - utter_direct_to_step2
+
+ ## not new to rasa + core
+ * how_to_get_started
+   - utter_getstarted
+   - utter_first_bot_with_rasa
+ * deny
+   - action_set_onboarding
+   - slot{"onboarding": false}
+   - utter_ask_which_product
+ * how_to_get_started{"product": "core"}
+   - utter_explain_core
+   - utter_anything_else
+```
+
+The above example mostly leverages intents to guide the flow, however you can also
+guide the flow with entities and slots. For example, if the user gives you the
+information that they're new to Rasa at the beginning, you may want to skip this
+question by storing this information in a slot.
+
+```md
+* how_to_get_started{"user_type": "new"}
+  - slot{"user_type":"new"}
+  - action_set_onboarding
+  - slot{"onboarding": true}
+  - utter_getstarted_new
+  - utter_built_bot_before
+```
+
+For this to work, keep in mind that the slot has to be featurized in your `domain.yml`
+file. This time we can use the `text` slot type, as we only care about whether the
+[slot was set or not](./domain.mdx#slots/).
+
+## AugmentedMemoizationPolicy
+
+To make your bot more robust to interjections, you can replace the MemoizationPolicy
+with the AugmentedMemoizationPolicy. It works the same way as the MemoizationPolicy,
+but if no exact match is found it additionally has a mechanism that forgets a certain
+amount of steps in the conversation history to find a match in your stories (read more
+[here](policies.mdx#augmented-memoization-policy))
+
+## Using ML to generalise
+
+Aside from the more rule-based policies we described above, Core also has some ML
+policies you can use. These come in as an additional layer in your policy configuration,
+and only jump in if the user follows a path that you have not anticipated. **It is important
+to understand that using these policies does not mean letting go of control over your
+assistant.** If a rule based policy is able to make a prediction, that prediction will
+always have a higher priority (read more [here](./policies.mdx#action-selection)) and predict the next action. The
+ML based policies give your assistant the chance not to fail, whereas if they are not
+used your assistant will definitely fail, like in state machine based dialogue systems.
+
+These types of unexpected user behaviors are something our [TEDPolicy](https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/) deals with
+very well. It can learn to bring the user back on track after some
+interjections during the main user goal the user is trying to complete. For example,
+in the conversation below (extracted from a conversation on [Rasa X](https://rasa.com/docs/rasa-x/user-guide/review-conversations/)):
+
+```md
+## Story from conversation with a2baab6c83054bfaa8d598459c659d2a on November 28th 2019
+* greet
+  - action_greet_user
+  - slot{"shown_privacy":true}
+* ask_whoisit
+  - action_chitchat
+* ask_whatspossible
+  - action_chitchat
+* telljoke
+  - action_chitchat
+* how_to_get_started{"product":"x"}
+  - slot{"product":"x"}
+  - utter_explain_x
+  - utter_also_explain_nlucore
+* affirm
+  - utter_explain_nlu
+  - utter_explain_core
+  - utter_direct_to_step2
+```
+
+Here we can see the user has completed a few chitchat tasks first, and then ultimately
+asks how they can get started with Rasa X. The TEDPolicy correctly predicts that
+Rasa X should be explained to the user, and then also takes them down the getting started
+path, without asking all the qualifying questions first.
+
+Since the ML policy generalized well in this situation, it makes sense to add this story
+to your training data to continuously improve your bot and help the ML generalize even
+better in future. [Rasa X](https://rasa.com/docs/rasa-x/) is a tool that can help
+you improve your bot and make it more contextual.

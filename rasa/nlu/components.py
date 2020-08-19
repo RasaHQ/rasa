@@ -97,7 +97,7 @@ def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
 
     if len(tokenizer_names) > 1:
         raise InvalidConfigError(
-            f"More then one tokenizer is used: {tokenizer_names}. "
+            f"More than one tokenizer is used: {tokenizer_names}. "
             f"You can use only one tokenizer."
         )
 

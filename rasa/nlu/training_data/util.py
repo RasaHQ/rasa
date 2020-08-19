@@ -4,11 +4,7 @@ import os
 from typing import Any, Dict, Optional, Text
 
 import rasa.utils.io as io_utils
-from rasa.nlu.constants import (
-    ENTITIES,
-    EXTRACTOR,
-    PRETRAINED_EXTRACTORS,
-)
+from rasa.nlu.constants import ENTITIES, EXTRACTOR, PRETRAINED_EXTRACTORS
 from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)

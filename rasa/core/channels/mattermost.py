@@ -36,7 +36,7 @@ class MattermostBot(OutputChannel):
             return None
 
     def __init__(
-        self, url: Text, token: Text, bot_channel: Text, webhook_url: Optional[Text],
+        self, url: Text, token: Text, bot_channel: Text, webhook_url: Optional[Text]
     ) -> None:
         self.url = url
         self.token = token
@@ -146,7 +146,7 @@ class MattermostInput(InputChannel):
         else:
             token = credentials.get("token")
 
-        return cls(credentials.get("url"), token, credentials.get("webhook_url"),)
+        return cls(credentials.get("url"), token, credentials.get("webhook_url"))
         # pytype: enable=attribute-error
 
     def __init__(self, url: Text, token: Text, webhook_url: Text) -> None:
@@ -207,7 +207,7 @@ class MattermostInput(InputChannel):
     ):
         try:
             out_channel = MattermostBot(
-                self.url, self.token, bot_channel, self.webhook_url,
+                self.url, self.token, bot_channel, self.webhook_url
             )
             user_msg = UserMessage(
                 message,
