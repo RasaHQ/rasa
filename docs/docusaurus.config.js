@@ -18,8 +18,8 @@ const legacyVersion = {
 
 module.exports = {
   title: 'Rasa Open Source Documentation',
-  tagline: 'The tagline of my site',
-  url: 'https://your-docusaurus-test-site.com',
+  tagline: 'Rasa Open Source Documentation',
+  url: 'https://rasa.com',
   // FIXME: when deploying this for real, change to '/docs/rasa/'
   baseUrl: '/docs/rasa/next/',
   favicon: 'img/favicon.ico',
