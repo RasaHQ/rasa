@@ -9,7 +9,7 @@ SHORTCODES
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import Prototyper, { Chat, DownloadButton, TrainButton } from '@site/src/components/prototyper';
+import Prototyper, { DownloadButton, TrainButton } from '@theme/Prototyper';
 
 import styles from './styles.module.scss';
 
@@ -47,7 +47,6 @@ export default {
 	custom, rasa-x
 	*/
 	Prototyper,
-	Chat,
 	DownloadButton,
 	TrainButton,
 	/*
