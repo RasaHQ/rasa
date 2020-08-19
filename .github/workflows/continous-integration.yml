@@ -273,7 +273,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
-        pip install -U github3.py
+        pip install -U github3.py pep440-version-utils
         python3 scripts/publish_gh_release_notes.py
         ./scripts/ping_slack_about_package_release.sh
 
