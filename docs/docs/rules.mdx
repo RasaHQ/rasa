@@ -83,8 +83,8 @@ rules:
 
 - rule: Only say `hello` when the user provided a name
   condition:
-  - slot: user_provided_name
-    value: true
+  - slot_was_set: 
+    - user_provided_name: true
   steps:
   - intent: greet
   - action: utter_greet
