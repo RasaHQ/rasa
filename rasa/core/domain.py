@@ -421,17 +421,12 @@ class Domain:
 
             for t in template_variations:
 
-                # responses should be a dict with options
-                if isinstance(t, str):
-                    raise_warning(
-                        f"Responses should not be strings anymore. "
+                if not isinstance(t, dict):
+                    raise InvalidDomain(
                         f"Response '{template_key}' should contain "
                         f"either a '- text: ' or a '- custom: ' "
-                        f"attribute to be a proper response.",
-                        FutureWarning,
-                        docs=DOCS_URL_DOMAINS + "#responses",
+                        f"attribute to be a proper response."
                     )
-                    validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(
                         f"Response '{template_key}' needs to contain either "
