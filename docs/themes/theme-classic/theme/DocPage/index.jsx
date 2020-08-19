@@ -14,7 +14,7 @@ import MDXComponents from '@theme/MDXComponents';
 import NotFound from '@theme/NotFound';
 import { matchPath } from '@docusaurus/router';
 
-import styles from './styles.module.css';
+import styles from './styles.module.scss';
 
 function DocPageContent({ currentDocRoute, docsMetadata, children }) {
 	const { siteConfig, isClient } = useDocusaurusContext();
