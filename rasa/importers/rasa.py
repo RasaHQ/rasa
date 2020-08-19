@@ -25,9 +25,8 @@ class RasaFileImporter(TrainingDataImporter):
 
         self._domain_path = domain_path
 
-        self._story_files, self._nlu_files = data.get_core_nlu_files(
-            training_data_paths
-        )
+        self._nlu_files = data.get_data_files(training_data_paths, data.is_nlu_file)
+        self._story_files = data.get_data_files(training_data_paths, data.is_story_file)
 
         self.config = autoconfig.get_configuration(config_file)
 
@@ -36,7 +35,6 @@ class RasaFileImporter(TrainingDataImporter):
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
@@ -45,7 +43,6 @@ class RasaFileImporter(TrainingDataImporter):
         return await utils.story_graph_from_paths(
             self._story_files,
             await self.get_domain(),
-            interpreter,
             template_variables,
             use_e2e,
             exclusion_percentage,

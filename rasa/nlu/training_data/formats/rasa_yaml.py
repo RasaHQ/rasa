@@ -13,6 +13,7 @@ from typing import (
     Optional,
 )
 
+from rasa import data
 from rasa.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 
@@ -21,7 +22,6 @@ from rasa.constants import (
     DOCS_URL_TRAINING_DATA_NLU,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
-from rasa.data import YAML_FILE_EXTENSIONS
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
@@ -354,7 +354,7 @@ class RasaYAMLReader(TrainingDataReader):
             `True` if the `filename` is possibly a valid YAML NLU file,
             `False` otherwise.
         """
-        if Path(filename).suffix not in YAML_FILE_EXTENSIONS:
+        if not data.is_likely_yaml_file(filename):
             return False
 
         try:

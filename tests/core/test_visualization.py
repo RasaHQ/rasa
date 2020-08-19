@@ -89,7 +89,7 @@ async def test_graph_persistence(stories_file: Text, default_domain: Domain, tmp
     import rasa.core.training.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
-        stories_file, default_domain, RegexInterpreter()
+        stories_file, default_domain
     )
     out_file = tmpdir.join("graph.html").strpath
     generated_graph = await visualization.visualize_stories(
@@ -120,7 +120,7 @@ async def test_merge_nodes(stories_file: Text, default_domain: Domain, tmpdir):
     import rasa.core.training.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
-        stories_file, default_domain, RegexInterpreter()
+        stories_file, default_domain
     )
     out_file = tmpdir.join("graph.html").strpath
     await visualization.visualize_stories(

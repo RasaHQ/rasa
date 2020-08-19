@@ -25,18 +25,11 @@ async def test_simple_story(
 ):
 
     original_md_reader = MarkdownStoryReader(
-        RegexInterpreter(),
-        default_domain,
-        None,
-        False,
-        input_yaml_file,
-        unfold_or_utterances=False,
+        default_domain, None, False, input_yaml_file, unfold_or_utterances=False,
     )
     original_md_story_steps = await original_md_reader.read_from_file(input_md_file)
 
-    original_yaml_reader = YAMLStoryReader(
-        RegexInterpreter(), default_domain, None, False
-    )
+    original_yaml_reader = YAMLStoryReader(default_domain, None, False)
     original_yaml_story_steps = await original_yaml_reader.read_from_file(
         input_yaml_file
     )
@@ -45,9 +38,7 @@ async def test_simple_story(
     writer = YAMLStoryWriter()
     writer.dump(target_story_filename, original_md_story_steps)
 
-    processed_yaml_reader = YAMLStoryReader(
-        RegexInterpreter(), default_domain, None, False
-    )
+    processed_yaml_reader = YAMLStoryReader(default_domain, None, False)
     processed_yaml_story_steps = await processed_yaml_reader.read_from_file(
         target_story_filename
     )
@@ -61,7 +52,7 @@ async def test_simple_story(
 
 async def test_forms_are_skipped_with_warning(default_domain: Domain):
     original_md_reader = MarkdownStoryReader(
-        RegexInterpreter(), default_domain, None, False, unfold_or_utterances=False,
+        default_domain, None, False, unfold_or_utterances=False,
     )
     original_md_story_steps = await original_md_reader.read_from_file(
         "data/test_stories/stories_form.md"

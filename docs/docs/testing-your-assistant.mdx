@@ -91,7 +91,7 @@ Here are some examples:
   </TabItem>
 </Tabs>
 
-By default Rasa Open Source saves conversation tests to `tests/conversation_tests.md`.
+By default Rasa Open Source saves conversation tests to `tests/test_conversations.yml`.
 You can test your assistant against them by running:
 
 ```bash
@@ -132,7 +132,7 @@ rasa data split nlu
 If you've done this, you can see how well your NLU model predicts the test cases using this command:
 
 ```bash
-rasa test nlu -u train_test_split/test_data.md --model models/nlu-20180323-145833.tar.gz
+rasa test nlu -u train_test_split/test_data.yml --model models/nlu-20180323-145833.tar.gz
 ```
 
 If you don't want to create a separate test set, you can
@@ -140,7 +140,7 @@ still estimate how well your model generalises using cross-validation.
 To do this, add the flag `--cross-validation`:
 
 ```bash
-rasa test nlu -u data/nlu.md --config config.yml --cross-validation
+rasa test nlu -u data/nlu.ml --config config.yml --cross-validation
 ```
 
 The full list of options for the script is:
@@ -155,7 +155,7 @@ a comparative examination between the pipelines.
 
 ```bash
 rasa test nlu --config pretrained_embeddings_spacy.yml supervised_embeddings.yml
-  --nlu data/nlu.md --runs 3 --percentages 0 25 50 70 90
+  --nlu data/nlu.yml --runs 3 --percentages 0 25 50 70 90
 ```
 
 The command in the example above will create a train/test split from your data,
@@ -245,10 +245,10 @@ You can evaluate your trained model on a set of test stories
 by using the evaluate script:
 
 ```bash
-rasa test core --stories test_stories.md --out results
+rasa test core --stories test_conversations.yml --out results
 ```
 
-This will print the failed stories to `results/failed_stories.md`.
+This will print the failed stories to `results/failed_conversations.yml`.
 We count any story as failed if at least one of the actions
 was predicted incorrectly.
 

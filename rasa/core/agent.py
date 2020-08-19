@@ -487,7 +487,7 @@ class Agent:
 
         processor = self.create_processor()
         message = UserMessage(message_data)
-        return await processor._parse_message(message, tracker)
+        return await processor.parse_message(message, tracker)
 
     async def handle_message(
         self,

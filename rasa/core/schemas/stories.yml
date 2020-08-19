@@ -22,11 +22,11 @@ mapping:
           sequence:
           - type: "map"
             mapping: &intent_and_entities
-              intent:
+              intent: &intent
                 type: "str"
                 required: True
                 allowempty: False
-              entities:
+              entities: &entities
                 type: "seq"
                 matching: "any"
                 sequence:
@@ -74,6 +74,51 @@ mapping:
                           regex;(.*):
                             type: "bool"
                 - type: "str"
+          - type: "map"
+            matching-rule: 'any'
+            mapping:
+              checkpoint:
+                type: "str"
+                allowempty: False
+              slot_was_set: *slot_was_set_seq_value
+          - type: "map"
+            mapping:
+              or:
+                type: "seq"
+                matching: "any"
+                sequence:
+                - type: "map"
+                  mapping: *intent_and_entities
+  test_conversations:
+    type: "seq"
+    matching: "any"
+    sequence:
+    - type: "map"
+      mapping:
+        story:
+          type: "str"
+          allowempty: False
+        metadata:
+          type: "any"
+          required: False
+        steps:
+          type: "seq"
+          matching: "any"
+          sequence:
+          - type: "map"
+            mapping:
+              user:
+                type: "str"
+                required: False
+                allowempty: False
+              intent: *intent
+              entities: *entities
+          - type: "map"
+            mapping: *active_loop
+          - type: "map"
+            mapping: *action
+          - type: "map"
+            mapping: *slot_was_set_seq
           - type: "map"
             matching-rule: 'any'
             mapping:

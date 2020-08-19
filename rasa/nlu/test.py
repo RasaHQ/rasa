@@ -1505,7 +1505,7 @@ def run_evaluation(
             disable_plotting,
         )
 
-    if entity_results:
+    if any(entity_results):
         logger.info("Entity evaluation results:")
         extractors = get_entity_extractors(interpreter)
         result["entity_evaluation"] = evaluate_entities(

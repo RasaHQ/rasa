@@ -1,17 +1,27 @@
 from collections import OrderedDict
 from pathlib import Path
 
+from ruamel import yaml
 import ruamel.yaml as ruamel_yaml
-from typing import List, Text, Union, Optional
+from typing import Any, Dict, List, Text, Union, Optional
 
+from ruamel.yaml.comments import CommentedMap
+
+from rasa import data
 from rasa.utils.common import raise_warning
-from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+from ruamel.yaml.scalarstring import (
+    DoubleQuotedScalarString,
+    LiteralScalarString,
+    PlainScalarString,
+    ScalarString,
+)
 
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, DOCS_URL_STORIES
 from rasa.core.events import UserUttered, ActionExecuted, SlotSet, Form
 from rasa.core.training.story_reader.yaml_story_reader import (
     KEY_STORIES,
     KEY_STORY_NAME,
+    KEY_TEST_CONVERSATIONS,
     KEY_USER_INTENT,
     KEY_ENTITIES,
     KEY_ACTION,
@@ -20,6 +30,7 @@ from rasa.core.training.story_reader.yaml_story_reader import (
     KEY_SLOT_NAME,
     KEY_CHECKPOINT_SLOTS,
     KEY_OR,
+    KEY_USER_MESSAGE,
 )
 from rasa.core.training.structures import StoryStep, Checkpoint
 
@@ -29,33 +40,51 @@ import rasa.utils.io as io_utils
 class YAMLStoryWriter:
     """Writes Core training data into a file in a YAML format. """
 
-    def dumps(self, story_steps: List[StoryStep]) -> Text:
+    def dumps(
+        self, story_steps: List[StoryStep], as_test_conversations: bool = False
+    ) -> Text:
         """Turns Story steps into a string.
 
         Args:
             story_steps: Original story steps to be converted to the YAML.
-
+            as_test_conversations: Decides which top level YAML key to use (stories
+                or test_conversations).
         Returns:
             String with story steps in the YAML format.
         """
         stream = ruamel_yaml.StringIO()
-        self.dump(stream, story_steps)
+        self.dump(stream, story_steps, as_test_conversations)
         return stream.getvalue()
 
     def dump(
         self,
         target: Union[Text, Path, ruamel_yaml.StringIO],
         story_steps: List[StoryStep],
+        as_test_conversations: bool = False,
     ) -> None:
         """Writes Story steps into a target file/stream.
 
         Args:
             target: name of the target file/stream to write the YAML to.
             story_steps: Original story steps to be converted to the YAML.
+            as_test_conversations: Decides which top level YAML key to use (stories
+                or test_conversations).
+        """
+        result = self.stories_to_yaml(story_steps, as_test_conversations)
+
+        io_utils.write_yaml(result, target, True)
+
+    def stories_to_yaml(
+        self, story_steps: List[StoryStep], as_test_conversations: bool = False,
+    ) -> Dict[Text, Any]:
+        """Converts a sequence of story steps into yaml format.
+
+        Args:
+            story_steps: Original story steps to be converted to the YAML.
+            as_test_conversations: Decides which top level YAML key to use (stories
+                or test_conversations).
         """
         from rasa.validator import KEY_TRAINING_DATA_FORMAT_VERSION
-
-        self.target = target
 
         stories = []
         for story_step in story_steps:
@@ -67,9 +96,11 @@ class YAMLStoryWriter:
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
             LATEST_TRAINING_DATA_FORMAT_VERSION
         )
-        result[KEY_STORIES] = stories
 
-        io_utils.write_yaml(result, self.target, True)
+        data_key = KEY_TEST_CONVERSATIONS if as_test_conversations else KEY_STORIES
+
+        result[data_key] = stories
+        return result
 
     def process_story_step(self, story_step: StoryStep) -> Optional[OrderedDict]:
         """Converts a single story step into an ordered dict.
@@ -82,7 +113,7 @@ class YAMLStoryWriter:
         """
         if self.story_contains_forms(story_step):
             raise_warning(
-                f'File "{self.target}" contains a story "{story_step.block_name}" '
+                f'Training data file contains a story "{story_step.block_name}" '
                 f"that has form(s) in it. This story cannot be converted automatically "
                 f"because of the new Rules system in Rasa Open Source "
                 f"version {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
@@ -127,6 +158,13 @@ class YAMLStoryWriter:
         return any([event for event in story_step.events if isinstance(event, Form)])
 
     @staticmethod
+    def _text_is_real_message(user_utterance: UserUttered) -> bool:
+        return (
+            not user_utterance.intent
+            or user_utterance.text != user_utterance.as_story_string()
+        )
+
+    @staticmethod
     def process_user_utterance(user_utterance: UserUttered) -> OrderedDict:
         """Converts a single user utterance into an ordered dict.
 
@@ -136,8 +174,15 @@ class YAMLStoryWriter:
         Returns:
             Dict with a user utterance.
         """
-        result = OrderedDict()
+        result = CommentedMap()
         result[KEY_USER_INTENT] = user_utterance.intent["name"]
+
+        # TODO: this is a workaround to print predicted intents / entities...
+        if hasattr(user_utterance, "comment"):
+            result.yaml_add_eol_comment(user_utterance.comment(), KEY_USER_INTENT)
+
+        if YAMLStoryWriter._text_is_real_message(user_utterance):
+            result[KEY_USER_MESSAGE] = LiteralScalarString(user_utterance.text)
 
         if len(user_utterance.entities):
             entities = []
@@ -161,8 +206,13 @@ class YAMLStoryWriter:
             Dict with an action.
         """
         result = OrderedDict()
-        result[KEY_ACTION] = action.action_name
+        s = PlainScalarString(action.action_name)
 
+        # TODO: this is a workaround to print predicted action...
+        if hasattr(action, "comment"):
+            s.comment = f"  # {action.comment()}"
+
+        result[KEY_ACTION] = s
         return result
 
     @staticmethod

@@ -25,7 +25,7 @@ async def test_story_visualization(
     import rasa.core.training.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
-        "data/test_stories/stories.md", default_domain, interpreter=RegexInterpreter()
+        "data/test_stories/stories.md", default_domain
     )
     out_file = str(tmp_path / "graph.html")
     generated_graph = await visualize_stories(
@@ -51,7 +51,7 @@ async def test_story_visualization_with_merging(
     import rasa.core.training.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
-        stories_file, default_domain, interpreter=RegexInterpreter()
+        stories_file, default_domain
     )
     generated_graph = await visualize_stories(
         story_steps,

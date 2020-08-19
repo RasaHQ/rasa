@@ -48,8 +48,8 @@ def test_get_nlu_file(project):
 
 def test_get_core_nlu_files(project):
     data_dir = os.path.join(project, "data")
-    core_files, nlu_files = data.get_core_nlu_files([data_dir])
-
+    nlu_files = data.get_data_files([data_dir], data.is_nlu_file)
+    core_files = data.get_data_files([data_dir], data.is_story_file)
     assert len(nlu_files) == 1
     assert list(nlu_files)[0].endswith("nlu.yml")
 
@@ -162,7 +162,8 @@ def test_same_file_names_get_resolved(tmpdir):
 def test_find_nlu_files_with_different_formats(test_input, expected):
     examples_dir = "data/examples"
     data_dir = os.path.join(examples_dir, test_input)
-    core_files, nlu_files = data.get_core_nlu_files([data_dir])
+    nlu_files = data.get_data_files([data_dir], data.is_nlu_file)
+    core_files = data.get_data_files([data_dir], data.is_story_file)
     assert [Path(f) for f in nlu_files] == [Path(f) for f in expected]
 
 
@@ -193,5 +194,6 @@ def test_is_not_nlu_file_with_json():
 
 def test_get_story_file_with_yaml():
     examples_dir = "data/test_yaml_stories"
-    core_files, nlu_files = data.get_core_nlu_files([examples_dir])
+    nlu_files = data.get_data_files([examples_dir], data.is_nlu_file)
+    core_files = data.get_data_files([examples_dir], data.is_story_file)
     assert core_files

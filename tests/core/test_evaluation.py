@@ -57,7 +57,7 @@ async def test_end_to_end_evaluation_script(default_agent: Agent):
         END_TO_END_STORY_FILE, default_agent, use_e2e=True
     )
 
-    story_evaluation, num_stories = _collect_story_predictions(
+    story_evaluation, num_stories = await _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
     )
 
@@ -94,7 +94,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
         E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True
     )
 
-    story_evaluation, num_stories = _collect_story_predictions(
+    story_evaluation, num_stories = await _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
     )
 
@@ -108,7 +108,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
         "data/test_evaluations/form-end-to-end-stories.md", form_bot_agent, use_e2e=True
     )
 
-    story_evaluation, num_stories = _collect_story_predictions(
+    story_evaluation, num_stories = await _collect_story_predictions(
         test_stories, form_bot_agent, use_e2e=True
     )
 
@@ -146,7 +146,7 @@ async def test_end_to_evaluation_trips_circuit_breaker():
         E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER, agent, use_e2e=True
     )
 
-    story_evaluation, num_stories = _collect_story_predictions(
+    story_evaluation, num_stories = await _collect_story_predictions(
         test_stories, agent, use_e2e=True
     )
 

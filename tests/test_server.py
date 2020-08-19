@@ -701,6 +701,7 @@ def test_evaluate_stories_end_to_end(
         "is_end_to_end_evaluation",
     }
     assert js["is_end_to_end_evaluation"]
+    assert js["actions"] != []
     assert set(js["actions"][0].keys()) == {
         "action",
         "predicted",

@@ -73,9 +73,9 @@ logger = logging.getLogger(__name__)
 MAX_VISUAL_HISTORY = 3
 
 PATHS = {
-    "stories": "data/stories.md",
-    "nlu": "data/nlu.md",
-    "backup": "data/nlu_interactive.md",
+    "stories": "data/stories.yml",
+    "nlu": "data/nlu.yml",
+    "backup": "data/nlu_interactive.yml",
     "domain": "domain.yml",
 }
 
@@ -843,20 +843,16 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:
-    from rasa.data import (
-        YAML_FILE_EXTENSIONS,
-        MARKDOWN_FILE_EXTENSIONS,
-        JSON_FILE_EXTENSIONS,
-    )
+    from rasa import data
 
     guessed_format = loading.guess_format(export_path)
 
     if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
-        if Path(export_path).suffix in JSON_FILE_EXTENSIONS:
+        if data.is_likely_json_file(export_path):
             guessed_format = RASA
-        elif Path(export_path).suffix in MARKDOWN_FILE_EXTENSIONS:
+        elif data.is_likely_markdown_file(export_path):
             guessed_format = MARKDOWN
-        elif Path(export_path).suffix in YAML_FILE_EXTENSIONS:
+        elif data.is_likely_yaml_file(export_path):
             guessed_format = RASA_YAML
 
     return guessed_format
@@ -1224,7 +1220,7 @@ async def _correct_entities(
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
-    from rasa.nlu.training_data.formats import MarkdownReader
+    from rasa.nlu.training_data import entities_parser
 
     parse_original = latest_message.get("parse_data", {})
     entity_str = _as_md_message(parse_original)
@@ -1233,8 +1229,7 @@ async def _correct_entities(
     )
 
     annotation = await _ask_questions(question, conversation_id, endpoint)
-    # noinspection PyProtectedMember
-    parse_annotated = MarkdownReader().parse_training_example(annotation)
+    parse_annotated = entities_parser.parse_training_example(annotation, intent=None)
 
     corrected_entities = _merge_annotated_and_original_entities(
         parse_annotated, parse_original

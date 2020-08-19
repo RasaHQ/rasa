@@ -42,14 +42,14 @@ This creates the following files:
 ├── config.yml
 ├── credentials.yml
 ├── data
-│   ├── nlu.md
-│   └── stories.md
+│   ├── nlu.yml
+│   └── stories.yml
 ├── domain.yml
 ├── endpoints.yml
 ├── models
 │   └── <timestamp>.tar.gz
 └── tests
-   └── conversation_tests.md
+   └── test_conversations.yml
 ```
 
 The `rasa init` command will ask you if you want to train an initial model using this data.
@@ -239,8 +239,8 @@ If you have NLG data for retrieval actions, this will be saved to seperate files
 ```bash
 ls train_test_split
 
-      nlg_test_data.md     test_data.json
-      nlg_training_data.md training_data.json
+      nlg_test_data.yml     test_data.json
+      nlg_training_data.yml training_data.json
 ```
 
 ## Convert Data Between Markdown and JSON

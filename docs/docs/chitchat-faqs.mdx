@@ -161,10 +161,10 @@ For example:
 While it's good to test the bot interactively, we should also add end to end test cases that
 can later be included as part of a [CI/CD system](./setting-up-ci-cd). End-to-end [test conversations](./testing-your-assistant#end-to-end-testing)
 include NLU data, so that both components of Rasa can be tested.
-The file `tests/conversation_tests.md` contains example test conversations. Delete all the test conversations and replace
+The file `tests/test_conversations.yml` contains example test conversations. Delete all the test conversations and replace
 them with some test conversations for your assistant so far:
 
-```yaml title="tests/conversation_tests.yml"
+```yaml title="tests/test_conversations.yml"
 e2e_tests:
 - story: greet and goodybe
   steps:
@@ -207,7 +207,7 @@ e2e_tests:
 To test our model against the test file, run the command:
 
 ```bash
-rasa test --stories tests/conversation_tests.yml
+rasa test --stories tests/test_conversations.yml
 ```
 
 The test command will produce a directory named `results`. It should contain a file
@@ -342,7 +342,7 @@ rasa shell
 
 At this stage it makes sense to add a few test cases for our conversations:
 
-```yaml title="tests/conversation_tests.yml"
+```yaml title="tests/test_conversations.yml"
 e2e_tests:
 - story: ask channels
   steps:
@@ -384,6 +384,6 @@ Here's a minimal checklist of files we modified to build a basic FAQ assistant:
 
 * `data/stories.yml`: Add a simple story for FAQs
 
-* `tests/conversation_tests.yml`: Add E2E test stories for your FAQs
+* `tests/test_conversations.yml`: Add E2E test stories for your FAQs
 
 :::

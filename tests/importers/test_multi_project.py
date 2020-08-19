@@ -214,10 +214,33 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
     assert not selector.is_imported(str(not_relevant_file2))
 
 
+@pytest.mark.parametrize(
+    "e2e_filename,e2e_story_test",
+    [
+        (
+            "test_conversations.yml",
+            """
+        test_conversations:
+        - story: story test
+          steps:
+          - user: hello
+            intent: greet
+          - action: utter_greet
+        """,
+        ),
+        (
+            "conversation_tests.md",
+            """
+        ## story test
+        * greet : "hello"
+            - utter_greet
+        """,
+        ),
+    ],
+)
 async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
-    tmpdir_factory: TempdirFactory,
+    tmpdir_factory: TempdirFactory, e2e_filename: Text, e2e_story_test: Text
 ):
-    from rasa.core.interpreter import RegexInterpreter
     from rasa.core.training.structures import StoryGraph
     import rasa.core.training.loading as core_loading
 
@@ -237,23 +260,15 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     )
 
     e2e_story_test_file = (
-        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "conversation_tests.md"
+        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / e2e_filename
     )
-    e2e_story_test_file.write(
-        """
-        ## story test
-        * greet : "hello"
-            - utter_greet
-        """,
-        ensure=True,
-    )
+    e2e_story_test_file.write(e2e_story_test, ensure=True)
 
     selector = MultiProjectImporter(config_path)
 
     story_steps = await core_loading.load_data_from_resource(
         resource=str(e2e_story_test_file),
         domain=Domain.empty(),
-        interpreter=RegexInterpreter(),
         template_variables=None,
         use_e2e=True,
         exclusion_percentage=None,
@@ -278,24 +293,15 @@ def test_not_importing_e2e_conversation_tests_in_project(
     story_file.write("""## story""", ensure=True)
 
     e2e_story_test_file = (
-        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "conversation_tests.md"
+        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "test_conversations.yml"
     )
-    e2e_story_test_file.write("""## story test""", ensure=True)
+    e2e_story_test_file.write("""test_conversations:""", ensure=True)
 
     selector = MultiProjectImporter(config_path)
 
     # Conversation tests should not be included in story paths
-    expected = {
-        "story_paths": [str(story_file)],
-        "e2e_story_paths": [str(e2e_story_test_file)],
-    }
-
-    actual = {
-        "story_paths": selector._story_paths,
-        "e2e_story_paths": selector._e2e_story_paths,
-    }
-
-    assert expected == actual
+    assert [str(story_file)] == selector._story_paths
+    assert [str(e2e_story_test_file)] == selector._e2e_story_paths
 
 
 def test_single_additional_file(tmpdir_factory):

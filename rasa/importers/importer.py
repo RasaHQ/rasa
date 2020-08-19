@@ -26,7 +26,6 @@ class TrainingDataImporter:
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
@@ -34,8 +33,6 @@ class TrainingDataImporter:
         """Retrieves the stories that should be used for training.
 
         Args:
-            interpreter: Interpreter that should be used to parse end to
-                         end learning annotations.
             template_variables: Values of templates that should be replaced while
                                 reading the story files.
             use_e2e: Specifies whether to parse end to end learning annotations.
@@ -182,7 +179,6 @@ class NluDataImporter(TrainingDataImporter):
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
@@ -207,13 +203,12 @@ class CoreDataImporter(TrainingDataImporter):
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         return await self._importer.get_stories(
-            interpreter, template_variables, use_e2e, exclusion_percentage
+            template_variables, use_e2e, exclusion_percentage
         )
 
     async def get_config(self) -> Dict:
@@ -247,15 +242,12 @@ class CombinedDataImporter(TrainingDataImporter):
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         stories = [
-            importer.get_stories(
-                interpreter, template_variables, use_e2e, exclusion_percentage
-            )
+            importer.get_stories(template_variables, use_e2e, exclusion_percentage)
             for importer in self._importers
         ]
         stories = await asyncio.gather(*stories)

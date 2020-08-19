@@ -9,7 +9,6 @@ from rasa import data
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
 from rasa.constants import DEFAULT_DATA_PATH
-from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 from rasa.nlu.convert import convert_training_data
@@ -281,7 +280,7 @@ def _write_nlu_yaml(
 def _write_core_yaml(
     training_data_path: Path, output_path: Path, source_path: Path
 ) -> None:
-    reader = MarkdownStoryReader(RegexInterpreter())
+    reader = MarkdownStoryReader()
     writer = YAMLStoryWriter()
 
     loop = asyncio.get_event_loop()

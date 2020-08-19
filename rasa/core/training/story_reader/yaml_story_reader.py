@@ -2,29 +2,32 @@ import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
+from rasa.nlu.training_data import entities_parser
 from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from ruamel.yaml.parser import ParserError
 
 import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
-from rasa.constants import DOCS_URL_STORIES, DOCS_URL_RULES
+from rasa.constants import DOCS_URL_STORIES, DOCS_URL_RULES, DOCS_URL_TEST_CONVERSATIONS
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, Form
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
-from rasa.data import YAML_FILE_EXTENSIONS
 from rasa.nlu.constants import INTENT_NAME_KEY
+import rasa.data
 
 logger = logging.getLogger(__name__)
 
 KEY_STORIES = "stories"
 KEY_STORY_NAME = "story"
+KEY_TEST_CONVERSATIONS = "test_conversations"
 KEY_RULES = "rules"
 KEY_RULE_NAME = "rule"
 KEY_STEPS = "steps"
 KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
+KEY_USER_MESSAGE = "user"
 KEY_SLOT_NAME = "slot_was_set"
 KEY_SLOT_VALUE = "value"
 KEY_FORM = "active_loop"
@@ -55,10 +58,9 @@ class YAMLStoryReader(StoryReader):
             A new reader instance.
         """
         return cls(
-            reader.interpreter,
             reader.domain,
             reader.template_variables,
-            reader.use_e2e,
+            reader.use_e2e,  # TODO: I don't think we actually need this
             reader.source_name,
             reader.unfold_or_utterances,
         )
@@ -109,6 +111,7 @@ class YAMLStoryReader(StoryReader):
         for key, parser_class in {
             KEY_STORIES: StoryParser,
             KEY_RULES: RuleParser,
+            KEY_TEST_CONVERSATIONS: TestConversationsParser,
         }.items():
             data = parsed_content.get(key, [])
             parser = parser_class.from_reader(self)
@@ -117,8 +120,8 @@ class YAMLStoryReader(StoryReader):
 
         return self.story_steps
 
-    @staticmethod
-    def is_yaml_story_file(file_path: Text) -> bool:
+    @classmethod
+    def is_yaml_story_file(cls, file_path: Text) -> bool:
         """Check if file contains Core training data or rule data in YAML format.
 
         Args:
@@ -128,23 +131,36 @@ class YAMLStoryReader(StoryReader):
             `True` in case the file is a Core YAML training data or rule data file,
             `False` otherwise.
         """
-        suffix = Path(file_path).suffix
+        return rasa.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
+            file_path, KEY_STORIES, KEY_RULES
+        )
 
-        if suffix and suffix not in YAML_FILE_EXTENSIONS:
-            return False
-
+    @classmethod
+    def is_key_in_yaml(cls, file_path, *keys):
         try:
             content = io_utils.read_yaml_file(file_path)
-            return any(key in content for key in [KEY_STORIES, KEY_RULES])
+            return any(key in content for key in keys)
         except Exception as e:
             # Using broad `Exception` because yaml library is not exposing all Errors
             common_utils.raise_warning(
-                f"Tried to check if '{file_path}' is a story or rule file, but failed "
-                f"to read it. If this file contains story or rule data, you should "
-                f"investigate this error, otherwise it is probably best to "
-                f"move the file to a different location. Error: {e}"
+                f"Tried to open '{file_path}' and load its data, but failed "
+                f"to read it. There seems to be an error with the yaml syntax: {e}"
             )
             return False
+
+    @classmethod
+    def is_yaml_test_conversations_file(cls, file_path: Union[Text, Path]) -> bool:
+        """Checks if a file is a test conversations file.
+
+        Args:
+            file_path: Path of the file which should be checked.
+
+        Returns:
+            `True` if it's a conversation test file, otherwise `False`.
+        """
+        return rasa.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
+            file_path, KEY_TEST_CONVERSATIONS
+        )
 
     def get_steps(self) -> List[StoryStep]:
         self._add_current_stories_to_result()
@@ -215,7 +231,7 @@ class YAMLStoryReader(StoryReader):
                 f"'{RULE_SNIPPET_ACTION_NAME}'. It will be skipped.",
                 docs=self._get_docs_link(),
             )
-        elif KEY_USER_INTENT in step.keys():
+        elif KEY_USER_INTENT in step.keys() or KEY_USER_MESSAGE in step.keys():
             self._parse_user_utterance(step)
         elif KEY_OR in step.keys():
             self._parse_or_statement(step)
@@ -291,10 +307,10 @@ class YAMLStoryReader(StoryReader):
 
         self.current_step_builder.add_user_messages(utterances)
 
-    def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
-        user_utterance = step.get(KEY_USER_INTENT, "").strip()
+    def _user_intent_from_step(self, step):
+        user_intent = step.get(KEY_USER_INTENT, "").strip()
 
-        if not user_utterance:
+        if not user_intent:
             common_utils.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
                 f"User utterance cannot be empty. "
@@ -303,22 +319,31 @@ class YAMLStoryReader(StoryReader):
                 docs=self._get_docs_link(),
             )
 
-        raw_entities = step.get(KEY_ENTITIES, [])
-        final_entities = self._parse_raw_entities(raw_entities)
-
-        if user_utterance.startswith(INTENT_MESSAGE_PREFIX):
+        if user_intent.startswith(INTENT_MESSAGE_PREFIX):
             common_utils.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
-                f"User intent '{user_utterance}' starts with "
+                f"User intent '{user_intent}' starts with "
                 f"'{INTENT_MESSAGE_PREFIX}'. This is not required.",
                 docs=self._get_docs_link(),
             )
             # Remove leading slash
-            user_utterance = user_utterance[1:]
+            user_intent = user_intent[1:]
+        return user_intent
 
-        intent = {"name": user_utterance, "confidence": 1.0}
+    def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
+        intent_name = self._user_intent_from_step(step)
+        intent = {"name": intent_name, "confidence": 1.0}
 
-        return UserUttered(user_utterance, intent, final_entities)
+        if KEY_USER_MESSAGE in step:
+            user_message = step[KEY_USER_MESSAGE].strip()
+            entities = entities_parser.find_entities_in_training_example(user_message)
+            plain_text = entities_parser.replace_entities(user_message)
+        else:
+            raw_entities = step.get(KEY_ENTITIES, [])
+            entities = self._parse_raw_entities(raw_entities)
+            plain_text = intent_name
+
+        return UserUttered(plain_text, intent, entities)
 
     @staticmethod
     def _parse_raw_entities(
@@ -408,6 +433,22 @@ class StoryParser(YAMLStoryReader):
 
     def _get_docs_link(self) -> Text:
         return DOCS_URL_STORIES
+
+
+class TestConversationsParser(YAMLStoryReader):
+    """Encapsulate test conversation (e2e tests) specific parser behavior."""
+
+    def _new_part(self, item_name: Text, item: Dict[Text, Any]) -> None:
+        self._new_story_part(item_name, self.source_name)
+
+    def _get_item_title(self) -> Text:
+        return KEY_STORY_NAME
+
+    def _get_plural_item_title(self) -> Text:
+        return KEY_TEST_CONVERSATIONS
+
+    def _get_docs_link(self) -> Text:
+        return DOCS_URL_TEST_CONVERSATIONS
 
 
 class RuleParser(YAMLStoryReader):

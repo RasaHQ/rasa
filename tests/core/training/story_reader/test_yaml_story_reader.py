@@ -18,9 +18,7 @@ from rasa.utils import io as io_utils
 async def rule_steps_without_stories(default_domain: Domain) -> List[StoryStep]:
     yaml_file = "data/test_yaml_stories/rules_without_stories.yml"
 
-    return await loading.load_data_from_files(
-        [yaml_file], default_domain, RegexInterpreter()
-    )
+    return await loading.load_data_from_files([yaml_file], default_domain)
 
 
 async def test_can_read_test_story_with_slots(default_domain: Domain):
@@ -162,9 +160,7 @@ async def test_read_rules_with_stories(default_domain: Domain):
 
     yaml_file = "data/test_yaml_stories/stories_and_rules.yml"
 
-    steps = await loading.load_data_from_files(
-        [yaml_file], default_domain, RegexInterpreter()
-    )
+    steps = await loading.load_data_from_files([yaml_file], default_domain)
 
     ml_steps = [s for s in steps if not s.is_rule]
     rule_steps = [s for s in steps if s.is_rule]
@@ -260,7 +256,7 @@ async def test_warning_if_intent_not_in_domain(default_domain: Domain):
       - intent: definitely not in domain
     """
 
-    reader = YAMLStoryReader(RegexInterpreter(), default_domain)
+    reader = YAMLStoryReader(default_domain)
     yaml_content = io_utils.read_yaml(stories)
 
     with pytest.warns(UserWarning) as record:
@@ -279,7 +275,7 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
         f"  - intent: greet"
     )
 
-    reader = YAMLStoryReader(RegexInterpreter(), default_domain)
+    reader = YAMLStoryReader(default_domain)
     yaml_content = io_utils.read_yaml(stories)
 
     with pytest.warns(None) as record:
@@ -298,7 +294,7 @@ async def test_active_loop_is_parsed(default_domain: Domain):
         f"  - active_loop: null"
     )
 
-    reader = YAMLStoryReader(RegexInterpreter(), default_domain)
+    reader = YAMLStoryReader(default_domain)
     yaml_content = io_utils.read_yaml(stories)
 
     with pytest.warns(None) as record:

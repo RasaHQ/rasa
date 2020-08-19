@@ -34,7 +34,19 @@ def test_default_story_files_are_story_files():
         assert data.is_story_file(fn)
 
 
-def test_default_conversation_tests_are_conversation_tests(tmpdir: Path):
+def test_default_conversation_tests_are_conversation_tests_yml(tmpdir: Path):
+    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
+    Path(parent).mkdir(parents=True)
+
+    e2e_path = parent / "test_conversations.yml"
+    e2e_story = """test_conversations:"""
+    write_text_file(e2e_story, e2e_path)
+
+    assert data.is_test_conversations_file(str(e2e_path))
+
+
+def test_default_conversation_tests_are_conversation_tests_md(tmpdir: Path):
+    # can be removed once conversation tests MD support is removed
     parent = tmpdir / DEFAULT_E2E_TESTS_PATH
     Path(parent).mkdir(parents=True)
 
@@ -42,7 +54,7 @@ def test_default_conversation_tests_are_conversation_tests(tmpdir: Path):
     e2e_story = """## my story test"""
     write_text_file(e2e_story, e2e_path)
 
-    assert data.is_end_to_end_conversation_test_file(str(e2e_path))
+    assert data.is_test_conversations_file(str(e2e_path))
 
 
 def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
@@ -58,7 +70,7 @@ def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
     """
     write_text_file(nlu_data, nlu_path)
 
-    assert not data.is_end_to_end_conversation_test_file(str(nlu_path))
+    assert not data.is_test_conversations_file(str(nlu_path))
 
 
 def test_domain_files_are_not_conversation_tests(tmpdir: Path):
@@ -67,4 +79,4 @@ def test_domain_files_are_not_conversation_tests(tmpdir: Path):
 
     domain_path = parent / "domain.yml"
 
-    assert not data.is_end_to_end_conversation_test_file(str(domain_path))
+    assert not data.is_test_conversations_file(str(domain_path))
