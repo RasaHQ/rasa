@@ -29,7 +29,7 @@ from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.models import RasaModel
-from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature, Data
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -243,36 +243,43 @@ class TEDPolicy(Policy):
     # noinspection PyPep8Naming
     @staticmethod
     def _surface_attributes(
-        list_of_list_of_dicts: List[List[Dict[Text, List["Features"]]]]
+        features: List[List[Dict[Text, List["Features"]]]]
     ) -> Dict[Text, List[List[List["Features"]]]]:
-        """
-        1. collects attributes present in the dataset; it is a subset of [TEXT, INTENT, ACTION_NAME, ACTION_TEXT, SLOTS, FORM, ENTITIES]
-        2. where one attribute is absent, fill it in with `None`
+        """Restructure the input.
 
         Args:
-            list_of_list_of_dicts: all of the core data 
+            features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
+                ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all
+                dialogue turns in all training trackers
+
+        Returns:
+            A dictionary of attributes to a list of features for all dialogue turns
+            and all training trackers.
         """
         # collect all attributes
         attributes = set(
             attribute
-            for list_of_dicts in list_of_list_of_dicts
-            for label in list_of_dicts
-            for attribute in label.keys()
+            for features_in_tracker in features
+            for features_in_dialogue in features_in_tracker
+            for attribute in features_in_dialogue.keys()
         )
-        # List [intent: List[Features], text: List[Features], action_name: List[Features], action_text: List[Features]]
-        # ->
-        # Dict[intent: List1[List2[Features]]]; len(List1) = len of dialogue history; len(List2) = number of different features
-        out = defaultdict(list)
-        for list_of_dicts in list_of_list_of_dicts:
-            seq_out = defaultdict(list)
-            for label in list_of_dicts:
+
+        attribute_to_features = defaultdict(list)
+
+        for features_in_tracker in features:
+            intermediate_features = defaultdict(list)
+
+            for features_in_dialogue in features_in_tracker:
                 for attribute in attributes:
                     # if attribute is not present in the example, populate it with None
-                    seq_out[attribute].append(label.get(attribute))
-            for key, value in seq_out.items():
-                out[key].append(value)
+                    intermediate_features[attribute].append(
+                        features_in_dialogue.get(attribute)
+                    )
 
-        return out
+            for key, value in intermediate_features.items():
+                attribute_to_features[key].append(value)
+
+        return attribute_to_features
 
     @staticmethod
     def _create_zero_features(
@@ -311,98 +318,110 @@ class TEDPolicy(Policy):
 
         return zero_features
 
-    def _convert_to_data(
+    def _convert_to_data_format(
         self,
-        list_of_dicts: Union[
+        features: Union[
             List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
         ],
-        double_list: bool = False,
-    ) -> Dict[Text, Dict[Text, List[np.ndarray]]]:
+    ) -> Data:
+        """Converts the input into "Data" format.
 
-        list_of_list_of_dicts = []
-        if not double_list:
-            for dicts in list_of_dicts:
-                list_of_list_of_dicts.append([dicts])
-        else:
-            list_of_list_of_dicts = list_of_dicts
+        Args:
+            features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
+                ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all
+                dialogue turns in all training trackers
 
-        dict_of_lists_lists = self._surface_attributes(list_of_list_of_dicts)
+        Returns:
+            Input in "Data" format.
+        """
+
+        remove_sequence_dimension = False
+        # unify format of incoming features
+        if isinstance(features[0], Dict):
+            features = [[dicts] for dicts in features]
+            remove_sequence_dimension = True
+
+        features = self._surface_attributes(features)
 
         attribute_data = {}
-        for attribute, list_of_all_features in dict_of_lists_lists.items():
+        for attribute, features_in_tracker in features.items():
+            # in case some features for a specific attribute and dialogue turn are
+            # missing, replace them with a feature vector of zeros
+            zero_features = self._create_zero_features(features_in_tracker)
 
-            zero_features = self._create_zero_features(list_of_all_features)
-            sparse_features = defaultdict(list)
-            dense_features = defaultdict(list)
-            feature_types = set()
-            attribute_masks = []
-            for all_features in list_of_all_features:
+            attribute_masks, dense_features, feature_types, sparse_features = self.map_tracker_features(
+                features_in_tracker, zero_features
+            )
 
-                seq_sparse_features = defaultdict(list)
-                seq_dense_features = defaultdict(list)
-                # create a mask for every state
-                # to capture which turn has which input
-                attribute_mask = np.expand_dims(
-                    np.ones(len(all_features), np.float32), -1
-                )
-
-                for i, example_features in enumerate(all_features):
-
-                    if example_features is None:
-                        # use zero features and set mask to zero
-                        attribute_mask[i] = 0
-                        example_features = zero_features
-
-                    for features in example_features:
-                        # all features should have the same types
-                        feature_types.add(features.type)
-                        if features.is_sparse():
-                            seq_sparse_features[features.type].append(features.features)
-                        else:
-                            seq_dense_features[features.type].append(features.features)
-
-                for key, value in seq_sparse_features.items():
-                    sparse_features[key].append(value)
-                for key, value in seq_dense_features.items():
-                    dense_features[key].append(value)
-                attribute_masks.append(attribute_mask)
-
-            if not double_list:
+            if remove_sequence_dimension:
                 # remove added sequence dimension
                 for key, values in sparse_features.items():
-                    new_values = []
-                    for value in values:
-                        new_values.append(value[0])
-                    sparse_features[key] = new_values
+                    sparse_features[key] = [value[0] for value in values]
                 for key, values in dense_features.items():
-                    new_values = []
-                    for value in values:
-                        new_values.append(value[0])
-                    dense_features[key] = new_values
+                    dense_features[key] = [value[0] for value in values]
             else:
                 for key, values in sparse_features.items():
-                    new_values = []
-                    for value in values:
-                        new_values.append(scipy.sparse.vstack(value))
-                    sparse_features[key] = new_values
+                    sparse_features[key] = [
+                        scipy.sparse.vstack(value) for value in values
+                    ]
                 for key, values in dense_features.items():
-                    new_values = []
-                    for value in values:
-                        new_values.append(np.vstack(value))
-                    dense_features[key] = new_values
+                    dense_features[key] = [np.vstack(value) for value in values]
 
             # TODO not sure about expand_dims
             attribute_features = {"mask": [np.array(attribute_masks)]}
+
             for feature_type in feature_types:
-                # TODO: we don't take sequence features because that makes us deal with 4D sparse tensors;
-                if not feature_type == SEQUENCE:
-                    attribute_features[feature_type] = [
-                        np.array(sparse_features[feature_type]),
-                        np.array(dense_features[feature_type]),
-                    ]
+                if feature_type == SEQUENCE:
+                    # TODO we don't take sequence features because that makes us deal
+                    #  with 4D sparse tensors
+                    continue
+                attribute_features[feature_type] = [
+                    np.array(sparse_features[feature_type]),
+                    np.array(dense_features[feature_type]),
+                ]
             attribute_data[attribute] = attribute_features
 
         return attribute_data
+
+    def map_tracker_features(self, features_in_tracker, zero_features):
+        sparse_features = defaultdict(list)
+        dense_features = defaultdict(list)
+        feature_types = set()
+        attribute_masks = []
+        for features_in_dialogue in features_in_tracker:
+            dialogue_sparse_features = defaultdict(list)
+            dialogue_dense_features = defaultdict(list)
+
+            # create a mask for every state
+            # to capture which turn has which input
+            attribute_mask = np.expand_dims(
+                np.ones(len(features_in_dialogue), np.float32), -1
+            )
+
+            for i, turn_features in enumerate(features_in_dialogue):
+
+                if turn_features is None:
+                    # use zero features and set mask to zero
+                    attribute_mask[i] = 0
+                    turn_features = zero_features
+
+                for features in turn_features:
+                    # all features should have the same types
+                    feature_types.add(features.type)
+                    if features.is_sparse():
+                        dialogue_sparse_features[features.type].append(
+                            features.features
+                        )
+                    else:
+                        dialogue_dense_features[features.type].append(features.features)
+
+            for key, value in dialogue_sparse_features.items():
+                sparse_features[key].append(value)
+            for key, value in dialogue_dense_features.items():
+                dense_features[key].append(value)
+
+            attribute_masks.append(attribute_mask)
+        return attribute_masks, dense_features, feature_types, sparse_features
 
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
@@ -411,7 +430,7 @@ class TEDPolicy(Policy):
         state_featurizer = self.featurizer.state_featurizer
         all_labels = state_featurizer.create_encoded_all_actions(domain, interpreter)
 
-        attribute_data = self._convert_to_data(all_labels, double_list=False)
+        attribute_data = self._convert_to_data_format(all_labels)
 
         label_data = RasaModelData()
         for attribute, attribute_features in attribute_data.items():
@@ -419,7 +438,6 @@ class TEDPolicy(Policy):
                 label_data.add_features(f"{LABEL_KEY}_{attribute}", subkey, features)
 
         label_ids = np.arange(domain.num_actions)
-        # TODO not sure about expand_dims
         # TODO add length of text sequence
         label_data.add_features(
             LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
@@ -427,48 +445,56 @@ class TEDPolicy(Policy):
 
         return label_data
 
-    def _get_label_features(
-        self, label_ids: List[List[int]]
-    ) -> Dict[Text, Dict[Text, np.ndarray]]:
-        label_attribute_data = {}
+    def _get_label_features(self, label_ids: List[List[int]]) -> Data:
+        label_attribute_data = defaultdict(lambda: defaultdict(list))
+
         for key, values in self._label_data.data.items():
-            label_attribute_data[key] = {}
-            for sub_key, value in values.items():
-                if not sub_key == LABEL_SUB_KEY:
-                    label_attribute_data[key][sub_key] = np.array(
-                        [value[0][label_id[0]] for label_id in label_ids]
-                    )
+            for sub_key, features in values.items():
+                if sub_key == LABEL_SUB_KEY:
+                    continue
+                label_attribute_data[key][sub_key] = [
+                    np.array([features[0][label_id[0]] for label_id in label_ids])
+                ]
+
         return label_attribute_data
 
     def _create_model_data(
         self,
         X: List[List[Dict[Text, List["Features"]]]],
-        label_ids: Optional[List[List[int]]],
+        label_ids: Optional[List[List[int]]] = None,
     ) -> RasaModelData:
-        """Combine all model related data into RasaModelData."""
+        """Combine all model related data into RasaModelData.
+
+        Args:
+            X: a dictionary of attributes (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+                ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
+                all training trackers
+            label_ids: the label ids (e.g. action ids) for every dialogue turn in all
+                training trackers
+
+        Returns:
+            RasaModelData
+        """
+
+        # sentence features for intent labels
+        # everything is sparse
 
         # TODO needs to be checked that double surfacing is working
         # TODO the first turn in the story is `[{}] -> action_listen`,
         #  since it didn't create any features its attribute_mask will be 0
+
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
-        label_attribute_data = None
         if label_ids:
             model_data.add_features(LABEL_KEY, LABEL_SUB_KEY, [np.array(label_ids)])
-            label_attribute_data = self._get_label_features(label_ids)
-            for attribute, attribute_features in label_attribute_data.items():
-                for subkey, features in attribute_features.items():
-                    model_data.add_features(f"{attribute}", f"{subkey}", [features])
+            model_data.add_data(self._get_label_features(label_ids))
 
-        attribute_data = self._convert_to_data(X, True)
-
-        for attribute, attribute_features in attribute_data.items():
-            for subkey, features in attribute_features.items():
-                model_data.add_features(attribute, subkey, features)
-
+        attribute_data = self._convert_to_data_format(X)
+        model_data.add_data(attribute_data)
         # TODO add dialogue and text lengths
         model_data.add_lengths(
             DIALOGUE, LENGTH, next(iter(list(attribute_data.keys()))), "mask"
         )
+
         return model_data
 
     def train(
@@ -884,7 +910,8 @@ class TED(RasaModel):
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = []
-        for key in self.tf_label_data:
+
+        for key in self.tf_label_data.keys():
             mask = None
             if "mask" in self.tf_label_data[key].keys():
                 mask = self.tf_label_data[key]["mask"][0]
