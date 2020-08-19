@@ -13,7 +13,7 @@ from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataWriter,
 )
 from rasa.utils.common import raise_warning
-from rasa.utils.io import encode_string
+from rasa.utils.io import encode_string, decode_string
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -30,7 +30,7 @@ LOOKUP = "lookup"
 AVAILABLE_SECTIONS = [INTENT, SYNONYM, REGEX, LOOKUP]
 MARKDOWN_SECTION_MARKERS = [f"## {s}:" for s in AVAILABLE_SECTIONS]
 
-item_regex = re.compile(r"\s*[-*+]\s*(.+)")
+item_regex = re.compile(r"\s*[-*+]\s*((?:.+\s*)*)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
 
@@ -57,7 +57,7 @@ class MarkdownReader(TrainingDataReader):
 
         s = self._strip_comments(s)
         for line in s.splitlines():
-            line = line.strip()
+            line = decode_string(line.strip())
             header = self._find_section_header(line)
             if header:
                 self._set_current_section(header[0], header[1])
