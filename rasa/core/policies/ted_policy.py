@@ -974,10 +974,7 @@ class TED(RasaModel):
         
         batch_features = [batch_user, batch_action]
         for key in batch_encoded.keys():
-            # ignore features which are essntially empty 
-            # (where there is nothing in the domain);
-            if not batch_encoded.get(key).shape[-1] == 0:
-                batch_features.append(batch_encoded.get(key))
+            batch_features.append(batch_encoded.get(key))
 
 
         batch_features = tf.concat(batch_features, axis=-1)

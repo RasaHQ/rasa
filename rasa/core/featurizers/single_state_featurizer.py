@@ -37,11 +37,16 @@ class SingleStateFeaturizer:
                 feature_state: idx for idx, feature_state in enumerate(feature_states)
             }
 
-        self._default_feature_states[INTENT] = convert_to_dict(domain.intents)
-        self._default_feature_states[ACTION_NAME] = convert_to_dict(domain.action_names)
-        self._default_feature_states[ENTITIES] = convert_to_dict(domain.entities)
-        self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
-        self._default_feature_states[FORM] = convert_to_dict(domain.form_names)
+        if not domain.intents == []:
+            self._default_feature_states[INTENT] = convert_to_dict(domain.intents)
+        if not domain.action_names == []:
+            self._default_feature_states[ACTION_NAME] = convert_to_dict(domain.action_names)
+        if not domain.entities == []:
+            self._default_feature_states[ENTITIES] = convert_to_dict(domain.entities)
+        if not domain.slot_states == []: 
+            self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
+        if not domain.form_names == []:
+            self._default_feature_states[FORM] = convert_to_dict(domain.form_names)
         self.e2e_action_texts = domain.e2e_action_texts
 
     @staticmethod
@@ -91,9 +96,13 @@ class SingleStateFeaturizer:
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )
 
+        if attribute not in self._default_feature_states:
+            return
+
         features = np.zeros(len(self._default_feature_states[attribute]), np.float32)
         for state_feature, value in state_features.items():
             features[self._default_feature_states[attribute][state_feature]] = value
+        features = np.expand_dims(features, 0)
 
         if sparse:
             features = scipy.sparse.coo_matrix(features)
@@ -163,13 +172,15 @@ class SingleStateFeaturizer:
                     )
                 )
             if state_type == USER:
-                featurized_state.update(
-                    self._create_features(sub_state, ENTITIES, sparse=True)
-                )
+                if sub_state.get(ENTITIES):
+                    featurized_state.update(
+                        self._create_features(sub_state, ENTITIES, sparse=True)
+                    )
             if state_type in {SLOTS, FORM}:
-                featurized_state.update(
-                    self._create_features(sub_state, state_type, sparse=True)
-                )
+                if sub_state.get(state_type):
+                    featurized_state.update(
+                        self._create_features(sub_state, state_type, sparse=True)
+                    )
 
         return featurized_state
 
