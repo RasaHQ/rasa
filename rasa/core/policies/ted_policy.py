@@ -997,9 +997,9 @@ class TED(RasaModel):
         return self._tf_layers[f"embed.{LABEL}"](label)
 
     def _encode_features_per_attribute(
-        self, batch: Dict[Text, List[tf.Tensor]], attribute: Text
-    ) -> tf.Tensor:
-        if batch[attribute] == {}:
+        self, batch: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
+    ) -> Optional[tf.Tensor]:
+        if not batch[attribute]:
             return None
         batch_attribute = batch[attribute]
         mask = batch_attribute["mask"][0]
@@ -1065,7 +1065,6 @@ class TED(RasaModel):
         )
 
         label_in = []
-        batch_label = batch.get(LABEL)
 
         self.label_keys = [key for key in self.data_signature.keys() if LABEL in key]
         for key in self.label_keys:
