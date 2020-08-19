@@ -27,7 +27,7 @@ KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
 KEY_SLOT_NAME = "slot_was_set"
 KEY_SLOT_VALUE = "value"
-KEY_FORM = "active_loop"
+KEY_ACTIVE_LOOP = "active_loop"
 KEY_ACTION = "action"
 KEY_CHECKPOINT = "checkpoint"
 KEY_CHECKPOINT_SLOTS = "slot_was_set"
@@ -227,8 +227,8 @@ class YAMLStoryReader(StoryReader):
         # a checkpoint.
         elif KEY_SLOT_NAME in step.keys():
             self._parse_slot(step)
-        elif KEY_FORM in step.keys():
-            self._parse_form(step[KEY_FORM])
+        elif KEY_ACTIVE_LOOP in step.keys():
+            self._parse_active_loop(step[KEY_ACTIVE_LOOP])
         elif KEY_METADATA in step.keys():
             pass
         else:
@@ -367,8 +367,8 @@ class YAMLStoryReader(StoryReader):
 
         self._add_event(action_name, {})
 
-    def _parse_form(self, form_name: Optional[Text]) -> None:
-        self._add_event(ActiveLoop.type_name, {"name": form_name})
+    def _parse_active_loop(self, active_loop_name: Optional[Text]) -> None:
+        self._add_event(ActiveLoop.type_name, {"name": active_loop_name})
 
     def _parse_checkpoint(self, step: Dict[Text, Any]) -> None:
 
