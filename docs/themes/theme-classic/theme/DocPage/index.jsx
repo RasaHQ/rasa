@@ -21,6 +21,9 @@ function DocPageContent({ currentDocRoute, docsMetadata, children }) {
 	const { permalinkToSidebar, docsSidebars, version } = docsMetadata;
 	const sidebarName = permalinkToSidebar[currentDocRoute.path];
 	const sidebar = docsSidebars[sidebarName];
+
+	console.table(currentDocRoute);
+
 	return (
 		<Layout version={version} key={isClient}>
 			<div className={styles.docPage}>
