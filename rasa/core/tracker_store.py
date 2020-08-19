@@ -186,6 +186,8 @@ class TrackerStore:
         sender_id: Text, serialised_tracker: bytes
     ) -> Dialogue:
 
+        # TODO: not sure if we should remove because it says "it will be deprecated in 2.0"
+        #       instead of removed.
         logger.warning(
             f"Found pickled tracker for "
             f"conversation ID '{sender_id}'. Deserialisation of pickled "

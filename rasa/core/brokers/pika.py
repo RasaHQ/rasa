@@ -336,16 +336,6 @@ class PikaEventBroker(EventBroker):
         Raises:
             `ValueError` if no valid `queue` or `queues` argument was found.
         """
-        queue_arg = kwargs.pop("queue", None)
-
-        if queue_arg:
-            raise_warning(
-                "Your Pika event broker config contains the deprecated `queue` key. "
-                "Please use the `queues` key instead.",
-                FutureWarning,
-                docs=DOCS_URL_PIKA_EVENT_BROKER,
-            )
-
         if queues_arg and isinstance(queues_arg, (list, tuple)):
             return queues_arg
 
@@ -357,14 +347,8 @@ class PikaEventBroker(EventBroker):
             )
             return [queues_arg]
 
-        if queue_arg and isinstance(queue_arg, str):
-            return [queue_arg]
-
-        if queue_arg:
-            return queue_arg  # pytype: disable=bad-return-type
-
         raise_warning(
-            f"No `queues` or `queue` argument provided. It is suggested to "
+            f"No `queues` argument provided. It is suggested to "
             f"explicitly specify a queue as described in "
             f"{DOCS_URL_PIKA_EVENT_BROKER}. "
             f"Using the default queue '{DEFAULT_QUEUE_NAME}' for now."

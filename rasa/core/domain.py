@@ -165,17 +165,6 @@ class Domain:
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
         utter_templates = cls.collect_templates(data.get(KEY_RESPONSES, {}))
-        if "templates" in data:
-            raise_warning(
-                "Your domain file contains the key: 'templates'. This has been "
-                "deprecated and renamed to 'responses'. The 'templates' key will "
-                "no longer work in future versions of Rasa. Please replace "
-                "'templates' with 'responses'",
-                FutureWarning,
-                docs=DOCS_URL_DOMAINS,
-            )
-            utter_templates = cls.collect_templates(data.get("templates", {}))
-
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))

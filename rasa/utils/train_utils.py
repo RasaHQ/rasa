@@ -2,30 +2,14 @@ import numpy as np
 import logging
 from typing import Optional, Text, Dict, Any, Union, List, Tuple
 
-from rasa.core.constants import DIALOGUE
-from rasa.nlu.constants import TEXT, NUMBER_OF_SUB_TOKENS
+from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
-    LABEL,
-    HIDDEN_LAYERS_SIZES,
-    NUM_TRANSFORMER_LAYERS,
-    NUM_HEADS,
-    DENSE_DIMENSION,
     LOSS_TYPE,
     SIMILARITY_TYPE,
-    NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    REGULARIZATION_CONSTANT,
-    USE_MAX_NEG_SIM,
-    MAX_NEG_SIM,
-    MAX_POS_SIM,
-    EMBEDDING_DIMENSION,
-    DROP_RATE_DIALOGUE,
-    DROP_RATE_LABEL,
-    NEGATIVE_MARGIN_SCALE,
-    DROP_RATE,
     EPOCHS,
     SOFTMAX,
     MARGIN,
@@ -194,38 +178,6 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns: updated model configuration
     """
 
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_pre_dial", [HIDDEN_LAYERS_SIZES, DIALOGUE], config
-    )
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_bot", [HIDDEN_LAYERS_SIZES, LABEL], config
-    )
-    config = _replace_deprecated_option("droprate", DROP_RATE, config)
-    config = _replace_deprecated_option("droprate_a", DROP_RATE_DIALOGUE, config)
-    config = _replace_deprecated_option("droprate_b", DROP_RATE_LABEL, config)
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_a", [HIDDEN_LAYERS_SIZES, TEXT], config
-    )
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_b", [HIDDEN_LAYERS_SIZES, LABEL], config
-    )
-    config = _replace_deprecated_option(
-        "num_transformer_layers", NUM_TRANSFORMER_LAYERS, config
-    )
-    config = _replace_deprecated_option("num_heads", NUM_HEADS, config)
-    config = _replace_deprecated_option("dense_dim", DENSE_DIMENSION, config)
-    config = _replace_deprecated_option("embed_dim", EMBEDDING_DIMENSION, config)
-    config = _replace_deprecated_option("num_neg", NUM_NEG, config)
-    config = _replace_deprecated_option("mu_pos", MAX_POS_SIM, config)
-    config = _replace_deprecated_option("mu_neg", MAX_NEG_SIM, config)
-    config = _replace_deprecated_option("use_max_sim_neg", USE_MAX_NEG_SIM, config)
-    config = _replace_deprecated_option("C2", REGULARIZATION_CONSTANT, config)
-    config = _replace_deprecated_option("C_emb", NEGATIVE_MARGIN_SCALE, config)
-    config = _replace_deprecated_option(
-        "evaluate_every_num_epochs", EVAL_NUM_EPOCHS, config
-    )
-    config = _replace_deprecated_option(
-        "evaluate_on_num_examples", EVAL_NUM_EXAMPLES, config
-    )
+    # note: call _replace_deprecated_option() here when there are options to deprecate
 
     return config
