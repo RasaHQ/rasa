@@ -1,15 +1,18 @@
-/**
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
+/* eslint-disable react/display-name */
 import React from 'react';
 import Link from '@docusaurus/Link';
 import CodeBlock from '@theme/CodeBlock';
 import Heading from '@theme/Heading';
+/*
+SHORTCODES
+*/
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import Prototyper, { Chat, DownloadButton, TrainButton } from '@site/src/components/prototyper';
 
 import styles from './styles.module.scss';
+
 export default {
 	code: (props) => {
 		const { children } = props;
@@ -34,4 +37,20 @@ export default {
 	h4: Heading('h4'),
 	h5: Heading('h5'),
 	h6: Heading('h6'),
+	/*
+	docsaurus
+	*/
+	useBaseUrl,
+	Tabs,
+	TabItem,
+	/*
+	custom, rasa-x
+	*/
+	Prototyper,
+	Chat,
+	DownloadButton,
+	TrainButton,
+	/*
+	custom, tabula
+	*/
 };
