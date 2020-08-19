@@ -1166,7 +1166,7 @@ class ActiveLoop(Event):
         tracker.change_form_to(self.name)
 
 
-class Form(ActiveLoop):
+class LegacyForm(ActiveLoop):
     """Legacy handler of old `Form` events.
 
     The `ActiveLoop` event used to be called `Form`. This class is there to handle old

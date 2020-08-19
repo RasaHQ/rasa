@@ -8,7 +8,7 @@ from rasa.core.events import (
     ActiveLoop,
     FormValidation,
     SlotSet,
-    Form,
+    LegacyForm,
 )
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.trackers import DialogueStateTracker
@@ -144,7 +144,7 @@ async def test_persist_legacy_form_story():
     ]
     [tracker.update(e) for e in events]
 
-    story = story.replace(f"- {Form.type_name}", f"- {ActiveLoop.type_name}")
+    story = story.replace(f"- {LegacyForm.type_name}", f"- {ActiveLoop.type_name}")
 
     assert story in tracker.export_stories()
 
