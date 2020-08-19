@@ -12,8 +12,19 @@
 @import 'resets/custom';
 
 // THEME
+// @import 'theme/atomic';
 @import 'theme/fonts';
 @import 'theme/root';
+@import 'theme/header';
+@import 'theme/footer';
+@import 'theme/global';
+@import 'theme/prose';
+
+@import 'theme/alerts';
+@import 'theme/avatars';
+@import 'theme/badges';
+@import 'theme/breadcrumbs';
+@import 'theme/buttons';
 
 
 .docusaurus-highlight-code-line {

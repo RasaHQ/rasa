@@ -13,7 +13,6 @@ import UserPreferencesProvider from '@theme/UserPreferencesProvider';
 import AnnouncementBar from '@theme/AnnouncementBar';
 import Navbar from '@theme/Navbar';
 import Footer from '@theme/Footer';
-import './styles.scss';
 
 function Providers({ children }) {
 	return (
@@ -60,7 +59,9 @@ function Layout(props) {
 			</Head>
 			<AnnouncementBar />
 			<Navbar />
-			<div className="main-wrapper">{children}</div>
+			<main className="main">
+				<div className="wrap frame">{children}</div>
+			</main>
 			{!noFooter && <Footer />}
 		</Providers>
 	);

@@ -34,7 +34,23 @@ html {
   box-sizing: border-box;
 }
 
-body { margin: 0; }
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+#__docusaurus {
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: 100vh;
+	// min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
 :root {
   --ifm-container-width: 1140px;
@@ -50,5 +66,18 @@ body { margin: 0; }
 }
 
 /*
-  CUSTOMIZATIONS
+  GLOBAL LAYOUT
  */
+
+main.main {
+  flex: 1 0 auto;
+}
+
+.wrap {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.frame {
+  padding: 0 2rem;
+}
