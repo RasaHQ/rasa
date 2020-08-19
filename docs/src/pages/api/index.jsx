@@ -1,23 +1,19 @@
 import React from 'react';
+import { RedocStandalone } from 'redoc';
+import BrowserOnly from '@docusaurus/BrowserOnly';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import Layout from '@theme/Layout';
 
-function Hello() {
-  return (
-    <Layout title="Hello">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '50vh',
-          fontSize: '20px',
-        }}>
-        <p>
-          Edit <code>pages/hello.js</code> and save to reload.
-        </p>
-      </div>
-    </Layout>
-  );
-}
+const Redoc = (props) => {
+	const specUrl = useBaseUrl('/spec/action-server.yml');
 
-export default Hello;
+	return (
+		<Layout>
+			<BrowserOnly fallback={<div>Loading...</div>}>
+				{() => <RedocStandalone specUrl={specUrl} {...props} />}
+			</BrowserOnly>
+		</Layout>
+	);
+};
+
+export default Redoc;
