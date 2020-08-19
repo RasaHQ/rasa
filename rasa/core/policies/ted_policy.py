@@ -349,26 +349,33 @@ class TEDPolicy(Policy):
             # missing, replace them with a feature vector of zeros
             zero_features = self._create_zero_features(features_in_tracker)
 
-            attribute_masks, dense_features, feature_types, sparse_features = self.map_tracker_features(
+            attribute_masks, _dense_features, _sparse_features = self._map_tracker_features(
                 features_in_tracker, zero_features
             )
 
+            sparse_features = defaultdict(list)
+            dense_features = defaultdict(list)
+
             if remove_sequence_dimension:
                 # remove added sequence dimension
-                for key, values in sparse_features.items():
+                for key, values in _sparse_features.items():
                     sparse_features[key] = [value[0] for value in values]
-                for key, values in dense_features.items():
+                for key, values in _dense_features.items():
                     dense_features[key] = [value[0] for value in values]
             else:
-                for key, values in sparse_features.items():
+                for key, values in _sparse_features.items():
                     sparse_features[key] = [
                         scipy.sparse.vstack(value) for value in values
                     ]
-                for key, values in dense_features.items():
+                for key, values in _dense_features.items():
                     dense_features[key] = [np.vstack(value) for value in values]
 
             # TODO not sure about expand_dims
             attribute_features = {"mask": [np.array(attribute_masks)]}
+
+            feature_types = set()
+            feature_types.update(list(dense_features.keys()))
+            feature_types.update(list(sparse_features.keys()))
 
             for feature_type in feature_types:
                 if feature_type == SEQUENCE:
@@ -383,11 +390,31 @@ class TEDPolicy(Policy):
 
         return attribute_data
 
-    def map_tracker_features(self, features_in_tracker, zero_features):
+    def _map_tracker_features(
+        self,
+        features_in_tracker: List[List[List["Features"]]],
+        zero_features: List["Features"],
+    ) -> Tuple[
+        List[np.ndarray],
+        Dict[Text, List[List["Features"]]],
+        Dict[Text, List[List["Features"]]],
+    ]:
+        """Create masks for all attributes of the given features and split the features
+        into sparse and dense features.
+
+        Args:
+            features_in_tracker: all features
+            zero_features: list of zero features
+
+        Returns:
+            - a list of attribute masks
+            - a map of attribute to dense features
+            - a map of attribute to sparse features
+        """
         sparse_features = defaultdict(list)
         dense_features = defaultdict(list)
-        feature_types = set()
         attribute_masks = []
+
         for features_in_dialogue in features_in_tracker:
             dialogue_sparse_features = defaultdict(list)
             dialogue_dense_features = defaultdict(list)
@@ -407,7 +434,6 @@ class TEDPolicy(Policy):
 
                 for features in turn_features:
                     # all features should have the same types
-                    feature_types.add(features.type)
                     if features.is_sparse():
                         dialogue_sparse_features[features.type].append(
                             features.features
@@ -421,7 +447,8 @@ class TEDPolicy(Policy):
                 dense_features[key].append(value)
 
             attribute_masks.append(attribute_mask)
-        return attribute_masks, dense_features, feature_types, sparse_features
+
+        return attribute_masks, dense_features, sparse_features
 
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
@@ -476,10 +503,6 @@ class TEDPolicy(Policy):
             RasaModelData
         """
 
-        # sentence features for intent labels
-        # everything is sparse
-
-        # TODO needs to be checked that double surfacing is working
         # TODO the first turn in the story is `[{}] -> action_listen`,
         #  since it didn't create any features its attribute_mask will be 0
 
