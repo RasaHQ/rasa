@@ -242,7 +242,9 @@ class TEDPolicy(Policy):
     # data helpers
     # noinspection PyPep8Naming
     @staticmethod
-    def _surface_attributes(list_of_list_of_dicts):
+    def _surface_attributes(
+        list_of_list_of_dicts: List[List[Dict[Text, List["Features"]]]]
+    ) -> Dict[Text, List[List[List["Features"]]]]:
         """
         1. collects attributes present in the dataset; it is a subset of [TEXT, INTENT, ACTION_NAME, ACTION_TEXT, SLOTS, FORM, ENTITIES]
         2. where one attribute is absent, fill it in with `None`
@@ -273,7 +275,9 @@ class TEDPolicy(Policy):
         return out
 
     @staticmethod
-    def _create_zero_features(list_of_all_features):
+    def _create_zero_features(
+        list_of_all_features: List[List[List["Features"]]]
+    ) -> List["Features"]:
         # all features should have the same types
         """
         Computes default feature values for an attribute;
@@ -285,10 +289,10 @@ class TEDPolicy(Policy):
         example_features = next(
             iter(
                 [
-                    example_features
+                    _example_features
                     for all_features in list_of_all_features
-                    for example_features in all_features
-                    if example_features is not None
+                    for _example_features in all_features
+                    if _example_features is not None
                 ]
             )
         )
@@ -309,9 +313,11 @@ class TEDPolicy(Policy):
 
     def _convert_to_data(
         self,
-        list_of_dicts: List[List[Dict[Text, List["Features"]]]],
+        list_of_dicts: Union[
+            List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
+        ],
         double_list: bool = False,
-    ) -> Dict[Text, Dict[Text, List[Union[scipy.sparse.spmatrix, np.ndarray]]]]:
+    ) -> Dict[Text, Dict[Text, List[np.ndarray]]]:
 
         list_of_list_of_dicts = []
         if not double_list:
@@ -395,6 +401,7 @@ class TEDPolicy(Policy):
                         np.array(dense_features[feature_type]),
                     ]
             attribute_data[attribute] = attribute_features
+
         return attribute_data
 
     def _create_label_data(
@@ -420,7 +427,9 @@ class TEDPolicy(Policy):
 
         return label_data
 
-    def _get_label_features(self, label_ids: List[List[int]]):
+    def _get_label_features(
+        self, label_ids: List[List[int]]
+    ) -> Dict[Text, Dict[Text, np.ndarray]]:
         label_attribute_data = {}
         for key, values in self._label_data.data.items():
             label_attribute_data[key] = {}
@@ -458,7 +467,7 @@ class TEDPolicy(Policy):
 
         # TODO add dialogue and text lengths
         model_data.add_lengths(
-            DIALOGUE, LENGTH, next(iter(list(attribute_data.keys()))), "mask",
+            DIALOGUE, LENGTH, next(iter(list(attribute_data.keys()))), "mask"
         )
         return model_data
 
@@ -564,7 +573,8 @@ class TEDPolicy(Policy):
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl", dict(self._label_data.data)
+            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
+            dict(self._label_data.data),
         )
 
     @classmethod
@@ -593,13 +603,15 @@ class TEDPolicy(Policy):
         label_data = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
         )
-        label_data = RasaModelData(data = label_data)
+        label_data = RasaModelData(data=label_data)
         meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
         priority = io_utils.json_unpickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
         )
 
-        model_data_example = RasaModelData(label_key=LABEL_KEY, label_sub_key = LABEL_SUB_KEY, data=loaded_data)
+        model_data_example = RasaModelData(
+            label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
+        )
         meta = train_utils.update_similarity_type(meta)
 
         model = TED.load(
@@ -615,7 +627,8 @@ class TEDPolicy(Policy):
 
         # build the graph for prediction
         predict_data_example = RasaModelData(
-            label_key=LABEL_KEY, label_sub_key = LABEL_SUB_KEY,
+            label_key=LABEL_KEY,
+            label_sub_key=LABEL_SUB_KEY,
             data={
                 feature_name: features
                 for feature_name, features in model_data_example.items()
@@ -634,7 +647,7 @@ class TEDPolicy(Policy):
 class TED(RasaModel):
     def __init__(
         self,
-        data_signature: Dict[Text, List[FeatureSignature]],
+        data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
         config: Dict[Text, Any],
         max_history_tracker_featurizer_used: bool,
         label_data: RasaModelData,
@@ -958,24 +971,35 @@ class TED(RasaModel):
             if not LABEL_KEY in key and not DIALOGUE in key
         }
 
-        if batch_encoded.get(ACTION_TEXT) is not None  and batch_encoded.get(ACTION_NAME) is not None:
-            batch_action = batch_encoded.pop(ACTION_TEXT) + batch_encoded.pop(ACTION_NAME)
+        if (
+            batch_encoded.get(ACTION_TEXT) is not None
+            and batch_encoded.get(ACTION_NAME) is not None
+        ):
+            batch_action = batch_encoded.pop(ACTION_TEXT) + batch_encoded.pop(
+                ACTION_NAME
+            )
         elif batch_encoded.get(ACTION_TEXT) is not None:
             batch_action = batch_encoded.pop(ACTION_TEXT)
         else:
             batch_action = batch_encoded.pop(ACTION_NAME)
 
-        if batch_encoded.get(INTENT) is not None  and batch_encoded.get(TEXT) is not None:
+        if (
+            batch_encoded.get(INTENT) is not None
+            and batch_encoded.get(TEXT) is not None
+        ):
             batch_user = batch_encoded.pop(INTENT) + batch_encoded.pop(TEXT)
         elif batch_encoded.get(TEXT) is not None:
             batch_user = batch_encoded.pop(TEXT)
         else:
             batch_user = batch_encoded.pop(INTENT)
-        
+
         batch_features = [batch_user, batch_action]
         for key in batch_encoded.keys():
             batch_features.append(batch_encoded.get(key))
-
+            # # ignore features which are essntially empty
+            # # (where there is nothing in the domain);
+            # if not batch_encoded.get(key).shape[-1] == 0:
+            #     batch_features.append(batch_encoded.get(key))
 
         batch_features = tf.concat(batch_features, axis=-1)
 
