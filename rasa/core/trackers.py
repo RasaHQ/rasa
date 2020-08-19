@@ -40,6 +40,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
+from rasa.utils import common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -208,17 +209,30 @@ class DialogueStateTracker:
         generated_states = domain.states_for_tracker_history(self)
         return deque(frozenset(s.items()) for s in generated_states)
 
-    def change_form_to(self, form_name: Text) -> None:
-        """Activate or deactivate a form"""
-        if form_name is not None:
+    def change_loop_to(self, loop_name: Text) -> None:
+        """Set the currently active loop.
+
+        Args:
+            loop_name: The name of loop which should be marked as active.
+        """
+        if loop_name is not None:
             self.active_loop = {
-                "name": form_name,
+                "name": loop_name,
                 "validate": True,
                 "rejected": False,
                 "trigger_message": self.latest_message.parse_data,
             }
         else:
             self.active_loop = {}
+
+    def change_form_to(self, form_name: Text) -> None:
+        common_utils.raise_warning(
+            "`change_form_to` is deprecated and will be removed "
+            "in future versions. Please use `change_loop_to` "
+            "instead.",
+            category=DeprecationWarning,
+        )
+        self.change_loop_to(form_name)
 
     def set_form_validation(self, validate: bool) -> None:
         """Toggle form validation"""

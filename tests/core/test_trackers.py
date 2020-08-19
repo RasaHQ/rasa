@@ -1102,3 +1102,12 @@ def test_writing_trackers_with_legacy_form_events():
 
     for event in events_as_dict:
         assert event["event"] == ActiveLoop.type_name
+
+
+def test_change_form_to_deprecation_warning():
+    tracker = DialogueStateTracker.from_events("conversation", evts=[])
+    new_form = "new form"
+    with pytest.warns(DeprecationWarning):
+        tracker.change_form_to(new_form)
+
+    assert tracker.active_loop_name() == new_form

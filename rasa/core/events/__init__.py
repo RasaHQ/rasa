@@ -1163,7 +1163,7 @@ class ActiveLoop(Event):
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        tracker.change_form_to(self.name)
+        tracker.change_loop_to(self.name)
 
 
 class LegacyForm(ActiveLoop):
