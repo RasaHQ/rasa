@@ -1,101 +1,20 @@
-@font-face {
-  font-family: 'GraphikWeb';
-  src: url('/fonts/Graphik-Regular-Web.woff2') format('woff2'),
-    url('/fonts/Graphik-Regular-Web.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-stretch: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'GraphikWeb';
-  src: url('/fonts/Graphik-Medium-Web.woff2') format('woff2'),
-    url('/fonts/Graphik-Medium-Web.woff') format('woff');
-  font-weight: 700;
-  font-style: normal;
-  font-stretch: normal;
-  font-display: swap;
-}
-
-// @font-face {
-//   font-family: 'GraphikWeb';
-//   src: url('/fonts/Graphik-Semibold-Web.woff2') format('woff2'),
-//     url('/fonts/Graphik-Semibold-Web.woff') format('woff');
-//   font-weight: 700;
-//   font-style: normal;
-//   font-stretch: normal;
-//   font-display: swap;
-// }
-
-@font-face {
-  font-family: 'JetBrainsMono';
-  src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2'),
-    url('/fonts/JetBrainsMono-Regular.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-stretch: normal;
-  font-display: swap;
-}
-
-// @font-face {
-//   font-family: 'JetBrainsMono';
-//   src: url('/fonts/JetBrainsMono-Medium.woff2') format('woff2'),
-//     url('/fonts/JetBrainsMono-Medium.woff') format('woff');
-//   font-weight: 400;
-//   font-style: normal;
-//   font-stretch: normal;
-//   font-display: swap;
-// }
-
-// @font-face {
-//   font-family: 'JetBrainsMono';
-//   src: url('/fonts/JetBrainsMono-Bold.woff2') format('woff2'),
-//     url('/fonts/JetBrainsMono-Bold.woff') format('woff');
-//   font-weight: 700;
-//   font-style: normal;
-//   font-stretch: normal;
-//   font-display: swap;
-// }
-
-/* You can override the default Infima variables here. */
-:root {
-  --ifm-color-primary: #5a17ee;
-  --ifm-color-primary-dark: rgb(33, 175, 144);
-  --ifm-color-primary-darker: rgb(31, 165, 136);
-  --ifm-color-primary-darkest: rgb(26, 136, 112);
-  --ifm-color-primary-light: rgb(70, 203, 174);
-  --ifm-color-primary-lighter: rgb(102, 212, 189);
-  --ifm-color-primary-lightest: rgb(146, 224, 208);
-  --ifm-code-font-size: 95%;
-}
-
-/*
-  CUSTOMIZATIONS
- */
-
 @import '@lunelson/sass-throw/index';
 @import '@lunelson/sass-calc/index';
 @import '@lunelson/sass-lerp/index';
 // @import '@lunelson/sass-maps-next/index';
 
+// INFIMA
+@import 'infima/config';
+@import 'infima/default';
+
+// RESETS
 // @import 'resets/destyle';
 @import 'resets/custom';
 
-*, *::before, *::after {
-  box-sizing: inherit;
-  line-height: lerp((14px: 1.5em, 64px: 1.1em), 1em);
-  letter-spacing: lerp((10px: 0.3px, 64px: -0.9px), 1em);
-}
+// THEME
+@import 'theme/fonts';
+@import 'theme/root';
 
-:root {
-  box-sizing: border-box;
-  font-size: 100%;
-}
-
-body {
-  font-family: 'GraphikWeb', sans-serif;
-}
 
 .docusaurus-highlight-code-line {
   background-color: rgb(72, 77, 91);

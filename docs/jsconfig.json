@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@rasahq/tabula-core": ["packages/tabula-core"],
+      "@rasahq/gatsby-theme-tabula": ["packages/gatsby-theme-tabula"],
+      "@rasahq/gatsby-theme-docs": ["packages/gatsby-theme-docs"],
+      "@rasahq/gatsby-theme-blog": ["packages/gatsby-theme-blog"],
+    }
+  },
+  "exclude": ["node_modules", "public", ".cache", "_disabled", ".vscode"]
+}

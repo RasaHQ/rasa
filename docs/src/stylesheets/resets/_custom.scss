@@ -1,152 +1,112 @@
+// inline text tags
+abbr, acronym, b, bdo, big, br, cite, code, dfn, em, i, kbd, q, samp, small, span, strong, sub, sup, time, tt, var {
+  display: inline;
+  vertical-align: baseline;
+  // white-space: normal;
+}
 
+strong, b, h1, h2, h3, h4, h5, h6 { font-weight: 700; }
+em, i { font-style: italic; }
 
-  @-ms-viewport { width: device-width; }
+// UI ELEMENTS
+// a, button, datalist, fieldset, form, input, keygen, label, legend, meter, optgroup, option, output, progress, select, textarea
 
-  *, ::before, ::after {
+a {
+  background-color: transparent; // Remove the gray background on active links in IE 10.
+  -webkit-text-decoration-skip: objects; // Remove gaps in links underline in iOS 8+ and Safari 8+.
+  &:active, &:hover { outline-width: 0; } // Remove the outline on focused links when they are also active or hovered
+}
 
-    word-break: keep-all;
-    // word-wrap: anywhere; // ms version of following
-    overflow-wrap: break-word;
-    // white-space: initial;
-    hyphens: manual;
+// suppress outline on non-keyboard-focusable elements
+[tabindex="-1"]:focus {
+  outline: 0 !important;
+}
 
-    font-family: inherit;
-    font-weight: inherit;
-    font-style: inherit;
-    font-size: inherit;
+form, fieldset { display: block; }
+
+legend {
+  box-sizing: border-box; // 1
+  color: inherit; // 2
+  display: table; // 1
+  max-width: 100%; // 1
+  padding: 0; // 3
+  white-space: normal; // 1
+}
+
+// EMBEDDED CONTENT
+// applet, audio, canvas, embed, iframe, img, map, noembed, object, picture, svg, video, source, area, track, param
+
+applet,
+audio,
+canvas,
+embed,
+iframe,
+img,
+map,
+noembed,
+object,
+picture,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-style: none;
+  border: 0;
+
+  // do not capture pointer events when inside clickable elements
+  a &,
+  button &,
+  label & {
+    pointer-events: none;
   }
+}
 
-  :root {
+svg, symbol {
+  overflow: visible;
+}
 
-    word-break: normal;
-    word-wrap: break-word; // old version of overflow-wrap
-    overflow-wrap: break-word;
-    hyphens: auto;
+audio:not([controls]) {
+  display: none;
+  height: 0;
+}
 
-    -moz-osx-font-smoothing: grayscale; // unify font rendering
-    -webkit-font-smoothing: antialiased; // unify font rendering
-    -ms-text-size-adjust: 100%;
-    -webkit-text-size-adjust: 100%;
-    direction: ltr;
-    font-family: sans-serif;
-    font-kerning: normal;
-    font-size: 100%;
-    font-style: normal;
-    font-weight: normal;
-    line-height: 1.25;
-    text-align: left;
-    text-rendering: auto; // faster, stabler than optimizeLegibility
+iframe {
+  border: 0;
+}
+
+// MISC
+
+blockquote, q {
+  quotes: none; // remove quotes
+  &:before, &:after { // remove pseudo element styles
+    content: '';
+    content: none;
   }
+}
 
-  // inline text tags
-  abbr, acronym, b, bdo, big, br, cite, code, dfn, em, i, kbd, q, samp, small, span, strong, sub, sup, time, tt, var {
-    display: inline;
-    vertical-align: baseline;
-    // white-space: normal;
-  }
+pre {
+  overflow: auto; // Don't allow content to break outside
+  -ms-overflow-style: scrollbar; // corresponds to ms-viewport rule
+}
 
-  strong, b, h1, h2, h3, h4, h5, h6 { font-weight: 700; }
-  em, i { font-style: italic; }
+// TABLES
+// table, caption, col, colgroup, tbody, td, th, thead, tr, tfoot
 
-  // UI ELEMENTS
-  // a, button, datalist, fieldset, form, input, keygen, label, legend, meter, optgroup, option, output, progress, select, textarea
+table {
+  display: block;
+  width: 100%;
+  border: 0; // strongest way of overriding
+  table-layout: fixed; // faster, more predictable
+  border-collapse: collapse;
+  border-spacing: 0;
+}
 
-  a {
-    background-color: transparent; // Remove the gray background on active links in IE 10.
-    -webkit-text-decoration-skip: objects; // Remove gaps in links underline in iOS 8+ and Safari 8+.
-    &:active, &:hover { outline-width: 0; } // Remove the outline on focused links when they are also active or hovered
-  }
+caption {
+  text-align: inherit;
+  caption-side: bottom;
+}
 
-  // suppress outline on non-keyboard-focusable elements
-  [tabindex="-1"]:focus {
-    outline: 0 !important;
-  }
-
-  form, fieldset { display: block; }
-
-  legend {
-    box-sizing: border-box; // 1
-    color: inherit; // 2
-    display: table; // 1
-    max-width: 100%; // 1
-    padding: 0; // 3
-    white-space: normal; // 1
-  }
-
-  // EMBEDDED CONTENT
-  // applet, audio, canvas, embed, iframe, img, map, noembed, object, picture, svg, video, source, area, track, param
-
-  applet,
-  audio,
-  canvas,
-  embed,
-  iframe,
-  img,
-  map,
-  noembed,
-  object,
-  picture,
-  svg,
-  video {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    border-style: none;
-    border: 0;
-
-    // do not capture pointer events when inside clickable elements
-    a &,
-    button &,
-    label & {
-      pointer-events: none;
-    }
-  }
-
-  svg, symbol {
-    overflow: visible;
-  }
-
-  audio:not([controls]) {
-    display: none;
-    height: 0;
-  }
-
-  iframe {
-    border: 0;
-  }
-
-  // MISC
-
-  blockquote, q {
-    quotes: none; // remove quotes
-    &:before, &:after { // remove pseudo element styles
-      content: '';
-      content: none;
-    }
-  }
-
-  pre {
-    overflow: auto; // Don't allow content to break outside
-    -ms-overflow-style: scrollbar; // corresponds to ms-viewport rule
-  }
-
-  // TABLES
-  // table, caption, col, colgroup, tbody, td, th, thead, tr, tfoot
-
-  table {
-    display: block;
-    width: 100%;
-    border: 0; // strongest way of overriding
-    table-layout: fixed; // faster, more predictable
-    border-collapse: collapse;
-    border-spacing: 0;
-  }
-
-  caption {
-    text-align: inherit;
-    caption-side: bottom;
-  }
-
-  th {
-    text-align: inherit;
-  }
+th {
+  text-align: inherit;
+}

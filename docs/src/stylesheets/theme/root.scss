@@ -1,0 +1,54 @@
+@-ms-viewport { width: device-width; }
+
+*, *::before, *::after {
+  box-sizing: inherit;
+	// word-break: keep-all;
+	// hyphens: auto;
+	// overflow-wrap: break-word;
+	// word-wrap: anywhere; // ms version of following
+	// white-space: initial;
+}
+
+html {
+	-moz-osx-font-smoothing: grayscale; // unify font rendering
+	-ms-text-size-adjust: 100%;
+	-webkit-font-smoothing: antialiased; // unify font rendering
+	-webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  font-family: 'GraphikWeb', sans-serif;
+	font-size: 100%;
+	font-style: normal;
+	font-weight: normal;
+	font-kerning: normal;
+  line-height: lerp((14px: 1.5em, 64px: 1.1em), 1em);
+  letter-spacing: lerp((10px: 0.3px, 64px: -0.9px), 1em);
+	hyphens: auto;
+	overflow-wrap: break-word;
+	word-break: normal;
+	word-wrap: break-word; // old version of overflow-wrap
+	// direction: ltr;
+	// text-align: left;
+	text-rendering: auto; // faster, stabler than optimizeLegibility
+  // background-color: white;
+  // color: black;
+  box-sizing: border-box;
+}
+
+body { margin: 0; }
+
+:root {
+  --ifm-container-width: 1140px;
+  --ifm-color-primary: #5a17ee;
+  --ifm-color-primary-dark: rgb(33, 175, 144);
+  --ifm-color-primary-darker: rgb(31, 165, 136);
+  --ifm-color-primary-darkest: rgb(26, 136, 112);
+  --ifm-color-primary-light: rgb(70, 203, 174);
+  --ifm-color-primary-lighter: rgb(102, 212, 189);
+  --ifm-color-primary-lightest: rgb(146, 224, 208);
+  --ifm-code-font-size: 95%;
+	--ifm-font-family-base: 'GraphikWeb', sans-serif;
+}
+
+/*
+  CUSTOMIZATIONS
+ */

@@ -72,22 +72,22 @@ module.exports = {
       },
       items: [
         {
-          href: 'https://blog.rasa.com/',
+          href: path.join(SITE_URL, '/docs/'),
           label: 'Overview',
           position: 'left',
         },
         {
-          href: `${SITE_URL}${BASE_URL}`,
+          to: path.join('/', BASE_URL),
           label: 'Rasa Open Source',
           position: 'left',
         },
         {
-          href: `${SITE_URL}/docs/rasa-x/next/`,
+          href: path.join(SITE_URL, '/docs/rasa-x/next/'),
           label: 'Rasa X',
           position: 'left',
         },
         {
-          href: `${SITE_URL}/docs/rasa-x/next/api/`,
+          to: path.join('/', BASE_URL, 'api'),
           label: 'API',
           position: 'left',
         },
@@ -97,7 +97,7 @@ module.exports = {
           position: 'right',
         },
         {
-          href: `${SITE_URL}/community/join/`,
+          href: path.join(SITE_URL, '/community/join/'),
           label: 'Community',
           position: 'right',
         },
@@ -112,13 +112,13 @@ module.exports = {
     },
   },
   themes: [
-    ['@docusaurus/theme-classic', {
+    [path.resolve(__dirname, './themes/theme-classic'), {
       customCss: require.resolve('./src/stylesheets/custom.scss'),
     }],
     path.resolve(__dirname, './themes/theme-live-codeblock'),
   ],
   plugins: [
-    ['@docusaurus/plugin-content-docs', {
+    ['@docusaurus/plugin-content-docs/', {
       // https://v2.docusaurus.io/docs/next/docs-introduction/#docs-only-mode
       routeBasePath: '/',
       // It is recommended to set document id as docs home page (`docs/` path).
