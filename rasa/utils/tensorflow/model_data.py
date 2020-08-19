@@ -386,7 +386,7 @@ class RasaModelData:
         final_data = defaultdict(list)
         for k, values in new_data.items():
             for v in values:
-                final_data[k].append(np.concatenate(np.array(v)))
+                final_data[k].append(np.concatenate(v))
 
         return final_data
 
