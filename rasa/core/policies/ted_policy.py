@@ -564,8 +564,7 @@ class TEDPolicy(Policy):
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
-            dict(self._label_data.data),
+            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl", dict(self._label_data.data)
         )
 
     @classmethod
@@ -594,15 +593,13 @@ class TEDPolicy(Policy):
         label_data = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
         )
-        label_data = RasaModelData(data=label_data)
+        label_data = RasaModelData(data = label_data)
         meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
         priority = io_utils.json_unpickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
         )
 
-        model_data_example = RasaModelData(
-            label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
-        )
+        model_data_example = RasaModelData(label_key=LABEL_KEY, label_sub_key = LABEL_SUB_KEY, data=loaded_data)
         meta = train_utils.update_similarity_type(meta)
 
         model = TED.load(
@@ -618,8 +615,7 @@ class TEDPolicy(Policy):
 
         # build the graph for prediction
         predict_data_example = RasaModelData(
-            label_key=LABEL_KEY,
-            label_sub_key=LABEL_SUB_KEY,
+            label_key=LABEL_KEY, label_sub_key = LABEL_SUB_KEY,
             data={
                 feature_name: features
                 for feature_name, features in model_data_example.items()
@@ -962,31 +958,27 @@ class TED(RasaModel):
             if not LABEL_KEY in key and not DIALOGUE in key
         }
 
-        if (
-            batch_encoded.get(ACTION_TEXT) is not None
-            and batch_encoded.get(ACTION_NAME) is not None
-        ):
-            batch_action = batch_encoded.pop(ACTION_TEXT) + batch_encoded.pop(
-                ACTION_NAME
-            )
+        if batch_encoded.get(ACTION_TEXT) is not None  and batch_encoded.get(ACTION_NAME) is not None:
+            batch_action = batch_encoded.pop(ACTION_TEXT) + batch_encoded.pop(ACTION_NAME)
         elif batch_encoded.get(ACTION_TEXT) is not None:
             batch_action = batch_encoded.pop(ACTION_TEXT)
         else:
             batch_action = batch_encoded.pop(ACTION_NAME)
 
-        if (
-            batch_encoded.get(INTENT) is not None
-            and batch_encoded.get(TEXT) is not None
-        ):
+        if batch_encoded.get(INTENT) is not None  and batch_encoded.get(TEXT) is not None:
             batch_user = batch_encoded.pop(INTENT) + batch_encoded.pop(TEXT)
         elif batch_encoded.get(TEXT) is not None:
             batch_user = batch_encoded.pop(TEXT)
         else:
             batch_user = batch_encoded.pop(INTENT)
-
+        
         batch_features = [batch_user, batch_action]
         for key in batch_encoded.keys():
-            batch_features.append(batch_encoded.get(key))
+            # ignore features which are essntially empty 
+            # (where there is nothing in the domain);
+            if not batch_encoded.get(key).shape[-1] == 0:
+                batch_features.append(batch_encoded.get(key))
+
 
         batch_features = tf.concat(batch_features, axis=-1)
 
