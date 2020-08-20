@@ -470,18 +470,13 @@ class TEDPolicy(Policy):
             LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
         )
 
-        return label_data
+        return label_data, all_labels
 
-    def _get_label_features(self, label_ids: List[List[int]]) -> Data:
+    def _get_label_features(self, label_ids: List[List[int]], all_data) -> Data:
         label_attribute_data = defaultdict(lambda: defaultdict(list))
-
-        for key, values in self._label_data.data.items():
-            for sub_key, features in values.items():
-                if sub_key == LABEL_SUB_KEY:
-                    continue
-                label_attribute_data[key][sub_key] = [
-                    np.array([features[0][label_id[0]] for label_id in label_ids])
-                ]
+        label_ids = [label_id[0] for label_id in label_ids]
+        label_data = [all_data[label_id] for label_id in label_ids]
+        label_attribute_data = self._convert_to_data_format(label_data)
 
         return label_attribute_data
 
@@ -489,6 +484,7 @@ class TEDPolicy(Policy):
         self,
         X: List[List[Dict[Text, List["Features"]]]],
         label_ids: Optional[List[List[int]]] = None,
+        all_data = None,
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData.
 
@@ -509,7 +505,11 @@ class TEDPolicy(Policy):
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
         if label_ids:
             model_data.add_features(LABEL_KEY, LABEL_SUB_KEY, [np.array(label_ids)])
-            model_data.add_data(self._get_label_features(label_ids))
+            attribute_data = self._get_label_features(label_ids, all_data)
+            for attribute, attribute_features in attribute_data.items():
+                for subkey, features in attribute_features.items():
+                    model_data.add_features(f"{LABEL_KEY}_{attribute}", subkey, features)
+            
 
         attribute_data = self._convert_to_data_format(X)
         model_data.add_data(attribute_data)
@@ -533,10 +533,10 @@ class TEDPolicy(Policy):
         X, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
-        self._label_data = self._create_label_data(domain, interpreter)
+        self._label_data, all_data = self._create_label_data(domain, interpreter)
 
         # extract actual training data to feed to model
-        model_data = self._create_model_data(X, label_ids)
+        model_data = self._create_model_data(X, label_ids, all_data)
         if model_data.is_empty():
             logger.error(
                 f"Can not train '{self.__class__.__name__}'. No data was provided. "
@@ -1065,15 +1065,19 @@ class TED(RasaModel):
         )
 
         label_in = []
-
-        self.label_keys = [key for key in self.data_signature.keys() if LABEL in key]
+        label_ids = tf.cast(batch[LABEL_KEY][LABEL_SUB_KEY][0], tf.int32)
+        
+        self.label_keys = [key for key in self.tf_label_data.keys() if LABEL in key]
         for key in self.label_keys:
+            mask = None
+            if "mask" in batch[key].keys():
+                mask = tf.expand_dims(batch[key]["mask"][0], axis=-2)
             for sub_key in batch[key]:
                 if sub_key in [SEQUENCE, SENTENCE]:
                     label_in.append(
-                        self._combine_sparse_dense_features(
-                            batch[key][sub_key], f"{key}_{sub_key}"
-                        )
+                        tf.expand_dims(self._combine_sparse_dense_features(
+                                                    batch[key][sub_key], f"{key}_{sub_key}"
+                                                ), axis=-2) * mask
                     )
         label_in = tf.concat(label_in, axis=-1)
         label_in = tf.squeeze(label_in, axis=1)
