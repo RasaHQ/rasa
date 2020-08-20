@@ -34,7 +34,7 @@ if typing.TYPE_CHECKING:
 CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
 REPORT_STORIES_FILE = "story_report.json"
 FAILED_STORIES_FILE = "failed_conversations.yml"
-SUCCESSFUL_STORIES_FILE = "successful_conversations.md"
+SUCCESSFUL_STORIES_FILE = "successful_conversations.yml"
 
 
 logger = logging.getLogger(__name__)

@@ -163,7 +163,6 @@ def test_find_nlu_files_with_different_formats(test_input, expected):
     examples_dir = "data/examples"
     data_dir = os.path.join(examples_dir, test_input)
     nlu_files = data.get_data_files([data_dir], data.is_nlu_file)
-    core_files = data.get_data_files([data_dir], data.is_story_file)
     assert [Path(f) for f in nlu_files] == [Path(f) for f in expected]
 
 
@@ -194,6 +193,5 @@ def test_is_not_nlu_file_with_json():
 
 def test_get_story_file_with_yaml():
     examples_dir = "data/test_yaml_stories"
-    nlu_files = data.get_data_files([examples_dir], data.is_nlu_file)
     core_files = data.get_data_files([examples_dir], data.is_story_file)
     assert core_files
