@@ -6,4 +6,7 @@ description: Check out the API docs for open source chatbot framework Rasa's act
 hide_table_of_contents: true
 ---
 
-See API link in header.
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import Redoc from '@site/src/components/redoc';
+
+<Redoc specUrl={useBaseUrl("/spec/action-server.yml")} />

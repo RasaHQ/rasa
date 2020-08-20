@@ -4,6 +4,9 @@ sidebar_label: Action Server
 title: Action Server
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import Redoc from '@site/src/components/redoc';
+
 ## Running the Action Server
 
 Because `rasa` is not a dependency of `rasa-sdk`, you can run the action
@@ -33,4 +36,6 @@ The full list of options for running the action server with either command is:
 
 ## Action Server HTTP API
 
-See API link in header above.
+<!-- TODO: Document the rest of the API endpoints -->
+
+<Redoc specUrl={useBaseUrl("/spec/action-server.yml")} />
