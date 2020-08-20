@@ -23,6 +23,7 @@ from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
 from rasa.utils.common import raise_warning
 from sanic import Sanic
+from asyncio import AbstractEventLoop
 
 logger = logging.getLogger()  # get the root logger
 
@@ -224,11 +225,12 @@ async def load_agent_on_start(
     endpoints: AvailableEndpoints,
     remote_storage: Optional[Text],
     app: Sanic,
+    loop: AbstractEventLoop,
 ):
     """Load an agent.
 
     Used to be scheduled on server start
-    (hence the `app` argument)."""
+    (hence the `app` and `loop` arguments)."""
 
     # noinspection PyBroadException
     try:

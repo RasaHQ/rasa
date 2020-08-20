@@ -1,6 +1,7 @@
 import pytest
 from typing import Text
 from sanic import Sanic
+from asyncio import AbstractEventLoop
 from pathlib import Path
 from rasa.core import run, interpreter, policies, domain
 from rasa.core.utils import AvailableEndpoints
@@ -48,10 +49,10 @@ def test_create_single_input_channels_by_class_wo_credentials():
 
 
 async def test_load_agent_on_start_with_good_model_file(
-    trained_rasa_model: Text, rasa_server: Sanic,
+    trained_rasa_model: Text, rasa_server: Sanic, loop: AbstractEventLoop,
 ):
     agent = await run.load_agent_on_start(
-        trained_rasa_model, AvailableEndpoints(), None, rasa_server,
+        trained_rasa_model, AvailableEndpoints(), None, rasa_server, loop,
     )
 
     assert isinstance(agent.interpreter, interpreter.RasaNLUInterpreter)
@@ -60,7 +61,7 @@ async def test_load_agent_on_start_with_good_model_file(
 
 
 async def test_load_agent_on_start_with_bad_model_file(
-    tmp_path: Path, rasa_server: Sanic,
+    tmp_path: Path, rasa_server: Sanic, loop: AbstractEventLoop,
 ):
     fake_model = tmp_path / "fake_model.tar.gz"
     fake_model.touch()
@@ -68,7 +69,7 @@ async def test_load_agent_on_start_with_bad_model_file(
 
     with pytest.warns(UserWarning) as warnings:
         agent = await run.load_agent_on_start(
-            fake_model_path, AvailableEndpoints(), None, rasa_server,
+            fake_model_path, AvailableEndpoints(), None, rasa_server, loop,
         )
         assert any(
             "fake_model.tar.gz' could not be loaded" in str(w.message) for w in warnings
