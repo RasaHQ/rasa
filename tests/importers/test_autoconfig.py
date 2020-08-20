@@ -139,7 +139,7 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
         (
             "config_empty_fr.yml",
             "config_empty_fr_after_dumping.yml",
-            "config_empty_fr_after_dumping_.yml",
+            "config_empty_fr_after_dumping.yml",
             {"policies", "pipeline"},
         ),  # no empty lines, with different language
         (
