@@ -9,7 +9,7 @@ on:
     - '**'
 
 # SECRETS
-# - GITHUB_DOCS_KEY: generated locally, added to github repo (public key)
+# - GH_DOCS_WRITE_KEY: generated locally, added to github repo (public key)
 #                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
 # - GITHUB_TOKEN: (default, from github actions)
 
@@ -49,10 +49,10 @@ jobs:
 
     - name: Build & Publish Docs 🏃‍♀️
       env:
-        GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
+        GH_DOCS_WRITE_KEY: ${{ secrets.GH_DOCS_WRITE_KEY }}
       run: |
         eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
-        echo "$GITHUB_DOCS_KEY" > "docs_key"
+        echo "$GH_DOCS_WRITE_KEY" > "docs_key"
         ssh-add docs_key
 
         git config --global user.email "builds@github-ci.com"
