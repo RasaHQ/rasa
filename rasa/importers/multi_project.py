@@ -93,7 +93,7 @@ class MultiProjectImporter(TrainingDataImporter):
                     # Check next file
                     continue
 
-                if data.is_test_conversations_file(full_path):
+                if data.is_test_stories_file(full_path):
                     self._e2e_story_paths.append(full_path)
                 elif Domain.is_domain_file(full_path):
                     self._domain_paths.append(full_path)

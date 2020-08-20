@@ -557,7 +557,7 @@ def _log_stories(
                 tracker.as_story(include_source=True) for tracker in trackers
             ]  # TODO: revisit `include_source=True` - what do we need it for?
             steps = [step for story in stories for step in story.story_steps]
-            f.write(YAMLStoryWriter().dumps(steps, as_test_conversations=True))
+            f.write(YAMLStoryWriter().dumps(steps))
 
 
 async def test(

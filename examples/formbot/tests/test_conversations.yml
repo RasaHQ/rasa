@@ -1,4 +1,4 @@
-test_conversations:
+stories:
 - story: Happy path
   steps:
   - user: |

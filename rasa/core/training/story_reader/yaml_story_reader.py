@@ -8,7 +8,13 @@ from ruamel.yaml.parser import ParserError
 
 import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
-from rasa.constants import DOCS_URL_STORIES, DOCS_URL_RULES, DOCS_URL_TEST_CONVERSATIONS
+from rasa.constants import (
+    DEFAULT_E2E_TESTS_PATH,
+    DEFAULT_TEST_STORIES_FILE_PREFIX,
+    DOCS_URL_STORIES,
+    DOCS_URL_RULES,
+    DOCS_URL_TEST_CONVERSATIONS,
+)
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, Form
@@ -111,7 +117,6 @@ class YAMLStoryReader(StoryReader):
         for key, parser_class in {
             KEY_STORIES: StoryParser,
             KEY_RULES: RuleParser,
-            KEY_TEST_CONVERSATIONS: TestConversationsParser,
         }.items():
             data = parsed_content.get(key, [])
             parser = parser_class.from_reader(self)
@@ -149,7 +154,11 @@ class YAMLStoryReader(StoryReader):
             return False
 
     @classmethod
-    def is_yaml_test_conversations_file(cls, file_path: Union[Text, Path]) -> bool:
+    def _has_test_prefix(cls, file_path):
+        return Path(file_path).name.startswith(DEFAULT_TEST_STORIES_FILE_PREFIX)
+
+    @classmethod
+    def is_yaml_test_stories_file(cls, file_path: Union[Text, Path]) -> bool:
         """Checks if a file is a test conversations file.
 
         Args:
@@ -158,9 +167,8 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `True` if it's a conversation test file, otherwise `False`.
         """
-        return rasa.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
-            file_path, KEY_TEST_CONVERSATIONS
-        )
+
+        return cls._has_test_prefix(file_path) and cls.is_yaml_story_file(file_path)
 
     def get_steps(self) -> List[StoryStep]:
         self._add_current_stories_to_result()
@@ -433,22 +441,6 @@ class StoryParser(YAMLStoryReader):
 
     def _get_docs_link(self) -> Text:
         return DOCS_URL_STORIES
-
-
-class TestConversationsParser(YAMLStoryReader):
-    """Encapsulate test conversation (e2e tests) specific parser behavior."""
-
-    def _new_part(self, item_name: Text, item: Dict[Text, Any]) -> None:
-        self._new_story_part(item_name, self.source_name)
-
-    def _get_item_title(self) -> Text:
-        return KEY_STORY_NAME
-
-    def _get_plural_item_title(self) -> Text:
-        return KEY_TEST_CONVERSATIONS
-
-    def _get_docs_link(self) -> Text:
-        return DOCS_URL_TEST_CONVERSATIONS
 
 
 class RuleParser(YAMLStoryReader):

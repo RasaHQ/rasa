@@ -39,10 +39,10 @@ def test_default_conversation_tests_are_conversation_tests_yml(tmpdir: Path):
     Path(parent).mkdir(parents=True)
 
     e2e_path = parent / "test_conversations.yml"
-    e2e_story = """test_conversations:"""
+    e2e_story = """stories:"""
     write_text_file(e2e_story, e2e_path)
 
-    assert data.is_test_conversations_file(str(e2e_path))
+    assert data.is_test_stories_file(str(e2e_path))
 
 
 def test_default_conversation_tests_are_conversation_tests_md(tmpdir: Path):
@@ -54,7 +54,7 @@ def test_default_conversation_tests_are_conversation_tests_md(tmpdir: Path):
     e2e_story = """## my story test"""
     write_text_file(e2e_story, e2e_path)
 
-    assert data.is_test_conversations_file(str(e2e_path))
+    assert data.is_test_stories_file(str(e2e_path))
 
 
 def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
@@ -70,7 +70,7 @@ def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
     """
     write_text_file(nlu_data, nlu_path)
 
-    assert not data.is_test_conversations_file(str(nlu_path))
+    assert not data.is_test_stories_file(str(nlu_path))
 
 
 def test_domain_files_are_not_conversation_tests(tmpdir: Path):
@@ -79,4 +79,4 @@ def test_domain_files_are_not_conversation_tests(tmpdir: Path):
 
     domain_path = parent / "domain.yml"
 
-    assert not data.is_test_conversations_file(str(domain_path))
+    assert not data.is_test_stories_file(str(domain_path))

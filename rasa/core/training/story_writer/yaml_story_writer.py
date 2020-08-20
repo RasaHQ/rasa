@@ -40,49 +40,38 @@ import rasa.utils.io as io_utils
 class YAMLStoryWriter:
     """Writes Core training data into a file in a YAML format. """
 
-    def dumps(
-        self, story_steps: List[StoryStep], as_test_conversations: bool = False
-    ) -> Text:
+    def dumps(self, story_steps: List[StoryStep]) -> Text:
         """Turns Story steps into a string.
 
         Args:
             story_steps: Original story steps to be converted to the YAML.
-            as_test_conversations: Decides which top level YAML key to use (stories
-                or test_conversations).
         Returns:
             String with story steps in the YAML format.
         """
         stream = ruamel_yaml.StringIO()
-        self.dump(stream, story_steps, as_test_conversations)
+        self.dump(stream, story_steps)
         return stream.getvalue()
 
     def dump(
         self,
         target: Union[Text, Path, ruamel_yaml.StringIO],
         story_steps: List[StoryStep],
-        as_test_conversations: bool = False,
     ) -> None:
         """Writes Story steps into a target file/stream.
 
         Args:
             target: name of the target file/stream to write the YAML to.
             story_steps: Original story steps to be converted to the YAML.
-            as_test_conversations: Decides which top level YAML key to use (stories
-                or test_conversations).
         """
-        result = self.stories_to_yaml(story_steps, as_test_conversations)
+        result = self.stories_to_yaml(story_steps)
 
         io_utils.write_yaml(result, target, True)
 
-    def stories_to_yaml(
-        self, story_steps: List[StoryStep], as_test_conversations: bool = False,
-    ) -> Dict[Text, Any]:
+    def stories_to_yaml(self, story_steps: List[StoryStep]) -> Dict[Text, Any]:
         """Converts a sequence of story steps into yaml format.
 
         Args:
             story_steps: Original story steps to be converted to the YAML.
-            as_test_conversations: Decides which top level YAML key to use (stories
-                or test_conversations).
         """
         from rasa.validator import KEY_TRAINING_DATA_FORMAT_VERSION
 
@@ -97,9 +86,7 @@ class YAMLStoryWriter:
             LATEST_TRAINING_DATA_FORMAT_VERSION
         )
 
-        data_key = KEY_TEST_CONVERSATIONS if as_test_conversations else KEY_STORIES
-
-        result[data_key] = stories
+        result[KEY_STORIES] = stories
         return result
 
     def process_story_step(self, story_step: StoryStep) -> Optional[OrderedDict]:

@@ -220,7 +220,7 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
         (
             "test_conversations.yml",
             """
-        test_conversations:
+        stories:
         - story: story test
           steps:
           - user: hello
@@ -295,7 +295,7 @@ def test_not_importing_e2e_conversation_tests_in_project(
     e2e_story_test_file = (
         root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "test_conversations.yml"
     )
-    e2e_story_test_file.write("""test_conversations:""", ensure=True)
+    e2e_story_test_file.write("""stories:""", ensure=True)
 
     selector = MultiProjectImporter(config_path)
 

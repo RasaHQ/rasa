@@ -6,9 +6,9 @@ import re
 from pathlib import PurePath, Path
 from typing import Dict, Optional, Text, List, Any, Union
 
+from rasa import data
 import rasa.data
 from rasa.nlu.training_data import Message
-from rasa.nlu.training_data.formats import MarkdownReader
 import rasa.utils.io as io_utils
 from rasa.constants import (
     DEFAULT_E2E_TESTS_PATH,
@@ -296,16 +296,16 @@ class MarkdownStoryReader(StoryReader):
             return False
 
     @staticmethod
-    def is_markdown_test_conversations_file(file_path: Union[Text, Path]) -> bool:
-        """Checks if a file is a test conversations file.
+    def is_markdown_test_stories_file(file_path: Union[Text, Path]) -> bool:
+        """Checks if a file contains test stories.
 
         Args:
             file_path: Path of the file which should be checked.
 
         Returns:
-            `True` if it's a conversation test file, otherwise `False`.
+            `True` if it's a file containing test stories, otherwise `False`.
         """
-        if Path(file_path).suffix not in MARKDOWN_FILE_EXTENSIONS:
+        if not data.is_likely_markdown_file(file_path):
             return False
 
         dirname = os.path.dirname(file_path)

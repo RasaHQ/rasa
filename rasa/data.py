@@ -42,7 +42,7 @@ def get_test_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
     Returns:
         Path to temporary directory containing all found Core training files.
     """
-    test_files = get_data_files(paths, is_test_conversations_file)
+    test_files = get_data_files(paths, is_test_stories_file)
     return _copy_files_to_new_dir(test_files)
 
 
@@ -182,23 +182,23 @@ def is_story_file(file_path: Text) -> bool:
     ) or MarkdownStoryReader.is_markdown_story_file(file_path)
 
 
-def is_test_conversations_file(file_path: Text) -> bool:
-    """Checks if a file is an end-to-end conversation test file.
+def is_test_stories_file(file_path: Text) -> bool:
+    """Checks if a file is a test stories file.
 
     Args:
         file_path: Path of the file which should be checked.
 
     Returns:
-        `True` if it's a conversation test file, otherwise `False`.
+        `True` if it's a story file containing tests, otherwise `False`.
     """
     from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
     from rasa.core.training.story_reader.markdown_story_reader import (
         MarkdownStoryReader,
     )
 
-    return YAMLStoryReader.is_yaml_test_conversations_file(
+    return YAMLStoryReader.is_yaml_story_file(
         file_path
-    ) or MarkdownStoryReader.is_markdown_test_conversations_file(file_path)
+    ) or MarkdownStoryReader.is_markdown_test_stories_file(file_path)
 
 
 def is_config_file(file_path: Text) -> bool:
