@@ -8,8 +8,8 @@ import React from 'react';
 import Link from '@docusaurus/Link';
 
 function BlogListPaginator(props) {
-  const {metadata} = props;
-  const {previousPage, nextPage} = metadata;
+  const { metadata } = props;
+  const { previousPage, nextPage } = metadata;
   return (
     <nav className="pagination-nav" aria-label="Blog list page navigation">
       <div className="pagination-nav__item">

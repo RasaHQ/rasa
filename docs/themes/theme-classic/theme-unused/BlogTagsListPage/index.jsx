@@ -14,7 +14,7 @@ function getCategoryOfTag(tag) {
 }
 
 function BlogTagsListPage(props) {
-  const {tags} = props;
+  const { tags } = props;
   const tagCategories = {};
   Object.keys(tags).forEach((tag) => {
     const category = getCategoryOfTag(tag);
@@ -33,10 +33,7 @@ function BlogTagsListPage(props) {
       <div key={category}>
         <h3>{category}</h3>
         {tagsForCategory.map((tag) => (
-          <Link
-            className="padding-right--md"
-            href={tags[tag].permalink}
-            key={tag}>
+          <Link className="padding-right--md" href={tags[tag].permalink} key={tag}>
             {tags[tag].name} ({tags[tag].count})
           </Link>
         ))}

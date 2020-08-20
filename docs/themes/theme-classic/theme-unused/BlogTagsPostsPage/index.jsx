@@ -14,12 +14,10 @@ function pluralize(count, word) {
 }
 
 function BlogTagsPostPage(props) {
-  const {metadata, items} = props;
-  const {allTagsPath, name: tagName, count} = metadata;
+  const { metadata, items } = props;
+  const { allTagsPath, name: tagName, count } = metadata;
   return (
-    <Layout
-      title={`Posts tagged "${tagName}"`}
-      description={`Blog | Tagged "${tagName}"`}>
+    <Layout title={`Posts tagged "${tagName}"`} description={`Blog | Tagged "${tagName}"`}>
       <div className="container margin-vert--lg">
         <div className="row">
           <main className="col col--8 col--offset-2">
@@ -29,12 +27,13 @@ function BlogTagsPostPage(props) {
             </h1>
             <Link href={allTagsPath}>View All Tags</Link>
             <div className="margin-vert--xl">
-              {items.map(({content: BlogPostContent}) => (
+              {items.map(({ content: BlogPostContent }) => (
                 <BlogPostItem
                   key={BlogPostContent.metadata.permalink}
                   frontMatter={BlogPostContent.frontMatter}
                   metadata={BlogPostContent.metadata}
-                  truncated>
+                  truncated
+                >
                   <BlogPostContent />
                 </BlogPostItem>
               ))}

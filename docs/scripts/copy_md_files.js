@@ -3,8 +3,8 @@ const fs = require('fs');
 const { copyFile } = fs.promises;
 
 const defaultOptions = {
-	files: {},
-	docsDir: './docs',
+  files: {},
+  docsDir: './docs',
 };
 
 /**
@@ -16,18 +16,18 @@ const defaultOptions = {
     - docsDir:        the docs folder
 */
 async function copyMarkdownFiles(options) {
-	options = { ...defaultOptions, ...options };
-	const { docsDir, files } = options;
+  options = { ...defaultOptions, ...options };
+  const { docsDir, files } = options;
 
-	for (const [source, destination] of Object.entries(files)) {
-		await copyFile(source, `${docsDir}/${destination}`);
-	}
+  for (const [source, destination] of Object.entries(files)) {
+    await copyFile(source, `${docsDir}/${destination}`);
+  }
 }
 
 console.info('Copying markdown files');
 copyMarkdownFiles({
-	docsDir: './docs',
-	files: {
-		'../CHANGELOG.mdx': 'changelog.mdx',
-	},
+  docsDir: './docs',
+  files: {
+    '../CHANGELOG.mdx': 'changelog.mdx',
+  },
 });

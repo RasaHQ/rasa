@@ -11,24 +11,25 @@ import BlogPostItem from '@theme/BlogPostItem';
 import BlogListPaginator from '@theme/BlogListPaginator';
 
 function BlogListPage(props) {
-  const {metadata, items} = props;
+  const { metadata, items } = props;
   const {
-    siteConfig: {title: siteTitle},
+    siteConfig: { title: siteTitle },
   } = useDocusaurusContext();
   const isBlogOnlyMode = metadata.permalink === '/';
   const title = isBlogOnlyMode ? siteTitle : 'Blog';
-  const {blogDescription} = metadata;
+  const { blogDescription } = metadata;
   return (
     <Layout title={title} description={blogDescription}>
       <div className="container margin-vert--lg">
         <div className="row">
           <main className="col col--8 col--offset-2">
-            {items.map(({content: BlogPostContent}) => (
+            {items.map(({ content: BlogPostContent }) => (
               <BlogPostItem
                 key={BlogPostContent.metadata.permalink}
                 frontMatter={BlogPostContent.frontMatter}
                 metadata={BlogPostContent.metadata}
-                truncated={BlogPostContent.metadata.truncated}>
+                truncated={BlogPostContent.metadata.truncated}
+              >
                 <BlogPostContent />
               </BlogPostItem>
             ))}
