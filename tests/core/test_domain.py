@@ -409,6 +409,58 @@ session_config:
     assert merged.session_config == SessionConfig(40, True)
 
 
+def test_merge_with_empty_domain():
+    domain = Domain.from_yaml(
+        """config:
+  store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
+entities:
+- cuisine
+intents:
+- greet
+slots:
+  cuisine:
+    type: text
+responses:
+  utter_goodbye:
+  - text: bye!
+  utter_greet:
+  - text: hey you!"""
+    )
+
+    merged = Domain.empty().merge(domain)
+
+    assert merged.as_dict() == domain.as_dict()
+
+
+def test_merge_with_empty_other_domain():
+    domain = Domain.from_yaml(
+        """config:
+  store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
+entities:
+- cuisine
+intents:
+- greet
+slots:
+  cuisine:
+    type: text
+responses:
+  utter_goodbye:
+  - text: bye!
+  utter_greet:
+  - text: hey you!"""
+    )
+
+    merged = domain.merge(Domain.empty(), override=True)
+
+    assert merged.as_dict() == domain.as_dict()
+
+
 @pytest.mark.parametrize(
     "intents, entities, intent_properties",
     [
@@ -670,7 +722,7 @@ def test_clean_domain_for_file():
             {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
-        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "entities": ["name", "unrelated_recognized_entity", "other"],
         "responses": {
             "utter_greet": [{"text": "hey there!"}],
             "utter_goodbye": [{"text": "goodbye :("}],
@@ -699,19 +751,19 @@ def test_clean_domain_deprecated_templates():
             {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
-        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "entities": ["name", "unrelated_recognized_entity", "other"],
         "responses": {
             "utter_greet": [{"text": "hey there!"}],
             "utter_goodbye": [{"text": "goodbye :("}],
             "utter_default": [{"text": "default message"}],
         },
-        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+        "actions": ["utter_default", "utter_greet", "utter_goodbye"],
     }
 
     expected = Domain.from_dict(expected)
     actual = Domain.from_dict(cleaned)
 
-    assert hash(actual) == hash(expected)
+    assert actual.as_dict() == expected.as_dict()
 
 
 def test_add_knowledge_base_slots(default_domain):
