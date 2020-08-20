@@ -11,41 +11,41 @@ import useUserPreferencesContext from '@theme/hooks/useUserPreferencesContext';
 import styles from './styles.module.scss';
 
 function AnnouncementBar() {
-	const { siteConfig: { themeConfig: { announcementBar = {} } = {} } = {} } = useDocusaurusContext();
-	const { content, backgroundColor, textColor } = announcementBar;
-	const { isAnnouncementBarClosed, closeAnnouncementBar } = useUserPreferencesContext();
+  const { siteConfig: { themeConfig: { announcementBar = {} } = {} } = {} } = useDocusaurusContext();
+  const { content, backgroundColor, textColor } = announcementBar;
+  const { isAnnouncementBarClosed, closeAnnouncementBar } = useUserPreferencesContext();
 
-	if (!content || isAnnouncementBarClosed) {
-		return null;
-	}
+  if (!content || isAnnouncementBarClosed) {
+    return null;
+  }
 
-	return (
-		<div
-			className={styles.announcementBar}
-			style={{
-				backgroundColor,
-				color: textColor,
-			}}
-			role="banner"
-		>
-			<div
-				className={styles.announcementBarContent} // Developer provided the HTML, so assume it's safe.
-				// eslint-disable-next-line react/no-danger
-				dangerouslySetInnerHTML={{
-					__html: content,
-				}}
-			/>
+  return (
+    <div
+      className={styles.announcementBar}
+      style={{
+        backgroundColor,
+        color: textColor,
+      }}
+      role="banner"
+    >
+      <div
+        className={styles.announcementBarContent} // Developer provided the HTML, so assume it's safe.
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{
+          __html: content,
+        }}
+      />
 
-			<button
-				type="button"
-				className={styles.announcementBarClose}
-				onClick={closeAnnouncementBar}
-				aria-label="Close"
-			>
-				<span aria-hidden="true">&times;</span>
-			</button>
-		</div>
-	);
+      <button
+        type="button"
+        className={styles.announcementBarClose}
+        onClick={closeAnnouncementBar}
+        aria-label="Close"
+      >
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  );
 }
 
 export default AnnouncementBar;

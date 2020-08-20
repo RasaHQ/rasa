@@ -7,37 +7,27 @@
 import React from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Link from '@docusaurus/Link';
-import {
-  useActivePlugin,
-  useActiveVersion,
-  useDocVersionSuggestions,
-} from '@theme/hooks/useDocs';
+import { useActivePlugin, useActiveVersion, useDocVersionSuggestions } from '@theme/hooks/useDocs';
 
 const useMandatoryActiveDocsPluginId = () => {
   const activePlugin = useActivePlugin();
 
   if (!activePlugin) {
-    throw new Error(
-      'DocVersionCallout is only supposed to be used on docs-related routes',
-    );
+    throw new Error('DocVersionCallout is only supposed to be used on docs-related routes');
   }
 
   return activePlugin.pluginId;
 };
 
-const getVersionMainDoc = (version) =>
-  version.docs.find((doc) => doc.id === version.mainDocId);
+const getVersionMainDoc = (version) => version.docs.find((doc) => doc.id === version.mainDocId);
 
 function DocVersionSuggestions() {
   const {
-    siteConfig: {title: siteTitle},
+    siteConfig: { title: siteTitle },
   } = useDocusaurusContext();
   const pluginId = useMandatoryActiveDocsPluginId();
   const activeVersion = useActiveVersion(pluginId);
-  const {
-    latestDocSuggestion,
-    latestVersionSuggestion,
-  } = useDocVersionSuggestions(pluginId); // No suggestion to be made
+  const { latestDocSuggestion, latestVersionSuggestion } = useDocVersionSuggestions(pluginId); // No suggestion to be made
 
   if (!latestVersionSuggestion) {
     return <></>;
@@ -46,20 +36,17 @@ function DocVersionSuggestions() {
   const activeVersionName = activeVersion.name; // try to link to same doc in latest version (not always possible)
   // fallback to main doc of latest version
 
-  const suggestedDoc =
-    latestDocSuggestion ?? getVersionMainDoc(latestVersionSuggestion);
+  const suggestedDoc = latestDocSuggestion ?? getVersionMainDoc(latestVersionSuggestion);
   return (
     <div className="alert alert--warning margin-bottom--md" role="alert">
       {activeVersionName === 'next' ? (
         <div>
-          This is unreleased documentation for {siteTitle}{' '}
-          <strong>{activeVersionName}</strong> version.
+          This is unreleased documentation for {siteTitle} <strong>{activeVersionName}</strong> version.
         </div>
       ) : (
         <div>
-          This is documentation for {siteTitle}{' '}
-          <strong>v{activeVersionName}</strong>, which is no longer actively
-          maintained.
+          This is documentation for {siteTitle} <strong>v{activeVersionName}</strong>, which is no longer
+          actively maintained.
         </div>
       )}
       <div className="margin-top--md">

@@ -5,15 +5,15 @@ import BrowserOnly from '@docusaurus/BrowserOnly';
 import Layout from '@theme/Layout';
 
 const Redoc = (props) => {
-	// const specUrl = useBaseUrl('/spec/action-server.yml');
+  // const specUrl = useBaseUrl('/spec/action-server.yml');
 
-	return (
-		<Layout>
-			<BrowserOnly fallback={<div>Loading...</div>}>
-				{/* {() => <RedocStandalone specUrl={specUrl} {...props} />} */}
-			</BrowserOnly>
-		</Layout>
-	);
+  return (
+    <Layout>
+      <BrowserOnly fallback={<div>Loading...</div>}>
+        {/* {() => <RedocStandalone specUrl={specUrl} {...props} />} */}
+      </BrowserOnly>
+    </Layout>
+  );
 };
 
 export default Redoc;

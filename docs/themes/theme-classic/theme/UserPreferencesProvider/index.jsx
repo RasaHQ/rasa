@@ -10,8 +10,8 @@ import useAnnouncementBar from '@theme/hooks/useAnnouncementBar';
 import UserPreferencesContext from '@theme/UserPreferencesContext';
 
 function UserPreferencesProvider(props) {
-  const {tabGroupChoices, setTabGroupChoices} = useTabGroupChoice();
-  const {isAnnouncementBarClosed, closeAnnouncementBar} = useAnnouncementBar();
+  const { tabGroupChoices, setTabGroupChoices } = useTabGroupChoice();
+  const { isAnnouncementBarClosed, closeAnnouncementBar } = useAnnouncementBar();
   return (
     <UserPreferencesContext.Provider
       value={{
@@ -19,7 +19,8 @@ function UserPreferencesProvider(props) {
         setTabGroupChoices,
         isAnnouncementBarClosed,
         closeAnnouncementBar,
-      }}>
+      }}
+    >
       {props.children}
     </UserPreferencesContext.Provider>
   );

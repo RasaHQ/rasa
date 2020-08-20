@@ -2,7 +2,6 @@
 	"endOfLine": "lf",
 	"semi": true,
 	"singleQuote": true,
-	"useTabs": true,
 	"trailingComma": "all",
 	"printWidth": 110,
 	"proseWrap": "never",

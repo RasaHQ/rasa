@@ -14,42 +14,42 @@ import Prototyper, { DownloadButton, TrainButton } from '@theme/Prototyper';
 import styles from './styles.module.scss';
 
 export default {
-	code: (props) => {
-		const { children } = props;
+  code: (props) => {
+    const { children } = props;
 
-		if (typeof children === 'string') {
-			if (!children.includes('\n')) {
-				return <code {...props} />;
-			}
+    if (typeof children === 'string') {
+      if (!children.includes('\n')) {
+        return <code {...props} />;
+      }
 
-			return <CodeBlock {...props} />;
-		}
+      return <CodeBlock {...props} />;
+    }
 
-		return children;
-	},
-	a: (props) => {
-		return <Link {...props} />;
-	},
-	pre: (props) => <div className={styles.mdxCodeBlock} {...props} />,
-	h1: Heading('h1'),
-	h2: Heading('h2'),
-	h3: Heading('h3'),
-	h4: Heading('h4'),
-	h5: Heading('h5'),
-	h6: Heading('h6'),
-	/*
+    return children;
+  },
+  a: (props) => {
+    return <Link {...props} />;
+  },
+  pre: (props) => <div className={styles.mdxCodeBlock} {...props} />,
+  h1: Heading('h1'),
+  h2: Heading('h2'),
+  h3: Heading('h3'),
+  h4: Heading('h4'),
+  h5: Heading('h5'),
+  h6: Heading('h6'),
+  /*
 	docsaurus
 	*/
-	useBaseUrl,
-	Tabs,
-	TabItem,
-	/*
+  useBaseUrl,
+  Tabs,
+  TabItem,
+  /*
 	custom, rasa-x
 	*/
-	Prototyper,
-	DownloadButton,
-	TrainButton,
-	/*
+  Prototyper,
+  DownloadButton,
+  TrainButton,
+  /*
 	custom, tabula
 	*/
 };

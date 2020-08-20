@@ -5,11 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 import React from 'react';
-import DefaultNavbarItem from './DefaultNavbarItem';
-import {useActiveVersion, useLatestVersion} from '@theme/hooks/useDocs';
+import { useActiveVersion, useLatestVersion } from '@theme/hooks/useDocs';
 
-const getVersionMainDoc = (version) =>
-  version.docs.find((doc) => doc.id === version.mainDocId);
+import DefaultNavbarItem from './DefaultNavbarItem';
+
+const getVersionMainDoc = (version) => version.docs.find((doc) => doc.id === version.mainDocId);
 
 const versionLabel = (version, nextVersionLabel) =>
   version.name === 'next' ? nextVersionLabel : version.name;

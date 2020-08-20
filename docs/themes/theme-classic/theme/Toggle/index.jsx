@@ -12,36 +12,37 @@ import clsx from 'clsx';
 import styles from './styles.module.scss';
 
 const Dark = ({ icon, style }) => (
-	<span className={clsx(styles.toggle, styles.dark)} style={style}>
-		{icon}
-	</span>
+  <span className={clsx(styles.toggle, styles.dark)} style={style}>
+    {icon}
+  </span>
 );
 
 const Light = ({ icon, style }) => (
-	<span className={clsx(styles.toggle, styles.light)} style={style}>
-		{icon}
-	</span>
+  <span className={clsx(styles.toggle, styles.light)} style={style}>
+    {icon}
+  </span>
 );
 
+// eslint-disable-next-line react/display-name
 export default function (props) {
-	const {
-		siteConfig: {
-			themeConfig: {
-				colorMode: {
-					switchConfig: { darkIcon, darkIconStyle, lightIcon, lightIconStyle },
-				},
-			},
-		},
-		isClient,
-	} = useDocusaurusContext();
-	return (
-		<Toggle
-			disabled={!isClient}
-			icons={{
-				checked: <Dark icon={darkIcon} style={darkIconStyle} />,
-				unchecked: <Light icon={lightIcon} style={lightIconStyle} />,
-			}}
-			{...props}
-		/>
-	);
+  const {
+    siteConfig: {
+      themeConfig: {
+        colorMode: {
+          switchConfig: { darkIcon, darkIconStyle, lightIcon, lightIconStyle },
+        },
+      },
+    },
+    isClient,
+  } = useDocusaurusContext();
+  return (
+    <Toggle
+      disabled={!isClient}
+      icons={{
+        checked: <Dark icon={darkIcon} style={darkIconStyle} />,
+        unchecked: <Light icon={lightIcon} style={lightIconStyle} />,
+      }}
+      {...props}
+    />
+  );
 }

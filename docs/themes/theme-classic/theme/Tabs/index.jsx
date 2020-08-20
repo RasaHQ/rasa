@@ -10,136 +10,136 @@ import clsx from 'clsx';
 
 import styles from './styles.module.scss';
 const keys = {
-	left: 37,
-	right: 39,
-	tab: 9,
+  left: 37,
+  right: 39,
+  tab: 9,
 };
 
 function Tabs(props) {
-	const { block, children, defaultValue, values, groupId } = props;
-	const { tabGroupChoices, setTabGroupChoices } = useUserPreferencesContext();
-	const [selectedValue, setSelectedValue] = useState(defaultValue);
-	const [keyboardPress, setKeyboardPress] = useState(false);
+  const { block, children, defaultValue, values, groupId } = props;
+  const { tabGroupChoices, setTabGroupChoices } = useUserPreferencesContext();
+  const [selectedValue, setSelectedValue] = useState(defaultValue);
+  const [keyboardPress, setKeyboardPress] = useState(false);
 
-	if (groupId != null) {
-		const relevantTabGroupChoice = tabGroupChoices[groupId];
+  if (groupId != null) {
+    const relevantTabGroupChoice = tabGroupChoices[groupId];
 
-		if (
-			relevantTabGroupChoice != null &&
-			relevantTabGroupChoice !== selectedValue &&
-			values.some((value) => value.value === relevantTabGroupChoice)
-		) {
-			setSelectedValue(relevantTabGroupChoice);
-		}
-	}
+    if (
+      relevantTabGroupChoice != null &&
+      relevantTabGroupChoice !== selectedValue &&
+      values.some((value) => value.value === relevantTabGroupChoice)
+    ) {
+      setSelectedValue(relevantTabGroupChoice);
+    }
+  }
 
-	const changeSelectedValue = (newValue) => {
-		setSelectedValue(newValue);
+  const changeSelectedValue = (newValue) => {
+    setSelectedValue(newValue);
 
-		if (groupId != null) {
-			setTabGroupChoices(groupId, newValue);
-		}
-	};
+    if (groupId != null) {
+      setTabGroupChoices(groupId, newValue);
+    }
+  };
 
-	const tabRefs = [];
+  const tabRefs = [];
 
-	const focusNextTab = (tabs, target) => {
-		const next = tabs.indexOf(target) + 1;
+  const focusNextTab = (tabs, target) => {
+    const next = tabs.indexOf(target) + 1;
 
-		if (!tabs[next]) {
-			tabs[0].focus();
-		} else {
-			tabs[next].focus();
-		}
-	};
+    if (!tabs[next]) {
+      tabs[0].focus();
+    } else {
+      tabs[next].focus();
+    }
+  };
 
-	const focusPreviousTab = (tabs, target) => {
-		const prev = tabs.indexOf(target) - 1;
+  const focusPreviousTab = (tabs, target) => {
+    const prev = tabs.indexOf(target) - 1;
 
-		if (!tabs[prev]) {
-			tabs[tabs.length - 1].focus();
-		} else {
-			tabs[prev].focus();
-		}
-	};
+    if (!tabs[prev]) {
+      tabs[tabs.length - 1].focus();
+    } else {
+      tabs[prev].focus();
+    }
+  };
 
-	const handleKeydown = (tabs, target, event) => {
-		switch (event.keyCode) {
-			case keys.right:
-				focusNextTab(tabs, target);
-				break;
+  const handleKeydown = (tabs, target, event) => {
+    switch (event.keyCode) {
+      case keys.right:
+        focusNextTab(tabs, target);
+        break;
 
-			case keys.left:
-				focusPreviousTab(tabs, target);
-				break;
+      case keys.left:
+        focusPreviousTab(tabs, target);
+        break;
 
-			default:
-				break;
-		}
-	};
+      default:
+        break;
+    }
+  };
 
-	const handleKeyboardEvent = (event) => {
-		if (event.metaKey || event.altKey || event.ctrlKey) {
-			return;
-		}
+  const handleKeyboardEvent = (event) => {
+    if (event.metaKey || event.altKey || event.ctrlKey) {
+      return;
+    }
 
-		setKeyboardPress(true);
-	};
+    setKeyboardPress(true);
+  };
 
-	const handleMouseEvent = () => {
-		setKeyboardPress(false);
-	};
+  const handleMouseEvent = () => {
+    setKeyboardPress(false);
+  };
 
-	useEffect(() => {
-		window.addEventListener('keydown', handleKeyboardEvent);
-		window.addEventListener('mousedown', handleMouseEvent);
-	}, []);
-	return (
-		<div>
-			<ul
-				role="tablist"
-				aria-orientation="horizontal"
-				className={clsx('tabs', {
-					'tabs--block': block,
-				})}
-			>
-				{values.map(({ value, label }) => (
-					<li
-						role="tab"
-						tabIndex={0}
-						aria-selected={selectedValue === value}
-						className={clsx('tabs__item', styles.tabItem, {
-							'tabs__item--active': selectedValue === value,
-						})}
-						style={
-							keyboardPress
-								? {}
-								: {
-										outline: 'none',
-								  }
-						}
-						key={value}
-						ref={(tabControl) => tabRefs.push(tabControl)}
-						onKeyDown={(event) => {
-							handleKeydown(tabRefs, event.target, event);
-							handleKeyboardEvent(event);
-						}}
-						onFocus={() => changeSelectedValue(value)}
-						onClick={() => {
-							changeSelectedValue(value);
-							setKeyboardPress(false);
-						}}
-						onPointerDown={() => setKeyboardPress(false)}
-					>
-						{label}
-					</li>
-				))}
-			</ul>
-			<div role="tabpanel" className="margin-vert--md">
-				{Children.toArray(children).filter((child) => child.props.value === selectedValue)[0]}
-			</div>
-		</div>
-	);
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyboardEvent);
+    window.addEventListener('mousedown', handleMouseEvent);
+  }, []);
+  return (
+    <div>
+      <ul
+        role="tablist"
+        aria-orientation="horizontal"
+        className={clsx('tabs', {
+          'tabs--block': block,
+        })}
+      >
+        {values.map(({ value, label }) => (
+          <li
+            role="tab"
+            tabIndex={0}
+            aria-selected={selectedValue === value}
+            className={clsx('tabs__item', styles.tabItem, {
+              'tabs__item--active': selectedValue === value,
+            })}
+            style={
+              keyboardPress
+                ? {}
+                : {
+                    outline: 'none',
+                  }
+            }
+            key={value}
+            ref={(tabControl) => tabRefs.push(tabControl)}
+            onKeyDown={(event) => {
+              handleKeydown(tabRefs, event.target, event);
+              handleKeyboardEvent(event);
+            }}
+            onFocus={() => changeSelectedValue(value)}
+            onClick={() => {
+              changeSelectedValue(value);
+              setKeyboardPress(false);
+            }}
+            onPointerDown={() => setKeyboardPress(false)}
+          >
+            {label}
+          </li>
+        ))}
+      </ul>
+      <div role="tabpanel" className="margin-vert--md">
+        {Children.toArray(children).filter((child) => child.props.value === selectedValue)[0]}
+      </div>
+    </div>
+  );
 }
 
 export default Tabs;
