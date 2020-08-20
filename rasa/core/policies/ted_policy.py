@@ -382,10 +382,16 @@ class TEDPolicy(Policy):
                     # TODO we don't take sequence features because that makes us deal
                     #  with 4D sparse tensors
                     continue
-                attribute_features[feature_type] = [
-                    np.array(sparse_features[feature_type]),
-                    np.array(dense_features[feature_type]),
-                ]
+                attribute_features[feature_type] = []
+                if feature_type in sparse_features:
+                    attribute_features[feature_type].append(
+                        np.array(sparse_features[feature_type])
+                    )
+                if feature_type in dense_features:
+                    attribute_features[feature_type].append(
+                        np.array(dense_features[feature_type])
+                    )
+
             attribute_data[attribute] = attribute_features
 
         return attribute_data
