@@ -203,8 +203,8 @@ class Domain:
         """Merge this domain with another one, combining their attributes.
 
         List attributes like ``intents`` and ``actions`` will be deduped
-        and merged. Single attributes will be taken from ``self`` unless
-        override is `True`, in which case they are taken from ``domain``."""
+        and merged. Single attributes will be taken from `self` unless
+        override is `True`, in which case they are taken from `domain`."""
 
         if not domain or domain.is_empty():
             return self
