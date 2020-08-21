@@ -1240,7 +1240,6 @@ class DIET(TransformerRasaModel):
             self._prepare_sparse_dense_layers(
                 self.data_signature[name][feature_type],
                 f"{name}_{feature_type}",
-                self.config[REGULARIZATION_CONSTANT],
                 self.config[DENSE_DIMENSION][name],
             )
             self._prepare_ffnn_layer(

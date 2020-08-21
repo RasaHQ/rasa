@@ -666,11 +666,7 @@ class TransformerRasaModel(RasaModel):
         )
 
     def _prepare_sparse_dense_layers(
-        self,
-        data_signature: List[FeatureSignature],
-        name: Text,
-        reg_lambda: float,
-        dense_dim: int,
+        self, data_signature: List[FeatureSignature], name: Text, dense_dim: int
     ) -> None:
         sparse = False
         dense = False
@@ -685,7 +681,9 @@ class TransformerRasaModel(RasaModel):
 
         if sparse:
             self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
-                units=dense_dim, reg_lambda=reg_lambda, name=name
+                units=dense_dim,
+                reg_lambda=self.config[REGULARIZATION_CONSTANT],
+                name=name,
             )
             if not dense:
                 # create dense labels for the input to use in negative sampling

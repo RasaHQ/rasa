@@ -790,14 +790,12 @@ class TED(TransformerRasaModel):
                 self._prepare_sparse_dense_layers(
                     self.data_signature[name][feature_type],
                     f"{name}_{feature_type}",
-                    self.config[REGULARIZATION_CONSTANT],
                     10,
                 )
             else:
                 self._prepare_sparse_dense_layers(
                     self.data_signature[name][feature_type],
                     f"{name}_{feature_type}",
-                    self.config[REGULARIZATION_CONSTANT],
                     self.data_signature[name][feature_type][0][1],
                 )
 
@@ -846,7 +844,7 @@ class TED(TransformerRasaModel):
         mask = self._compute_mask(sequence_lengths)
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
-        dialogue_transformed = self._tf_layers[f"{DIALOGUE}_transformer"](
+        dialogue_transformed = self._tf_layers[f"transformer.{DIALOGUE}"](
             dialogue, 1 - mask, self._training
         )
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
