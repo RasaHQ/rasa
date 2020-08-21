@@ -398,6 +398,9 @@ def raise_deprecation_warning(
 
     # need the correct stacklevel now
     kwargs.setdefault("stacklevel", 3)
+    # we're raising a `FutureWarning` instead of a `DeprecationWarning` because
+    # we want these warnings to be visible in the terminal of our users
+    # https://docs.python.org/3/library/warnings.html#warning-categories
     raise_warning(message, FutureWarning, docs, **kwargs)
 
 
