@@ -1,1 +1,0 @@
-If two entities are separated by a comma (or any other symbol), extract them as two separate entities.
