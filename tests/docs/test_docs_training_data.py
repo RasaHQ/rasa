@@ -11,7 +11,7 @@ MDX_DOCS_FILES = Path("docs/docs").glob("**/*.mdx")
 # we're matching codeblocks with either `yaml-rasa` or `yml-rasa` types
 # we support title or no title (you'll get a nice error message if there is a title)
 TRAINING_DATA_CODEBLOCK_RE = re.compile(
-    r"```y(?:a)?ml-rasa(?: title=[\"'](?P<title>[^\"']+)[\"'])?[^\n]*\n(?P<codeblock>.+?)```",
+    r"```y(?:a)?ml-rasa(?: title=[\"'][^\"']+[\"'])?[^\n]*\n(?P<codeblock>.+?)```",
     re.DOTALL,
 )
 
@@ -24,12 +24,12 @@ def test_docs_training_data(mdx_file_path: Path):
     matches = TRAINING_DATA_CODEBLOCK_RE.finditer(mdx_content)
 
     for match in matches:
-        title = match.group("title")
         codeblock = match.group("codeblock")
+        start_index = match.span()[0]
+        line_number = mdx_content.count("\n", 0, start_index) + 1
         try:
             RasaYAMLReader.validate(codeblock)
         except ValueError as e:
-            error_message = f"({mdx_file_path}): Invalid training data found "
-            if title:
-                error_message = f'{error_message} in block with title "{title}"'
-            raise AssertionError(error_message) from e
+            raise AssertionError(
+                f"({mdx_file_path}): Invalid training data found at line {line_number}"
+            ) from e
