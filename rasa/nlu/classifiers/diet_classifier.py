@@ -818,7 +818,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             if self.component_config[BILOU_FLAG]:
                 tags = bilou_utils.ensure_consistent_bilou_tagging(tags)
-                tags = bilou_utils.remove_bilou_prefixes(tags)
 
             predicted_tags[tag_spec.tag_name] = tags
 
