@@ -205,7 +205,7 @@ class ResponseSelector(DIETClassifier):
         # should predict those tokens.
         MASKED_LM: False,
         # Name of the intent for which this response selector is to be trained
-        INTENT_RESPONSE_KEY: None,
+        RETRIEVAL_INTENT: None,
         # Boolean flag to check if actual text of the response should be used as ground truth label for
         # training the model.
         TRAIN_ON_TEXT: False,
@@ -253,7 +253,7 @@ class ResponseSelector(DIETClassifier):
         return DIET2DIET
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
-        self.retrieval_intent = config[INTENT_RESPONSE_KEY]
+        self.retrieval_intent = config[RETRIEVAL_INTENT]
 
     def _check_config_parameters(self) -> None:
         super()._check_config_parameters()
