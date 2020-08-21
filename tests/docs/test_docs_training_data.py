@@ -7,11 +7,12 @@ import pytest
 from rasa.nlu.training_data.formats import RasaYAMLReader
 
 
-MDX_DOCS_FILES = Path("docs/docs").glob("**/*.mdx")
+DOCS_BASE_DIR = Path("docs/")
+MDX_DOCS_FILES = (DOCS_BASE_DIR / "docs").glob("**/*.mdx")
 # we're matching codeblocks with either `yaml-rasa` or `yml-rasa` types
 # we support title or no title (you'll get a nice error message if there is a title)
 TRAINING_DATA_CODEBLOCK_RE = re.compile(
-    r"```y(?:a)?ml-rasa(?: title=[\"'][^\"']+[\"'])?[^\n]*\n(?P<codeblock>.+?)```",
+    r"```y(?:a)?ml-rasa(?: title=[\"'][^\"']+[\"'])?(?: \((?P<yaml_path>.+?)\))?[^\n]*\n(?P<codeblock>.*?)```",
     re.DOTALL,
 )
 
@@ -24,7 +25,13 @@ def test_docs_training_data(mdx_file_path: Path):
     matches = TRAINING_DATA_CODEBLOCK_RE.finditer(mdx_content)
 
     for match in matches:
-        codeblock = match.group("codeblock")
+        yaml_path = match.group("yaml_path")
+        if yaml_path:
+            with (DOCS_BASE_DIR / yaml_path).open("r") as handle:
+                codeblock = handle.read()
+        else:
+            codeblock = match.group("codeblock")
+
         start_index = match.span()[0]
         line_number = mdx_content.count("\n", 0, start_index) + 1
         try:
