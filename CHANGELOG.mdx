@@ -392,7 +392,7 @@ Bugfixes
   specified as a list in the `endpoints.yml` event broker config under a new key
   `queues`. Example config:
 
-  ```yaml
+  ```yaml-rasa
   event_broker:
     type: pika
     url: localhost
@@ -809,7 +809,7 @@ Bugfixes
 
   The following settings match the previous `NGramFeaturizer`:
 
-  ```yaml
+  ```yaml-rasa
   - name: 'CountVectorsFeaturizer'
       analyzer: 'char_wb'
       min_ngram: 3
