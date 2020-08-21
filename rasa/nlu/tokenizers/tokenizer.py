@@ -95,7 +95,7 @@ class Tokenizer(Component):
         for example in training_data.training_examples:
             for attribute in MESSAGE_ATTRIBUTES:
                 if example.get(attribute) is not None:
-                    if attribute == INTENT or INTENT_RESPONSE_KEY:
+                    if attribute in [INTENT, INTENT_RESPONSE_KEY]:
                         tokens = self._split_intent(example, attribute)
                     else:
                         tokens = self.tokenize(example, attribute)
