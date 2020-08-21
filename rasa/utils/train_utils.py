@@ -1,10 +1,11 @@
-import numpy as np
-import logging
 from typing import Optional, Text, Dict, Any, Union, List, Tuple
+
+import numpy as np
 
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
+from rasa.utils import common as common_utils
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -17,9 +18,6 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     COSINE,
 )
-
-
-logger = logging.getLogger(__name__)
 
 
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
@@ -146,20 +144,25 @@ def load_tf_hub_model(model_url: Text) -> Any:
 
 
 def _replace_deprecated_option(
-    old_option: Text, new_option: Union[Text, List[Text]], config: Dict[Text, Any]
+    old_option: Text,
+    new_option: Union[Text, List[Text]],
+    config: Dict[Text, Any],
+    warn_until_version: Text,
 ) -> Dict[Text, Any]:
     if old_option in config:
         if isinstance(new_option, str):
-            logger.warning(
+            common_utils.raise_deprecation_warning(
                 f"Option '{old_option}' got renamed to '{new_option}'. "
-                f"Please update your configuration file."
+                f"Please update your configuration file.",
+                warn_until_version=warn_until_version,
             )
             config[new_option] = config[old_option]
         else:
-            logger.warning(
+            common_utils.raise_deprecation_warning(
                 f"Option '{old_option}' got renamed to "
                 f"a dictionary '{new_option[0]}' with a key '{new_option[1]}'. "
-                f"Please update your configuration file."
+                f"Please update your configuration file.",
+                warn_until_version=warn_until_version,
             )
             option_dict = config.get(new_option[0], {})
             option_dict[new_option[1]] = config[old_option]
