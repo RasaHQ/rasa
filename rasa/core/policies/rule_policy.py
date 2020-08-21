@@ -4,7 +4,7 @@ from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 import re
 from collections import defaultdict
 
-from rasa.core.events import FormValidation
+from rasa.core.events import LoopUnhappy
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -467,7 +467,7 @@ class RulePolicy(MemoizationPolicy):
 
             if DO_NOT_VALIDATE_FORM in unhappy_path_conditions:
                 logger.debug("Added `FormValidation(False)` event.")
-                tracker.update(FormValidation(False))
+                tracker.update(LoopUnhappy(False))
 
         if predicted_action_name is not None:
             logger.debug(

@@ -234,9 +234,23 @@ class DialogueStateTracker:
         )
         self.change_loop_to(form_name)
 
-    def set_form_validation(self, validate: bool) -> None:
-        """Toggle form validation"""
+    # TODO: Change this :-D
+    def make_loop_unhappy(self, validate: bool) -> None:
+        """Toggle loop validation.
+
+        Args:
+            validate: `False` if the loop was run after an unhappy path.
+        """
         self.active_loop["validate"] = validate
+
+    def set_form_validation(self, validate: bool) -> None:
+        common_utils.raise_warning(
+            "`set_form_validation` is deprecated and will be removed "
+            "in future versions. Please use `change_loop_to` "
+            "instead.",
+            category=DeprecationWarning,
+        )
+        self.make_loop_unhappy(validate)
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active loop that it was rejected"""
