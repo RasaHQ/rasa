@@ -1159,7 +1159,7 @@ class DIET(RasaModel):
         self._entity_tag_specs = self._ordered_tag_specs(entity_tag_specs)
 
         # tf objects
-        self._tf_layers: Dict[Text : tf.keras.layers.Layer] = {}
+        self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
         self._prepare_layers()
 
         # tf training
