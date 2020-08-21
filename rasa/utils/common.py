@@ -396,7 +396,9 @@ def raise_deprecation_warning(
     if warn_until_version not in message:
         message = f"{message} (will be removed in {warn_until_version})"
 
-    raise_warning(message, DeprecationWarning, docs, **kwargs)
+    # need the correct stacklevel now
+    kwargs.setdefault("stacklevel", 3)
+    raise_warning(message, FutureWarning, docs, **kwargs)
 
 
 class RepeatedLogFilter(logging.Filter):
