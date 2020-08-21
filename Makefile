@@ -15,7 +15,7 @@ help:
 	@echo "    lint"
 	@echo "        Lint code with flake8, and check if black formatter should be applied."
 	@echo "    types"
-	@echo "        Check for type errors using pytype."
+	@echo "        Check for type errors using mypy."
 	@echo "    prepare-tests-ubuntu"
 	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
 	@echo "    prepare-tests-macos"
@@ -37,7 +37,7 @@ clean:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f  {} +
 	rm -rf build/
-	rm -rf .pytype/
+	rm -rf .mypy_cache/
 	rm -rf dist/
 	rm -rf docs/build
 	rm -rf docs/.docusaurus
@@ -68,7 +68,7 @@ lint:
 	poetry run black --check rasa tests
 
 types:
-	poetry run pytype --keep-going rasa -j 16
+	poetry run mypy rasa
 
 prepare-tests-files:
 	poetry install -E spacy

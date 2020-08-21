@@ -142,7 +142,6 @@ fakeredis = "^1.4.0"
 mongomock = "^3.18.0"
 black = "^19.10b0"
 flake8 = "^3.8.3"
-pytype = "^2020.6.1"
 google-cloud-storage = "^1.29.0"
 azure-storage-blob = "<12.4.0"
 coveralls = "^2.0.0"
@@ -150,6 +149,7 @@ towncrier = "^19.2.0"
 toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
 pydoc-markdown = "3.3.0.post1"
+mypy = "^0.782"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
