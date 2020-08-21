@@ -291,7 +291,7 @@ class PikaEventBroker(EventBroker):
         self.password = password
         self.port = port
         self.channel: Optional["Channel"] = None
-        self.queues = self._get_queues_from_args(queues, kwargs)
+        self.queues = self._get_queues_from_args(queues)
         self.should_keep_unpublished_messages = should_keep_unpublished_messages
         self.raise_on_failure = raise_on_failure
 
@@ -315,26 +315,23 @@ class PikaEventBroker(EventBroker):
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text], Text, None], kwargs: Any
+        queues_arg: Union[List[Text], Tuple[Text], Text, None]
     ) -> Union[List[Text], Tuple[Text]]:
         """Get queues for this event broker.
 
         The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
-        publish to is `queues` (as of Rasa Open Source version 1.8.2). This function
-        ensures backwards compatibility with the old `queue` argument. This method
+        publish to is `queues` (as of Rasa Open Source version 1.8.2). This method
         can be removed in the future, and `self.queues` should just receive the value of
         the `queues` kwarg in the constructor.
 
         Args:
             queues_arg: Value of the supplied `queues` argument.
-            kwargs: Additional kwargs supplied to the `PikaEventBroker` constructor.
-                If `queues_arg` is not supplied, the `queue` kwarg will be used instead.
 
         Returns:
             Queues this event broker publishes to.
 
         Raises:
-            `ValueError` if no valid `queue` or `queues` argument was found.
+            `ValueError` if no valid `queues` argument was found.
         """
         if queues_arg and isinstance(queues_arg, (list, tuple)):
             return queues_arg
