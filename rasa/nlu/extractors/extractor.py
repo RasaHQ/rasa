@@ -23,6 +23,7 @@ from rasa.nlu.constants import (
 )
 from rasa.nlu.training_data import Message
 import rasa.utils.common as common_utils
+import rasa.nlu.utils.bilou_utils as bilou_utils
 
 
 class EntityExtractor(Component):
@@ -148,11 +149,40 @@ class EntityExtractor(Component):
             current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
             current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
 
-            new_tag_found = (
-                last_entity_tag != current_entity_tag
-                or last_group_tag != current_group_tag
-                or last_role_tag != current_role_tag
+            group_or_role_changed = (
+                last_group_tag != current_group_tag or last_role_tag != current_role_tag
             )
+
+            if bilou_utils.bilou_prefix_from_tag(current_entity_tag):
+                # checks for new bilou tag
+                # new bilou tag begins are not with I- , L- tags
+                new_bilou_tag_starts = last_entity_tag != current_entity_tag and (
+                    bilou_utils.LAST
+                    != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                    and bilou_utils.INSIDE
+                    != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                )
+
+                # to handle bilou tags such as only I-, L- tags without B-tag
+                # and handle multiple U-tags consecutively
+                new_unigram_bilou_tag_starts = (
+                    last_entity_tag == NO_ENTITY_TAG
+                    or bilou_utils.UNIT
+                    == bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                )
+
+                new_tag_found = (
+                    new_bilou_tag_starts
+                    or new_unigram_bilou_tag_starts
+                    or group_or_role_changed
+                )
+                last_entity_tag = current_entity_tag
+                current_entity_tag = bilou_utils.tag_without_prefix(current_entity_tag)
+            else:
+                new_tag_found = (
+                    last_entity_tag != current_entity_tag or group_or_role_changed
+                )
+                last_entity_tag = current_entity_tag
 
             if new_tag_found:
                 # new entity found
@@ -188,7 +218,6 @@ class EntityExtractor(Component):
                 )
                 entities.append(entity)
 
-            last_entity_tag = current_entity_tag
             last_group_tag = current_group_tag
             last_role_tag = current_role_tag
             last_token_end = token.end

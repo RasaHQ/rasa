@@ -33,6 +33,11 @@ from rasa.importers.importer import TrainingDataImporter
             "examples/rules/domain.yml",
             "examples/rules/data",
         ),
+        (
+            "rasa/cli/initial_project/config.yml",
+            "rasa/cli/initial_project/domain.yml",
+            "rasa/cli/initial_project/data",
+        ),
     ],
 )
 async def test_example_bot_training_data_not_raises(

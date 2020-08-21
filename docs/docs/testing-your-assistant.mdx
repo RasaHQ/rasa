@@ -59,10 +59,10 @@ Here are some examples:
       - utter_greet
   * request_restaurant: im looking for a restaurant
       - restaurant_form
-      - form{"name": "restaurant_form"}
+      - active_loop{"name": "restaurant_form"}
   * inform: [afghan](cuisine) food
       - active_loop: restaurant_form
-      - form{"name": null}
+      - active_loop{"name": null}
       - utter_slots_values
   * thankyou: thanks
       - utter_noworries
@@ -77,12 +77,12 @@ Here are some examples:
       - utter_greet
   * request_restaurant: im looking for a restaurant
       - restaurant_form
-      - form{"name": "restaurant_form"}
+      - active_loop{"name": "restaurant_form"}
   <!-- The user sends a message which should not be handled by the form. -->
   * chitchat: can you share your boss with me?
       - utter_chitchat
       - restaurant_form
-      - form{"name": null}
+      - active_loop{"name": null}
       - utter_slots_values
   * thankyou: thanks
       - utter_noworries
