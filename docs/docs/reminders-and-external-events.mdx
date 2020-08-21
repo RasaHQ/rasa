@@ -34,12 +34,13 @@ Let's say you want your assistant to remind you to call a friend in 5 seconds.
 Thus, we define an intent `ask_remind_call` with some NLU data,
 
 ```yaml-rasa
-## intent:ask_remind_call
-- remind me to call [Albert](name)
-- remind me to call [Susan](name)
-- later I have to call [Daksh](name)
-- later I have to call [Anna](name)
-...
+nlu:
+- intent: ask_remind_call
+  examples: |
+    - remind me to call [Albert](name)
+    - remind me to call [Susan](name)
+    - later I have to call [Daksh](name)
+    - later I have to call [Anna](name)
 ```
 
 and connect this intent with a new custom action `action_set_reminder`.

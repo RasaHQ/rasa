@@ -69,12 +69,15 @@ times in a row, you might want to tell the user what you can help them
 with. So your story might look like this:
 
 ```yaml-rasa
-* out_of_scope
-   - utter_default
-* out_of_scope
-   - utter_default
-* out_of_scope
-   - utter_help_message
+stories:
+  - story: utter help after 2 fallbacks
+    steps:
+    - intent: out_of_scope
+    - action: utter_default
+    - intent: out_of_scope
+    - action: utter_default
+    - intent: out_of_scope
+    - action: utter_help_message
 ```
 
 For Rasa Core to learn this pattern, the `max_history`
@@ -93,13 +96,15 @@ the ones in your stories files.
 This is because if you have stories like:
 
 ```yaml-rasa
-# thanks
-* thankyou
-   - utter_youarewelcome
-
-# bye
-* goodbye
-   - utter_goodbye
+stories: 
+  - story: thank
+    steps:
+    - intent: thankyou
+    - action: utter_youarewelcome
+  - story: say goodbye
+    steps: 
+    - intent: goodbye
+    - action: utter_goodbye
 ```
 
 You actually want to teach your policy to **ignore** the dialogue history

@@ -161,10 +161,13 @@ of only whole words. You can add character level featurization to your pipeline 
 using the `char_wb` analyzer for the `CountVectorsFeaturizer`, for example:
 
 ```yaml-rasa
+pipeline:
+# <other components> 
 - name: CountVectorsFeaturizer
   analyze: char_wb
   min_ngram: 1
   max_ngram: 4
+# <other components> 
 ```
 
 In addition to character-level featurization, you can add common misspellings to

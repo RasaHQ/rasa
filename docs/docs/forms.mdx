@@ -17,7 +17,6 @@ For example:
 
 ```yaml-rasa
 policies:
-- ... # other policies
 - name: RulePolicy
 ```
 
@@ -55,6 +54,7 @@ which describes when the assistant should run the form. In the case a specific i
 triggering a form, you can for example use the following rule:
 
 ```yaml-rasa
+rules:
 - rule: Activate form
   steps:
   - intent: intent_which_activates_form
@@ -77,6 +77,7 @@ The following example runs the utterance `utter_all_slots_filled` as soon as the
 `your_form` filled all required slots.
 
 ```yaml-rasa
+rules:
 - rule: Submit form
   condition:
   # Condition that form is active.
@@ -196,6 +197,7 @@ with rules or stories. For example, if you expect your users to chitchat with yo
 you could add a story like this:
 
 ```yaml-rasa
+rules:
 - rule: Example of an unhappy path
   condition:
   # Condition that form is active.
@@ -217,6 +219,7 @@ the form and reset the requested slot. An example story of such conversation cou
 look as follows:
 
 ```yaml-rasa
+rules:
 - rule: Example of an unhappy path
   condition:
   # Condition that form is active.
@@ -253,7 +256,6 @@ section of your domain:
 
 ```yaml-rasa
 actions:
-- ... # other actions
 - validate_your_form
 ```
 
@@ -394,29 +396,32 @@ The response to this `explain` intent depends on where we are in the story.
 In the restaurant case, your stories would look something like this:
 
 ```yaml-rasa
-## explain cuisine slot
-* request_restaurant
-    - restaurant_form
-    - active_loop{"name": "restaurant_form"}
-    - slot{"requested_slot": "cuisine"}
-* explain
-    - utter_explain_cuisine
-    - restaurant_form
-    - slot{"cuisine": "greek"}
-    ( ... all other slots the form set ... )
-    - active_loop{"name": null}
+stories: 
+- story: explain cuisine slot
+  steps:
+  - intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant
+  - slot_was_set:
+    - requested_slot: cuisine
+  - intent: explain 
+  - action: utter_explain_cuisine
+  - action: restaurant_form
+  - active_loop: null
 
-## explain num_people slot
-* request_restaurant
-    - restaurant_form
-    - active_loop{"name": "restaurant_form"}
-    - slot{"requested_slot": "num_people"}
-* explain
-    - utter_explain_num_people
-    - restaurant_form
-    - slot{"cuisine": "greek"}
-    ( ... all other slots the form set ... )
-    - active_loop{"name": null}
+- story: explain num_people slot
+  steps:
+  - intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant
+  - slot_was_set:
+    - requested_slot: cuisine
+  - slot_was_set:
+    - requested_slot: num_people
+  - intent: explain 
+  - action: utter_explain_num_people
+  - action: restaurant_form
+  - active_loop: null
 ```
 
 Again, it is **strongly** recommended that you use 

@@ -44,9 +44,11 @@ two ways to use these responses:
    stories:
 
    ```yaml-rasa
-   ## greet the user
-   * intent_greet
-     - utter_greet
+   stories:
+   - story: greet user
+     steps:
+     - intent: greet
+     - action: utter_greet
    ```
 
    When `utter_greet` is run as an action, it will send the message from
@@ -102,13 +104,14 @@ as in story files, e.g. `/intent{entities}`. For example, if you let
 users choose a color by clicking a button, the button payloads may look like:
 
 ```yaml-rasa
-utter_ask_color:
-- text: "what color would you like?"
-  buttons:
-  - title: "blue"
-    payload: '/choose{"color": "blue"}'
-  - title: "red"
-    payload: '/choose{"color": "red"}'
+responses:
+  utter_ask_color:
+  - text: "what color would you like?"
+    buttons:
+    - title: "blue"
+      payload: '/choose{"color": "blue"}'
+    - title: "red"
+      payload: '/choose{"color": "red"}'
 ```
 
 

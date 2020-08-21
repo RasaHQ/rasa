@@ -71,10 +71,10 @@ For example:
 
 ```yaml-rasa
 entities:
-   - PERSON          # entity extracted by SpacyEntityExtractor
-   - time            # entity extracted by DucklingHTTPExtractor
-   - membership_type # custom entity extracted by CRFEntityExtractor
-   - priority        # custom entity extracted by CRFEntityExtractor
+  - PERSON          # entity extracted by SpacyEntityExtractor
+  - time            # entity extracted by DucklingHTTPExtractor
+  - membership_type # custom entity extracted by CRFEntityExtractor
+  - priority        # custom entity extracted by CRFEntityExtractor
 ```
 
 ## Slots
@@ -181,9 +181,9 @@ Make this a nice table instead.
 
   ```yaml-rasa
   slots:
-     risk_level:
-        type: categorical
-        values:
+    risk_level:
+      type: categorical
+      values:
         - low
         - medium
         - high
@@ -218,10 +218,10 @@ Make this a nice table instead.
 
   ```yaml-rasa
   slots:
-     temperature:
-        type: float
-        min_value: -100.0
-        max_value:  100.0
+    temperature:
+      type: float
+      min_value: -100.0
+      max_value:  100.0
   ```
 
 
@@ -258,8 +258,8 @@ Make this a nice table instead.
 
   ```yaml-rasa
   slots:
-     shopping_items:
-        type: list
+    shopping_items:
+      type: list
   ```
 
 
@@ -290,8 +290,8 @@ Make this a nice table instead.
 
   ```yaml-rasa
   slots:
-     internal_user_id:
-        type: unfeaturized
+    internal_user_id:
+      type: unfeaturized
   ```
 
 
@@ -344,14 +344,26 @@ Now we also need some training stories, so that Rasa Core
 can learn from these how to handle the different situations:
 
 ```yaml-rasa
-# story1
-...
-* inform{"people": "3"}
-  - action_book_table
-...
-# story2
-* inform{"people": "9"}
-  - action_explain_table_limit
+stories:
+- story: collecting table info
+  steps:
+  # ... other story steps
+  - intent: inform
+    entities:      
+    - people: 3
+  - slot_was_set:
+    - people: 3
+  - action: action_book_table
+
+- story: too many people at the table
+  steps:
+  # ... other story steps
+  - intent: inform
+    entities:      
+    - people: 9
+  - slot_was_set:
+    - people: 9
+  - action: action_explain_table_limit
 ```
 
 ### Slot Auto-fill
@@ -360,13 +372,17 @@ If your NLU model picks up an entity, and your domain contains a
 slot with the same name, the slot will be set automatically. For example:
 
 ```yaml-rasa
-# story_01
-* greet{"name": "Ali"}
-  - slot{"name": "Ali"}
-  - utter_greet
+stories:
+- story: entity slot-filling
+  steps:
+  - intent: greet
+    entities:      
+    - name: Ali
+  - slot_was_set:
+    - name: Ali
 ```
 
-In this case, you don't have to include the `- slot{}` part in the
+In this case, you don't have to include the `slot_was_set` part in the
 story, because it is automatically picked up.
 
 To disable this behavior for a particular slot, you can set the
