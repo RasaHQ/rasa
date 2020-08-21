@@ -144,7 +144,7 @@ async def test_ask_rephrase_after_failed_affirmation():
         f"""
         responses:
             utter_ask_rephrase:
-            - {rephrase_text}
+            - text: {rephrase_text}
         """
     )
     action = TwoStageFallbackAction()
