@@ -1,0 +1,2 @@
+Fixed a bug where domain fields such as ``store_entities_as_slots`` were overridden
+with defaults and therefore ignored.
