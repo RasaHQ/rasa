@@ -715,7 +715,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ):
             # no label features are present, get default features from _label_data
             model_data.add_features(
-                LABEL_SEQUENCE_FEATURES, self._use_default_label_features(label_ids)
+                LABEL_SENTENCE_FEATURES, self._use_default_label_features(label_ids)
             )
 
         # explicitly add last dimension to label_ids
