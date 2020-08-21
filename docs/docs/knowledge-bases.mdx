@@ -145,17 +145,17 @@ attribute of an object. The intent should contain lots of variations of both of 
 nlu:
 - intent: query_knowledge_base
   examples: |
-    - what [restaurants](object_type:restaurant) can you recommend?
-    - list some [restaurants](object_type:restaurant)
-    - can you name some [restaurants](object_type:restaurant) please?
-    - can you show me some [restaurant](object_type:restaurant) options
-    - list [German](cuisine) [restaurants](object_type:restaurant)
-    - do you have any [mexican](cuisine) [restaurants](object_type:restaurant)?
-    - do you know the [price range](attribute:price-range) of [that one](mention)?
+    - what [restaurants]{"entity": "object_type", "value": "restaurant"} can you recommend?
+    - list some [restaurants]{"entity": "object_type", "value": "restaurant"}
+    - can you name some [restaurants]{"entity": "object_type", "value": "restaurant"} please?
+    - can you show me some [restaurants]{"entity": "object_type", "value": "restaurant"} options
+    - list [German](cuisine) [restaurants]{"entity": "object_type", "value": "restaurant"}
+    - do you have any [mexican](cuisine) [restaurants]{"entity": "object_type", "value": "restaurant"}?
+    - do you know the [price range]{"entity": "attribute", "value": "price-range"} of [that one](mention)?
     - what [cuisine](attribute) is [it](mention)?
-    - do you know what [cuisine](attribute) the [last one](mention:LAST) has?
-    - does the [first one](mention:1) have [outside seating](attribute:outside-seating)?
-    - what is the [price range](attribute:price-range) of [Berlin Burrito Company](restaurant)?
+    - do you know what [cuisine](attribute) the [last one]{"entity": "mention", "value": "LAST"} has?
+    - does the [first one]{"entity": "mention", "value": "1"} have [outside seating]{"entity": "attribute", "value": "outside-seating"}?
+    - what is the [price range]{"entity": "attribute", "value": "price-range"} of [Berlin Burrito Company](restaurant)?
     - what about [I due forni](restaurant)?
     - can you tell me the [price range](attribute) of [that restaurant](mention)?
     - what [cuisine](attribute) do [they](mention) have?
