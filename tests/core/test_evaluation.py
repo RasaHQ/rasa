@@ -129,7 +129,7 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
     failed_stories = rasa.utils.io.read_file(stories_path)
 
     assert (
-        f"## simple_story_with_unknown_entity ({E2E_STORY_FILE_UNKNOWN_ENTITY})"
+        f"story: simple_story_with_unknown_entity ({E2E_STORY_FILE_UNKNOWN_ENTITY})"
         in failed_stories
     )
 
