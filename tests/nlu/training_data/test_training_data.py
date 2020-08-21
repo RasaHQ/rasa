@@ -4,7 +4,7 @@ import pytest
 
 import rasa.utils.io as io_utils
 from rasa.nlu import training_data
-from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
+from rasa.nlu.constants import TEXT, RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -162,12 +162,10 @@ def test_demo_data_filter_out_retrieval_intents(files):
     td = training_data_from_paths(files, language="en")
     assert len(td.training_examples) == 46
 
-    td1 = td.filter_training_examples(lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is None)
+    td1 = td.filter_training_examples(lambda ex: ex.get(RESPONSE_KEY) is None)
     assert len(td1.training_examples) == 42
 
-    td2 = td.filter_training_examples(
-        lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is not None
-    )
+    td2 = td.filter_training_examples(lambda ex: ex.get(RESPONSE_KEY) is not None)
     assert len(td2.training_examples) == 4
 
     # make sure filtering operation doesn't mutate the source training data

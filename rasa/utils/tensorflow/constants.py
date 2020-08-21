@@ -55,6 +55,8 @@ BILOU_FLAG = "BILOU_flag"
 
 RETRIEVAL_INTENT = "retrieval_intent"
 
+TRAIN_ON_TEXT = "train_on_text"
+
 SOFTMAX = "softmax"
 MARGIN = "margin"
 AUTO = "auto"

@@ -9,7 +9,8 @@ from rasa.nlu.constants import (
     ENTITIES,
     INTENT,
     RESPONSE,
-    RESPONSE_KEY_ATTRIBUTE,
+    RESPONSE_KEY,
+    INTENT_RESPONSE_KEY,
     TEXT,
     RESPONSE_IDENTIFIER_DELIMITER,
     FEATURE_TYPE_SEQUENCE,
@@ -66,7 +67,7 @@ class Message:
         d = self.as_dict()
         if d.get(INTENT, None):
             d[INTENT] = self.get_combined_intent_response_key()
-        d.pop(RESPONSE_KEY_ATTRIBUTE, None)
+        d.pop(RESPONSE_KEY, None)
         d.pop(RESPONSE, None)
         return d
 
@@ -109,7 +110,10 @@ class Message:
             if split_intent:
                 data[INTENT] = split_intent
             if response_key:
-                data[RESPONSE_KEY_ATTRIBUTE] = response_key
+                # intent label can be of form - {intent}/{response_key}, so store response_key separately and
+                # full intent label also separately
+                data[RESPONSE_KEY] = response_key
+                data[INTENT_RESPONSE_KEY] = intent
         if entities:
             data[ENTITIES] = entities
         return cls(text, data, **kwargs)
@@ -118,7 +122,7 @@ class Message:
         """Get intent as it appears in training data"""
 
         intent = self.get(INTENT)
-        response_key = self.get(RESPONSE_KEY_ATTRIBUTE)
+        response_key = self.get(RESPONSE_KEY)
         response_key_suffix = (
             f"{RESPONSE_IDENTIFIER_DELIMITER}{response_key}" if response_key else ""
         )

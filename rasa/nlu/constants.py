@@ -2,7 +2,8 @@ TEXT = "text"
 INTENT = "intent"
 RESPONSE = "response"
 
-RESPONSE_KEY_ATTRIBUTE = "response_key"
+RESPONSE_KEY = "response_key"
+INTENT_RESPONSE_KEY = "intent_response_key"
 
 ENTITIES = "entities"
 BILOU_ENTITIES = "bilou_entities"
@@ -35,7 +36,7 @@ TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClass
 
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
-MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE]
+MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE, INTENT_RESPONSE_KEY]
 DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE]
 
 LANGUAGE_MODEL_DOCS = {
@@ -48,6 +49,7 @@ TOKENS_NAMES = {
     TEXT: "text_tokens",
     INTENT: "intent_tokens",
     RESPONSE: "response_tokens",
+    INTENT_RESPONSE_KEY: "intent_response_key_tokens",
 }
 
 TOKENS = "tokens"

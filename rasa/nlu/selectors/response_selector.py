@@ -64,6 +64,7 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
     RETRIEVAL_INTENT,
+    TRAIN_ON_TEXT,
     SOFTMAX,
     AUTO,
     BALANCED,
@@ -75,7 +76,8 @@ from rasa.utils.tensorflow.constants import (
 from rasa.nlu.constants import (
     RESPONSE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
-    RESPONSE_KEY_ATTRIBUTE,
+    RESPONSE_KEY,
+    INTENT_RESPONSE_KEY,
     INTENT,
     DEFAULT_OPEN_UTTERANCE_TYPE,
     TEXT,
@@ -203,7 +205,10 @@ class ResponseSelector(DIETClassifier):
         # should predict those tokens.
         MASKED_LM: False,
         # Name of the intent for which this response selector is to be trained
-        RETRIEVAL_INTENT: None,
+        INTENT_RESPONSE_KEY: None,
+        # Boolean flag to check if actual text of the response should be used as ground truth label for
+        # training the model.
+        TRAIN_ON_TEXT: False,
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.
         TENSORBOARD_LOG_DIR: None,
@@ -248,7 +253,7 @@ class ResponseSelector(DIETClassifier):
         return DIET2DIET
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
-        self.retrieval_intent = config[RETRIEVAL_INTENT]
+        self.retrieval_intent = config[INTENT_RESPONSE_KEY]
 
     def _check_config_parameters(self) -> None:
         super()._check_config_parameters()
@@ -262,9 +267,9 @@ class ResponseSelector(DIETClassifier):
 
         retrieval_intent_mapping = {}
         for example in training_data.intent_examples:
-            retrieval_intent_mapping[
-                example.get(RESPONSE)
-            ] = f"{example.get(INTENT)}/{example.get(RESPONSE_KEY_ATTRIBUTE)}"
+            retrieval_intent_mapping[example.get(RESPONSE)] = example.get(
+                INTENT_RESPONSE_KEY
+            )
 
         return retrieval_intent_mapping
 
@@ -298,12 +303,19 @@ class ResponseSelector(DIETClassifier):
                 "all retrieval intents."
             )
 
-        label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=RESPONSE
+        label_attribute = (
+            RESPONSE if self.component_config[TRAIN_ON_TEXT] else INTENT_RESPONSE_KEY
         )
+
+        label_id_index_mapping = self._label_id_index_mapping(
+            training_data, attribute=label_attribute
+        )
+
+        # Todo: Revisit, this might not be needed/could be simplified.
         self.retrieval_intent_mapping = self._create_retrieval_intent_mapping(
             training_data
         )
+
         self.responses = training_data.responses
 
         if not label_id_index_mapping:
@@ -313,20 +325,22 @@ class ResponseSelector(DIETClassifier):
         self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
         self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping, attribute=RESPONSE
+            training_data, label_id_index_mapping, attribute=label_attribute
         )
 
         model_data = self._create_model_data(
             training_data.intent_examples,
             label_id_index_mapping,
-            label_attribute=RESPONSE,
+            label_attribute=label_attribute,
         )
 
         self._check_input_dimension_consistency(model_data)
 
         return model_data
 
-    def _full_response(self, label: Dict[Text, Any]) -> Optional[Dict[Text, Any]]:
+    def _full_response(
+        self, label: Dict[Text, Any]
+    ) -> Optional[Tuple[Text, Dict[Text, Any]]]:
         """Given a label return the full response based on the labels id.
 
         Args:
@@ -338,9 +352,14 @@ class ResponseSelector(DIETClassifier):
             the text but also buttons, images, ...
         """
         for key, responses in self.responses.items():
-            for response in responses:
-                if hash(response.get(TEXT, "")) == label.get("id"):
-                    return response
+            if self.component_config[TRAIN_ON_TEXT]:
+                for response in responses:
+                    if hash(response.get(TEXT, "")) == label.get("id"):
+                        return key, response
+            else:
+                if hash(key) == label.get("id"):
+                    # return the first response
+                    return key, responses[0]
         return None
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -348,11 +367,26 @@ class ResponseSelector(DIETClassifier):
 
         out = self._predict(message)
         label, label_ranking = self._predict_label(out)
-        retrieval_intent_name = self.retrieval_intent_mapping.get(label.get("name"))
+
+        # label_key, label_response = self._full_response(label) or {TEXT: label.get("name")}
+        label_retrieval_intent, label_responses = self._full_response(label)
+
+        # retrieval_intent_name = (
+        #     self.retrieval_intent_mapping.get(label.get("name"))
+        #     if self.component_config[TRAIN_ON_TEXT]
+        #     else label.get("name")
+        # )
 
         for ranking in label_ranking:
-            ranking["full_retrieval_intent"] = self.retrieval_intent_mapping.get(
-                ranking.get("name")
+            # ranking["full_retrieval_intent"] = (
+            #     self.retrieval_intent_mapping.get(ranking.get("name"))
+            #     if self.component_config[TRAIN_ON_TEXT]
+            #     else ranking.get("name")
+            # )
+            ranking["full_retrieval_intent"] = (
+                self.retrieval_intent_mapping.get(ranking.get("name"))
+                if self.component_config[TRAIN_ON_TEXT]
+                else ranking.get("name")
             )
 
         selector_key = (
@@ -366,9 +400,9 @@ class ResponseSelector(DIETClassifier):
         )
 
         prediction_dict = {
-            "response": self._full_response(label) or {TEXT: label.get("name")},
+            "response": label_responses,
             "ranking": label_ranking,
-            "full_retrieval_intent": retrieval_intent_name,
+            "full_retrieval_intent": label_retrieval_intent,
         }
 
         self._set_message_property(message, prediction_dict, selector_key)
@@ -417,7 +451,7 @@ class ResponseSelector(DIETClassifier):
         )
 
         model.retrieval_intent_mapping = retrieval_intent_mapping
-        model.collected_responses = meta.get("responses", {})
+        model.responses = meta.get("responses", {})
 
         return model  # pytype: disable=bad-return-type
 

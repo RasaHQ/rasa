@@ -29,6 +29,7 @@ from rasa.nlu.constants import (
     INTENT,
     TEXT,
     ENTITIES,
+    INTENT_RESPONSE_KEY,
     NO_ENTITY_TAG,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_TYPE,
@@ -464,7 +465,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if (
             self.component_config[NUM_TRANSFORMER_LAYERS] == 0
             and not self.component_config[ENTITY_RECOGNITION]
-            and attribute != INTENT
+            and attribute not in [INTENT, INTENT_RESPONSE_KEY]
         ):
             sparse_sequence_features = None
             dense_sequence_features = None

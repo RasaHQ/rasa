@@ -16,7 +16,7 @@ import rasa.nlu.utils
 from rasa.utils.common import raise_warning, lazy_property
 from rasa.nlu.constants import (
     RESPONSE,
-    RESPONSE_KEY_ATTRIBUTE,
+    RESPONSE_KEY,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
@@ -86,11 +86,7 @@ class TrainingData:
             responses.update(o.responses)
 
         return TrainingData(
-            training_examples,
-            entity_synonyms,
-            regex_features,
-            lookup_tables,
-            responses,
+            training_examples, entity_synonyms, regex_features, lookup_tables, responses
         )
 
     def filter_training_examples(
@@ -243,15 +239,16 @@ class TrainingData:
             # if response_key is None, that means the corresponding intent is not a
             # retrieval intent and hence no response text needs to be fetched.
             # If response_key is set, fetch the corresponding response text
-            if example.get(RESPONSE_KEY_ATTRIBUTE) is None:
+            if example.get(RESPONSE_KEY) is None:
                 continue
 
             # look for corresponding bot utterance
             story_lookup_intent = example.get_combined_intent_response_key()
             assistant_utterances = self.responses.get(story_lookup_intent, [])
             if assistant_utterances:
-                # selecting only first assistant utterance for now
                 example.set(RESPONSE, assistant_utterances[0].get(TEXT))
+                # example.set(RESPONSE, [utterance.get(TEXT) for utterance in assistant_utterances])
+                # example.set(RESPONSE, assistant_utterances)
 
     def nlu_as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
@@ -421,7 +418,7 @@ class TrainingData:
 
         # emit warnings for response intents without a response template
         for example in self.training_examples:
-            if example.get(RESPONSE_KEY_ATTRIBUTE):
+            if example.get(RESPONSE_KEY):
                 raise_warning(
                     f"Your training data contains an example '{example.text[:20]}...' "
                     f"for the {example.get_combined_intent_response_key()} intent. "
@@ -474,7 +471,7 @@ class TrainingData:
 
         responses = {}
         for ex in examples:
-            if ex.get(RESPONSE_KEY_ATTRIBUTE) and ex.get(RESPONSE):
+            if ex.get(RESPONSE_KEY) and ex.get(RESPONSE):
                 key = ex.get_combined_intent_response_key()
                 responses[key] = self.responses[key]
         return responses

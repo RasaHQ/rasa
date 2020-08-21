@@ -19,6 +19,7 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     INTENT,
+    INTENT_RESPONSE_KEY,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     RESPONSE,
     FEATURE_TYPE_SEQUENCE,
@@ -222,7 +223,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
         """Apply processing and cleaning steps to text"""
 
-        if attribute == INTENT:
+        if attribute == INTENT or INTENT_RESPONSE_KEY:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
@@ -424,7 +425,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             sequence_features.append(seq_vec.tocoo())
 
-            if attribute in [TEXT, RESPONSE]:
+            if attribute in [TEXT, RESPONSE, INTENT_RESPONSE_KEY]:
                 tokens_text = [" ".join(tokens)]
                 sentence_vec = self.vectorizers[attribute].transform(tokens_text)
                 sentence_vec.sort_indices()
