@@ -85,8 +85,8 @@ The following example runs the utterance `utter_all_slots_filled` as soon as the
   # Form is deactivated
   - action: your_form
   - active_loop: null
-  - slot: requested_slot
-    value: null
+  - slot_was_set: 
+    - requested_slot: null
   # The action we want to run when the form is submitted.
   - action: utter_all_slots_filled
 ```
