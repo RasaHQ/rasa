@@ -272,9 +272,9 @@ class MarkdownStoryReader(StoryReader):
             `True` in case the file is a Core Markdown training data or rule data file,
             `False` otherwise.
         """
-        suffix = PurePath(file_path).suffix
-
-        if suffix not in MARKDOWN_FILE_EXTENSIONS:
+        if not data.is_likely_markdown_file(file_path) or rasa.data.is_nlu_file(
+            file_path
+        ):
             return False
 
         try:

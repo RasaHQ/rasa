@@ -192,14 +192,13 @@ class YAMLStoryWriter:
         Returns:
             Dict with an action.
         """
-        result = OrderedDict()
-        s = PlainScalarString(action.action_name)
+        result = CommentedMap()
+        result[KEY_ACTION] = action.action_name
 
         # TODO: this is a workaround to print predicted action...
         if hasattr(action, "comment"):
-            s.comment = f"  # {action.comment()}"
+            result.yaml_add_eol_comment(action.comment(), KEY_ACTION)
 
-        result[KEY_ACTION] = s
         return result
 
     @staticmethod
