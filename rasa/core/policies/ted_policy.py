@@ -20,14 +20,13 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.nlu.constants import ACTION_NAME, INTENT, ACTION_TEXT, TEXT, ENTITIES
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE, FORM, SLOTS
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature, Data
 from rasa.utils.tensorflow.constants import (
@@ -67,6 +66,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
     ENCODING_LAYER_SIZE,
+    UNIDIRECTIONAL_ENCODER,
 )
 
 if typing.TYPE_CHECKING:
@@ -128,6 +128,8 @@ class TEDPolicy(Policy):
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
+        # Use a unidirectional or bidirectional encoder.
+        UNIDIRECTIONAL_ENCODER: True,
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
@@ -747,6 +749,31 @@ class TED(TransformerRasaModel):
                 f"Cannot train '{self.__class__.__name__}' model."
             )
 
+    def _prepare_layers(self) -> None:
+        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
+
+        for name in self.data_signature.keys():
+            self._prepare_utterance_level_layers(name)
+
+        for name in FEATURES_TO_ENCODE:
+            self._prepare_encoding_layers(name)
+
+        self._prepare_ffnn_layer(
+            DIALOGUE,
+            self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
+            self.config[DROP_RATE_DIALOGUE],
+        )
+        self._prepare_ffnn_layer(
+            LABEL, self.config[HIDDEN_LAYERS_SIZES][LABEL], self.config[DROP_RATE_LABEL]
+        )
+
+        self._prepare_transformer_layer(
+            DIALOGUE, self.config[DROP_RATE_DIALOGUE], self.config[DROP_RATE_ATTENTION]
+        )
+
+        self._prepare_embed_layers(DIALOGUE)
+        self._prepare_embed_layers(LABEL)
+
     def _prepare_utterance_level_layers(self, name: Text) -> None:
         for feature_type in POSSIBLE_FEATURE_TYPES:
             if (
@@ -782,73 +809,10 @@ class TED(TransformerRasaModel):
         ):
             return
 
-        self._tf_layers[f"encode_{name}_{feature_type}"] = layers.Ffnn(
+        self._prepare_ffnn_layer(
+            f"{name}_{feature_type}",
             self.config[ENCODING_LAYER_SIZE],
             self.config[DROP_RATE_DIALOGUE],
-            self.config[REGULARIZATION_CONSTANT],
-            self.config[WEIGHT_SPARSITY],
-            layer_name_suffix="encode",
-        )
-
-    def _prepare_layers(self) -> None:
-        self._tf_layers[f"loss.{LABEL}"] = layers.DotProductLoss(
-            self.config[NUM_NEG],
-            self.config[LOSS_TYPE],
-            self.config[MAX_POS_SIM],
-            self.config[MAX_NEG_SIM],
-            self.config[USE_MAX_NEG_SIM],
-            self.config[NEGATIVE_MARGIN_SCALE],
-            self.config[SCALE_LOSS],
-            # set to 1 to get deterministic behaviour
-            parallel_iterations=1 if self.random_seed is not None else 1000,
-        )
-
-        for name in self.data_signature.keys():
-            self._prepare_utterance_level_layers(name)
-
-        for name in FEATURES_TO_ENCODE:
-            self._prepare_encoding_layers(name)
-
-        self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
-            self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
-            self.config[DROP_RATE_DIALOGUE],
-            self.config[REGULARIZATION_CONSTANT],
-            self.config[WEIGHT_SPARSITY],
-            layer_name_suffix=DIALOGUE,
-        )
-        self._tf_layers[f"ffnn.{LABEL}"] = layers.Ffnn(
-            self.config[HIDDEN_LAYERS_SIZES][LABEL],
-            self.config[DROP_RATE_LABEL],
-            self.config[REGULARIZATION_CONSTANT],
-            self.config[WEIGHT_SPARSITY],
-            layer_name_suffix=LABEL,
-        )
-        self._tf_layers["transformer"] = TransformerEncoder(
-            self.config[NUM_TRANSFORMER_LAYERS],
-            self.config[TRANSFORMER_SIZE],
-            self.config[NUM_HEADS],
-            self.config[TRANSFORMER_SIZE] * 4,
-            self.config[REGULARIZATION_CONSTANT],
-            dropout_rate=self.config[DROP_RATE_DIALOGUE],
-            attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
-            sparsity=self.config[WEIGHT_SPARSITY],
-            unidirectional=True,
-            use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
-            use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
-            max_relative_position=self.config[MAX_RELATIVE_POSITION],
-            name=DIALOGUE + "_encoder",
-        )
-        self._tf_layers[f"embed.{DIALOGUE}"] = layers.Embed(
-            self.config[EMBEDDING_DIMENSION],
-            self.config[REGULARIZATION_CONSTANT],
-            DIALOGUE,
-            self.config[SIMILARITY_TYPE],
-        )
-        self._tf_layers[f"embed.{LABEL}"] = layers.Embed(
-            self.config[EMBEDDING_DIMENSION],
-            self.config[REGULARIZATION_CONSTANT],
-            LABEL,
-            self.config[SIMILARITY_TYPE],
         )
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -882,7 +846,7 @@ class TED(TransformerRasaModel):
         mask = self._compute_mask(sequence_lengths)
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
-        dialogue_transformed = self._tf_layers["transformer"](
+        dialogue_transformed = self._tf_layers[f"{DIALOGUE}_transformer"](
             dialogue, 1 - mask, self._training
         )
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
@@ -914,7 +878,7 @@ class TED(TransformerRasaModel):
             batch_attribute[SENTENCE], f"{attribute}_{SENTENCE}", mask=mask
         )
         if attribute in FEATURES_TO_ENCODE:
-            batch_attribute = self._tf_layers[f"encode_{attribute}_{SENTENCE}"](
+            batch_attribute = self._tf_layers[f"ffnn.{attribute}_{SENTENCE}"](
                 batch_attribute
             )
         return batch_attribute

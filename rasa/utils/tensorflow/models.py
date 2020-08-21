@@ -24,10 +24,26 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
     RANDOM_SEED,
     TENSORBOARD_LOG_DIR,
-    LABEL,
-    SENTENCE,
+    EMBEDDING_DIMENSION,
+    REGULARIZATION_CONSTANT,
+    SIMILARITY_TYPE,
+    WEIGHT_SPARSITY,
+    NUM_TRANSFORMER_LAYERS,
+    TRANSFORMER_SIZE,
+    NUM_HEADS,
+    UNIDIRECTIONAL_ENCODER,
+    KEY_RELATIVE_ATTENTION,
+    VALUE_RELATIVE_ATTENTION,
+    MAX_RELATIVE_POSITION,
+    NUM_NEG,
+    LOSS_TYPE,
+    MAX_POS_SIM,
+    MAX_NEG_SIM,
+    USE_MAX_NEG_SIM,
+    NEGATIVE_MARGIN_SCALE,
 )
 from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow.transformer import TransformerEncoder
 
 if TYPE_CHECKING:
     from tensorflow.python.ops.summary_ops_v2 import ResourceSummaryWriter
@@ -573,6 +589,71 @@ class TransformerRasaModel(RasaModel):
 
     def _prepare_layers(self) -> None:
         raise NotImplementedError
+
+    def _prepare_embed_layers(self, name: Text, prefix: Text = "embed") -> None:
+        self._tf_layers[f"{prefix}.{name}"] = layers.Embed(
+            self.config[EMBEDDING_DIMENSION],
+            self.config[REGULARIZATION_CONSTANT],
+            name,
+            self.config[SIMILARITY_TYPE],
+        )
+
+    def _prepare_ffnn_layer(
+        self,
+        name: Text,
+        layer_sizes: List[int],
+        drop_rate: float,
+        prefix: Text = "ffnn",
+    ) -> None:
+        self._tf_layers[f"{prefix}.{name}"] = layers.Ffnn(
+            layer_sizes,
+            drop_rate,
+            self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
+            layer_name_suffix=name,
+        )
+
+    def _prepare_transformer_layer(
+        self,
+        name: Text,
+        drop_rate: float,
+        drop_rate_attention: float,
+        prefix: Text = "transformer",
+    ):
+        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
+            self._tf_layers[f"{prefix}.{name}"] = TransformerEncoder(
+                self.config[NUM_TRANSFORMER_LAYERS],
+                self.config[TRANSFORMER_SIZE],
+                self.config[NUM_HEADS],
+                self.config[TRANSFORMER_SIZE] * 4,
+                self.config[REGULARIZATION_CONSTANT],
+                dropout_rate=drop_rate,
+                attention_dropout_rate=drop_rate_attention,
+                sparsity=self.config[WEIGHT_SPARSITY],
+                unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
+                use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+                use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+                max_relative_position=self.config[MAX_RELATIVE_POSITION],
+                name=f"{name}_encoder",
+            )
+        else:
+            # create lambda so that it can be used later without the check
+            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: x
+
+    def _prepare_dot_product_loss(
+        self, name: Text, scale_loss: bool, prefix: Text = "loss"
+    ) -> None:
+        self._tf_layers[f"{prefix}.{name}"] = layers.DotProductLoss(
+            self.config[NUM_NEG],
+            self.config[LOSS_TYPE],
+            self.config[MAX_POS_SIM],
+            self.config[MAX_NEG_SIM],
+            self.config[USE_MAX_NEG_SIM],
+            self.config[NEGATIVE_MARGIN_SCALE],
+            scale_loss,
+            # set to 1 to get deterministic behaviour
+            parallel_iterations=1 if self.random_seed is not None else 1000,
+        )
 
     def _prepare_sparse_dense_dropout_layers(
         self, name: Text, drop_rate: float

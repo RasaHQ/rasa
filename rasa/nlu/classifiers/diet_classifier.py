@@ -21,7 +21,6 @@ from rasa.nlu.test import determine_token_labels
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import (
@@ -1224,13 +1223,10 @@ class DIET(TransformerRasaModel):
             self._prepare_entity_recognition_layers()
 
     def _prepare_input_layers(self, name: Text) -> None:
-        self._tf_layers[f"ffnn.{name}"] = layers.Ffnn(
-            self.config[HIDDEN_LAYERS_SIZES][name],
-            self.config[DROP_RATE],
-            self.config[REGULARIZATION_CONSTANT],
-            self.config[WEIGHT_SPARSITY],
-            name,
+        self._prepare_ffnn_layer(
+            name, self.config[HIDDEN_LAYERS_SIZES][name], self.config[DROP_RATE]
         )
+
         for feature_type in [SENTENCE, SEQUENCE]:
             if (
                 name not in self.data_signature
@@ -1247,57 +1243,18 @@ class DIET(TransformerRasaModel):
                 self.config[REGULARIZATION_CONSTANT],
                 self.config[DENSE_DIMENSION][name],
             )
-            self._tf_layers[f"concat_layer.{name}_{feature_type}"] = layers.Ffnn(
+            self._prepare_ffnn_layer(
+                f"{name}_{feature_type}",
                 [self.config[CONCAT_DIMENSION][name]],
                 self.config[DROP_RATE],
-                self.config[REGULARIZATION_CONSTANT],
-                self.config[WEIGHT_SPARSITY],
-                name,
+                prefix="concat_layer",
             )
-
-    def _prepare_embed_layers(self, name: Text) -> None:
-        self._tf_layers[f"embed.{name}"] = layers.Embed(
-            self.config[EMBEDDING_DIMENSION],
-            self.config[REGULARIZATION_CONSTANT],
-            name,
-            self.config[SIMILARITY_TYPE],
-        )
-
-    def _prepare_dot_product_loss(self, name: Text, scale_loss: bool) -> None:
-        self._tf_layers[f"loss.{name}"] = layers.DotProductLoss(
-            self.config[NUM_NEG],
-            self.config[LOSS_TYPE],
-            self.config[MAX_POS_SIM],
-            self.config[MAX_NEG_SIM],
-            self.config[USE_MAX_NEG_SIM],
-            self.config[NEGATIVE_MARGIN_SCALE],
-            scale_loss,
-            # set to 1 to get deterministic behaviour
-            parallel_iterations=1 if self.random_seed is not None else 1000,
-        )
 
     def _prepare_sequence_layers(self, name: Text) -> None:
         self._prepare_input_layers(name)
-
-        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
-            self._tf_layers[f"{name}_transformer"] = TransformerEncoder(
-                self.config[NUM_TRANSFORMER_LAYERS],
-                self.config[TRANSFORMER_SIZE],
-                self.config[NUM_HEADS],
-                self.config[TRANSFORMER_SIZE] * 4,
-                self.config[REGULARIZATION_CONSTANT],
-                dropout_rate=self.config[DROP_RATE],
-                attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
-                sparsity=self.config[WEIGHT_SPARSITY],
-                unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
-                use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
-                use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
-                max_relative_position=self.config[MAX_RELATIVE_POSITION],
-                name=f"{name}_encoder",
-            )
-        else:
-            # create lambda so that it can be used later without the check
-            self._tf_layers[f"{name}_transformer"] = lambda x, mask, training: x
+        self._prepare_transformer_layer(
+            name, self.config[DROP_RATE], self.config[DROP_RATE_ATTENTION]
+        )
 
     def _prepare_mask_lm_layers(self, name: Text) -> None:
         self._tf_layers[f"{name}_input_mask"] = layers.InputMask()
@@ -1484,7 +1441,7 @@ class DIET(TransformerRasaModel):
             transformer_inputs = inputs
             lm_mask_bool = None
 
-        outputs = self._tf_layers[f"{name}_transformer"](
+        outputs = self._tf_layers[f"transformer.{name}"](
             transformer_inputs, 1 - mask, self._training
         )
 
