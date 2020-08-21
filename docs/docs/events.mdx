@@ -1,0 +1,21 @@
+---
+id: events
+sidebar_label: Events
+title: Events
+description: Use events in open source library Rasa Core to support functionalities like resetting slots, scheduling reminder or pausing a conversation.
+---
+
+TODO: This page needs to be rewritten for 2.0!
+Ideally it will be sourced from the SDK repo instead (?)
+We want to show the user, most importantly, how to use the
+events from the SDK. Also helpful would be the JSON form of
+the events that make it back to rasa (for example if you
+write your own SDK)
+
+All of that info can be found here: [https://github.com/RasaHQ/rasa-sdk/blob/master/rasa_sdk/events.py](https://github.com/RasaHQ/rasa-sdk/blob/master/rasa_sdk/events.py)
+
+An action's `run()` method returns a list of events. For more information on
+the different types of events, see [Events](./events). There is an example of a `SlotSet` event
+[above](./actions.mdx#custom-action-example). The action itself will automatically be added to the
+tracker as an `ActionExecuted` event. If the action should not trigger any
+other events, it should return an empty list.

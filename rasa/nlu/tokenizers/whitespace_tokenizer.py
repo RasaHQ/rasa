@@ -3,8 +3,10 @@ from typing import Any, Dict, List, Text
 import regex
 import re
 
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
+import rasa.utils.common as common_utils
 
 
 class WhitespaceTokenizer(Tokenizer):
@@ -14,8 +16,8 @@ class WhitespaceTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # Text will be tokenized with case sensitive as default
-        "case_sensitive": True,
+        # Regular expression to detect tokens
+        "token_pattern": None,
     }
 
     # the following language should not be tokenized using the WhitespaceTokenizer
@@ -26,9 +28,14 @@ class WhitespaceTokenizer(Tokenizer):
 
         super().__init__(component_config)
 
-        self.case_sensitive = self.component_config["case_sensitive"]
-
         self.emoji_pattern = self.get_emoji_regex()
+
+        if "case_sensitive" in self.component_config:
+            common_utils.raise_warning(
+                "The option 'case_sensitive' was moved from the tokenizers to the "
+                "featurizers.",
+                docs=DOCS_URL_COMPONENTS,
+            )
 
     @staticmethod
     def get_emoji_regex():
@@ -58,9 +65,6 @@ class WhitespaceTokenizer(Tokenizer):
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         text = message.get(attribute)
 
-        if not self.case_sensitive:
-            text = text.lower()
-
         # we need to use regex instead of re, because of
         # https://stackoverflow.com/questions/12746458/python-unicode-regular-expression-matching-failing-with-some-unicode-characters
 
@@ -86,4 +90,6 @@ class WhitespaceTokenizer(Tokenizer):
         if not words:
             words = [text]
 
-        return self._convert_words_to_tokens(words, text)
+        tokens = self._convert_words_to_tokens(words, text)
+
+        return self._apply_token_pattern(tokens)

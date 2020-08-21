@@ -58,7 +58,7 @@ def get_validated_path(
     return current
 
 
-def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List:
+def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List[Text]:
     import rasa.utils.io
 
     if not os.path.exists(path):

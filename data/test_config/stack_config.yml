@@ -1,7 +1,8 @@
 # Configuration for Rasa NLU.
 # https://rasa.com/docs/rasa/nlu/components/
 language: en
-pipeline: keyword
+pipeline:
+  - name: KeywordIntentClassifier
 
 # Configuration for Rasa Core.
 # https://rasa.com/docs/rasa/core/policies/

@@ -28,6 +28,8 @@ class JiebaTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Regular expression to detect tokens
+        "token_pattern": None,
     }  # default don't load custom dictionary
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -69,7 +71,7 @@ class JiebaTokenizer(Tokenizer):
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
 
-        return tokens
+        return self._apply_token_pattern(tokens)
 
     @classmethod
     def load(

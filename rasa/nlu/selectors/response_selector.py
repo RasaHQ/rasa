@@ -15,12 +15,14 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.classifiers.diet_classifier import (
     DIETClassifier,
     DIET,
-    TEXT_FEATURES,
-    LABEL_FEATURES,
     LABEL_IDS,
     EntityTagSpec,
-    TEXT_SEQ_LENGTH,
-    LABEL_SEQ_LENGTH,
+    TEXT_SEQUENCE_LENGTH,
+    LABEL_SEQUENCE_LENGTH,
+    TEXT_SEQUENCE_FEATURES,
+    LABEL_SEQUENCE_FEATURES,
+    TEXT_SENTENCE_FEATURES,
+    LABEL_SENTENCE_FEATURES,
 )
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -67,6 +69,8 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    CONCAT_DIMENSION,
+    FEATURIZERS,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -147,6 +151,8 @@ class ResponseSelector(DIETClassifier):
         EMBEDDING_DIMENSION: 20,
         # Default dense dimension to use if no dense features are present.
         DENSE_DIMENSION: {TEXT: 512, LABEL: 512},
+        # Default dimension to use for concatenating sequence and sentence features.
+        CONCAT_DIMENSION: {TEXT: 512, LABEL: 512},
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
@@ -205,6 +211,9 @@ class ResponseSelector(DIETClassifier):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
+        # Specify what features to use as sequence and sentence features
+        # By default all features in the pipeline are used.
+        FEATURIZERS: [],
     }
 
     def __init__(
@@ -214,6 +223,7 @@ class ResponseSelector(DIETClassifier):
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
+        responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
 
         component_config = component_config or {}
@@ -223,6 +233,7 @@ class ResponseSelector(DIETClassifier):
         component_config[ENTITY_RECOGNITION] = False
         component_config[BILOU_FLAG] = None
         self.retrieval_intent_mapping = retrieval_intent_mapping or {}
+        self.responses = responses or {}
 
         super().__init__(
             component_config, index_label_id_mapping, entity_tag_specs, model
@@ -293,6 +304,7 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent_mapping = self._create_retrieval_intent_mapping(
             training_data
         )
+        self.responses = training_data.responses
 
         if not label_id_index_mapping:
             # no labels are present to train
@@ -313,6 +325,23 @@ class ResponseSelector(DIETClassifier):
         self._check_input_dimension_consistency(model_data)
 
         return model_data
+
+    def _full_response(self, label: Dict[Text, Any]) -> Optional[Dict[Text, Any]]:
+        """Given a label return the full response based on the labels id.
+
+        Args:
+            label: predicted label by the selector
+
+        Returns:
+            The match for the label that was found in the known responses. In
+            contrast to the predicted label, the response doesn't only contain
+            the text but also buttons, images, ...
+        """
+        for key, responses in self.responses.items():
+            for response in responses:
+                if hash(response.get(TEXT, "")) == label.get("id"):
+                    return response
+        return None
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response and its similarity to the input."""
@@ -337,7 +366,7 @@ class ResponseSelector(DIETClassifier):
         )
 
         prediction_dict = {
-            "response": label,
+            "response": self._full_response(label) or {TEXT: label.get("name")},
             "ranking": label_ranking,
             "full_retrieval_intent": retrieval_intent_name,
         }
@@ -361,7 +390,7 @@ class ResponseSelector(DIETClassifier):
             self.retrieval_intent_mapping,
         )
 
-        return {"file": file_name}
+        return {"file": file_name, "responses": self.responses}
 
     @classmethod
     def load(
@@ -377,8 +406,7 @@ class ResponseSelector(DIETClassifier):
         model = super().load(
             meta, model_dir, model_metadata, cached_component, **kwargs
         )
-        if model == cls(component_config=meta):
-            model.retrieval_intent_mapping = {}
+        if not meta.get("file"):
             return model  # pytype: disable=bad-return-type
 
         file_name = meta.get("file")
@@ -389,26 +417,27 @@ class ResponseSelector(DIETClassifier):
         )
 
         model.retrieval_intent_mapping = retrieval_intent_mapping
+        model.collected_responses = meta.get("responses", {})
 
         return model  # pytype: disable=bad-return-type
 
 
 class DIET2DIET(DIET):
     def _check_data(self) -> None:
-        if TEXT_FEATURES not in self.data_signature:
+        if TEXT_SENTENCE_FEATURES not in self.data_signature:
             raise InvalidConfigError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
-        if LABEL_FEATURES not in self.data_signature:
+        if LABEL_SENTENCE_FEATURES not in self.data_signature:
             raise InvalidConfigError(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if (
             self.config[SHARE_HIDDEN_LAYERS]
-            and self.data_signature[TEXT_FEATURES]
-            != self.data_signature[LABEL_FEATURES]
+            and self.data_signature[TEXT_SENTENCE_FEATURES]
+            != self.data_signature[LABEL_SENTENCE_FEATURES]
         ):
             raise ValueError(
                 "If hidden layer weights are shared, data signatures "
@@ -425,10 +454,26 @@ class DIET2DIET(DIET):
         self.response_acc = tf.keras.metrics.Mean(name="r_acc")
 
     def _update_metrics_to_log(self) -> None:
-        if self.config[MASKED_LM]:
-            self.metrics_to_log += ["m_loss", "m_acc"]
+        debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
 
-        self.metrics_to_log += ["r_loss", "r_acc"]
+        if self.config[MASKED_LM]:
+            self.metrics_to_log.append("m_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("m_loss")
+
+        self.metrics_to_log.append("r_acc")
+        if debug_log_level:
+            self.metrics_to_log.append("r_loss")
+
+        self._log_metric_info()
+
+    def _log_metric_info(self) -> None:
+        metric_name = {"t": "total", "m": "mask", "r": "response"}
+        logger.debug("Following metrics will be logged during training: ")
+        for metric in self.metrics_to_log:
+            parts = metric.split("_")
+            name = f"{metric_name[parts[0]]} {parts[1]}"
+            logger.debug(f"  {metric} ({name})")
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
@@ -443,17 +488,25 @@ class DIET2DIET(DIET):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
+        sequence_mask_label = super()._get_mask_for(
+            self.tf_label_data, LABEL_SEQUENCE_LENGTH
+        )
+        batch_dim = tf.shape(self.tf_label_data[LABEL_IDS][0])[0]
         sequence_lengths_label = self._get_sequence_lengths(
-            self.tf_label_data[LABEL_SEQ_LENGTH][0]
+            self.tf_label_data, LABEL_SEQUENCE_LENGTH, batch_dim
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
-            self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name
+            self.tf_label_data[LABEL_SEQUENCE_FEATURES],
+            self.tf_label_data[LABEL_SENTENCE_FEATURES],
+            sequence_mask_label,
+            mask_label,
+            self.label_name,
         )
-        cls_label = self._last_token(label_transformed, sequence_lengths_label)
+        sentence_label = self._last_token(label_transformed, sequence_lengths_label)
 
-        all_labels_embed = self._tf_layers[f"embed.{LABEL}"](cls_label)
+        all_labels_embed = self._tf_layers[f"embed.{LABEL}"](sentence_label)
 
         return all_label_ids, all_labels_embed
 
@@ -462,8 +515,10 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
+        batch_dim = self._get_batch_dim(tf_batch_data)
+        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
         sequence_lengths_text = self._get_sequence_lengths(
-            tf_batch_data[TEXT_SEQ_LENGTH][0]
+            tf_batch_data, TEXT_SEQUENCE_LENGTH, batch_dim
         )
         mask_text = self._compute_mask(sequence_lengths_text)
 
@@ -473,7 +528,9 @@ class DIET2DIET(DIET):
             text_seq_ids,
             lm_mask_bool_text,
         ) = self._create_sequence(
-            tf_batch_data[TEXT_FEATURES],
+            tf_batch_data[TEXT_SEQUENCE_FEATURES],
+            tf_batch_data[TEXT_SENTENCE_FEATURES],
+            sequence_mask_text,
             mask_text,
             self.text_name,
             sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
@@ -482,13 +539,20 @@ class DIET2DIET(DIET):
             sequence_ids=True,
         )
 
+        sequence_mask_label = super()._get_mask_for(
+            tf_batch_data, LABEL_SEQUENCE_LENGTH
+        )
         sequence_lengths_label = self._get_sequence_lengths(
-            tf_batch_data[LABEL_SEQ_LENGTH][0]
+            tf_batch_data, LABEL_SEQUENCE_LENGTH, batch_dim
         )
         mask_label = self._compute_mask(sequence_lengths_label)
 
         label_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data[LABEL_FEATURES], mask_label, self.label_name
+            tf_batch_data[LABEL_SEQUENCE_FEATURES],
+            tf_batch_data[LABEL_SENTENCE_FEATURES],
+            sequence_mask_label,
+            mask_label,
+            self.label_name,
         )
 
         losses = []
@@ -506,12 +570,16 @@ class DIET2DIET(DIET):
             self.mask_acc.update_state(acc)
             losses.append(loss)
 
-        # get _cls_ vector for label classification
-        cls_text = self._last_token(text_transformed, sequence_lengths_text)
-        cls_label = self._last_token(label_transformed, sequence_lengths_label)
+        # get sentence feature vector for label classification
+        sentence_vector_text = self._last_token(text_transformed, sequence_lengths_text)
+        sentence_vector_label = self._last_token(
+            label_transformed, sequence_lengths_label
+        )
         label_ids = tf_batch_data[LABEL_IDS][0]
 
-        loss, acc = self._calculate_label_loss(cls_text, cls_label, label_ids)
+        loss, acc = self._calculate_label_loss(
+            sentence_vector_text, sentence_vector_label, label_ids
+        )
         self.response_loss.update_state(loss)
         self.response_acc.update_state(acc)
         losses.append(loss)
@@ -525,13 +593,18 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
+        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT_SEQUENCE_LENGTH)
         sequence_lengths_text = self._get_sequence_lengths(
-            tf_batch_data[TEXT_SEQ_LENGTH][0]
+            tf_batch_data, TEXT_SEQUENCE_LENGTH, batch_dim=1
         )
         mask_text = self._compute_mask(sequence_lengths_text)
 
         text_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data[TEXT_FEATURES], mask_text, self.text_name
+            tf_batch_data[TEXT_SEQUENCE_FEATURES],
+            tf_batch_data[TEXT_SENTENCE_FEATURES],
+            sequence_mask_text,
+            mask_text,
+            self.text_name,
         )
 
         out = {}
@@ -539,12 +612,13 @@ class DIET2DIET(DIET):
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels()
 
-        # get _cls_ vector for intent classification
-        cls = self._last_token(text_transformed, sequence_lengths_text)
-        cls_embed = self._tf_layers[f"embed.{TEXT}"](cls)
+        # get sentence feature vector for intent classification
+        sentence_vector = self._last_token(text_transformed, sequence_lengths_text)
+        sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
-            cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
+            sentence_vector_embed[:, tf.newaxis, :],
+            self.all_labels_embed[tf.newaxis, :, :],
         )
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]

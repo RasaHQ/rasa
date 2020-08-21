@@ -1,18 +1,12 @@
 import logging
+import re
 
 from typing import Text, List, Optional, Dict, Any
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
-from rasa.nlu.constants import (
-    RESPONSE,
-    TEXT,
-    CLS_TOKEN,
-    TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    INTENT,
-)
+from rasa.nlu.constants import TEXT, TOKENS_NAMES, MESSAGE_ATTRIBUTES, INTENT
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +66,11 @@ class Tokenizer(Component):
         )
         # split symbol for intents
         self.intent_split_symbol = self.component_config.get("intent_split_symbol", "_")
+        # token pattern to further split tokens
+        token_pattern = self.component_config.get("token_pattern", None)
+        self.token_pattern_regex = None
+        if token_pattern:
+            self.token_pattern_regex = re.compile(token_pattern)
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenizes the text of the provided attribute of the incoming message."""
@@ -93,14 +92,12 @@ class Tokenizer(Component):
                         tokens = self._split_intent(example)
                     else:
                         tokens = self.tokenize(example, attribute)
-                        tokens = self.add_cls_token(tokens, attribute)
                     example.set(TOKENS_NAMES[attribute], tokens)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Tokenize the incoming message."""
 
         tokens = self.tokenize(message, TEXT)
-        tokens = self.add_cls_token(tokens, TEXT)
         message.set(TOKENS_NAMES[TEXT], tokens)
 
     def _split_intent(self, message: Message):
@@ -114,6 +111,42 @@ class Tokenizer(Component):
 
         return self._convert_words_to_tokens(words, text)
 
+    def _apply_token_pattern(self, tokens: List[Token]) -> List[Token]:
+        """Apply the token pattern to the given tokens.
+
+        Args:
+            tokens: list of tokens to split
+
+        Returns:
+            List of tokens.
+        """
+        if not self.token_pattern_regex:
+            return tokens
+
+        final_tokens = []
+        for token in tokens:
+            new_tokens = self.token_pattern_regex.findall(token.text)
+            new_tokens = [t for t in new_tokens if t]
+
+            if not new_tokens:
+                final_tokens.append(token)
+
+            running_offset = 0
+            for new_token in new_tokens:
+                word_offset = token.text.index(new_token, running_offset)
+                word_len = len(new_token)
+                running_offset = word_offset + word_len
+                final_tokens.append(
+                    Token(
+                        new_token,
+                        token.start + word_offset,
+                        data=token.data,
+                        lemma=token.lemma,
+                    )
+                )
+
+        return final_tokens
+
     @staticmethod
     def _convert_words_to_tokens(words: List[Text], text: Text) -> List[Token]:
         running_offset = 0
@@ -124,14 +157,5 @@ class Tokenizer(Component):
             word_len = len(word)
             running_offset = word_offset + word_len
             tokens.append(Token(word, word_offset))
-
-        return tokens
-
-    @staticmethod
-    def add_cls_token(tokens: List[Token], attribute: Text) -> List[Token]:
-        if attribute in [RESPONSE, TEXT] and tokens:
-            # +1 to have a space between the last token and the __cls__ token
-            idx = tokens[-1].end + 1
-            tokens.append(Token(CLS_TOKEN, idx))
 
         return tokens

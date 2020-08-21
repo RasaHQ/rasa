@@ -1,19 +1,20 @@
-import numpy as np
 from typing import Any, Optional, Text, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT,
     LANGUAGE_MODEL_DOCS,
-    DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+    FEATURIZER_CLASS_ALIAS,
 )
 
 
@@ -62,9 +63,17 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         sequence_features = doc[SEQUENCE_FEATURES]
         sentence_features = doc[SENTENCE_FEATURES]
 
-        features = np.concatenate([sequence_features, sentence_features])
-
-        features = self._combine_with_existing_dense_features(
-            message, features, DENSE_FEATURE_NAMES[attribute]
+        final_sequence_features = Features(
+            sequence_features,
+            FEATURE_TYPE_SEQUENCE,
+            attribute,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
         )
-        message.set(DENSE_FEATURE_NAMES[attribute], features)
+        message.add_features(final_sequence_features)
+        final_sentence_features = Features(
+            sentence_features,
+            FEATURE_TYPE_SENTENCE,
+            attribute,
+            self.component_config[FEATURIZER_CLASS_ALIAS],
+        )
+        message.add_features(final_sentence_features)

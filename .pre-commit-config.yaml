@@ -7,3 +7,4 @@ repos:
     rev: master
     hooks:
     -   id: doctoc
+        files: "CONTRIBUTING.md"

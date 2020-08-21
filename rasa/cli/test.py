@@ -69,6 +69,7 @@ def run_core_test(args: argparse.Namespace) -> None:
     stories = cli_utils.get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
     stories = data.get_core_directory(stories)
     output = args.out or DEFAULT_RESULTS_PATH
+    args.errors = not args.no_errors
 
     io_utils.create_directory(output)
 

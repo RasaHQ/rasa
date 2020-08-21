@@ -3,16 +3,21 @@ import functools
 import logging
 import multiprocessing
 import os
+from pathlib import Path
 import tempfile
 import traceback
 import typing
 from functools import reduce, wraps
 from inspect import isawaitable
-from typing import Any, Callable, List, Optional, Text, Union
+from pathlib import Path
+from typing import Any, Callable, List, Optional, Text, Union, Dict
 
+from sanic.exceptions import InvalidUsage
+
+from rasa.nlu.training_data.formats import RasaYAMLReader
 import rasa
 import rasa.core.utils
-from rasa.utils.common import raise_warning, arguments_of
+from rasa.utils import common as common_utils
 import rasa.utils.endpoints
 import rasa.utils.io
 from rasa import model
@@ -22,6 +27,7 @@ from rasa.constants import (
     DEFAULT_RESPONSE_TIMEOUT,
     DOCS_BASE_URL,
     MINIMUM_COMPATIBLE_VERSION,
+    DOCS_URL_TRAINING_DATA_NLU,
 )
 from rasa.core import agent
 from rasa.core.agent import Agent
@@ -52,6 +58,9 @@ if typing.TYPE_CHECKING:
     from rasa.core.processor import MessageProcessor
 
 logger = logging.getLogger(__name__)
+
+JSON_CONTENT_TYPE = "application/json"
+YAML_CONTENT_TYPE = "application/x-yaml"
 
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
@@ -119,7 +128,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
     def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
-            argnames = arguments_of(f)
+            argnames = common_utils.arguments_of(f)
 
             try:
                 sender_id_arg_idx = argnames.index("conversation_id")
@@ -516,7 +525,7 @@ def create_app(
         events = [event for event in events if event]
 
         if not events:
-            raise_warning(
+            common_utils.raise_warning(
                 f"Append event called, but could not extract a valid event. "
                 f"Request JSON: {request.json}"
             )
@@ -689,7 +698,7 @@ def create_app(
     @app.post("/conversations/<conversation_id>/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def predict(request: Request, conversation_id: Text):
+    async def predict(request: Request, conversation_id: Text) -> HTTPResponse:
         try:
             # Fetches the appropriate bot response in a json format
             responses = await app.agent.predict_next(conversation_id)
@@ -754,50 +763,14 @@ def create_app(
             "train your model.",
         )
 
-        rjs = request.json
-        validate_request(rjs)
-
-        # create a temporary directory to store config, domain and
-        # training data
-        temp_dir = tempfile.mkdtemp()
-
-        config_path = os.path.join(temp_dir, "config.yml")
-
-        rasa.utils.io.write_text_file(rjs["config"], config_path)
-
-        if "nlu" in rjs:
-            nlu_path = os.path.join(temp_dir, "nlu.md")
-            rasa.utils.io.write_text_file(rjs["nlu"], nlu_path)
-
-        if "stories" in rjs:
-            stories_path = os.path.join(temp_dir, "stories.md")
-            rasa.utils.io.write_text_file(rjs["stories"], stories_path)
-
-        if "responses" in rjs:
-            responses_path = os.path.join(temp_dir, "responses.md")
-            rasa.utils.io.write_text_file(rjs["responses"], responses_path)
-
-        domain_path = DEFAULT_DOMAIN_PATH
-        if "domain" in rjs:
-            domain_path = os.path.join(temp_dir, "domain.yml")
-            rasa.utils.io.write_text_file(rjs["domain"], domain_path)
-
-        if rjs.get("save_to_default_model_directory", True) is True:
-            model_output_directory = DEFAULT_MODELS_PATH
+        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+            training_payload = _training_payload_from_yaml(request)
         else:
-            model_output_directory = tempfile.gettempdir()
+            training_payload = _training_payload_from_json(request)
 
         try:
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
-
-            info = dict(
-                domain=domain_path,
-                config=config_path,
-                training_files=temp_dir,
-                output=model_output_directory,
-                force_training=rjs.get("force", False),
-            )
 
             loop = asyncio.get_event_loop()
 
@@ -807,14 +780,23 @@ def create_app(
             model_path: Optional[Text] = None
             # pass `None` to run in default executor
             model_path = await loop.run_in_executor(
-                None, functools.partial(train_model, **info)
+                None, functools.partial(train_model, **training_payload)
             )
 
-            filename = os.path.basename(model_path) if model_path else None
+            if model_path:
+                filename = os.path.basename(model_path)
 
-            return await response.file(
-                model_path, filename=filename, headers={"filename": filename}
-            )
+                return await response.file(
+                    model_path, filename=filename, headers={"filename": filename}
+                )
+            else:
+                raise ErrorResponse(
+                    500,
+                    "TrainingError",
+                    "Ran training, but it finished without a trained model.",
+                )
+        except ErrorResponse as e:
+            raise e
         except InvalidDomain as e:
             raise ErrorResponse(
                 400,
@@ -822,7 +804,7 @@ def create_app(
                 f"Provided domain file is invalid. Error: {e}",
             )
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TrainingError",
@@ -832,37 +814,10 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value -= 1
 
-    def validate_request(rjs):
-        if "config" not in rjs:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "The training request is missing the required key `config`.",
-                {"parameter": "config", "in": "body"},
-            )
-
-        if "nlu" not in rjs and "stories" not in rjs:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "To train a Rasa model you need to specify at least one type of "
-                "training data. Add `nlu` and/or `stories` to the request.",
-                {"parameters": ["nlu", "stories"], "in": "body"},
-            )
-
-        if "stories" in rjs and "domain" not in rjs:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "To train a Rasa model with story training data, you also need to "
-                "specify the `domain`.",
-                {"parameter": "domain", "in": "body"},
-            )
-
     @app.post("/model/test/stories")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app, require_core_is_ready=True)
-    async def evaluate_stories(request: Request):
+    async def evaluate_stories(request: Request) -> HTTPResponse:
         """Evaluate stories against the currently loaded model."""
         validate_request_body(
             request,
@@ -870,14 +825,15 @@ def create_app(
             "evaluate your model.",
         )
 
-        stories = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
+        test_data = _test_data_file_from_payload(request)
+
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = await test(stories, app.agent, e2e=use_e2e)
+            evaluation = await test(test_data, app.agent, e2e=use_e2e)
             return response.json(evaluation)
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TestingError",
@@ -886,13 +842,15 @@ def create_app(
 
     @app.post("/model/test/intents")
     @requires_auth(app, auth_token)
-    async def evaluate_intents(request: Request):
+    async def evaluate_intents(request: Request) -> HTTPResponse:
         """Evaluate intents against a Rasa model."""
         validate_request_body(
             request,
             "You must provide some nlu data in the request body in order to "
             "evaluate your model.",
         )
+
+        test_data = _test_data_file_from_payload(request)
 
         eval_agent = app.agent
 
@@ -905,8 +863,7 @@ def create_app(
                 model_path, model_server, app.agent.remote_storage
             )
 
-        nlu_data = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
-        data_path = os.path.abspath(nlu_data)
+        data_path = os.path.abspath(test_data)
 
         if not os.path.exists(eval_agent.model_directory):
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
@@ -918,7 +875,7 @@ def create_app(
             evaluation = run_evaluation(data_path, nlu_model)
             return response.json(evaluation)
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TestingError",
@@ -928,7 +885,7 @@ def create_app(
     @app.post("/model/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app, require_core_is_ready=True)
-    async def tracker_predict(request: Request):
+    async def tracker_predict(request: Request) -> HTTPResponse:
         """ Given a list of events, predicts the next action"""
         validate_request_body(
             request,
@@ -955,7 +912,7 @@ def create_app(
         try:
             policy_ensemble = app.agent.policy_ensemble
             probabilities, policy = policy_ensemble.probabilities_using_best_policy(
-                tracker, app.agent.domain
+                tracker, app.agent.domain, app.agent.interpreter
             )
 
             scores = [
@@ -979,7 +936,7 @@ def create_app(
     @app.post("/model/parse")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def parse(request: Request):
+    async def parse(request: Request) -> HTTPResponse:
         validate_request_body(
             request,
             "No text message defined in request_body. Add text message to request body "
@@ -1011,7 +968,7 @@ def create_app(
 
     @app.put("/model")
     @requires_auth(app, auth_token)
-    async def load_model(request: Request):
+    async def load_model(request: Request) -> HTTPResponse:
         validate_request_body(request, "No path to model file defined in request_body.")
 
         model_path = request.json.get("model_file", None)
@@ -1039,7 +996,7 @@ def create_app(
 
     @app.delete("/model")
     @requires_auth(app, auth_token)
-    async def unload_model(request: Request):
+    async def unload_model(request: Request) -> HTTPResponse:
         model_file = app.agent.model_directory
 
         app.agent = Agent(lock_store=app.agent.lock_store)
@@ -1050,28 +1007,28 @@ def create_app(
     @app.get("/domain")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def get_domain(request: Request):
+    async def get_domain(request: Request) -> HTTPResponse:
         """Get current domain in yaml or json format."""
 
-        accepts = request.headers.get("Accept", default="application/json")
+        accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
         if accepts.endswith("json"):
             domain = app.agent.domain.as_dict()
             return response.json(domain)
         elif accepts.endswith("yml") or accepts.endswith("yaml"):
             domain_yaml = app.agent.domain.as_yaml()
             return response.text(
-                domain_yaml, status=200, content_type="application/x-yml"
+                domain_yaml, status=200, content_type=YAML_CONTENT_TYPE
             )
         else:
             raise ErrorResponse(
                 406,
                 "NotAcceptable",
-                "Invalid Accept header. Domain can be "
-                "provided as "
-                'json ("Accept: application/json") or'
-                'yml ("Accept: application/x-yml"). '
-                "Make sure you've set the appropriate Accept "
-                "header.",
+                f"Invalid Accept header. Domain can be "
+                f"provided as "
+                f'json ("Accept: {JSON_CONTENT_TYPE}") or'
+                f'yml ("Accept: {YAML_CONTENT_TYPE}"). '
+                f"Make sure you've set the appropriate Accept "
+                f"header.",
             )
 
     return app
@@ -1115,3 +1072,142 @@ def _get_output_channel(
         matching_channels,
         CollectingOutputChannel(),
     )
+
+
+def _test_data_file_from_payload(request: Request) -> Text:
+    if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+        return str(_training_payload_from_yaml(request)["training_files"])
+    else:
+        return rasa.utils.io.create_temporary_file(
+            request.body, mode="w+b", suffix=".md"
+        )
+
+
+def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool]]:
+    logger.debug(
+        "Extracting JSON payload with Markdown training data from request body."
+    )
+
+    request_payload = request.json
+    _validate_json_training_payload(request_payload)
+
+    # create a temporary directory to store config, domain and
+    # training data
+    temp_dir = tempfile.mkdtemp()
+
+    config_path = os.path.join(temp_dir, "config.yml")
+
+    rasa.utils.io.write_text_file(request_payload["config"], config_path)
+
+    if "nlu" in request_payload:
+        nlu_path = os.path.join(temp_dir, "nlu.md")
+        rasa.utils.io.write_text_file(request_payload["nlu"], nlu_path)
+
+    if "stories" in request_payload:
+        stories_path = os.path.join(temp_dir, "stories.md")
+        rasa.utils.io.write_text_file(request_payload["stories"], stories_path)
+
+    if "responses" in request_payload:
+        responses_path = os.path.join(temp_dir, "responses.md")
+        rasa.utils.io.write_text_file(request_payload["responses"], responses_path)
+
+    domain_path = DEFAULT_DOMAIN_PATH
+    if "domain" in request_payload:
+        domain_path = os.path.join(temp_dir, "domain.yml")
+        rasa.utils.io.write_text_file(request_payload["domain"], domain_path)
+
+    model_output_directory = _model_output_directory(
+        request_payload.get(
+            "save_to_default_model_directory",
+            request.args.get("save_to_default_model_directory", True),
+        )
+    )
+
+    return dict(
+        domain=domain_path,
+        config=config_path,
+        training_files=temp_dir,
+        output=model_output_directory,
+        force_training=request_payload.get(
+            "force", request.args.get("force_training", False)
+        ),
+    )
+
+
+def _validate_json_training_payload(rjs: Dict):
+    if "config" not in rjs:
+        raise ErrorResponse(
+            400,
+            "BadRequest",
+            "The training request is missing the required key `config`.",
+            {"parameter": "config", "in": "body"},
+        )
+
+    if "nlu" not in rjs and "stories" not in rjs:
+        raise ErrorResponse(
+            400,
+            "BadRequest",
+            "To train a Rasa model you need to specify at least one type of "
+            "training data. Add `nlu` and/or `stories` to the request.",
+            {"parameters": ["nlu", "stories"], "in": "body"},
+        )
+
+    if "stories" in rjs and "domain" not in rjs:
+        raise ErrorResponse(
+            400,
+            "BadRequest",
+            "To train a Rasa model with story training data, you also need to "
+            "specify the `domain`.",
+            {"parameter": "domain", "in": "body"},
+        )
+
+    if "force" in rjs or "save_to_default_model_directory" in rjs:
+        common_utils.raise_warning(
+            "Specifying 'force' and 'save_to_default_model_directory' as part of the "
+            "JSON payload is deprecated. Please use the header arguments "
+            "'force_training' and 'save_to_default_model_directory'.",
+            category=FutureWarning,
+            docs=_docs("/api/http-api"),
+        )
+
+
+def _training_payload_from_yaml(request: Request,) -> Dict[Text, Union[Text, bool]]:
+    logger.debug("Extracting YAML training data from request body.")
+
+    decoded = request.body.decode(rasa.utils.io.DEFAULT_ENCODING)
+    _validate_yaml_training_payload(decoded)
+
+    temp_dir = tempfile.mkdtemp()
+    training_data = Path(temp_dir) / "data.yml"
+    rasa.utils.io.write_text_file(decoded, training_data)
+
+    model_output_directory = _model_output_directory(
+        request.args.get("save_to_default_model_directory", True)
+    )
+
+    return dict(
+        domain=str(training_data),
+        config=str(training_data),
+        training_files=temp_dir,
+        output=model_output_directory,
+        force_training=request.args.get("force_training", False),
+    )
+
+
+def _model_output_directory(save_to_default_model_directory: bool) -> Text:
+    if save_to_default_model_directory:
+        return DEFAULT_MODELS_PATH
+
+    return tempfile.gettempdir()
+
+
+def _validate_yaml_training_payload(yaml_text: Text) -> None:
+    try:
+        RasaYAMLReader.validate(yaml_text)
+    except Exception as e:
+        raise ErrorResponse(
+            400,
+            "BadRequest",
+            f"The request body does not contain valid YAML. Error: {e}",
+            help_url=DOCS_URL_TRAINING_DATA_NLU,
+        )

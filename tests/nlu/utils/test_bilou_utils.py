@@ -131,7 +131,6 @@ def test_apply_bilou_schema():
         "O",
         "B-organisation",
         "L-organisation",
-        "O",
     ]
     assert message_2.get(BILOU_ENTITIES) == [
         "U-location",
@@ -140,7 +139,6 @@ def test_apply_bilou_schema():
         "O",
         "O",
         "U-location",
-        "O",
     ]
 
 

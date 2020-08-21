@@ -1,16 +1,19 @@
 import sys
 
 import json
-import os
+from pathlib import Path
+from typing import Text
+
 from aioresponses import aioresponses
 
 from rasa.core.agent import Agent
 from rasa.core.train import train
 from rasa.core.utils import AvailableEndpoints
+from rasa.importers.importer import TrainingDataImporter
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 
-async def test_moodbot_example(unpacked_trained_moodbot_path):
+async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
     agent = Agent.load(unpacked_trained_moodbot_path)
 
     responses = await agent.handle_text("/greet")
@@ -25,15 +28,22 @@ async def test_moodbot_example(unpacked_trained_moodbot_path):
 
 async def test_formbot_example():
     sys.path.append("examples/formbot/")
+    project = Path("examples/formbot/")
+    config = str(project / "config.yml")
+    domain = str(project / "domain.yml")
+    training_dir = project / "data"
+    training_files = [
+        str(training_dir / "rules.yml"),
+        str(training_dir / "stories.yml"),
+    ]
+    importer = TrainingDataImporter.load_from_config(config, domain, training_files)
 
-    p = "examples/formbot/"
-    stories = os.path.join(p, "data", "stories.md")
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     endpoints = AvailableEndpoints(action=endpoint)
     agent = await train(
-        os.path.join(p, "domain.yml"),
-        stories,
-        os.path.join(p, "models", "dialogue"),
+        domain,
+        importer,
+        str(project / "models" / "dialogue"),
         endpoints=endpoints,
         policy_config="examples/formbot/config.yml",
     )
@@ -59,7 +69,7 @@ async def test_formbot_example():
         }
         with aioresponses() as mocked:
             mocked.post(
-                "https://example.com/webhooks/actions", payload=response, repeat=True,
+                "https://example.com/webhooks/actions", payload=response, repeat=True
             )
             responses = await agent.handle_text(input_text)
             assert responses[0]["text"] == output_text
@@ -123,22 +133,3 @@ async def test_formbot_example():
 
     responses = await agent.handle_text("/thankyou")
     assert responses[0]["text"] == "you are welcome :)"
-
-
-async def test_restaurantbot_example():
-    sys.path.append("examples/restaurantbot/")
-    from run import train_core, train_nlu, parse
-
-    p = "examples/restaurantbot/"
-    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
-    nlu_data = os.path.join(p, "data", "nlu.md")
-    await train_core(
-        os.path.join(p, "domain.yml"), os.path.join(p, "models"), "current", stories
-    )
-    train_nlu(
-        os.path.join(p, "config.yml"), os.path.join(p, "models"), "current", nlu_data
-    )
-
-    responses = await parse("hello", os.path.join(p, "models", "current"))
-
-    assert responses[0]["text"] == "how can I help you?"
