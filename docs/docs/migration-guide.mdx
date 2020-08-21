@@ -63,7 +63,7 @@ If you previously used the [Mapping Policy](./policies.mdx#mapping-policy), you
 can follow the documentation on [FAQs](./rules.mdx#faqs--mapping-intents-to-actions) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
-```yaml
+```yaml-rasa
 intents:
  - ask_is_bot:
      triggers: action_is_bot
@@ -71,7 +71,7 @@ intents:
 
 This becomes the following rule:
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Rule to map `ask_is_bot` intent
   steps:
@@ -84,7 +84,7 @@ rules:
 If you previously used the [Fallback Policy](./policies.mdx#fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
-```yaml
+```yaml-rasa
 policies:
   - name: "FallbackPolicy"
     nlu_threshold: 0.4
@@ -95,7 +95,7 @@ policies:
 
 The new configuration would then look like:
 
-```yaml
+```yaml-rasa
 policies:
 # Other policies
 - name: RulePolicy
@@ -112,7 +112,7 @@ pipeline:
 In addition, you need to add a [Rule](./rules.mdx) to specify which action to run
 in case of low NLU confidence:
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Ask the user to rephrase whenever they send a message with low NLU confidence
   steps:
@@ -129,7 +129,7 @@ If you previously used the
 [Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
-```yaml
+```yaml-rasa
 policies:
   - name: TwoStageFallbackPolicy
     nlu_threshold: 0.4
@@ -142,7 +142,7 @@ policies:
 
 The new configuration would then look like:
 
-```yaml
+```yaml-rasa
 policies:
 # Other policies
 - name: RulePolicy
@@ -159,7 +159,7 @@ pipeline:
 In addition you need to add a [Rule](./rules.mdx) to activate the Two-Stage Fallback for
 messages with low NLU confidence.
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Implementation of the TwoStageFallbackPolicy
   steps:
@@ -245,7 +245,7 @@ class RestaurantForm(FormAction):
 Start the migration by adding the [RulePolicy](./policies.mdx#rule-policy) to your
 model configuration:
 
-```yaml
+```yaml-rasa
 policies:
 # Other policies
 # ...
@@ -255,7 +255,7 @@ policies:
 Then you need to define the form and the required slots in the domain as described in
 [Forms](./forms.mdx#defining-a-form):
 
-```yaml
+```yaml-rasa
 forms:
   restaurant_form:
     cuisine:
@@ -268,7 +268,7 @@ You don't have to add a rule for activating the form as this is already covered 
 existing stories. However, you have to add a story for handle the submission of the
 form.
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Submit form
   condition:
@@ -286,7 +286,7 @@ rules:
 The last step is to implement a custom action to validate the form slots. Start by
 adding the custom action to your domain:
 
-```yaml
+```yaml-rasa
 actions:
 # Other actions
 # ...
@@ -358,7 +358,7 @@ model before trying to use it with this improved version.
   [TED Policy](./policies.mdx#ted-policy) add this to the `policies` section in your `config.yml`
   and remove potentially existing `KerasPolicy` entries:
 
-  ```yaml
+  ```yaml-rasa
   policies:
   # - ... other policies
   - name: TEDPolicy
@@ -412,7 +412,7 @@ model before trying to use it with this improved version.
   If you want to get the same model behavior as the current `EmbeddingIntentClassifier`, you can use
   the following configuration of `DIETClassifier`:
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   # - ... other components
   - name: DIETClassifier
@@ -434,7 +434,7 @@ model before trying to use it with this improved version.
 * `CRFEntityExtractor` is now deprecated and will be replaced by `DIETClassifier` in the future. If you want to
   get the same model behavior as the current `CRFEntityExtractor`, you can use the following configuration:
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   # - ... other components
   - name: LexicalSyntacticFeaturizer
@@ -473,7 +473,7 @@ model before trying to use it with this improved version.
 * If your pipeline contains `CRFEntityExtractor` and `EmbeddingIntentClassifier` you can substitute both
   components with [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier). You can use the following pipeline for that:
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   # - ... other components
   - name: LexicalSyntacticFeaturizer

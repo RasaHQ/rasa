@@ -14,7 +14,7 @@ conversation sessions.
 As an example, the domain created by `rasa init` has the following yaml definition:
 <!-- TODO: use an example with all of the pieces! e.g. formbot? -->
 
-```yml (docs/sources/rasa/cli/initial_project/domain.yml)
+```yaml-rasa (docs/sources/rasa/cli/initial_project/domain.yml)
 ```
 
 ## Intents
@@ -29,7 +29,7 @@ If you want all entities to be ignored for certain intents, you can
 add the `use_entities: []` parameter to the intent in your domain
 file like this:
 
-```yaml
+```yaml-rasa
 intents:
   - greet:
       use_entities: []
@@ -38,7 +38,7 @@ intents:
 To ignore some entities or explicitly take only certain entities
 into account you can use this syntax:
 
-```yaml
+```yaml-rasa
 intents:
 - greet:
     use_entities:
@@ -69,7 +69,7 @@ NLU pipeline.
 
 For example:
 
-```yaml
+```yaml-rasa
 entities:
    - PERSON          # entity extracted by SpacyEntityExtractor
    - time            # entity extracted by DucklingHTTPExtractor
@@ -123,7 +123,7 @@ Make this a nice table instead.
 
 * **Example**
 
-  ```yaml
+  ```yaml-rasa
   slots:
      cuisine:
         type: text
@@ -152,7 +152,7 @@ Make this a nice table instead.
 
 * **Example**
 
-  ```yaml
+  ```yaml-rasa
   slots:
      is_authenticated:
         type: bool
@@ -179,7 +179,7 @@ Make this a nice table instead.
 
 * **Example**
 
-  ```yaml
+  ```yaml-rasa
   slots:
      risk_level:
         type: categorical
@@ -216,7 +216,7 @@ Make this a nice table instead.
 
 * **Example**
 
-  ```yaml
+  ```yaml-rasa
   slots:
      temperature:
         type: float
@@ -256,7 +256,7 @@ Make this a nice table instead.
 
 * **Example**
 
-  ```yaml
+  ```yaml-rasa
   slots:
      shopping_items:
         type: list
@@ -288,7 +288,7 @@ Make this a nice table instead.
 
 * **Example**
 
-  ```yaml
+  ```yaml-rasa
   slots:
      internal_user_id:
         type: unfeaturized
@@ -343,7 +343,7 @@ class NumberOfPeopleSlot(Slot):
 Now we also need some training stories, so that Rasa Core
 can learn from these how to handle the different situations:
 
-```story
+```yaml-rasa
 # story1
 ...
 * inform{"people": "3"}
@@ -359,7 +359,7 @@ can learn from these how to handle the different situations:
 If your NLU model picks up an entity, and your domain contains a
 slot with the same name, the slot will be set automatically. For example:
 
-```story
+```yaml-rasa
 # story_01
 * greet{"name": "Ali"}
   - slot{"name": "Ali"}
@@ -372,7 +372,7 @@ story, because it is automatically picked up.
 To disable this behavior for a particular slot, you can set the
 `auto_fill` attribute to `False` in the domain file:
 
-```yaml
+```yaml-rasa
 slots:
   name:
     type: text
@@ -383,7 +383,7 @@ slots:
 
 You can provide an initial value for a slot in your domain file:
 
-```yaml
+```yaml-rasa
 slots:
   num_fallbacks:
     type: float
@@ -437,7 +437,7 @@ existing set slots should be carried over to new sessions.
 
 The default session configuration looks as follows:
 
-```yaml
+```yaml-rasa
 session_config:
   session_expiration_time: 60  # value in minutes, 0 means infinitely long
   carry_over_slots_to_new_session: true  # set to false to forget slots between sessions

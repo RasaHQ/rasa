@@ -180,7 +180,7 @@ you need to specify and annotate the following entities in your training example
 
 Remember to add those entities to your domain file (as entities and slots):
 
-```yaml
+```yaml-rasa
 entities:
   - object_type
   - mention
@@ -220,7 +220,7 @@ You can only pull information from one knowledge base, as the usage of multiple 
 This is the entirety of the code for this action! The name of the action is `action_query_knowledge_base`.
 Don't forget to add it to your domain file:
 
-```yaml
+```yaml-rasa
 actions:
 - action_query_knowledge_base
 ```

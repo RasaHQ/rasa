@@ -80,7 +80,7 @@ Note that this requires the `datetime` and `rasa_sdk.events` packages.
 Finally, we define another custom action `action_react_to_reminder` and link it to the `EXTERNAL_reminder` intent
 by writing a [Rule](./rules.mdx) for it:
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Trigger `action_react_to_reminder` for `EXTERNAL_reminder`
   steps:

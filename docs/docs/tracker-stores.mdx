@@ -49,7 +49,7 @@ extending the `TrackerStore` class.
 
   1. Add required configuration to your `endpoints.yml`:
 
-     ```yaml
+     ```yaml-rasa
      tracker_store:
          type: SQL
          dialect: "postgresql"  # the dialect used to interact with the db
@@ -70,7 +70,7 @@ extending the `TrackerStore` class.
 
   3. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
 
-     ```yaml
+     ```yaml-rasa
      postgres:
        image: postgres:latest
      ```
@@ -78,7 +78,7 @@ extending the `TrackerStore` class.
      To route requests to the new service, make sure that the `url` in your `endpoints.yml`
      references the service name:
 
-     ```yaml {4}
+     ```yaml-rasa {4}
        tracker_store:
            type: SQL
            dialect: "postgresql"  # the dialect used to interact with the db
@@ -190,7 +190,7 @@ USER 1001`}</code></pre>
 
   2. Add required configuration to your `endpoints.yml`:
 
-     ```yaml
+     ```yaml-rasa
      tracker_store:
          type: redis
          url: <url of the redis instance, e.g. localhost>
@@ -209,7 +209,7 @@ USER 1001`}</code></pre>
 
   4. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
 
-     ```yaml
+     ```yaml-rasa
      redis:
        image: redis:latest
      ```
@@ -217,7 +217,7 @@ USER 1001`}</code></pre>
      To route requests to the new service, make sure that the `url` in your `endpoints.yml`
      references the service name:
 
-     ```yaml {3}
+     ```yaml-rasa {3}
       tracker_store:
           type: redis
           url: <url of the redis instance, e.g. localhost>
@@ -261,7 +261,7 @@ USER 1001`}</code></pre>
 
   2. Add required configuration to your `endpoints.yml`
 
-     ```yaml
+     ```yaml-rasa
      tracker_store:
          type: mongod
          url: <url to your mongo instance, e.g. mongodb://localhost:27017>
@@ -283,7 +283,7 @@ USER 1001`}</code></pre>
 
   4. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
 
-     ```yaml
+     ```yaml-rasa
      mongo:
        image: mongo
        environment:
@@ -301,7 +301,7 @@ USER 1001`}</code></pre>
      To route requests to this database, make sure to set the `url` in your `endpoints.yml` as the service name,
      and specify the user and password:
 
-     ```yaml {3,5,6}
+     ```yaml-rasa {3,5,6}
       tracker_store:
           type: mongod
           url: mongodb://mongo:27017
@@ -346,7 +346,7 @@ USER 1001`}</code></pre>
 
   2. Add required configuration to your `endpoints.yml`:
 
-     ```yaml
+     ```yaml-rasa
      tracker_store:
          type: dynamo
          tablename: <name of the table to create, e.g. rasa>
@@ -387,7 +387,7 @@ USER 1001`}</code></pre>
   2. In your `endpoints.yml` put in the module path to your custom tracker store
      and the parameters you require:
 
-     ```yaml
+     ```yaml-rasa
      tracker_store:
        type: path.to.your.module.Class
        url: localhost
@@ -405,7 +405,7 @@ USER 1001`}</code></pre>
 
      `docker-compose.yml`:
 
-     ```yaml {5,6,7}
+     ```yaml-rasa {5,6,7}
      rasa:
        <existing rasa service configuration>
        volumes:
@@ -417,7 +417,7 @@ USER 1001`}</code></pre>
 
      `endpoints.yml`:
 
-     ```yaml {3}
+     ```yaml-rasa {3}
      tracker_store:
        type: path.to.your.module.Class
        url: custom-tracker-store

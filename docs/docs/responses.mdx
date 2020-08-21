@@ -8,7 +8,7 @@ title: Responses
 Responses are the simplest type of action, which utter a response you define in your
 domain file, starting with `utter_`:
 
-```yaml
+```yaml-rasa
 responses:
   utter_my_message:
     - text: "This is what I want my action to say!"
@@ -34,7 +34,7 @@ two ways to use these responses:
    directly be used as an action. You would add the response
    to the domain:
 
-   ```yaml
+   ```yaml-rasa
    responses:
      utter_greet:
      - text: "Hey! How are you?"
@@ -43,7 +43,7 @@ two ways to use these responses:
    Afterwards, you can use the response as an action in the
    stories:
 
-   ```story
+   ```yaml-rasa
    ## greet the user
    * intent_greet
      - utter_greet
@@ -81,7 +81,7 @@ and interactive components, and more.
 Responses defined in a domain's yaml file can contain images and
 buttons as well:
 
-```yaml
+```yaml-rasa
 responses:
   utter_greet:
   - text: "Hey! How are you?"
@@ -101,7 +101,7 @@ Rasa Open Source will send messages starting with a `/` to the
 as in story files, e.g. `/intent{entities}`. For example, if you let
 users choose a color by clicking a button, the button payloads may look like:
 
-```yaml
+```yaml-rasa
 utter_ask_color:
 - text: "what color would you like?"
   buttons:
@@ -130,7 +130,7 @@ For example, although date pickers are not a defined parameter in responses
 because they are not supported by most channels, a Slack date picker
 can be sent like so:
 
-```yaml
+```yaml-rasa
 responses:
   utter_take_bet:
   - custom:
@@ -156,7 +156,7 @@ the name defined in the `name()` method of the channel's `OutputChannel`
 class. Channel-specific responses are especially useful if creating custom
 output payloads that will only work in certain channels.
 
-```yaml
+```yaml-rasa
 responses:
   utter_ask_game:
   - text: "Which game would you like to play?"
@@ -209,7 +209,7 @@ collected during the dialogue. You can either do that in your custom python
 code or by using the automatic slot filling mechanism. For example, if you
 have a response like this:
 
-```yaml
+```yaml-rasa
 responses:
   utter_greet:
   - text: "Hey, {name}. How are you?"
@@ -249,7 +249,7 @@ dispatcher.utter_message(template="utter_greet", my_variable="my text")
 If you want to randomly vary the response sent to the user, you can list
 multiple **response variations** and Rasa will randomly pick one of them, e.g.:
 
-```yaml
+```yaml-rasa
 responses:
   utter_greeting:
   - text: "Hey, {name}. How are you?"

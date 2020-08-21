@@ -29,7 +29,7 @@ been part of one large file.
 
 Here's an example of a dialogue in the Rasa story format:
 
-```story
+```yaml-rasa
 ## greet + location/price + cuisine + num people    <!-- name of the story - just for debugging -->
 * greet
    - action_ask_howcanhelp
@@ -150,7 +150,7 @@ are easier to read and write. Here is an example story file which
 contains checkpoints (note that you can attach more than one checkpoint
 at a time):
 
-```story
+```yaml-rasa
 ## first story
 * greet
    - action_ask_user_question
@@ -191,7 +191,7 @@ the user to confirm something, and you want to treat the `affirm`
 and `thankyou` intents in the same way. The story below will be
 converted into two stories at training time:
 
-```story
+```yaml-rasa
 ## story
 ...
   - utter_ask_confirm
