@@ -230,7 +230,10 @@ async def form_bot_agent(trained_async, tmpdir_factory) -> Agent:
     zipped_model = await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",
-        training_files=["examples/formbot/data/stories.md"],
+        training_files=[
+            "examples/formbot/data/rules.yml",
+            "examples/formbot/data/stories.yml",
+        ],
     )
 
     return Agent.load_local_model(zipped_model)
