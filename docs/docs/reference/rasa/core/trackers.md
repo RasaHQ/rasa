@@ -73,13 +73,17 @@ Return the current tracker state as an object.
 
 Generate the past states of this tracker based on the history.
 
-#### change\_form\_to
+#### change\_loop\_to
 
 ```python
- | change_form_to(form_name: Text) -> None
+ | change_loop_to(loop_name: Text) -> None
 ```
 
-Activate or deactivate a form
+Set the currently active loop.
+
+**Arguments**:
+
+- `loop_name` - The name of loop which should be marked as active.
 
 #### set\_form\_validation
 
@@ -95,7 +99,7 @@ Toggle form validation
  | reject_action(action_name: Text) -> None
 ```
 
-Notify active form that it was rejected
+Notify active loop that it was rejected
 
 #### set\_latest\_action\_name
 
@@ -339,13 +343,13 @@ Triggers another action following the execution of the current.
 
 Clears follow up action when it was executed.
 
-#### active\_form\_name
+#### active\_loop\_name
 
 ```python
- | active_form_name() -> Optional[Text]
+ | active_loop_name() -> Optional[Text]
 ```
 
-Get the name of the currently active form.
+Get the name of the currently active loop.
 
-Returns: `None` if no active form or the name of the currenly active form.
+Returns: `None` if no active loop or the name of the currently active loop.
 

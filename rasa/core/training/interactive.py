@@ -46,7 +46,7 @@ from rasa.core.events import (
     UserUtteranceReverted,
 )
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, NaturalLanguageInterpreter
-from rasa.core.trackers import EventVerbosity, DialogueStateTracker
+from rasa.core.trackers import EventVerbosity, DialogueStateTracker, ACTIVE_LOOP_KEY
 from rasa.core.training import visualization
 from rasa.core.training.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
@@ -1012,8 +1012,8 @@ async def _correct_wrong_action(
 def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check if the form got rejected with the most recent action name."""
     return (
-        tracker.get("active_form", {}).get("name")
-        and action_name != tracker["active_form"]["name"]
+        tracker.get(ACTIVE_LOOP_KEY, {}).get("name")
+        and action_name != tracker[ACTIVE_LOOP_KEY]["name"]
         and action_name != ACTION_LISTEN_NAME
     )
 
@@ -1021,9 +1021,9 @@ def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
 def _form_is_restored(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check whether the form is called again after it was rejected."""
     return (
-        tracker.get("active_form", {}).get("rejected")
+        tracker.get(ACTIVE_LOOP_KEY, {}).get("rejected")
         and tracker.get("latest_action_name") == ACTION_LISTEN_NAME
-        and action_name == tracker.get("active_form", {}).get("name")
+        and action_name == tracker.get(ACTIVE_LOOP_KEY, {}).get("name")
     )
 
 
@@ -1050,7 +1050,7 @@ async def _confirm_form_validation(
             endpoint, conversation_id, {"event": "form_validation", "validate": False}
         )
 
-    elif not tracker.get("active_form", {}).get("validate"):
+    elif not tracker.get(ACTIVE_LOOP_KEY, {}).get("validate"):
         # handle contradiction with learned behaviour
         warning_question = questionary.confirm(
             "ERROR: FormPolicy predicted no form validation "
@@ -1102,7 +1102,7 @@ async def _validate_action(
             conversation_id,
             {
                 "event": "action_execution_rejected",
-                "name": tracker["active_form"]["name"],
+                "name": tracker[ACTIVE_LOOP_KEY]["name"],
             },
         )
 

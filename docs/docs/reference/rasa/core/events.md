@@ -264,14 +264,24 @@ The agent has said something to the user.
 This class is not used in the story training as it is contained in the
 ``ActionExecuted`` class. An entry is made in the ``Tracker``.
 
-## Form Objects
+## ActiveLoop Objects
 
 ```python
-class Form(Event)
+class ActiveLoop(Event)
 ```
 
-If `name` is not None: activates a form with `name`
-else deactivates active form
+If `name` is not None: activates a loop with `name` else deactivates active loop.
+
+## LegacyForm Objects
+
+```python
+class LegacyForm(ActiveLoop)
+```
+
+Legacy handler of old `Form` events.
+
+The `ActiveLoop` event used to be called `Form`. This class is there to handle old
+legacy events which were stored with the old type name `form`.
 
 ## FormValidation Objects
 
@@ -279,8 +289,8 @@ else deactivates active form
 class FormValidation(Event)
 ```
 
-Event added by FormPolicy to notify form action
-whether or not to validate the user input
+Event added by FormPolicy and RulePolicy to notify form action
+whether or not to validate the user input.
 
 ## ActionExecutionRejected Objects
 
