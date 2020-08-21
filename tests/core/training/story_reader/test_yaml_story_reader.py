@@ -7,7 +7,7 @@ from rasa.core import training
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.training import loading
-from rasa.core.events import ActionExecuted, UserUttered, SlotSet, Form
+from rasa.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 from rasa.core.training.structures import StoryStep
@@ -195,7 +195,7 @@ def test_rule_with_condition(rule_steps_without_stories: List[StoryStep]):
     rule = rule_steps_without_stories[0]
     assert rule.block_name == "Rule with condition"
     assert rule.events == [
-        Form("loop_q_form"),
+        ActiveLoop("loop_q_form"),
         SlotSet("requested_slot", "some_slot"),
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
         UserUttered(
@@ -215,7 +215,7 @@ def test_rule_without_condition(rule_steps_without_stories: List[StoryStep]):
         UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
         ActionExecuted("utter_explain_some_slot"),
         ActionExecuted("loop_q_form"),
-        Form("loop_q_form"),
+        ActiveLoop("loop_q_form"),
     ]
 
 
