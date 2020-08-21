@@ -4,12 +4,30 @@ import tensorflow as tf
 import numpy as np
 import logging
 from collections import defaultdict
-from typing import List, Text, Dict, Tuple, Union, Optional, Callable, TYPE_CHECKING
+from typing import (
+    List,
+    Text,
+    Dict,
+    Tuple,
+    Union,
+    Optional,
+    Callable,
+    TYPE_CHECKING,
+    Any,
+)
 
 from tqdm import tqdm
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
-from rasa.utils.tensorflow.constants import SEQUENCE, TENSORBOARD_LOG_LEVEL
+from rasa.utils.tensorflow.constants import (
+    SEQUENCE,
+    TENSORBOARD_LOG_LEVEL,
+    RANDOM_SEED,
+    TENSORBOARD_LOG_DIR,
+    LABEL,
+    SENTENCE,
+)
+from rasa.utils.tensorflow import layers
 
 if TYPE_CHECKING:
     from tensorflow.python.ops.summary_ops_v2 import ResourceSummaryWriter
@@ -518,3 +536,154 @@ class RasaModel(tf.keras.models.Model):
         raise Exception(
             "This method should neither be called nor implemented in our code."
         )
+
+
+# noinspection PyMethodOverriding
+class TransformerRasaModel(RasaModel):
+    def __init__(
+        self,
+        name: Text,
+        config: Dict[Text, Any],
+        data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
+        label_data: RasaModelData,
+    ) -> None:
+        super().__init__(
+            name=name,
+            random_seed=config[RANDOM_SEED],
+            tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
+            tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
+        )
+
+        self.config = config
+        self.data_signature = data_signature
+
+        self._check_data()
+
+        label_batch = label_data.prepare_batch()
+        self.tf_label_data = self.batch_to_model_data_format(
+            label_batch, label_data.get_signature()
+        )
+
+        # set up tf layers
+        self._tf_layers: Dict[Text : tf.keras.layers.Layer] = {}
+        self._prepare_layers()
+
+    def _check_data(self) -> None:
+        raise NotImplementedError
+
+    def _prepare_layers(self) -> None:
+        raise NotImplementedError
+
+    def _prepare_sparse_dense_dropout_layers(
+        self, name: Text, drop_rate: float
+    ) -> None:
+        self._tf_layers[f"sparse_input_dropout.{name}"] = layers.SparseDropout(
+            rate=drop_rate
+        )
+        self._tf_layers[f"dense_input_dropout.{name}"] = tf.keras.layers.Dropout(
+            rate=drop_rate
+        )
+
+    def _prepare_sparse_dense_layers(
+        self,
+        data_signature: List[FeatureSignature],
+        name: Text,
+        reg_lambda: float,
+        dense_dim: int,
+    ) -> None:
+        sparse = False
+        dense = False
+        for is_sparse, feature_dimension in data_signature:
+            if is_sparse:
+                sparse = True
+            else:
+                dense = True
+                # if dense features are present
+                # use the feature dimension of the dense features
+                dense_dim = feature_dimension
+
+        if sparse:
+            self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
+                units=dense_dim, reg_lambda=reg_lambda, name=name
+            )
+            if not dense:
+                # create dense labels for the input to use in negative sampling
+                self._tf_layers[f"sparse_to_dense_ids.{name}"] = layers.DenseForSparse(
+                    units=2, trainable=False, name=f"sparse_to_dense_ids.{name}"
+                )
+
+    def _combine_sparse_dense_features(
+        self,
+        features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]],
+        name: Text,
+        mask: Optional[tf.Tensor] = None,
+        sparse_dropout: bool = False,
+        dense_dropout: bool = False,
+    ) -> Optional[tf.Tensor]:
+
+        if not features:
+            return None
+
+        dense_features = []
+
+        for f in features:
+            if isinstance(f, tf.SparseTensor):
+                if sparse_dropout:
+                    _f = self._tf_layers[f"sparse_input_dropout.{name}"](
+                        f, self._training
+                    )
+                else:
+                    _f = f
+
+                dense_f = self._tf_layers[f"sparse_to_dense.{name}"](_f)
+
+                if dense_dropout:
+                    dense_f = self._tf_layers[f"dense_input_dropout.{name}"](
+                        dense_f, self._training
+                    )
+
+                dense_features.append(dense_f)
+            else:
+                dense_features.append(f)
+
+        if mask is None:
+            return tf.concat(dense_features, axis=-1)
+
+        return tf.concat(dense_features, axis=-1) * mask
+
+    @staticmethod
+    def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
+        mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
+        # explicitly add last dimension to mask
+        # to track correctly dynamic sequences
+        return tf.expand_dims(mask, -1)
+
+    @staticmethod
+    def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
+        last_sequence_index = tf.maximum(0, sequence_lengths - 1)
+        batch_index = tf.range(tf.shape(last_sequence_index)[0])
+
+        indices = tf.stack([batch_index, last_sequence_index], axis=1)
+        return tf.gather_nd(x, indices)
+
+    def _get_mask_for(
+        self,
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        key: Text,
+        sub_key: Text,
+    ) -> Optional[tf.Tensor]:
+        if key not in tf_batch_data or sub_key not in tf_batch_data[key]:
+            return None
+
+        sequence_lengths = tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
+        return self._compute_mask(sequence_lengths)
+
+    def batch_loss(
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> tf.Tensor:
+        raise NotImplementedError
+
+    def batch_predict(
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> Dict[Text, tf.Tensor]:
+        raise NotImplementedError

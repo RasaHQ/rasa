@@ -22,7 +22,7 @@ from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
-from rasa.utils.tensorflow.models import RasaModel
+from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import (
     INTENT,
@@ -1062,7 +1062,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 # pytype: disable=key-error
 
 
-class DIET(RasaModel):
+class DIET(TransformerRasaModel):
     def __init__(
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
@@ -1070,17 +1070,7 @@ class DIET(RasaModel):
         entity_tag_specs: Optional[List[EntityTagSpec]],
         config: Dict[Text, Any],
     ) -> None:
-        super().__init__(
-            name="DIET",
-            random_seed=config[RANDOM_SEED],
-            tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
-            tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
-        )
-
-        self.config = config
-
-        self.data_signature = data_signature
-        self._check_data()
+        super().__init__("DIET", config, data_signature, label_data)
 
         self.predict_data_signature = {
             feature_name: features
@@ -1088,16 +1078,7 @@ class DIET(RasaModel):
             if TEXT in feature_name
         }
 
-        label_batch = label_data.prepare_batch()
-        self.tf_label_data = self.batch_to_model_data_format(
-            label_batch, label_data.get_signature()
-        )
-
         self._entity_tag_specs = self._ordered_tag_specs(entity_tag_specs)
-
-        # tf objects
-        self._tf_layers: Dict[Text : tf.keras.layers.Layer] = {}
-        self._prepare_layers()
 
         # tf training
         self.optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
@@ -1242,34 +1223,6 @@ class DIET(RasaModel):
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
 
-    def _prepare_sparse_dense_layers(
-        self,
-        feature_signatures: List[FeatureSignature],
-        name: Text,
-        reg_lambda: float,
-        dense_dim: int,
-    ) -> None:
-        sparse = False
-        dense = False
-        for is_sparse, feature_dimension in feature_signatures:
-            if is_sparse:
-                sparse = True
-            else:
-                dense = True
-                # if dense features are present
-                # use the feature dimension of the dense features
-                dense_dim = feature_dimension
-
-        if sparse:
-            self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
-                units=dense_dim, reg_lambda=reg_lambda, name=name
-            )
-            if not dense:
-                # create dense labels for the input to use in negative sampling
-                self._tf_layers[f"sparse_to_dense_ids.{name}"] = layers.DenseForSparse(
-                    units=2, trainable=False, name=f"sparse_to_dense_ids.{name}"
-                )
-
     def _prepare_input_layers(self, name: Text) -> None:
         self._tf_layers[f"ffnn.{name}"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][name],
@@ -1285,12 +1238,9 @@ class DIET(RasaModel):
             ):
                 continue
 
-            self._tf_layers[
-                f"sparse_input_dropout.{name}_{feature_type}"
-            ] = layers.SparseDropout(rate=self.config[DROP_RATE])
-            self._tf_layers[
-                f"dense_input_dropout.{name}_{feature_type}"
-            ] = tf.keras.layers.Dropout(rate=self.config[DROP_RATE])
+            self._prepare_sparse_dense_dropout_layers(
+                f"{name}_{feature_type}", self.config[DROP_RATE]
+            )
             self._prepare_sparse_dense_layers(
                 self.data_signature[name][feature_type],
                 f"{name}_{feature_type}",
@@ -1380,45 +1330,6 @@ class DIET(RasaModel):
                 self.config[REGULARIZATION_CONSTANT],
                 f"tags.{name}",
             )
-
-    def _combine_sparse_dense_features(
-        self,
-        features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]],
-        name: Text,
-        mask: Optional[tf.Tensor] = None,
-        sparse_dropout: bool = False,
-        dense_dropout: bool = False,
-    ) -> Optional[tf.Tensor]:
-
-        if not features:
-            return None
-
-        dense_features = []
-
-        for f in features:
-            if isinstance(f, tf.SparseTensor):
-                if sparse_dropout:
-                    _f = self._tf_layers[f"sparse_input_dropout.{name}"](
-                        f, self._training
-                    )
-                else:
-                    _f = f
-
-                dense_f = self._tf_layers[f"sparse_to_dense.{name}"](_f)
-
-                if dense_dropout:
-                    dense_f = self._tf_layers[f"dense_input_dropout.{name}"](
-                        dense_f, self._training
-                    )
-
-                dense_features.append(dense_f)
-            else:
-                dense_features.append(f)
-
-        if mask is None:
-            return tf.concat(dense_features, axis=-1)
-
-        return tf.concat(dense_features, axis=-1) * mask
 
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
@@ -1601,14 +1512,6 @@ class DIET(RasaModel):
 
         return all_label_ids, all_labels_embed
 
-    @staticmethod
-    def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
-        last_sequence_index = tf.maximum(0, sequence_lengths - 1)
-        batch_index = tf.range(tf.shape(last_sequence_index)[0])
-
-        indices = tf.stack([batch_index, last_sequence_index], axis=1)
-        return tf.gather_nd(x, indices)
-
     def _mask_loss(
         self,
         outputs: tf.Tensor,
@@ -1680,13 +1583,6 @@ class DIET(RasaModel):
         return loss, f1, logits
 
     @staticmethod
-    def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
-        mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
-        # explicitly add last dimension to mask
-        # to track correctly dynamic sequences
-        return tf.expand_dims(mask, -1)
-
-    @staticmethod
     def _get_sequence_lengths(
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
         key: Text,
@@ -1701,18 +1597,6 @@ class DIET(RasaModel):
             sequence_lengths += tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
 
         return sequence_lengths
-
-    def _get_mask_for(
-        self,
-        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
-        key: Text,
-        sub_key: Text,
-    ) -> Optional[tf.Tensor]:
-        if key not in tf_batch_data or sub_key not in tf_batch_data[key]:
-            return None
-
-        sequence_lengths = tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
-        return self._compute_mask(sequence_lengths)
 
     @staticmethod
     def _get_batch_dim(tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]) -> int:

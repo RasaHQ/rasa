@@ -63,7 +63,9 @@ INNER = "inner"
 COSINE = "cosine"
 
 BALANCED = "balanced"
+
 SEQUENCE = "sequence"
+SENTENCE = "sentence"
 
 POOLING = "pooling"
 MAX_POOLING = "max"
