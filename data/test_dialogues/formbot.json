@@ -173,7 +173,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.Form",
+      "py/object":"rasa.core.events.ActiveLoop",
       "name":null,
       "timestamp":1551884214.9510589
     },
