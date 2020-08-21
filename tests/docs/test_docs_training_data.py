@@ -29,7 +29,7 @@ def test_docs_training_data(mdx_file_path: Path):
         try:
             RasaYAMLReader.validate(codeblock)
         except ValueError as e:
-            error_message = f'Invalid training data found in file "{mdx_file_path}"'
+            error_message = f"({mdx_file_path}): Invalid training data found "
             if title:
-                error_message = f'{error_message}, in block with title "{title}"'
+                error_message = f'{error_message} in block with title "{title}"'
             raise AssertionError(error_message) from e
