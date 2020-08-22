@@ -1,5 +1,4 @@
 import logging
-import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -19,10 +18,7 @@ from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManage
 from unittest.mock import Mock
 
 import rasa.core.tracker_store
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.core.domain import Domain
@@ -193,10 +189,8 @@ def test_tracker_store_deprecated_url_argument_from_string(default_domain: Domai
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.URLExampleTrackerStore"
 
-    with pytest.warns(DeprecationWarning):
-        tracker_store = TrackerStore.create(store_config, default_domain)
-
-    assert isinstance(tracker_store, URLExampleTrackerStore)
+    with pytest.raises(Exception):
+        TrackerStore.create(store_config, default_domain)
 
 
 def test_tracker_store_with_host_argument_from_string(default_domain: Domain):
@@ -576,10 +570,10 @@ def test_tracker_store_retrieve_with_session_started_events(
 ):
     tracker_store = tracker_store_type(default_domain, **tracker_store_kwargs)
     events = [
-        UserUttered("Hola", {"name": "greet"}),
-        BotUttered("Hi"),
-        SessionStarted(),
-        UserUttered("Ciao", {"name": "greet"}),
+        UserUttered("Hola", {"name": "greet"}, timestamp=1),
+        BotUttered("Hi", timestamp=2),
+        SessionStarted(timestamp=3),
+        UserUttered("Ciao", {"name": "greet"}, timestamp=4),
     ]
     sender_id = "test_sql_tracker_store_with_session_events"
     tracker = DialogueStateTracker.from_events(sender_id, events)
@@ -629,6 +623,38 @@ def test_tracker_store_retrieve_without_session_started_events(
     assert all(event == tracker.events[i] for i, event in enumerate(events))
 
 
+@pytest.mark.parametrize(
+    "tracker_store_type,tracker_store_kwargs",
+    [
+        (MockedMongoTrackerStore, {}),
+        (SQLTrackerStore, {"host": "sqlite:///"}),
+        (InMemoryTrackerStore, {}),
+    ],
+)
+def test_tracker_store_retrieve_with_events_from_previous_sessions(
+    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict
+):
+    tracker_store = tracker_store_type(Domain.empty(), **tracker_store_kwargs)
+    tracker_store.load_events_from_previous_conversation_sessions = True
+
+    conversation_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+        ],
+    )
+    tracker_store.save(tracker)
+
+    actual = tracker_store.retrieve(conversation_id)
+
+    assert len(actual.events) == len(tracker.events)
+
+
 def test_session_scope_error(
     monkeypatch: MonkeyPatch, capsys: CaptureFixture, default_domain: Domain
 ):
@@ -640,7 +666,7 @@ def test_session_scope_error(
     # `ensure_schema_exists()` raises `ValueError`
     mocked_ensure_schema_exists = Mock(side_effect=ValueError(requested_schema))
     monkeypatch.setattr(
-        rasa.core.tracker_store, "ensure_schema_exists", mocked_ensure_schema_exists,
+        rasa.core.tracker_store, "ensure_schema_exists", mocked_ensure_schema_exists
     )
 
     # `SystemExit` is triggered by failing `ensure_schema_exists()`

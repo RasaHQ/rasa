@@ -14,7 +14,7 @@ from rasa.test import compare_nlu_models
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa.nlu.model import Interpreter
+from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.test import (
     is_token_within_entity,
     do_entities_overlap,
@@ -33,8 +33,6 @@ from rasa.nlu.test import (
     evaluate_intents,
     evaluate_entities,
     evaluate_response_selections,
-    get_unique_labels,
-    get_evaluation_metrics,
     NO_ENTITY,
     collect_successful_entity_predictions,
     collect_incorrect_entity_predictions,
@@ -50,7 +48,6 @@ from rasa.nlu.tokenizers.tokenizer import Token
 import json
 import os
 from rasa.nlu import training_data
-from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
@@ -76,25 +73,6 @@ def loop():
     loop = rasa.utils.io.enable_async_loop_debugging(loop)
     yield loop
     loop.close()
-
-
-@pytest.fixture(scope="session")
-async def pretrained_interpreter(component_builder, tmpdir_factory):
-    conf = RasaNLUModelConfig(
-        {
-            "pipeline": [
-                {"name": "SpacyNLP"},
-                {"name": "SpacyEntityExtractor"},
-                {"name": "DucklingHTTPExtractor"},
-            ]
-        }
-    )
-    return await utilities.interpreter_for(
-        component_builder,
-        data="./data/examples/rasa/demo-rasa.json",
-        path=tmpdir_factory.mktemp("projects").strpath,
-        config=conf,
-    )
 
 
 # Chinese Example
@@ -275,6 +253,21 @@ def test_determine_token_labels_with_extractors():
             ["CRFEntityExtractor"],
             0.87,
         ),
+        (
+            Token("pizza", 4),
+            [
+                {
+                    "start": 4,
+                    "end": 9,
+                    "value": "pizza",
+                    "entity": "food",
+                    "confidence_entity": 0.87,
+                    "extractor": "DIETClassifier",
+                }
+            ],
+            ["DIETClassifier"],
+            0.87,
+        ),
     ],
 )
 def test_get_entity_confidences(
@@ -391,7 +384,6 @@ def test_run_cv_evaluation_with_response_selector():
         "data/examples/rasa/demo-rasa-responses.md"
     )
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
-    training_data_obj.fill_response_phrases()
 
     nlu_config = RasaNLUModelConfig(
         {
@@ -829,9 +821,20 @@ def test_evaluate_entities_cv():
     }, "Wrong entity prediction alignment"
 
 
-def test_remove_pretrained_extractors(pretrained_interpreter):
+def test_remove_pretrained_extractors(component_builder):
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "SpacyNLP"},
+                {"name": "SpacyEntityExtractor"},
+                {"name": "DucklingHTTPExtractor"},
+            ]
+        }
+    )
+    trainer = Trainer(_config, component_builder)
+
     target_components_names = ["SpacyNLP"]
-    filtered_pipeline = remove_pretrained_extractors(pretrained_interpreter.pipeline)
+    filtered_pipeline = remove_pretrained_extractors(trainer.pipeline)
     filtered_components_names = [c.name for c in filtered_pipeline]
     assert filtered_components_names == target_components_names
 
@@ -840,61 +843,6 @@ def test_label_replacement():
     original_labels = ["O", "location"]
     target_labels = ["no_entity", "location"]
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
-
-
-@pytest.mark.parametrize(
-    "targets,exclude_label,expected",
-    [
-        (
-            ["no_entity", "location", "location", "location", "person"],
-            NO_ENTITY,
-            ["location", "person"],
-        ),
-        (
-            ["no_entity", "location", "location", "location", "person"],
-            None,
-            ["no_entity", "location", "person"],
-        ),
-        (["no_entity"], NO_ENTITY, []),
-        (["location", "location", "location"], NO_ENTITY, ["location"]),
-        ([], None, []),
-    ],
-)
-def test_get_label_set(targets, exclude_label, expected):
-    actual = get_unique_labels(targets, exclude_label)
-    assert set(expected) == set(actual)
-
-
-@pytest.mark.parametrize(
-    "targets,predictions,expected_precision,expected_fscore,expected_accuracy",
-    [
-        (
-            ["no_entity", "location", "no_entity", "location", "no_entity"],
-            ["no_entity", "location", "no_entity", "no_entity", "person"],
-            1.0,
-            0.6666666666666666,
-            3 / 5,
-        ),
-        (
-            ["no_entity", "no_entity", "no_entity", "no_entity", "person"],
-            ["no_entity", "no_entity", "no_entity", "no_entity", "no_entity"],
-            0.0,
-            0.0,
-            4 / 5,
-        ),
-    ],
-)
-def test_get_evaluation_metrics(
-    targets, predictions, expected_precision, expected_fscore, expected_accuracy
-):
-    report, precision, f1, accuracy = get_evaluation_metrics(
-        targets, predictions, True, exclude_label=NO_ENTITY
-    )
-
-    assert f1 == expected_fscore
-    assert precision == expected_precision
-    assert accuracy == expected_accuracy
-    assert NO_ENTITY not in report
 
 
 def test_nlu_comparison(tmpdir, config_path, config_path_duplicate):

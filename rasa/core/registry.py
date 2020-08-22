@@ -3,9 +3,9 @@ should import this in module scope."""
 
 import logging
 import typing
-from typing import Text, Type
+from typing import Text, Type, TYPE_CHECKING
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.policies.policy import Policy
     from rasa.core.featurizers import TrackerFeaturizer
 

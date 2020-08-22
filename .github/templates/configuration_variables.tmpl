@@ -1,0 +1,14 @@
+{{- /*
+
+The template maps dataset name and configuration name for the model
+regression tests into paths where files are located. As a result,
+the template returns two environment variables `DATASET` and `CONFIG`
+which contain paths to file/directory.
+
+ */ -}}
+{{- $mapping := (datasource "mapping") -}}
+{{- $dataset := (index $mapping.datasets (getenv "DATASET_NAME")) -}}
+{{- $config := (index $mapping.configurations (getenv "CONFIG_NAME")) -}}
+
+export DATASET="{{ $dataset.path }}"
+export CONFIG="{{ $dataset.language }}/{{ $config }}"

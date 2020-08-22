@@ -1,27 +1,22 @@
 from typing import Callable
 from _pytest.pytester import RunResult
+import pytest
+import sys
 
 
 def test_cli_start(run: Callable[..., RunResult]):
     """
-    Measures an average startup time and checks that it
-    does not deviate more than x seconds from 5.
+    Checks that a call to ``rasa --help`` does not take longer than 7 seconds.
     """
     import time
 
-    durations = []
+    start = time.time()
+    run("--help")
+    end = time.time()
 
-    for i in range(5):
-        start = time.time()
-        run("--help")
-        end = time.time()
+    duration = end - start
 
-        durations.append(end - start)
-
-    avg_duration = sum(durations) / len(durations)
-
-    # When run in parallel, it takes a little longer
-    assert avg_duration - 5 <= 2
+    assert duration <= 7
 
 
 def test_data_convert_help(run: Callable[..., RunResult]):
@@ -37,6 +32,9 @@ def test_data_convert_help(run: Callable[..., RunResult]):
         assert output.outlines[i] == line
 
 
+@pytest.mark.xfail(
+    sys.platform == "win32", reason="--version doesn't print anything on Windows"
+)
 def test_version_print_lines(run: Callable[..., RunResult]):
     output = run("--version")
     output_text = "".join(output.outlines)

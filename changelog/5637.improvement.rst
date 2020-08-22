@@ -1,2 +1,0 @@
-Added behavior to the ``rasa --version`` command. It will now also list information about the operating system,
-python version and rasa-sdk. This will make it easier for users to file bug reports.

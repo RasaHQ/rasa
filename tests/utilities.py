@@ -4,7 +4,6 @@ from typing import Text
 import rasa.utils.io as io_utils
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.utils.tensorflow.constants import EPOCHS
 
@@ -28,11 +27,7 @@ def update_number_of_epochs(config_path: Text, output_file: Text):
         if not isinstance(component, dict):
             continue
 
-        if component["name"] in [
-            EmbeddingIntentClassifier.name,
-            DIETClassifier.name,
-            ResponseSelector.name,
-        ]:
+        if component["name"] in [DIETClassifier.name, ResponseSelector.name]:
             component[EPOCHS] = 1
 
-    io_utils.write_yaml_file(config, output_file)
+    io_utils.write_yaml(config, output_file)

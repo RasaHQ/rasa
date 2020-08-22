@@ -20,6 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: rasahq/merge-pal-action@v0.5.1
+      - uses: rasahq/merge-pal-action@master
         with:
           token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN || secrets.GITHUB_TOKEN}}

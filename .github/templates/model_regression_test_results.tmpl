@@ -1,0 +1,34 @@
+{{- /*
+
+The template reads a file with a report (the report file is available
+as an artifact in the model regression tests workflow) and returns
+a markdown table with a summary of the tests.
+
+*/ -}}
+{{ range $dataset, $config := (datasource "data")}}
+Dataset: `{{$dataset}}`
+
+| Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 |
+|---------------|-----------------|-----------------|-------------------|
+{{ range $config_name, $config_data := $config -}}
+| `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}` |
+{{- if has $config_data "intent_classification" -}}
+{{- $intent_class := index $config_data.intent_classification -}}
+{{- if (has (index $intent_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $intent_class "micro avg") "f1-score") }}{{- else if (has $intent_class "accuracy") -}}{{ printf "%.4f" $intent_class.accuracy }}{{- else -}}`no data`{{- end -}} |
+{{- else -}}
+`no data`|
+{{- end -}}
+{{- if has $config_data "entity_prediction" -}}
+{{- $entity_class := $config_data.entity_prediction -}}
+{{- if (has (index $entity_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $entity_class "micro avg") "f1-score") }}{{- else if (has $entity_class "accuracy") -}}{{ printf "%.4f" $entity_class.accuracy }}{{- else -}}`no data`{{- end -}} |
+{{- else -}}
+`no data`|
+{{- end -}}
+{{- if has $config_data "response_selection" -}}
+{{- $response_class := $config_data.response_selection -}}
+{{- if (has (index $response_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $response_class "micro avg") "f1-score") }}{{- else if (has $response_class "accuracy") -}}{{ printf "%.4f" $response_class.accuracy }}{{- else -}}`no data`{{- end -}} |
+{{- else -}}
+`no data`|
+{{- end }}
+{{end}}
+{{end}}

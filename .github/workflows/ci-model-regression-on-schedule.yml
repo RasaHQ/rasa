@@ -1,0 +1,231 @@
+# The docs: https://www.notion.so/rasa/The-CI-for-model-regression-tests-92af7185e08e4fb2a0c764770a8e9095
+name: CI - Model Regression
+
+on:
+  schedule:
+    # Run once a week
+    - cron:  '1 23 * * */7'
+
+env:
+  GKE_ZONE: us-central1-a
+
+jobs:
+  read_test_configuration:
+    name: Reads tests configuration
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Checkout master
+      uses: actions/checkout@v2
+
+    - name: Download yq
+      run: |
+        curl --location https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64 -o yq
+        chmod +x yq
+
+    - name: Check if a configuration file exists
+      run: test -f .github/configs/mr-test-schedule.yaml
+
+    - name: Set matrix values
+      id: set-matrix
+      shell: bash
+      run: echo "::set-output name=matrix::$(./yq -j r .github/configs/mr-test-schedule.yaml)"
+
+  deploy_runner_gpu:
+    name: Deploy Github Runner - GPU
+    needs: read_test_configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download gomplate
+        run: |-
+          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          chmod 755 gomplate
+
+      - name: Render deployment template
+        run: |-
+          ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
+
+      # Setup gcloud CLI
+      - uses: GoogleCloudPlatform/github-actions@0.1.2
+        with:
+          service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
+          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
+
+      # Get the GKE credentials so we can deploy to the cluster
+      - run: |-
+          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}"
+
+      - name: Deploy Github Runner
+        run: |-
+          kubectl apply -f runner_deployment.yaml
+          kubectl -n github-runner rollout status --timeout=15m deployment/github-runner-$GITHUB_RUN_ID
+
+  model_regression_test_gpu:
+    name: Model Regression Tests - GPU
+    continue-on-error: true
+    needs:
+    - deploy_runner_gpu
+    - read_test_configuration
+    env:
+      # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
+      LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+      ACCELERATOR_TYPE: "GPU"
+    runs-on: [self-hosted, gpu]
+    strategy:
+      max-parallel: 1
+      matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Checkout dataset
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ secrets.DATASET_REPOSITORY }}
+          token: ${{ secrets.ML_TEST_SA_PAT }}
+          path: 'dataset'
+
+      - name: Set DATASET and CONFIG variables
+        id: set_dataset_config_vars
+        env:
+          DATASET_NAME: "${{ matrix.dataset }}"
+          CONFIG_NAME: "${{ matrix.config }}"
+        run: |-
+          # determine DATASET and CONFIG environment variables
+          source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
+
+          # Not all configurations are available for all datasets.
+          # The job will fail and the workflow continues, if the configuration file doesn't exist
+          # for a given dataset
+
+          echo "::set-output name=is_dataset_exists::true"
+          echo "::set-output name=is_config_exists::true"
+
+          test -f dataset/configs/$CONFIG || (echo "::warning::The ${{ matrix.config }} configuration file doesn't exist. Skipping the job." \
+            && echo "::set-output name=is_dataset_exists::false" && exit 0)
+          test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
+            && echo "::set-output name=is_config_exists::false" && exit 0)
+
+          echo "::set-env name=DATASET::${DATASET}"
+          echo "::set-env name=CONFIG::${CONFIG}"
+
+      - name: Set up Python 3.8 🐍
+        uses: actions/setup-python@v2
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        with:
+          python-version: 3.8
+
+      - name: Read Poetry Version 🔢
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |
+          echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@v1
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        uses: actions/cache@v1
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-poetry-3.8-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: ${{ runner.os }}-poetry-3.8
+
+      - name: Install Dependencies 📦
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |
+          poetry install --extras full
+          make install
+          poetry run python -m spacy download de_core_news_md
+          poetry run python -m spacy link --force de_core_news_md de
+
+      - name: Validate that GPUs are working
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |-
+          poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
+
+      - name: Run test
+        id: run_test
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        env:
+          TFHUB_CACHE_DIR: ~/.tfhub_cache/
+          OMP_NUM_THREADS: 1
+        run: |-
+          poetry run rasa --version
+
+          export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          cd ${{ github.workspace }}/dataset
+          poetry run rasa train nlu --quiet -u $DATASET/train -c configs/$CONFIG --out models/$DATASET/$CONFIG
+          echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+
+          export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
+          poetry run rasa test nlu --quiet -u $DATASET/test -m models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
+
+          echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+          echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
+
+      # Download the results of the previous runs
+      # The report file is extended with new results every next job run
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        continue-on-error: true
+        with:
+          name: report.json
+
+      - name: Generate a JSON file with a report / Publish results to Segment
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        env:
+          SUMMARY_FILE: "./report.json"
+          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
+          DATASET_NAME: ${{ matrix.dataset }}
+          RESULT_DIR: "${{ github.workspace }}/results"
+          CONFIG: ${{ matrix.config }}
+          TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
+          TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
+          TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
+          PR_URL: ""
+        run: |-
+          poetry run pip install analytics-python
+          poetry run python .github/scripts/mr_publish_results.py
+          poetry run python .github/scripts/mr_generate_summary.py
+          cat $SUMMARY_FILE
+
+      - name: Upload an artifact with the report
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        uses: actions/upload-artifact@v2
+        with:
+          name: report.json
+          path: ./report.json
+
+  remove_runner_gpu:
+    name: Delete Github Runner - GPU
+    if: always()
+    needs:
+    - deploy_runner_gpu
+    - model_regression_test_gpu
+    runs-on: ubuntu-latest
+
+    steps:
+      # Setup gcloud CLI
+      - uses: GoogleCloudPlatform/github-actions@0.1.2
+        with:
+          service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
+          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
+
+      # Get the GKE credentials so we can deploy to the cluster
+      - run: |-
+          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}"
+
+      - name: Remove Github Runner
+        run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30

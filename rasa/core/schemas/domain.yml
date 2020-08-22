@@ -1,5 +1,9 @@
 allowempty: True
 mapping:
+  version:
+    type: "str"
+    required: False
+    allowempty: False
   intents:
     type: "seq"
     sequence:
@@ -30,6 +34,8 @@ mapping:
     type: "seq"
     sequence:
     - type: "str"
+    - type: "map"
+      allowempty: True
     allowempty: True
   config:
     type: "map"

@@ -1,17 +1,17 @@
-import json
-import tempfile
 import os
 from typing import Text, List
+from unittest.mock import Mock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
-import rasa.utils.io as io_utils
+from rasa.importers import autoconfig
+from rasa.importers.rasa import RasaFileImporter
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu import config, load_data
 from rasa.nlu import components
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.nlu.registry import registered_pipeline_templates
 from rasa.nlu.model import Trainer
 from tests.nlu.utilities import write_file_config
 
@@ -34,15 +34,6 @@ def test_invalid_config_json(tmp_path):
         config.load(str(f))
 
 
-def test_invalid_pipeline_template():
-    args = {"pipeline": "my_made_up_name"}
-    f = write_file_config(args)
-
-    with pytest.raises(config.InvalidConfigError) as execinfo:
-        config.load(f.name)
-    assert "unknown pipeline template" in str(execinfo.value)
-
-
 def test_invalid_many_tokenizers_in_config():
     nlu_config = {
         "pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyTokenizer"}]
@@ -50,22 +41,32 @@ def test_invalid_many_tokenizers_in_config():
 
     with pytest.raises(config.InvalidConfigError) as execinfo:
         Trainer(config.RasaNLUModelConfig(nlu_config))
-    assert "More then one tokenizer is used" in str(execinfo.value)
+    assert "More than one tokenizer is used" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(
     "_config",
     [
         {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyFeaturizer"}]},
-        {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "ConveRTFeaturizer"}]},
-        {
-            "pipeline": [
-                {"name": "ConveRTTokenizer"},
-                {"name": "LanguageModelFeaturizer"},
-            ]
-        },
+        pytest.param(
+            {
+                "pipeline": [
+                    {"name": "WhitespaceTokenizer"},
+                    {"name": "ConveRTFeaturizer"},
+                ]
+            },
+        ),
+        pytest.param(
+            {
+                "pipeline": [
+                    {"name": "ConveRTTokenizer"},
+                    {"name": "LanguageModelFeaturizer"},
+                ]
+            },
+        ),
     ],
 )
+@pytest.mark.skip_on_windows
 def test_missing_required_component(_config):
     with pytest.raises(config.InvalidConfigError) as execinfo:
         Trainer(config.RasaNLUModelConfig(_config))
@@ -79,21 +80,6 @@ def test_missing_property(pipeline_config):
     with pytest.raises(config.InvalidConfigError) as execinfo:
         Trainer(config.RasaNLUModelConfig(pipeline_config))
     assert "Add required components to the pipeline" in str(execinfo.value)
-
-
-@pytest.mark.parametrize(
-    "pipeline_template", list(registered_pipeline_templates.keys())
-)
-def test_pipeline_registry_lookup(pipeline_template: Text):
-    args = {"pipeline": pipeline_template}
-    f = write_file_config(args)
-
-    final_config = config.load(f.name)
-    components = [c for c in final_config.pipeline]
-
-    assert json.dumps(components, sort_keys=True) == json.dumps(
-        registered_pipeline_templates[pipeline_template], sort_keys=True
-    )
 
 
 def test_default_config_file():
@@ -174,13 +160,17 @@ def config_files_in(config_directory: Text):
     "config_file",
     config_files_in("data/configs_for_docs") + config_files_in("docker/configs"),
 )
-def test_train_docker_and_docs_configs(config_file: Text):
-    content = io_utils.read_yaml_file(config_file)
+async def test_train_docker_and_docs_configs(
+    config_file: Text, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setattr(autoconfig, "_dump_config", Mock())
+    importer = RasaFileImporter(config_file=config_file)
+    imported_config = await importer.get_config()
 
-    loaded_config = config.load(config_file)
+    loaded_config = config.load(imported_config)
 
     assert len(loaded_config.component_names) > 1
-    assert loaded_config.language == content["language"]
+    assert loaded_config.language == imported_config["language"]
 
 
 @pytest.mark.parametrize(

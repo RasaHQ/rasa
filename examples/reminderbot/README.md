@@ -7,8 +7,8 @@ The `reminderbot` example demonstrates how your bot can respond to external even
 This example contains some training data and the main files needed to build an
 assistant on your local machine. The `reminderbot` consists of the following files:
 
-- **data/nlu.md** contains training examples for the NLU model  
-- **data/stories.md** contains training stories for the Core model  
+- **data/nlu.yml** contains training examples for the NLU model  
+- **data/rules.yml** contains rules for the Core model  
 - **config.yml** contains the model configuration
 - **domain.yml** contains the domain of the assistant  
 - **credentials.yml** contains credentials for the different channels
@@ -24,14 +24,37 @@ To train and chat with `reminderbot`, execute the following steps:
     rasa train
     ```
     The model will be stored in the `/models` directory as a zipped file.
-    
-2. Run a Rasa action server with
+
+2. Run a Rasa SDK action server with
     ```
     rasa run actions
     ```
+
+3. (Option 1) Run Rasa X to talk to your bot. In a separate console window from where you ran the step 2 command:
+    ```
+    rasa x
+    ```
+
+3. (Option 2) To test this example without Rasa X, run a 
+   [callback channel](https://rasa.com/docs/rasa/user-guide/connectors/your-own-website/#callbackinput). 
+   In a separate console window from where you ran the step 2 command:
+    ```
+    python callback_server.py
+    ```
+     
+   This will run a server that prints the bot's responses to the console. 
    
-3. Run a Rasa X to talk to your bot. 
-   If you don't have a Rasa X server running, you can test things with `rasa x` in a separate shell (the action server must keep running).
+   Start your Rasa server in a third console window: 
+   ```
+   rasa run --enable-api 
+   ```
+   
+   You can then send messages to the bot via the callback channel endpoint: 
+   ```
+   curl -XPOST http://localhost:5005/webhooks/callback/webhook \
+      -d '{"sender": "tester", "message": "hello"}' \
+      -H "Content-type: application/json"
+   ```
 
 For more information about the individual commands, please check out our
 [documentation](http://rasa.com/docs/rasa/user-guide/command-line-interface/).

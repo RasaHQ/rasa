@@ -1,11 +1,9 @@
 import pytest
 
-from typing import Tuple
-from rasa.nlu import registry
+from rasa.nlu import registry, train
 from rasa.nlu.components import find_unavailable_packages
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Metadata
-from tests.nlu import utilities
+from rasa.nlu.model import Interpreter, Metadata
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -17,19 +15,6 @@ def test_no_components_with_same_name(component_class):
     assert (
         names.count(component_class.name) == 1
     ), f"There is more than one component named {component_class.name}"
-
-
-@pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates)
-def test_all_components_in_model_templates_exist(pipeline_template):
-    """We provide a couple of ready to use pipelines, this test ensures
-    all components referenced by name in the
-    pipeline definitions are available."""
-
-    components = registry.registered_pipeline_templates[pipeline_template]
-    for component in components:
-        assert (
-            component["name"] in registry.registered_components
-        ), "Model template contains unknown component."
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -97,17 +82,20 @@ def test_builder_load_unknown(component_builder):
     assert "Cannot find class" in str(excinfo.value)
 
 
-async def test_example_component(component_builder, tmpdir_factory):
-    conf = RasaNLUModelConfig(
+async def test_example_component(component_builder, tmp_path):
+    _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
     )
 
-    interpreter = await utilities.interpreter_for(
-        component_builder,
+    (trainer, trained, persisted_path) = await train(
+        _config,
         data="./data/examples/rasa/demo-rasa.json",
-        path=tmpdir_factory.mktemp("projects").strpath,
-        config=conf,
+        path=str(tmp_path),
+        component_builder=component_builder,
     )
 
-    r = interpreter.parse("test")
-    assert r is not None
+    assert trainer.pipeline
+
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    assert loaded.parse("test") is not None
