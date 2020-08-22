@@ -1,0 +1,57 @@
+e2e_tests:
+- story: happy path
+  steps:
+  - user: |
+     hey
+    intent: greet
+  - action: utter_greet
+  - user: |
+     amazing
+    intent: mood_great
+  - action: utter_happy
+
+- story: sad path 1
+  steps:
+  - user: |
+     hi
+    intent: greet
+  - action: utter_greet
+  - user: |
+     my day was horrible
+    intent: mood_unhappy
+  - action: utter_cheer_up
+  - action: utter_did_that_help
+  - user: |
+     yes
+    intent: affirm
+  - action: utter_happy
+
+- story: sad path 2
+  steps:
+  - user: |
+     good morning
+    intent: greet
+  - action: utter_greet
+  - user: |
+     I am sad
+    intent: mood_unhappy
+  - action: utter_cheer_up
+  - action: utter_did_that_help
+  - user: |
+     I don't think so
+    intent: deny
+  - action: utter_goodbye
+
+- story: say goodbye
+  steps:
+  - user: |
+     bye
+    intent: goodbye
+  - action: utter_goodbye  
+
+- story: bot challenge
+  steps: 
+  - user: |
+     are you human?
+    intent: bot_challenge
+  - action: utter_iamabot
