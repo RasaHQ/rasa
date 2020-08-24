@@ -1698,7 +1698,7 @@
   resolved "https://registry.yarnpkg.com/@hapi/address/-/address-2.1.4.tgz#5d67ed43f3fd41a69d4b9ff7b56e7c0d1d0a81e5"
   integrity sha512-QD1PhQk+s31P1ixsX0H0Suoupp3VMXzIVMSwobR3F3MSUO2YCV0B7xqLcUw/Bh8yuvd3LhpyqLQWTNcRmp6IdQ==
 
-"@hapi/address@^4.0.1":
+"@hapi/address@^4.0.1", "@hapi/address@^4.1.0":
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/@hapi/address/-/address-4.1.0.tgz#d60c5c0d930e77456fdcde2598e77302e2955e1d"
   integrity sha512-SkszZf13HVgGmChdHo/PxchnSaCJ6cetVqLzyciudzZRT0jcOouIF/Q93mgjw8cce+D+4F4C1Z/WrfFN+O3VHQ==
@@ -2277,6 +2277,25 @@
     minimist "^1.2.0"
     os-homedir "^1.0.1"
     regexpu-core "^4.5.4"
+
+"@rasahq/docusaurus-theme-tabula@^0.5.1":
+  version "0.5.1"
+  resolved "https://npm.pkg.github.com/download/@rasahq/docusaurus-theme-tabula/0.5.1/e69778e7a8488cbe1cd4290786907cb0a7967d45480225f7b110b5547fd7fa3d#c8f426d02aa05ae943394c21e85c4927334365fa"
+  integrity sha512-P9SBu7C9a2NHq7dxYouHsXN0THzopvQdGKMX0jWxLTxqwuEe1iTdB9v1srAXJJXXh5ZLVDMwKWXi5mkd6+d6jg==
+  dependencies:
+    "@mdx-js/mdx" "^1.5.8"
+    "@mdx-js/react" "^1.5.8"
+    clsx "^1.1.1"
+    copy-text-to-clipboard "^2.2.0"
+    fibers "^5.0.0"
+    joi "^17.1.1"
+    lodash "^4.17.19"
+    parse-numeric-range "^0.0.2"
+    prism-react-renderer "^1.1.0"
+    prismjs "^1.20.0"
+    prop-types "^15.7.2"
+    react-router-dom "^5.1.2"
+    react-toggle "^4.1.1"
 
 "@sindresorhus/is@^0.14.0":
   version "0.14.0"
@@ -8784,6 +8803,17 @@ jmespath@0.15.0:
   version "0.15.0"
   resolved "https://registry.yarnpkg.com/jmespath/-/jmespath-0.15.0.tgz#a3f222a9aae9f966f5d27c796510e28091764217"
   integrity sha1-o/Iiqarp+Wb10nx5ZRDigJF2Qhc=
+
+joi@^17.1.1:
+  version "17.2.1"
+  resolved "https://registry.yarnpkg.com/joi/-/joi-17.2.1.tgz#e5140fdf07e8fecf9bc977c2832d1bdb1e3f2a0a"
+  integrity sha512-YT3/4Ln+5YRpacdmfEfrrKh50/kkgX3LgBltjqnlMPIYiZ4hxXZuVJcxmsvxsdeHg9soZfE3qXxHC2tMpCCBOA==
+  dependencies:
+    "@hapi/address" "^4.1.0"
+    "@hapi/formula" "^2.0.0"
+    "@hapi/hoek" "^9.0.0"
+    "@hapi/pinpoint" "^2.0.0"
+    "@hapi/topo" "^5.0.0"
 
 js-string-escape@^1.0.1:
   version "1.0.1"

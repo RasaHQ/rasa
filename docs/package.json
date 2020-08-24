@@ -32,6 +32,7 @@
     "@lunelson/sass-maps-next": "^1.0.0",
     "@lunelson/sass-throw": "^2.1.0",
     "@philpl/buble": "^0.19.7",
+    "@rasahq/docusaurus-theme-tabula": "^0.5.1",
     "classnames": "^2.2.6",
     "clsx": "^1.1.1",
     "core-js": "^3.6.5",
@@ -66,8 +67,6 @@
     ]
   },
   "devDependencies": {
-    "netlify-cli": "^2.59.0",
-    "toml": "^3.0.0",
     "eslint": "^7.6.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-html": "^6.0.3",
@@ -77,6 +76,8 @@
     "eslint-plugin-prettier": "^3.1.4",
     "eslint-plugin-react": "^7.20.6",
     "eslint-plugin-react-hooks": "^4.0.8",
-    "prettier": "^2.0.5"
+    "netlify-cli": "^2.59.0",
+    "prettier": "^2.0.5",
+    "toml": "^3.0.0"
   }
 }

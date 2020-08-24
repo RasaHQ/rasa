@@ -116,15 +116,7 @@ module.exports = {
       containerID: 'GTM-PK448GB',
     },
   },
-  themes: [
-    [
-      path.resolve(__dirname, './themes/theme-tabula'),
-      {
-        customCss: require.resolve('./src/stylesheets/custom.scss'),
-      },
-    ],
-    path.resolve(__dirname, './themes/theme-live-codeblock'),
-  ],
+  themes: ['@rasahq/docusaurus-theme-tabula', path.resolve(__dirname, './themes/theme-live-codeblock')],
   plugins: [
     [
       '@docusaurus/plugin-content-docs/',
@@ -148,16 +140,5 @@ module.exports = {
       },
     ],
     [path.resolve(__dirname, './plugins/google-tagmanager'), {}],
-    [
-      path.resolve(__dirname, './plugins/dart-sass'),
-      {
-        sassOptions: {
-          fiber: require('fibers'),
-          includePaths: [path.join(__dirname, 'node_modules')],
-          additionalData: '$env: ' + process.env.NODE_ENV + ';',
-          webpackImporter: false,
-        },
-      },
-    ],
   ],
 };
