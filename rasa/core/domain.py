@@ -164,7 +164,7 @@ class Domain:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
-        utter_templates = cls.collect_templates(data.get(KEY_RESPONSES, {}))
+        utter_templates = data.get(KEY_RESPONSES, {})
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -403,41 +403,6 @@ class Domain:
             if intent_name not in intent_properties:
                 _, properties = cls._intent_properties(intent_name, entities)
                 intent_properties.update(properties)
-
-    @staticmethod
-    def collect_templates(
-        yml_templates: Dict[Text, List[Any]]
-    ) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Go through the templates and make sure they are all in dict format."""
-        templates = {}
-        for template_key, template_variations in yml_templates.items():
-            validated_variations = []
-            if template_variations is None:
-                raise InvalidDomain(
-                    "Response '{}' does not have any defined variations.".format(
-                        template_key
-                    )
-                )
-
-            for t in template_variations:
-
-                if not isinstance(t, dict):
-                    raise InvalidDomain(
-                        f"Response '{template_key}' should contain "
-                        f"either a '- text: ' or a '- custom: ' "
-                        f"attribute to be a proper response."
-                    )
-                elif "text" not in t and "custom" not in t:
-                    raise InvalidDomain(
-                        f"Response '{template_key}' needs to contain either "
-                        f"'- text: ' or '- custom: ' attribute to be a proper "
-                        f"response."
-                    )
-                else:
-                    validated_variations.append(t)
-
-            templates[template_key] = validated_variations
-        return templates
 
     def __init__(
         self,

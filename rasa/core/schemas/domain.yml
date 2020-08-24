@@ -27,6 +27,33 @@ mapping:
   responses:
     type: "map"
     allowempty: True
+    matching-rule: 'any'
+    mapping:
+      regex;(.+):
+        type: "seq"
+        required: True
+        sequence:
+        - type: "map"
+          allowempty: True
+          matching-rule: 'any'
+          mapping:
+            regex;(^text$):
+              type: "str"
+            regex;(^image$):
+              type: "str"
+            regex;(^custom$):
+              type: "map"
+              allowempty: True
+            regex;(^buttons$):
+              type: "seq"
+              sequence:
+              - type: "map"
+                mapping:
+                  title:
+                    type: "str"
+                  payload:
+                    type: "str"
+
   slots:
     type: "map"
     allowempty: True
