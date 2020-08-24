@@ -15,8 +15,8 @@ from rasa.utils import io as io_utils
 CONFIG_FOLDER = Path("data/test_config")
 
 SOME_CONFIG = CONFIG_FOLDER / "stack_config.yml"
-DEFAULT_CONFIG = Path("rasa/importers/default_config.yml")
-DEFAULT_CONFIG_WINDOWS = Path("rasa/importers/default_config_windows.yml")
+DEFAULT_CONFIG_EN = Path("rasa/importers/default_config_en.yml")
+DEFAULT_CONFIG_OTHER_LANGUAGE = Path("rasa/importers/default_config_other_language.yml")
 
 
 @pytest.mark.parametrize(
@@ -60,19 +60,27 @@ def test_get_configuration_missing_file(tmp_path: Path, config_file: Text):
 
 
 @pytest.mark.parametrize(
-    "keys_to_configure", ({"policies"}, {"pipeline"}, {"policies", "pipeline"})
+    "language, keys_to_configure",
+    [
+        ("en", {"policies"}),
+        ("en", {"pipeline"}),
+        ("fr", {"pipeline"}),
+        ("en", {"policies", "pipeline"}),
+    ],
 )
-def test_auto_configure(keys_to_configure: Set[Text]):
-    if sys.platform == "win32":
-        default_config = io_utils.read_config_file(DEFAULT_CONFIG_WINDOWS)
+def test_auto_configure(language: Text, keys_to_configure: Set[Text]):
+    if sys.platform == "win32" or not language == "en":
+        default_config = io_utils.read_config_file(DEFAULT_CONFIG_OTHER_LANGUAGE)
     else:
-        default_config = io_utils.read_config_file(DEFAULT_CONFIG)
+        default_config = io_utils.read_config_file(DEFAULT_CONFIG_EN)
 
-    config = autoconfig._auto_configure({}, keys_to_configure)
+    config = autoconfig._auto_configure({"language": language}, keys_to_configure)
 
     for k in keys_to_configure:
         assert config[k] == default_config[k]  # given keys are configured correctly
 
+    assert config.get("language") == language
+    config.pop("language")
     assert len(config) == len(keys_to_configure)  # no other keys are configured
 
 
@@ -123,11 +131,17 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
             {"policies"},
         ),  # comments in various positions
         (
-            "config_empty.yml",
-            "config_empty_after_dumping.yml",
-            "config_empty_after_dumping_windows.yml",
+            "config_empty_en.yml",
+            "config_empty_en_after_dumping.yml",
+            "config_empty_en_after_dumping_windows.yml",
             {"policies", "pipeline"},
         ),  # no empty lines
+        (
+            "config_empty_fr.yml",
+            "config_empty_fr_after_dumping.yml",
+            "config_empty_fr_after_dumping.yml",
+            {"policies", "pipeline"},
+        ),  # no empty lines, with different language
         (
             "config_with_comments_after_dumping.yml",
             "config_with_comments_after_dumping.yml",
