@@ -177,3 +177,51 @@ async def test_e2e_warning_if_no_nlu_model(
     agent_load.assert_called_once()
     _, _, kwargs = agent_load.mock_calls[0]
     assert isinstance(kwargs["interpreter"], RegexInterpreter)
+
+
+@pytest.mark.parametrize(
+    "entity_predictions,entity_targets",
+    [
+        (
+            [
+                {'text': 'hi, how are you', 'start': 4, 'end': 7, 'entity': 'aa'}
+            ],
+            [
+                {'text': 'hi, how are you', 'start': 0, 'end': 2, 'entity': 'bb'},
+                {'text': 'hi, how are you', 'start': 4, 'end': 7, 'entity': 'aa'}
+            ],
+        ),
+        (
+            [
+                {'text': 'hi, how are you', 'start': 0, 'end': 2, 'entity': 'bb'},
+                {'text': 'hi, how are you', 'start': 4, 'end': 7, 'entity': 'aa'}
+            ],
+            [
+                {'text': 'hi, how are you', 'start': 0, 'end': 2, 'entity': 'bb'},
+                {'text': 'hi, how are you', 'start': 4, 'end': 7, 'entity': 'aa'}
+            ],
+        ),
+    ],
+)
+def test_evaluation_store_serialise(entity_predictions, entity_targets):
+    from rasa.core.test import EvaluationStore
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+
+    store = EvaluationStore(entity_predictions=entity_predictions,
+                            entity_targets=entity_targets)
+
+    targets, predictions = store.serialise()
+    print(targets)
+    print(predictions)
+    assert len(targets) == len(predictions)
+
+    i_pred = 0
+    i_target = 0
+    for prediction in predictions:
+        if prediction != "None":
+            predicted = entity_predictions[i_pred]
+            assert prediction == TrainingDataWriter.generate_entity(predicted.get("text"), predicted)
+            assert predicted.get("start") == entity_targets[i_target].get("start")
+            assert predicted.get("end") == entity_targets[i_target].get("end")
+            i_pred += 1
+        i_target += 1
