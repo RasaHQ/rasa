@@ -29,17 +29,22 @@ been part of one large file.
 
 Here's an example of a dialogue in the Rasa story format:
 
-```story
-## greet + location/price + cuisine + num people    <!-- name of the story - just for debugging -->
-* greet
-   - action_ask_howcanhelp
-* inform{"location": "rome", "price": "cheap"}  <!-- user utterance, in format intent{entities} -->
-   - action_on_it
-   - action_ask_cuisine
-* inform{"cuisine": "spanish"}
-   - action_ask_numpeople        <!-- action that the bot should execute -->
-* inform{"people": "six"}
-   - action_ack_dosearch
+```yaml-rasa
+stories: 
+- story: collect restaurant booking info  # name of the story - just for debugging
+  steps: 
+  - intent: greet                         # user message with no entities
+  - action: action_ask_howcanhelp
+  - intent: inform                        # user message with no entities
+    entities:
+    - location: "rome"
+    - price: "cheap" 
+  - action: action_on_it                  # action that the bot should execute
+  - action: action_ask_cuisine 
+  - intent: inform
+    entities:
+    - cuisine: "spanish"
+  - action: action_ask_num_people
 ```
 
 ### What makes up a story?
@@ -150,29 +155,33 @@ are easier to read and write. Here is an example story file which
 contains checkpoints (note that you can attach more than one checkpoint
 at a time):
 
-```story
-## first story
-* greet
-   - action_ask_user_question
-> check_asked_question
+```yaml-rasa
+stories:
+- story: beginning of flow
+  steps:
+  - intent: greet
+  - action: action_ask_user_question
+  - checkpoint: check_asked_question
 
-## user affirms question
-> check_asked_question
-* affirm
-  - action_handle_affirmation
-> check_handled_affirmation
+- story: handle user affirm
+  steps:
+  - checkpoint: check_asked_question
+  - intent: affirm
+  - action: action_handle_affirmation
+  - checkpoint: check_flow_finished
 
-## user denies question
-> check_asked_question
-* deny
-  - action_handle_denial
-> check_handled_denial
+- story: handle user deny
+  steps:
+  - checkpoint: check_asked_question
+  - intent: deny
+  - action: action_handle_denial
+  - checkpoint: check_flow_finished
 
-## user leaves
-> check_handled_denial
-> check_handled_affirmation
-* goodbye
-  - utter_goodbye
+- story: finish flow
+  steps:
+  - checkpoint: check_flow_finished
+  - intent: goodbye
+  - action: utter_goodbye
 ```
 
 :::note
@@ -183,27 +192,31 @@ as well.
 
 :::
 
-### OR Statements
+### Or Statements
 
 Another way to write shorter stories, or to handle multiple intents
-the same way, is to use an `OR` statement. For example, if you ask
+the same way, is to use an `or` statement. For example, if you ask
 the user to confirm something, and you want to treat the `affirm`
 and `thankyou` intents in the same way. The story below will be
 converted into two stories at training time:
 
-```story
-## story
-...
-  - utter_ask_confirm
-* affirm OR thankyou
-  - action_handle_affirmation
+```yaml-rasa
+stories:
+- story: 
+  steps: 
+  # ... previous steps 
+  - action: utter_ask_confirm
+  - or: 
+    - intent: affirm
+    - intent: thankyou
+  - action: action_handle_affirmation
 ```
 
-Just like checkpoints, `OR` statements can be useful, but if you are using a
+Just like checkpoints, `or` statements can be useful, but if you are using a
 lot of them, it is probably better to restructure your domain and/or intents.
 
 :::caution
-Overusing these features (both checkpoints and OR statements)
+Overusing these features (both checkpoints and or statements)
 will slow down training.
 
 :::
