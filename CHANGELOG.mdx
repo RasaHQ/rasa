@@ -415,7 +415,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   specified as a list in the `endpoints.yml` event broker config under a new key
   `queues`. Example config:
 
-  ```yaml
+  ```yaml-rasa
   event_broker:
     type: pika
     url: localhost
@@ -832,13 +832,14 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
   The following settings match the previous `NGramFeaturizer`:
 
-  ```yaml
+  ```yaml-rasa
+  pipeline:
   - name: 'CountVectorsFeaturizer'
-      analyzer: 'char_wb'
-      min_ngram: 3
-      max_ngram: 17
-      max_features: 10
-      min_df: 5
+    analyzer: 'char_wb'
+    min_ngram: 3
+    max_ngram: 17
+    max_features: 10
+    min_df: 5
   ```
 
 * [#4957](https://github.com/rasahq/rasa/issues/4957): To [use custom features in the `CRFEntityExtractor`](./components/entity-extractors.mdx#passing-custom-features-to-crfentityextractor)
