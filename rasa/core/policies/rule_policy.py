@@ -390,7 +390,7 @@ class RulePolicy(MemoizationPolicy):
         tracker: DialogueStateTracker,
     ) -> Optional[Text]:
 
-        active_form_name = tracker.active_form_name()
+        active_form_name = tracker.active_loop_name()
         active_form_rejected = tracker.active_loop.get("rejected")
         should_predict_form = (
             active_form_name
@@ -432,7 +432,7 @@ class RulePolicy(MemoizationPolicy):
             best_rule_key = max(rule_keys, key=len)
             predicted_action_name = self.lookup[RULES].get(best_rule_key)
 
-        active_form_name = tracker.active_form_name()
+        active_form_name = tracker.active_loop_name()
         if active_form_name:
             # find rules for unhappy path of the form
             form_unhappy_keys = self._get_possible_keys(

@@ -397,26 +397,26 @@ In the restaurant case, your stories would look something like this:
 ## explain cuisine slot
 * request_restaurant
     - restaurant_form
-    - form{"name": "restaurant_form"}
+    - active_loop{"name": "restaurant_form"}
     - slot{"requested_slot": "cuisine"}
 * explain
     - utter_explain_cuisine
     - restaurant_form
     - slot{"cuisine": "greek"}
     ( ... all other slots the form set ... )
-    - form{"name": null}
+    - active_loop{"name": null}
 
 ## explain num_people slot
 * request_restaurant
     - restaurant_form
-    - form{"name": "restaurant_form"}
+    - active_loop{"name": "restaurant_form"}
     - slot{"requested_slot": "num_people"}
 * explain
     - utter_explain_num_people
     - restaurant_form
     - slot{"cuisine": "greek"}
     ( ... all other slots the form set ... )
-    - form{"name": null}
+    - active_loop{"name": null}
 ```
 
 Again, it is **strongly** recommended that you use 
