@@ -71,7 +71,7 @@ the response depend on the value of a categorical `product` slot that comes from
 This also makes it easy to handle the case when no entity is provided,
 e.g. "How do I migrate to Rasa?" For example:
 
-```yaml
+```yaml-rasa
 stories:
 - story: migrate from IBM Watson
   steps:
@@ -160,11 +160,14 @@ an effective defense against spelling errors by accounting for parts of words, i
 of only whole words. You can add character level featurization to your pipeline by
 using the `char_wb` analyzer for the `CountVectorsFeaturizer`, for example:
 
-```yaml
+```yaml-rasa
+pipeline:
+# <other components> 
 - name: CountVectorsFeaturizer
   analyze: char_wb
   min_ngram: 1
   max_ngram: 4
+# <other components> 
 ```
 
 In addition to character-level featurization, you can add common misspellings to

@@ -44,7 +44,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Configuration**
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "WhitespaceTokenizer"
     # Flag to check whether to split intents
@@ -94,7 +94,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
   User's custom dictionary files can be auto loaded by specifying the files' directory path via `dictionary_path`.
   If the `dictionary_path` is `None` (the default), then no custom dictionary will be used.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "JiebaTokenizer"
     dictionary_path: "path/to/custom/dictionary/dir"
@@ -136,7 +136,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Configuration**
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "MitieTokenizer"
     # Flag to check whether to split intents
@@ -177,7 +177,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Configuration**
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "SpacyTokenizer"
     # Flag to check whether to split intents
@@ -229,7 +229,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Configuration**
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "ConveRTTokenizer"
     # Flag to check whether to split intents
@@ -271,7 +271,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
 * **Configuration**
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "LanguageModelTokenizer"
     # Flag to check whether to split intents

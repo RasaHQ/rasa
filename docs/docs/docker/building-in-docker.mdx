@@ -200,7 +200,7 @@ tell your bot to use this new action.
 
 In `domain.yml`, add a section for custom actions, including your new action:
 
-```yaml
+```yaml-rasa
 actions:
   - action_joke
 ```
@@ -242,7 +242,7 @@ of your currently running containers.
 To instruct the Rasa server to use the action server, you have to tell Rasa its location.
 Add this endpoint to your `endpoints.yml`, referencing the `--name` you gave the server:
 
-```yaml
+```yaml-rasa
 action_endpoint:
   url: "http://action-server:5055/webhook"
 ```
