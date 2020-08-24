@@ -33,13 +33,14 @@ Let's say you want your assistant to remind you to call a friend in 5 seconds.
 (You probably want some longer time span, but for the sake of testing, let it be 5 seconds.)
 Thus, we define an intent `ask_remind_call` with some NLU data,
 
-```md
-## intent:ask_remind_call
-- remind me to call [Albert](name)
-- remind me to call [Susan](name)
-- later I have to call [Daksh](name)
-- later I have to call [Anna](name)
-...
+```yaml-rasa
+nlu:
+- intent: ask_remind_call
+  examples: |
+    - remind me to call [Albert](name)
+    - remind me to call [Susan](name)
+    - later I have to call [Daksh](name)
+    - later I have to call [Anna](name)
 ```
 
 and connect this intent with a new custom action `action_set_reminder`.
@@ -80,7 +81,7 @@ Note that this requires the `datetime` and `rasa_sdk.events` packages.
 Finally, we define another custom action `action_react_to_reminder` and link it to the `EXTERNAL_reminder` intent
 by writing a [Rule](./rules.mdx) for it:
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Trigger `action_react_to_reminder` for `EXTERNAL_reminder`
   steps:
