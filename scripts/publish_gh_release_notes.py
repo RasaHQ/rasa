@@ -23,6 +23,7 @@ from typing import Text
 
 # if this needs any more dependencies, they need to be installed on github deploy stage
 import github3
+from pep440_version_utils import Version
 
 
 def create_github_release(slug: Text, token: Text, tag_name: Text, body: Text):
@@ -76,7 +77,11 @@ def main():
         print("GITHUB_REPO_SLUG not set", file=sys.stderr)
         return 1
 
-    md_body = parse_changelog(tag_name)
+    version = Version(tag_name)
+    if version.pre:
+        md_body = "_Pre-release version_"
+    else:
+        md_body = parse_changelog(tag_name)
 
     if not md_body:
         print("Failed to extract changelog entries for version from changelog.")

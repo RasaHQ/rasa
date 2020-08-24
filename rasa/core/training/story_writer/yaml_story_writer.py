@@ -17,7 +17,7 @@ from ruamel.yaml.scalarstring import (
 )
 
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, DOCS_URL_STORIES
-from rasa.core.events import UserUttered, ActionExecuted, SlotSet, Form
+from rasa.core.events import UserUttered, ActionExecuted, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.yaml_story_reader import (
     KEY_STORIES,
     KEY_STORY_NAME,
@@ -142,7 +142,9 @@ class YAMLStoryWriter:
             `True` if the `story_step` contains at least one form action,
             `False` otherwise.
         """
-        return any([event for event in story_step.events if isinstance(event, Form)])
+        return any(
+            [event for event in story_step.events if isinstance(event, ActiveLoop)]
+        )
 
     @staticmethod
     def _text_is_real_message(user_utterance: UserUttered) -> bool:

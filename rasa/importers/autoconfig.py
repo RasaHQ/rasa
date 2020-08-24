@@ -88,14 +88,13 @@ def _auto_configure(
         )
 
     if sys.platform == "win32":
-        default_config_file = pkg_resources.resource_filename(
-            __name__, "default_config_windows.yml"
-        )
+        filename = "default_config_other_language.yml"
+    elif config.get("language") == "en":
+        filename = "default_config_en.yml"
     else:
-        default_config_file = pkg_resources.resource_filename(
-            __name__, "default_config.yml"
-        )
+        filename = "default_config_other_language.yml"
 
+    default_config_file = pkg_resources.resource_filename(__name__, filename)
     default_config = io_utils.read_config_file(default_config_file)
 
     config = copy.deepcopy(config)
