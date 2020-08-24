@@ -8,7 +8,7 @@ from rasa.nlu.training_data.formats import RasaYAMLReader
 
 
 DOCS_BASE_DIR = Path("docs/")
-MDX_DOCS_FILES = (DOCS_BASE_DIR / "docs").glob("**/*.mdx")
+MDX_DOCS_FILES = list((DOCS_BASE_DIR / "docs").glob("**/*.mdx"))
 # we're matching codeblocks with either `yaml-rasa` or `yml-rasa` types
 # we support title or no title (you'll get a nice error message if there is a title)
 TRAINING_DATA_CODEBLOCK_RE = re.compile(
@@ -17,7 +17,7 @@ TRAINING_DATA_CODEBLOCK_RE = re.compile(
 )
 
 
-@pytest.mark.parametrize("mdx_file_path", list(MDX_DOCS_FILES))
+@pytest.mark.parametrize("mdx_file_path", MDX_DOCS_FILES)
 def test_docs_training_data(mdx_file_path: Path):
     with mdx_file_path.open("r") as handle:
         mdx_content = handle.read()
