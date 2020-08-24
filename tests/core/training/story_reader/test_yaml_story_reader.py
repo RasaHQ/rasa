@@ -125,8 +125,8 @@ async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
             remove_duplicates=False,
         )
 
-    # one for leading slash, one for missing version
-    assert len(record) == 2
+    # one for leading slash
+    assert len(record) == 1
 
     assert tracker[0].latest_message == UserUttered("simple", {"name": "simple"})
 
@@ -266,8 +266,8 @@ async def test_warning_if_intent_not_in_domain(default_domain: Domain):
     with pytest.warns(UserWarning) as record:
         reader.read_from_parsed_yaml(yaml_content)
 
-    # one for missing intent, one for missing version
-    assert len(record) == 2
+    # one for missing intent
+    assert len(record) == 1
 
 
 async def test_no_warning_if_intent_in_domain(default_domain: Domain):

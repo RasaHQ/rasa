@@ -10,7 +10,6 @@ from rasa.nlu.constants import INTENT
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader, RasaYAMLWriter
 
 MULTILINE_INTENT_EXAMPLES = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: intent_name
   examples: |
@@ -19,7 +18,6 @@ nlu:
 """
 
 MULTILINE_INTENT_EXAMPLE_WITH_SYNONYM = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: intent_name
   examples: |
@@ -27,7 +25,6 @@ nlu:
 """
 
 MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: intent_name
   examples: |
@@ -43,7 +40,6 @@ nlu:
 """
 
 INTENT_EXAMPLES_WITH_METADATA = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: intent_name
   metadata:
@@ -57,7 +53,6 @@ nlu:
 """
 
 MINIMAL_VALID_EXAMPLE = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:\n
 stories:
 """
@@ -77,7 +72,6 @@ nlu:
 """
 
 SYNONYM_EXAMPLE = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - synonym: savings
   examples: |
@@ -87,7 +81,6 @@ nlu:
 
 LOOKUP_ITEM_NAME = "additional_currencies"
 LOOKUP_EXAMPLE = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - lookup: {LOOKUP_ITEM_NAME}
   examples: |
@@ -100,7 +93,6 @@ REGEX_NAME = "zipcode"
 PATTERN_1 = "[0-9]{4}"
 PATTERN_2 = "[0-9]{5}"
 REGEX_EXAMPLE = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - regex: {REGEX_NAME}
   examples: |
@@ -171,16 +163,6 @@ def test_multiline_intent_example_is_skipped_when_no_leading_symbol():
 
     assert len(training_data.training_examples) == 1
     assert not len(training_data.entity_synonyms)
-
-
-def test_no_version_specified_raises_warning():
-    parser = RasaYAMLReader()
-
-    with pytest.warns(None) as record:
-        parser.reads(EXAMPLE_NO_VERSION_SPECIFIED)
-
-    # warning for the missing version string
-    assert len(record) == 1
 
 
 @pytest.mark.parametrize(
