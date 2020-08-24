@@ -1,5 +1,9 @@
 allowempty: True
 mapping:
+  version:
+    type: "str"
+    required: False
+    allowempty: False
   intents:
     type: "seq"
     sequence:
@@ -20,7 +24,7 @@ mapping:
     sequence:
     - type: "str"
       required: True
-  templates:
+  responses:
     type: "map"
     allowempty: True
   slots:
@@ -30,4 +34,22 @@ mapping:
     type: "seq"
     sequence:
     - type: "str"
+    - type: "map"
+      allowempty: True
     allowempty: True
+  config:
+    type: "map"
+    allowempty: True
+    mapping:
+      store_entities_as_slots:
+        type: "bool"
+  session_config:
+    type: "map"
+    allowempty: True
+    mapping:
+      session_expiration_time:
+        type: "number"
+        range:
+          min: 0
+      carry_over_slots_to_new_session:
+        type: "bool"

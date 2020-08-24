@@ -1,17 +1,20 @@
 import logging
 import os
 import shutil
+import warnings
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Text, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Text, Type, Collection
 
 import rasa.core.utils
 import rasa.utils.io
+from rasa.cli import utils
+from rasa.cli.utils import bcolors
 from rasa.constants import (
-    GLOBAL_USER_CONFIG_PATH,
     DEFAULT_LOG_LEVEL,
-    ENV_LOG_LEVEL,
     DEFAULT_LOG_LEVEL_LIBRARIES,
+    ENV_LOG_LEVEL,
     ENV_LOG_LEVEL_LIBRARIES,
+    GLOBAL_USER_CONFIG_PATH,
 )
 
 logger = logging.getLogger(__name__)
@@ -68,27 +71,48 @@ def set_log_level(log_level: Optional[int] = None):
     update_tensorflow_log_level()
     update_asyncio_log_level()
     update_apscheduler_log_level()
+    update_socketio_log_level()
 
     os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
 
 
-def update_apscheduler_log_level():
+def update_apscheduler_log_level() -> None:
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
-    logging.getLogger("apscheduler.scheduler").setLevel(log_level)
-    logging.getLogger("apscheduler.scheduler").propagate = False
-    logging.getLogger("apscheduler.executors.default").setLevel(log_level)
-    logging.getLogger("apscheduler.executors.default").propagate = False
+    apscheduler_loggers = [
+        "apscheduler",
+        "apscheduler.scheduler",
+        "apscheduler.executors",
+        "apscheduler.executors.default",
+    ]
+
+    for logger_name in apscheduler_loggers:
+        logging.getLogger(logger_name).setLevel(log_level)
+        logging.getLogger(logger_name).propagate = False
 
 
-def update_tensorflow_log_level():
+def update_socketio_log_level() -> None:
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
+
+    socketio_loggers = ["websockets.protocol", "engineio.server", "socketio.server"]
+
+    for logger_name in socketio_loggers:
+        logging.getLogger(logger_name).setLevel(log_level)
+        logging.getLogger(logger_name).propagate = False
+
+
+def update_tensorflow_log_level() -> None:
     """Set the log level of Tensorflow to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
+
+    # Disables libvinfer, tensorRT, cuda, AVX2 and FMA warnings (CPU support). This variable needs to be set before the
+    # first import since some warnings are raised on the first import.
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
     import tensorflow as tf
 
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # disables AVX2 FMA warnings (CPU support)
     if log_level == "DEBUG":
         tf_log_level = tf.compat.v1.logging.DEBUG
     elif log_level == "INFO":
@@ -127,11 +151,23 @@ def update_sanic_log_level(log_file: Optional[Text] = None):
         access_logger.addHandler(file_handler)
 
 
-def update_asyncio_log_level():
+def update_asyncio_log_level() -> None:
     """Set the log level of asyncio to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
     logging.getLogger("asyncio").setLevel(log_level)
+
+
+def set_log_and_warnings_filters() -> None:
+    """
+    Set log filters on the root logger, and duplicate filters for warnings.
+
+    Filters only propagate on handlers, not loggers.
+    """
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(RepeatedLogFilter())
+
+    warnings.filterwarnings("once", category=UserWarning)
 
 
 def obtain_verbosity() -> int:
@@ -159,6 +195,14 @@ def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     return sorted(dicts, key=lambda d: list(d.keys())[0])
 
 
+def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
+    """Transforms e.g. a list like ['A', 'B', 'C'] into a sentence 'A, B and C'."""
+    x = list(collection)
+    if len(x) >= 2:
+        return ", ".join(map(str, x[:-1])) + " and " + x[-1]
+    return "".join(collection)
+
+
 # noinspection PyUnresolvedReferences
 def class_from_module_path(
     module_path: Text, lookup_path: Optional[Text] = None
@@ -184,7 +228,7 @@ def class_from_module_path(
             m = importlib.import_module(lookup_path)
             return getattr(m, module_path)
         else:
-            raise ImportError("Cannot retrieve class from path {}.".format(module_path))
+            raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
 
 def minimal_kwargs(
@@ -224,9 +268,7 @@ def write_global_config_value(name: Text, value: Any) -> None:
         c[name] = value
         rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
     except Exception as e:
-        logger.warning(
-            "Failed to write global config. Error: {}. Skipping." "".format(e)
-        )
+        logger.warning(f"Failed to write global config. Error: {e}. Skipping.")
 
 
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
@@ -236,7 +278,7 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         if unavailable_ok:
             return None
         else:
-            raise ValueError("Configuration '{}' key not found.".format(name))
+            raise ValueError(f"Configuration '{name}' key not found.")
 
     if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
         return not_found()
@@ -253,11 +295,26 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
     """Warns users that they are using an experimental feature."""
 
     logger.warning(
-        "The {} is currently experimental and might change or be "
+        f"The {feature_name} is currently experimental and might change or be "
         "removed in the future 🔬 Please share your feedback on it in the "
         "forum (https://forum.rasa.com) to help us make this feature "
-        "ready for production.".format(feature_name)
+        "ready for production."
     )
+
+
+def update_existing_keys(
+    original: Dict[Any, Any], updates: Dict[Any, Any]
+) -> Dict[Any, Any]:
+    """Iterate through all the updates and update a value in the original dictionary.
+
+    If the updates contain a key that is not present in the original dict, it will
+    be ignored."""
+
+    updated = original.copy()
+    for k, v in updates.items():
+        if k in updated:
+            updated[k] = v
+    return updated
 
 
 def lazy_property(function: Callable) -> Any:
@@ -276,3 +333,72 @@ def lazy_property(function: Callable) -> Any:
         return getattr(self, attr_name)
 
     return _lazyprop
+
+
+def raise_warning(
+    message: Text,
+    category: Optional[Type[Warning]] = None,
+    docs: Optional[Text] = None,
+    **kwargs: Any,
+) -> None:
+    """Emit a `warnings.warn` with sensible defaults and a colored warning msg."""
+
+    original_formatter = warnings.formatwarning
+
+    def should_show_source_line() -> bool:
+        if "stacklevel" not in kwargs:
+            if category == UserWarning or category is None:
+                return False
+            if category == FutureWarning:
+                return False
+        return True
+
+    def formatwarning(
+        message: Text,
+        category: Optional[Type[Warning]],
+        filename: Text,
+        lineno: Optional[int],
+        line: Optional[Text] = None,
+    ):
+        """Function to format a warning the standard way."""
+
+        if not should_show_source_line():
+            if docs:
+                line = f"More info at {docs}"
+            else:
+                line = ""
+
+        formatted_message = original_formatter(
+            message, category, filename, lineno, line
+        )
+        return utils.wrap_with_color(formatted_message, color=bcolors.WARNING)
+
+    if "stacklevel" not in kwargs:
+        # try to set useful defaults for the most common warning categories
+        if category == DeprecationWarning:
+            kwargs["stacklevel"] = 3
+        elif category in (UserWarning, FutureWarning):
+            kwargs["stacklevel"] = 2
+
+    warnings.formatwarning = formatwarning
+    warnings.warn(message, category=category, **kwargs)
+    warnings.formatwarning = original_formatter
+
+
+class RepeatedLogFilter(logging.Filter):
+    """Filter repeated log records."""
+
+    last_log = None
+
+    def filter(self, record):
+        current_log = (
+            record.levelno,
+            record.pathname,
+            record.lineno,
+            record.msg,
+            record.args,
+        )
+        if current_log != self.last_log:
+            self.last_log = current_log
+            return True
+        return False

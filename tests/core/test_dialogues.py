@@ -4,10 +4,15 @@ import jsonpickle
 import pytest
 
 import rasa.utils.io
+from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.tracker_store import InMemoryTrackerStore
+from tests.core.conftest import (
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
+    TEST_DIALOGUES,
+    EXAMPLE_DOMAINS,
+)
 from tests.core.utilities import tracker_from_dialogue_file
-from tests.core.conftest import TEST_DIALOGUES, EXAMPLE_DOMAINS
 
 
 @pytest.mark.parametrize("filename", TEST_DIALOGUES)
@@ -30,9 +35,18 @@ def test_inmemory_tracker_store(pair):
     assert restored == tracker
 
 
-def test_tracker_restaurant():
-    domain = Domain.load("examples/restaurantbot/domain.yml")
-    filename = "data/test_dialogues/restaurantbot.json"
+def test_tracker_default():
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
+    filename = "data/test_dialogues/default.json"
     tracker = tracker_from_dialogue_file(filename, domain)
-    assert tracker.get_slot("price") == "lo"
-    assert tracker.get_slot("name") is None  # slot doesn't exist!
+    assert tracker.get_slot("name") == "Peter"
+    assert tracker.get_slot("price") is None  # slot doesn't exist!
+
+
+def test_dialogue_from_parameters():
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
+    filename = "data/test_dialogues/default.json"
+    tracker = tracker_from_dialogue_file(filename, domain)
+    serialised_dialogue = InMemoryTrackerStore.serialise_tracker(tracker)
+    deserialised_dialogue = Dialogue.from_parameters(json.loads(serialised_dialogue))
+    assert tracker.as_dialogue().as_dict() == deserialised_dialogue.as_dict()

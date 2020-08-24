@@ -1,7 +1,9 @@
-import io
 import os
+import string
+import uuid
+from collections import OrderedDict
 from pathlib import Path
-from typing import Callable, Text, List, Set
+from typing import Callable, Text, List, Set, Dict, Any
 
 import pytest
 from prompt_toolkit.document import Document
@@ -146,9 +148,7 @@ def test_emojis_in_tmp_file():
             - two £ (?u)\\b\\w+\\b f\u00fcr
         """
     test_file = io_utils.create_temporary_file(test_data)
-    with io.open(test_file, mode="r", encoding="utf-8") as f:
-        content = f.read()
-    content = io_utils.read_yaml(content)
+    content = io_utils.read_yaml_file(test_file)
 
     assert content["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
     assert content["data"][1] == "two £ (?u)\\b\\w+\\b für"
@@ -280,7 +280,7 @@ def test_list_directory(
     sub_sub_directory.mkdir()
 
     sub_sub_file = sub_sub_directory / "sub_file.txt"
-    sub_sub_file.write_text("", encoding="utf-8")
+    sub_sub_file.write_text("", encoding=io_utils.DEFAULT_ENCODING)
 
     file1 = subdirectory / "file.txt"
     file1.write_text("", encoding="utf-8")
@@ -294,3 +294,105 @@ def test_list_directory(
     expected = {str(subdirectory / entry) for entry in expected}
 
     assert set(list_function(str(subdirectory))) == expected
+
+
+def test_write_json_file(tmp_path: Path):
+    expected = {"abc": "dasds", "list": [1, 2, 3, 4], "nested": {"a": "b"}}
+    file_path = str(tmp_path / "abc.txt")
+
+    io_utils.dump_obj_as_json_to_file(file_path, expected)
+    assert io_utils.read_json_file(file_path) == expected
+
+
+def test_write_utf_8_yaml_file(tmp_path: Path):
+    """This test makes sure that dumping a yaml doesn't result in Uxxxx sequences
+    but rather directly dumps the unicode character."""
+
+    file_path = str(tmp_path / "test.yml")
+    data = {"data": "amazing 🌈"}
+
+    io_utils.write_yaml(data, file_path)
+    assert io_utils.read_file(file_path) == "data: amazing 🌈\n"
+
+
+def test_create_directory_if_new(tmp_path: Path):
+    directory = str(tmp_path / "a" / "b")
+    io_utils.create_directory(directory)
+
+    assert os.path.exists(directory)
+
+
+def test_create_directory_if_already_exists(tmp_path: Path):
+    # This should not throw an exception
+    io_utils.create_directory(str(tmp_path))
+    assert True
+
+
+def test_create_directory_for_file(tmp_path: Path):
+    file = str(tmp_path / "dir" / "test.txt")
+
+    io_utils.create_directory_for_file(str(file))
+    assert not os.path.exists(file)
+    assert os.path.exists(os.path.dirname(file))
+
+
+@pytest.mark.parametrize(
+    "should_preserve_key_order, expected_keys",
+    [(True, list(reversed(string.ascii_lowercase))),],
+)
+def test_dump_yaml_key_order(
+    tmp_path: Path, should_preserve_key_order: bool, expected_keys: List[Text]
+):
+    file = tmp_path / "test.yml"
+
+    # create YAML file with keys in reverse-alphabetical order
+    content = ""
+    for i in reversed(string.ascii_lowercase):
+        content += f"{i}: {uuid.uuid4().hex}\n"
+
+    file.write_text(content)
+
+    # load this file and ensure keys are in correct reverse-alphabetical order
+    data = io_utils.read_yaml_file(file)
+    assert list(data.keys()) == list(reversed(string.ascii_lowercase))
+
+    # dumping `data` will result in alphabetical or reverse-alphabetical list of keys,
+    # depending on the value of `should_preserve_key_order`
+    io_utils.write_yaml(data, file, should_preserve_key_order=should_preserve_key_order)
+    with file.open() as f:
+        keys = [line.split(":")[0] for line in f.readlines()]
+
+    assert keys == expected_keys
+
+
+@pytest.mark.parametrize(
+    "source, target",
+    [
+        # ordinary dictionary
+        ({"b": "b", "a": "a"}, OrderedDict({"b": "b", "a": "a"})),
+        # dict with list
+        ({"b": [1, 2, 3]}, OrderedDict({"b": [1, 2, 3]})),
+        # nested dict
+        ({"b": {"c": "d"}}, OrderedDict({"b": OrderedDict({"c": "d"})})),
+        # doubly-nested dict
+        (
+            {"b": {"c": {"d": "e"}}},
+            OrderedDict({"b": OrderedDict({"c": OrderedDict({"d": "e"})})}),
+        ),
+        # a list is not affected
+        ([1, 2, 3], [1, 2, 3]),
+        # a string also isn't
+        ("hello", "hello"),
+    ],
+)
+def test_convert_to_ordered_dict(source: Any, target: Any):
+    assert io_utils.convert_to_ordered_dict(source) == target
+
+    def _recursively_check_dict_is_ordered_dict(d):
+        if isinstance(d, dict):
+            assert isinstance(d, OrderedDict)
+            for value in d.values():
+                _recursively_check_dict_is_ordered_dict(value)
+
+    # ensure nested dicts are converted correctly
+    _recursively_check_dict_is_ordered_dict(target)

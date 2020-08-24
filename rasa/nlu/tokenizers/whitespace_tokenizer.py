@@ -1,96 +1,95 @@
-import re
 from typing import Any, Dict, List, Text
 
-from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token, Tokenizer
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
-)
+import regex
+import re
+
+from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.training_data import Message
+import rasa.utils.common as common_utils
 
 
-class WhitespaceTokenizer(Tokenizer, Component):
-
-    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
+class WhitespaceTokenizer(Tokenizer):
 
     defaults = {
         # Flag to check whether to split intents
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # text will be tokenized with case sensitive as default
-        "case_sensitive": True,
+        # Regular expression to detect tokens
+        "token_pattern": None,
     }
+
+    # the following language should not be tokenized using the WhitespaceTokenizer
+    not_supported_language_list = ["zh", "ja", "th"]
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
-        super(WhitespaceTokenizer, self).__init__(component_config)
-        # flag to check whether to split intents
-        self.intent_tokenization_flag = self.component_config.get(
-            "intent_tokenization_flag"
-        )
-        # split symbol for intents
-        self.intent_split_symbol = self.component_config["intent_split_symbol"]
-        self.case_sensitive = self.component_config["case_sensitive"]
+        super().__init__(component_config)
 
-    def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
-    ) -> None:
-        for example in training_data.training_examples:
-            for attribute in MESSAGE_ATTRIBUTES:
-                if example.get(attribute) is not None:
-                    example.set(
-                        MESSAGE_TOKENS_NAMES[attribute],
-                        self.tokenize(example.get(attribute), attribute),
-                    )
+        self.emoji_pattern = self.get_emoji_regex()
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-
-        message.set(
-            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], self.tokenize(message.text)
-        )
-
-    def tokenize(
-        self, text: Text, attribute: Text = MESSAGE_TEXT_ATTRIBUTE
-    ) -> List[Token]:
-
-        if not self.case_sensitive:
-            text = text.lower()
-        # remove 'not a word character' if
-        if attribute != MESSAGE_INTENT_ATTRIBUTE:
-            words = re.sub(
-                # there is a space or an end of a string after it
-                r"[^\w#@&]+(?=\s|$)|"
-                # there is a space or beginning of a string before it
-                # not followed by a number
-                r"(\s|^)[^\w#@&]+(?=[^0-9\s])|"
-                # not in between numbers and not . or @ or & or - or #
-                # e.g. 10'000.00 or blabla@gmail.com
-                # and not url characters
-                r"(?<=[^0-9\s])[^\w._~:/?#\[\]()@!$&*+,;=-]+(?=[^0-9\s])",
-                " ",
-                text,
-            ).split()
-        else:
-            words = (
-                text.split(self.intent_split_symbol)
-                if self.intent_tokenization_flag
-                else [text]
+        if "case_sensitive" in self.component_config:
+            common_utils.raise_warning(
+                "The option 'case_sensitive' was moved from the tokenizers to the "
+                "featurizers.",
+                docs=DOCS_URL_COMPONENTS,
             )
 
-        running_offset = 0
-        tokens = []
-        for word in words:
-            word_offset = text.index(word, running_offset)
-            word_len = len(word)
-            running_offset = word_offset + word_len
-            tokens.append(Token(word, word_offset))
-        return tokens
+    @staticmethod
+    def get_emoji_regex():
+        return re.compile(
+            "["
+            "\U0001F600-\U0001F64F"  # emoticons
+            "\U0001F300-\U0001F5FF"  # symbols & pictographs
+            "\U0001F680-\U0001F6FF"  # transport & map symbols
+            "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+            "\U00002702-\U000027B0"
+            "\U000024C2-\U0001F251"
+            "\u200d"  # zero width joiner
+            "\u200c"  # zero width non-joiner
+            "]+",
+            flags=re.UNICODE,
+        )
+
+    def remove_emoji(self, text: Text) -> Text:
+        """Remove emoji if the full text, aka token, matches the emoji regex."""
+        match = self.emoji_pattern.fullmatch(text)
+
+        if match is not None:
+            return ""
+
+        return text
+
+    def tokenize(self, message: Message, attribute: Text) -> List[Token]:
+        text = message.get(attribute)
+
+        # we need to use regex instead of re, because of
+        # https://stackoverflow.com/questions/12746458/python-unicode-regular-expression-matching-failing-with-some-unicode-characters
+
+        # remove 'not a word character' if
+        words = regex.sub(
+            # there is a space or an end of a string after it
+            r"[^\w#@&]+(?=\s|$)|"
+            # there is a space or beginning of a string before it
+            # not followed by a number
+            r"(\s|^)[^\w#@&]+(?=[^0-9\s])|"
+            # not in between numbers and not . or @ or & or - or #
+            # e.g. 10'000.00 or blabla@gmail.com
+            # and not url characters
+            r"(?<=[^0-9\s])[^\w._~:/?#\[\]()@!$&*+,;=-]+(?=[^0-9\s])",
+            " ",
+            text,
+        ).split()
+
+        words = [self.remove_emoji(w) for w in words]
+        words = [w for w in words if w]
+
+        # if we removed everything like smiles `:)`, use the whole text as 1 token
+        if not words:
+            words = [text]
+
+        tokens = self._convert_words_to_tokens(words, text)
+
+        return self._apply_token_pattern(tokens)

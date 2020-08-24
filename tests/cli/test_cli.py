@@ -1,8 +1,13 @@
+from typing import Callable
+from _pytest.pytester import RunResult
 import pytest
+import sys
 
 
-@pytest.mark.repeat(3)
-def test_cli_start(run):
+def test_cli_start(run: Callable[..., RunResult]):
+    """
+    Checks that a call to ``rasa --help`` does not take longer than 7 seconds.
+    """
     import time
 
     start = time.time()
@@ -11,16 +16,29 @@ def test_cli_start(run):
 
     duration = end - start
 
-    assert duration < 3  # startup of cli should not take longer than 3 seconds
+    assert duration <= 7
 
 
-def test_data_convert_help(run):
+def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("--help")
 
     help_text = """usage: rasa [-h] [--version]
-            {init,run,shell,train,interactive,test,visualize,data,x} ..."""
+            {init,run,shell,train,interactive,test,visualize,data,export,x}
+            ..."""
 
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
         assert output.outlines[i] == line
+
+
+@pytest.mark.xfail(
+    sys.platform == "win32", reason="--version doesn't print anything on Windows"
+)
+def test_version_print_lines(run: Callable[..., RunResult]):
+    output = run("--version")
+    output_text = "".join(output.outlines)
+    assert "Rasa Version" in output_text
+    assert "Python Version" in output_text
+    assert "Operating System" in output_text
+    assert "Python Path" in output_text

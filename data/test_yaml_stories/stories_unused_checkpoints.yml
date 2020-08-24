@@ -1,0 +1,23 @@
+stories:
+- story: simple_story_with_end_checkpoint_1
+  steps:
+  - intent: simple
+  - action: utter_default
+  - action: utter_greet
+  - checkpoint: check_end_1
+
+- story: simple_story_with_end_checkpoint_2
+  steps:
+  - intent: hello
+  - action: utter_greet
+  - slot_was_set:
+    - name: peter
+  - checkpoint: check_end_2
+
+- story:  simple_story_with_start
+  steps:
+  - checkpoint: check_start
+  - intent: hello
+  - action: utter_greet
+  - slot_was_set:
+    - name: peter

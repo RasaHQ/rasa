@@ -1,16 +1,22 @@
 import asyncio
 import logging
+import typing
+from typing import Optional, Text
 
 from rasa.cli.utils import print_success
-
+from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, RegexInterpreter
 from rasa.nlu.model import Interpreter
 from rasa.nlu.utils import json_to_string
-from rasa.core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX
+
+if typing.TYPE_CHECKING:
+    from rasa.nlu.components import ComponentBuilder
 
 logger = logging.getLogger(__name__)
 
 
-def run_cmdline(model_path, component_builder=None):
+def run_cmdline(
+    model_path: Text, component_builder: Optional["ComponentBuilder"] = None
+) -> None:
     interpreter = Interpreter.load(model_path, component_builder)
     regex_interpreter = RegexInterpreter()
 
@@ -24,7 +30,7 @@ def run_cmdline(model_path, component_builder=None):
         else:
             result = interpreter.parse(message)
 
-        print (json_to_string(result))
+        print(json_to_string(result))
 
 
 if __name__ == "__main__":

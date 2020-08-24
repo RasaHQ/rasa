@@ -3,11 +3,23 @@ import os
 import shutil
 import tempfile
 import uuid
-import re
-from typing import Tuple, List, Text, Set, Union, Optional
-from rasa.nlu.training_data import loading
+from pathlib import Path
+from typing import Tuple, List, Text, Set, Union, Optional, Iterable
+
+from rasa.constants import DEFAULT_E2E_TESTS_PATH
+from rasa.nlu.training_data import loading as nlu_loading
 
 logger = logging.getLogger(__name__)
+
+MARKDOWN_FILE_EXTENSIONS = {".md"}
+
+YAML_FILE_EXTENSIONS = {".yml", ".yaml"}
+
+JSON_FILE_EXTENSIONS = {".json"}
+
+TRAINING_DATA_EXTENSIONS = JSON_FILE_EXTENSIONS.union(MARKDOWN_FILE_EXTENSIONS).union(
+    YAML_FILE_EXTENSIONS
+)
 
 
 def get_core_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
@@ -59,7 +71,7 @@ def get_core_nlu_directories(
 
 def get_core_nlu_files(
     paths: Optional[Union[Text, List[Text]]]
-) -> Tuple[Set[Text], Set[Text]]:
+) -> Tuple[List[Text], List[Text]]:
     """Recursively collects all training files from a list of paths.
 
     Args:
@@ -94,15 +106,17 @@ def get_core_nlu_files(
             story_files.update(new_story_files)
             nlu_data_files.update(new_nlu_data_files)
 
-    return story_files, nlu_data_files
+    return sorted(story_files), sorted(nlu_data_files)
 
 
 def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[Text]]:
     story_files = set()
     nlu_data_files = set()
 
-    for root, _, files in os.walk(directory):
-        for f in files:
+    for root, _, files in os.walk(directory, followlinks=True):
+        # we sort the files here to ensure consistent order for repeatable training
+        # results
+        for f in sorted(files):
             full_path = os.path.join(root, f)
 
             if not _is_valid_filetype(full_path):
@@ -117,10 +131,7 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
 
 
 def _is_valid_filetype(path: Text) -> bool:
-    is_file = os.path.isfile(path)
-    is_datafile = path.endswith(".json") or path.endswith(".md")
-
-    return is_file and is_datafile
+    return os.path.isfile(path) and Path(path).suffix in TRAINING_DATA_EXTENSIONS
 
 
 def is_nlu_file(file_path: Text) -> bool:
@@ -132,7 +143,7 @@ def is_nlu_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a nlu file, otherwise `False`.
     """
-    return loading.guess_format(file_path) != loading.UNK
+    return nlu_loading.guess_format(file_path) != nlu_loading.UNK
 
 
 def is_story_file(file_path: Text) -> bool:
@@ -144,34 +155,37 @@ def is_story_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file, otherwise `False`.
     """
-    _is_story_file = False
+    from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 
-    if file_path.endswith(".md"):
-        with open(file_path, encoding="utf-8") as f:
-            _is_story_file = any(_contains_story_pattern(l) for l in f)
+    if YAMLStoryReader.is_yaml_story_file(file_path):
+        return True
 
-    return _is_story_file
+    from rasa.core.training.story_reader.markdown_story_reader import (
+        MarkdownStoryReader,
+    )
 
-
-def _contains_story_pattern(text: Text) -> bool:
-    story_pattern = r".*##.+"
-
-    return re.match(story_pattern, text) is not None
+    return MarkdownStoryReader.is_markdown_story_file(file_path)
 
 
-def is_domain_file(file_path: Text) -> bool:
-    """Checks whether the given file path is a Rasa domain file.
+def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
+    """Checks if a file is an end-to-end conversation test file.
 
     Args:
         file_path: Path of the file which should be checked.
 
     Returns:
-        `True` if it's a domain file, otherwise `False`.
+        `True` if it's a conversation test file, otherwise `False`.
     """
 
-    file_name = os.path.basename(file_path)
+    if Path(file_path).suffix not in MARKDOWN_FILE_EXTENSIONS:
+        return False
 
-    return file_name in ["domain.yml", "domain.yaml"]
+    dirname = os.path.dirname(file_path)
+    return (
+        DEFAULT_E2E_TESTS_PATH in dirname
+        and is_story_file(file_path)
+        and not is_nlu_file(file_path)
+    )
 
 
 def is_config_file(file_path: Text) -> bool:
@@ -189,7 +203,7 @@ def is_config_file(file_path: Text) -> bool:
     return file_name in ["config.yml", "config.yaml"]
 
 
-def _copy_files_to_new_dir(files: Set[Text]) -> Text:
+def _copy_files_to_new_dir(files: Iterable[Text]) -> Text:
     directory = tempfile.mkdtemp()
     for f in files:
         # makes sure files do not overwrite each other, hence the prefix

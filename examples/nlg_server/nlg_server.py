@@ -1,17 +1,17 @@
 import argparse
 import logging
+import os
 
 from sanic import Sanic, response
 
 from rasa.core.domain import Domain
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
+from rasa.constants import ENV_SANIC_BACKLOG, DEFAULT_SANIC_WORKERS
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_SERVER_PORT = 5056
-
-DEFAULT_SANIC_WORKERS = 1
 
 
 def create_argument_parser():
@@ -70,7 +70,12 @@ def run_server(domain, port, workers):
 
         return response.json(bot_response)
 
-    app.run(host="0.0.0.0", port=port, workers=workers)
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        workers=workers,
+        backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
+    )
 
 
 if __name__ == "__main__":

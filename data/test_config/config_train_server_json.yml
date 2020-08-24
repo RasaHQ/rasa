@@ -1,0 +1,23 @@
+language: "en"
+
+pipeline:
+  - name: SpacyNLP
+  - name: SpacyTokenizer
+  - name: SpacyFeaturizer
+  - name: RegexFeaturizer
+  - name: CRFEntityExtractor
+  - name: EntitySynonymMapper
+  - name: SklearnIntentClassifier
+
+# data contains the same json, as described in the training data section
+data: {
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "hey",
+        "intent": "greet",
+        "entities": []
+      }
+    ]
+  }
+}

@@ -13,7 +13,7 @@ slots:
   requested_slot:
     type: unfeaturized
 
-templates:
+responses:
   utter_ask_GPE_origin:
     - text: "where are you leaving from?"
   utter_ask_GPE_destination:

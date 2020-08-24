@@ -1,12 +1,12 @@
 import json
 import logging
 import os
-
+import re
 import typing
 from typing import Optional, Text
 
+import rasa.utils.io as io_utils
 from rasa.nlu import utils
-from rasa.nlu.training_data.formats import markdown
 from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
@@ -16,8 +16,6 @@ from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_PACKAGE,
 )
 from rasa.utils.endpoints import EndpointConfig
-import rasa.utils.io as io_utils
-import re
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -30,11 +28,12 @@ WIT = "wit"
 LUIS = "luis"
 RASA = "rasa_nlu"
 MARKDOWN = "md"
+RASA_YAML = "rasa_yml"
 UNK = "unk"
 MARKDOWN_NLG = "nlg.md"
+JSON = "json"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
-_markdown_section_markers = ["## {}:".format(s) for s in markdown.available_sections]
 _json_format_heuristics = {
     WIT: lambda js, fn: "data" in js and isinstance(js.get("data"), list),
     LUIS: lambda js, fn: "luis_schema_version" in js,
@@ -51,7 +50,7 @@ _json_format_heuristics = {
 # ##
 # * intent/response_key
 #   - response_text
-_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*.*\/.*\n\s*\t*\-.*")
+_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*[^:]*\/.*\n\s*\t*\-.*")
 
 
 def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData":
@@ -61,7 +60,7 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     from rasa.nlu.training_data import TrainingData
 
     if not os.path.exists(resource_name):
-        raise ValueError("File '{}' does not exist.".format(resource_name))
+        raise ValueError(f"File '{resource_name}' does not exist.")
 
     files = io_utils.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]
@@ -72,9 +71,6 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
         training_data = data_sets[0]
     else:
         training_data = data_sets[0].merge(*data_sets[1:])
-
-    if training_data.nlg_stories:
-        training_data.fill_response_phrases()
 
     return training_data
 
@@ -95,12 +91,13 @@ async def load_data_from_endpoint(
 
         return training_data
     except Exception as e:
-        logger.warning("Could not retrieve training data from URL:\n{}".format(e))
+        logger.warning(f"Could not retrieve training data from URL:\n{e}")
 
 
 def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     """Generates the appropriate reader class based on the file format."""
     from rasa.nlu.training_data.formats import (
+        RasaYAMLReader,
         MarkdownReader,
         WitReader,
         LuisReader,
@@ -122,6 +119,8 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
         reader = MarkdownReader()
     elif fformat == MARKDOWN_NLG:
         reader = NLGMarkdownReader()
+    elif fformat == RASA_YAML:
+        reader = RasaYAMLReader()
     return reader
 
 
@@ -130,9 +129,8 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
 
     fformat = guess_format(filename)
     if fformat == UNK:
-        raise ValueError("Unknown data format for file '{}'.".format(filename))
+        raise ValueError(f"Unknown data format for file '{filename}'.")
 
-    logger.debug("Training data format of '{}' is '{}'.".format(filename, fformat))
     reader = _reader_factory(fformat)
 
     if reader:
@@ -157,6 +155,8 @@ def guess_format(filename: Text) -> Text:
     Returns:
         Guessed file format.
     """
+    from rasa.nlu.training_data.formats import RasaYAMLReader, markdown
+
     guess = UNK
 
     content = ""
@@ -164,15 +164,19 @@ def guess_format(filename: Text) -> Text:
         content = io_utils.read_file(filename)
         js = json.loads(content)
     except ValueError:
-        if any([marker in content for marker in _markdown_section_markers]):
+        if any(marker in content for marker in markdown.MARKDOWN_SECTION_MARKERS):
             guess = MARKDOWN
         elif _is_nlg_story_format(content):
             guess = MARKDOWN_NLG
+        elif RasaYAMLReader.is_yaml_nlu_file(filename):
+            guess = RASA_YAML
     else:
         for fformat, format_heuristic in _json_format_heuristics.items():
             if format_heuristic(js, filename):
                 guess = fformat
                 break
+
+    logger.debug(f"Training data format of '{filename}' is '{guess}'.")
 
     return guess
 

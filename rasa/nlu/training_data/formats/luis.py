@@ -3,6 +3,7 @@ import typing
 from typing import Any, Dict, Text
 
 from rasa.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
+from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -18,14 +19,13 @@ class LuisReader(JsonTrainingDataReader):
         training_examples = []
         regex_features = []
 
-        # Simple check to ensure we support this luis data schema version
-        if not js["luis_schema_version"].startswith("2"):
-            raise Exception(
-                "Invalid luis data schema version {}, "
-                "should be 2.x.x. "
-                "Make sure to use the latest luis version "
-                "(e.g. by downloading your data again)."
-                "".format(js["luis_schema_version"])
+        max_tested_luis_schema_version = 5
+        major_version = int(js["luis_schema_version"].split(".")[0])
+        if major_version > max_tested_luis_schema_version:
+            raise_warning(
+                f"Your luis data schema version {js['luis_schema_version']} "
+                f"is higher than 5.x.x. "
+                f"Training may not be performed correctly. "
             )
 
         for r in js.get("regex_features", []):

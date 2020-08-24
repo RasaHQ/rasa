@@ -1,7 +1,8 @@
 import itertools
 
 import contextlib
-from typing import Text, List
+import typing
+from typing import Text, List, Optional, Text, Any, Dict
 
 import jsonpickle
 import os
@@ -10,10 +11,16 @@ import rasa.utils.io
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, Event
 from rasa.core.trackers import DialogueStateTracker
+from rasa.nlu.constants import INTENT_NAME_KEY
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
+if typing.TYPE_CHECKING:
+    from rasa.core.conversation import Dialogue
 
-def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
+
+def tracker_from_dialogue_file(
+    filename: Text, domain: Optional[Domain] = None
+) -> DialogueStateTracker:
     dialogue = read_dialogue_file(filename)
 
     if not domain:
@@ -24,15 +31,8 @@ def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
     return tracker
 
 
-def read_dialogue_file(filename: Text):
+def read_dialogue_file(filename: Text) -> "Dialogue":
     return jsonpickle.loads(rasa.utils.io.read_file(filename))
-
-
-def write_text_to_file(tmpdir: Text, filename: Text, text: Text):
-    path = tmpdir.join(filename).strpath
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(text)
-    return path
 
 
 @contextlib.contextmanager
@@ -47,7 +47,7 @@ def cwd(path: Text):
 
 
 @contextlib.contextmanager
-def mocked_cmd_input(package, text):
+def mocked_cmd_input(package, text: Text):
     if isinstance(text, str):
         text = [text]
 
@@ -56,7 +56,7 @@ def mocked_cmd_input(package, text):
 
     def mocked_input(*args, **kwargs):
         value = next(text_generator)
-        print ("wrote '{}' to input".format(value))
+        print(f"wrote '{value}' to input")
         return value
 
     package.get_user_input = mocked_input
@@ -66,10 +66,19 @@ def mocked_cmd_input(package, text):
         package.get_user_input = i
 
 
-def user_uttered(text: Text, confidence: float) -> UserUttered:
-    parse_data = {"intent": {"name": text, "confidence": confidence}}
+def user_uttered(
+    text: Text,
+    confidence: float = 1.0,
+    metadata: Dict[Text, Any] = None,
+    timestamp: Optional[float] = None,
+) -> UserUttered:
+    parse_data = {"intent": {INTENT_NAME_KEY: text, "confidence": confidence}}
     return UserUttered(
-        text="Random", intent=parse_data["intent"], parse_data=parse_data
+        text="Random",
+        intent=parse_data["intent"],
+        parse_data=parse_data,
+        metadata=metadata,
+        timestamp=timestamp,
     )
 
 

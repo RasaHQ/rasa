@@ -1,0 +1,10 @@
+nlu:
+- intent: estimate_emissions
+  # Arbitrary metadata
+  metadata:
+    author: Some example metadata!
+    key: value
+  # Multiline examples, each line is a separate training example.
+  examples: |
+     how much CO2 will that use?
+     how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?

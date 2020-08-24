@@ -3,12 +3,14 @@ import logging
 import os
 from typing import Any, List, Text, Optional, Dict, Tuple
 
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
 
 import rasa.utils.io
+from rasa.utils import common as common_utils
 
-from rasa.core import utils
 from rasa.core.domain import Domain
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
@@ -24,7 +26,7 @@ class FallbackPolicy(Policy):
     prediction. """
 
     @staticmethod
-    def _standard_featurizer():
+    def _standard_featurizer() -> None:
         return None
 
     def __init__(
@@ -33,7 +35,7 @@ class FallbackPolicy(Policy):
         nlu_threshold: float = 0.3,
         ambiguity_threshold: float = 0.1,
         core_threshold: float = 0.3,
-        fallback_action_name: Text = "action_default_fallback",
+        fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
     ) -> None:
         """Create a new Fallback policy.
 
@@ -49,18 +51,26 @@ class FallbackPolicy(Policy):
                 between confidences of the top two predictions
             fallback_action_name: name of the action to execute as a fallback
         """
-        super(FallbackPolicy, self).__init__(priority=priority)
+        super().__init__(priority=priority)
 
         self.nlu_threshold = nlu_threshold
         self.ambiguity_threshold = ambiguity_threshold
         self.core_threshold = core_threshold
         self.fallback_action_name = fallback_action_name
 
+        common_utils.raise_warning(
+            f"'{self.__class__.__name__}' is deprecated and will be removed "
+            "in the future. It is recommended to use the 'RulePolicy' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
 
@@ -123,16 +133,22 @@ class FallbackPolicy(Policy):
 
         return False
 
-    def fallback_scores(self, domain, fallback_score=1.0):
+    def fallback_scores(
+        self, domain: Domain, fallback_score: float = 1.0
+    ) -> List[float]:
         """Prediction scores used if a fallback is necessary."""
 
-        result = [0.0] * domain.num_actions
+        result = self._default_predictions(domain)
         idx = domain.index_for_action(self.fallback_action_name)
         result[idx] = fallback_score
         return result
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts a fallback action.
 
@@ -142,8 +158,16 @@ class FallbackPolicy(Policy):
 
         nlu_data = tracker.latest_message.parse_data
 
-        if tracker.latest_action_name == self.fallback_action_name:
-            result = [0.0] * domain.num_actions
+        if (
+            tracker.latest_action_name == self.fallback_action_name
+            and tracker.latest_action_name != ACTION_LISTEN_NAME
+        ):
+            logger.debug(
+                "Predicted 'action_listen' after fallback action '{}'".format(
+                    self.fallback_action_name
+                )
+            )
+            result = self._default_predictions(domain)
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
 
@@ -177,7 +201,7 @@ class FallbackPolicy(Policy):
             "fallback_action_name": self.fallback_action_name,
         }
         rasa.utils.io.create_directory_for_file(config_file)
-        utils.dump_obj_as_json_to_file(config_file, meta)
+        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":

@@ -1,9 +1,10 @@
-import io
 import logging
 import os
 import shutil
 import tarfile
 from typing import List, Optional, Text, Tuple
+
+import rasa.utils.common
 
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 def get_persistor(name: Text) -> Optional["Persistor"]:
     """Returns an instance of the requested persistor.
 
-    Currently, `aws`, `gcs` and `azure` are supported"""
+    Currently, `aws`, `gcs`, `azure` and providing module paths are supported remote storages."""
 
     if name == "aws":
         return AWSPersistor(
@@ -27,18 +28,28 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
             os.environ.get("AZURE_ACCOUNT_NAME"),
             os.environ.get("AZURE_ACCOUNT_KEY"),
         )
-
+    if name:
+        try:
+            persistor = rasa.utils.common.class_from_module_path(name)
+            return persistor()
+        except ImportError:
+            raise ImportError(
+                f"Unknown model persistor {name}. Please make sure to "
+                "either use an included model persistor (`aws`, `gcs` "
+                "or `azure`) or specify the module path to an external "
+                "model persistor."
+            )
     return None
 
 
-class Persistor(object):
+class Persistor:
     """Store models in cloud and fetch them when needed"""
 
     def persist(self, model_directory: Text, model_name: Text) -> None:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
         if not os.path.isdir(model_directory):
-            raise ValueError("Target directory '{}' not found.".format(model_directory))
+            raise ValueError(f"Target directory '{model_directory}' not found.")
 
         file_key, tar_path = self._compress(model_directory, model_name)
         self._persist_tar(file_key, tar_path)
@@ -53,7 +64,7 @@ class Persistor(object):
             tar_name = self._tar_name(model_name)
 
         self._retrieve_tar(tar_name)
-        self._decompress(tar_name, target_path)
+        self._decompress(os.path.basename(tar_name), target_path)
 
     def list_models(self) -> List[Text]:
         """Lists all the trained models."""
@@ -99,7 +110,7 @@ class Persistor(object):
     def _tar_name(model_name: Text, include_extension: bool = True) -> Text:
 
         ext = ".tar.gz" if include_extension else ""
-        return "{m}{ext}".format(m=model_name, ext=ext)
+        return f"{model_name}{ext}"
 
     @staticmethod
     def _decompress(compressed_path: Text, target_path: Text) -> None:
@@ -113,12 +124,19 @@ class AWSPersistor(Persistor):
 
     Fetches them when needed, instead of storing them on the local disk."""
 
-    def __init__(self, bucket_name: Text, endpoint_url: Optional[Text] = None) -> None:
+    def __init__(
+        self,
+        bucket_name: Text,
+        endpoint_url: Optional[Text] = None,
+        region_name: Optional[Text] = None,
+    ) -> None:
         import boto3
 
-        super(AWSPersistor, self).__init__()
-        self.s3 = boto3.resource("s3", endpoint_url=endpoint_url)
-        self._ensure_bucket_exists(bucket_name)
+        super().__init__()
+        self.s3 = boto3.resource(
+            "s3", endpoint_url=endpoint_url, region_name=region_name
+        )
+        self._ensure_bucket_exists(bucket_name, region_name)
         self.bucket_name = bucket_name
         self.bucket = self.s3.Bucket(bucket_name)
 
@@ -129,14 +147,19 @@ class AWSPersistor(Persistor):
                 for obj in self.bucket.objects.filter()
             ]
         except Exception as e:
-            logger.warning("Failed to list models in AWS. {}".format(e))
+            logger.warning(f"Failed to list models in AWS. {e}")
             return []
 
-    def _ensure_bucket_exists(self, bucket_name: Text) -> None:
+    def _ensure_bucket_exists(
+        self, bucket_name: Text, region_name: Optional[Text] = None
+    ) -> None:
         import boto3
         import botocore
 
-        bucket_config = {"LocationConstraint": boto3.DEFAULT_SESSION.region_name}
+        if not region_name:
+            region_name = boto3.DEFAULT_SESSION.region_name
+
+        bucket_config = {"LocationConstraint": region_name}
         # noinspection PyUnresolvedReferences
         try:
             self.s3.create_bucket(
@@ -151,22 +174,22 @@ class AWSPersistor(Persistor):
         with open(tar_path, "rb") as f:
             self.s3.Object(self.bucket_name, file_key).put(Body=f)
 
-    def _retrieve_tar(self, target_filename: Text) -> None:
+    def _retrieve_tar(self, model_path: Text) -> None:
         """Downloads a model that has previously been persisted to s3."""
-
-        with io.open(target_filename, "wb") as f:
-            self.bucket.download_fileobj(target_filename, f)
+        tar_name = os.path.basename(model_path)
+        with open(tar_name, "wb") as f:
+            self.bucket.download_fileobj(model_path, f)
 
 
 class GCSPersistor(Persistor):
     """Store models on Google Cloud Storage.
 
-     Fetches them when needed, instead of storing them on the local disk."""
+    Fetches them when needed, instead of storing them on the local disk."""
 
     def __init__(self, bucket_name: Text) -> None:
         from google.cloud import storage
 
-        super(GCSPersistor, self).__init__()
+        super().__init__()
 
         self.storage_client = storage.Client()
         self._ensure_bucket_exists(bucket_name)
@@ -183,9 +206,7 @@ class GCSPersistor(Persistor):
                 for b in blob_iterator
             ]
         except Exception as e:
-            logger.warning(
-                "Failed to list models in google cloud storage. {}".format(e)
-            )
+            logger.warning(f"Failed to list models in google cloud storage. {e}")
             return []
 
     def _ensure_bucket_exists(self, bucket_name: Text) -> None:
@@ -218,7 +239,7 @@ class AzurePersistor(Persistor):
     ) -> None:
         from azure.storage import blob as azureblob
 
-        super(AzurePersistor, self).__init__()
+        super().__init__()
 
         self.blob_client = azureblob.BlockBlobService(
             account_name=azure_account_name,
@@ -244,7 +265,7 @@ class AzurePersistor(Persistor):
                 for b in blob_iterator
             ]
         except Exception as e:
-            logger.warning("Failed to list models azure blob storage. {}".format(e))
+            logger.warning(f"Failed to list models azure blob storage. {e}")
             return []
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:

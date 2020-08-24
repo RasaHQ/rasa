@@ -7,22 +7,9 @@ services:
     ports:
     - "5005:5005"
     volumes:
-    - "./rasa-app-data/models:/app/models"
-    - "./rasa-app-data/config:/app/config"
-    - "./rasa-app-data/project:/app/project"
-    - "./rasa-app-data/projects:/app/projects"
-    - "./rasa-app-data/logs:/app/logs"
-    - "./rasa-app-data/data:/app/data"
+    - "./rasa-app-data/:/app/"
     command:
-    - start
-    - -d
-    - ./model
-    - -c
-    - rest
-    - -u
-    - current/nlu
-    - --endpoints
-    - config/endpoints.yml
+    - run
 
   action_server:
     image: rasa/rasa-sdk:latest

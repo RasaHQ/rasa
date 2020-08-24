@@ -1,12 +1,11 @@
 import copy
 import logging
-from collections import defaultdict
 
 from rasa.core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
 
+from rasa.core.nlg import interpolator  # pytype: disable=pyi-error
 from rasa.core.nlg.generator import NaturalLanguageGenerator
-from rasa.core.nlg.interpolator import interpolate_text, interpolate
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     def __init__(self, templates: Dict[Text, List[Dict[Text, Any]]]) -> None:
         self.templates = templates
 
-    def _templates_for_utter_action(self, utter_action, output_channel):
+    def _templates_for_utter_action(
+        self, utter_action: Text, output_channel: Text
+    ) -> List[Dict[Text, Any]]:
         """Return array of templates that fit the channel and action."""
 
         channel_templates = []
@@ -66,7 +67,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         template_name: Text,
         tracker: DialogueStateTracker,
         output_channel: Text,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested template."""
 
@@ -80,7 +81,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         template_name: Text,
         filled_slots: Dict[Text, Any],
         output_channel: Text,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested template."""
 
@@ -96,7 +97,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         self,
         template: Dict[Text, Any],
         filled_slots: Optional[Dict[Text, Any]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Dict[Text, Any]:
         """"Combine slot values and key word arguments to fill templates."""
 
@@ -107,14 +108,16 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             "text",
             "image",
             "custom",
-            "button",
+            "buttons",
             "attachment",
             "quick_replies",
         ]
         if template_vars:
             for key in keys_to_interpolate:
                 if key in template:
-                    template[key] = interpolate(template[key], template_vars)
+                    template[key] = interpolator.interpolate(
+                        template[key], template_vars
+                    )
         return template
 
     @staticmethod

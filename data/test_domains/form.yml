@@ -17,19 +17,15 @@ slots:
 entities:
  - name
 
-templates:
+responses:
   utter_greet:
     - text: hey there!
   utter_goodbye:
     - text: goodbye :(
   utter_default:
     - text: default message
-
-actions:
-  - utter_default
-  - utter_greet
-  - utter_goodbye
-  - utter_ask_continue
+  utter_ask_continue:
+    - text: should I continue?
 
 forms:
   - some_form

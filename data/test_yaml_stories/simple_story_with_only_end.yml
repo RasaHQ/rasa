@@ -1,0 +1,7 @@
+stories:
+- story: simple_story_with_only_end
+  steps:
+  - intent: hello
+  - action: utter_greet
+  - slot_was_set:
+    - name: peter

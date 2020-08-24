@@ -2,13 +2,14 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Text
 
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.nlu.emulators.no_emulator import NoEmulator
 
 
 class DialogflowEmulator(NoEmulator):
     def __init__(self) -> None:
 
-        super(DialogflowEmulator, self).__init__()
+        super().__init__()
         self.name = "api"
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
@@ -16,8 +17,7 @@ class DialogflowEmulator(NoEmulator):
 
         # populate entities dict
         entities = {
-            entity_type: []
-            for entity_type in set([x["entity"] for x in data["entities"]])
+            entity_type: [] for entity_type in {x["entity"] for x in data["entities"]}
         }
 
         for entity in data["entities"]:
@@ -29,7 +29,7 @@ class DialogflowEmulator(NoEmulator):
             "result": {
                 "source": "agent",
                 "resolvedQuery": data["text"],
-                "action": data["intent"]["name"],
+                "action": data["intent"][INTENT_NAME_KEY],
                 "actionIncomplete": False,
                 "parameters": entities,
                 "contexts": [],

@@ -3,4 +3,8 @@ repos:
     rev: stable
     hooks:
     - id: black
-      language_version: python3.6 
+-   repo: https://github.com/thlorenz/doctoc
+    rev: master
+    hooks:
+    -   id: doctoc
+        files: "CONTRIBUTING.md"

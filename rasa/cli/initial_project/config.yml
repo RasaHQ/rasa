@@ -1,11 +1,11 @@
 # Configuration for Rasa NLU.
 # https://rasa.com/docs/rasa/nlu/components/
 language: en
-pipeline: supervised_embeddings
+
+pipeline:
+# This key can be left empty. The pipeline will then be provided from a default configuration during training.
 
 # Configuration for Rasa Core.
 # https://rasa.com/docs/rasa/core/policies/
 policies:
-  - name: MemoizationPolicy
-  - name: KerasPolicy
-  - name: MappingPolicy
+# This key can be left empty. Policies will then be provided from a default configuration during training.

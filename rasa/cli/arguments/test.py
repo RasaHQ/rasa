@@ -22,10 +22,18 @@ def set_test_arguments(parser: argparse.ArgumentParser):
     nlu_arguments = parser.add_argument_group("NLU Test Arguments")
     add_test_nlu_argument_group(nlu_arguments)
 
+    add_no_plot_param(parser)
+    add_errors_success_params(parser)
+    add_out_param(
+        parser,
+        default=DEFAULT_RESULTS_PATH,
+        help_text="Output path for any files created during the evaluation.",
+    )
+
 
 def set_test_core_arguments(parser: argparse.ArgumentParser):
     add_test_core_model_param(parser)
-    add_test_core_argument_group(parser)
+    add_test_core_argument_group(parser, include_e2e_argument=True)
 
 
 def set_test_nlu_arguments(parser: argparse.ArgumentParser):
@@ -34,7 +42,8 @@ def set_test_nlu_arguments(parser: argparse.ArgumentParser):
 
 
 def add_test_core_argument_group(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    include_e2e_argument: bool = False,
 ):
     add_stories_param(parser, "test")
     parser.add_argument(
@@ -45,14 +54,15 @@ def add_test_core_argument_group(
         default=DEFAULT_RESULTS_PATH,
         help_text="Output path for any files created during the evaluation.",
     )
-    parser.add_argument(
-        "--e2e",
-        "--end-to-end",
-        action="store_true",
-        help="Run an end-to-end evaluation for combined action and "
-        "intent prediction. Requires a story file in end-to-end "
-        "format.",
-    )
+    if include_e2e_argument:
+        parser.add_argument(
+            "--e2e",
+            "--end-to-end",
+            action="store_true",
+            help="Run an end-to-end evaluation for combined action and "
+            "intent prediction. Requires a story file in end-to-end "
+            "format.",
+        )
     add_endpoint_param(
         parser, help_text="Configuration file for the connectors as a yml file."
     )
@@ -79,6 +89,8 @@ def add_test_core_argument_group(
         "All models in the provided directory are evaluated "
         "and compared against each other.",
     )
+    add_no_plot_param(parser)
+    add_errors_success_params(parser)
 
 
 def add_test_nlu_argument_group(
@@ -90,33 +102,6 @@ def add_test_nlu_argument_group(
         parser,
         default=DEFAULT_RESULTS_PATH,
         help_text="Output path for any files created during the evaluation.",
-    )
-
-    parser.add_argument(
-        "--successes",
-        action="store_true",
-        default=False,
-        help="If set successful predictions (intent and entities) will be written "
-        "to a file.",
-    )
-    parser.add_argument(
-        "--no-errors",
-        action="store_true",
-        default=False,
-        help="If set incorrect predictions (intent and entities) will NOT be written "
-        "to a file.",
-    )
-    parser.add_argument(
-        "--histogram",
-        required=False,
-        default="hist.png",
-        help="Output path for the confidence histogram.",
-    )
-    parser.add_argument(
-        "--confmat",
-        required=False,
-        default="confmat.png",
-        help="Output path for the confusion matrix plot.",
     )
     parser.add_argument(
         "-c",
@@ -140,7 +125,7 @@ def add_test_nlu_argument_group(
         "-f",
         "--folds",
         required=False,
-        default=10,
+        default=5,
         help="Number of cross validation folds (cross validation only).",
     )
     comparison_arguments = parser.add_argument_group("Comparison Mode")
@@ -162,6 +147,9 @@ def add_test_nlu_argument_group(
         help="Percentages of training data to exclude during comparison.",
     )
 
+    add_no_plot_param(parser)
+    add_errors_success_params(parser)
+
 
 def add_test_core_model_param(parser: argparse.ArgumentParser):
     default_path = get_latest_model(DEFAULT_MODELS_PATH)
@@ -174,4 +162,32 @@ def add_test_core_model_param(parser: argparse.ArgumentParser):
         "will be used. If it is a directory, the latest model in that directory "
         "will be used (exception: '--evaluate-model-directory' flag is set). If multiple "
         "'tar.gz' files are provided, all those models will be compared.",
+    )
+
+
+def add_no_plot_param(
+    parser: argparse.ArgumentParser, default: bool = False, required: bool = False
+) -> None:
+    parser.add_argument(
+        "--no-plot",
+        dest="disable_plotting",
+        action="store_true",
+        default=default,
+        help="Don't render evaluation plots.",
+        required=required,
+    )
+
+
+def add_errors_success_params(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--successes",
+        action="store_true",
+        default=False,
+        help="If set successful predictions will be written to a file.",
+    )
+    parser.add_argument(
+        "--no-errors",
+        action="store_true",
+        default=False,
+        help="If set incorrect predictions will NOT be written to a file.",
     )

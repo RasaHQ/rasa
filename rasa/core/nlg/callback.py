@@ -9,7 +9,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-def nlg_response_format_spec():
+def nlg_response_format_spec() -> Dict[Text, Any]:
     """Expected response schema for an NLG endpoint.
 
     Used for validation of the response returned from the NLG endpoint."""
@@ -25,7 +25,7 @@ def nlg_response_format_spec():
     }
 
 
-def nlg_request_format_spec():
+def nlg_request_format_spec() -> Dict[Text, Any]:
     """Expected request schema for requests sent to an NLG endpoint."""
 
     return {
@@ -53,7 +53,7 @@ def nlg_request_format(
     template_name: Text,
     tracker: DialogueStateTracker,
     output_channel: Text,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
 
@@ -84,7 +84,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         template_name: Text,
         tracker: DialogueStateTracker,
         output_channel: Text,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Dict[Text, Any]:
         """Retrieve a named template from the domain using an endpoint."""
 
