@@ -551,11 +551,9 @@ def _log_stories(
         os.path.join(out_directory, filename), "w", encoding=DEFAULT_ENCODING
     ) as f:
         if not trackers:
-            f.write("# No stories found.")
+            f.write("# None of the test stories failed - all good!")
         else:
-            stories = [
-                tracker.as_story(include_source=True) for tracker in trackers
-            ]  # TODO: revisit `include_source=True` - what do we need it for?
+            stories = [tracker.as_story(include_source=True) for tracker in trackers]
             steps = [step for story in stories for step in story.story_steps]
             f.write(YAMLStoryWriter().dumps(steps))
 
