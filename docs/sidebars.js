@@ -4,12 +4,12 @@ module.exports = {
     {
       type: 'category',
       label: 'Building Assistants',
-      collapsed: true,
+      collapsed: false,
       items: [
         {
           type: 'category',
           label: 'Getting Started',
-          collapsed: true,
+          collapsed: false,
           items: [
             'prototype-an-assistant',
             'installation',
