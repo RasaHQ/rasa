@@ -352,6 +352,7 @@ class ResponseSelector(DIETClassifier):
             the text but also buttons, images, ...
         """
         for key, responses in self.responses.items():
+            ## TODO: This can be simplified, do we need this distinction here?
             if self.component_config[TRAIN_ON_TEXT]:
                 for response in responses:
                     if hash(response.get(TEXT, "")) == label.get("id"):
@@ -369,6 +370,7 @@ class ResponseSelector(DIETClassifier):
         label, label_ranking = self._predict_label(out)
 
         # label_key, label_response = self._full_response(label) or {TEXT: label.get("name")}
+
         label_retrieval_intent, label_responses = self._full_response(label)
 
         # retrieval_intent_name = (
@@ -400,7 +402,11 @@ class ResponseSelector(DIETClassifier):
         )
 
         prediction_dict = {
-            "response": label_responses,
+            "response": {
+                "id": label["id"],
+                "name": label_responses,
+                "confidence": label["confidence"],
+            },
             "ranking": label_ranking,
             "full_retrieval_intent": label_retrieval_intent,
         }

@@ -418,7 +418,7 @@ class TrainingData:
 
         # emit warnings for response intents without a response template
         for example in self.training_examples:
-            if example.get(RESPONSE_KEY):
+            if example.get(RESPONSE_KEY) and example.get(RESPONSE, None) is None:
                 raise_warning(
                     f"Your training data contains an example '{example.text[:20]}...' "
                     f"for the {example.get_combined_intent_response_key()} intent. "

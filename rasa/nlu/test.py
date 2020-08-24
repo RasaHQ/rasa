@@ -401,9 +401,15 @@ def evaluate_response_selections(
     for result in response_selection_results:
         response_to_intent_target[result.response_target] = result.intent_target
 
+    # print(response_to_intent_target)
+
+    # print(response_selection_results)
+
     target_responses, predicted_responses = _targets_predictions_from(
         response_selection_results, "response_target", "response_prediction"
     )
+    # print(target_responses)
+    # print(predicted_responses)
 
     confusion_matrix = sklearn.metrics.confusion_matrix(
         target_responses, predicted_responses
@@ -1305,6 +1311,7 @@ def get_eval_data(
 
     for example in tqdm(test_data.training_examples):
         result = interpreter.parse(example.text, only_output_properties=False)
+        # print(example.get(TEXT))
 
         if should_eval_intents:
             intent_prediction = result.get(INTENT, {}) or {}
@@ -1333,6 +1340,8 @@ def get_eval_data(
                 response_prediction_key, {}
             ).get(OPEN_UTTERANCE_PREDICTION_KEY, {})
 
+            # print(response_prediction)
+
             response_target = example.get(RESPONSE, "")
 
             complete_intent = example.get_combined_intent_response_key()
@@ -1341,11 +1350,12 @@ def get_eval_data(
                 ResponseSelectionEvaluationResult(
                     complete_intent,
                     response_target,
-                    response_prediction.get("name"),
+                    response_prediction.get("name").get(TEXT),
                     result.get(TEXT, {}),
                     response_prediction.get("confidence"),
                 )
             )
+            # print('-----------------')
 
         if should_eval_entities:
             entity_results.append(
