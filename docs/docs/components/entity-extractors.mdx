@@ -61,7 +61,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 * **Configuration**
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "MitieEntityExtractor"
   ```
@@ -126,7 +126,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   the [spaCy documentation](https://spacy.io/api/annotation#section-named-entities).
   Leaving the dimensions option unspecified will extract all available dimensions.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "SpacyEntityExtractor"
     # dimensions to extract
@@ -229,7 +229,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   * `BILOU_flag` determines whether to use BILOU tagging or not. Default `True`.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "CRFEntityExtractor"
     # BILOU_flag determines whether to use BILOU tagging or not.
@@ -345,7 +345,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   the [duckling documentation](https://duckling.wit.ai/).
   Leaving the dimensions option unspecified will extract all available dimensions.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "DucklingHTTPExtractor"
     # url of the running duckling server
@@ -439,7 +439,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 * **Configuration**
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "EntitySynonymMapper"
   ```

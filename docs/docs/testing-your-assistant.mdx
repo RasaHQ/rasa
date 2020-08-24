@@ -26,66 +26,99 @@ Here are some examples:
 <Tabs values={[{"label": "Basics", "value": "basics"}, {"label": "Custom Actions", "value": "customactions"}, {"label": "Forms Happy Path", "value": "formshappypath"}, {"label": "Forms Unhappy Path", "value": "formsunhappypath"}]} defaultValue="basics">
   <TabItem value="basics">
 
-  ```story
-  ## A basic end-to-end test
-  * greet: hello
-     - utter_ask_howcanhelp
-  * inform: show me [chinese](cuisine) restaurants
-     - utter_ask_location
-  * inform: in [Paris](location)
-     - utter_ask_price
+  ```yaml-rasa
+  e2e_tests:
+  - story: A basic end-to-end test
+    steps:
+    - user: |
+       hey
+      intent: greet
+    - action: utter_ask_howcanhelp
+    - user: |
+       show me [chinese]{"entity": "cuisine"} restaurants
+      intent: inform
+    - action: utter_ask_location
+    - user: |
+       in [Paris]{"entity": "location"}
+      intent: inform
+    - action: utter_ask_price
   ```
 
   </TabItem>
   <TabItem value="customactions">
-
-  ```story
-  ## End-to-End tests where a custom action appends events
-  * greet: hi
-      - my_custom_action
-      <!-- The following events are emitted by `my_custom_action` -->
-      - slot{"my_slot": "value added by custom action"}
+  
+  ```yaml-rasa
+  e2e_tests:
+  - story: A test where a custom action returns events 
+    steps:
+    - user: |
+       hey
+      intent: greet
+    - action: my_custom_action
+    - slot_was_set:
+      - my_slot: "value added by custom action" 
+    - action: 
       - utter_ask_age
-  * thankyou: thanks
-      - utter_noworries
+    - user: |
+        thanks 
+      intent: thankyou
+    - action: utter_no_worries
   ```
 
   </TabItem>
   <TabItem value="formshappypath">
-
-  ```story
-  ## Testing a conversation with a form
-  * greet: hi
-      - utter_greet
-  * request_restaurant: im looking for a restaurant
-      - restaurant_form
-      - active_loop{"name": "restaurant_form"}
-  * inform: [afghan](cuisine) food
-      - active_loop: restaurant_form
-      - active_loop{"name": null}
-      - utter_slots_values
-  * thankyou: thanks
-      - utter_noworries
+  
+  ```yaml-rasa
+  e2e_tests:
+  - story: A test conversation with a form
+    steps:
+    - user: |
+       hi
+      intent: greet
+    - action: utter_greet
+    - user: |
+        im looking for a restaurant
+      intent: request_restaurant
+    - action: restaurant_form
+    - active_loop: restaurant_form
+    - user: |
+       [afghan](cuisine) food
+      intent: inform
+    - action: restaurant_form
+    - active_loop: null
+    - action: utter_slots_values
+    - user: |
+        thanks 
+      intent: thankyou
+    - action: utter_no_worries
   ```
 
   </TabItem>
   <TabItem value="formsunhappypath">
-
-  ```story
-  ## Testing a conversation with a form and unexpected user input
-  * greet: hi
-      - utter_greet
-  * request_restaurant: im looking for a restaurant
-      - restaurant_form
-      - active_loop{"name": "restaurant_form"}
-  <!-- The user sends a message which should not be handled by the form. -->
-  * chitchat: can you share your boss with me?
-      - utter_chitchat
-      - restaurant_form
-      - active_loop{"name": null}
-      - utter_slots_values
-  * thankyou: thanks
-      - utter_noworries
+  
+  ```yaml-rasa
+  e2e_tests:
+  - story: A test conversation with unexpected input during a form
+    steps:
+    - user: |
+       hi
+      intent: greet
+    - action: utter_greet
+    - user: |
+       im looking for a restaurant
+      intent: request_restaurant
+    - action: restaurant_form
+    - active_loop: restaurant_form
+    - user: |
+       can you share your boss with me? 
+    - action: utter_chitchat
+    - action: restaurant_form
+    - active_loop: null
+    - action: utter_slots_values
+    - user: |
+        thanks 
+      intent: thankyou
+    - action: utter_no_worries
   ```
 
   </TabItem>

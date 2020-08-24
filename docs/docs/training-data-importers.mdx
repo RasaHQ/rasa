@@ -20,7 +20,7 @@ You can instruct Rasa to load and use your custom importer by adding the section
 `importers` to the Rasa configuration file and specifying the importer with its
 full class path:
 
-```yaml
+```yaml-rasa
 importers:
 - name: "module.CustomImporter"
   parameter1: "value"
@@ -43,7 +43,7 @@ own, you don't have to specify anything in your configuration file.
 If you want to use it together with other importers, add it to your
 configuration file:
 
-```yaml
+```yaml-rasa
 importers:
 - name: "RasaFileImporter"
 ```
@@ -88,7 +88,7 @@ each project.
 To instruct Rasa to use the `MultiProjectImporter` module, put this section in the config
 file of your root project:
 
-```yaml
+```yaml-rasa
 importers:
 - name: MultiProjectImporter
 ```
@@ -96,14 +96,14 @@ importers:
 Then specify which projects you want to import.
 In our example, the `config.yml` in the root project would look like this:
 
-```yaml
+```yaml-rasa
 imports:
 - projects/ChitchatBot
 ```
 
 The configuration file of the `ChitchatBot` in turn references the `GreetBot`:
 
-```yaml
+```yaml-rasa
 imports:
 - ../GreetBot
 ```
