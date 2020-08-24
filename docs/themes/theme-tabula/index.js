@@ -6,7 +6,7 @@ module.exports = function (context, options) {
   const { customCss } = options || {};
 
   return {
-    name: 'theme-classic',
+    name: 'theme-tabula',
 
     getThemePath() {
       return path.resolve(__dirname, './theme');

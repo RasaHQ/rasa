@@ -118,7 +118,7 @@ module.exports = {
   },
   themes: [
     [
-      path.resolve(__dirname, './themes/theme-classic'),
+      path.resolve(__dirname, './themes/theme-tabula'),
       {
         customCss: require.resolve('./src/stylesheets/custom.scss'),
       },
