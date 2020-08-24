@@ -480,9 +480,11 @@ class TEDPolicy(Policy):
 
         return label_data, all_labels
 
-    def _get_label_features(self, label_ids: List[List[int]], all_data) -> Data:
+    def _get_label_features(
+        self, label_ids: List[List[int]], all_labels: List[Dict[Text, List["Features"]]]
+    ) -> Data:
         label_ids = [label_id[0] for label_id in label_ids]
-        label_data = [all_data[label_id] for label_id in label_ids]
+        label_data = [all_labels[label_id] for label_id in label_ids]
         label_attribute_data = self._convert_to_data_format(label_data)
 
         return label_attribute_data
@@ -491,7 +493,7 @@ class TEDPolicy(Policy):
         self,
         X: List[List[Dict[Text, List["Features"]]]],
         label_ids: Optional[List[List[int]]] = None,
-        all_data=None,
+        all_labels: Optional[List[Dict[Text, List["Features"]]]] = None,
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData.
 
@@ -510,9 +512,9 @@ class TEDPolicy(Policy):
         #  since it didn't create any features its attribute_mask will be 0
 
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
-        if label_ids:
+        if label_ids and all_labels:
             model_data.add_features(LABEL_KEY, LABEL_SUB_KEY, [np.array(label_ids)])
-            attribute_data = self._get_label_features(label_ids, all_data)
+            attribute_data = self._get_label_features(label_ids, all_labels)
             for attribute, attribute_features in attribute_data.items():
                 for subkey, features in attribute_features.items():
                     model_data.add_features(
@@ -541,10 +543,10 @@ class TEDPolicy(Policy):
         X, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
-        self._label_data, all_data = self._create_label_data(domain, interpreter)
+        self._label_data, all_labels = self._create_label_data(domain, interpreter)
 
         # extract actual training data to feed to model
-        model_data = self._create_model_data(X, label_ids, all_data)
+        model_data = self._create_model_data(X, label_ids, all_labels)
         if model_data.is_empty():
             logger.error(
                 f"Can not train '{self.__class__.__name__}'. No data was provided. "
