@@ -365,8 +365,10 @@ async def test_action_utter_retrieved_response(
         parse_data={
             "response_selector": {
                 "chitchat": {
-                    "response": {"text": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "full_retrieval_intent": "chitchat/ask_name",
+                        "name": [{"text": "I am a bot."}],
+                    }
                 }
             }
         },
@@ -394,8 +396,10 @@ async def test_action_utter_default_retrieved_response(
         parse_data={
             "response_selector": {
                 "default": {
-                    "response": {"text": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "full_retrieval_intent": "chitchat/ask_name",
+                        "name": [{"text": "I am a bot."}],
+                    }
                 }
             }
         },
@@ -406,6 +410,10 @@ async def test_action_utter_default_retrieved_response(
 
     assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
         "text"
+    )
+
+    assert (
+        events[0].as_dict().get("metadata").get("template_name") == "chitchat/ask_name"
     )
 
 

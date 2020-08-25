@@ -338,7 +338,7 @@ class ResponseSelector(DIETClassifier):
 
     def _full_response(
         self, label: Dict[Text, Any]
-    ) -> Optional[Tuple[Text, List[Dict[Text, Any]]]]:
+    ) -> Tuple[Any, List[Dict[Text, Any]]]:
         """Given a label return the full response based on the labels id.
 
         Args:
