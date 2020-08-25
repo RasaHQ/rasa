@@ -3,13 +3,14 @@ from typing import Text
 
 import pytest
 
-from rasa.core.domain import InvalidDomain
 import rasa.utils.io as io_utils
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.core.domain import InvalidDomain
 from rasa.nlu.constants import INTENT
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader, RasaYAMLWriter
 
 MULTILINE_INTENT_EXAMPLES = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: intent_name
   examples: |
@@ -17,29 +18,22 @@ nlu:
     - how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
 """
 
-MULTILINE_INTENT_EXAMPLE_WITH_SYNONYM = f"""
+MULTILINE_INTENT_EXAMPLE_WITH_SYNONYM = """
 nlu:
 - intent: intent_name
   examples: |
-    - flight from [boston]{{"entity": "city", "role": "from", "value": "bostn"}}?
+    - flight from [boston]{"entity": "city", "role": "from", "value": "bostn"}?
 """
 
-MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL = f"""
+MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL = """
 nlu:
 - intent: intent_name
   examples: |
     how much CO2 will that use?
-    - how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
-"""
-
-EXAMPLE_NO_VERSION_SPECIFIED = """
-nlu:
-- intent: intent_name
-  examples: |
     - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
 """
 
-INTENT_EXAMPLES_WITH_METADATA = f"""
+INTENT_EXAMPLES_WITH_METADATA = """
 nlu:
 - intent: intent_name
   metadata:
@@ -49,10 +43,10 @@ nlu:
     metadata:
       sentiment: positive
   - text: |
-      how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
+      how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
 """
 
-MINIMAL_VALID_EXAMPLE = f"""
+MINIMAL_VALID_EXAMPLE = """
 nlu:\n
 stories:
 """
@@ -72,6 +66,7 @@ nlu:
 """
 
 SYNONYM_EXAMPLE = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - synonym: savings
   examples: |
@@ -81,6 +76,7 @@ nlu:
 
 LOOKUP_ITEM_NAME = "additional_currencies"
 LOOKUP_EXAMPLE = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - lookup: {LOOKUP_ITEM_NAME}
   examples: |
@@ -93,6 +89,7 @@ REGEX_NAME = "zipcode"
 PATTERN_1 = "[0-9]{4}"
 PATTERN_2 = "[0-9]{5}"
 REGEX_EXAMPLE = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - regex: {REGEX_NAME}
   examples: |
@@ -140,6 +137,7 @@ def test_multiline_intent_is_parsed(example: Text):
     assert not len(training_data.entity_synonyms)
 
 
+# This test would work only with examples that have a `version` key specified
 @pytest.mark.parametrize(
     "example",
     [MULTILINE_INTENT_EXAMPLES, SYNONYM_EXAMPLE, LOOKUP_EXAMPLE, REGEX_EXAMPLE],
