@@ -283,7 +283,6 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _does_rule_match_state(rule_state: State, conversation_state: State) -> bool:
-
         for state_type, rule_sub_state in rule_state.items():
             conversation_sub_state = conversation_state.get(state_type, {})
             for key, value in rule_sub_state.items():
