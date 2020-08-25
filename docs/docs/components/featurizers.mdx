@@ -1,0 +1,547 @@
+---
+id: featurizers
+sidebar_label: Text Featurizers
+title: Text Featurizers
+---
+
+Text featurizers are divided into two different categories: sparse featurizers and dense featurizers.
+Sparse featurizers are featurizers that return feature vectors with a lot of missing values, e.g. zeros.
+As those feature vectors would normally take up a lot of memory, we store them as sparse features.
+Sparse features only store the values that are non zero and their positions in the vector.
+Thus, we save a lot of memory and are able to train on larger datasets.
+
+All featurizers can return two different kind of features: sequence features and sentence features.
+The sequence features are a matrix of size `(number-of-tokens x feature-dimension)`.
+The matrix contains a feature vector for every token in the sequence.
+This allows us to train sequence models.
+The sentence features are represented by a matrix of size `(1 x feature-dimension)`.
+It contains the feature vector for the complete utterance.
+The sentence features can be used in any bag-of-words model.
+The corresponding classifier can therefore decide what kind of features to use.
+Note: The `feature-dimension` for sequence and sentence features does not have to be the same.
+
+## MitieFeaturizer
+
+
+* **Short**
+
+  Creates a vector representation of user message and response (if specified) using the MITIE featurizer.
+
+
+
+* **Outputs**
+
+  `dense_features` for user messages and responses
+
+
+
+* **Requires**
+
+  [MitieNLP](../components/language-models.mdx#mitienlp)
+
+
+
+* **Type**
+
+  Dense featurizer
+
+
+
+* **Description**
+
+  Creates features for entity extraction, intent classification, and response classification using the MITIE
+  featurizer.
+
+  :::note
+  NOT used by the `MitieIntentClassifier` component. But can be used by any component later in the pipeline
+  that makes use of `dense_features`.
+
+  :::
+
+
+
+* **Configuration**
+
+  The sentence vector, i.e. the vector of the complete utterance, can be calculated in two different ways, either via
+  mean or via max pooling. You can specify the pooling method in your configuration file with the option `pooling`.
+  The default pooling method is set to `mean`.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "MitieFeaturizer"
+    # Specify what pooling operation should be used to calculate the vector of
+    # the complete utterance. Available options: 'mean' and 'max'.
+    "pooling": "mean"
+  ```
+
+
+## SpacyFeaturizer
+
+
+* **Short**
+
+  Creates a vector representation of user message and response (if specified) using the spaCy featurizer.
+
+
+
+* **Outputs**
+
+  `dense_features` for user messages and responses
+
+
+
+* **Requires**
+
+  [SpacyNLP](../components/language-models.mdx#spacynlp)
+
+
+
+* **Type**
+
+  Dense featurizer
+
+
+
+* **Description**
+
+  Creates features for entity extraction, intent classification, and response classification using the spaCy
+  featurizer.
+
+
+
+* **Configuration**
+
+  The sentence vector, i.e. the vector of the complete utterance, can be calculated in two different ways, either via
+  mean or via max pooling. You can specify the pooling method in your configuration file with the option `pooling`.
+  The default pooling method is set to `mean`.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "SpacyFeaturizer"
+    # Specify what pooling operation should be used to calculate the vector of
+    # the complete utterance. Available options: 'mean' and 'max'.
+    "pooling": "mean"
+  ```
+
+
+## ConveRTFeaturizer
+
+
+* **Short**
+
+  Creates a vector representation of user message and response (if specified) using
+  [ConveRT](https://github.com/PolyAI-LDN/polyai-models) model.
+
+
+
+* **Outputs**
+
+  `dense_features` for user messages and responses
+
+
+
+* **Requires**
+
+  [ConveRTTokenizer](../components/tokenizers.mdx#converttokenizer)
+
+
+
+* **Type**
+
+  Dense featurizer
+
+
+
+* **Description**
+
+  Creates features for entity extraction, intent classification, and response selection.
+  It uses the [default signature](https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures) to compute vector
+  representations of input text.
+
+  :::note
+  Since `ConveRT` model is trained only on an English corpus of conversations, this featurizer should only
+  be used if your training data is in English language.
+
+  :::
+
+  :::note
+  To use `ConveRTTokenizer`, install Rasa Open Source with `pip install rasa[convert]`.
+
+  :::
+
+
+
+* **Configuration**
+
+  ```yaml-rasa
+  pipeline:
+  - name: "ConveRTFeaturizer"
+  ```
+
+
+## LanguageModelFeaturizer
+
+
+* **Short**
+
+  Creates a vector representation of user message and response (if specified) using a pre-trained language model.
+
+
+
+* **Outputs**
+
+  `dense_features` for user messages and responses
+
+
+
+* **Requires**
+
+  [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer)
+
+
+
+* **Type**
+
+  Dense featurizer
+
+
+
+* **Description**
+
+  Creates features for entity extraction, intent classification, and response selection.
+  Uses the pre-trained language model specified in upstream [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) component to compute vector
+  representations of input text.
+
+  :::note
+  Please make sure that you use a language model which is pre-trained on the same language corpus as that of your
+  training data.
+
+  :::
+
+
+
+* **Configuration**
+
+  Include [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) components before this component. Use
+  [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "LanguageModelFeaturizer"
+  ```
+
+
+## RegexFeaturizer
+
+
+* **Short**
+
+  Creates a vector representation of user message using regular expressions.
+
+
+
+* **Outputs**
+
+  `sparse_features` for user messages and `tokens.pattern`
+
+
+
+* **Requires**
+
+  `tokens`
+
+
+
+* **Type**
+
+  Sparse featurizer
+
+
+
+* **Description**
+
+  Creates features for entity extraction and intent classification.
+  During training the `RegexFeaturizer` creates a list of regular expressions defined in the training
+  data format.
+  For each regex, a feature will be set marking whether this expression was found in the user message or not.
+  All features will later be fed into an intent classifier / entity extractor to simplify classification (assuming
+  the classifier has learned during the training phase, that this set feature indicates a certain intent / entity).
+  Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](../components/entity-extractors.mdx#crfentityextractor) and the
+  [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier) components!
+
+
+
+* **Configuration**
+
+  Make the featurizer case insensitive by adding the `case_sensitive: False` option, the default being
+  `case_sensitive: True`.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "RegexFeaturizer"
+    # Text will be processed with case sensitive as default
+    "case_sensitive": True
+  ```
+
+
+## CountVectorsFeaturizer
+
+
+* **Short**
+
+  Creates bag-of-words representation of user messages, intents, and responses.
+
+
+
+* **Outputs**
+
+  `sparse_features` for user messages, intents, and responses
+
+
+
+* **Requires**
+
+  `tokens`
+
+
+
+* **Type**
+
+  Sparse featurizer
+
+
+
+* **Description**
+
+  Creates features for intent classification and response selection.
+  Creates bag-of-words representation of user message, intent, and response using
+  [sklearn's CountVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html).
+  All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
+
+
+
+* **Configuration**
+
+  See [sklearn's CountVectorizer docs](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html)
+  for detailed description of the configuration parameters.
+
+  This featurizer can be configured to use word or character n-grams, using the `analyzer` configuration parameter.
+  By default `analyzer` is set to `word` so word token counts are used as features.
+  If you want to use character n-grams, set `analyzer` to `char` or `char_wb`.
+  The lower and upper boundaries of the n-grams can be configured via the parameters `min_ngram` and `max_ngram`.
+  By default both of them are set to `1`.
+
+  :::note
+  Option `char_wb` creates character n-grams only from text inside word boundaries;
+  n-grams at the edges of words are padded with space.
+  This option can be used to create [Subword Semantic Hashing](https://arxiv.org/abs/1810.07150).
+
+  :::
+
+  :::note
+  For character n-grams do not forget to increase `min_ngram` and `max_ngram` parameters.
+  Otherwise the vocabulary will contain only single letters.
+
+  :::
+
+  Handling Out-Of-Vocabulary (OOV) words:
+
+  :::note
+  Enabled only if `analyzer` is `word`.
+
+  :::
+
+  Since the training is performed on limited vocabulary data, it cannot be guaranteed that during prediction
+  an algorithm will not encounter an unknown word (a word that were not seen during training).
+  In order to teach an algorithm how to treat unknown words, some words in training data can be substituted
+  by generic word `OOV_token`.
+  In this case during prediction all unknown words will be treated as this generic word `OOV_token`.
+
+  For example, one might create separate intent `outofscope` in the training data containing messages of
+  different number of `OOV_token` s and maybe some additional general words.
+  Then an algorithm will likely classify a message with unknown words as this intent `outofscope`.
+
+  You can either set the `OOV_token` or a list of words `OOV_words`:
+
+  * `OOV_token` set a keyword for unseen words; if training data contains `OOV_token` as words in some
+    messages, during prediction the words that were not seen during training will be substituted with
+    provided `OOV_token`; if `OOV_token=None` (default behavior) words that were not seen during
+    training will be ignored during prediction time;
+
+  * `OOV_words` set a list of words to be treated as `OOV_token` during training; if a list of words
+    that should be treated as Out-Of-Vocabulary is known, it can be set to `OOV_words` instead of manually
+    changing it in training data or using custom preprocessor.
+
+  :::note
+  This featurizer creates a bag-of-words representation by **counting** words,
+  so the number of `OOV_token` in the sentence might be important.
+
+  :::
+
+  :::note
+  Providing `OOV_words` is optional, training data can contain `OOV_token` input manually or by custom
+  additional preprocessor.
+  Unseen words will be substituted with `OOV_token` **only** if this token is present in the training
+  data or `OOV_words` list is provided.
+
+  :::
+
+  If you want to share the vocabulary between user messages and intents, you need to set the option
+  `use_shared_vocab` to `True`. In that case a common vocabulary set between tokens in intents and user messages
+  is build.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "CountVectorsFeaturizer"
+    # Analyzer to use, either 'word', 'char', or 'char_wb'
+    "analyzer": "word"
+    # Set the lower and upper boundaries for the n-grams
+    "min_ngram": 1
+    "max_ngram": 1
+    # Set the out-of-vocabulary token
+    "OOV_token": "_oov_"
+    # Whether to use a shared vocab
+    "use_shared_vocab": False
+  ```
+
+  <details>
+    <summary>
+      The above configuration parameters are the ones you should configure to fit your model to your data.
+      However, additional parameters exist that can be adapted.
+    </summary>
+
+    ```
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | Parameter         | Default Value           | Description                                                  |
+    +===================+=========================+==============================================================+
+    | use_shared_vocab  | False                   | If set to 'True' a common vocabulary is used for labels      |
+    |                   |                         | and user message.                                            |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | analyzer          | word                    | Whether the features should be made of word n-gram or        |
+    |                   |                         | character n-grams. Option 'char_wb' creates character        |
+    |                   |                         | n-grams only from text inside word boundaries;               |
+    |                   |                         | n-grams at the edges of words are padded with space.         |
+    |                   |                         | Valid values: 'word', 'char', 'char_wb'.                     |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | strip_accents     | None                    | Remove accents during the pre-processing step.               |
+    |                   |                         | Valid values: 'ascii', 'unicode', 'None'.                    |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | stop_words        | None                    | A list of stop words to use.                                 |
+    |                   |                         | Valid values: 'english' (uses an internal list of            |
+    |                   |                         | English stop words), a list of custom stop words, or         |
+    |                   |                         | 'None'.                                                      |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | min_df            | 1                       | When building the vocabulary ignore terms that have a        |
+    |                   |                         | document frequency strictly lower than the given threshold.  |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | max_df            | 1                       | When building the vocabulary ignore terms that have a        |
+    |                   |                         | document frequency strictly higher than the given threshold  |
+    |                   |                         | (corpus-specific stop words).                                |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | min_ngram         | 1                       | The lower boundary of the range of n-values for different    |
+    |                   |                         | word n-grams or char n-grams to be extracted.                |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | max_ngram         | 1                       | The upper boundary of the range of n-values for different    |
+    |                   |                         | word n-grams or char n-grams to be extracted.                |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | max_features      | None                    | If not 'None', build a vocabulary that only consider the top |
+    |                   |                         | max_features ordered by term frequency across the corpus.    |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | lowercase         | True                    | Convert all characters to lowercase before tokenizing.       |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | OOV_token         | None                    | Keyword for unseen words.                                    |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | OOV_words         | []                      | List of words to be treated as 'OOV_token' during training.  |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | alias             | CountVectorFeaturizer   | Alias name of featurizer.                                    |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    ```
+
+  </details>
+
+
+## LexicalSyntacticFeaturizer
+
+
+* **Short**
+
+  Creates lexical and syntactic features for a user message to support entity extraction.
+
+
+
+* **Outputs**
+
+  `sparse_features` for user messages
+
+
+
+* **Requires**
+
+  `tokens`
+
+
+
+* **Type**
+
+  Sparse featurizer
+
+
+
+* **Description**
+
+  Creates features for entity extraction.
+  Moves with a sliding window over every token in the user message and creates features according to the
+  configuration (see below). As a default configuration is present, you don't need to specify a configuration.
+
+
+
+* **Configuration**
+
+  You can configure what kind of lexical and syntactic features the featurizer should extract.
+  The following features are available:
+
+  ```
+  ==============  ==========================================================================================
+  Feature Name    Description
+  ==============  ==========================================================================================
+  BOS             Checks if the token is at the beginning of the sentence.
+  EOS             Checks if the token is at the end of the sentence.
+  low             Checks if the token is lower case.
+  upper           Checks if the token is upper case.
+  title           Checks if the token starts with an uppercase character and all remaining characters are
+                  lowercased.
+  digit           Checks if the token contains just digits.
+  prefix5         Take the first five characters of the token.
+  prefix2         Take the first two characters of the token.
+  suffix5         Take the last five characters of the token.
+  suffix3         Take the last three characters of the token.
+  suffix2         Take the last two characters of the token.
+  suffix1         Take the last character of the token.
+  pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+  pos2            Take the first two characters of the Part-of-Speech tag of the token
+                  (``SpacyTokenizer`` required).
+  ==============  ==========================================================================================
+  ```
+
+  As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
+  previous tokens, the current token, and the next tokens in the sliding window.
+  You define the features as a [before, token, after] array.
+  If you want to define features for the token before, the current token, and the token after,
+  your features configuration would look like this:
+
+  ```yaml-rasa
+  pipeline:
+  - name: LexicalSyntacticFeaturizer
+    "features": [
+      ["low", "title", "upper"],
+      ["BOS", "EOS", "low", "upper", "title", "digit"],
+      ["low", "title", "upper"],
+    ]
+  ```
+
+  This configuration is also the default configuration.
+
+  :::note
+  If you want to make use of `pos` or `pos2` you need to add `SpacyTokenizer` to your pipeline.
+
+  :::

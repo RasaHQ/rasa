@@ -1,6 +1,8 @@
 import logging
 from typing import Any, Dict, List, Text, Tuple, Optional
 
+from rasa.core.utils import get_dict_hash
+from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
@@ -17,6 +19,7 @@ from rasa.nlu.constants import (
     TOKENS,
     SENTENCE_FEATURES,
     SEQUENCE_FEATURES,
+    NUMBER_OF_SUB_TOKENS,
 )
 
 logger = logging.getLogger(__name__)
@@ -93,6 +96,15 @@ class HFTransformersNLP(Component):
         self.pad_token_id = self.tokenizer.unk_token_id
 
     @classmethod
+    def cache_key(
+        cls, component_meta: Dict[Text, Any], model_metadata: Metadata
+    ) -> Optional[Text]:
+
+        weights = component_meta.get("model_weights") or {}
+
+        return f"{cls.name}-{component_meta.get('model_name')}-{get_dict_hash(weights)}"
+
+    @classmethod
     def required_packages(cls) -> List[Text]:
         return ["transformers"]
 
@@ -116,7 +128,8 @@ class HFTransformersNLP(Component):
     def _add_lm_specific_special_tokens(
         self, token_ids: List[List[int]]
     ) -> List[List[int]]:
-        """Add language model specific special tokens which were used during their training.
+        """Add language model specific special tokens which were used during their
+        training.
 
         Args:
             token_ids: List of token ids for each example in the batch.
@@ -139,12 +152,15 @@ class HFTransformersNLP(Component):
     ) -> Tuple[List[int], List[Text]]:
         """Clean up special chars added by tokenizers of language models.
 
-        Many language models add a special char in front/back of (some) words. We clean up those chars as they are not
+        Many language models add a special char in front/back of (some) words. We clean
+        up those chars as they are not
         needed once the features are already computed.
 
         Args:
-            split_token_ids: List of token ids received as output from the language model specific tokenizer.
-            token_strings: List of token strings received as output from the language model specific tokenizer.
+            split_token_ids: List of token ids received as output from the language
+            model specific tokenizer.
+            token_strings: List of token strings received as output from the language
+            model specific tokenizer.
 
         Returns:
             Cleaned up token ids and token strings.
@@ -156,10 +172,12 @@ class HFTransformersNLP(Component):
     def _post_process_sequence_embeddings(
         self, sequence_embeddings: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Compute sentence level representations and sequence level representations for relevant tokens.
+        """Compute sentence level representations and sequence level representations
+        for relevant tokens.
 
         Args:
-            sequence_embeddings: Sequence level dense features received as output from language model.
+            sequence_embeddings: Sequence level dense features received as output from
+            language model.
 
         Returns:
             Sentence and sequence level representations.
@@ -191,18 +209,20 @@ class HFTransformersNLP(Component):
     ) -> Tuple[List[Token], List[int]]:
         """Tokenize a single message example.
 
-        Many language models add a special char in front of (some) words and split words into
-        sub-words. To ensure the entity start and end values matches the token values,
-        tokenize the text first using the whitespace tokenizer. If individual tokens
-        are split up into multiple tokens, we make sure that the start and end value
-        of the first and last respective tokens stay the same.
+        Many language models add a special char in front of (some) words and split
+        words into sub-words. To ensure the entity start and end values matches the
+        token values, tokenize the text first using the whitespace tokenizer. If
+        individual tokens are split up into multiple tokens, we add this information
+        to the respected token.
 
         Args:
             message: Single message object to be processed.
-            attribute: Property of message to be processed, one of ``TEXT`` or ``RESPONSE``.
+            attribute: Property of message to be processed, one of ``TEXT`` or
+            ``RESPONSE``.
 
         Returns:
-            List of token strings and token ids for the corresponding attribute of the message.
+            List of token strings and token ids for the corresponding attribute of the
+            message.
         """
 
         tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
@@ -221,9 +241,9 @@ class HFTransformersNLP(Component):
 
             token_ids_out += split_token_ids
 
-            tokens_out += train_utils.align_tokens(
-                split_token_strings, token.end, token.start
-            )
+            token.set(NUMBER_OF_SUB_TOKENS, len(split_token_strings))
+
+            tokens_out.append(token)
 
         return tokens_out, token_ids_out
 
@@ -234,8 +254,10 @@ class HFTransformersNLP(Component):
 
         A token id is the id of that token in the vocabulary of the language model.
         Args:
-            batch_examples: Batch of message objects for which tokens need to be computed.
-            attribute: Property of message to be processed, one of ``TEXT`` or ``RESPONSE``.
+            batch_examples: Batch of message objects for which tokens need to be
+            computed.
+            attribute: Property of message to be processed, one of ``TEXT`` or
+            ``RESPONSE``.
 
         Returns:
             List of token strings and token ids for each example in the batch.
@@ -257,7 +279,8 @@ class HFTransformersNLP(Component):
     def _compute_attention_mask(actual_sequence_lengths: List[int]) -> np.ndarray:
         """Compute a mask for padding tokens.
 
-        This mask will be used by the language model so that it does not attend to padding tokens.
+        This mask will be used by the language model so that it does not attend to
+        padding tokens.
 
         Args:
             actual_sequence_lengths: List of length of each example without any padding
@@ -286,7 +309,8 @@ class HFTransformersNLP(Component):
         """Add padding so that all examples in the batch are of the same length.
 
         Args:
-            batch_token_ids: Batch of examples where each example is a non-padded list of token ids.
+            batch_token_ids: Batch of examples where each example is a non-padded list
+            of token ids.
 
         Returns:
             Padded batch with all examples of the same length.
@@ -315,7 +339,8 @@ class HFTransformersNLP(Component):
     def _extract_nonpadded_embeddings(
         embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ) -> np.ndarray:
-        """Use pre-computed non-padded lengths of each example to extract embeddings for non-padding tokens.
+        """Use pre-computed non-padded lengths of each example to extract embeddings
+        for non-padding tokens.
 
         Args:
             embeddings: sequence level representations for each example of the batch.
@@ -337,8 +362,10 @@ class HFTransformersNLP(Component):
         """Feed the padded batch to the language model.
 
         Args:
-            batch_attention_mask: Mask of 0s and 1s which indicate whether the token is a padding token or not.
-            padded_token_ids: Batch of token ids for each example. The batch is padded and hence can be fed at once.
+            batch_attention_mask: Mask of 0s and 1s which indicate whether the token
+            is a padding token or not.
+            padded_token_ids: Batch of token ids for each example. The batch is padded
+            and hence can be fed at once.
 
         Returns:
             Sequence level representations from the language model.
@@ -354,14 +381,16 @@ class HFTransformersNLP(Component):
         return sequence_hidden_states
 
     def _get_model_features_for_batch(
-        self, batch_token_ids: List[List[int]]
+        self, batch_token_ids: List[List[int]], batch_tokens: List[List[Token]]
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Compute dense features of each example in the batch.
 
-        We first add the special tokens corresponding to each language model. Next, we add appropriate padding
-        and compute a mask for that padding so that it doesn't affect the feature computation. The padded batch is next
-        fed to the language model and token level embeddings are computed. Using the pre-computed mask, embeddings for
-        non-padding tokens are extracted and subsequently sentence level embeddings are computed.
+        We first add the special tokens corresponding to each language model. Next, we
+        add appropriate padding and compute a mask for that padding so that it doesn't
+        affect the feature computation. The padded batch is next fed to the language
+        model and token level embeddings are computed. Using the pre-computed mask,
+        embeddings for non-padding tokens are extracted and subsequently sentence
+        level embeddings are computed.
 
         Args:
             batch_token_ids: List of token ids of each example in the batch.
@@ -395,8 +424,27 @@ class HFTransformersNLP(Component):
         # Extract sentence level and post-processed features
         (
             sentence_embeddings,
-            sequence_final_embeddings,
+            sequence_embeddings,
         ) = self._post_process_sequence_embeddings(sequence_nonpadded_embeddings)
+
+        # shape of matrix for all sequence embeddings
+        batch_dim = len(sequence_embeddings)
+        seq_dim = max(e.shape[0] for e in sequence_embeddings)
+        feature_dim = sequence_embeddings[0].shape[1]
+        shape = (batch_dim, seq_dim, feature_dim)
+
+        # align features with tokens so that we have just one vector per token
+        # (don't include sub-tokens)
+        sequence_embeddings = train_utils.align_token_features(
+            batch_tokens, sequence_embeddings, shape
+        )
+
+        # sequence_embeddings is a padded numpy array
+        # remove the padding, keep just the non-zero vectors
+        sequence_final_embeddings = []
+        for embeddings, tokens in zip(sequence_embeddings, batch_tokens):
+            sequence_final_embeddings.append(embeddings[: len(tokens)])
+        sequence_final_embeddings = np.array(sequence_final_embeddings)
 
         return sentence_embeddings, sequence_final_embeddings
 
@@ -406,8 +454,10 @@ class HFTransformersNLP(Component):
         """Compute language model docs for all examples in the batch.
 
         Args:
-            batch_examples: Batch of message objects for which language model docs need to be computed.
-            attribute: Property of message to be processed, one of ``TEXT`` or ``RESPONSE``.
+            batch_examples: Batch of message objects for which language model docs
+            need to be computed.
+            attribute: Property of message to be processed, one of ``TEXT`` or
+            ``RESPONSE``.
 
         Returns:
             List of language model docs for each message in batch.
@@ -420,10 +470,11 @@ class HFTransformersNLP(Component):
         (
             batch_sentence_features,
             batch_sequence_features,
-        ) = self._get_model_features_for_batch(batch_token_ids)
+        ) = self._get_model_features_for_batch(batch_token_ids, batch_tokens)
 
         # A doc consists of
-        # {'token_ids': ..., 'tokens': ..., 'sequence_features': ..., 'sentence_features': ...}
+        # {'token_ids': ..., 'tokens': ..., 'sequence_features': ...,
+        # 'sentence_features': ...}
         batch_docs = []
         for index in range(len(batch_examples)):
             doc = {
@@ -468,7 +519,8 @@ class HFTransformersNLP(Component):
                 # Collect batch examples
                 batch_messages = non_empty_examples[batch_start_index:batch_end_index]
 
-                # Construct a doc with relevant features extracted(tokens, dense_features)
+                # Construct a doc with relevant features
+                # extracted(tokens, dense_features)
                 batch_docs = self._get_docs_for_batch(batch_messages, attribute)
 
                 for index, ex in enumerate(batch_messages):

@@ -7,10 +7,7 @@ import rasa.cli.utils as cli_utils
 import rasa.core.utils as rasa_core_utils
 from rasa.cli.arguments import export as arguments
 from rasa.constants import DOCS_URL_TRACKER_STORES, DOCS_URL_EVENT_BROKERS
-from rasa.exceptions import (
-    PublishingError,
-    RasaException,
-)
+from rasa.exceptions import PublishingError, RasaException
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -220,7 +217,7 @@ def _get_continuation_command(exporter: "Exporter", timestamp: float) -> Text:
 
     """
     # build CLI command command based on supplied timestamp and options
-    command = f"rasa export"
+    command = "rasa export"
 
     if exporter.endpoints_path is not None:
         command += f" --endpoints {exporter.endpoints_path}"

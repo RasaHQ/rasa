@@ -1,56 +1,16 @@
-from typing import Optional, Text
+from typing import Text
 
 import pytest
-import tempfile
-from jsonschema import ValidationError
 
-from rasa.nlu.constants import TEXT
+import rasa.utils.io as io_utils
 from rasa.nlu import training_data
+from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
 from rasa.nlu.convert import convert_training_data
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.formats import MarkdownReader, MarkdownWriter
-from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data, RasaReader
-from rasa.nlu.training_data.loading import guess_format, UNK, load_data
+from rasa.nlu.training_data.loading import guess_format, UNK, RASA_YAML, JSON, MARKDOWN
 from rasa.nlu.training_data.util import get_file_format
-import rasa.utils.io as io_utils
-
-
-def test_example_training_data_is_valid():
-    demo_json = "data/examples/rasa/demo-rasa.json"
-    data = io_utils.read_json_file(demo_json)
-    validate_rasa_nlu_data(data)
-
-
-@pytest.mark.parametrize(
-    "invalid_data",
-    [
-        {"wrong_top_level": []},
-        ["this is not a toplevel dict"],
-        {
-            "rasa_nlu_data": {
-                "common_examples": [{"intent": "some example without text"}]
-            }
-        },
-        {
-            "rasa_nlu_data": {
-                "common_examples": [
-                    {
-                        "text": "mytext",
-                        "entities": [{"start": "INVALID", "end": 0, "entity": "x"}],
-                    }
-                ]
-            }
-        },
-    ],
-)
-def test_validation_is_throwing_exceptions(invalid_data):
-    with pytest.raises(ValidationError):
-        validate_rasa_nlu_data(invalid_data)
 
 
 def test_luis_data():
@@ -106,32 +66,41 @@ def test_lookup_table_json():
     lookup_fname = "data/test/lookup_tables/plates.txt"
     td_lookup = training_data.load_data("data/test/lookup_tables/lookup_table.json")
     assert not td_lookup.is_empty()
+    assert len(td_lookup.lookup_tables) == 1
     assert td_lookup.lookup_tables[0]["name"] == "plates"
     assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
-    assert td_lookup.lookup_tables[1]["name"] == "drinks"
-    assert td_lookup.lookup_tables[1]["elements"] == [
-        "mojito",
-        "lemonade",
-        "sweet berry wine",
-        "tea",
-        "club mate",
-    ]
 
 
 def test_lookup_table_md():
     lookup_fname = "data/test/lookup_tables/plates.txt"
     td_lookup = training_data.load_data("data/test/lookup_tables/lookup_table.md")
     assert not td_lookup.is_empty()
+    assert len(td_lookup.lookup_tables) == 1
     assert td_lookup.lookup_tables[0]["name"] == "plates"
     assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
-    assert td_lookup.lookup_tables[1]["name"] == "drinks"
-    assert td_lookup.lookup_tables[1]["elements"] == [
-        "mojito",
-        "lemonade",
-        "sweet berry wine",
-        "tea",
-        "club mate",
-    ]
+
+
+def test_composite_entities_data():
+    td = training_data.load_data("data/test/demo-rasa-composite-entities.md")
+    assert not td.is_empty()
+    assert len(td.entity_examples) == 11
+    assert len(td.intent_examples) == 45
+    assert len(td.training_examples) == 45
+    assert td.entity_synonyms == {"SF": "San Fransisco"}
+    assert td.intents == {
+        "order_pizza",
+        "book_flight",
+        "chitchat",
+        "greet",
+        "goodbye",
+        "affirm",
+    }
+    assert td.entities == {"location", "topping", "size"}
+    assert td.entity_groups == {"1", "2"}
+    assert td.entity_roles == {"to", "from"}
+    assert td.number_of_examples_per_entity["entity 'location'"] == 8
+    assert td.number_of_examples_per_entity["group '1'"] == 9
+    assert td.number_of_examples_per_entity["role 'from'"] == 3
 
 
 @pytest.mark.parametrize(
@@ -153,12 +122,12 @@ def test_demo_data(files):
     td = training_data_from_paths(files, language="en")
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
+    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
     assert len(td.response_examples) == 4
     assert len(td.entity_examples) == 11
-    assert len(td.nlg_stories) == 2
+    assert len(td.responses) == 2
 
     assert td.entity_synonyms == {
         "Chines": "chinese",
@@ -175,6 +144,37 @@ def test_demo_data(files):
 
 
 @pytest.mark.parametrize(
+    "files",
+    [
+        [
+            "data/examples/rasa/demo-rasa.json",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+        [
+            "data/examples/rasa/demo-rasa.md",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+    ],
+)
+def test_demo_data_filter_out_retrieval_intents(files):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(files, language="en")
+    assert len(td.training_examples) == 46
+
+    td1 = td.filter_training_examples(lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is None)
+    assert len(td1.training_examples) == 42
+
+    td2 = td.filter_training_examples(
+        lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is not None
+    )
+    assert len(td2.training_examples) == 4
+
+    # make sure filtering operation doesn't mutate the source training data
+    assert len(td.training_examples) == 46
+
+
+@pytest.mark.parametrize(
     "filepaths",
     [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
 )
@@ -182,15 +182,33 @@ def test_train_test_split(filepaths):
     from rasa.importers.utils import training_data_from_paths
 
     td = training_data_from_paths(filepaths, language="en")
+
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
+    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
+
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
+    assert len(td.response_examples) == 4
 
     td_train, td_test = td.train_test_split(train_frac=0.8)
 
-    assert len(td_train.training_examples) == 35
-    assert len(td_test.training_examples) == 11
+    assert len(td_test.training_examples) + len(td_train.training_examples) == 46
+    assert len(td_train.training_examples) == 34
+    assert len(td_test.training_examples) == 12
+
+    assert len(td.number_of_examples_per_intent.keys()) == len(
+        td_test.number_of_examples_per_intent.keys()
+    )
+    assert len(td.number_of_examples_per_intent.keys()) == len(
+        td_train.number_of_examples_per_intent.keys()
+    )
+    assert len(td.number_of_examples_per_response.keys()) == len(
+        td_test.number_of_examples_per_response.keys()
+    )
+    assert len(td.number_of_examples_per_response.keys()) == len(
+        td_train.number_of_examples_per_response.keys()
+    )
 
 
 @pytest.mark.parametrize(
@@ -246,7 +264,7 @@ def test_markdown_single_sections():
     assert td_syn_only.entity_synonyms == {"Chines": "chinese", "Chinese": "chinese"}
 
 
-def test_repeated_entities():
+def test_repeated_entities(tmp_path):
     data = """
 {
   "rasa_nlu_data": {
@@ -266,21 +284,20 @@ def test_repeated_entities():
     ]
   }
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert len(td.entity_examples) == 1
-        example = td.entity_examples[0]
-        entities = example.get("entities")
-        assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
-        assert start == 9
-        assert end == 10
+    f = tmp_path / "tmp_training_data.json"
+    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    td = training_data.load_data(str(f))
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example.get("entities")
+    assert len(entities) == 1
+    tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
+    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    assert start == 9
+    assert end == 10
 
 
-def test_multiword_entities():
+def test_multiword_entities(tmp_path):
     data = """
 {
   "rasa_nlu_data": {
@@ -300,21 +317,20 @@ def test_multiword_entities():
     ]
   }
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert len(td.entity_examples) == 1
-        example = td.entity_examples[0]
-        entities = example.get("entities")
-        assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
-        assert start == 4
-        assert end == 7
+    f = tmp_path / "tmp_training_data.json"
+    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    td = training_data.load_data(str(f))
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example.get("entities")
+    assert len(entities) == 1
+    tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
+    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    assert start == 4
+    assert end == 7
 
 
-def test_nonascii_entities():
+def test_nonascii_entities(tmp_path):
     data = """
 {
   "luis_schema_version": "5.0",
@@ -332,22 +348,21 @@ def test_nonascii_entities():
     }
   ]
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert len(td.entity_examples) == 1
-        example = td.entity_examples[0]
-        entities = example.get("entities")
-        assert len(entities) == 1
-        entity = entities[0]
-        assert entity["value"] == "ßäæ ?€ö)"
-        assert entity["start"] == 19
-        assert entity["end"] == 27
-        assert entity["entity"] == "description"
+    f = tmp_path / "tmp_training_data.json"
+    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    td = training_data.load_data(str(f))
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example.get("entities")
+    assert len(entities) == 1
+    entity = entities[0]
+    assert entity["value"] == "ßäæ ?€ö)"
+    assert entity["start"] == 19
+    assert entity["end"] == 27
+    assert entity["entity"] == "description"
 
 
-def test_entities_synonyms():
+def test_entities_synonyms(tmp_path):
     data = """
 {
   "rasa_nlu_data": {
@@ -385,11 +400,10 @@ def test_entities_synonyms():
     ]
   }
 }"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode(io_utils.DEFAULT_ENCODING))
-        f.flush()
-        td = training_data.load_data(f.name)
-        assert td.entity_synonyms["New York City"] == "nyc"
+    f = tmp_path / "tmp_training_data.json"
+    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    td = training_data.load_data(str(f))
+    assert td.entity_synonyms["New York City"] == "nyc"
 
 
 def cmp_message_list(firsts, seconds):
@@ -406,7 +420,7 @@ def cmp_dict_list(firsts, seconds):
                 del seconds[idx]
                 break
         else:
-            others = ", ".join([e.text for e in seconds])
+            others = ", ".join(e.text for e in seconds)
             assert False, f"Failed to find message {a.text} in {others}"
     return not seconds
 
@@ -487,222 +501,50 @@ def test_training_data_conversion(
     #     f.write(td.as_json(indent=2))
 
 
-def test_url_data_format():
-    data = """
-    {
-      "rasa_nlu_data": {
-        "entity_synonyms": [
-          {
-            "value": "nyc",
-            "synonyms": ["New York City", "nyc", "the big apple"]
-          }
-        ],
-        "common_examples" : [
-          {
-            "text": "show me flights to New York City",
-            "intent": "unk",
-            "entities": [
-              {
-                "entity": "destination",
-                "start": 19,
-                "end": 32,
-                "value": "NYC"
-              }
-            ]
-          }
-        ]
-      }
-    }"""
-    fname = io_utils.create_temporary_file(
-        data.encode(io_utils.DEFAULT_ENCODING),
-        suffix="_tmp_training_data.json",
-        mode="w+b",
-    )
-    data = io_utils.read_json_file(fname)
-    assert data is not None
-    validate_rasa_nlu_data(data)
+@pytest.mark.parametrize(
+    "data_file,expected_format",
+    [
+        ("data/examples/luis/demo-restaurants_v5.json", JSON),
+        ("data/examples", JSON),
+        ("data/examples/rasa/demo-rasa.md", MARKDOWN),
+        ("data/rasa_yaml_examples", RASA_YAML),
+    ],
+)
+def test_get_supported_file_format(data_file: Text, expected_format: Text):
+    fformat = get_file_format(data_file)
+    assert fformat == expected_format
 
 
-def test_markdown_entity_regex():
-    r = MarkdownReader()
-
-    md = """
-## intent:restaurant_search
-- i'm looking for a place to eat
-- i'm looking for a place in the [north](loc-direction) of town
-- show me [chines](cuisine:chinese) restaurants
-- show me [chines](22_ab-34*3.A:43er*+?df) restaurants
-    """
-
-    result = r.reads(md)
-
-    assert len(result.training_examples) == 4
-    first = result.training_examples[0]
-    assert first.data == {"intent": "restaurant_search"}
-    assert first.text == "i'm looking for a place to eat"
-
-    second = result.training_examples[1]
-    assert second.data == {
-        "intent": "restaurant_search",
-        "entities": [
-            {"start": 31, "end": 36, "value": "north", "entity": "loc-direction"}
-        ],
-    }
-    assert second.text == "i'm looking for a place in the north of town"
-
-    third = result.training_examples[2]
-    assert third.data == {
-        "intent": "restaurant_search",
-        "entities": [{"start": 8, "end": 14, "value": "chinese", "entity": "cuisine"}],
-    }
-    assert third.text == "show me chines restaurants"
-
-    fourth = result.training_examples[3]
-    assert fourth.data == {
-        "intent": "restaurant_search",
-        "entities": [
-            {"start": 8, "end": 14, "value": "43er*+?df", "entity": "22_ab-34*3.A"}
-        ],
-    }
-    assert fourth.text == "show me chines restaurants"
-
-
-def test_get_file_format():
-    fformat = get_file_format("data/examples/luis/demo-restaurants_v5.json")
-
-    assert fformat == "json"
-
-    fformat = get_file_format("data/examples")
-
-    assert fformat == "json"
-
-    fformat = get_file_format("examples/restaurantbot/data/nlu.md")
-
-    assert fformat == "md"
-
+@pytest.mark.parametrize("data_file", ["path-does-not-exists", None])
+def test_get_non_existing_file_format_raises(data_file: Text):
     with pytest.raises(AttributeError):
-        get_file_format("path-does-not-exists")
-
-    with pytest.raises(AttributeError):
-        get_file_format(None)
+        get_file_format(data_file)
 
 
 def test_guess_format_from_non_existing_file_path():
     assert guess_format("not existing path") == UNK
 
 
-def test_load_data_from_non_existing_file():
-    with pytest.raises(ValueError):
-        load_data("some path")
-
-
 def test_is_empty():
     assert TrainingData().is_empty()
 
 
-def test_markdown_empty_section():
-    data = training_data.load_data(
-        "data/test/markdown_single_sections/empty_section.md"
-    )
-    assert data.regex_features == [{"name": "greet", "pattern": r"hey[^\s]*"}]
-
-    assert not data.entity_synonyms
-    assert len(data.lookup_tables) == 1
-    assert data.lookup_tables[0]["name"] == "chinese"
-    assert "Chinese" in data.lookup_tables[0]["elements"]
-    assert "Chines" in data.lookup_tables[0]["elements"]
-
-
-def test_markdown_not_existing_section():
-    with pytest.raises(ValueError):
-        training_data.load_data(
-            "data/test/markdown_single_sections/not_existing_section.md"
-        )
-
-
-def test_section_value_with_delimiter():
-    td_section_with_delimiter = training_data.load_data(
-        "data/test/markdown_single_sections/section_with_delimiter.md"
-    )
-    assert td_section_with_delimiter.entity_synonyms == {"10:00 am": "10:00"}
-
-
-def test_markdown_order():
-    r = MarkdownReader()
-
-    md = """## intent:z
-- i'm looking for a place to eat
-- i'm looking for a place in the [north](loc-direction) of town
-
-## intent:a
-- intent a
-- also very important
-"""
-
-    training_data = r.reads(md)
-    assert training_data.nlu_as_markdown() == md
-
-
-def test_dump_nlu_with_responses():
-    md = """## intent:greet
-- hey
-- howdy
-- hey there
-- hello
-- hi
-- good morning
-- good evening
-- dear sir
-
-## intent:chitchat/ask_name
-- What's your name?
-- What can I call you?
-
-## intent:chitchat/ask_weather
-- How's the weather?
-- Is it too hot outside?
-"""
-
-    r = MarkdownReader()
-    nlu_data = r.reads(md)
-
-    dumped = nlu_data.nlu_as_markdown()
-    assert dumped == md
-
-
-@pytest.mark.parametrize(
-    "entity_extractor,expected_output",
-    [
-        (None, "- [test](word:random)"),
-        ("", "- [test](word:random)"),
-        ("random-extractor", "- [test](word:random)"),
-        (CRFEntityExtractor.__name__, "- [test](word:random)"),
-        (DucklingHTTPExtractor.__name__, "- test"),
-        (SpacyEntityExtractor.__name__, "- test"),
-        (MitieEntityExtractor.__name__, "- [test](word:random)"),
-    ],
-)
-def test_dump_trainable_entities(
-    entity_extractor: Optional[Text], expected_output: Text
-):
-    training_data_json = {
-        "rasa_nlu_data": {
-            "common_examples": [
-                {
-                    "text": "test",
-                    "intent": "greet",
-                    "entities": [
-                        {"start": 0, "end": 4, "value": "random", "entity": "word"}
-                    ],
-                }
-            ]
-        }
-    }
-    if entity_extractor is not None:
-        training_data_json["rasa_nlu_data"]["common_examples"][0]["entities"][0][
-            "extractor"
-        ] = entity_extractor
-
-    training_data_object = RasaReader().read_from_json(training_data_json)
-    md_dump = MarkdownWriter().dumps(training_data_object)
-    assert md_dump.splitlines()[1] == expected_output
+def test_custom_attributes(tmp_path):
+    data = """
+{
+  "rasa_nlu_data": {
+    "common_examples" : [
+      {
+        "intent": "happy",
+        "text": "I'm happy.",
+        "sentiment": 0.8
+      }
+    ]
+  }
+}"""
+    f = tmp_path / "tmp_training_data.json"
+    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    td = training_data.load_data(str(f))
+    assert len(td.training_examples) == 1
+    example = td.training_examples[0]
+    assert example.get("sentiment") == 0.8

@@ -1,0 +1,158 @@
+---
+id: model-storage
+sidebar_label: Model Storage
+title: Model Storage
+---
+
+Rasa can load your model in three different ways:
+
+1. Fetch the model from a server (see [Fetching Models from a Server](./model-storage.mdx#server-fetch-from-server)), or
+
+2. Fetch the model from a remote storage (see [Remote Storage](./model-storage.mdx#server-fetch-from-remote-storage)).
+
+3. Load the model specified via `-m` from your local storage system.
+
+Rasa tries to load a model in the above mentioned order, i.e. it only tries to load your model from your local
+storage system if no model server and no remote storage were configured.
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-fetch-from-server"></a>
+
+## Fetching Models from a Server
+
+You can configure the HTTP server to fetch models from another URL
+by adding it to your `endpoints.yml`. The server will then
+reguarly query this URL for zipped models.
+
+```yaml-rasa
+models:
+  url: http://my-server.com/models/default@latest
+  wait_time_between_pulls: 10   # In seconds, optional, default: 100
+```
+
+:::note
+If you want to pull the model just once from the server, set
+`wait_time_between_pulls` to `None`.
+
+:::
+
+:::note
+Your model server must provide zipped Rasa models, and have
+`{"ETag": <model_hash_string>}` as one of its headers. Rasa will
+only download a new model if this model hash has changed.
+
+:::
+
+Rasa sends requests to your model server with an `If-None-Match`
+header that contains the current model hash. If your model server can
+provide a model with a different hash from the one you sent, it should send it
+in as a zip file with an `ETag` header containing the new hash. If not, Rasa
+expects an empty response with a `204` or `304` status code.
+
+An example request Rasa might make to your model server looks like this:
+
+```bash
+curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default@latest
+```
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-fetch-from-remote-storage"></a>
+
+## Fetching Models from Remote Storage
+
+You can also configure the Rasa server to fetch your model from a remote storage:
+
+```bash
+rasa run -m 20190506-100418.tar.gz --remote-storage aws
+```
+
+The model will be downloaded and stored in a temporary directory on your local storage system.
+
+Rasa supports using [S3](https://aws.amazon.com/s3/) ,
+[GCS](https://cloud.google.com/storage/) and [Azure Storage](https://azure.microsoft.com/services/storage/) to save your models.
+
+* Amazon S3 Storage
+
+  S3 is supported using the `boto3` module which you can
+  install with `pip install boto3`.
+
+  Start the Rasa server with `remote-storage` option set to
+  `aws`. Get your S3 credentials and set the following
+  environment variables:
+
+    * `AWS_SECRET_ACCESS_KEY`
+
+    * `AWS_ACCESS_KEY_ID`
+
+    * `AWS_DEFAULT_REGION`
+
+    * `BUCKET_NAME`
+
+    * `AWS_ENDPOINT_URL`
+
+  If there is no bucket with the name `BUCKET_NAME`, Rasa will create it.
+
+* Google Cloud Storage
+
+  GCS is supported using the `google-cloud-storage` package,
+  which you can install with `pip install google-cloud-storage`.
+
+  Start the Rasa server with `remote-storage` option set to `gcs`.
+
+  When running on google app engine and compute engine, the auth
+  credentials are already set up. For running locally or elsewhere,
+  checkout their
+  [client repo](https://github.com/GoogleCloudPlatform/python-docs-samples/tree/master/storage/cloud-client#authentication)
+  for details on setting up authentication. It involves creating
+  a service account key file from google cloud console,
+  and setting the `GOOGLE_APPLICATION_CREDENTIALS` environment
+  variable to the path of that key file.
+
+* Azure Storage
+
+  Azure is supported using the legacy `azure-storage-blob` package (v 2.1.0),
+  which you can install with `pip install -I azure-storage-blob==2.1.0`.
+
+  Start the Rasa server with `remote-storage` option set to `azure`.
+
+  The following environment variables must be set:
+
+    * `AZURE_CONTAINER`
+
+    * `AZURE_ACCOUNT_NAME`
+
+    * `AZURE_ACCOUNT_KEY`
+
+  If there is no container with the name `AZURE_CONTAINER`, Rasa will create it.
+
+* Other Remote Storage
+
+  Support for other remote storages can be achieved by using an external library or implementing
+  a custom module for it by extending the `rasa.nlu.persistor.Persistor` class.
+
+  Start the Rasa server with `remote-storage` option set to the module path of model persistor.
+
+  An example command is:
+
+  ```bash
+  rasa run --remote-storage <your module>.<class name>
+  ```
+
+Models are gzipped before they are saved in the cloud. The gzipped file naming convention
+is `{MODEL_NAME}.tar.gz` and it is stored in the root folder of the storage service.
+Currently, you are not able to manually specify the path on the cloud storage.
+
+If storing trained models, Rasa will gzip the new model and upload it to the container. If retrieving/loading models
+from the cloud storage, Rasa will download the gzipped model locally and extract the contents to a temporary directory.
+
+
+## Fetching Models from Local Storage
+
+If you do not configure any other storage, Rasa will try to load models from local storage.
+You can specify the path to your model with the `-m` parameter:
+
+```bash
+rasa run -m models/20190506-100418.tar.gz
+```
+
+You can also specify a path to a directory instead of a specific model; Rasa will
+then load the model with the latest timestamp in that directory. If you do not
+specify the `-m` parameter, it will look for models in the default `models` path.

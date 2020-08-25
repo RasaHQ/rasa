@@ -1,10 +1,17 @@
 language: en
 
-pipeline: "pretrained_embeddings_spacy"
+pipeline:
+  - name: SpacyNLP
+  - name: SpacyTokenizer
+  - name: SpacyFeaturizer
+  - name: RegexFeaturizer
+  - name: CRFEntityExtractor
+  - name: EntitySynonymMapper
+  - name: SklearnIntentClassifier
 
 policies:
   - name: MemoizationPolicy
-  - name: KerasPolicy
+  - name: TEDPolicy
 
 importers:
   - name: MultiProjectImporter

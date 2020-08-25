@@ -1,8 +1,9 @@
+import sys
 import argparse
 import logging
+import platform
 
 import rasa.utils.io
-
 from rasa import version
 from rasa.cli import (
     scaffold,
@@ -18,8 +19,9 @@ from rasa.cli import (
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
-from rasa.utils.common import set_log_level
+from rasa.utils.common import set_log_level, set_log_and_warnings_filters
 import rasa.utils.tensorflow.environment as tf_env
+from rasa_sdk import __version__ as rasa_sdk_version
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +66,22 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 
 def print_version() -> None:
-    print("Rasa", version.__version__)
+    """Prints version information of rasa tooling and python."""
+
+    python_version, os_info = sys.version.split("\n")
+    try:
+        from rasax.community.version import __version__  # pytype: disable=import-error
+
+        rasa_x_info = __version__
+    except ModuleNotFoundError:
+        rasa_x_info = None
+
+    print(f"Rasa Version     : {version.__version__}")
+    print(f"Rasa SDK Version : {rasa_sdk_version}")
+    print(f"Rasa X Version   : {rasa_x_info}")
+    print(f"Python Version   : {python_version}")
+    print(f"Operating System : {platform.platform()}")
+    print(f"Python Path      : {sys.executable}")
 
 
 def main() -> None:
@@ -88,6 +105,7 @@ def main() -> None:
 
     if hasattr(cmdline_arguments, "func"):
         rasa.utils.io.configure_colored_logging(log_level)
+        set_log_and_warnings_filters()
         cmdline_arguments.func(cmdline_arguments)
     elif hasattr(cmdline_arguments, "version"):
         print_version()

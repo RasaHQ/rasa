@@ -19,6 +19,7 @@ RANDOM_SEED = "random_seed"
 LEARNING_RATE = "learning_rate"
 
 DENSE_DIMENSION = "dense_dimension"
+CONCAT_DIMENSION = "concat_dimension"
 EMBEDDING_DIMENSION = "embedding_dimension"
 
 SIMILARITY_TYPE = "similarity_type"
@@ -46,6 +47,7 @@ ENTITY_RECOGNITION = "entity_recognition"
 MASKED_LM = "use_masked_language_model"
 
 SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
+DENSE_INPUT_DROPOUT = "use_dense_input_dropout"
 
 RANKING_LENGTH = "ranking_length"
 
@@ -68,3 +70,8 @@ MEAN_POOLING = "mean"
 
 TENSORBOARD_LOG_DIR = "tensorboard_log_directory"
 TENSORBOARD_LOG_LEVEL = "tensorboard_log_level"
+
+SEQUENCE_FEATURES = "sequence_features"
+SENTENCE_FEATURES = "sentence_features"
+
+FEATURIZERS = "featurizers"

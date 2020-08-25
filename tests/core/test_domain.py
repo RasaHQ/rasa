@@ -1,20 +1,20 @@
+import copy
 import json
 from pathlib import Path
+from typing import Dict
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
 
+from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core.constants import (
     DEFAULT_KNOWLEDGE_BASE_ACTION,
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
+    DEFAULT_INTENTS,
 )
-from rasa.core.domain import (
-    USED_ENTITIES_KEY,
-    USE_ENTITIES_KEY,
-    IGNORE_ENTITIES_KEY,
-)
+from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -165,8 +165,8 @@ def test_domain_from_template():
     domain = Domain.load(domain_file)
 
     assert not domain.is_empty()
-    assert len(domain.intents) == 10
-    assert len(domain.action_names) == 13
+    assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
+    assert len(domain.action_names) == 15
 
 
 def test_avoid_action_repetition():
@@ -235,8 +235,47 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
         Domain.load(domain_path)
 
 
+def test_domain_to_dict():
+    test_yaml = """
+    actions:
+    - action_save_world
+    config:
+      store_entities_as_slots: true
+    entities: []
+    forms: []
+    intents: []
+    responses:
+      utter_greet:
+      - text: hey there!
+    session_config:
+      carry_over_slots_to_new_session: true
+      session_expiration_time: 60
+    slots: {}"""
+
+    domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
+
+    assert domain_as_dict == {
+        "actions": ["action_save_world"],
+        "config": {"store_entities_as_slots": True},
+        "entities": [],
+        "forms": [],
+        "intents": [],
+        "responses": {"utter_greet": [{"text": "hey there!"}]},
+        "session_config": {
+            "carry_over_slots_to_new_session": True,
+            "session_expiration_time": 60,
+        },
+        "slots": {},
+    }
+
+
 def test_domain_to_yaml():
-    test_yaml = """config:
+    test_yaml = f"""
+%YAML 1.2
+---
+actions:
+- action_save_world
+config:
   store_entities_as_slots: true
 entities: []
 forms: []
@@ -246,18 +285,18 @@ responses:
   - text: hey there!
 session_config:
   carry_over_slots_to_new_session: true
-  session_expiration_time: 60
-slots: {}"""
+  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
+slots: {{}}"""
 
     domain = Domain.from_yaml(test_yaml)
-    # python 3 and 2 are different here, python 3 will have a leading set
-    # of --- at the beginning of the yml
-    assert domain.as_yaml().strip().endswith(test_yaml.strip())
-    assert Domain.from_yaml(domain.as_yaml()) is not None
+
+    actual_yaml = domain.as_yaml()
+
+    assert actual_yaml.strip() == test_yaml.strip()
 
 
 def test_domain_to_yaml_deprecated_templates():
-    test_yaml = """actions:
+    test_yaml = f"""actions:
 - utter_greet
 config:
   store_entities_as_slots: true
@@ -269,10 +308,10 @@ templates:
   - text: hey there!
 session_config:
   carry_over_slots_to_new_session: true
-  session_expiration_time: 60
-slots: {}"""
+  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
+slots: {{}}"""
 
-    target_yaml = """actions:
+    target_yaml = f"""actions:
 - utter_greet
 config:
   store_entities_as_slots: true
@@ -284,8 +323,8 @@ responses:
   - text: hey there!
 session_config:
   carry_over_slots_to_new_session: true
-  session_expiration_time: 60
-slots: {}"""
+  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
+slots: {{}}"""
 
     domain = Domain.from_yaml(test_yaml)
     # python 3 and 2 are different here, python 3 will have a leading set
@@ -333,7 +372,7 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     # lists should be deduplicated and merged
-    assert domain.intents == ["greet"]
+    assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
     assert domain.entities == ["cuisine"]
     assert isinstance(domain.slots[0], TextSlot)
     assert domain.slots[0].name == "cuisine"
@@ -373,6 +412,82 @@ session_config:
     assert merged.session_config == SessionConfig(40, True)
 
 
+def test_merge_with_empty_domain():
+    domain = Domain.from_yaml(
+        """config:
+  store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
+entities:
+- cuisine
+intents:
+- greet
+slots:
+  cuisine:
+    type: text
+responses:
+  utter_goodbye:
+  - text: bye!
+  utter_greet:
+  - text: hey you!"""
+    )
+
+    merged = Domain.empty().merge(domain)
+
+    assert merged.as_dict() == domain.as_dict()
+
+
+def test_merge_with_empty_other_domain():
+    domain = Domain.from_yaml(
+        """config:
+  store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
+entities:
+- cuisine
+intents:
+- greet
+slots:
+  cuisine:
+    type: text
+responses:
+  utter_goodbye:
+  - text: bye!
+  utter_greet:
+  - text: hey you!"""
+    )
+
+    merged = domain.merge(Domain.empty(), override=True)
+
+    assert merged.as_dict() == domain.as_dict()
+
+
+def test_merge_domain_with_forms():
+    test_yaml_1 = """
+    forms:
+    # Old style form definitions (before RulePolicy)
+    - my_form
+    - my_form2
+    """
+
+    test_yaml_2 = """
+    forms:
+    - my_form3:
+        slot1:
+          type: from_text
+    """
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+    domain = domain_1.merge(domain_2)
+
+    expected_number_of_forms = 3
+    assert len(domain.form_names) == expected_number_of_forms
+    assert len(domain.forms) == expected_number_of_forms
+
+
 @pytest.mark.parametrize(
     "intents, entities, intent_properties",
     [
@@ -405,7 +520,7 @@ session_config:
             ],
             ["entity", "other", "third"],
             {
-                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"],},
+                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"]},
                 "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
@@ -416,42 +531,39 @@ session_config:
             ],
             ["entity", "other", "third"],
             {
-                "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye",},
+                "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye"},
                 "goodbye": {USED_ENTITIES_KEY: []},
             },
         ),
     ],
 )
 def test_collect_intent_properties(intents, entities, intent_properties):
+    Domain._add_default_intents(intent_properties, entities)
+
     assert Domain.collect_intent_properties(intents, entities) == intent_properties
 
 
 def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
     root = tmpdir_factory.mktemp("Parent Bot")
     root_domain = {"actions": ["utter_root", "utter_root2"]}
-    utils.dump_obj_as_yaml_to_file(root / "domain.yml", root_domain)
+    utils.dump_obj_as_yaml_to_file(root / "domain_pt1.yml", root_domain)
 
     subdirectory_1 = root / "Skill 1"
     subdirectory_1.mkdir()
     skill_1_domain = {"actions": ["utter_skill_1"]}
-    utils.dump_obj_as_yaml_to_file(subdirectory_1 / "domain.yml", skill_1_domain)
+    utils.dump_obj_as_yaml_to_file(subdirectory_1 / "domain_pt2.yml", skill_1_domain)
 
     subdirectory_2 = root / "Skill 2"
     subdirectory_2.mkdir()
     skill_2_domain = {"actions": ["utter_skill_2"]}
-    utils.dump_obj_as_yaml_to_file(subdirectory_2 / "domain.yml", skill_2_domain)
+    utils.dump_obj_as_yaml_to_file(subdirectory_2 / "domain_pt3.yml", skill_2_domain)
 
     subsubdirectory = subdirectory_2 / "Skill 2-1"
     subsubdirectory.mkdir()
     skill_2_1_domain = {"actions": ["utter_subskill", "utter_root"]}
     # Check if loading from `.yaml` also works
-    utils.dump_obj_as_yaml_to_file(subsubdirectory / "domain.yaml", skill_2_1_domain)
-
-    subsubdirectory_2 = subdirectory_2 / "Skill 2-2"
-    subsubdirectory_2.mkdir()
-    excluded_domain = {"actions": ["should not be loaded"]}
     utils.dump_obj_as_yaml_to_file(
-        subsubdirectory_2 / "other_name.yaml", excluded_domain
+        subsubdirectory / "domain_pt4.yaml", skill_2_1_domain
     )
 
     actual = Domain.load(str(root))
@@ -532,7 +644,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=["random_name", "random_name"],
-            form_names=[],
+            forms=[],
         )
 
     with pytest.raises(InvalidDomain):
@@ -542,7 +654,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[TextSlot("random_name"), TextSlot("random_name")],
             templates={},
             action_names=[],
-            form_names=[],
+            forms=[],
         )
 
     with pytest.raises(InvalidDomain):
@@ -552,7 +664,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=[],
-            form_names=[],
+            forms=[],
         )
 
     with pytest.raises(InvalidDomain):
@@ -562,7 +674,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=[],
-            form_names=["random_name", "random_name"],
+            forms=["random_name", "random_name"],
         )
 
 
@@ -634,16 +746,15 @@ def test_clean_domain_for_file():
             {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
-        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "entities": ["name", "unrelated_recognized_entity", "other"],
         "responses": {
             "utter_greet": [{"text": "hey there!"}],
             "utter_goodbye": [{"text": "goodbye :("}],
             "utter_default": [{"text": "default message"}],
         },
-        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
         "session_config": {
             "carry_over_slots_to_new_session": True,
-            "session_expiration_time": 0,
+            "session_expiration_time": DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
         },
     }
 
@@ -664,24 +775,22 @@ def test_clean_domain_deprecated_templates():
             {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
-        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "entities": ["name", "unrelated_recognized_entity", "other"],
         "responses": {
             "utter_greet": [{"text": "hey there!"}],
             "utter_goodbye": [{"text": "goodbye :("}],
             "utter_default": [{"text": "default message"}],
         },
-        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+        "actions": ["utter_default", "utter_greet", "utter_goodbye"],
     }
 
     expected = Domain.from_dict(expected)
     actual = Domain.from_dict(cleaned)
 
-    assert hash(actual) == hash(expected)
+    assert actual.as_dict() == expected.as_dict()
 
 
 def test_add_knowledge_base_slots(default_domain):
-    import copy
-
     # don't modify default domain as it is used in other tests
     test_domain = copy.deepcopy(default_domain)
 
@@ -706,17 +815,17 @@ def test_add_knowledge_base_slots(default_domain):
     "input_domain, expected_session_expiration_time, expected_carry_over_slots",
     [
         (
-            """session_config:
-    session_expiration_time: 0
+            f"""session_config:
+    session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
     carry_over_slots_to_new_session: true""",
-            0,
+            DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
             True,
         ),
-        ("", 0, True),
+        ("", DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES, True),
         (
             """session_config:
     carry_over_slots_to_new_session: false""",
-            0,
+            DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
             False,
         ),
         (
@@ -726,7 +835,7 @@ def test_add_knowledge_base_slots(default_domain):
             20.2,
             False,
         ),
-        ("""session_config: {}""", 0, True),
+        ("""session_config: {}""", DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES, True),
     ],
 )
 def test_session_config(
@@ -766,10 +875,7 @@ def test_are_sessions_enabled(session_config: SessionConfig, enabled: bool):
 
 
 def test_domain_utterance_actions_deprecated_templates():
-    new_yaml = """actions:
-- utter_greet
-- utter_goodbye
-config:
+    new_yaml = f"""config:
   store_entities_as_slots: true
 entities: []
 forms: []
@@ -781,10 +887,10 @@ templates:
   - text: bye!
 session_config:
   carry_over_slots_to_new_session: true
-  session_expiration_time: 60
-slots: {}"""
+  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
+slots: {{}}"""
 
-    old_yaml = """config:
+    old_yaml = f"""config:
   store_entities_as_slots: true
 entities: []
 forms: []
@@ -796,9 +902,44 @@ responses:
   - text: bye!
 session_config:
   carry_over_slots_to_new_session: true
-  session_expiration_time: 60
-slots: {}"""
+  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
+slots: {{}}"""
 
     old_domain = Domain.from_yaml(old_yaml)
     new_domain = Domain.from_yaml(new_yaml)
     assert hash(old_domain) == hash(new_domain)
+
+
+def test_domain_from_dict_does_not_change_input():
+    input_before = {
+        "intents": [
+            {"greet": {USE_ENTITIES_KEY: ["name"]}},
+            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+            {"goodbye": {USE_ENTITIES_KEY: None}},
+            {"thank": {USE_ENTITIES_KEY: False}},
+            {"ask": {USE_ENTITIES_KEY: True}},
+            {"why": {USE_ENTITIES_KEY: []}},
+            "pure_intent",
+        ],
+        "entities": ["name", "unrelated_recognized_entity", "other"],
+        "slots": {"name": {"type": "text"}},
+        "responses": {
+            "utter_greet": [{"text": "hey there {name}!"}],
+            "utter_goodbye": [{"text": "goodbye 😢"}, {"text": "bye bye 😢"}],
+            "utter_default": [{"text": "default message"}],
+        },
+    }
+
+    input_after = copy.deepcopy(input_before)
+    Domain.from_dict(input_after)
+
+    assert input_after == input_before
+
+
+@pytest.mark.parametrize(
+    "domain", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
+)
+def test_add_default_intents(domain: Dict):
+    domain = Domain.from_dict(domain)
+
+    assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)

@@ -1,6 +1,6 @@
 import os
-import shutil
 import tempfile
+from pathlib import Path
 
 import pytest
 from typing import Callable
@@ -9,6 +9,8 @@ from _pytest.pytester import RunResult
 from rasa import model
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import training_data
+
+# noinspection PyProtectedMember
 from rasa.cli.train import _get_valid_config
 from rasa.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
@@ -18,10 +20,10 @@ from rasa.constants import (
 import rasa.utils.io as io_utils
 
 
-def test_train(run_in_default_project_without_models: Callable[..., RunResult]):
+def test_train(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "-c",
         "config.yml",
@@ -48,12 +50,10 @@ def test_train(run_in_default_project_without_models: Callable[..., RunResult]):
     )
 
 
-def test_train_persist_nlu_data(
-    run_in_default_project_without_models: Callable[..., RunResult]
-):
+def test_train_persist_nlu_data(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "-c",
         "config.yml",
@@ -81,21 +81,19 @@ def test_train_persist_nlu_data(
     )
 
 
-def test_train_core_compare(
-    run_in_default_project_without_models: Callable[..., RunResult]
-):
+def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
-    io_utils.write_yaml_file(
+    io_utils.write_yaml(
         {
             "language": "en",
             "pipeline": "supervised_embeddings",
-            "policies": [{"name": "KerasPolicy"}],
+            "policies": [{"name": "MemoizationPolicy"}],
         },
         "config_1.yml",
     )
 
-    io_utils.write_yaml_file(
+    io_utils.write_yaml(
         {
             "language": "en",
             "pipeline": "supervised_embeddings",
@@ -104,14 +102,14 @@ def test_train_core_compare(
         "config_2.yml",
     )
 
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "core",
         "-c",
         "config_1.yml",
         "config_2.yml",
         "--stories",
-        "data/stories.md",
+        "data/stories.yml",
         "--out",
         "core_comparison_results",
         "--runs",
@@ -136,11 +134,11 @@ def test_train_core_compare(
 
 
 def test_train_no_domain_exists(
-    run_in_default_project_without_models: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult]
 ) -> None:
 
     os.remove("domain.yml")
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "-c",
         "config.yml",
@@ -164,7 +162,7 @@ def test_train_no_domain_exists(
 
 
 def test_train_skip_on_model_not_changed(
-    run_in_default_project: Callable[..., RunResult]
+    run_in_simple_project_with_model: Callable[..., RunResult]
 ):
     temp_dir = os.getcwd()
 
@@ -173,7 +171,7 @@ def test_train_skip_on_model_not_changed(
     assert len(files) == 1
 
     file_name = files[0]
-    run_in_default_project("train")
+    run_in_simple_project_with_model("train")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
@@ -181,41 +179,28 @@ def test_train_skip_on_model_not_changed(
     assert file_name == files[0]
 
 
-def test_train_force(run_in_default_project):
+def test_train_force(run_in_simple_project_with_model: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 1
 
-    run_in_default_project("train", "--force")
+    run_in_simple_project_with_model("train", "--force")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 2
 
 
-def test_train_with_only_nlu_data(run_in_default_project_without_models):
-    temp_dir = os.getcwd()
+def test_train_with_only_nlu_data(run_in_simple_project: Callable[..., RunResult]):
+    temp_dir = Path.cwd()
 
-    assert os.path.exists(os.path.join(temp_dir, "data/stories.md"))
-    os.remove(os.path.join(temp_dir, "data/stories.md"))
+    for core_file in ["stories.yml", "rules.yml"]:
+        assert (temp_dir / "data" / core_file).exists()
+        (temp_dir / "data" / core_file).unlink()
 
-    run_in_default_project_without_models("train", "--fixed-model-name", "test-model")
-
-    assert os.path.exists(os.path.join(temp_dir, "models"))
-    files = io_utils.list_files(os.path.join(temp_dir, "models"))
-    assert len(files) == 1
-    assert os.path.basename(files[0]) == "test-model.tar.gz"
-
-
-def test_train_with_only_core_data(run_in_default_project_without_models):
-    temp_dir = os.getcwd()
-
-    assert os.path.exists(os.path.join(temp_dir, "data/nlu.md"))
-    os.remove(os.path.join(temp_dir, "data/nlu.md"))
-
-    run_in_default_project_without_models("train", "--fixed-model-name", "test-model")
+    run_in_simple_project("train", "--fixed-model-name", "test-model")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
@@ -223,8 +208,22 @@ def test_train_with_only_core_data(run_in_default_project_without_models):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
-def test_train_core(run_in_default_project_without_models: Callable[..., RunResult]):
-    run_in_default_project_without_models(
+def test_train_with_only_core_data(run_in_simple_project: Callable[..., RunResult]):
+    temp_dir = os.getcwd()
+
+    assert os.path.exists(os.path.join(temp_dir, "data/nlu.yml"))
+    os.remove(os.path.join(temp_dir, "data/nlu.yml"))
+
+    run_in_simple_project("train", "--fixed-model-name", "test-model")
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = io_utils.list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]) == "test-model.tar.gz"
+
+
+def test_train_core(run_in_simple_project: Callable[..., RunResult]):
+    run_in_simple_project(
         "train",
         "core",
         "-c",
@@ -243,12 +242,10 @@ def test_train_core(run_in_default_project_without_models: Callable[..., RunResu
     assert os.path.isfile("train_rasa_models/rasa-model.tar.gz")
 
 
-def test_train_core_no_domain_exists(
-    run_in_default_project_without_models: Callable[..., RunResult]
-):
+def test_train_core_no_domain_exists(run_in_simple_project: Callable[..., RunResult]):
 
     os.remove("domain.yml")
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "core",
         "--config",
@@ -267,8 +264,8 @@ def test_train_core_no_domain_exists(
     assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
 
 
-def test_train_nlu(run_in_default_project_without_models: Callable[..., RunResult]):
-    run_in_default_project_without_models(
+def test_train_nlu(run_in_simple_project: Callable[..., RunResult]):
+    run_in_simple_project(
         "train",
         "nlu",
         "-c",
@@ -293,9 +290,9 @@ def test_train_nlu(run_in_default_project_without_models: Callable[..., RunResul
 
 
 def test_train_nlu_persist_nlu_data(
-    run_in_default_project_without_models: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult]
 ) -> None:
-    run_in_default_project_without_models(
+    run_in_simple_project(
         "train",
         "nlu",
         "-c",
@@ -326,6 +323,7 @@ def test_train_help(run):
     help_text = """usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
+                  [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force]
                   {core,nlu} ..."""
@@ -340,7 +338,8 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
     output = run("train", "nlu", "--help")
 
     help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [--out OUT]
-                      [-u NLU] [--fixed-model-name FIXED_MODEL_NAME]
+                      [-u NLU] [--num-threads NUM_THREADS]
+                      [--fixed-model-name FIXED_MODEL_NAME]
                       [--persist-nlu-data]"""
 
     lines = help_text.split("\n")
@@ -373,30 +372,44 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
-            "error": True,
+            "error": False,
+        },
+        {
+            "config_data": {
+                "language": "en",
+                "pipeline": "supervised",
+                "policies": None,
+            },
+            "default_config": {
+                "language": "en",
+                "pipeline": "supervised",
+                "policies": ["TEDPolicy", "FallbackPolicy"],
+            },
+            "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
+            "error": False,
         },
         {
             "config_data": {},
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
             "error": True,
         },
         {
             "config_data": {
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
                 "imports": "other-folder",
             },
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
             "error": True,
@@ -405,7 +418,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "config_data": None,
             "default_config": {
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
             "error": True,
@@ -415,7 +428,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
             "error": False,
@@ -424,7 +437,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
             "config_data": None,
             "default_config": {"language": "en", "pipeline": "supervised"},
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
-            "error": True,
+            "error": False,
         },
         {
             "config_data": None,
@@ -435,17 +448,15 @@ def test_train_core_help(run: Callable[..., RunResult]):
     ],
 )
 def test_get_valid_config(parameters):
-    import rasa.utils.io
-
     config_path = None
     if parameters["config_data"] is not None:
         config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
-        rasa.utils.io.write_yaml_file(parameters["config_data"], config_path)
+        io_utils.write_yaml(parameters["config_data"], config_path)
 
     default_config_path = None
     if parameters["default_config"] is not None:
         default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
-        rasa.utils.io.write_yaml_file(parameters["default_config"], default_config_path)
+        io_utils.write_yaml(parameters["default_config"], default_config_path)
 
     if parameters["error"]:
         with pytest.raises(SystemExit):
@@ -456,7 +467,7 @@ def test_get_valid_config(parameters):
             config_path, parameters["mandatory_keys"], default_config_path
         )
 
-        config_data = rasa.utils.io.read_yaml_file(config_path)
+        config_data = io_utils.read_yaml_file(config_path)
 
         for k in parameters["mandatory_keys"]:
             assert k in config_data

@@ -1,4 +1,4 @@
-FROM python:3.6-slim as base
+FROM python:3.7-slim as base
 
 RUN apt-get update -qq \
  && apt-get install -y --no-install-recommends \
@@ -26,7 +26,7 @@ RUN apt-get update -qq && \
 
 # install poetry
 # keep this in sync with the version in pyproject.toml and Dockerfile
-ENV POETRY_VERSION 1.0.3
+ENV POETRY_VERSION 1.0.5
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 ENV PATH "/root/.poetry/bin:/opt/venv/bin:${PATH}"
 

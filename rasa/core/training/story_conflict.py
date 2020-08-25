@@ -74,9 +74,7 @@ class StoryConflict:
         if last_event_type:
             conflict_message = f"Story structure conflict after {last_event_type} '{last_event_name}':\n"
         else:
-            conflict_message = (
-                f"Story structure conflict at the beginning of stories:\n"
-            )
+            conflict_message = "Story structure conflict at the beginning of stories:\n"
 
         # List which stories are in conflict with one another
         for action, stories in self._conflicting_actions.items():

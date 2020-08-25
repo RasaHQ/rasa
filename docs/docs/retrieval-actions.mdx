@@ -1,0 +1,218 @@
+---
+id: retrieval-actions
+sidebar_label: Retrieval Actions
+title: Retrieval Actions
+description: Use a retrieval model to select chatbot responses in open source bot framework Rasa.
+---
+
+Retrieval actions are designed to make it simpler to work with small talk and simple questions.
+For example, if your assistant can handle 100 FAQs and 50 different small talk intents, you can use a single retrieval
+action to cover all of these.
+From a dialogue perspective, these single-turn exchanges can all be treated equally, so this simplifies your stories.
+
+Instead of having a lot of stories like:
+
+```yaml-rasa
+stories:
+- story: weather
+  steps:
+  - intent: ask_weather
+  - action: utter_ask_weather
+
+- story: introduction
+  steps:
+  - intent: ask_name
+  - action: utter_introduce_myself
+
+# ...
+```
+
+You can cover all of these with a single story where the above intents are grouped
+under a common `chitchat` intent:
+
+```yaml-rasa
+stories:
+- story: chitchat
+  steps:
+  - intent: chitchat
+  - action: respond_chitchat
+```
+
+A retrieval action uses the output of a [ResponseSelector](./components/selectors.mdx#responseselector) component from NLU which learns a
+retrieval model to predict the correct response from a list of candidate responses given a user message text.
+
+:::note Retrieval Model Blog Post
+There is an in-depth blog post [here](https://blog.rasa.com/response-retrieval-models/) about how to use retrieval
+actions for handling single turn interactions.
+
+:::
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="retrieval-training-data"></a>
+
+## Training Data
+
+Like the name suggests, retrieval actions learn to select the correct response from a list of candidates.
+As with other message data, you need to include examples of what your users will say in
+your training data file:
+
+```yaml-rasa title="data/nlu.yml"
+nlu:
+- intent: chitchat/ask_name
+  examples: |
+    - what's your name
+    - who are you?
+    - what are you called?
+
+- intent: chitchat/ask_weather
+  examples: |
+    - how's weather?
+    - is it sunny where you are?
+```
+
+First, all of these examples will be combined into a single `chitchat`
+retrieval intent that NLU will predict. All retrieval intents have a suffix
+added to them which identifies a particular response text for your assistant, in the
+above example - `ask_name` and `ask_weather`. The suffix is separated from
+the intent name by a `/` delimiter.
+
+Next, include response texts for all retrieval intents in a training data file:
+
+```yaml-rasa title="data/responses.yml"
+responses:
+  chitchat/ask_name:
+  - text: "my name is Sara, Rasa's documentation bot!"
+
+  chitchat/ask_weather:
+  - text: "it's always sunny where I live"
+```
+
+:::info Responses format
+The responses use the same format as the [responses in the domain](responses.mdx).
+This means, you can also use buttons, images and any other multimedia elements in
+your responses.
+:::
+
+The retrieval model is trained separately as part of the NLU training pipeline
+to select the correct response. One important thing to remember is that the
+retrieval model uses the text of the response messages to select the correct
+one. If you change the text of these responses, you have to retrain your
+retrieval model! This is a key difference to the responses defined in
+your domain file.
+
+:::note Special meaning of `/`
+As shown in the above examples, the `/` symbol is reserved as a delimiter to separate
+retrieval intents from response text identifier. Make sure not to use it in the
+name of your intents.
+
+:::
+
+## Configuration File
+
+You need to include the [ResponseSelector](./components/selectors.mdx#responseselector)
+component in your configuration. The component needs a tokenizer, a featurizer and an
+intent classifier to operate on the user message before it can predict a response
+and hence these components should be placed before `ResponseSelector` in the
+NLU configuration. An example:
+
+```yaml-rasa title="config.yml" {8}
+language: "en"
+
+pipeline:
+- name: "WhitespaceTokenizer"
+  intent_split_symbol: "_"
+- name: "CountVectorsFeaturizer"
+- name: "DIETClassifier"
+- name: "ResponseSelector"
+```
+
+## Domain
+
+Rasa uses a naming convention to match the intent names like `chitchat/ask_name`
+to the retrieval action.
+The correct action name in this case is `respond_chitchat`.
+The prefix `respond_` is mandatory to identify it as a retrieval action.
+Another example - correct action name for `faq/ask_policy` would be `respond_faq`
+To include this in your domain, add it to the list of actions:
+
+```yaml-rasa title="domain.yml"
+actions:
+  # ...
+  - respond_chitchat
+  - respond_faq
+```
+
+A simple way to ensure that the retrieval action is predicted after the chitchat
+intent is to use [Rules](./rules.mdx).
+However, you can also include this action in your stories.
+For example, if you want to repeat a question after handling chitchat:
+
+```yaml-rasa title="data/stories.yml" {6-8}
+stories:
+- story: interruption
+  steps:
+  - intent: search_restaurant
+  - action: utter_ask_cuisine
+  - intent: chitchat
+  - action: respond_chitchat
+  - action: utter_ask_cuisine
+```
+
+## Multiple Retrieval Actions
+
+If your assistant includes both FAQs **and** chitchat, it is possible to
+separate these into separate retrieval actions, for example having intents
+like `chitchat/ask_weather` and `faq/returns_policy`.
+Rasa supports adding multiple `RetrievalActions` like `respond_chitchat` and
+`respond_returns_policy`
+
+This works out of the box. Both actions can share the same retrieval model,
+you only need to specify a single `ResponseSelector` component in your configuration:
+
+```yaml-rasa title="config.yml" {8}
+language: "en"
+
+pipeline:
+- name: "WhitespaceTokenizer"
+  intent_split_symbol: "_"
+- name: "CountVectorsFeaturizer"
+- name: "DIETClassifier"
+- name: "ResponseSelector"
+```
+
+## Under the hood: Parsing Response Selector Output
+
+The parsed output from NLU will have a property named `response_selector`
+containing the output for each response selector. Each response selector is
+identified by `retrieval_intent` parameter of that response selector
+and stores two properties:
+
+* `response`: The predicted response text and the prediction confidence.
+
+* `ranking`: Ranking with confidences of top 10 candidate responses.
+
+Example result:
+
+```json
+{
+    "text": "What is the recommend python version to install?",
+    "entities": [],
+    "intent": {"confidence": 0.6485910906220309, "name": "faq"},
+    "intent_ranking": [
+        {"confidence": 0.6485910906220309, "name": "faq"},
+        {"confidence": 0.1416153159565678, "name": "greet"}
+    ],
+    "response_selector": {
+      "faq": {
+        "response": {"text": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+        "full_retrieval_intent": "faq/supports",
+        "ranking": [
+            {"confidence": 0.7356462617, "full_retrieval_intent": "faq/supports"},
+            {"confidence": 0.2134543431, "full_retrieval_intent": "faq/languages"}
+        ]
+      }
+    }
+}
+```
+
+If the `retrieval_intent` parameter of a particular response selector was left to its default value,
+the corresponding response selector will be identified as `default` in the returned output.

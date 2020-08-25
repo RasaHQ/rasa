@@ -1,18 +1,28 @@
 import re
 import logging
-from typing import Text, Dict, Union, Any
+from typing import Text, Dict, Union, Any, List
 
 logger = logging.getLogger(__name__)
 
 
 def interpolate_text(template: Text, values: Dict[Text, Text]) -> Text:
-    # transforming template tags from
-    # "{tag_name}" to "{0[tag_name]}"
-    # as described here:
-    # https://stackoverflow.com/questions/7934620/python-dots-in-the-name-of-variable-in-a-format-string#comment9695339_7934969
-    # black list character and make sure to not to allow
-    # (a) newline in slot name
-    # (b) { or } in slot name
+    """Interpolate values into templates with placeholders.
+
+    Transform template tags from "{tag_name}" to "{0[tag_name]}" as described here:
+    https://stackoverflow.com/questions/7934620/python-dots-in-the-name-of-variable-in-a-format-string#comment9695339_7934969
+    Block characters, making sure not to allow:
+    (a) newline in slot name
+    (b) { or } in slot name
+
+    Args:
+        template: The piece of text that should be interpolated.
+        values: A dictionary of keys and the values that those
+            keys should be replaced with.
+
+    Returns:
+        The piece of text with any replacements made.
+    """
+
     try:
         text = re.sub(r"{([^\n{}]+?)}", r"{0[\1]}", template)
         text = text.format(values)
@@ -27,20 +37,29 @@ def interpolate_text(template: Text, values: Dict[Text, Text]) -> Text:
         return text
     except KeyError as e:
         logger.exception(
-            "Failed to fill utterance template '{}'. "
-            "Tried to replace '{}' but could not find "
-            "a value for it. There is no slot with this "
-            "name nor did you pass the value explicitly "
-            "when calling the template. Return template "
-            "without filling the template. "
-            "".format(template, e.args[0])
+            f"Failed to fill utterance template '{template}'. "
+            f"Tried to replace '{e.args[0]}' but could not find "
+            f"a value for it. There is no slot with this "
+            f"name nor did you pass the value explicitly "
+            f"when calling the template. Return template "
+            f"without filling the template. "
         )
         return template
 
 
 def interpolate(
-    template: Union[Dict[Text, Any], Text], values: Dict[Text, Text]
-) -> Union[Dict[Text, Any], Text]:
+    template: Union[List[Any], Dict[Text, Any], Text], values: Dict[Text, Text]
+) -> Union[List[Any], Dict[Text, Any], Text]:
+    """Recursively process template and interpolate any text keys.
+
+    Args:
+        template: The template that should be interpolated.
+        values: A dictionary of keys and the values that those
+            keys should be replaced with.
+
+    Returns:
+        The template with any replacements made.
+    """
     if isinstance(template, str):
         return interpolate_text(template, values)
     elif isinstance(template, dict):
@@ -49,7 +68,9 @@ def interpolate(
                 interpolate(v, values)
             elif isinstance(v, list):
                 template[k] = [interpolate(i, values) for i in v]
-            else:
+            elif isinstance(v, str):
                 template[k] = interpolate_text(v, values)
         return template
+    elif isinstance(template, list):
+        return [interpolate(i, values) for i in template]
     return template

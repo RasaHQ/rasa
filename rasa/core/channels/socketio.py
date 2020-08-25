@@ -28,9 +28,8 @@ class SocketIOOutput(OutputChannel):
     def name(cls) -> Text:
         return "socketio"
 
-    def __init__(self, sio, sid, bot_message_evt) -> None:
+    def __init__(self, sio: AsyncServer, bot_message_evt: Text) -> None:
         self.sio = sio
-        self.sid = sid
         self.bot_message_evt = bot_message_evt
 
     async def _send_message(self, socket_id: Text, response: Any) -> None:
@@ -44,7 +43,7 @@ class SocketIOOutput(OutputChannel):
         """Send a message through this channel."""
 
         for message_part in text.strip().split("\n\n"):
-            await self._send_message(self.sid, {"text": message_part})
+            await self._send_message(recipient_id, {"text": message_part})
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
@@ -52,7 +51,7 @@ class SocketIOOutput(OutputChannel):
         """Sends an image to the output"""
 
         message = {"attachment": {"type": "image", "payload": {"src": image}}}
-        await self._send_message(self.sid, message)
+        await self._send_message(recipient_id, message)
 
     async def send_text_with_buttons(
         self,
@@ -80,7 +79,7 @@ class SocketIOOutput(OutputChannel):
             )
 
         for message in messages:
-            await self._send_message(self.sid, message)
+            await self._send_message(recipient_id, message)
 
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
@@ -95,14 +94,14 @@ class SocketIOOutput(OutputChannel):
                 }
             }
 
-            await self._send_message(self.sid, message)
+            await self._send_message(recipient_id, message)
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends custom json to the output"""
 
-        json_message.setdefault("room", self.sid)
+        json_message.setdefault("room", recipient_id)
 
         await self.sio.emit(self.bot_message_evt, **json_message)
 
@@ -110,7 +109,7 @@ class SocketIOOutput(OutputChannel):
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends an attachment to the user."""
-        await self._send_message(self.sid, {"attachment": attachment})
+        await self._send_message(recipient_id, {"attachment": attachment})
 
 
 class SocketIOInput(InputChannel):
@@ -144,6 +143,19 @@ class SocketIOInput(InputChannel):
         self.user_message_evt = user_message_evt
         self.namespace = namespace
         self.socketio_path = socketio_path
+        self.sio = None
+
+    def get_output_channel(self) -> Optional["OutputChannel"]:
+        if self.sio is None:
+            raise_warning(
+                "SocketIO output channel cannot be recreated. "
+                "This is expected behavior when using multiple Sanic "
+                "workers or multiple Rasa Open Source instances. "
+                "Please use a different channel for external events in these "
+                "scenarios."
+            )
+            return
+        return SocketIOOutput(self.sio, self.bot_message_evt)
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -154,6 +166,9 @@ class SocketIOInput(InputChannel):
         socketio_webhook = SocketBlueprint(
             sio, self.socketio_path, "socketio_webhook", __name__
         )
+
+        # make sio object static to use in get_output_channel
+        self.sio = sio
 
         @socketio_webhook.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
@@ -173,12 +188,14 @@ class SocketIOInput(InputChannel):
                 data = {}
             if "session_id" not in data or data["session_id"] is None:
                 data["session_id"] = uuid.uuid4().hex
+            if self.session_persistence:
+                sio.enter_room(sid, data["session_id"])
             await sio.emit("session_confirm", data["session_id"], room=sid)
             logger.debug(f"User {sid} connected to socketIO endpoint.")
 
         @sio.on(self.user_message_evt, namespace=self.namespace)
         async def handle_message(sid: Text, data: Dict) -> Any:
-            output_channel = SocketIOOutput(sio, sid, self.bot_message_evt)
+            output_channel = SocketIOOutput(sio, self.bot_message_evt)
 
             if self.session_persistence:
                 if not data.get("session_id"):

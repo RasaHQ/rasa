@@ -1,260 +1,126 @@
+from pathlib import Path
+
+from typing import Dict, Text, List, Any
+
+import pytest
+
+from rasa.nlu.components import ComponentBuilder
+from rasa.nlu import train
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.model import Interpreter
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.constants import TEXT, SPACY_DOCS, ENTITIES
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
 
-def test_crf_extractor(spacy_nlp):
-    examples = [
-        Message(
-            "anywhere in the west",
-            {
-                "intent": "restaurant_search",
-                "entities": [
-                    {"start": 16, "end": 20, "value": "west", "entity": "location"}
-                ],
-                SPACY_DOCS[TEXT]: spacy_nlp("anywhere in the west"),
-            },
-        ),
-        Message(
-            "central indian restaurant",
-            {
-                "intent": "restaurant_search",
-                "entities": [
-                    {
-                        "start": 0,
-                        "end": 7,
-                        "value": "central",
-                        "entity": "location",
-                        "extractor": "random_extractor",
-                    },
-                    {
-                        "start": 8,
-                        "end": 14,
-                        "value": "indian",
-                        "entity": "cuisine",
-                        "extractor": "CRFEntityExtractor",
-                    },
-                ],
-                SPACY_DOCS[TEXT]: spacy_nlp("central indian restaurant"),
-            },
-        ),
-    ]
+def pipeline_from_components(*components: Text) -> List[Dict[Text, Text]]:
+    return [{"name": c} for c in components]
 
-    extractor = CRFEntityExtractor(
-        component_config={
-            "features": [
-                ["low", "title", "upper", "pos", "pos2"],
-                ["low", "suffix3", "suffix2", "upper", "title", "digit", "pos", "pos2"],
-                ["low", "title", "upper", "pos", "pos2"],
-            ]
-        }
+
+async def test_train_persist_load_with_composite_entities(
+    component_builder: ComponentBuilder, tmp_path: Path
+):
+    pipeline = pipeline_from_components("WhitespaceTokenizer", "CRFEntityExtractor")
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+
+    (trainer, trained, persisted_path) = await train(
+        _config,
+        path=str(tmp_path),
+        data="data/test/demo-rasa-composite-entities.md",
+        component_builder=component_builder,
     )
-    tokenizer = SpacyTokenizer()
 
-    training_data = TrainingData(training_examples=examples)
-    tokenizer.train(training_data)
-    extractor.train(training_data)
+    assert trainer.pipeline
+    assert trained.pipeline
 
-    sentence = "italian restaurant"
-    message = Message(sentence, {SPACY_DOCS[TEXT]: spacy_nlp(sentence)})
+    loaded = Interpreter.load(persisted_path, component_builder)
 
-    tokenizer.process(message)
-    extractor.process(message)
+    assert loaded.pipeline
+    text = "I am looking for an italian restaurant"
+    assert loaded.parse(text) == trained.parse(text)
 
-    detected_entities = message.get(ENTITIES)
+
+@pytest.mark.parametrize(
+    "config_params",
+    [
+        (
+            {
+                "features": [
+                    ["low", "title", "upper", "pos", "pos2"],
+                    [
+                        "low",
+                        "suffix3",
+                        "suffix2",
+                        "upper",
+                        "title",
+                        "digit",
+                        "pos",
+                        "pos2",
+                    ],
+                    ["low", "title", "upper", "pos", "pos2"],
+                ],
+                "BILOU_flag": False,
+            }
+        ),
+        (
+            {
+                "features": [
+                    ["low", "title", "upper", "pos", "pos2"],
+                    [
+                        "low",
+                        "suffix3",
+                        "suffix2",
+                        "upper",
+                        "title",
+                        "digit",
+                        "pos",
+                        "pos2",
+                    ],
+                    ["low", "title", "upper", "pos", "pos2"],
+                ],
+                "BILOU_flag": True,
+            }
+        ),
+    ],
+)
+async def test_train_persist_with_different_configurations(
+    config_params: Dict[Text, Any], component_builder: ComponentBuilder, tmp_path: Path
+):
+    pipeline = pipeline_from_components(
+        "SpacyNLP", "SpacyTokenizer", "CRFEntityExtractor"
+    )
+    assert pipeline[2]["name"] == "CRFEntityExtractor"
+    pipeline[2].update(config_params)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+
+    (trainer, trained, persisted_path) = await train(
+        _config,
+        path=str(tmp_path),
+        data="data/examples/rasa",
+        component_builder=component_builder,
+    )
+
+    assert trainer.pipeline
+    assert trained.pipeline
+
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    assert loaded.pipeline
+    text = "I am looking for an italian restaurant"
+    assert loaded.parse(text) == trained.parse(text)
+
+    detected_entities = loaded.parse(text).get(ENTITIES)
 
     assert len(detected_entities) == 1
     assert detected_entities[0]["entity"] == "cuisine"
     assert detected_entities[0]["value"] == "italian"
 
 
-def test_crf_json_from_BILOU(spacy_nlp):
-    ext = CRFEntityExtractor(
-        component_config={
-            "features": [
-                ["low", "title", "upper", "pos", "pos2"],
-                [
-                    "low",
-                    "bias",
-                    "suffix3",
-                    "suffix2",
-                    "upper",
-                    "title",
-                    "digit",
-                    "pos",
-                    "pos2",
-                ],
-                ["low", "title", "upper", "pos", "pos2"],
-            ]
-        }
-    )
-
-    sentence = "I need a home cleaning close-by"
-
-    message = Message(sentence, {SPACY_DOCS[TEXT]: spacy_nlp(sentence)})
-
-    tokenizer = SpacyTokenizer()
-    tokenizer.process(message)
-
-    r = ext._from_crf_to_json(
-        message,
-        [
-            {"O": 1.0},
-            {"O": 1.0},
-            {"O": 1.0},
-            {"B-what": 1.0},
-            {"L-what": 1.0},
-            {"B-where": 1.0},
-            {"I-where": 1.0},
-            {"L-where": 1.0},
-        ],
-    )
-    assert len(r) == 2, "There should be two entities"
-
-    assert r[0]["confidence"]  # confidence should exist
-    del r[0]["confidence"]
-    assert r[0] == {"start": 9, "end": 22, "value": "home cleaning", "entity": "what"}
-
-    assert r[1]["confidence"]  # confidence should exist
-    del r[1]["confidence"]
-    assert r[1] == {"start": 23, "end": 31, "value": "close-by", "entity": "where"}
-
-
-def test_crf_json_from_non_BILOU(spacy_nlp):
-    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-
-    ext = CRFEntityExtractor(
-        component_config={
-            "BILOU_flag": False,
-            "features": [
-                ["low", "title", "upper", "pos", "pos2"],
-                ["low", "suffix3", "suffix2", "upper", "title", "digit", "pos", "pos2"],
-                ["low", "title", "upper", "pos", "pos2"],
-            ],
-        }
-    )
-    sentence = "I need a home cleaning close-by"
-
-    message = Message(sentence, {SPACY_DOCS[TEXT]: spacy_nlp(sentence)})
-
-    tokenizer = SpacyTokenizer()
-    tokenizer.process(message)
-
-    rs = ext._from_crf_to_json(
-        message,
-        [
-            {"O": 1.0},
-            {"O": 1.0},
-            {"O": 1.0},
-            {"what": 1.0},
-            {"what": 1.0},
-            {"where": 1.0},
-            {"where": 1.0},
-            {"where": 1.0},
-        ],
-    )
-
-    # non BILOU will split multi-word entities - hence 5
-    assert len(rs) == 5, "There should be five entities"
-
-    for r in rs:
-        assert r["confidence"]  # confidence should exist
-        del r["confidence"]
-
-    assert rs[0] == {"start": 9, "end": 13, "value": "home", "entity": "what"}
-    assert rs[1] == {"start": 14, "end": 22, "value": "cleaning", "entity": "what"}
-    assert rs[2] == {"start": 23, "end": 28, "value": "close", "entity": "where"}
-    assert rs[3] == {"start": 28, "end": 29, "value": "-", "entity": "where"}
-    assert rs[4] == {"start": 29, "end": 31, "value": "by", "entity": "where"}
-
-
-def test_crf_create_entity_dict(spacy_nlp):
-    crf_extractor = CRFEntityExtractor()
-    spacy_tokenizer = SpacyTokenizer()
-    white_space_tokenizer = WhitespaceTokenizer()
-
-    examples = [
-        {
-            "message": Message(
-                "where is St. Michael's Hospital?",
-                {
-                    "intent": "search_location",
-                    "entities": [
-                        {
-                            "start": 9,
-                            "end": 31,
-                            "value": "St. Michael's Hospital",
-                            "entity": "hospital",
-                            "SpacyTokenizer": {
-                                "entity_start_token_idx": 2,
-                                "entity_end_token_idx": 5,
-                            },
-                            "WhitespaceTokenizer": {
-                                "entity_start_token_idx": 2,
-                                "entity_end_token_idx": 5,
-                            },
-                        }
-                    ],
-                    SPACY_DOCS[TEXT]: spacy_nlp("where is St. Michael's Hospital?"),
-                },
-            )
-        },
-        {
-            "message": Message(
-                "where is Children's Hospital?",
-                {
-                    "intent": "search_location",
-                    "entities": [
-                        {
-                            "start": 9,
-                            "end": 28,
-                            "value": "Children's Hospital",
-                            "entity": "hospital",
-                            "SpacyTokenizer": {
-                                "entity_start_token_idx": 2,
-                                "entity_end_token_idx": 4,
-                            },
-                            "WhitespaceTokenizer": {
-                                "entity_start_token_idx": 2,
-                                "entity_end_token_idx": 4,
-                            },
-                        }
-                    ],
-                    SPACY_DOCS[TEXT]: spacy_nlp("where is Children's Hospital?"),
-                },
-            )
-        },
-    ]
-    for ex in examples:
-        # spacy tokenizers receives a Doc as input and whitespace tokenizer receives a text
-        spacy_tokens = spacy_tokenizer.tokenize(ex["message"], TEXT)
-        white_space_tokens = white_space_tokenizer.tokenize(ex["message"], TEXT)
-        for tokenizer, tokens in [
-            ("SpacyTokenizer", spacy_tokens),
-            ("WhitespaceTokenizer", white_space_tokens),
-        ]:
-            for entity in ex["message"].get("entities"):
-                parsed_entities = crf_extractor._create_entity_dict(
-                    ex["message"],
-                    tokens,
-                    entity[tokenizer]["entity_start_token_idx"],
-                    entity[tokenizer]["entity_end_token_idx"],
-                    entity["entity"],
-                    0.8,
-                )
-                assert parsed_entities == {
-                    "start": entity["start"],
-                    "end": entity["end"],
-                    "value": entity["value"],
-                    "entity": entity["entity"],
-                    "confidence": 0.8,
-                }
-
-
-def test_crf_use_dense_features(spacy_nlp):
+def test_crf_use_dense_features(spacy_nlp: Any):
     crf_extractor = CRFEntityExtractor(
         component_config={
             "features": [
@@ -285,12 +151,34 @@ def test_crf_use_dense_features(spacy_nlp):
     spacy_tokenizer.process(message)
     spacy_featurizer.process(message)
 
-    text_data = crf_extractor._from_text_to_crf(message)
-    features = crf_extractor._sentence_to_features(text_data)
+    text_data = crf_extractor._convert_to_crf_tokens(message)
+    features = crf_extractor._crf_tokens_to_features(text_data)
 
     assert "0:text_dense_features" in features[0]
-    for i in range(0, len(message.data.get("text_dense_features")[0])):
+    dense_features, _ = message.get_dense_features(TEXT, [])
+
+    for i in range(0, len(dense_features[0])):
         assert (
             features[0]["0:text_dense_features"]["text_dense_features"][str(i)]
-            == message.data.get("text_dense_features")[0][i]
+            == dense_features[0][i]
         )
+
+
+@pytest.mark.parametrize(
+    "entity_predictions, expected_label, expected_confidence",
+    [
+        ([{"O": 0.34, "B-person": 0.03, "I-person": 0.85}], ["I-person"], [0.88]),
+        ([{"O": 0.99, "person": 0.03}], ["O"], [0.99]),
+    ],
+)
+def test_most_likely_entity(
+    entity_predictions: List[Dict[Text, float]],
+    expected_label: Text,
+    expected_confidence: float,
+):
+    crf_extractor = CRFEntityExtractor({"BILOU_flag": True})
+
+    actual_label, actual_confidence = crf_extractor._most_likely_tag(entity_predictions)
+
+    assert actual_label == expected_label
+    assert actual_confidence == expected_confidence

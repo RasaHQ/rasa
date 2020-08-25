@@ -1,0 +1,115 @@
+---
+id: nlg
+sidebar_label: NLG
+title: NLG Servers
+---
+
+
+Retraining the bot just to change the text copy can be suboptimal for
+some workflows. That's why Core also allows you to outsource the
+response generation and separate it from the dialogue learning.
+
+The assistant will still learn to predict actions and to react to user input
+based on past dialogues, but the responses it sends back to the user
+are generated outside of Rasa Core.
+
+If the assistant wants to send a message to the user, it will call an
+external HTTP server with a `POST` request. To configure this endpoint,
+you need to create an `endpoints.yml` and pass it either to the `run`
+or `server` script. The content of the `endpoints.yml` should be
+
+```yaml-rasa (docs/sources/data/test_endpoints/example_endpoints.yml)
+```
+
+Then pass the `enable-api` flag to the `rasa run` command when starting
+the server:
+
+```shell
+rasa run \
+  --enable-api \
+  -m examples/babi/models \
+  --log-file out.log \
+  --endpoints endpoints.yml
+```
+
+The body of the `POST` request sent to the endpoint will look
+like this:
+
+```json
+{
+  "tracker": {
+    "latest_message": {
+      "text": "/greet",
+      "intent_ranking": [
+        {
+          "confidence": 1.0,
+          "name": "greet"
+        }
+      ],
+      "intent": {
+        "confidence": 1.0,
+        "name": "greet"
+      },
+      "entities": []
+    },
+    "sender_id": "22ae96a6-85cd-11e8-b1c3-f40f241f6547",
+    "paused": false,
+    "latest_event_time": 1531397673.293572,
+    "slots": {
+      "name": null
+    },
+    "events": [
+      {
+        "timestamp": 1531397673.291998,
+        "event": "action",
+        "name": "action_listen"
+      },
+      {
+        "timestamp": 1531397673.293572,
+        "parse_data": {
+          "text": "/greet",
+          "intent_ranking": [
+            {
+              "confidence": 1.0,
+              "name": "greet"
+            }
+          ],
+          "intent": {
+            "confidence": 1.0,
+            "name": "greet"
+          },
+          "entities": []
+        },
+        "event": "user",
+        "text": "/greet"
+      }
+    ]
+  },
+  "arguments": {},
+  "template": "utter_greet",
+  "channel": {
+    "name": "collector"
+  }
+}
+```
+
+The endpoint then needs to respond with the generated response:
+
+```json
+{
+    "text": "hey there",
+    "buttons": [],
+    "image": null,
+    "elements": [],
+    "attachments": []
+}
+```
+
+Rasa will then use this response and sent it back to the user.
+
+:::note
+If you use an external NLG service, you don't need to specify the
+responses in the domain, but you still need to add the utterance names
+to the actions list of the domain.
+
+:::

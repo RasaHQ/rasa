@@ -1,0 +1,550 @@
+---
+id: intent-classifiers
+sidebar_label: Intent Classifiers
+title: Intent Classifiers
+---
+
+Intent classifiers assign one of the intents defined in the domain file to incoming user messages.
+
+## MitieIntentClassifier
+
+
+* **Short**
+
+  MITIE intent classifier (using a
+  [text categorizer](https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py))
+
+
+
+* **Outputs**
+
+  `intent`
+
+
+
+* **Requires**
+
+  `tokens` for user message and [MitieNLP](../components/language-models.mdx#mitienlp)
+
+
+
+* **Output-Example**
+
+  ```json
+  {
+      "intent": {"name": "greet", "confidence": 0.98343}
+  }
+  ```
+
+
+
+* **Description**
+
+  This classifier uses MITIE to perform intent classification. The underlying classifier
+  is using a multi-class linear SVM with a sparse linear kernel (see
+  [MITIE trainer code](https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222)).
+
+  :::note
+  This classifier does not rely on any featurizer as it extracts features on its own.
+
+  :::
+
+
+
+* **Configuration**
+
+  ```yaml-rasa
+  pipeline:
+  - name: "MitieIntentClassifier"
+  ```
+
+
+## SklearnIntentClassifier
+
+
+* **Short**
+
+  Sklearn intent classifier
+
+
+
+* **Outputs**
+
+  `intent` and `intent_ranking`
+
+
+
+* **Requires**
+
+  `dense_features` for user messages
+
+
+
+* **Output-Example**
+
+  ```json
+  {
+      "intent": {"name": "greet", "confidence": 0.78343},
+      "intent_ranking": [
+          {
+              "confidence": 0.1485910906220309,
+              "name": "goodbye"
+          },
+          {
+              "confidence": 0.08161531595656784,
+              "name": "restaurant_search"
+          }
+      ]
+  }
+  ```
+
+
+
+* **Description**
+
+  The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. It also provides
+  rankings of the labels that did not “win”. The `SklearnIntentClassifier` needs to be preceded by a dense
+  featurizer in the pipeline. This dense featurizer creates the features used for the classification.
+  For more information about the algorithm itself, take a look at the
+  [GridSearchCV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html)
+  documentation.
+
+
+
+* **Configuration**
+
+  During the training of the SVM a hyperparameter search is run to find the best parameter set.
+  In the configuration you can specify the parameters that will get tried.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "SklearnIntentClassifier"
+    # Specifies the list of regularization values to
+    # cross-validate over for C-SVM.
+    # This is used with the ``kernel`` hyperparameter in GridSearchCV.
+    C: [1, 2, 5, 10, 20, 100]
+    # Specifies the kernel to use with C-SVM.
+    # This is used with the ``C`` hyperparameter in GridSearchCV.
+    kernels: ["linear"]
+    # Gamma parameter of the C-SVM.
+    "gamma": [0.1]
+    # We try to find a good number of cross folds to use during
+    # intent training, this specifies the max number of folds.
+    "max_cross_validation_folds": 5
+    # Scoring function used for evaluating the hyper parameters.
+    # This can be a name or a function.
+    "scoring_function": "f1_weighted"
+  ```
+
+
+## KeywordIntentClassifier
+
+
+* **Short**
+
+  Simple keyword matching intent classifier, intended for small, short-term projects.
+
+
+
+* **Outputs**
+
+  `intent`
+
+
+
+* **Requires**
+
+  Nothing
+
+
+
+* **Output-Example**
+
+  ```json
+  {
+      "intent": {"name": "greet", "confidence": 1.0}
+  }
+  ```
+
+
+
+* **Description**
+
+  This classifier works by searching a message for keywords.
+  The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user
+  message.
+  The keywords for an intent are the examples of that intent in the NLU training data.
+  This means the entire example is the keyword, not the individual words in the example.
+
+  :::note
+  This classifier is intended only for small projects or to get started. If
+  you have few NLU training data, you can take a look at the recommended pipelines in
+  [Tuning Your Model](./tuning-your-model.mdx).
+
+  :::
+
+
+
+* **Configuration**
+
+  ```yaml-rasa
+  pipeline:
+  - name: "KeywordIntentClassifier"
+    case_sensitive: True
+  ```
+
+
+## DIETClassifier
+
+
+* **Short**
+
+  Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction
+
+
+
+* **Outputs**
+
+  `entities`, `intent` and `intent_ranking`
+
+
+
+* **Requires**
+
+  `dense_features` and/or `sparse_features` for user message and optionally the intent
+
+
+
+* **Output-Example**
+
+  ```json
+  {
+      "intent": {"name": "greet", "confidence": 0.8343},
+      "intent_ranking": [
+          {
+              "confidence": 0.385910906220309,
+              "name": "goodbye"
+          },
+          {
+              "confidence": 0.28161531595656784,
+              "name": "restaurant_search"
+          }
+      ],
+      "entities": [{
+          "end": 53,
+          "entity": "time",
+          "start": 48,
+          "value": "2017-04-10T00:00:00.000+02:00",
+          "confidence": 1.0,
+          "extractor": "DIETClassifier"
+      }]
+  }
+  ```
+
+
+
+* **Description**
+
+  DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
+  recognition. The architecture is based on a transformer which is shared for both tasks.
+  A sequence of entity labels is predicted through a Conditional Random Field (CRF) tagging layer on top of the
+  transformer output sequence corresponding to the input sequence of tokens.
+  For the intent labels the transformer output for the complete utterance and intent labels are embedded into a
+  single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
+  minimize similarities with negative samples.
+
+  If you want to learn more about the model, please take a look at our
+  [videos](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) where we explain the model
+  architecture in detail.
+
+  :::note
+  If during prediction time a message contains **only** words unseen during training
+  and no Out-Of-Vocabulary preprocessor was used, an empty intent `None` is predicted with confidence
+  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](../components/featurizers.mdx#countvectorsfeaturizer) with a `word` analyzer
+  as featurizer. If you use the `char_wb` analyzer, you should always get an intent with a confidence
+  value `> 0.0`.
+
+  :::
+
+
+
+* **Configuration**
+
+  If you want to use the `DIETClassifier` just for intent classification, set `entity_recognition` to `False`.
+  If you want to do only entity recognition, set `intent_classification` to `False`.
+  By default `DIETClassifier` does both, i.e. `entity_recognition` and `intent_classification` are set to
+  `True`.
+
+  You can define a number of hyperparameters to adapt the model.
+  If you want to adapt your model, start by modifying the following parameters:
+
+  * `epochs`:
+    This parameter sets the number of times the algorithm will see the training data (default: `300`).
+    One `epoch` is equals to one forward pass and one backward pass of all the training examples.
+    Sometimes the model needs more epochs to properly learn.
+    Sometimes more epochs don't influence the performance.
+    The lower the number of epochs the faster the model is trained.
+
+  * `hidden_layers_sizes`:
+    This parameter allows you to define the number of feed forward layers and their output
+    dimensions for user messages and intents (default: `text: [], label: []`).
+    Every entry in the list corresponds to a feed forward layer.
+    For example, if you set `text: [256, 128]`, we will add two feed forward layers in front of
+    the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
+    layers. The first layer will have an output dimension of 256 and the second layer will have an output
+    dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
+    added.
+    Make sure to use only positive integer values. Usually, numbers of power of two are used.
+    Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
+    value before.
+
+  * `embedding_dimension`:
+    This parameter defines the output dimension of the embedding layers used inside the model (default: `20`).
+    We are using multiple embeddings layers inside the model architecture.
+    For example, the vector of the complete utterance and the intent is passed on to an embedding layer before
+    they are compared and the loss is calculated.
+
+  * `number_of_transformer_layers`:
+    This parameter sets the number of transformer layers to use (default: `2`).
+    The number of transformer layers corresponds to the transformer blocks to use for the model.
+
+  * `transformer_size`:
+    This parameter sets the number of units in the transformer (default: `256`).
+    The vectors coming out of the transformers will have the given `transformer_size`.
+
+  * `weight_sparsity`:
+    This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
+    in the model (default: `0.8`). The value should be between 0 and 1. If you set `weight_sparsity`
+    to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+    set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+    to learn.
+
+  <details>
+    <summary>
+      The above configuration parameters are the ones you should configure to fit your model to your data.
+      However, additional parameters exist that can be adapted.
+    </summary>
+
+    ```
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | Parameter                       | Default Value    | Description                                                  |
+    +=================================+==================+==============================================================+
+    | hidden_layers_sizes             | text: []         | Hidden layer sizes for layers before the embedding layers    |
+    |                                 | label: []        | for user messages and labels. The number of hidden layers is |
+    |                                 |                  | equal to the length of the corresponding.                    |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | share_hidden_layers             | False            | Whether to share the hidden layer weights between user       |
+    |                                 |                  | messages and labels.                                         |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | transformer_size                | 256              | Number of units in transformer.                              |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | number_of_transformer_layers    | 2                | Number of transformer layers.                                |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | number_of_attention_heads       | 4                | Number of attention heads in transformer.                    |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | use_key_relative_attention      | False            | If 'True' use key relative embeddings in attention.          |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | use_value_relative_attention    | False            | If 'True' use value relative embeddings in attention.        |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | max_relative_position           | None             | Maximum position for relative embeddings.                    |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | unidirectional_encoder          | False            | Use a unidirectional or bidirectional encoder.               |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
+    |                                 |                  | Batch size will be linearly increased for each epoch.        |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
+    |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | epochs                          | 300              | Number of epochs to train.                                   |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | random_seed                     | None             | Set random seed to any 'int' to get reproducible results.    |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | learning_rate                   | 0.001            | Initial learning rate for the optimizer.                     |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | dense_dimension                 | text: 512        | Dense dimension for sparse features to use if no dense       |
+    |                                 | label: 20        | features are present.                                        |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | concat_dimension                | text: 512        | Concat dimension for sequence and sentence features.         |
+    |                                 | label: 20        |                                                              |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
+    |                                 |                  | their similarity to the user input during training.          |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
+    |                                 |                  | or 'inner'.                                                  |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
+    |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
+    |                                 |                  | embedding vectors for correct labels.                        |
+    |                                 |                  | Should be 0.0 < ... < 1.0 for 'cosine' similarity type.      |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | maximum_negative_similarity     | -0.4             | Maximum negative similarity for incorrect labels.            |
+    |                                 |                  | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | use_maximum_negative_similarity | True             | If 'True' the algorithm only minimizes maximum similarity    |
+    |                                 |                  | over incorrect intent labels, used only if 'loss_type' is    |
+    |                                 |                  | set to 'margin'.                                             |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | scale_loss                      | False            | Scale loss inverse proportionally to confidence of correct   |
+    |                                 |                  | prediction.                                                  |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | regularization_constant         | 0.002            | The scale of regularization.                                 |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | negative_margin_scale           | 0.8              | The scale of how important it is to minimize the maximum     |
+    |                                 |                  | similarity between embeddings of different labels.           |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+    |                                 |                  | Value should be between 0 and 1.                             |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
+    |                                 |                  | The higher the value the higher the regularization effect.   |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | drop_rate_attention             | 0.0              | Dropout rate for attention. Value should be between 0 and 1. |
+    |                                 |                  | The higher the value the higher the regularization effect.   |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | use_sparse_input_dropout        | True             | If 'True' apply dropout to sparse input tensors.             |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | use_dense_input_dropout         | True             | If 'True' apply dropout to dense input tensors.              |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
+    |                                 |                  | Set to '-1' to evaluate just once at the end of training.    |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | evaluate_on_number_of_examples  | 0                | How many examples to use for hold out validation set.        |
+    |                                 |                  | Large values may hurt performance, e.g. model accuracy.      |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | intent_classification           | True             | If 'True' intent classification is trained and intents are   |
+    |                                 |                  | predicted.                                                   |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | entity_recognition              | True             | If 'True' entity recognition is trained and entities are     |
+    |                                 |                  | extracted.                                                   |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | use_masked_language_model       | False            | If 'True' random tokens of the input message will be masked  |
+    |                                 |                  | and the model has to predict those tokens. It acts like a    |
+    |                                 |                  | regularizer and should help to learn a better contextual     |
+    |                                 |                  | representation of the input.                                 |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | tensorboard_log_directory       | None             | If you want to use tensorboard to visualize training         |
+    |                                 |                  | metrics, set this option to a valid output directory. You    |
+    |                                 |                  | can view the training metrics after training in tensorboard  |
+    |                                 |                  | via 'tensorboard --logdir <path-to-given-directory>'.        |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
+    |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
+    |                                 |                  | training step ('minibatch').                                 |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    | featurizers                     | []               | List of featurizer names (alias names). Only features        |
+    |                                 |                  | coming from the listed names are used. If list is empty      |
+    |                                 |                  | all available features are used.                             |
+    +---------------------------------+------------------+--------------------------------------------------------------+
+    ```
+
+    :::note
+    For `cosine` similarity `maximum_positive_similarity` and `maximum_negative_similarity` should
+    be between `-1` and `1`.
+
+    :::
+
+    :::note
+    There is an option to use linearly increasing batch size. The idea comes from
+    [https://arxiv.org/abs/1711.00489](https://arxiv.org/abs/1711.00489).
+    In order to do it pass a list to `batch_size`, e.g. `"batch_size": [64, 256]` (default behavior).
+    If constant `batch_size` is required, pass an `int`, e.g. `"batch_size": 64`.
+
+    :::
+
+    :::note
+    Parameter `maximum_negative_similarity` is set to a negative value to mimic the original
+    starspace algorithm in the case `maximum_negative_similarity = maximum_positive_similarity`
+    and `use_maximum_negative_similarity = False`.
+    See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
+
+    :::
+
+  </details>
+
+## FallbackClassifier
+
+* **Short**
+
+  Classifies a message with the intent `nlu_fallback` if the NLU intent classification
+  scores are ambiguous.
+
+* **Outputs**
+
+  `entities`, `intent` and `intent_ranking`
+
+* **Requires**
+
+  `intent` and `intent_ranking` output from a previous intent classifier
+
+* **Output-Example**
+
+    ```json
+
+        {
+            "intent": {"name": "nlu_fallback", "confidence": 1.0},
+            "intent_ranking": [
+                {
+                    "confidence": 1.0,
+                    "name": "nlu_fallback"
+                },
+                {
+                    "confidence": 0.28161531595656784,
+                    "name": "restaurant_search"
+                }
+            ],
+            "entities": [{
+                "end": 53,
+                "entity": "time",
+                "start": 48,
+                "value": "2017-04-10T00:00:00.000+02:00",
+                "confidence": 1.0,
+                "extractor": "DIETClassifier"
+            }]
+        }
+    ```
+
+* **Description**
+
+    The `FallbackClassifier` classifies a user message with the intent `nlu_fallback`
+    in case the previous intent classifier wasn't
+    able to classify an intent with a confidence greater or equal than the `threshold`
+    of the `FallbackClassifier`. It can also predict the fallback intent in the
+    case when the confidence scores of the two top ranked intents are closer than the the
+    `ambiguity_threshold`.
+
+    You can use the `FallbackClassifier` to implement a
+    [Fallback Action](./fallback-handoff.mdx#fallbackactions) which handles message with uncertain
+    NLU predictions.
+
+    ```yaml-rasa
+    rules:
+
+    - rule: Ask the user to rephrase in case of low NLU confidence
+      steps:
+      - intent: nlu_fallback
+      - action: utter_please_rephrase
+    ```
+* **Configuration**
+
+    The `FallbackClassifier` will only add its prediction for the `nlu_fallback`
+    intent in case no other intent was predicted with a confidence greater or equal
+    than `threshold`.
+
+    - `threshold`:
+      This parameter sets the threshold for predicting the `nlu_fallback` intent.
+      If no intent predicted by a previous
+      intent classifier has a confidence
+      level greater or equal than `threshold` the `FallbackClassifier` will add
+      a prediction of the `nlu_fallback` intent with a confidence `1.0`.
+    - `ambiguity_threshold`: If you configure an `ambiguity_threshold`, the
+      `FallbackClassifier` will also predict the `nlu_fallback` intent in case
+      the difference of the confidence scores for the two highest ranked intents is
+      smaller than the `ambiguity_threshold`.

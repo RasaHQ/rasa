@@ -31,6 +31,7 @@ from rasa.constants import (
     DEFAULT_SANIC_WORKERS,
     ENV_SANIC_WORKERS,
     DEFAULT_ENDPOINTS_PATH,
+    YAML_VERSION,
 )
 
 # backwards compatibility 1.0.x
@@ -195,15 +196,24 @@ def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
     yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
     yaml_writer.unicode_supplementary = True
     yaml_writer.default_flow_style = False
-    yaml_writer.version = "1.1"
+    yaml_writer.version = YAML_VERSION
 
     yaml_writer.dump(obj, output)
 
 
-def dump_obj_as_yaml_to_file(filename: Union[Text, Path], obj: Dict) -> None:
-    """Writes data (python dict) to the filename in yaml repr."""
+def dump_obj_as_yaml_to_file(
+    filename: Union[Text, Path], obj: Any, should_preserve_key_order: bool = False
+) -> None:
+    """Writes `obj` to the filename in YAML repr.
 
-    io_utils.write_yaml_file(obj, filename)
+    Args:
+        filename: Target filename.
+        obj: Object to dump.
+        should_preserve_key_order: Whether to preserve key order in `obj`.
+    """
+    io_utils.write_yaml(
+        obj, filename, should_preserve_key_order=should_preserve_key_order
+    )
 
 
 def dump_obj_as_yaml_to_string(obj: Dict) -> Text:

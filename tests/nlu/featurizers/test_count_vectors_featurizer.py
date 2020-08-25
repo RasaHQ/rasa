@@ -4,14 +4,7 @@ import scipy.sparse
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.constants import (
-    CLS_TOKEN,
-    TOKENS_NAMES,
-    TEXT,
-    INTENT,
-    SPARSE_FEATURE_NAMES,
-    RESPONSE,
-)
+from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT, RESPONSE
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
@@ -30,7 +23,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     ],
 )
 def test_count_vector_featurizer(sentence, expected, expected_cls):
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer()
 
     train_message = Message(sentence)
     test_message = Message(sentence)
@@ -42,14 +35,16 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
 
     ftr.process(test_message)
 
-    assert isinstance(
-        test_message.get(SPARSE_FEATURE_NAMES[TEXT]), scipy.sparse.coo_matrix
-    )
+    seq_vecs, sen_vecs = test_message.get_sparse_features(TEXT, [])
 
-    actual = test_message.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()
+    assert isinstance(seq_vecs, scipy.sparse.coo_matrix)
+    assert isinstance(sen_vecs, scipy.sparse.coo_matrix)
 
-    assert np.all(actual[0] == expected)
-    assert np.all(actual[-1] == expected_cls)
+    actual_seq_vecs = seq_vecs.toarray()
+    actual_sen_vecs = sen_vecs.toarray()
+
+    assert np.all(actual_seq_vecs[0] == expected)
+    assert np.all(actual_sen_vecs[-1] == expected_cls)
 
 
 @pytest.mark.parametrize(
@@ -59,7 +54,7 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
 def test_count_vector_featurizer_response_attribute_featurization(
     sentence, intent, response, intent_features, response_features
 ):
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer()
     tk = WhitespaceTokenizer()
 
     train_message = Message(sentence)
@@ -78,21 +73,24 @@ def test_count_vector_featurizer_response_attribute_featurization(
     tk.train(data)
     ftr.train(data)
 
+    intent_seq_vecs, intent_sen_vecs = train_message.get_sparse_features(INTENT, [])
+    response_seq_vecs, response_sen_vecs = train_message.get_sparse_features(
+        RESPONSE, []
+    )
+
     if intent_features:
-        assert (
-            train_message.get(SPARSE_FEATURE_NAMES[INTENT]).toarray()[0]
-            == intent_features
-        )
+        assert intent_seq_vecs.toarray()[0] == intent_features
+        assert intent_sen_vecs is None
     else:
-        assert train_message.get(SPARSE_FEATURE_NAMES[INTENT]) is None
+        assert intent_seq_vecs is None
+        assert intent_sen_vecs is None
 
     if response_features:
-        assert (
-            train_message.get(SPARSE_FEATURE_NAMES[RESPONSE]).toarray()[0]
-            == response_features
-        )
+        assert response_seq_vecs.toarray()[0] == response_features
+        assert response_sen_vecs is not None
     else:
-        assert train_message.get(SPARSE_FEATURE_NAMES[RESPONSE]) is None
+        assert response_seq_vecs is None
+        assert response_sen_vecs is None
 
 
 @pytest.mark.parametrize(
@@ -106,7 +104,7 @@ def test_count_vector_featurizer_response_attribute_featurization(
 def test_count_vector_featurizer_attribute_featurization(
     sentence, intent, response, intent_features, response_features
 ):
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer()
     tk = WhitespaceTokenizer()
 
     train_message = Message(sentence)
@@ -119,21 +117,23 @@ def test_count_vector_featurizer_attribute_featurization(
     tk.train(data)
     ftr.train(data)
 
+    intent_seq_vecs, intent_sen_vecs = train_message.get_sparse_features(INTENT, [])
+    response_seq_vecs, response_sen_vecs = train_message.get_sparse_features(
+        RESPONSE, []
+    )
     if intent_features:
-        assert (
-            train_message.get(SPARSE_FEATURE_NAMES[INTENT]).toarray()[0]
-            == intent_features
-        )
+        assert intent_seq_vecs.toarray()[0] == intent_features
+        assert intent_sen_vecs is None
     else:
-        assert train_message.get(SPARSE_FEATURE_NAMES[INTENT]) is None
+        assert intent_seq_vecs is None
+        assert intent_sen_vecs is None
 
     if response_features:
-        assert (
-            train_message.get(SPARSE_FEATURE_NAMES[RESPONSE]).toarray()[0]
-            == response_features
-        )
+        assert response_seq_vecs.toarray()[0] == response_features
+        assert response_sen_vecs is not None
     else:
-        assert train_message.get(SPARSE_FEATURE_NAMES[RESPONSE]) is None
+        assert response_seq_vecs is None
+        assert response_sen_vecs is None
 
 
 @pytest.mark.parametrize(
@@ -153,9 +153,7 @@ def test_count_vector_featurizer_attribute_featurization(
 def test_count_vector_featurizer_shared_vocab(
     sentence, intent, response, text_features, intent_features, response_features
 ):
-    ftr = CountVectorsFeaturizer(
-        {"token_pattern": r"(?u)\b\w+\b", "use_shared_vocab": True}
-    )
+    ftr = CountVectorsFeaturizer({"use_shared_vocab": True})
     tk = WhitespaceTokenizer()
 
     train_message = Message(sentence)
@@ -167,16 +165,15 @@ def test_count_vector_featurizer_shared_vocab(
     tk.train(data)
     ftr.train(data)
 
-    assert np.all(
-        train_message.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()[0] == text_features
-    )
-    assert np.all(
-        train_message.get(SPARSE_FEATURE_NAMES[INTENT]).toarray()[0] == intent_features
-    )
-    assert np.all(
-        train_message.get(SPARSE_FEATURE_NAMES[RESPONSE]).toarray()[0]
-        == response_features
-    )
+    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
+    assert np.all(seq_vec.toarray()[0] == text_features)
+    assert sen_vec is not None
+    seq_vec, sen_vec = train_message.get_sparse_features(INTENT, [])
+    assert np.all(seq_vec.toarray()[0] == intent_features)
+    assert sen_vec is None
+    seq_vec, sen_vec = train_message.get_sparse_features(RESPONSE, [])
+    assert np.all(seq_vec.toarray()[0] == response_features)
+    assert sen_vec is not None
 
 
 @pytest.mark.parametrize(
@@ -189,9 +186,7 @@ def test_count_vector_featurizer_shared_vocab(
     ],
 )
 def test_count_vector_featurizer_oov_token(sentence, expected):
-    ftr = CountVectorsFeaturizer(
-        {"token_pattern": r"(?u)\b\w+\b", "OOV_token": "__oov__"}
-    )
+    ftr = CountVectorsFeaturizer({"OOV_token": "__oov__"})
     train_message = Message(sentence)
     WhitespaceTokenizer().process(train_message)
 
@@ -201,7 +196,9 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    assert np.all(test_message.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()[0] == expected)
+    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
+    assert np.all(seq_vec.toarray()[0] == expected)
+    assert sen_vec is not None
 
 
 @pytest.mark.parametrize(
@@ -216,11 +213,7 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
 def test_count_vector_featurizer_oov_words(sentence, expected):
 
     ftr = CountVectorsFeaturizer(
-        {
-            "token_pattern": r"(?u)\b\w+\b",
-            "OOV_token": "__oov__",
-            "OOV_words": ["oov_word0", "OOV_word1"],
-        }
+        {"OOV_token": "__oov__", "OOV_words": ["oov_word0", "OOV_word1"]}
     )
     train_message = Message(sentence)
     WhitespaceTokenizer().process(train_message)
@@ -231,24 +224,26 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    assert np.all(test_message.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()[0] == expected)
+    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
+    assert np.all(seq_vec.toarray()[0] == expected)
+    assert sen_vec is not None
 
 
 @pytest.mark.parametrize(
     "tokens, expected",
     [
-        (["hello", "hello", "hello", "hello", "hello", CLS_TOKEN], [[1]]),
-        (["你好", "你好", "你好", "你好", "你好", CLS_TOKEN], [[1]]),  # test for unicode chars
-        (["hello", "goodbye", "hello", CLS_TOKEN], [[0, 1]]),
+        (["hello", "hello", "hello", "hello", "hello"], [[1]]),
+        (["你好", "你好", "你好", "你好", "你好"], [[1]]),  # test for unicode chars
+        (["hello", "goodbye", "hello"], [[0, 1]]),
         # Note: order has changed in Chinese version of "hello" & "goodbye"
-        (["你好", "再见", "你好", CLS_TOKEN], [[1, 0]]),  # test for unicode chars
-        (["a", "b", "c", "d", "e", "f", CLS_TOKEN], [[1, 0, 0, 0, 0, 0]]),
-        (["a", "1", "2", CLS_TOKEN], [[0, 1]]),
+        (["你好", "再见", "你好"], [[1, 0]]),  # test for unicode chars
+        (["a", "b", "c", "d", "e", "f"], [[1, 0, 0, 0, 0, 0]]),
+        (["a", "1", "2"], [[0, 1]]),
     ],
 )
 def test_count_vector_featurizer_using_tokens(tokens, expected):
 
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer()
 
     # using empty string instead of real text string to make sure
     # count vector only can come from `tokens` feature.
@@ -268,7 +263,9 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
     ftr.process(test_message)
 
-    assert np.all(test_message.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()[0] == expected)
+    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
+    assert np.all(seq_vec.toarray()[0] == expected)
+    assert sen_vec is not None
 
 
 @pytest.mark.parametrize(
@@ -292,15 +289,16 @@ def test_count_vector_featurizer_char(sentence, expected):
     WhitespaceTokenizer().process(test_message)
     ftr.process(test_message)
 
-    assert np.all(test_message.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()[0] == expected)
+    seq_vec, sen_vec = train_message.get_sparse_features(TEXT, [])
+    assert np.all(seq_vec.toarray()[0] == expected)
+    assert sen_vec is not None
 
 
-def test_count_vector_featurizer_persist_load(tmpdir):
+def test_count_vector_featurizer_persist_load(tmp_path):
 
     # set non default values to config
     config = {
         "analyzer": "char",
-        "token_pattern": r"(?u)\b\w+\b",
         "strip_accents": "ascii",
         "stop_words": "stop",
         "min_df": 2,
@@ -321,7 +319,7 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     train_ftr.train(data)
 
     # persist featurizer
-    file_dict = train_ftr.persist("ftr", tmpdir.strpath)
+    file_dict = train_ftr.persist("ftr", str(tmp_path))
     train_vect_params = {
         attribute: vectorizer.get_params()
         for attribute, vectorizer in train_ftr.vectorizers.items()
@@ -337,7 +335,7 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     # load featurizer
     meta = train_ftr.component_config.copy()
     meta.update(file_dict)
-    test_ftr = CountVectorsFeaturizer.load(meta, tmpdir.strpath)
+    test_ftr = CountVectorsFeaturizer.load(meta, str(tmp_path))
     test_vect_params = {
         attribute: vectorizer.get_params()
         for attribute, vectorizer in test_ftr.vectorizers.items()
@@ -345,20 +343,24 @@ def test_count_vector_featurizer_persist_load(tmpdir):
 
     assert train_vect_params == test_vect_params
 
+    # check if vocaculary was loaded correctly
+    assert hasattr(test_ftr.vectorizers[TEXT], "vocabulary_")
+
     test_message1 = Message(sentence1)
     test_ftr.process(test_message1)
     test_message2 = Message(sentence2)
     test_ftr.process(test_message2)
 
+    test_seq_vec_1, test_sen_vec_1 = test_message1.get_sparse_features(TEXT, [])
+    train_seq_vec_1, train_sen_vec_1 = train_message1.get_sparse_features(TEXT, [])
+    test_seq_vec_2, test_sen_vec_2 = test_message2.get_sparse_features(TEXT, [])
+    train_seq_vec_2, train_sen_vec_2 = train_message2.get_sparse_features(TEXT, [])
+
     # check that train features and test features after loading are the same
-    assert np.all(
-        [
-            train_message1.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()
-            == test_message1.get(SPARSE_FEATURE_NAMES[TEXT]).toarray(),
-            train_message2.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()
-            == test_message2.get(SPARSE_FEATURE_NAMES[TEXT]).toarray(),
-        ]
-    )
+    assert np.all(test_seq_vec_1.toarray() == train_seq_vec_1.toarray())
+    assert np.all(test_sen_vec_1.toarray() == train_sen_vec_1.toarray())
+    assert np.all(test_seq_vec_2.toarray() == train_seq_vec_2.toarray())
+    assert np.all(test_sen_vec_2.toarray() == train_sen_vec_2.toarray())
 
 
 def test_count_vectors_featurizer_train():
@@ -376,19 +378,22 @@ def test_count_vectors_featurizer_train():
     expected = np.array([0, 1, 0, 0, 0])
     expected_cls = np.array([1, 1, 1, 1, 1])
 
-    vecs = message.get(SPARSE_FEATURE_NAMES[TEXT])
+    seq_vec, sen_vec = message.get_sparse_features(TEXT, [])
 
-    assert (6, 5) == vecs.shape
-    assert np.all(vecs.toarray()[0] == expected)
-    assert np.all(vecs.toarray()[-1] == expected_cls)
+    assert (5, 5) == seq_vec.shape
+    assert (1, 5) == sen_vec.shape
+    assert np.all(seq_vec.toarray()[0] == expected)
+    assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    vecs = message.get(SPARSE_FEATURE_NAMES[RESPONSE])
+    seq_vec, sen_vec = message.get_sparse_features(RESPONSE, [])
 
-    assert (6, 5) == vecs.shape
-    assert np.all(vecs.toarray()[0] == expected)
-    assert np.all(vecs.toarray()[-1] == expected_cls)
+    assert (5, 5) == seq_vec.shape
+    assert (1, 5) == sen_vec.shape
+    assert np.all(seq_vec.toarray()[0] == expected)
+    assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    vecs = message.get(SPARSE_FEATURE_NAMES[INTENT])
+    seq_vec, sen_vec = message.get_sparse_features(INTENT, [])
 
-    assert (1, 1) == vecs.shape
-    assert np.all(vecs.toarray()[0] == np.array([1]))
+    assert sen_vec is None
+    assert (1, 1) == seq_vec.shape
+    assert np.all(seq_vec.toarray()[0] == np.array([1]))

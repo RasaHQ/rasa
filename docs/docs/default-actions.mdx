@@ -1,0 +1,95 @@
+---
+id: default-actions
+sidebar_label: Default Actions
+title: Default Actions
+---
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="default-actions"></a>
+
+## Default Actions
+
+The available default actions are:
+
+|                                 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|`action_listen`                  |Stop predicting more actions and wait for user input.                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|`action_restart`                 |Reset the whole conversation. Can be triggered during a conversation by entering `/restart` if the [Mapping Policy](./policies.mdx#mapping-policy) is included in the policy configuration.                                                                                                                                                                                                                                                                                          |
+|`action_session_start`           |Start a new conversation session. Take all set slots, mark the beginning of a new conversation session and re-apply the existing `SlotSet` events. This action is triggered automatically after an inactivity period defined by the `session_expiration_time` parameter in the domain's [Session configuration](./domain.mdx#session-config). Can be triggered manually during a conversation by entering `/session_start`. All conversations begin with an `action_session_start`. |
+|`action_default_fallback`        |Undo the last user message (as if the user did not send it and the bot did not react) and utter a message that the bot did not understand. See [Fallback Policy](./policies.mdx#fallback-policy).                                                                                                                                                                                                                                                                                           |
+|`action_deactivate_form`         |Deactivate the active form and reset the requested slot. See also See also [Handling unhappy paths](./forms.mdx#writing-stories--rules-for-unhappy-form-paths).                                                                                                                                                                                                                                                                                                                                                             |
+|`action_revert_fallback_events`  |Revert events that occurred during the [TwoStageFallbackPolicy](./policies.mdx#two-stage-fallback-policy).                                                                                                                                                                                                                                                                                                                                                                    |
+|`action_default_ask_affirmation` |Ask the user to affirm their intent. It is suggested to overwrite this default action with a custom action to have more meaningful prompts.                                                                                                                                                                                                                                                                                                                                               |
+|`action_default_ask_rephrase`    |Ask the user to rephrase their intent.                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+|`action_back`                    |Undo the last user message (as if the user did not send it and the bot did not react). Can be triggered during a conversation by entering `/back` if the MappingPolicy is included in the policy configuration.                                                                                                                                                                                                                                                                           |
+
+All the default actions can be overridden. To do so, add the action name
+to the list of actions in your domain:
+
+```yaml-rasa
+actions:
+- action_default_ask_affirmation
+```
+
+Rasa will then call your action endpoint and treat it as every other
+custom action.
+
+## Customizing Default Actions
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="custom-session-start"></a>
+
+In order to overwrite a default action, write a custom action whose `name()` method
+returns the same name as the default action in the table above.
+Explicitly add this action to the `actions:` section of your domain file to tell Rasa
+to use your custom action instead of the default action when that action name is called.
+
+### Customizing the session start action
+
+The default behavior of the session start action is to take all existing slots and to
+carry them over into the next session. Let's say you do not want to carry over all
+slots, but only a user's name and their phone number. To do that, you'd override the
+`action_session_start` with a custom action that might look like this:
+
+```python
+from typing import Text, List, Dict, Any
+
+from rasa_sdk import Action, Tracker
+from rasa_sdk.events import SlotSet, SessionStarted, ActionExecuted, EventType
+from rasa_sdk.executor import CollectingDispatcher
+
+
+class ActionSessionStart(Action):
+    def name(self) -> Text:
+        return "action_session_start"
+
+    @staticmethod
+    def fetch_slots(tracker: Tracker) -> List[EventType]:
+        """Collect slots that contain the user's name and phone number."""
+
+        slots = []
+
+        for key in ("name", "phone_number"):
+            value = tracker.get_slot(key)
+            if value is not None:
+                slots.append(SlotSet(key=key, value=value))
+
+        return slots
+
+    async def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[EventType]:
+
+        # the session should begin with a `session_started` event
+        events = [SessionStarted(metadata=self.metadata)]
+
+        # any slots that should be carried over should come after the
+        # `session_started` event
+        events.extend(self.fetch_slots(tracker))
+
+        # an `action_listen` should be added at the end as a user message follows
+        events.append(ActionExecuted("action_listen"))
+
+        return events
+```

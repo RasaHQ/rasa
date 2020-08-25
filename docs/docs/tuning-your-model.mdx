@@ -1,0 +1,374 @@
+---
+id: tuning-your-model
+sidebar_label: Tuning Your Model
+title: Tuning Your Model
+---
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+
+## How to Choose a Pipeline
+
+In Rasa Open Source, incoming messages are processed by a sequence of components.
+These components are executed one after another in a so-called processing `pipeline` defined in your `config.yml`.
+Choosing an NLU pipeline allows you to customize your model and finetune it on your dataset.
+
+To get started, you can let the
+[Suggested Config](.//model-configuration.mdx#suggested-config) feature choose a
+default pipeline for you.
+Just provide your bot's `language` in the `config.yml` file and leave the `pipeline` key
+out or empty.
+
+```yaml-rasa
+language: fr  # your 2-letter language code
+
+pipeline:
+# intentionally left empty
+```
+
+### Sensible Starting Pipelines
+
+We recommend using following pipeline, if your training data is in English:
+
+```yaml-rasa (docs/sources/data/configs_for_docs/default_english_config.yml)
+```
+
+The pipeline contains the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) that provides pre-trained word embeddings of the user utterance.
+Pre-trained word embeddings are helpful as they already encode some kind of linguistic knowledge.
+For example, if you have a sentence like “I want to buy apples” in your training data, and Rasa is asked to predict
+the intent for “get pears”, your model already knows that the words “apples” and “pears” are very similar.
+This is especially useful if you don't have enough training data.
+The advantage of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is that it doesn't treat each word of the user message independently, but
+creates a contextual vector representation for the complete sentence.
+However, `ConveRT` is only available in English.
+
+If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
+the following pipeline:
+
+```yaml-rasa (docs/sources/data/configs_for_docs/default_spacy_config.yml)
+```
+
+It uses the [SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer) instead of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer).
+[SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer) provides pre-trained word embeddings from either GloVe or fastText in many different languages
+(see [Language Models](./components/language-models.mdx)).
+
+If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
+and can train your model to be more domain specific.
+If there are no word embeddings for your language or you have very domain specific terminology,
+we recommend using the following pipeline:
+
+```yaml-rasa (docs/sources/data/configs_for_docs/default_config.yml)
+```
+
+:::note
+If you want to use custom components in your pipeline, see [Custom NLU Components](./components/custom-nlu-components.mdx).
+
+:::
+
+
+### Component Lifecycle
+
+Each component processes an input and/or creates an output. The order of the components is determined by
+the order they are listed in the `config.yml`; the output of a component can be used by any other component that
+comes after it in the pipeline. Some components only produce information used by other components
+in the pipeline. Other components produce `output` attributes that are returned after
+the processing has finished.
+
+For example, for the sentence `"I am looking for Chinese food"`, the output is:
+
+```json
+{
+    "text": "I am looking for Chinese food",
+    "entities": [
+        {
+            "start": 8,
+            "end": 15,
+            "value": "chinese",
+            "entity": "cuisine",
+            "extractor": "DIETClassifier",
+            "confidence": 0.864
+        }
+    ],
+    "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
+    "intent_ranking": [
+        {"confidence": 0.6485910906220309, "name": "restaurant_search"},
+        {"confidence": 0.1416153159565678, "name": "affirm"}
+    ]
+}
+```
+
+This is created as a combination of the results of the different components in the following pipeline:
+
+```yaml-rasa
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: "char_wb"
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+```
+
+For example, the `entities` attribute here is created by the `DIETClassifier` component.
+
+Every component can implement several methods from the `Component` base class; in a pipeline these different methods
+will be called in a specific order. Assuming we added the following pipeline to our `config.yml`:
+
+```yaml-rasa
+pipeline:
+  - name: "Component A"
+  - name: "Component B"
+  - name: "Last Component"
+```
+
+The image below shows the call order during the training of this pipeline:
+
+
+
+<img alt="Component Lifecycle" src={useBaseUrl("/img/component_lifecycle.png")} />
+
+Before the first component is created using the `create` function, a so
+called `context` is created (which is nothing more than a python dict).
+This context is used to pass information between the components. For example,
+one component can calculate feature vectors for the training data, store
+that within the context and another component can retrieve these feature
+vectors from the context and do intent classification.
+
+Initially the context is filled with all configuration values. The arrows
+in the image show the call order and visualize the path of the passed
+context. After all components are trained and persisted, the
+final context dictionary is used to persist the model's metadata.
+
+### Multi-Intent Classification
+
+You can use Rasa Open Source components to split intents into multiple labels. For example, you can predict
+multiple intents (`thank+goodbye`) or model hierarchical intent structure (`feedback+positive` being more similar
+to `feedback+negative` than `chitchat`).
+To do this, you need to use the [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) in your pipeline.
+You'll also need to define these flags in whichever tokenizer you are using:
+
+* `intent_tokenization_flag`: Set it to `True`, so that intent labels are tokenized.
+
+* `intent_split_symbol`: Set it to the delimiter string that splits the intent labels. In this case `+`, default `_`.
+
+Read a [tutorial](https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/)
+on how to use multiple intents in Rasa.
+
+Here's an example configuration:
+
+```yaml-rasa
+language: "en"
+
+pipeline:
+- name: "WhitespaceTokenizer"
+  intent_tokenization_flag: True
+  intent_split_symbol: "_"
+- name: "CountVectorsFeaturizer"
+- name: "DIETClassifier"
+```
+
+### Comparing Pipelines
+
+Rasa gives you the tools to compare the performance of multiple pipelines on your data directly.
+See [Comparing NLU Pipelines](./testing-your-assistant.mdx#comparing-nlu-pipelines) for more information.
+
+:::note
+Intent classification is independent of entity extraction. So sometimes
+NLU will get the intent right but entities wrong, or the other way around.
+You need to provide enough data for both intents and entities.
+
+:::
+
+
+## Choosing the Right Components
+
+There are components for entity extraction, for intent classification, response selection,
+pre-processing, and others.
+If you want to add your own component, for example to run a spell-check or to
+do sentiment analysis, check out [Custom NLU Components](./components/custom-nlu-components.mdx).
+
+A pipeline usually consists of three main parts:
+
+### Tokenization
+
+For tokenization of English input, we recommend the [ConveRTTokenizer](./components/tokenizers.mdx#converttokenizer).
+You can process other whitespace-tokenized (words are separated by spaces) languages
+with the [WhitespaceTokenizer](./components/tokenizers.mdx#swhitespacetokenizer). If your language is not whitespace-tokenized, you should use a different tokenizer.
+We support a number of different [tokenizers](./components/tokenizers.mdx), or you can
+create your own [custom tokenizer](./components/custom-nlu-components.mdx).
+
+:::note
+Some components further down the pipeline may require a specific tokenizer. You can find those requirements
+on the individual components' `requires` parameter. If a required component is missing inside the pipeline, an
+error will be thrown.
+
+:::
+
+### Featurization
+
+You need to decide whether to use components that provide pre-trained word embeddings or not. We recommend in cases
+of small amounts of training data to start with pre-trained word embeddings. Once you have a larger amount of data
+and ensure that most relevant words will be in your data and therefore will have a word embedding, supervised
+embeddings, which learn word meanings directly from your training data, can make your model more specific to your domain.
+If you can't find a pre-trained model for your language, you should use supervised embeddings.
+
+#### Pre-trained Embeddings
+
+The advantage of using pre-trained word embeddings in your pipeline is that if you have a training example like:
+“I want to buy apples”, and Rasa is asked to predict the intent for “get pears”, your model already knows that the
+words “apples” and “pears” are very similar. This is especially useful if you don't have enough training data.
+We support a few components that provide pre-trained word embeddings:
+
+1. [MitieFeaturizer](./components/featurizers.mdx#mitiefeaturizer)
+
+2. [SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer)
+
+3. [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer)
+
+4. [LanguageModelFeaturizer](./components/featurizers.mdx#languagemodelfeaturizer)
+
+If your training data is in English, we recommend using the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer).
+The advantage of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is that it doesn't treat each word of the user message independently, but
+creates a contextual vector representation for the complete sentence. For example, if you
+have a training example, like: “Can I book a car?”, and Rasa is asked to predict the intent for “I need a ride from
+my place”, since the contextual vector representation for both examples are already very similar, the intent classified
+for both is highly likely to be the same. This is also useful if you don't have enough training data.
+
+An alternative to [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is the [LanguageModelFeaturizer](./components/featurizers.mdx#languagemodelfeaturizer) which uses pre-trained language
+models such as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
+[HFTransformersNLP](./components/language-models.mdx#hftransformersnlp) for a full list of supported language models.
+
+If your training data is not in English you can also use a different variant of a language model which
+is pre-trained in the language specific to your training data.
+For example, there are chinese (`bert-base-chinese`) and japanese (`bert-base-japanese`) variants of the BERT model.
+A full list of different variants of
+these language models is available in the
+[official documentation of the Transformers library](https://huggingface.co/transformers/pretrained_models.html).
+
+[spacynlp](./components/featurizers.mdx#spacyfeaturizer) also provides word embeddings in many different languages,
+so you can use this as another alternative, depending on the language of your training data.
+
+#### Supervised Embeddings
+
+If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
+and can train your model to be more domain specific. For example, in general English, the word “balance” is closely
+related to “symmetry”, but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely
+related and you'd like your model to capture that.
+You should only use featurizers from the category [sparse featurizers](./components/featurizers.mdx#text-featurizers), such as
+[CountVectorsFeaturizer](./components/featurizers.mdx#countvectorsfeaturizer), [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer), if you don't want to use
+pre-trained word embeddings.
+
+### Intent Classification / Response Selectors
+
+Depending on your data you may want to only perform intent classification, entity recognition or response selection.
+Or you might want to combine multiple of those tasks. We support several components for each of the tasks.
+We recommend using [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) for intent classification and entity recognition
+and [ResponseSelector](./components/selectors.mdx#responseselector) for response selection.
+
+By default all of these components consume all available features produced in the pipeline.
+However, sometimes it makes sense to restrict the features that are used by a specific component.
+For example, [ResponseSelector](./components/selectors.mdx#responseselector) is likely to perform better if no features from the
+[RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer) are used.
+To achieve that, you can do the following:
+Set an alias for every featurizer in your pipeline via the option `alias`.
+By default the alias is set the the full featurizer class name, for example, `RegexFeaturizer`.
+You can then specify, for example, on the [ResponseSelector](./components/selectors.mdx#responseselector) via the option `featurizers` what features from
+which featurizers should be used.
+If you don't set the option `featurizers` all available features will be used.
+
+Here is an example configuration file where the `DIETClassifier` is using all available features and the
+`ResponseSelector` is just using the features from the `ConveRTFeaturizer` and the `CountVectorsFeaturizer`.
+
+```yaml-rasa (docs/sources/data/configs_for_docs/config_featurizers.yml)
+```
+
+### Entity Extraction
+
+Entity extraction involves parsing user messages for required pieces of information. Rasa Open Source
+provides entity extractors for custom entities as well as pre-trained ones like dates and locations.
+Here is a summary of the available extractors and what they are best used for:
+
+|       Component        |     Requires     |                      Model                      |              Notes               |
+|------------------------|------------------|-------------------------------------------------|----------------------------------|
+|`DIETClassifier`        | N/A              |conditional random field on top of a transformer |good for training custom entities |
+|`CRFEntityExtractor`    |sklearn-crfsuite  |conditional random field                         |good for training custom entities |
+|`SpacyEntityExtractor`  |spaCy             |averaged perceptron                              |provides pre-trained entities     |
+|`DucklingHTTPExtractor` |running duckling  |context-free grammar                             |provides pre-trained entities     |
+|`MitieEntityExtractor`  |MITIE             |structured SVM                                   |good for training custom entities |
+|`EntitySynonymMapper`   |existing entities |N/A                                              |maps known synonyms               |
+
+## Handling Class Imbalance
+
+Classification algorithms often do not perform well if there is a large class imbalance,
+for example if you have a lot of training data for some intents and very little training data for others.
+To mitigate this problem, you can use a `balanced` batching strategy.
+This algorithm ensures that all classes are represented in every batch, or at least in
+as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
+Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
+`batch_strategy: sequence` in your config file.
+
+```yaml-rasa
+language: "en"
+
+pipeline:
+# - ... other components
+- name: "DIETClassifier"
+  batch_strategy: sequence
+```
+
+
+## Configuring Tensorflow
+
+TensorFlow allows configuring options in the runtime environment via
+[TF Config submodule](https://www.tensorflow.org/api_docs/python/tf/config). Rasa Open Source supports a smaller subset of these
+configuration options and makes appropriate calls to the `tf.config` submodule.
+This smaller subset comprises of configurations that developers frequently use with Rasa Open Source.
+All configuration options are specified using environment variables as shown in subsequent sections.
+
+### Optimizing CPU Performance
+
+:::note
+We recommend that you configure these options only if you are an advanced TensorFlow user and understand the
+implementation of the machine learning components in your pipeline. These options affect how operations are carried
+out under the hood in Tensorflow. Leaving them at their default values is fine.
+
+:::
+
+Depending on the TensorFlow operations a NLU component or Core policy uses, you can leverage multi-core CPU
+parallelism by tuning these options.
+
+#### Parallelizing One Operation
+
+Set `TF_INTRA_OP_PARALLELISM_THREADS` as an environment variable to specify the maximum number of threads that can be used
+to parallelize the execution of one operation. For example, operations like `tf.matmul()` and `tf.reduce_sum` can be executed
+on multiple threads running in parallel. The default value for this variable is `0` which means TensorFlow would
+allocate one thread per CPU core.
+
+#### Parallelizing Multiple Operations
+
+Set `TF_INTER_OP_PARALLELISM_THREADS` as an environment variable to specify the maximum number of threads that can be used
+to parallelize the execution of multiple **non-blocking** operations. These would include operations that do not have a
+directed path between them in the TensorFlow graph. In other words, the computation of one operation does not affect the
+computation of the other operation. The default value for this variable is `0` which means TensorFlow would allocate one thread per CPU core.
+
+To understand more about how these two options differ from each other, refer to this
+[stackoverflow thread](https://stackoverflow.com/questions/41233635/meaning-of-inter-op-parallelism-threads-and-intra-op-parallelism-threads/41233901#41233901).
+
+### Optimizing GPU Performance
+
+#### Limiting GPU Memory Growth
+
+TensorFlow by default blocks all the available GPU memory for the running process. This can be limiting if you are running
+multiple TensorFlow processes and want to distribute memory across them. To prevent Rasa Open Source from blocking all
+of the available GPU memory, set the environment variable `TF_FORCE_GPU_ALLOW_GROWTH` to `True`.
+
+#### Restricting Absolute GPU Memory Available
+
+You may want to limit the absolute amount of GPU memory that can be used by a Rasa Open Source process.
+
+For example, say you have two visible GPUs(`GPU:0` and `GPU:1`) and you want to allocate 1024 MB from the first GPU
+and 2048 MB from the second GPU. You can do this by setting the environment variable `TF_GPU_MEMORY_ALLOC` to `"0:1024, 1:2048"`.

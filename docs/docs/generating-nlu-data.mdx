@@ -1,0 +1,196 @@
+---
+id: generating-nlu-data
+sidebar_label: Generating NLU Data
+title: Generating NLU Data
+---
+
+NLU (Natural Language Understanding) is the part of Rasa Open Source that performs
+intent classification, entity extraction, and response retrieval.
+
+NLU will take in a sentence such as "I am looking for a French restaurant in the center
+of town" and return structured data like:
+
+```json
+{
+  "intent": "search_restaurant",
+  "entities": {
+    "cuisine": "French",
+    "location": "center"
+  }
+}
+```
+
+Building NLU models is hard, and building ones that are production-ready is even harder.
+Here are some tips for designing your NLU training data and pipeline to get the most
+out of your bot.
+
+## Conversation-Driven Development for NLU
+
+Conversation-Driven Development (CDD) means letting real user conversations guide your
+development. For building a great NLU model, this means two key things:
+
+### Gather Real Data
+When it comes to building out NLU training data, developers often rely on text
+generation tools to quickly increase the number of training examples. While this
+approach can be time-saving, it makes NLU models prone to overfit data that is not
+representative of things a real user would say.
+
+To avoid such a problem, it is always a good idea to collect as much real user data
+as possible to use as training data. Even though your bot will make mistakes initially,
+the process of training & evaluating on user data will enable your model to generalize
+much more effectively in real-world scenarios.
+
+### Share with Test Users Early
+
+In order to gather real data, you’re going to need real user messages. A bot developer
+can only come up with a limited range of examples, and users will always surprise you
+with what they say. This means you should share your bot with test users outside the
+development team as early as possible.
+See the full [CDD guidelines](./conversation-driven-development.mdx) for more details.
+
+## Avoiding Intent Confusion
+
+Intents are classified using character and word-level features extracted from your
+training examples, depending on what [featurizers](./components/featurizers.mdx)
+you've added to your NLU pipeline. When different intents contain the same
+words ordered in a similar fashion, this can create confusion for the intent classifier.
+
+### Splitting on Entities vs Intents
+
+Intent confusion often occurs when you want your assistant's response to be conditioned on
+information provided by the user. For example, 
+"How do I migrate to Rasa from IBM Watson?" versus "I want to migrate from Dialogflow."
+
+Since each of these messages will lead to a different response, your initial approach might be to create
+separate intents for each migration type, e.g. `watson_migration` and `dialogflow_migration`.
+However, these intents are trying to achieve the same goal (migrating to Rasa) and will 
+likely be phrased similarly, which may cause the model to confuse these intents.
+
+To avoid intent confusion, group these training examples into single `migration` intent and make
+the response depend on the value of a categorical `product` slot that comes from an entity.
+This also makes it easy to handle the case when no entity is provided,
+e.g. "How do I migrate to Rasa?" For example:
+
+```yaml-rasa
+stories:
+- story: migrate from IBM Watson
+  steps:
+    - intent: migration
+      entities:
+      - product
+    - slot_was_set:
+      - product: Watson
+    - action: utter_watson_migration
+
+- story: migrate from Dialogflow
+  steps:
+    - intent: migration
+      entities:
+      - product
+    - slot_was_set:
+      - product: Dialogflow
+    - action: utter_dialogflow_migration
+
+- story: migrate from unspecified
+  steps:
+    - intent: migration
+    - action: utter_ask_migration_product
+```
+
+## Improving Entity Recognition
+
+With Rasa Open Source, you can define custom entities and annotate them in your training data
+to teach your model to recognize them. Rasa Open Source also provides components 
+to extract pre-trained entities, as well as other forms of training data to help
+your model recognize and process entities.
+
+### Pre-trained Entity Extractors
+
+Common entities such as names, addresses, and cities require a large amount of training
+data for an NLU model to generalize effectively. 
+
+Rasa Open Source provides two great options for
+pre-trained extraction: [SpacyEntityExtractor](./components/entity-extractors/#SpacyEntityExtractor)
+and [DucklingEntityExtractor](./components/entity-extractors/#DucklingHTTPExtractor).
+Because these extractors have been pre-trained on a large corpus of data, you can use them
+to extract the entities they support without annotating them in your training data.
+
+### Regexes
+
+Regexes are useful for performing entity extraction on structured patterns such as 5-digit
+U.S. zip codes. Regex patterns can be used to generate features for the NLU model to learn,
+or as a method of direct entity matching.
+See [Regular Expression Features](./training-data-format/#regular-expression-features)
+for more information.
+
+### Lookup Tables
+
+Lookup tables are processed as a regex pattern that checks if any of the lookup table
+entries exist in the training example. Similar to regexes, lookup tables can be used
+to provide features to the model to improve entity recognition, or used to perform
+match-based entity recognition. Examples of useful applications of lookup tables are
+flavors of ice cream, brands of bottled water, and even sock length styles
+(see [Lookup Tables](./training-data-format/#lookup-tables)).
+
+### Synonyms
+
+Adding synonyms to your training data is useful for mapping certain entity values to a
+single normalized entity. Synonyms, however, are not meant for improving your model's
+entity recognition and have no effect on NLU performance.
+
+A good use case for synonyms is when normalizing entities belonging to distinct groups.
+For example, in an assistant that asks users what insurance policies they're interested
+in, they might respond with "my truck," "a car," or "I drive a batmobile."
+It would be a good idea to map `truck`, `car`, and `batmobile` to the normalized value
+`auto` so that the processing logic will only need to account for a narrow set of
+possibilities (see [Entity Synonyms](./training-data-format/#entity-synonyms)).
+
+## Handling Edge Cases
+
+### Misspellings
+
+Coming across misspellings is inevitable, so your bot needs an effective way to
+handle this. Keep in mind that the goal is not to correct misspellings, but to
+correctly identify intents and entities. For this reason, while a spellchecker may
+seem like an obvious solution, adjusting your featurizers and training data is often
+sufficient to account for misspellings. 
+
+Adding a character-level featurizer provides
+an effective defense against spelling errors by accounting for parts of words, instead
+of only whole words. You can add character level featurization to your pipeline by
+using the `char_wb` analyzer for the `CountVectorsFeaturizer`, for example:
+
+```yaml-rasa
+pipeline:
+# <other components> 
+- name: CountVectorsFeaturizer
+  analyze: char_wb
+  min_ngram: 1
+  max_ngram: 4
+# <other components> 
+```
+
+In addition to character-level featurization, you can add common misspellings to
+your training data.
+
+### Defining an Out-of-scope Intent
+
+It is always a good idea to define an `out_of_scope` intent in your bot to capture
+any user messages outside of your bot's domain. When an `out_of_scope` intent is
+identified, you can respond with messages such as "I'm not sure how to handle that,
+here are some things you can ask me..." to gracefully guide the user towards a
+supported skill.
+
+## Shipping Updates
+
+Treat your data like code. In the same way that you would never ship code updates
+without reviews, updates to your training data should be carefully reviewed because
+of the significant influence it can have on your model's performance.
+
+Use a version control system such as Github or Bitbucket to track changes to your
+data and rollback updates when necessary.
+
+Be sure to build tests for your NLU models to [evaluate performance](./testing-your-assistant.mdx) as training data
+and hyper-parameters change. Automate these tests in a [CI pipeline](./setting-up-ci-cd.mdx) such as Jenkins
+or Git Workflow to streamline your development process and ensure that only
+high-quality updates are shipped.

@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
 import tensorflow_addons as tfa
+import rasa.utils.tensorflow.crf
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 from rasa.utils.tensorflow.constants import SOFTMAX, MARGIN, COSINE, INNER
@@ -22,7 +23,7 @@ class SparseDropout(tf.keras.layers.Dropout):
 
     def call(
         self, inputs: tf.SparseTensor, training: Optional[Union[tf.Tensor, bool]] = None
-    ) -> tf.Tensor:
+    ) -> tf.SparseTensor:
         """Apply dropout to sparse inputs.
 
         Arguments:
@@ -36,13 +37,14 @@ class SparseDropout(tf.keras.layers.Dropout):
         Raises:
             A ValueError if inputs is not a sparse tensor
         """
+
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
 
         if training is None:
             training = K.learning_phase()
 
-        def dropped_inputs() -> tf.Tensor:
+        def dropped_inputs() -> tf.SparseTensor:
             to_retain_prob = tf.random.uniform(
                 tf.shape(inputs.values), 0, 1, inputs.values.dtype
             )
@@ -52,11 +54,10 @@ class SparseDropout(tf.keras.layers.Dropout):
         outputs = tf_utils.smart_cond(
             training, dropped_inputs, lambda: tf.identity(inputs)
         )
-        # need to explicitly set shape, because it becomes dynamic after `retain`
+        # need to explicitly recreate sparse tensor, because otherwise the shape
+        # information will be lost after `retain`
         # noinspection PyProtectedMember
-        outputs._dense_shape = inputs._dense_shape
-
-        return outputs
+        return tf.SparseTensor(outputs.indices, outputs.values, inputs._dense_shape)
 
 
 class DenseForSparse(tf.keras.layers.Dense):
@@ -445,6 +446,10 @@ class CRF(tf.keras.layers.Layer):
         self.num_tags = num_tags
         self.scale_loss = scale_loss
         self.transition_regularizer = tf.keras.regularizers.l2(reg_lambda)
+        self.f1_score_metric = tfa.metrics.F1Score(
+            num_classes=num_tags - 1,  # `0` prediction is not a prediction
+            average="micro",
+        )
 
     def build(self, input_shape: tf.TensorShape) -> None:
         # the weights should be created in `build` to apply random_seed
@@ -456,7 +461,9 @@ class CRF(tf.keras.layers.Layer):
         self.built = True
 
     # noinspection PyMethodOverriding
-    def call(self, logits: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
+    def call(
+        self, logits: tf.Tensor, sequence_lengths: tf.Tensor
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Decodes the highest scoring sequence of tags.
 
         Arguments:
@@ -467,16 +474,23 @@ class CRF(tf.keras.layers.Layer):
         Returns:
             A [batch_size, max_seq_len] matrix, with dtype `tf.int32`.
             Contains the highest scoring tag indices.
+            A [batch_size, max_seq_len] matrix, with dtype `tf.float32`.
+            Contains the confidence values of the highest scoring tag indices.
         """
-        pred_ids, _ = tfa.text.crf.crf_decode(
+        predicted_ids, scores, _ = rasa.utils.tensorflow.crf.crf_decode(
             logits, self.transition_params, sequence_lengths
         )
         # set prediction index for padding to `0`
         mask = tf.sequence_mask(
-            sequence_lengths, maxlen=tf.shape(pred_ids)[1], dtype=pred_ids.dtype
+            sequence_lengths,
+            maxlen=tf.shape(predicted_ids)[1],
+            dtype=predicted_ids.dtype,
         )
 
-        return pred_ids * mask
+        confidence_values = scores * tf.cast(mask, tf.float32)
+        predicted_ids = predicted_ids * mask
+
+        return predicted_ids, confidence_values
 
     def loss(
         self, logits: tf.Tensor, tag_indices: tf.Tensor, sequence_lengths: tf.Tensor
@@ -503,6 +517,25 @@ class CRF(tf.keras.layers.Layer):
             loss *= _scale_loss(log_likelihood)
 
         return tf.reduce_mean(loss)
+
+    def f1_score(
+        self, tag_ids: tf.Tensor, pred_ids: tf.Tensor, mask: tf.Tensor
+    ) -> tf.Tensor:
+        """Calculates f1 score for train predictions"""
+
+        mask_bool = tf.cast(mask[:, :, 0], tf.bool)
+
+        # pick only non padding values and flatten sequences
+        tag_ids_flat = tf.boolean_mask(tag_ids, mask_bool)
+        pred_ids_flat = tf.boolean_mask(pred_ids, mask_bool)
+
+        # set `0` prediction to not a prediction
+        num_tags = self.num_tags - 1
+
+        tag_ids_flat_one_hot = tf.one_hot(tag_ids_flat - 1, num_tags)
+        pred_ids_flat_one_hot = tf.one_hot(pred_ids_flat - 1, num_tags)
+
+        return self.f1_score_metric(tag_ids_flat_one_hot, pred_ids_flat_one_hot)
 
 
 class DotProductLoss(tf.keras.layers.Layer):

@@ -3,6 +3,7 @@ from typing import Text
 import os
 
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
+from rasa.core.constants import DEFAULT_INTENTS
 from rasa.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers.rasa import RasaFileImporter
@@ -19,10 +20,10 @@ async def test_rasa_file_importer(project: Text):
     importer = RasaFileImporter(config_path, domain_path, [default_data_path])
 
     domain = await importer.get_domain()
-    assert len(domain.intents) == 7
+    assert len(domain.intents) == 7 + len(DEFAULT_INTENTS)
     assert domain.slots == []
     assert domain.entities == []
-    assert len(domain.action_names) == 15
+    assert len(domain.action_names) == 17
     assert len(domain.templates) == 6
 
     stories = await importer.get_stories()
@@ -30,7 +31,7 @@ async def test_rasa_file_importer(project: Text):
 
     nlu_data = await importer.get_nlu_data("en")
     assert len(nlu_data.intents) == 7
-    assert len(nlu_data.intent_examples) == 43
+    assert len(nlu_data.intent_examples) == 68
 
 
 async def test_rasa_file_importer_with_invalid_config():

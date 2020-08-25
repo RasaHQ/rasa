@@ -1,9 +1,10 @@
-import io
 import logging
 import os
 import shutil
 import tarfile
 from typing import List, Optional, Text, Tuple
+
+import rasa.utils.common
 
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 def get_persistor(name: Text) -> Optional["Persistor"]:
     """Returns an instance of the requested persistor.
 
-    Currently, `aws`, `gcs` and `azure` are supported"""
+    Currently, `aws`, `gcs`, `azure` and providing module paths are supported remote storages."""
 
     if name == "aws":
         return AWSPersistor(
@@ -27,7 +28,17 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
             os.environ.get("AZURE_ACCOUNT_NAME"),
             os.environ.get("AZURE_ACCOUNT_KEY"),
         )
-
+    if name:
+        try:
+            persistor = rasa.utils.common.class_from_module_path(name)
+            return persistor()
+        except ImportError:
+            raise ImportError(
+                f"Unknown model persistor {name}. Please make sure to "
+                "either use an included model persistor (`aws`, `gcs` "
+                "or `azure`) or specify the module path to an external "
+                "model persistor."
+            )
     return None
 
 
@@ -173,7 +184,7 @@ class AWSPersistor(Persistor):
 class GCSPersistor(Persistor):
     """Store models on Google Cloud Storage.
 
-     Fetches them when needed, instead of storing them on the local disk."""
+    Fetches them when needed, instead of storing them on the local disk."""
 
     def __init__(self, bucket_name: Text) -> None:
         from google.cloud import storage

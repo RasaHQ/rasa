@@ -22,7 +22,6 @@ from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 
-
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS = (
@@ -35,15 +34,19 @@ DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
-DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.md"
+INCORRECT_NLU_DATA = "data/test/markdown_single_sections/incorrect_nlu_format.md"
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
-MOODBOT_MODEL_PATH = "examples/moodbot/models/"
+STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
+    "data/test_evaluations/stories_trip_circuit_breaker.md"
+)
 
-RESTAURANTBOT_PATH = "examples/restaurantbot/"
+E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
+    "data/test_evaluations/end_to_end_trips_circuit_breaker.md"
+)
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
@@ -51,7 +54,6 @@ TEST_DIALOGUES = [
     "data/test_dialogues/default.json",
     "data/test_dialogues/formbot.json",
     "data/test_dialogues/moodbot.json",
-    "data/test_dialogues/restaurantbot.json",
 ]
 
 EXAMPLE_DOMAINS = [
@@ -60,7 +62,6 @@ EXAMPLE_DOMAINS = [
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     "examples/formbot/domain.yml",
     "examples/moodbot/domain.yml",
-    "examples/restaurantbot/domain.yml",
 ]
 
 
@@ -122,6 +123,8 @@ def default_stack_config():
 
 @pytest.fixture(scope="session")
 def default_nlu_data():
+    from tests.conftest import DEFAULT_NLU_DATA
+
     return DEFAULT_NLU_DATA
 
 
@@ -189,7 +192,7 @@ def tracker_with_six_scheduled_reminders(
 
 
 @pytest.fixture(scope="session")
-def moodbot_domain(trained_moodbot_path):
+def moodbot_domain():
     domain_path = os.path.join("examples", "moodbot", "domain.yml")
     return Domain.load(domain_path)
 
@@ -227,7 +230,10 @@ async def form_bot_agent(trained_async, tmpdir_factory) -> Agent:
     zipped_model = await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",
-        training_files=["examples/formbot/data/stories.md"],
+        training_files=[
+            "examples/formbot/data/rules.yml",
+            "examples/formbot/data/stories.yml",
+        ],
     )
 
     return Agent.load_local_model(zipped_model)

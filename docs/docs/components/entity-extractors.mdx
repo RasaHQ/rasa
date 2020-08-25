@@ -1,0 +1,451 @@
+---
+id: entity-extractors
+sidebar_label: Entity Extractors
+title: Entity Extractors
+---
+
+
+Entity extractors extract entities, such as person names or locations, from the user message.
+
+
+## MitieEntityExtractor
+
+
+* **Short**
+
+  MITIE entity extraction (using a [MITIE NER trainer](https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp))
+
+
+
+* **Outputs**
+
+  `entities`
+
+
+
+* **Requires**
+
+  [MitieNLP](../components/language-models.mdx#mitienlp) and `tokens`
+
+
+
+* **Output-Example**
+
+  ```json
+  {
+      "entities": [{
+          "value": "New York City",
+          "start": 20,
+          "end": 33,
+          "confidence": null,
+          "entity": "city",
+          "extractor": "MitieEntityExtractor"
+      }]
+  }
+  ```
+
+
+
+* **Description**
+
+  `MitieEntityExtractor` uses the MITIE entity extraction to find entities in a message. The underlying classifier
+  is using a multi class linear SVM with a sparse linear kernel and custom features.
+  The MITIE component does not provide entity confidence values.
+
+  :::note
+  This entity extractor does not rely on any featurizer as it extracts features on its own.
+
+  :::
+
+
+
+* **Configuration**
+
+  ```yaml-rasa
+  pipeline:
+  - name: "MitieEntityExtractor"
+  ```
+
+
+## SpacyEntityExtractor
+
+
+* **Short**
+
+  spaCy entity extraction
+
+
+
+* **Outputs**
+
+  `entities`
+
+
+
+* **Requires**
+
+  [SpacyNLP](../components/language-models.mdx#spacynlp)
+
+
+
+* **Output-Example**
+
+  ```json
+  {
+      "entities": [{
+          "value": "New York City",
+          "start": 20,
+          "end": 33,
+          "confidence": null,
+          "entity": "city",
+          "extractor": "SpacyEntityExtractor"
+      }]
+  }
+  ```
+
+
+
+* **Description**
+
+  Using spaCy this component predicts the entities of a message. spaCy uses a statistical BILOU transition model.
+  As of now, this component can only use the spaCy builtin entity extraction models and can not be retrained.
+  This extractor does not provide any confidence scores.
+
+  You can test out spaCy's entity extraction models in this [interactive demo](https://explosion.ai/demos/displacy-ent).
+  Note that some spaCy models are highly case-sensitive.
+
+:::note
+The `SpacyEntityExtractor` extractor does not provide a `confidence` level and will always return `null`.
+
+:::
+
+* **Configuration**
+
+  Configure which dimensions, i.e. entity types, the spaCy component
+  should extract. A full list of available dimensions can be found in
+  the [spaCy documentation](https://spacy.io/api/annotation#section-named-entities).
+  Leaving the dimensions option unspecified will extract all available dimensions.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "SpacyEntityExtractor"
+    # dimensions to extract
+    dimensions: ["PERSON", "LOC", "ORG", "PRODUCT"]
+  ```
+
+
+## CRFEntityExtractor
+
+
+* **Short**
+
+  Conditional random field (CRF) entity extraction
+
+
+
+* **Outputs**
+
+  `entities`
+
+
+
+* **Requires**
+
+  `tokens` and `dense_features` (optional)
+
+
+
+* **Output-Example**
+
+  ```json
+  {
+      "entities": [{
+          "value": "New York City",
+          "start": 20,
+          "end": 33,
+          "entity": "city",
+          "confidence": 0.874,
+          "extractor": "CRFEntityExtractor"
+      }]
+  }
+  ```
+
+
+
+* **Description**
+
+  This component implements a conditional random fields (CRF) to do named entity recognition.
+  CRFs can be thought of as an undirected Markov chain where the time steps are words
+  and the states are entity classes. Features of the words (capitalization, POS tagging,
+  etc.) give probabilities to certain entity classes, as are transitions between
+  neighbouring entity tags: the most likely set of tags is then calculated and returned.
+
+
+  If you want to pass custom features, such as pre-trained word embeddings, to `CRFEntityExtractor`, you can
+  add any dense featurizer to the pipeline before the `CRFEntityExtractor`.
+  `CRFEntityExtractor` automatically finds the additional dense features and checks if the dense features are an
+  iterable of `len(tokens)`, where each entry is a vector.
+  A warning will be shown in case the check fails.
+  However, `CRFEntityExtractor` will continue to train just without the additional custom features.
+  In case dense features are present, `CRFEntityExtractor` will pass the dense features to `sklearn_crfsuite`
+  and use them for training.
+
+
+
+* **Configuration**
+
+  `CRFEntityExtractor` has a list of default features to use.
+  However, you can overwrite the default configuration.
+  The following features are available:
+
+  ```
+  ==============  ==========================================================================================
+  Feature Name    Description
+  ==============  ==========================================================================================
+  low             Checks if the token is lower case.
+  upper           Checks if the token is upper case.
+  title           Checks if the token starts with an uppercase character and all remaining characters are
+                  lowercased.
+  digit           Checks if the token contains just digits.
+  prefix5         Take the first five characters of the token.
+  prefix2         Take the first two characters of the token.
+  suffix5         Take the last five characters of the token.
+  suffix3         Take the last three characters of the token.
+  suffix2         Take the last two characters of the token.
+  suffix1         Take the last character of the token.
+  pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+  pos2            Take the first two characters of the Part-of-Speech tag of the token
+                  (``SpacyTokenizer`` required).
+  pattern         Take the patterns defined by ``RegexFeaturizer``.
+  bias            Add an additional "bias" feature to the list of features.
+  ==============  ==========================================================================================
+  ```
+
+  As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
+  previous tokens, the current token, and the next tokens in the sliding window.
+  You define the features as [before, token, after] array.
+
+  Additional you can set a flag to determine whether to use the BILOU tagging schema or not.
+
+  * `BILOU_flag` determines whether to use BILOU tagging or not. Default `True`.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "CRFEntityExtractor"
+    # BILOU_flag determines whether to use BILOU tagging or not.
+    "BILOU_flag": True
+    # features to extract in the sliding window
+    "features": [
+      ["low", "title", "upper"],
+      [
+        "bias",
+        "low",
+        "prefix5",
+        "prefix2",
+        "suffix5",
+        "suffix3",
+        "suffix2",
+        "upper",
+        "title",
+        "digit",
+        "pattern",
+      ],
+      ["low", "title", "upper"],
+    ]
+    # The maximum number of iterations for optimization algorithms.
+    "max_iterations": 50
+    # weight of the L1 regularization
+    "L1_c": 0.1
+    # weight of the L2 regularization
+    "L2_c": 0.1
+    # Name of dense featurizers to use.
+    # If list is empty all available dense features are used.
+    "featurizers": []
+  ```
+
+  :::note
+  If POS features are used (`pos` or `pos2`), you need to have `SpacyTokenizer` in your pipeline.
+
+  :::
+
+  :::note
+  If `pattern` features are used, you need to have `RegexFeaturizer` in your pipeline.
+
+  :::
+
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="ducklinghttpextractor"></a>
+
+## DucklingHTTPExtractor
+
+
+* **Short**
+
+  Duckling lets you extract common entities like dates,
+  amounts of money, distances, and others in a number of languages.
+
+
+
+* **Outputs**
+
+  `entities`
+
+
+
+* **Requires**
+
+  Nothing
+
+
+
+* **Output-Example**
+
+  ```json
+  {
+      "entities": [{
+          "end": 53,
+          "entity": "time",
+          "start": 48,
+          "value": "2017-04-10T00:00:00.000+02:00",
+          "confidence": 1.0,
+          "extractor": "DucklingHTTPExtractor"
+      }]
+  }
+  ```
+
+
+
+* **Description**
+
+  To use this component you need to run a duckling server. The easiest
+  option is to spin up a docker container using
+  `docker run -p 8000:8000 rasa/duckling`.
+
+  Alternatively, you can [install duckling directly on your
+  machine](https://github.com/facebook/duckling#quickstart) and start the server.
+
+  Duckling allows to recognize dates, numbers, distances and other structured entities
+  and normalizes them.
+  Please be aware that duckling tries to extract as many entity types as possible without
+  providing a ranking. For example, if you specify both `number` and `time` as dimensions
+  for the duckling component, the component will extract two entities: `10` as a number and
+  `in 10 minutes` as a time from the text `I will be there in 10 minutes`. In such a
+  situation, your application would have to decide which entity type is be the correct one.
+  The extractor will always return 1.0 as a confidence, as it is a rule
+  based system.
+
+  The list of supported languages can be found [here](https://github.com/facebook/duckling/tree/master/Duckling/Dimensions).
+
+
+
+* **Configuration**
+
+  Configure which dimensions, i.e. entity types, the duckling component
+  should extract. A full list of available dimensions can be found in
+  the [duckling documentation](https://duckling.wit.ai/).
+  Leaving the dimensions option unspecified will extract all available dimensions.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "DucklingHTTPExtractor"
+    # url of the running duckling server
+    url: "http://localhost:8000"
+    # dimensions to extract
+    dimensions: ["time", "number", "amount-of-money", "distance"]
+    # allows you to configure the locale, by default the language is
+    # used
+    locale: "de_DE"
+    # if not set the default timezone of Duckling is going to be used
+    # needed to calculate dates from relative expressions like "tomorrow"
+    timezone: "Europe/Berlin"
+    # Timeout for receiving response from http url of the running duckling server
+    # if not set the default timeout of duckling http url is set to 3 seconds.
+    timeout : 3
+  ```
+
+
+## DIETClassifier
+
+
+* **Short**
+
+  Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction
+
+
+
+* **Description**
+
+  You can find the detailed description of the [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier) under the section
+  Intent Classifiers.
+
+
+
+## EntitySynonymMapper
+
+
+* **Short**
+
+  Maps synonymous entity values to the same value.
+
+
+
+* **Outputs**
+
+  Modifies existing entities that previous entity extraction components found.
+
+
+
+* **Requires**
+
+  An extractor from [Entity Extractors](../components/entity-extractors.mdx)
+
+
+
+* **Description**
+
+  If the training data contains defined synonyms, this component will make sure that detected entity values will
+  be mapped to the same value. For example, if your training data contains the following examples:
+
+  ```json
+  [
+      {
+        "text": "I moved to New York City",
+        "intent": "inform_relocation",
+        "entities": [{
+          "value": "nyc",
+          "start": 11,
+          "end": 24,
+          "entity": "city",
+        }]
+      },
+      {
+        "text": "I got a new flat in NYC.",
+        "intent": "inform_relocation",
+        "entities": [{
+          "value": "nyc",
+          "start": 20,
+          "end": 23,
+          "entity": "city",
+        }]
+      }
+  ]
+  ```
+
+  This component will allow you to map the entities `New York City` and `NYC` to `nyc`. The entity
+  extraction will return `nyc` even though the message contains `NYC`. When this component changes an
+  existing entity, it appends itself to the processor list of this entity.
+
+
+
+* **Configuration**
+
+  ```yaml-rasa
+  pipeline:
+  - name: "EntitySynonymMapper"
+  ```
+
+  :::note
+  When using the `EntitySynonymMapper` as part of an NLU pipeline, it will need to be placed
+  below any entity extractors in the configuration file.
+
+  :::

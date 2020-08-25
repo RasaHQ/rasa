@@ -1,8 +1,8 @@
-from typing import Text
+from typing import Text, Dict, Any
 
 from ruamel.yaml.constructor import DuplicateKeyError
 
-from rasa.constants import PACKAGE_NAME
+from rasa.constants import PACKAGE_NAME, DOCS_URL_TRAINING_DATA_NLU
 
 
 class InvalidYamlFileError(ValueError):
@@ -64,3 +64,27 @@ def validate_yaml_schema(
             "take a look at the errors logged during "
             "validation previous to this exception."
         )
+
+
+def validate_training_data(json_data: Dict[Text, Any], schema: Dict[Text, Any]) -> None:
+    """Validate rasa training data format to ensure proper training.
+
+    Args:
+        json_data: the data to validate
+        schema: the schema
+
+    Raises:
+        ValidationError if validation fails.
+    """
+    from jsonschema import validate
+    from jsonschema import ValidationError
+
+    try:
+        validate(json_data, schema)
+    except ValidationError as e:
+        e.message += (
+            f". Failed to validate data, make sure your data "
+            f"is valid. For more information about the format visit "
+            f"{DOCS_URL_TRAINING_DATA_NLU}."
+        )
+        raise e

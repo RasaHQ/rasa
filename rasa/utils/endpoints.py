@@ -1,10 +1,9 @@
+import aiohttp
 import logging
 import os
-
-import aiohttp
-from typing import Any, Optional, Text, Dict
-
+from aiohttp.client_exceptions import ContentTypeError
 from sanic.request import Request
+from typing import Any, Optional, Text, Dict
 
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
@@ -43,14 +42,20 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     Strips leading slashes from the subpath if necessary. This behaves
     differently than `urlparse.urljoin` and will not treat the subpath
     as a base url if it starts with `/` but will always append it to the
-    `base`."""
+    `base`.
 
+    Args:
+        base: Base URL.
+        subpath: Optional path to append to the base URL.
+
+    Returns:
+        Concatenated URL with base and subpath.
+    """
     if not subpath:
         if base.endswith("/"):
             logger.debug(
-                "The URL '{}' has a trailing slash. Please make sure the "
-                "target server supports trailing slashes for this "
-                "endpoint.".format(base)
+                f"The URL '{base}' has a trailing slash. Please make sure the "
+                f"target server supports trailing slashes for this endpoint."
             )
         return base
 
@@ -119,10 +124,9 @@ class EndpointConfig:
         method: Text = "post",
         subpath: Optional[Text] = None,
         content_type: Optional[Text] = "application/json",
-        return_method: Text = "json",
         **kwargs: Any,
-    ):
-        """Send a HTTP request to the endpoint.
+    ) -> Optional[Any]:
+        """Send a HTTP request to the endpoint. Return json response, if available.
 
         All additional arguments will get passed through
         to aiohttp's `session.request`."""
@@ -144,12 +148,15 @@ class EndpointConfig:
                 headers=headers,
                 params=self.combine_parameters(kwargs),
                 **kwargs,
-            ) as resp:
-                if resp.status >= 400:
+            ) as response:
+                if response.status >= 400:
                     raise ClientResponseError(
-                        resp.status, resp.reason, await resp.content.read()
+                        response.status, response.reason, await response.content.read()
                     )
-                return await getattr(resp, return_method)()
+                try:
+                    return await response.json()
+                except ContentTypeError:
+                    return None
 
     @classmethod
     def from_dict(cls, data) -> "EndpointConfig":

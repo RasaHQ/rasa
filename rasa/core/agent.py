@@ -71,41 +71,76 @@ async def load_from_server(agent: "Agent", model_server: EndpointConfig) -> "Age
     return agent
 
 
+def _load_interpreter(
+    agent: "Agent", nlu_path: Optional[Text]
+) -> NaturalLanguageInterpreter:
+    """Load the NLU interpreter at `nlu_path`.
+
+    Args:
+        agent: Instance of `Agent` to inspect for an interpreter if `nlu_path` is
+            `None`.
+        nlu_path: NLU model path.
+
+    Returns:
+        The NLU interpreter.
+    """
+    if nlu_path:
+        from rasa.core.interpreter import RasaNLUInterpreter
+
+        return RasaNLUInterpreter(model_directory=nlu_path)
+
+    return agent.interpreter or RegexInterpreter()
+
+
+def _load_domain_and_policy_ensemble(
+    core_path: Optional[Text],
+) -> Tuple[Optional[Domain], Optional[PolicyEnsemble]]:
+    """Load the domain and policy ensemble from the model at `core_path`.
+
+    Args:
+        core_path: Core model path.
+
+    Returns:
+        An instance of `Domain` and `PolicyEnsemble` if `core_path` is not `None`.
+    """
+    policy_ensemble = None
+    domain = None
+
+    if core_path:
+        policy_ensemble = PolicyEnsemble.load(core_path)
+        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
+        domain = Domain.load(domain_path)
+
+    return domain, policy_ensemble
+
+
 def _load_and_set_updated_model(
     agent: "Agent", model_directory: Text, fingerprint: Text
-):
-    """Load the persisted model into memory and set the model on the agent."""
+) -> None:
+    """Load the persisted model into memory and set the model on the agent.
 
+    Args:
+        agent: Instance of `Agent` to update with the new model.
+        model_directory: Rasa model directory.
+        fingerprint: Fingerprint of the supplied model at `model_directory`.
+    """
     logger.debug(f"Found new model with fingerprint {fingerprint}. Loading...")
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
-    if nlu_path:
-        from rasa.core.interpreter import RasaNLUInterpreter
-
-        interpreter = RasaNLUInterpreter(model_directory=nlu_path)
-    else:
-        interpreter = (
-            agent.interpreter if agent.interpreter is not None else RegexInterpreter()
-        )
-
-    domain = None
-    if core_path:
-        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
-        domain = Domain.load(domain_path)
-
     try:
-        policy_ensemble = None
-        if core_path:
-            policy_ensemble = PolicyEnsemble.load(core_path)
+        interpreter = _load_interpreter(agent, nlu_path)
+        domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
+
         agent.update_model(
             domain, policy_ensemble, fingerprint, interpreter, model_directory
         )
+
         logger.debug("Finished updating agent to new model.")
-    except Exception:
+    except Exception as e:
         logger.exception(
-            "Failed to load policy and update agent. "
-            "The previous model will stay loaded instead."
+            f"Failed to update model. The previous model will stay loaded instead. "
+            f"Error: {e}"
         )
 
 
@@ -463,14 +498,10 @@ class Agent:
         """Handle a single message."""
 
         if not isinstance(message, UserMessage):
-            raise_warning(
+            # DEPRECATION EXCEPTION - remove in 2.1
+            raise Exception(
                 "Passing a text to `agent.handle_message(...)` is "
-                "deprecated. Rather use `agent.handle_text(...)`.",
-                DeprecationWarning,
-            )
-            # noinspection PyTypeChecker
-            return await self.handle_text(
-                message, message_preprocessor=message_preprocessor, **kwargs
+                "not supported anymore. Rather use `agent.handle_text(...)`."
             )
 
         def noop(_):
@@ -532,7 +563,7 @@ class Agent:
 
         processor = self.create_processor()
         await processor.trigger_external_user_uttered(
-            intent_name, entities, tracker, output_channel,
+            intent_name, entities, tracker, output_channel
         )
 
     async def handle_text(
@@ -557,7 +588,7 @@ class Agent:
 
             >>> from rasa.core.agent import Agent
             >>> from rasa.core.interpreter import RasaNLUInterpreter
-            >>> agent = Agent.load("examples/restaurantbot/models/current")
+            >>> agent = Agent.load("examples/moodbot/models")
             >>> await agent.handle_text("hello")
             [u'how can I help you?']
 
@@ -577,7 +608,7 @@ class Agent:
         the prediction of that policy. When set to ``False`` the Memoization
         policies present in the policy ensemble will not make any predictions.
         Hence, the prediction result from the ensemble always needs to come
-        from a different policy (e.g. ``KerasPolicy``). Useful to test
+        from a different policy (e.g. ``TEDPolicy``). Useful to test
         prediction
         capabilities of an ensemble when ignoring memorized turns from the
         training data."""
@@ -596,7 +627,9 @@ class Agent:
         max_histories = [
             policy.featurizer.max_history
             for policy in self.policy_ensemble.policies
-            if hasattr(policy.featurizer, "max_history")
+            if policy.featurizer
+            and hasattr(policy.featurizer, "max_history")
+            and policy.featurizer.max_history is not None
         ]
 
         return max(max_histories or [0])
@@ -604,8 +637,12 @@ class Agent:
     def _are_all_featurizers_using_a_max_history(self) -> bool:
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
-        def has_max_history_featurizer(policy):
-            return policy.featurizer and hasattr(policy.featurizer, "max_history")
+        def has_max_history_featurizer(policy: Policy) -> bool:
+            return (
+                policy.featurizer
+                and hasattr(policy.featurizer, "max_history")
+                and policy.featurizer.max_history is not None
+            )
 
         for p in self.policy_ensemble.policies:
             if p.featurizer and not has_max_history_featurizer(p):
@@ -621,7 +658,7 @@ class Agent:
         tracker_limit: Optional[int] = None,
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
-        exclusion_percentage: int = None,
+        exclusion_percentage: Optional[int] = None,
     ) -> List[DialogueStateTracker]:
         """Load training data from a resource."""
 
@@ -704,46 +741,10 @@ class Agent:
 
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
-        self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
+        self.policy_ensemble.train(
+            training_trackers, self.domain, interpreter=self.interpreter, **kwargs
+        )
         self._set_fingerprint()
-
-    def handle_channels(
-        self,
-        channels: List[InputChannel],
-        http_port: int = constants.DEFAULT_SERVER_PORT,
-        route: Text = "/webhooks/",
-        cors: Union[Text, List[Text], None] = None,
-    ) -> Sanic:
-        """Start a webserver attaching the input channels and handling msgs."""
-
-        from rasa.core import run
-
-        raise_warning(
-            "Using `handle_channels` is deprecated. "
-            "Please use `rasa.run(...)` or see "
-            "`rasa.core.run.configure_app(...)` if you want to implement "
-            "this on a more detailed level.",
-            DeprecationWarning,
-        )
-
-        app = run.configure_app(channels, cors, None, enable_api=False, route=route)
-
-        app.agent = self
-
-        update_sanic_log_level()
-
-        app.run(
-            host="0.0.0.0",
-            port=http_port,
-            backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
-            workers=rasa.core.utils.number_of_sanic_workers(self.lock_store),
-        )
-
-        # this might seem unnecessary (as run does not return until the server
-        # is killed) - but we use it for tests where we mock `.run` to directly
-        # return and need the app to inspect if we created a properly
-        # configured server
-        return app
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:
 
@@ -806,7 +807,7 @@ class Agent:
         fontsize: int = 12,
     ) -> None:
         from rasa.core.training.visualization import visualize_stories
-        from rasa.core.training.dsl import StoryFileReader
+        from rasa.core.training import loading
 
         """Visualize the loaded training data from the resource."""
 
@@ -814,7 +815,7 @@ class Agent:
         # largest value from any policy
         max_history = max_history or self._max_history()
 
-        story_steps = await StoryFileReader.read_from_folder(resource_name, self.domain)
+        story_steps = await loading.load_data_from_resource(resource_name, self.domain)
         await visualize_stories(
             story_steps,
             self.domain,

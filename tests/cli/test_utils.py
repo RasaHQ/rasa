@@ -91,7 +91,7 @@ def test_validate_with_none_if_default_is_valid(caplog: LogCaptureFixture):
     assert caplog.records == []
 
 
-def test_validate_with_invalid_directory_if_default_is_valid(caplog: LogCaptureFixture):
+def test_validate_with_invalid_directory_if_default_is_valid():
     tempdir = tempfile.mkdtemp()
     invalid_directory = "gcfhvjkb"
     with pytest.warns(UserWarning) as record:

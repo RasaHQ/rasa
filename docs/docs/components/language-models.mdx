@@ -1,0 +1,211 @@
+---
+id: language-models
+sidebar_label: Language Models
+title: Language Models
+---
+
+The following components load pre-trained models that are needed if you want to use pre-trained
+word vectors in your pipeline.
+
+
+## MitieNLP
+
+
+* **Short**
+
+  MITIE initializer
+
+
+
+* **Outputs**
+
+  Nothing
+
+
+
+* **Requires**
+
+  Nothing
+
+
+
+* **Description**
+
+  Initializes MITIE structures. Every MITIE component relies on this,
+  hence this should be put at the beginning
+  of every pipeline that uses any MITIE components.
+
+
+
+* **Configuration**
+
+  The MITIE library needs a language model file, that **must** be specified in
+  the configuration:
+
+  ```yaml-rasa
+  pipeline:
+  - name: "MitieNLP"
+    # language model to load
+    model: "data/total_word_feature_extractor.dat"
+  ```
+
+  For more information where to get that file from, head over to
+  [installing MITIE](../installation.mdx#install-mitie).
+
+
+  You can also pre-train your own word vectors from a language corpus using MITIE. To do so:
+
+  1. Get a clean language corpus (a Wikipedia dump works) as a set of text files.
+
+  2. Build and run [MITIE Wordrep Tool](https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep) on your corpus.
+     This can take several hours/days depending on your dataset and your workstation.
+     You'll need something like 128GB of RAM for wordrep to run – yes, that's a lot: try to extend your swap.
+
+  3. Set the path of your new `total_word_feature_extractor.dat` as the `model` parameter in your
+     [configuration](./tuning-your-model.mdx#section-mitie-pipeline).
+
+  For a full example of how to train MITIE word vectors, check out
+  [this blogpost](http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html)
+  of creating a MITIE model from a Chinese Wikipedia dump.
+
+
+
+## SpacyNLP
+
+
+* **Short**
+
+  spaCy language initializer
+
+
+
+* **Outputs**
+
+  Nothing
+
+
+
+* **Requires**
+
+  Nothing
+
+
+
+* **Description**
+
+  Initializes spaCy structures. Every spaCy component relies on this, hence this should be put at the beginning
+  of every pipeline that uses any spaCy components.
+
+
+
+* **Configuration**
+
+  You need to specify the language model to use.
+  By default the language configured in the pipeline will be used as the language model name.
+  If the spaCy model to be used has a name that is different from the language tag (`"en"`, `"de"`, etc.),
+  the model name can be specified using the configuration variable `model`.
+  The name will be passed to `spacy.load(name)`.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "SpacyNLP"
+    # language model to load
+    model: "en_core_web_md"
+
+    # when retrieving word vectors, this will decide if the casing
+    # of the word is relevant. E.g. `hello` and `Hello` will
+    # retrieve the same vector, if set to `False`. For some
+    # applications and models it makes sense to differentiate
+    # between these two words, therefore setting this to `True`.
+    case_sensitive: False
+  ```
+
+  For more information on how to download the spaCy models, head over to
+  [installing SpaCy](../installation.mdx#install-spacy).
+
+  In addition to SpaCy's pretrained language models, you can also use this component to
+  load fastText vectors, which are available for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md).
+  If you want to incorporate a custom model you've found into spaCy, check out their page on
+  [adding languages](https://spacy.io/usage/adding-languages/). As described in the documentation, you need to
+  register your language model and link it to the language identifier, which will allow Rasa to load and use your new language
+  by passing in your language identifier as the `language` option.
+
+
+## HFTransformersNLP
+
+
+* **Short**
+
+  HuggingFace's Transformers based pre-trained language model initializer
+
+
+
+* **Outputs**
+
+  Nothing
+
+
+
+* **Requires**
+
+  Nothing
+
+
+
+* **Description**
+
+  Initializes specified pre-trained language model from HuggingFace's [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
+  featurization to compute sequence and sentence level representations for each example in the training data.
+  Include [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](../components/featurizers.mdx#languagemodelfeaturizer) to utilize the output of this
+  component for downstream NLU models.
+
+  :::note
+  To use `HFTransformersNLP` component, install Rasa Open Source with `pip install rasa[transformers]`.
+
+  :::
+
+
+
+* **Configuration**
+
+  You should specify what language model to load via the parameter `model_name`. See the below table for the
+  available language models.
+  Additionally, you can also specify the architecture variation of the chosen language model by specifying the
+  parameter `model_weights`.
+  The full list of supported architectures can be found
+  [here](https://huggingface.co/transformers/pretrained_models.html).
+  If left empty, it uses the default model architecture that original Transformers library loads (see table below).
+
+  ```
+  +----------------+--------------+-------------------------+
+  | Language Model | Parameter    | Default value for       |
+  |                | "model_name" | "model_weights"         |
+  +----------------+--------------+-------------------------+
+  | BERT           | bert         | bert-base-uncased       |
+  +----------------+--------------+-------------------------+
+  | GPT            | gpt          | openai-gpt              |
+  +----------------+--------------+-------------------------+
+  | GPT-2          | gpt2         | gpt2                    |
+  +----------------+--------------+-------------------------+
+  | XLNet          | xlnet        | xlnet-base-cased        |
+  +----------------+--------------+-------------------------+
+  | DistilBERT     | distilbert   | distilbert-base-uncased |
+  +----------------+--------------+-------------------------+
+  | RoBERTa        | roberta      | roberta-base            |
+  +----------------+--------------+-------------------------+
+  ```
+
+  The following configuration loads the language model BERT:
+
+  ```yaml-rasa
+  pipeline:
+    - name: HFTransformersNLP
+      # Name of the language model to use
+      model_name: "bert"
+      # Pre-Trained weights to be loaded
+      model_weights: "bert-base-uncased"
+
+      # An optional path to a specific directory to download and cache the pre-trained model weights.
+      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      cache_dir: null
+  ```

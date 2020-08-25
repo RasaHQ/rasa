@@ -18,6 +18,7 @@ from rasa.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
 )
+from rasa.nlu.constants import INTENT_NAME_KEY
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -56,11 +57,12 @@ def deserialise_entities(entities: Union[Text, List[Any]]) -> List[Dict[Text, An
 
 
 def md_format_message(text, intent, entities) -> Text:
-    from rasa.nlu.training_data.formats import MarkdownWriter, MarkdownReader
+    from rasa.nlu.training_data.formats import MarkdownReader
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     message_from_md = MarkdownReader().parse_training_example(text)
     deserialised_entities = deserialise_entities(entities)
-    return MarkdownWriter.generate_message_md(
+    return TrainingDataWriter.generate_message(
         {
             "text": message_from_md.text,
             "intent": intent,
@@ -139,7 +141,7 @@ class Event:
         if event_name is None:
             return None
 
-        event_class: Type[Event] = Event.resolve_by_type(event_name, default)
+        event_class: Optional[Type[Event]] = Event.resolve_by_type(event_name, default)
         if not event_class:
             return None
 
@@ -258,7 +260,11 @@ class UserUttered(Event):
 
     def __hash__(self) -> int:
         return hash(
-            (self.text, self.intent.get("name"), jsonpickle.encode(self.entities))
+            (
+                self.text,
+                self.intent.get(INTENT_NAME_KEY),
+                jsonpickle.encode(self.entities),
+            )
         )
 
     def __eq__(self, other) -> bool:
@@ -267,11 +273,11 @@ class UserUttered(Event):
         else:
             return (
                 self.text,
-                self.intent.get("name"),
+                self.intent.get(INTENT_NAME_KEY),
                 [jsonpickle.encode(ent) for ent in self.entities],
             ) == (
                 other.text,
-                other.intent.get("name"),
+                other.intent.get(INTENT_NAME_KEY),
                 [jsonpickle.encode(ent) for ent in other.entities],
             )
 
@@ -324,11 +330,11 @@ class UserUttered(Event):
                 ent_string = ""
 
             parse_string = "{intent}{entities}".format(
-                intent=self.intent.get("name", ""), entities=ent_string
+                intent=self.intent.get(INTENT_NAME_KEY, ""), entities=ent_string
             )
             if e2e:
                 message = md_format_message(self.text, self.intent, self.entities)
-                return "{}: {}".format(self.intent.get("name"), message)
+                return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
             else:
                 return parse_string
         else:
@@ -340,11 +346,11 @@ class UserUttered(Event):
 
     @staticmethod
     def create_external(
-        intent_name: Text, entity_list: Optional[List[Dict[Text, Any]]] = None,
+        intent_name: Text, entity_list: Optional[List[Dict[Text, Any]]] = None
     ) -> "UserUttered":
         return UserUttered(
             text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
-            intent={"name": intent_name},
+            intent={INTENT_NAME_KEY: intent_name},
             metadata={IS_EXTERNAL: True},
             entities=entity_list or [],
         )
@@ -733,7 +739,7 @@ class ReminderCancelled(Event):
         super().__init__(timestamp, metadata)
 
     def __hash__(self) -> int:
-        return hash((self.name, self.intent, str(self.entities),))
+        return hash((self.name, self.intent, str(self.entities)))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, ReminderCancelled):
@@ -1109,12 +1115,11 @@ class AgentUttered(Event):
             raise ValueError(f"Failed to parse agent uttered event. {e}")
 
 
-class Form(Event):
-    """If `name` is not None: activates a form with `name`
-        else deactivates active form
+class ActiveLoop(Event):
+    """If `name` is not None: activates a loop with `name` else deactivates active loop.
     """
 
-    type_name = "form"
+    type_name = "active_loop"
 
     def __init__(
         self,
@@ -1126,26 +1131,26 @@ class Form(Event):
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
-        return f"Form({self.name})"
+        return f"Loop({self.name})"
 
     def __hash__(self) -> int:
         return hash(self.name)
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, Form):
+        if not isinstance(other, ActiveLoop):
             return False
         else:
             return self.name == other.name
 
     def as_story_string(self) -> Text:
         props = json.dumps({"name": self.name})
-        return f"{self.type_name}{props}"
+        return f"{ActiveLoop.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters) -> List["Form"]:
+    def _from_story_string(cls, parameters: Dict[Text, Any]) -> List["ActiveLoop"]:
         """Called to convert a parsed story line into an event."""
         return [
-            Form(
+            ActiveLoop(
                 parameters.get("name"),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
@@ -1158,12 +1163,29 @@ class Form(Event):
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        tracker.change_form_to(self.name)
+        tracker.change_loop_to(self.name)
+
+
+class LegacyForm(ActiveLoop):
+    """Legacy handler of old `Form` events.
+
+    The `ActiveLoop` event used to be called `Form`. This class is there to handle old
+    legacy events which were stored with the old type name `form`.
+    """
+
+    type_name = "form"
+
+    def as_dict(self) -> Dict[Text, Any]:
+        d = super().as_dict()
+        # Dump old `Form` events as `ActiveLoop` events instead of keeping the old
+        # event type.
+        d["event"] = ActiveLoop.type_name
+        return d
 
 
 class FormValidation(Event):
-    """Event added by FormPolicy to notify form action
-        whether or not to validate the user input"""
+    """Event added by FormPolicy and RulePolicy to notify form action
+       whether or not to validate the user input."""
 
     type_name = "form_validation"
 

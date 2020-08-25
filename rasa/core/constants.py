@@ -1,3 +1,5 @@
+from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+
 DEFAULT_SERVER_PORT = 5005
 
 DEFAULT_SERVER_FORMAT = "{}://localhost:{}"
@@ -7,8 +9,6 @@ DEFAULT_SERVER_URL = DEFAULT_SERVER_FORMAT.format("http", DEFAULT_SERVER_PORT)
 DEFAULT_NLU_FALLBACK_THRESHOLD = 0.0
 
 DEFAULT_CORE_FALLBACK_THRESHOLD = 0.0
-
-DEFAULT_FALLBACK_ACTION = "action_default_fallback"
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
@@ -35,6 +35,14 @@ USER_INTENT_SESSION_START = "session_start"
 USER_INTENT_BACK = "back"
 
 USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
+
+DEFAULT_INTENTS = [
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    USER_INTENT_OUT_OF_SCOPE,
+    USER_INTENT_SESSION_START,
+    DEFAULT_NLU_FALLBACK_INTENT_NAME,
+]
 
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
@@ -65,3 +73,11 @@ DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
 # RabbitMQ message property header added to events published using `rasa export`
 RASA_EXPORT_PROCESS_ID_HEADER_NAME = "rasa-export-process-id"
+
+# Name of the environment variable defining the PostgreSQL schema to access. See
+# https://www.postgresql.org/docs/9.1/ddl-schemas.html for more details.
+POSTGRESQL_SCHEMA = "POSTGRESQL_SCHEMA"
+
+# Names of the environment variables defining PostgreSQL pool size and max overflow
+POSTGRESQL_POOL_SIZE = "SQL_POOL_SIZE"
+POSTGRESQL_MAX_OVERFLOW = "SQL_MAX_OVERFLOW"
