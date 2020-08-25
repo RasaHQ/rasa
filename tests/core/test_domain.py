@@ -46,16 +46,16 @@ async def test_create_train_data_no_history(default_domain):
 
     assert hashed == [
         "[{}]",
-        '[{"prev_action": {"action_name": "utter_greet", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_greet", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "greet", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_goodbye", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "goodbye", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_default", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": [], "intent": "default", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_default", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "default", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": [], "intent": "default", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "greet", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "goodbye", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "default", "text": null}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
     ]
 
 
@@ -74,19 +74,18 @@ async def test_create_train_data_with_history(default_domain):
     for states in decoded:
         hashed.append(json.dumps(states, sort_keys=True))
     hashed = sorted(hashed)
-    print(hashed)
 
     assert hashed == [
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "default", "text": null}}, {"prev_action": {"action_name": "utter_default", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "default", "text": null}}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "goodbye", "text": null}}, {"prev_action": {"action_name": "utter_goodbye", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "goodbye", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "utter_greet", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "default", "text": null}}, {"prev_action": {"action_name": "utter_default", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "default", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "utter_greet", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": [], "intent": "default", "text": null}}, {"prev_action": {"action_name": "utter_default", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": [], "intent": "default", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_greet", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "default", "text": null}}, {"prev_action": {"action_name": "utter_default", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "default", "text": null}}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "goodbye", "text": null}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "utter_greet", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "default", "text": null}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "utter_greet", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "greet", "text": null}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [0.0]}, "user": {"entities": [], "intent": "greet", "text": null}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "utter_greet", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": [], "intent": "default", "text": null}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet", "text": null}}, {"prev_action": {"action_name": "utter_greet", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet", "text": null}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen", "action_text": null}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet", "text": null}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}, {"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
         "[{}]",
     ]
 
@@ -112,9 +111,12 @@ async def test_create_train_data_unfeaturized_entities():
         new_states = []
         for state in states:
             if state.get("user"):
-                if len(state.get("user").get("entities")) > 1:
-                    state.get("user")["entities"] = ()
-                    new_states.append(state)
+                if state.get("user").get("entities"):
+                    if len(state.get("user")["entities"]) > 1:
+                        state.get("user")["entities"] = ()
+                        new_states.append(state)
+                    else:
+                        new_states.append(state)
                 else:
                     new_states.append(state)
             else:
@@ -125,20 +127,20 @@ async def test_create_train_data_unfeaturized_entities():
 
     assert hashed == [
         "[{}]",
-        '[{"prev_action": {"action_name": "utter_greet", "action_text": null}, "user": {"entities": [], "intent": "greet", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_greet", "action_text": null}, "user": {"entities": ["name"], "intent": "greet", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_goodbye", "action_text": null}, "user": {"entities": [], "intent": "goodbye", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_default", "action_text": null}, "user": {"entities": [], "intent": "why", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_default", "action_text": null}, "user": {"entities": [], "intent": "thank", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_default", "action_text": null}, "user": {"entities": [], "intent": "default", "text": null}}]',
-        '[{"prev_action": {"action_name": "utter_default", "action_text": null}, "user": {"entities": [], "intent": "ask", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "user": {"entities": [], "intent": "why", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "user": {"entities": [], "intent": "thank", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "user": {"entities": [], "intent": "greet", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "user": {"entities": [], "intent": "goodbye", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "user": {"entities": [], "intent": "default", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "user": {"entities": [], "intent": "ask", "text": null}}]',
-        '[{"prev_action": {"action_name": "action_listen", "action_text": null}, "user": {"entities": ["name"], "intent": "greet", "text": null}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "why"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "thank"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"entities": [], "intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"entities": [], "intent": "ask"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "why"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "thank"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": [], "intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": [], "intent": "ask"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": ["name"], "intent": "greet"}}]',
     ]
 
 
@@ -220,6 +222,7 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
 def test_domain_to_yaml():
     test_yaml = f"""config:
   store_entities_as_slots: true
+e2e_actions: []
 entities: []
 forms: []
 intents: []
@@ -243,6 +246,7 @@ def test_domain_to_yaml_deprecated_templates():
 - utter_greet
 config:
   store_entities_as_slots: true
+e2e_actions: []
 entities: []
 forms: []
 intents: []
@@ -258,6 +262,7 @@ slots: {{}}"""
 - utter_greet
 config:
   store_entities_as_slots: true
+e2e_actions: []
 entities: []
 forms: []
 intents: []
