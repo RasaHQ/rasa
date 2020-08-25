@@ -135,27 +135,6 @@ def test_get_label_set(targets, exclude_label, expected):
     assert set(expected) == set(actual)
 
 
-async def test_interpreter_passed_to_agent(
-    monkeypatch: MonkeyPatch, trained_rasa_model: Text
-):
-    from rasa.test import test_core
-
-    # Patching is bit more complicated as we have a module `train` and function
-    # with the same name 😬
-    monkeypatch.setattr(
-        sys.modules["rasa.test"], "_test_core", asyncio.coroutine(lambda *_, **__: True)
-    )
-
-    agent_load = Mock()
-    monkeypatch.setattr(Agent, "load", agent_load)
-
-    test_core(trained_rasa_model)
-
-    agent_load.assert_called_once()
-    _, _, kwargs = agent_load.mock_calls[0]
-    assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
-
-
 async def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
@@ -167,13 +146,6 @@ async def test_e2e_warning_if_no_nlu_model(
         sys.modules["rasa.test"], "_test_core", asyncio.coroutine(lambda *_, **__: True)
     )
 
-    agent_load = Mock()
-    monkeypatch.setattr(Agent, "load", agent_load)
-
     test_core(trained_core_model, additional_arguments={"e2e": True})
 
     assert "No NLU model found. Using default" in capsys.readouterr().out
-
-    agent_load.assert_called_once()
-    _, _, kwargs = agent_load.mock_calls[0]
-    assert isinstance(kwargs["interpreter"], RegexInterpreter)
