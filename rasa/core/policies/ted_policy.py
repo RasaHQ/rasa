@@ -1,3 +1,4 @@
+import collections
 import copy
 import logging
 import os
@@ -413,6 +414,7 @@ class TEDPolicy(Policy):
                     # TODO we don't take sequence features because that makes us deal
                     #  with 4D sparse tensors
                     continue
+
                 attribute_features[feature_type] = []
                 if feature_type in sparse_features:
                     attribute_features[feature_type].append(
@@ -552,6 +554,7 @@ class TEDPolicy(Policy):
                     )
 
         attribute_data = self._convert_to_data_format(X, training)
+        attribute_data = collections.OrderedDict(sorted(attribute_data.items()))
         model_data.add_data(attribute_data)
         # TODO add dialogue and text lengths
         model_data.add_lengths(
