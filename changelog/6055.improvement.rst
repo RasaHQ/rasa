@@ -1,0 +1,1 @@
+Support for rasa conversation id with special characters on the server side - necessary for some channels (e.g. Viber)
