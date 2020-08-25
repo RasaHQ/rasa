@@ -40,10 +40,12 @@ class SingleStateFeaturizer:
         if not domain.intents == []:
             self._default_feature_states[INTENT] = convert_to_dict(domain.intents)
         if not domain.action_names == []:
-            self._default_feature_states[ACTION_NAME] = convert_to_dict(domain.action_names)
+            self._default_feature_states[ACTION_NAME] = convert_to_dict(
+                domain.action_names
+            )
         if not domain.entities == []:
             self._default_feature_states[ENTITIES] = convert_to_dict(domain.entities)
-        if not domain.slot_states == []: 
+        if not domain.slot_states == []:
             self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
         if not domain.form_names == []:
             self._default_feature_states[FORM] = convert_to_dict(domain.form_names)
