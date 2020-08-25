@@ -150,6 +150,9 @@ class MemoizationPolicy(Policy):
     def _create_feature_key(self, states: List[State]) -> Optional[Text]:
         from rasa.utils import io
 
+        # we sort keys to make sure that the same states
+        # represented as dictionaries have the same json strings
+        # quotes are removed for aesthetic reasons
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(bytes(feature_str, io.DEFAULT_ENCODING))

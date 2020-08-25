@@ -140,6 +140,8 @@ class RulePolicy(MemoizationPolicy):
         if not new_states or new_states == [{}]:
             return
 
+        # we sort keys to make sure that the same states
+        # represented as dictionaries have the same json strings
         return json.dumps(new_states, sort_keys=True)
 
     @staticmethod
