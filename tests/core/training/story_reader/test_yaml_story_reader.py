@@ -1,14 +1,15 @@
+from pathlib import Path
 from typing import Text, List
 
 import pytest
 
+import rasa.utils.io
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.training import loading
 from rasa.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
-from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.utils import io as io_utils
@@ -301,3 +302,26 @@ async def test_active_loop_is_parsed(default_domain: Domain):
         reader.read_from_parsed_yaml(yaml_content)
 
     assert not len(record)
+
+
+def test_is_test_story_file(tmp_path: Path):
+    path = str(tmp_path / "test_stories.yml")
+    rasa.utils.io.write_yaml({"stories": []}, path)
+    assert YAMLStoryReader.is_yaml_test_stories_file(path)
+
+
+def test_is_not_test_story_file_if_it_doesnt_contain_stories(tmp_path: Path):
+    path = str(tmp_path / "test_stories.yml")
+    rasa.utils.io.write_yaml({"nlu": []}, path)
+    assert not YAMLStoryReader.is_yaml_test_stories_file(path)
+
+
+def test_is_not_test_story_file_if_empty(tmp_path: Path):
+    path = str(tmp_path / "test_stories.yml")
+    assert not YAMLStoryReader.is_yaml_test_stories_file(path)
+
+
+def test_is_not_test_story_file_without_test_prefix(tmp_path: Path):
+    path = str(tmp_path / "stories.yml")
+    rasa.utils.io.write_yaml({"stories": []}, path)
+    assert not YAMLStoryReader.is_yaml_test_stories_file(path)

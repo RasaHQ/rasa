@@ -1,6 +1,7 @@
 import asyncio
 import sys
 from pathlib import Path
+import textwrap
 from typing import Text
 from unittest.mock import Mock
 
@@ -8,6 +9,16 @@ import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.utils.io
+from rasa.core.actions.action import ActionListen
+from rasa.core.events import ActionExecuted, UserUttered
+from rasa.core.test import (
+    EvaluationStore,
+    WronglyClassifiedUserUtterance,
+    WronglyPredictedAction,
+)
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 import rasa.model
 import rasa.cli.utils
 from rasa.core.agent import Agent
@@ -149,3 +160,48 @@ async def test_e2e_warning_if_no_nlu_model(
     test_core(trained_core_model, additional_arguments={"e2e": True})
 
     assert "No NLU model found. Using default" in capsys.readouterr().out
+
+
+def test_write_classification_errors():
+    evaluation = EvaluationStore(
+        action_predictions=["utter_goodbye"],
+        action_targets=["utter_greet"],
+        intent_predictions=["goodbye"],
+        intent_targets=["greet"],
+        entity_predictions=None,
+        entity_targets=None,
+    )
+    events = [
+        WronglyClassifiedUserUtterance(
+            UserUttered("Hello", {"name": "goodbye"}), evaluation
+        ),
+        WronglyPredictedAction("utter_greet", "utter_goodbye"),
+    ]
+    tracker = DialogueStateTracker.from_events("default", events)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
+    assert (
+        dump.strip()
+        == textwrap.dedent(
+            """
+        version: "2.0"
+        stories:
+        - story: default
+          steps:
+          - intent: greet  # predicted: goodbye: Hello 
+            user: |-
+              Hello
+          - action: utter_greet  # predicted: utter_goodbye
+
+    """
+        ).strip()
+    )
+
+
+def test_log_failed_stories(tmp_path: Path):
+    path = str(tmp_path / "stories.yml")
+    rasa.core.test._log_stories([], path)
+
+    dump = rasa.utils.io.read_file(path)
+
+    assert dump.startswith("#")
+    assert len(dump.split("\n")) == 1

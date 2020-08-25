@@ -139,14 +139,20 @@ class WronglyPredictedAction(ActionExecuted):
     type_name = "wrong_action"
 
     def __init__(
-        self, correct_action, predicted_action, policy, confidence, timestamp=None
+        self,
+        action_name_target: Text,
+        action_name_prediction: Text,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict] = None,
     ) -> None:
-        self.predicted_action = predicted_action
-        super().__init__(correct_action, policy, confidence, timestamp=timestamp)
+        self.action_name_prediction = action_name_prediction
+        super().__init__(action_name_target, policy, confidence, timestamp, metadata)
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
-        return f"predicted: {self.predicted_action}"
+        return f"predicted: {self.action_name_prediction}"
 
     def as_story_string(self) -> Text:
         return f"{self.action_name}   <!-- {self.inline_comment()} -->"
@@ -547,16 +553,10 @@ async def _collect_story_predictions(
     )
 
 
-def _log_stories(
-    trackers: List[DialogueStateTracker], filename: Text, out_directory: Text
-) -> None:
+def _log_stories(trackers: List[DialogueStateTracker], file_path: Text) -> None:
     """Write given stories to the given file."""
-    if not out_directory:
-        return
 
-    with open(
-        os.path.join(out_directory, filename), "w", encoding=DEFAULT_ENCODING
-    ) as f:
+    with open(file_path, "w", encoding=DEFAULT_ENCODING) as f:
         if not trackers:
             f.write("# None of the test stories failed - all good!")
         else:
@@ -644,11 +644,13 @@ async def test(
 
     if errors:
         _log_stories(
-            story_evaluation.failed_stories, FAILED_STORIES_FILE, out_directory
+            story_evaluation.failed_stories,
+            os.path.join(out_directory, FAILED_STORIES_FILE),
         )
     if successes:
         _log_stories(
-            story_evaluation.successful_stories, SUCCESSFUL_STORIES_FILE, out_directory
+            story_evaluation.successful_stories,
+            os.path.join(out_directory, SUCCESSFUL_STORIES_FILE),
         )
 
     return {

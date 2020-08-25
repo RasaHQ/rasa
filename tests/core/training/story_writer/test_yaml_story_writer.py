@@ -1,10 +1,13 @@
 from pathlib import Path
+import textwrap
 from typing import Text
 
 import pytest
 
 from rasa.core.domain import Domain
+from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.interpreter import RegexInterpreter
+from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
@@ -65,3 +68,53 @@ async def test_forms_are_skipped_with_warning(default_domain: Domain):
 
     # We skip 5 stories with the forms and warn users
     assert len(record) == 5
+
+
+def test_yaml_writer_dumps_user_messages():
+    events = [
+        UserUttered("Hello", {"name": "greet"}),
+        ActionExecuted("utter_greet"),
+    ]
+    tracker = DialogueStateTracker.from_events("default", events)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
+
+    assert (
+        dump.strip()
+        == textwrap.dedent(
+            """
+        version: "2.0"
+        stories:
+        - story: default
+          steps:
+          - intent: greet
+            user: |-
+              Hello
+          - action: utter_greet
+
+    """
+        ).strip()
+    )
+
+
+def test_yaml_writer_avoids_dumping_not_existing_user_messages():
+    events = [
+        UserUttered("greet", {"name": "greet"}),
+        ActionExecuted("utter_greet"),
+    ]
+    tracker = DialogueStateTracker.from_events("default", events)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
+
+    assert (
+        dump.strip()
+        == textwrap.dedent(
+            """
+        version: "2.0"
+        stories:
+        - story: default
+          steps:
+          - intent: greet
+          - action: utter_greet
+
+    """
+        ).strip()
+    )
