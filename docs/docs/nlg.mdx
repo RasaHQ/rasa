@@ -25,11 +25,11 @@ Then pass the `enable-api` flag to the `rasa run` command when starting
 the server:
 
 ```shell
-$ rasa run \
-   --enable-api \
-   -m examples/babi/models \
-   --log-file out.log \
-   --endpoints endpoints.yml
+rasa run \
+  --enable-api \
+  -m examples/babi/models \
+  --log-file out.log \
+  --endpoints endpoints.yml
 ```
 
 The body of the `POST` request sent to the endpoint will look
