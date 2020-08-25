@@ -358,9 +358,15 @@ class TEDPolicy(Policy):
         else:
             attributes = list(self.zero_features.keys())
 
+        dialogue_length = 1
+        for key, values in features.items():
+            dialogue_length = max(dialogue_length, len(values[0]))
+
+        empty_features = [[None] * dialogue_length]
+
         for attribute in attributes:
             features_in_tracker = (
-                features[attribute] if attribute in features else [[None]]
+                features[attribute] if attribute in features else empty_features
             )
 
             # in case some features for a specific attribute and dialogue turn are
