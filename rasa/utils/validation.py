@@ -2,7 +2,11 @@ from typing import Text, Dict, Any
 
 from ruamel.yaml.constructor import DuplicateKeyError
 
-from rasa.constants import PACKAGE_NAME, DOCS_URL_TRAINING_DATA_NLU
+from rasa.constants import (
+    PACKAGE_NAME,
+    DOCS_URL_TRAINING_DATA_NLU,
+    SCHEMA_EXTENSIONS_FILE,
+)
 
 
 class InvalidYamlFileError(ValueError):
@@ -53,8 +57,15 @@ def validate_yaml_schema(
 
     try:
         schema_file = pkg_resources.resource_filename(PACKAGE_NAME, schema_path)
+        schema_extensions = pkg_resources.resource_filename(
+            PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE
+        )
 
-        c = Core(source_data=source_data, schema_files=[schema_file])
+        c = Core(
+            source_data=source_data,
+            schema_files=[schema_file],
+            extensions=[schema_extensions],
+        )
         c.validate(raise_exception=True)
     except SchemaError:
         raise InvalidYamlFileError(

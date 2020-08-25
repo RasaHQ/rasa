@@ -32,6 +32,7 @@ mapping:
         type: "seq"
         required: False
         nullable: False
+        func: require_response_keys
         sequence:
         - type: "map"
           required: True
