@@ -38,7 +38,6 @@ class FormPolicy(MemoizationPolicy):
         common_utils.raise_deprecation_warning(
             f"'{FormPolicy.__name__}' is deprecated and will be removed in "
             "in the future. It is recommended to use the 'RulePolicy' instead.",
-            warn_until_version="3.0.0",
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 

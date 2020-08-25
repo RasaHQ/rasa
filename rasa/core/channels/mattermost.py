@@ -137,7 +137,6 @@ class MattermostInput(InputChannel):
                 "should not be used anymore, you should rather convert your "
                 "account to a bot account and use a token. Password based "
                 "authentication will be removed in a future Rasa Open Source version.",
-                warn_until_version="3.0.0",
                 docs=DOCS_URL_CONNECTORS + "mattermost/",
             )
             token = MattermostBot.token_from_login(

@@ -3,6 +3,7 @@ from typing import Collection, List, Text
 
 import pytest
 
+from rasa.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.utils.common import (
     raise_warning,
     raise_deprecation_warning,
@@ -99,6 +100,17 @@ def test_raise_deprecation_warning_version_already_in_message():
     assert (
         record[0].message.args[0]
         == "This feature is deprecated and will be removed in 3.0.0!"
+    )
+
+
+def test_raise_deprecation_warning_default():
+    with pytest.warns(FutureWarning) as record:
+        raise_deprecation_warning("This feature is deprecated.")
+
+    assert len(record) == 1
+    assert record[0].message.args[0] == (
+        f"This feature is deprecated. "
+        f"(will be removed in {NEXT_MAJOR_VERSION_FOR_DEPRECATIONS})"
     )
 
 

@@ -15,6 +15,7 @@ from rasa.constants import (
     ENV_LOG_LEVEL,
     ENV_LOG_LEVEL_LIBRARIES,
     GLOBAL_USER_CONFIG_PATH,
+    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
 
 logger = logging.getLogger(__name__)
@@ -386,7 +387,10 @@ def raise_warning(
 
 
 def raise_deprecation_warning(
-    message: Text, warn_until_version: Text, docs: Optional[Text] = None, **kwargs: Any,
+    message: Text,
+    warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+    docs: Optional[Text] = None,
+    **kwargs: Any,
 ) -> None:
     """
     Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires

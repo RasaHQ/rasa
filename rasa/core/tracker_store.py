@@ -191,7 +191,6 @@ class TrackerStore:
             f"conversation ID '{sender_id}'. Deserialisation of pickled "
             f"trackers is deprecated. Rasa will perform any "
             f"future save operations of this tracker using json serialisation.",
-            warn_until_version="3.0.0",
         )
         return pickle.loads(serialised_tracker)
 

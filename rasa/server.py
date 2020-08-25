@@ -1166,7 +1166,6 @@ def _validate_json_training_payload(rjs: Dict):
             "Specifying 'force' and 'save_to_default_model_directory' as part of the "
             "JSON payload is deprecated. Please use the header arguments "
             "'force_training' and 'save_to_default_model_directory'.",
-            warn_until_version="3.0.0",
             docs=_docs("/api/http-api"),
         )
 
