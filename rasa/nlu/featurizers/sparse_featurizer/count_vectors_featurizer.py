@@ -223,7 +223,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
         """Apply processing and cleaning steps to text"""
 
-        if attribute == INTENT or INTENT_RESPONSE_KEY:
+        if attribute in [INTENT, INTENT_RESPONSE_KEY]:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
@@ -423,13 +423,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             seq_vec = self.vectorizers[attribute].transform(tokens)
             seq_vec.sort_indices()
 
-            print("seq vec", tokens, seq_vec.toarray())
-
             sequence_features.append(seq_vec.tocoo())
 
             if attribute in [TEXT, RESPONSE, INTENT_RESPONSE_KEY]:
                 tokens_text = [" ".join(tokens)]
-                print(attribute, tokens_text)
                 sentence_vec = self.vectorizers[attribute].transform(tokens_text)
                 sentence_vec.sort_indices()
 
@@ -479,9 +476,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     self.component_config[FEATURIZER_CLASS_ALIAS],
                 )
                 message.add_features(final_sentence_features)
-
-            seq_vecs, sen_vecs = message.get_sparse_features(TEXT, [])
-            print("Setting features to", seq_vecs.toarray(), sen_vecs.toarray())
 
     def train(
         self,
