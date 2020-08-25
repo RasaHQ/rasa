@@ -985,7 +985,7 @@ class TED(TransformerRasaModel):
                 )
                 label_in.append(tf.expand_dims(label_features, axis=-2) * mask)
 
-        return tf.squeeze(tf.concat(label_in, axis=-1))
+        return tf.squeeze(tf.concat(label_in, axis=-1), axis=1)
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
