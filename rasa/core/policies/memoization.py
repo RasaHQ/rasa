@@ -10,7 +10,7 @@ from typing import Optional, Any, Dict, List, Text
 import rasa.utils.io
 import rasa.utils.common as common_utils
 
-from rasa.core.domain import Domain, STATE
+from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -97,7 +97,7 @@ class MemoizationPolicy(Policy):
 
     def _create_lookup_from_states(
         self,
-        trackers_as_states: List[List[STATE]],
+        trackers_as_states: List[List[State]],
         trackers_as_actions: List[List[Text]],
     ) -> Dict[Text, Text]:
         """Creates lookup dictionary from the tracker represented as states.
@@ -147,7 +147,7 @@ class MemoizationPolicy(Policy):
 
         return lookup
 
-    def _create_feature_key(self, states: List[STATE]) -> Text:
+    def _create_feature_key(self, states: List[State]) -> Optional[Text]:
         from rasa.utils import io
 
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
@@ -179,12 +179,12 @@ class MemoizationPolicy(Policy):
         )
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
 
-    def _recall_states(self, states: List[STATE]) -> Optional[Text]:
+    def _recall_states(self, states: List[State]) -> Optional[Text]:
 
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
-        self, states: List[STATE], tracker: DialogueStateTracker, domain: Domain,
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
 
         return self._recall_states(states)
@@ -334,7 +334,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         return None
 
     def recall(
-        self, states: List[STATE], tracker: DialogueStateTracker, domain: Domain,
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
 
         predicted_action_name = self._recall_states(states)

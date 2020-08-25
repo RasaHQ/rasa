@@ -74,7 +74,7 @@ ALL_DOMAIN_KEYS = [
     KEY_RESPONSES,
 ]
 
-STATE = Dict[Text, Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]]
+State = Dict[Text, Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]]
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -760,7 +760,7 @@ class Domain:
         else:
             return {}
 
-    def get_active_states(self, tracker: "DialogueStateTracker") -> STATE:
+    def get_active_states(self, tracker: "DialogueStateTracker") -> State:
         """Return a bag of active states from the tracker state."""
         state_dict = self._get_user_states(tracker)
         state_dict.update(self._get_slots_states(tracker))
@@ -770,7 +770,7 @@ class Domain:
 
     def states_for_tracker_history(
         self, tracker: "DialogueStateTracker"
-    ) -> List[STATE]:
+    ) -> List[State]:
         """Array of states for each state of the trackers history."""
         return [
             self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()

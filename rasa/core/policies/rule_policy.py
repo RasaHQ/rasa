@@ -7,7 +7,7 @@ from rasa.core.events import FormValidation
 from rasa.core.domain import (
     Domain,
     InvalidDomain,
-    STATE,
+    State,
 )
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -125,11 +125,11 @@ class RulePolicy(MemoizationPolicy):
             )
 
     @staticmethod
-    def _is_rule_snippet_state(state: STATE) -> bool:
+    def _is_rule_snippet_state(state: State) -> bool:
         prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
         return prev_action_name == RULE_SNIPPET_ACTION_NAME
 
-    def _create_feature_key(self, states: List[STATE]) -> Optional[Text]:
+    def _create_feature_key(self, states: List[State]) -> Optional[Text]:
         new_states = []
         for state in reversed(states):
             if self._is_rule_snippet_state(state):
@@ -143,16 +143,16 @@ class RulePolicy(MemoizationPolicy):
         return json.dumps(new_states, sort_keys=True)
 
     @staticmethod
-    def _get_active_form_name(state: STATE) -> Optional[Text]:
+    def _get_active_form_name(state: State) -> Optional[Text]:
         return state.get(FORM, {}).get("name")
 
     @staticmethod
-    def _prev_action_listen_in_state(state: STATE) -> bool:
+    def _prev_action_listen_in_state(state: State) -> bool:
         prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
         return prev_action_name == ACTION_LISTEN_NAME
 
     @staticmethod
-    def _modified_states(states: List[STATE]) -> List[STATE]:
+    def _states_for_unhappy_loop_predictions(states: List[State]) -> List[State]:
         """Modifies the states to create feature keys for loop unhappy path conditions.
 
         Args:
@@ -172,19 +172,21 @@ class RulePolicy(MemoizationPolicy):
             return [{PREVIOUS_ACTION: states[-2][PREVIOUS_ACTION]}, states[-1]]
 
     @staticmethod
-    def _clean_feature_keys(lookup: Dict[Text, Text]) -> Dict[Text, Text]:
-        # remove action_listens that were added after conditions
-        updated_lookup = lookup.copy()
+    def _remove_rule_snippet_predictions(lookup: Dict[Text, Text]) -> Dict[Text, Text]:
+        keys_to_remove = set()
         for feature_key, action in lookup.items():
             # Delete rules if it would predict the `...` action
             if action == RULE_SNIPPET_ACTION_NAME:
-                del updated_lookup[feature_key]
+                keys_to_remove.add(feature_key)
 
-        return updated_lookup
+        for feature_key in keys_to_remove:
+            del lookup[feature_key]
+
+        return lookup
 
     def _create_form_unhappy_lookup_from_states(
         self,
-        trackers_as_states: List[List[STATE]],
+        trackers_as_states: List[List[State]],
         trackers_as_actions: List[List[Text]],
     ) -> Dict[Text, Text]:
         """Creates lookup dictionary from the tracker represented as states.
@@ -205,7 +207,7 @@ class RulePolicy(MemoizationPolicy):
             # their form will be the same
             # because of `active_form_...` feature
             if active_form and active_form != SHOULD_NOT_BE_SET:
-                states = self._modified_states(states)
+                states = self._states_for_unhappy_loop_predictions(states)
                 feature_key = self._create_feature_key(states)
                 if not feature_key:
                     continue
@@ -255,7 +257,7 @@ class RulePolicy(MemoizationPolicy):
         rules_lookup = self._create_lookup_from_states(
             rule_trackers_as_states, rule_trackers_as_actions
         )
-        self.lookup[RULES] = self._clean_feature_keys(rules_lookup)
+        self.lookup[RULES] = self._remove_rule_snippet_predictions(rules_lookup)
 
         story_trackers = [t for t in training_trackers if not t.is_rule_tracker]
         (
@@ -280,10 +282,10 @@ class RulePolicy(MemoizationPolicy):
         logger.debug(f"Memorized '{len(self.lookup[RULES])}' unique rules.")
 
     @staticmethod
-    def _check_rule_state(rule_state: STATE, state: STATE) -> bool:
+    def _does_rule_match_state(rule_state: State, conversation_state: State) -> bool:
 
         for state_type, rule_sub_state in rule_state.items():
-            sub_state = state.get(state_type, {})
+            conversation_sub_state = conversation_state.get(state_type, {})
             for key, value in rule_sub_state.items():
                 if isinstance(value, list):
                     # json dumps and loads tuples as lists,
@@ -295,22 +297,24 @@ class RulePolicy(MemoizationPolicy):
                     # check whether it is the same as in the state
                     value
                     and value != SHOULD_NOT_BE_SET
-                    and sub_state.get(key) != value
+                    and conversation_sub_state.get(key) != value
                 ) or (
                     # value shouldn't be set, therefore
                     # it should be None or non existent in the state
                     value == SHOULD_NOT_BE_SET
-                    and sub_state.get(key)
+                    and conversation_sub_state.get(key)
                 ):
                     return False
 
         return True
 
     @staticmethod
-    def _rule_key_to_state(rule_key: Text) -> List[STATE]:
+    def _rule_key_to_state(rule_key: Text) -> List[State]:
         return json.loads(rule_key)
 
-    def _rule_is_good(self, rule_key: Text, turn_index: int, state: STATE) -> bool:
+    def _is_rule_applicable(
+        self, rule_key: Text, turn_index: int, conversation_state: State
+    ) -> bool:
         """Check if rule is satisfied with current state at turn."""
 
         # turn_index goes back in time
@@ -320,23 +324,27 @@ class RulePolicy(MemoizationPolicy):
             # rule is shorter than current turn index
             turn_index >= len(reversed_rule_states)
             # current rule and state turns are empty
-            or (not reversed_rule_states[turn_index] and not state)
+            or (not reversed_rule_states[turn_index] and not conversation_state)
             # check that current rule turn features are present in current state turn
             or (
                 reversed_rule_states[turn_index]
-                and state
-                and self._check_rule_state(reversed_rule_states[turn_index], state)
+                and conversation_state
+                and self._does_rule_match_state(
+                    reversed_rule_states[turn_index], conversation_state
+                )
             )
         )
 
     def _get_possible_keys(
-        self, lookup: Dict[Text, Text], states: List[STATE]
+        self, lookup: Dict[Text, Text], states: List[State]
     ) -> Set[Text]:
         possible_keys = set(lookup.keys())
         for i, state in enumerate(reversed(states)):
             # find rule keys that correspond to current state
             possible_keys = set(
-                filter(lambda _key: self._rule_is_good(_key, i, state), possible_keys)
+                filter(
+                    lambda _key: self._is_rule_applicable(_key, i, state), possible_keys
+                )
             )
         return possible_keys
 
