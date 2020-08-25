@@ -111,10 +111,9 @@ async def test_generate_training_data_with_cycles(
         stories_file, default_domain, augmentation_factor=0
     )
 
-    training_data = featurizer.featurize_trackers(
+    training_data, label_ids = featurizer.featurize_trackers(
         training_trackers, default_domain, interpreter=RegexInterpreter()
     )
-    y = training_data.y
 
     # how many there are depends on the graph which is not created in a
     # deterministic way but should always be 3 or 4
@@ -124,7 +123,8 @@ async def test_generate_training_data_with_cycles(
     num_tens = len(training_trackers) - 1
     # if new default actions are added the keys of the actions will be changed
 
-    assert Counter(y) == {0: 6, 12: num_tens, 14: 1, 1: 2, 13: 3}
+    all_label_ids = [id for ids in label_ids for id in ids]
+    assert Counter(all_label_ids) == {0: 6, 12: num_tens, 14: 1, 1: 2, 13: 3}
 
 
 @pytest.mark.parametrize(
@@ -226,7 +226,7 @@ async def test_load_multi_file_training_data(
         hashed.append(json.dumps(sts + acts, sort_keys=True))
     hashed = sorted(hashed, reverse=True)
 
-    data = featurizer.featurize_trackers(
+    data, label_ids = featurizer.featurize_trackers(
         trackers, default_domain, interpreter=RegexInterpreter()
     )
 
@@ -242,25 +242,25 @@ async def test_load_multi_file_training_data(
         hashed_mul.append(json.dumps(sts_mul + acts_mul, sort_keys=True))
     hashed_mul = sorted(hashed_mul, reverse=True)
 
-    data_mul = featurizer_mul.featurize_trackers(
+    data_mul, label_ids_mul = featurizer_mul.featurize_trackers(
         trackers_mul, default_domain, interpreter=RegexInterpreter()
     )
 
     assert hashed == hashed_mul
     # we check for intents, action names and entities -- the features which
     # are included in the story files
-    data_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data.X])
-    data_mul_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data_mul.X])
-    data_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data.X])
-    data_mul_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data_mul.X])
-    data_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data.X])
-    data_mul_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data_mul.X])
+    data_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data])
+    data_mul_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data_mul])
+    data_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data])
+    data_mul_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data_mul])
+    data_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data])
+    data_mul_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data_mul])
     assert np.all(data_X_intent.sort(axis=0) == data_mul_X_intent.sort(axis=0))
     assert np.all(
         data_X_action_name.sort(axis=0) == data_mul_X_action_name.sort(axis=0)
     )
     assert np.all(data_X_entities.sort(axis=0) == data_mul_X_entities.sort(axis=0))
-    assert np.all(data.y.sort(axis=0) == data_mul.y.sort(axis=0))
+    assert np.all(label_ids.sort(axis=0) == label_ids_mul.sort(axis=0))
 
 
 async def test_load_training_data_reader_not_found_throws(
