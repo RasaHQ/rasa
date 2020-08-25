@@ -7,6 +7,7 @@ from typing import Text, List
 import numpy as np
 import pytest
 
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core import training
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, SessionStarted
@@ -17,7 +18,7 @@ from rasa.core.featurizers.single_state_featurizer import (
 )
 
 from rasa.core.interpreter import RegexInterpreter
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.nlu.constants import INTENT_NAME_KEY, INTENT, ACTION_NAME, ENTITIES
 
 
 @pytest.mark.parametrize(
@@ -249,18 +250,28 @@ async def test_load_multi_file_training_data(
     assert hashed == hashed_mul
     # we check for intents, action names and entities -- the features which
     # are included in the story files
-    data_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data])
-    data_mul_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data_mul])
-    data_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data])
-    data_mul_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data_mul])
-    data_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data])
-    data_mul_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data_mul])
-    assert np.all(data_X_intent.sort(axis=0) == data_mul_X_intent.sort(axis=0))
-    assert np.all(
-        data_X_action_name.sort(axis=0) == data_mul_X_action_name.sort(axis=0)
-    )
-    assert np.all(data_X_entities.sort(axis=0) == data_mul_X_entities.sort(axis=0))
-    assert np.all(label_ids.sort(axis=0) == label_ids_mul.sort(axis=0))
+
+    data = TEDPolicy._surface_attributes(data)
+    data_mul = TEDPolicy._surface_attributes(data_mul)
+
+    for attribute in [INTENT, ACTION_NAME, ENTITIES]:
+        if attribute not in data or attribute not in data_mul:
+            continue
+        assert len(data.get(attribute)) == len(data_mul.get(attribute))
+
+        for idx_tracker in range(len(data.get(attribute))):
+            for idx_dialogue in range(len(data.get(attribute)[idx_tracker])):
+                f1 = data.get(attribute)[idx_tracker][idx_dialogue]
+                f2 = data_mul.get(attribute)[idx_tracker][idx_dialogue]
+                if f1 is None or f2 is None:
+                    assert f1 == f2
+                    continue
+                for idx_turn in range(len(f1)):
+                    f1 = data.get(attribute)[idx_tracker][idx_dialogue][idx_turn]
+                    f2 = data_mul.get(attribute)[idx_tracker][idx_dialogue][idx_turn]
+                    assert np.all((f1 == f2).data)
+
+    assert np.all(label_ids == label_ids_mul)
 
 
 async def test_load_training_data_reader_not_found_throws(

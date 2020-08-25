@@ -1,4 +1,4 @@
-from typing import Union, Text, Optional, List
+from typing import Union, Text, Optional, List, Any
 
 import numpy as np
 import scipy.sparse
@@ -47,7 +47,7 @@ class Features:
         """
         return not self.is_sparse()
 
-    def combine_with_features(self, additional_features: Optional["Features"],) -> None:
+    def combine_with_features(self, additional_features: Optional["Features"]) -> None:
         """Combine the incoming features with this instance's features.
 
         Args:
@@ -87,3 +87,19 @@ class Features:
             )
 
         self.features = hstack([self.features, additional_features.features])
+
+    def __key__(self):
+        return (self.type, self.attribute, self.features, self.origin)
+
+    def __hash__(self):
+        return hash(self.__key__())
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Features):
+            return False
+
+        return (
+            other.type == self.type
+            and other.attribute == self.attribute
+            and other.features == self.features
+        )
