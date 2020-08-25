@@ -432,7 +432,7 @@ class TrainingData:
         for example in self.training_examples:
             if example.get(RESPONSE_KEY_ATTRIBUTE):
                 raise_warning(
-                    f"Your training data contains an example '{example.text[:20]}...' "
+                    f"Your training data contains an example '{example.get(TEXT)[:20]}...' "
                     f"for the {example.get_combined_intent_response_key()} intent. "
                     f"You either need to add a response phrase or correct the "
                     f"intent for this example in your training data."
