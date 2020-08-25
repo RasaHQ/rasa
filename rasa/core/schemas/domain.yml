@@ -56,10 +56,6 @@ mapping:
                     type: "str"
             channel:
               type: "str"
-            # allow custom keys
-            regex;(.+):
-              type: "any"
-              required: False
 
   slots:
     type: "map"

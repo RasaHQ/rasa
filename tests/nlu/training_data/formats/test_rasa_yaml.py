@@ -308,7 +308,6 @@ def test_nlg_reads_any_multimedia():
         chitchat/ask_weather:
         - text: Where do you want to check the weather?
           image: https://example.com/weather.jpg
-          temperature: 25°C
     """
     )
 
@@ -320,7 +319,6 @@ def test_nlg_reads_any_multimedia():
             {
                 "text": "Where do you want to check the weather?",
                 "image": "https://example.com/weather.jpg",
-                "temperature": "25°C",
             }
         ]
     }
