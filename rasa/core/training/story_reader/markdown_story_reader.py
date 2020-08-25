@@ -211,9 +211,9 @@ class MarkdownStoryReader(StoryReader):
     def parse_e2e_message(line: Text) -> "Message":
         f"""Parses an md list item line based on the current section type.
 
-        Matches expressions of the form `<intent>:<example>. For the
-        syntax of <example> see the Rasa docs on NLU training data:
-        {DOCS_BASE_URL}/nlu/training-data-format/#markdown-format"""
+        Matches expressions of the form `<intent>:<example>`. For the
+        syntax of `<example>` see the Rasa docs on NLU training data:
+        {DOCS_BASE_URL}/training-data-format/#markdown-format"""
 
         # Match three groups:
         # 1) Potential "form" annotation
