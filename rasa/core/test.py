@@ -144,11 +144,12 @@ class WronglyPredictedAction(ActionExecuted):
         self.predicted_action = predicted_action
         super().__init__(correct_action, policy, confidence, timestamp=timestamp)
 
-    def comment(self) -> Text:
+    def inline_comment(self) -> Text:
+        """A comment attached to this event. Used during dumping."""
         return f"predicted: {self.predicted_action}"
 
     def as_story_string(self) -> Text:
-        return f"{self.action_name}   <!-- {self.comment()} -->"
+        return f"{self.action_name}   <!-- {self.inline_comment()} -->"
 
 
 class EndToEndUserUtterance(UserUttered):
@@ -188,7 +189,8 @@ class WronglyClassifiedUserUtterance(UserUttered):
             event.input_channel,
         )
 
-    def comment(self) -> Text:
+    def inline_comment(self) -> Text:
+        """A comment attached to this event. Used during dumping."""
         from rasa.core.events import md_format_message
 
         predicted_message = md_format_message(
@@ -203,7 +205,8 @@ class WronglyClassifiedUserUtterance(UserUttered):
             self.text, self.intent.get("name"), self.entities
         )
         return (
-            f"{self.intent.get('name')}: {correct_message}   <!-- {self.comment()} -->"
+            f"{self.intent.get('name')}: {correct_message}   "
+            f"<!-- {self.inline_comment()} -->"
         )
 
 
@@ -286,7 +289,9 @@ def _collect_user_uttered_predictions(
         if fail_on_prediction_errors:
             raise ValueError(
                 "NLU model predicted a wrong intent. Failed Story:"
-                " \n\n{}".format(partial_tracker.export_stories())
+                " \n\n{}".format(
+                    YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
+                )
             )
     else:
         end_to_end_user_utterance = EndToEndUserUtterance(
@@ -356,7 +361,9 @@ def _collect_action_executed_predictions(
         if fail_on_prediction_errors:
             error_msg = (
                 "Model predicted a wrong action. Failed Story: "
-                "\n\n{}".format(partial_tracker.export_stories())
+                "\n\n{}".format(
+                    YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
+                )
             )
             if FormPolicy.__name__ in policy:
                 error_msg += (

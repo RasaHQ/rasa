@@ -141,7 +141,15 @@ class YAMLStoryReader(StoryReader):
         )
 
     @classmethod
-    def is_key_in_yaml(cls, file_path, *keys):
+    def is_key_in_yaml(cls, file_path: Text, *keys: Text) -> bool:
+        """Check if all keys are contained in the parsed dictionary from a yaml file.
+
+        Arguments:
+            file_path: path to the yaml file
+            keys: keys to look for
+        Returns:
+              `True` if all the keys are contained in the file, `False` otherwise.
+        """
         try:
             content = io_utils.read_yaml_file(file_path)
             return any(key in content for key in keys)
@@ -154,7 +162,15 @@ class YAMLStoryReader(StoryReader):
             return False
 
     @classmethod
-    def _has_test_prefix(cls, file_path):
+    def _has_test_prefix(cls, file_path: Text) -> bool:
+        """Check if the filename of a file at a path has a certain prefix.
+
+        Arguments:
+            file_path: path to the file
+
+        Returns:
+            `True` if the filename starts with the prefix, `False` otherwise.
+        """
         return Path(file_path).name.startswith(DEFAULT_TEST_STORIES_FILE_PREFIX)
 
     @classmethod
@@ -315,7 +331,7 @@ class YAMLStoryReader(StoryReader):
 
         self.current_step_builder.add_user_messages(utterances)
 
-    def _user_intent_from_step(self, step):
+    def _user_intent_from_step(self, step: Dict[Text, Any]) -> Text:
         user_intent = step.get(KEY_USER_INTENT, "").strip()
 
         if not user_intent:

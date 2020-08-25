@@ -166,9 +166,10 @@ class YAMLStoryWriter:
         result = CommentedMap()
         result[KEY_USER_INTENT] = user_utterance.intent["name"]
 
-        # TODO: this is a workaround to print predicted intents / entities...
-        if hasattr(user_utterance, "comment"):
-            result.yaml_add_eol_comment(user_utterance.comment(), KEY_USER_INTENT)
+        if hasattr(user_utterance, "inline_comment"):
+            result.yaml_add_eol_comment(
+                user_utterance.inline_comment(), KEY_USER_INTENT
+            )
 
         if YAMLStoryWriter._text_is_real_message(user_utterance):
             result[KEY_USER_MESSAGE] = LiteralScalarString(user_utterance.text)
@@ -197,9 +198,8 @@ class YAMLStoryWriter:
         result = CommentedMap()
         result[KEY_ACTION] = action.action_name
 
-        # TODO: this is a workaround to print predicted action...
-        if hasattr(action, "comment"):
-            result.yaml_add_eol_comment(action.comment(), KEY_ACTION)
+        if hasattr(action, "inline_comment"):
+            result.yaml_add_eol_comment(action.inline_comment(), KEY_ACTION)
 
         return result
 

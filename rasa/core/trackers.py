@@ -547,12 +547,13 @@ class DialogueStateTracker:
         )
         return Story.from_events(self.applied_events(), story_name)
 
-    def export_stories(
-        self, e2e: bool = False, include_source: bool = False
-    ) -> Text:  # TODO: this should not be used, deprecate, use yaml instead
+    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
+        # TODO: we need to revisit all usages of this, the caller needs to specify
+        #       the format. this likely points to areas where we are not properly
+        #       handling markdown vs yaml
         story = self.as_story(include_source)
         return story.as_story_string(flat=True, e2e=e2e)
 

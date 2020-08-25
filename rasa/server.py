@@ -14,6 +14,7 @@ from typing import Any, Callable, List, Optional, Text, Union, Dict
 
 from sanic.exceptions import InvalidUsage
 
+from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 from rasa.nlu.training_data.formats import RasaYAMLReader
 import rasa
 import rasa.core.utils
@@ -583,7 +584,7 @@ def create_app(
                 tracker = tracker.travel_back_in_time(until_time)
 
             # dump and return tracker
-            state = tracker.export_stories(e2e=True)
+            state = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
             return response.text(state)
         except Exception as e:
             logger.debug(traceback.format_exc())

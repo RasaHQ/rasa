@@ -22,7 +22,7 @@ mapping:
           sequence:
           - type: "map"
             mapping: &intent_and_entities
-              intent: &intent
+              intent:
                 type: "str"
                 required: True
                 allowempty: False
@@ -30,7 +30,7 @@ mapping:
                 type: "str"
                 required: False
                 allowempty: False
-              entities: &entities
+              entities:
                 type: "seq"
                 matching: "any"
                 sequence:

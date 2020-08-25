@@ -59,6 +59,17 @@ def deserialise_entities(entities: Union[Text, List[Any]]) -> List[Dict[Text, An
 def md_format_message(
     text: Text, intent: Optional[Text], entities: Union[Text, List[Any]]
 ) -> Text:
+    """Uses NLU parser information to generate a message with inline entity annotations.
+
+    Arguments:
+        text: text of the message
+        intent: intent of the message
+        entities: entities of the message
+
+    Return:
+        Message with entities annotated inline, e.g.
+        `I am from [Berlin]{"entity": "city"}`.
+    """
     from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
     from rasa.nlu.training_data import entities_parser
 
