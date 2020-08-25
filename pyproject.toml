@@ -153,10 +153,9 @@ pydoc-markdown = "3.3.0.post1"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
-convert = [ "tensorflow-text",]
 jieba = [ "jieba",]
 transformers = [ "transformers",]
-full = [ "spacy", "tensorflow-text", "transformers", "jieba",]
+full = [ "spacy", "transformers", "jieba",]
 gh-release-notes = [ "github3.py",]
 
 [tool.poetry.scripts]
@@ -168,7 +167,7 @@ optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
 version = "~2.3"
-optional = true
+markers = "sys_platform!='win32'"  # TODO: remove this marker once tensorflow-text supports windows
 
 [tool.poetry.dependencies."github3.py"]
 version = "~1.3.0"
