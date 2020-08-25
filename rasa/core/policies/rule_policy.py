@@ -153,7 +153,7 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _modified_states(states: List[STATE]) -> List[STATE]:
-        """Modifies the states to create feature keys for form unhappy path conditions.
+        """Modifies the states to create feature keys for loop unhappy path conditions.
 
         Args:
             states: a representation of a tracker
