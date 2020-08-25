@@ -47,9 +47,9 @@ DEFAULT_ACTION_MAPPINGS = {
 }
 
 RULES = "rules"
-RULES_FOR_FORM_UNHAPPY_PATH = "rules_for_form_unhappy_path"
-DO_NOT_VALIDATE_FORM = "do_not_validate_form"
-DO_NOT_PREDICT_FORM_ACTION = "do_not_predict_form_action"
+RULES_FOR_LOOP_UNHAPPY_PATH = "rules_for_loop_unhappy_path"
+DO_NOT_VALIDATE_LOOP = "do_not_validate_loop"
+DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
 
 
 class RulePolicy(MemoizationPolicy):
@@ -143,7 +143,7 @@ class RulePolicy(MemoizationPolicy):
         return json.dumps(new_states, sort_keys=True)
 
     @staticmethod
-    def _get_active_form_name(state: State) -> Optional[Text]:
+    def _get_active_loop_name(state: State) -> Optional[Text]:
         return state.get(FORM, {}).get("name")
 
     @staticmethod
@@ -184,7 +184,7 @@ class RulePolicy(MemoizationPolicy):
 
         return lookup
 
-    def _create_form_unhappy_lookup_from_states(
+    def _create_loop_unhappy_lookup_from_states(
         self,
         trackers_as_states: List[List[State]],
         trackers_as_actions: List[List[Text]],
@@ -202,35 +202,34 @@ class RulePolicy(MemoizationPolicy):
         lookup = {}
         for states, actions in zip(trackers_as_states, trackers_as_actions):
             action = actions[0]
-            active_form = self._get_active_form_name(states[-1])
+            active_loop = self._get_active_loop_name(states[-1])
             # even if there are two identical feature keys
-            # their form will be the same
-            # because of `active_form_...` feature
-            if active_form and active_form != SHOULD_NOT_BE_SET:
+            # their loop will be the same
+            if active_loop and active_loop != SHOULD_NOT_BE_SET:
                 states = self._states_for_unhappy_loop_predictions(states)
                 feature_key = self._create_feature_key(states)
                 if not feature_key:
                     continue
 
-                # Since rule snippets and stories inside the form contain
-                # only unhappy paths, notify the form that
+                # Since rule snippets and stories inside the loop contain
+                # only unhappy paths, notify the loop that
                 # it was predicted after an answer to a different question and
-                # therefore it should not validate user input for requested slot
+                # therefore it should not validate user input
                 if (
-                    # form is predicted after action_listen in unhappy path,
+                    # loop is predicted after action_listen in unhappy path,
                     # therefore no validation is needed
                     self._prev_action_listen_in_state(states[-1])
-                    and action == active_form
+                    and action == active_loop
                 ):
-                    lookup[feature_key] = DO_NOT_VALIDATE_FORM
+                    lookup[feature_key] = DO_NOT_VALIDATE_LOOP
                 elif (
-                    # some action other than action_listen and active_form
+                    # some action other than action_listen and active_loop
                     # is predicted in unhappy path,
-                    # therefore active_form shouldn't be predicted by the rule
+                    # therefore active_loop shouldn't be predicted by the rule
                     not self._prev_action_listen_in_state(states[-1])
-                    and action not in {ACTION_LISTEN_NAME, active_form}
+                    and action not in {ACTION_LISTEN_NAME, active_loop}
                 ):
-                    lookup[feature_key] = DO_NOT_PREDICT_FORM_ACTION
+                    lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
         return lookup
 
     def train(
@@ -271,8 +270,8 @@ class RulePolicy(MemoizationPolicy):
 
         # negative rules are not anti-rules, they are auxiliary to actual rules
         self.lookup[
-            RULES_FOR_FORM_UNHAPPY_PATH
-        ] = self._create_form_unhappy_lookup_from_states(
+            RULES_FOR_LOOP_UNHAPPY_PATH
+        ] = self._create_loop_unhappy_lookup_from_states(
             trackers_as_states, trackers_as_actions
         )
 
@@ -352,7 +351,7 @@ class RulePolicy(MemoizationPolicy):
         tracker: DialogueStateTracker,
     ) -> Optional[Text]:
         if (
-            not tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
+            not tracker.latest_action_name == ACTION_LISTEN_NAME
             or not tracker.latest_message
         ):
             return None
@@ -367,31 +366,31 @@ class RulePolicy(MemoizationPolicy):
         return default_action_name
 
     @staticmethod
-    def _find_action_from_form_happy_path(
+    def _find_action_from_loop_happy_path(
         tracker: DialogueStateTracker,
     ) -> Optional[Text]:
 
-        active_form_name = tracker.active_form_name()
-        active_form_rejected = tracker.active_loop.get("rejected")
-        should_predict_form = (
-            active_form_name
-            and not active_form_rejected
-            and tracker.latest_action.get(ACTION_NAME) != active_form_name
+        active_loop_name = tracker.active_loop_name
+        active_loop_rejected = tracker.active_loop.get("rejected")
+        should_predict_loop = (
+            active_loop_name
+            and not active_loop_rejected
+            and tracker.latest_action_name != active_loop_name
         )
         should_predict_listen = (
-            active_form_name
-            and not active_form_rejected
-            and tracker.latest_action.get(ACTION_NAME) == active_form_name
+            active_loop_name
+            and not active_loop_rejected
+            and tracker.latest_action_name == active_loop_name
         )
 
-        if should_predict_form:
-            logger.debug(f"Predicted form '{active_form_name}'.")
-            return active_form_name
+        if should_predict_loop:
+            logger.debug(f"Predicted loop '{active_loop_name}'.")
+            return active_loop_name
 
-        # predict `action_listen` if form action was run successfully
+        # predict `action_listen` if loop action was run successfully
         if should_predict_listen:
             logger.debug(
-                f"Predicted '{ACTION_LISTEN_NAME}' after form '{active_form_name}'."
+                f"Predicted '{ACTION_LISTEN_NAME}' after loop '{active_loop_name}'."
             )
             return ACTION_LISTEN_NAME
 
@@ -413,42 +412,42 @@ class RulePolicy(MemoizationPolicy):
             best_rule_key = max(rule_keys, key=len)
             predicted_action_name = self.lookup[RULES].get(best_rule_key)
 
-        active_form_name = tracker.active_form_name()
-        if active_form_name:
-            # find rules for unhappy path of the form
-            form_unhappy_keys = self._get_possible_keys(
-                self.lookup[RULES_FOR_FORM_UNHAPPY_PATH], states
+        active_loop_name = tracker.active_loop_name
+        if active_loop_name:
+            # find rules for unhappy path of the loop
+            loop_unhappy_keys = self._get_possible_keys(
+                self.lookup[RULES_FOR_LOOP_UNHAPPY_PATH], states
             )
             # there could be several unhappy path conditions
             unhappy_path_conditions = [
-                self.lookup[RULES_FOR_FORM_UNHAPPY_PATH].get(key)
-                for key in form_unhappy_keys
+                self.lookup[RULES_FOR_LOOP_UNHAPPY_PATH].get(key)
+                for key in loop_unhappy_keys
             ]
 
             # Check if a rule that predicted action_listen
-            # was applied inside the form.
-            # Rules might not explicitly switch back to the `Form`.
+            # was applied inside the loop.
+            # Rules might not explicitly switch back to the loop.
             # Hence, we have to take care of that.
             predicted_listen_from_general_rule = (
                 predicted_action_name == ACTION_LISTEN_NAME
-                and not self._get_active_form_name(
+                and not self._get_active_loop_name(
                     self._rule_key_to_state(best_rule_key)[-1]
                 )
             )
             if predicted_listen_from_general_rule:
-                if DO_NOT_PREDICT_FORM_ACTION not in unhappy_path_conditions:
+                if DO_NOT_PREDICT_LOOP_ACTION not in unhappy_path_conditions:
                     # negative rules don't contain a key that corresponds to
-                    # the fact that active_form shouldn't be predicted
+                    # the fact that active_loop shouldn't be predicted
                     logger.debug(
-                        f"Predicted form '{active_form_name}' by overwriting "
+                        f"Predicted loop '{active_loop_name}' by overwriting "
                         f"'{ACTION_LISTEN_NAME}' predicted by general rule."
                     )
-                    return active_form_name
+                    return active_loop_name
 
                 # do not predict anything
                 predicted_action_name = None
 
-            if DO_NOT_VALIDATE_FORM in unhappy_path_conditions:
+            if DO_NOT_VALIDATE_LOOP in unhappy_path_conditions:
                 logger.debug("Added `FormValidation(False)` event.")
                 tracker.update(FormValidation(False))
 
@@ -472,19 +471,19 @@ class RulePolicy(MemoizationPolicy):
         result = self._default_predictions(domain)
 
         # Rasa Open Source default actions overrule anything. If users want to achieve
-        # the same, they need to write a rule or make sure that their form rejects
+        # the same, they need to write a rule or make sure that their loop rejects
         # accordingly.
         default_action_name = self._find_action_from_default_actions(tracker)
         if default_action_name:
             return self._prediction_result(default_action_name, tracker, domain)
 
-        # A form has priority over any other rule.
-        # The rules or any other prediction will be applied only if a form was rejected.
-        # If we are in a form, and the form didn't run previously or rejected, we can
-        # simply force predict the form.
-        form_happy_path_action_name = self._find_action_from_form_happy_path(tracker)
-        if form_happy_path_action_name:
-            return self._prediction_result(form_happy_path_action_name, tracker, domain)
+        # A loop has priority over any other rule.
+        # The rules or any other prediction will be applied only if a loop was rejected.
+        # If we are in a loop, and the loop didn't run previously or rejected, we can
+        # simply force predict the loop.
+        loop_happy_path_action_name = self._find_action_from_loop_happy_path(tracker)
+        if loop_happy_path_action_name:
+            return self._prediction_result(loop_happy_path_action_name, tracker, domain)
 
         rules_action_name = self._find_action_from_rules(tracker, domain)
         if rules_action_name:

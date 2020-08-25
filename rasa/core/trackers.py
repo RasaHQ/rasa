@@ -677,7 +677,8 @@ class DialogueStateTracker:
         ]
         return new_slots
 
-    def active_form_name(self) -> Optional[Text]:
+    @property
+    def active_loop_name(self) -> Optional[Text]:
         """Get the name of the currently active form.
 
         Returns: `None` if no active form or the name of the currenly active form.
@@ -686,3 +687,11 @@ class DialogueStateTracker:
             return None
 
         return self.active_loop.get("name")
+
+    @property
+    def latest_action_name(self) -> Optional[Text]:
+        """Get the name of the previously executed action if it was not e2e action.
+
+        Returns: `None` if the action was e2e action.
+        """
+        return self.latest_action.get(ACTION_NAME)
