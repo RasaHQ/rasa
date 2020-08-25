@@ -426,7 +426,7 @@ class PolicyEnsemble:
             raise InvalidPolicyConfig("featurizer can have only 1 state featurizer")
         state_featurizer_config = featurizer_config["state_featurizer"][0]
         state_featurizer_name = state_featurizer_config.pop("name")
-        state_featurizer_func = registry.featurizer_from_module_path(
+        state_featurizer_func = registry.state_featurizer_from_module_path(
             state_featurizer_name
         )
 
