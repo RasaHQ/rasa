@@ -27,24 +27,24 @@ mapping:
   responses:
     type: "map"
     allowempty: True
-    matching-rule: 'any'
     mapping:
       regex;(.+):
         type: "seq"
-        required: True
+        required: False
+        nullable: False
         sequence:
         - type: "map"
-          allowempty: True
-          matching-rule: 'any'
+          required: True
+          allowempty: False
           mapping:
-            regex;(^text$):
+            text:
               type: "str"
-            regex;(^image$):
+            image:
               type: "str"
-            regex;(^custom$):
+            custom:
               type: "map"
               allowempty: True
-            regex;(^buttons$):
+            buttons:
               type: "seq"
               sequence:
               - type: "map"
@@ -53,6 +53,12 @@ mapping:
                     type: "str"
                   payload:
                     type: "str"
+            channel:
+              type: "str"
+            # allow custom keys
+            regex;(.+):
+              type: "any"
+              required: False
 
   slots:
     type: "map"

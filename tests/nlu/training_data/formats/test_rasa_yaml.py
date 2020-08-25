@@ -349,7 +349,7 @@ def test_nlg_fails_on_empty_response():
 
     reader = RasaYAMLReader()
 
-    with pytest.raises(InvalidDomain):
+    with pytest.raises(ValueError):
         reader.reads(responses_yml)
 
 
