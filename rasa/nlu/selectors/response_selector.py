@@ -317,8 +317,6 @@ class ResponseSelector(DIETClassifier):
 
         self.responses = training_data.responses
 
-        print("storing responses as ", self.responses)
-
         if not label_id_index_mapping:
             # no labels are present to train
             return RasaModelData()
@@ -352,9 +350,7 @@ class ResponseSelector(DIETClassifier):
             contrast to the predicted label, the response doesn't only contain
             the text but also buttons, images, ...
         """
-        print("responses")
         for key, responses in self.responses.items():
-            print(key, responses)
             ## TODO: This can be simplified, do we need this distinction here?
             if self.train_on_text:
                 for response in responses:
@@ -365,15 +361,19 @@ class ResponseSelector(DIETClassifier):
                     # return the first response
                     return key, responses
 
+        # If none of the responses match, then go to default response where response key
+        # and the response text are the same.
+        return label.get("name"), [{"text": label.get("name")}]
+
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response and its similarity to the input."""
 
         out = self._predict(message)
         label, label_ranking = self._predict_label(out)
 
-        print(message.as_dict())
-        print(self.responses)
-        print(label)
+        # print(message.as_dict())
+        # print(self.responses)
+        # print(label)
 
         label_retrieval_intent, label_responses = self._full_response(label)
 
