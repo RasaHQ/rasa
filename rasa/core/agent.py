@@ -7,15 +7,12 @@ from asyncio import CancelledError
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
-from sanic import Sanic
 
 import rasa
 import rasa.utils.io
 import rasa.core.utils
 from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
-    LEGACY_DOCS_BASE_URL,
-    ENV_SANIC_BACKLOG,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
 from rasa.core import constants, jobs, training
@@ -45,7 +42,7 @@ from rasa.model import (
     get_model,
 )
 from rasa.nlu.utils import is_url
-from rasa.utils.common import raise_warning, update_sanic_log_level
+from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -706,28 +703,6 @@ class Agent:
         """
         if not self.is_core_ready():
             raise AgentNotReady("Can't train without a policy ensemble.")
-
-        # deprecation tests
-        if kwargs.get("featurizer"):
-            raise Exception(
-                "Passing `featurizer` "
-                "to `agent.train(...)` is not supported anymore. "
-                "Pass appropriate featurizer directly "
-                "to the policy configuration instead. More info "
-                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
-            )
-        if (
-            kwargs.get("epochs")
-            or kwargs.get("max_history")
-            or kwargs.get("batch_size")
-        ):
-            raise Exception(
-                "Passing policy configuration parameters "
-                "to `agent.train(...)` is not supported "
-                "anymore. Specify parameters directly in the "
-                "policy configuration instead. More info "
-                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
-            )
 
         if isinstance(training_trackers, str):
             # the user most likely passed in a file name to load training

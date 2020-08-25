@@ -51,7 +51,7 @@ DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide/"
 
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
 
-LEGACY_DOCS_BASE_URL = "http://legacy-docs.rasa.com"
+LEGACY_DOCS_BASE_URL = "https://legacy-docs-v1.rasa.com"
 
 CONFIG_KEYS_CORE = ["policies"]
 CONFIG_KEYS_NLU = ["language", "pipeline"]

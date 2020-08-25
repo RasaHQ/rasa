@@ -96,30 +96,25 @@ def test(
     model: Text,
     stories: Text,
     nlu_data: Text,
-    endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
 ):
     if additional_arguments is None:
         additional_arguments = {}
 
-    test_core(model, stories, endpoints, output, additional_arguments)
+    test_core(model, stories, output, additional_arguments)
     test_nlu(model, nlu_data, output, additional_arguments)
 
 
 def test_core(
     model: Optional[Text] = None,
     stories: Optional[Text] = None,
-    endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
 ) -> None:
-    import rasa.core.utils as core_utils
     import rasa.model
     from rasa.core.interpreter import RegexInterpreter
     from rasa.core.agent import Agent
-
-    _endpoints = core_utils.AvailableEndpoints.read_endpoints(endpoints)
 
     if additional_arguments is None:
         additional_arguments = {}

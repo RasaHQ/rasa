@@ -135,6 +135,10 @@ You can test your assistant against them by running:
 rasa test
 ```
 
+The command will always load all stories from any story files, where there file
+name starts with `test_`, e.g. `test_conversations.yml`. Your story test
+file names should always start with `test_` for this detection to work.
+
 :::info Custom Actions
 [Custom Actions](./custom-actions.mdx) are **not executed as part of end-to-end tests.** If your custom
 actions append any events to the conversation, this has to be reflected in your end-to-end
@@ -170,7 +174,7 @@ still estimate how well your model generalises using cross-validation.
 To do this, add the flag `--cross-validation`:
 
 ```bash
-rasa test nlu --nlu data/nlu.ml --cross-validation
+rasa test nlu --nlu data/nlu.yml --cross-validation
 ```
 
 You can find the full list of options in the

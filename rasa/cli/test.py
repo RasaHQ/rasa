@@ -63,9 +63,6 @@ def run_core_test(args: argparse.Namespace) -> None:
     from rasa import data
     from rasa.test import test_core_models_in_directory, test_core, test_core_models
 
-    endpoints = cli_utils.get_validated_path(
-        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
     stories = cli_utils.get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
     stories = data.get_test_directory(stories)
     output = args.out or DEFAULT_RESULTS_PATH
@@ -87,7 +84,6 @@ def run_core_test(args: argparse.Namespace) -> None:
             test_core(
                 model=model_path,
                 stories=stories,
-                endpoints=endpoints,
                 output=output,
                 additional_arguments=vars(args),
             )

@@ -125,6 +125,7 @@ def get_data_files(
 
     Args:
         paths: List of paths to training files or folders containing them.
+        filter_property: property to use when filtering the paths, e.g. `is_nlu_file`.
 
     Returns:
         paths of training data files.

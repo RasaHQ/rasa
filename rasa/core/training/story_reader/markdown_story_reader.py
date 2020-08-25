@@ -15,6 +15,7 @@ from rasa.constants import (
     DOCS_BASE_URL,
     DOCS_URL_DOMAINS,
     DOCS_URL_STORIES,
+    LEGACY_DOCS_BASE_URL,
 )
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import UserUttered
@@ -225,10 +226,10 @@ class MarkdownStoryReader(StoryReader):
 
         if not match:
             raise ValueError(
-                "Encountered invalid end-to-end format for message "
+                "Encountered invalid test story format for message "
                 "`{}`. Please visit the documentation page on "
                 "end-to-end testing at {}/user-guide/testing-your-assistant/"
-                "#end-to-end-testing/".format(line, DOCS_BASE_URL)
+                "#end-to-end-testing/".format(line, LEGACY_DOCS_BASE_URL)
             )
         from rasa.nlu.training_data import entities_parser
 
