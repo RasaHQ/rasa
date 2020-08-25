@@ -82,7 +82,7 @@ LABEL_SUB_KEY = "ids"
 LENGTH = "length"
 SEQUENCE = "sequence"
 SENTENCE = "sentence"
-POSSIBLE_FEATURE_TYPES = [SEQUENCE, SENTENCE, MASK, LENGTH, LABEL_SUB_KEY]
+POSSIBLE_FEATURE_TYPES = [SEQUENCE, SENTENCE]
 FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, FORM]
 
@@ -504,7 +504,6 @@ class TEDPolicy(Policy):
                 label_data.add_features(f"{LABEL_KEY}_{attribute}", subkey, features)
 
         label_ids = np.arange(domain.num_actions)
-        # TODO add length of text sequence
         label_data.add_features(
             LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
         )
@@ -554,9 +553,9 @@ class TEDPolicy(Policy):
                     )
 
         attribute_data = self._convert_to_data_format(X, training)
+        # ensure that all attributes are in the same order
         attribute_data = collections.OrderedDict(sorted(attribute_data.items()))
         model_data.add_data(attribute_data)
-        # TODO add dialogue and text lengths
         model_data.add_lengths(
             DIALOGUE, LENGTH, next(iter(list(attribute_data.keys()))), MASK
         )
@@ -775,7 +774,7 @@ class TED(TransformerRasaModel):
         self.action_acc = tf.keras.metrics.Mean(name="acc")
         self.metrics_to_log += ["loss", "acc"]
 
-        self.all_labels_embed = None
+        self.all_labels_embed = None  # needed for efficient prediction
 
     def _check_data(self) -> None:
         if not any(key in [INTENT, TEXT] for key in self.data_signature.keys()):
@@ -930,7 +929,7 @@ class TED(TransformerRasaModel):
 
         return attribute_features
 
-    def _preprocess_batch(
+    def _process_batch(
         self, batch: Dict[Text, Dict[Text, List[tf.Tensor]]]
     ) -> tf.Tensor:
         batch_encoded = {
@@ -1006,7 +1005,7 @@ class TED(TransformerRasaModel):
         )
 
         label_in = self._process_label_features(batch)
-        dialogue_in = self._preprocess_batch(batch)
+        dialogue_in = self._process_batch(batch)
         all_labels, all_labels_embed = self._create_all_labels_embed()
 
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in, sequence_lengths)
@@ -1033,7 +1032,7 @@ class TED(TransformerRasaModel):
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
 
-        dialogue_in = self._preprocess_batch(batch)
+        dialogue_in = self._process_batch(batch)
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in, sequence_lengths)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
