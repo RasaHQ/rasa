@@ -254,6 +254,7 @@ class ResponseSelector(DIETClassifier):
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
         self.retrieval_intent = config[RETRIEVAL_INTENT]
+        self.train_on_text = config[TRAIN_ON_TEXT]
 
     def _check_config_parameters(self) -> None:
         super()._check_config_parameters()
@@ -303,9 +304,7 @@ class ResponseSelector(DIETClassifier):
                 "all retrieval intents."
             )
 
-        label_attribute = (
-            RESPONSE if self.component_config[TRAIN_ON_TEXT] else INTENT_RESPONSE_KEY
-        )
+        label_attribute = RESPONSE if self.train_on_text else INTENT_RESPONSE_KEY
 
         label_id_index_mapping = self._label_id_index_mapping(
             training_data, attribute=label_attribute
@@ -317,6 +316,8 @@ class ResponseSelector(DIETClassifier):
         )
 
         self.responses = training_data.responses
+
+        print("storing responses as ", self.responses)
 
         if not label_id_index_mapping:
             # no labels are present to train
@@ -340,7 +341,7 @@ class ResponseSelector(DIETClassifier):
 
     def _full_response(
         self, label: Dict[Text, Any]
-    ) -> Optional[Tuple[Text, Dict[Text, Any]]]:
+    ) -> Optional[Tuple[Text, List[Dict[Text, Any]]]]:
         """Given a label return the full response based on the labels id.
 
         Args:
@@ -351,17 +352,18 @@ class ResponseSelector(DIETClassifier):
             contrast to the predicted label, the response doesn't only contain
             the text but also buttons, images, ...
         """
+        print("responses")
         for key, responses in self.responses.items():
+            print(key, responses)
             ## TODO: This can be simplified, do we need this distinction here?
-            if self.component_config[TRAIN_ON_TEXT]:
+            if self.train_on_text:
                 for response in responses:
                     if hash(response.get(TEXT, "")) == label.get("id"):
-                        return key, response
+                        return key, responses
             else:
                 if hash(key) == label.get("id"):
                     # return the first response
-                    return key, responses[0]
-        return None
+                    return key, responses
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response and its similarity to the input."""
@@ -369,25 +371,16 @@ class ResponseSelector(DIETClassifier):
         out = self._predict(message)
         label, label_ranking = self._predict_label(out)
 
-        # label_key, label_response = self._full_response(label) or {TEXT: label.get("name")}
+        print(message.as_dict())
+        print(self.responses)
+        print(label)
 
         label_retrieval_intent, label_responses = self._full_response(label)
 
-        # retrieval_intent_name = (
-        #     self.retrieval_intent_mapping.get(label.get("name"))
-        #     if self.component_config[TRAIN_ON_TEXT]
-        #     else label.get("name")
-        # )
-
         for ranking in label_ranking:
-            # ranking["full_retrieval_intent"] = (
-            #     self.retrieval_intent_mapping.get(ranking.get("name"))
-            #     if self.component_config[TRAIN_ON_TEXT]
-            #     else ranking.get("name")
-            # )
             ranking["full_retrieval_intent"] = (
                 self.retrieval_intent_mapping.get(ranking.get("name"))
-                if self.component_config[TRAIN_ON_TEXT]
+                if self.train_on_text
                 else ranking.get("name")
             )
 
@@ -406,9 +399,9 @@ class ResponseSelector(DIETClassifier):
                 "id": label["id"],
                 "name": label_responses,
                 "confidence": label["confidence"],
+                "full_retrieval_intent": label_retrieval_intent,
             },
             "ranking": label_ranking,
-            "full_retrieval_intent": label_retrieval_intent,
         }
 
         self._set_message_property(message, prediction_dict, selector_key)
@@ -520,7 +513,11 @@ class DIET2DIET(DIET):
         self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
 
         self._prepare_sequence_layers(self.text_name)
-        self._prepare_sequence_layers(self.label_name)
+
+        # When training on labels, don't create transformer layers for the label
+        self._prepare_sequence_layers(
+            self.label_name, dense_input=self.config[TRAIN_ON_TEXT]
+        )
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_layers(self.text_name)
         self._prepare_label_classification_layers()

@@ -32,6 +32,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     RESPONSE,
     INTENT,
+    INTENT_RESPONSE_KEY,
     TEXT,
     ENTITIES,
     TOKENS_NAMES,
@@ -156,7 +157,10 @@ def drop_intents_below_freq(
     ]
 
     return TrainingData(
-        keep_examples, training_data.entity_synonyms, training_data.regex_features
+        keep_examples,
+        training_data.entity_synonyms,
+        training_data.regex_features,
+        responses=training_data.responses,
     )
 
 
@@ -244,7 +248,7 @@ def write_response_successes(
             },
         }
         for r in response_results
-        if r.response_prediction == r.response_target
+        if r.response_prediction == r.intent_target
     ]
 
     if successes:
@@ -277,7 +281,7 @@ def write_response_errors(
             },
         }
         for r in response_results
-        if r.response_prediction != r.response_target
+        if r.response_prediction != r.intent_target
     ]
 
     if errors:
@@ -401,15 +405,13 @@ def evaluate_response_selections(
     for result in response_selection_results:
         response_to_intent_target[result.response_target] = result.intent_target
 
-    # print(response_to_intent_target)
-
-    # print(response_selection_results)
+    # target_responses, predicted_responses = _targets_predictions_from(
+    #     response_selection_results, "response_target", "response_prediction"
+    # )
 
     target_responses, predicted_responses = _targets_predictions_from(
-        response_selection_results, "response_target", "response_prediction"
+        response_selection_results, "intent_target", "response_prediction"
     )
-    # print(target_responses)
-    # print(predicted_responses)
 
     confusion_matrix = sklearn.metrics.confusion_matrix(
         target_responses, predicted_responses
@@ -457,15 +459,15 @@ def evaluate_response_selections(
             confusion_matrix_filename = os.path.join(
                 output_directory, confusion_matrix_filename
             )
-        _labels = [
-            response_to_intent_target[label]
-            if label in response_to_intent_target
-            else f"'{label[:20]}...' (response not present in test data)"
-            for label in labels
-        ]
+        # _labels = [
+        #     response_to_intent_target[label]
+        #     if label in response_to_intent_target
+        #     else f"'{label[:20]}...' (response not present in test data)"
+        #     for label in labels
+        # ]
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
-            classes=_labels,
+            classes=labels,
             title="Response Selection Confusion Matrix",
             output_file=confusion_matrix_filename,
         )
@@ -476,7 +478,7 @@ def evaluate_response_selections(
         plot_attribute_confidences(
             response_selection_results,
             histogram_filename,
-            "response_target",
+            "intent_target",
             "response_prediction",
             title="Response Selection Prediction Confidence Distribution",
         )
@@ -1311,7 +1313,6 @@ def get_eval_data(
 
     for example in tqdm(test_data.training_examples):
         result = interpreter.parse(example.text, only_output_properties=False)
-        # print(example.get(TEXT))
 
         if should_eval_intents:
             intent_prediction = result.get(INTENT, {}) or {}
@@ -1344,13 +1345,13 @@ def get_eval_data(
 
             response_target = example.get(RESPONSE, "")
 
-            complete_intent = example.get_combined_intent_response_key()
+            complete_intent = example.get(INTENT_RESPONSE_KEY)
 
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
                     complete_intent,
                     response_target,
-                    response_prediction.get("name").get(TEXT),
+                    response_prediction.get("full_retrieval_intent"),
                     result.get(TEXT, {}),
                     response_prediction.get("confidence"),
                 )
@@ -1552,11 +1553,13 @@ def generate_folds(
                 training_examples=train,
                 entity_synonyms=training_data.entity_synonyms,
                 regex_features=training_data.regex_features,
+                responses=training_data.responses,
             ),
             TrainingData(
                 training_examples=test,
                 entity_synonyms=training_data.entity_synonyms,
                 regex_features=training_data.regex_features,
+                responses=training_data.responses,
             ),
         )
 

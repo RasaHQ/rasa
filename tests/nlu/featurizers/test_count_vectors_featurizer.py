@@ -31,8 +31,13 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
     WhitespaceTokenizer().process(train_message)
     WhitespaceTokenizer().process(test_message)
 
+    print([tok.text for tok in train_message.get("text_tokens")])
+    print([tok.text for tok in test_message.get("text_tokens")])
+
+    print("training")
     ftr.train(TrainingData([train_message]))
 
+    print("processing")
     ftr.process(test_message)
 
     seq_vecs, sen_vecs = test_message.get_sparse_features(TEXT, [])

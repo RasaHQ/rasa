@@ -3,6 +3,7 @@ import json
 import logging
 import typing
 from typing import List, Text, Optional, Dict, Any
+import random
 
 import aiohttp
 
@@ -234,6 +235,8 @@ class ActionRetrieveResponse(Action):
             RESPONSE_SELECTOR_PROPERTY_NAME
         ]
 
+        print(response_selector_properties)
+
         if self.intent_name_from_action() in response_selector_properties:
             query_key = self.intent_name_from_action()
         elif DEFAULT_OPEN_UTTERANCE_TYPE in response_selector_properties:
@@ -248,10 +251,17 @@ class ActionRetrieveResponse(Action):
 
         logger.debug(f"Picking response from selector of type {query_key}")
         selected = response_selector_properties[query_key]
-        message = selected[OPEN_UTTERANCE_PREDICTION_KEY]
-        message["template_name"] = selected[FULL_RETRIEVAL_INTENT]
+        possible_messages = selected[OPEN_UTTERANCE_PREDICTION_KEY]["name"]
 
-        return [create_bot_utterance(message)]
+        # Pick a random message from list of candidate messages
+        picked_message_idx = random.randint(0, len(possible_messages) - 1)
+        picked_message = copy.deepcopy(possible_messages[picked_message_idx])
+
+        picked_message["template_name"] = selected[OPEN_UTTERANCE_PREDICTION_KEY][
+            "full_retrieval_intent"
+        ]
+
+        return [create_bot_utterance(picked_message)]
 
     def name(self) -> Text:
         return self.action_name

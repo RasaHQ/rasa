@@ -550,16 +550,16 @@ def test_response_evaluation_report(tmpdir_factory):
 
     response_results = [
         ResponseSelectionEvaluationResult(
-            "chitchat",
+            "chitchat/ask_weather",
             "It's sunny in Berlin",
-            "It's sunny in Berlin",
+            "chitchat/ask_weather",
             "What's the weather",
             0.65432,
         ),
         ResponseSelectionEvaluationResult(
-            "chitchat",
+            "chitchat/ask_name",
             "My name is Mr.bot",
-            "My name is Mr.bot",
+            "chitchat/ask_name",
             "What's your name?",
             0.98765,
         ),
@@ -585,14 +585,14 @@ def test_response_evaluation_report(tmpdir_factory):
 
     prediction = {
         "text": "What's your name?",
-        "intent_target": "chitchat",
+        "intent_target": "chitchat/ask_name",
         "response_target": "My name is Mr.bot",
-        "response_predicted": "My name is Mr.bot",
+        "response_predicted": "chitchat/ask_name",
         "confidence": 0.98765,
     }
 
     assert len(report.keys()) == 5
-    assert report["My name is Mr.bot"] == name_query_results
+    assert report["chitchat/ask_name"] == name_query_results
     assert result["predictions"][1] == prediction
 
     assert os.path.exists(

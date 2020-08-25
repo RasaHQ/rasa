@@ -1393,10 +1393,10 @@ class DIET(RasaModel):
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
 
-    def _prepare_sequence_layers(self, name: Text) -> None:
+    def _prepare_sequence_layers(self, name: Text, dense_input: Text = True) -> None:
         self._prepare_input_layers(name)
 
-        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
+        if self.config[NUM_TRANSFORMER_LAYERS] > 0 and dense_input:
             self._tf_layers[f"{name}_transformer"] = TransformerEncoder(
                 self.config[NUM_TRANSFORMER_LAYERS],
                 self.config[TRANSFORMER_SIZE],
