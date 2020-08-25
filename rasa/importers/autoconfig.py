@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 
-from typing import Text, Dict, Any, List, Set
+from typing import Text, Dict, Any, List, Set, Optional
 
 from rasa.cli import utils as cli_utils
 from rasa.constants import (
@@ -11,6 +11,10 @@ from rasa.constants import (
     DOCS_URL_PIPELINE,
     DOCS_URL_POLICIES,
     CONFIG_KEYS,
+    CONFIG_KEYS_CORE,
+    CONFIG_KEYS_NLU,
+    CONFIG_AUTOCONFIGURABLE_KEYS_CORE,
+    CONFIG_AUTOCONFIGURABLE_KEYS_NLU,
 )
 from rasa.utils import io as io_utils, common as common_utils
 
@@ -32,7 +36,9 @@ COMMENTS_FOR_KEYS = {
 }
 
 
-def get_configuration(config_file_path: Text) -> Dict[Text, Any]:
+def get_configuration(
+    config_file_path: Text, nlu_or_core: Optional[Text] = "both"
+) -> Dict[Text, Any]:
     """Determine configuration from a configuration file.
 
     Keys that are provided and have a value in the file are kept. Keys that are not
@@ -40,6 +46,7 @@ def get_configuration(config_file_path: Text) -> Dict[Text, Any]:
 
     Args:
         config_file_path: The path to the configuration file.
+        nlu_or_core: 'nlu', 'core' or 'both' depending on what is trained.
     """
     if not config_file_path or not os.path.exists(config_file_path):
         logger.debug("No configuration file was provided to the TrainingDataImporter.")
@@ -47,22 +54,42 @@ def get_configuration(config_file_path: Text) -> Dict[Text, Any]:
 
     config = io_utils.read_config_file(config_file_path)
 
-    missing_keys = _get_missing_config_keys(config)
-    keys_to_configure = _get_unspecified_autoconfigurable_keys(config)
+    missing_keys = _get_missing_config_keys(config, nlu_or_core)
+    keys_to_configure = _get_unspecified_autoconfigurable_keys(config, nlu_or_core)
 
     if keys_to_configure:
         config = _auto_configure(config, keys_to_configure)
-        _dump_config(config, config_file_path, missing_keys, keys_to_configure)
+        _dump_config(
+            config, config_file_path, missing_keys, keys_to_configure, nlu_or_core
+        )
 
     return config
 
 
-def _get_unspecified_autoconfigurable_keys(config: Dict[Text, Any]) -> Set[Text]:
-    return {k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not config.get(k)}
+def _get_unspecified_autoconfigurable_keys(
+    config: Dict[Text, Any], nlu_or_core: Optional[Text] = "both"
+) -> Set[Text]:
+    if nlu_or_core == "nlu":
+        all_keys = CONFIG_AUTOCONFIGURABLE_KEYS_NLU
+    elif nlu_or_core == "core":
+        all_keys = CONFIG_AUTOCONFIGURABLE_KEYS_CORE
+    else:
+        all_keys = CONFIG_AUTOCONFIGURABLE_KEYS
+
+    return {k for k in all_keys if not config.get(k)}
 
 
-def _get_missing_config_keys(config: Dict[Text, Any]) -> Set[Text]:
-    return {k for k in CONFIG_KEYS if k not in config.keys()}
+def _get_missing_config_keys(
+    config: Dict[Text, Any], nlu_or_core: Optional[Text] = "both"
+) -> Set[Text]:
+    if nlu_or_core == "nlu":
+        all_keys = CONFIG_KEYS_NLU
+    elif nlu_or_core == "core":
+        all_keys = CONFIG_KEYS_CORE
+    else:
+        all_keys = CONFIG_KEYS
+
+    return {k for k in all_keys if k not in config.keys()}
 
 
 def _auto_configure(
@@ -109,6 +136,7 @@ def _dump_config(
     config_file_path: Text,
     missing_keys: Set[Text],
     auto_configured_keys: Set[Text],
+    nlu_or_core: Optional[Text] = "both",
 ) -> None:
     """Dump the automatically configured keys into the config file.
 
@@ -125,9 +153,10 @@ def _dump_config(
         missing_keys: Keys that need to be added to the config file.
         auto_configured_keys: Keys for which a commented out auto configuration section
                               needs to be added to the config file.
+        nlu_or_core: 'nlu', 'core' or 'both' depending on which is trained.
     """
     config_as_expected = _is_config_file_as_expected(
-        config_file_path, missing_keys, auto_configured_keys
+        config_file_path, missing_keys, auto_configured_keys, nlu_or_core,
     )
     if not config_as_expected:
         cli_utils.print_error(
@@ -160,7 +189,10 @@ def _dump_config(
 
 
 def _is_config_file_as_expected(
-    config_file_path: Text, missing_keys: Set[Text], auto_configured_keys: Set[Text]
+    config_file_path: Text,
+    missing_keys: Set[Text],
+    auto_configured_keys: Set[Text],
+    nlu_or_core: Optional[Text] = "both",
 ) -> bool:
     try:
         content = io_utils.read_config_file(config_file_path)
@@ -169,8 +201,9 @@ def _is_config_file_as_expected(
 
     return (
         bool(content)
-        and missing_keys == _get_missing_config_keys(content)
-        and auto_configured_keys == _get_unspecified_autoconfigurable_keys(content)
+        and missing_keys == _get_missing_config_keys(content, nlu_or_core)
+        and auto_configured_keys
+        == _get_unspecified_autoconfigurable_keys(content, nlu_or_core)
     )
 
 

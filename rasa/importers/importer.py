@@ -73,12 +73,13 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        nlu_or_core: Optional[Text] = "both",
     ) -> "TrainingDataImporter":
         """Loads a ``TrainingDataImporter`` instance from a configuration file."""
 
         config = io_utils.read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
-            config, config_path, domain_path, training_data_paths
+            config, config_path, domain_path, training_data_paths, nlu_or_core
         )
 
     @staticmethod
@@ -92,7 +93,7 @@ class TrainingDataImporter:
         """
 
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths
+            config_path, domain_path, training_data_paths, "core",
         )
 
         return CoreDataImporter(importer)
@@ -108,7 +109,7 @@ class TrainingDataImporter:
         """
 
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths
+            config_path, domain_path, training_data_paths, "nlu"
         )
 
         return NluDataImporter(importer)
@@ -119,6 +120,7 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        nlu_or_core: Optional[Text] = "both",
     ) -> "TrainingDataImporter":
         """Loads a ``TrainingDataImporter`` instance from a dictionary."""
 
@@ -128,7 +130,7 @@ class TrainingDataImporter:
         importers = config.get("importers", [])
         importers = [
             TrainingDataImporter._importer_from_dict(
-                importer, config_path, domain_path, training_data_paths
+                importer, config_path, domain_path, training_data_paths, nlu_or_core
             )
             for importer in importers
         ]
@@ -136,7 +138,9 @@ class TrainingDataImporter:
 
         if not importers:
             importers = [
-                RasaFileImporter(config_path, domain_path, training_data_paths)
+                RasaFileImporter(
+                    config_path, domain_path, training_data_paths, nlu_or_core
+                )
             ]
 
         return CombinedDataImporter(importers)
@@ -147,6 +151,7 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        nlu_or_core: Optional[Text] = "both",
     ) -> Optional["TrainingDataImporter"]:
         from rasa.importers.multi_project import MultiProjectImporter
         from rasa.importers.rasa import RasaFileImporter
@@ -163,9 +168,12 @@ class TrainingDataImporter:
                 logging.warning(f"Importer '{module_path}' not found.")
                 return None
 
+        importer_config["nlu_or_core"] = nlu_or_core
+
         constructor_arguments = common_utils.minimal_kwargs(
             importer_config, importer_class
         )
+
         return importer_class(
             config_path, domain_path, training_data_paths, **constructor_arguments
         )

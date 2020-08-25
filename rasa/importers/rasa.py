@@ -21,6 +21,7 @@ class RasaFileImporter(TrainingDataImporter):
         config_file: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[Union[List[Text], Text]] = None,
+        nlu_or_core: Optional[Text] = "both",
     ):
 
         self._domain_path = domain_path
@@ -29,7 +30,7 @@ class RasaFileImporter(TrainingDataImporter):
             training_data_paths
         )
 
-        self.config = autoconfig.get_configuration(config_file)
+        self.config = autoconfig.get_configuration(config_file, nlu_or_core)
 
     async def get_config(self) -> Dict:
         return self.config
