@@ -246,15 +246,13 @@ class TrainingData:
             story_lookup_intent = example.get_combined_intent_response_key()
             assistant_utterances = self.responses.get(story_lookup_intent, [])
             if assistant_utterances:
-                # Todo: handle this better. Can we pass the complete utterance template to the message object?
-                # example.set(RESPONSE, assistant_utterances[0].get(TEXT))
 
                 # Use the first response text as training label if needed downstream
                 for assistant_utterance in assistant_utterances:
                     if assistant_utterance.get(TEXT, None):
                         example.set(RESPONSE, assistant_utterance.get(TEXT))
 
-                # If no text attribute found, then use the key as the training label
+                # If none of the response templates have a text attribute, then use the key as the training label
                 if not example.get(RESPONSE):
                     example.set(RESPONSE, story_lookup_intent)
 

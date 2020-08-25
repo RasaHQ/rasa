@@ -76,7 +76,6 @@ from rasa.utils.tensorflow.constants import (
 from rasa.nlu.constants import (
     RESPONSE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
-    RESPONSE_KEY,
     INTENT_RESPONSE_KEY,
     INTENT,
     DEFAULT_OPEN_UTTERANCE_TYPE,
@@ -206,8 +205,8 @@ class ResponseSelector(DIETClassifier):
         MASKED_LM: False,
         # Name of the intent for which this response selector is to be trained
         RETRIEVAL_INTENT: None,
-        # Boolean flag to check if actual text of the response should be used as ground truth label for
-        # training the model.
+        # Boolean flag to check if actual text of the response
+        # should be used as ground truth label for training the model.
         TRAIN_ON_TEXT: False,
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.

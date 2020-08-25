@@ -120,7 +120,8 @@ class Tokenizer(Component):
     def _split_intent(self, message: Message, attribute: Text = INTENT) -> List[Token]:
         text = message.get(attribute)
 
-        # for INTENT_RESPONSE_KEY attribute, first split by RESPONSE_IDENTIFIER_DELIMITER
+        # for INTENT_RESPONSE_KEY attribute,
+        # first split by RESPONSE_IDENTIFIER_DELIMITER
         if attribute == INTENT_RESPONSE_KEY:
             intent, response_key = text.split(RESPONSE_IDENTIFIER_DELIMITER)
             words = self._tokenize_on_split_symbol(

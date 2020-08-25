@@ -235,8 +235,6 @@ class ActionRetrieveResponse(Action):
             RESPONSE_SELECTOR_PROPERTY_NAME
         ]
 
-        print(response_selector_properties)
-
         if self.intent_name_from_action() in response_selector_properties:
             query_key = self.intent_name_from_action()
         elif DEFAULT_OPEN_UTTERANCE_TYPE in response_selector_properties:

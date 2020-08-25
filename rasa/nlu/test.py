@@ -405,10 +405,6 @@ def evaluate_response_selections(
     for result in response_selection_results:
         response_to_intent_target[result.response_target] = result.intent_target
 
-    # target_responses, predicted_responses = _targets_predictions_from(
-    #     response_selection_results, "response_target", "response_prediction"
-    # )
-
     target_responses, predicted_responses = _targets_predictions_from(
         response_selection_results, "intent_target", "response_prediction"
     )
@@ -459,12 +455,7 @@ def evaluate_response_selections(
             confusion_matrix_filename = os.path.join(
                 output_directory, confusion_matrix_filename
             )
-        # _labels = [
-        #     response_to_intent_target[label]
-        #     if label in response_to_intent_target
-        #     else f"'{label[:20]}...' (response not present in test data)"
-        #     for label in labels
-        # ]
+
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
             classes=labels,
@@ -1356,7 +1347,6 @@ def get_eval_data(
                     response_prediction.get("confidence"),
                 )
             )
-            # print('-----------------')
 
         if should_eval_entities:
             entity_results.append(

@@ -110,7 +110,8 @@ class Message:
             if split_intent:
                 data[INTENT] = split_intent
             if response_key:
-                # intent label can be of form - {intent}/{response_key}, so store response_key separately and
+                # intent label can be of the form - {intent}/{response_key},
+                # so store response_key separately and
                 # full intent label also separately
                 data[RESPONSE_KEY] = response_key
                 data[INTENT_RESPONSE_KEY] = intent
