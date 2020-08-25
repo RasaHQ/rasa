@@ -23,7 +23,7 @@ You can configure the HTTP server to fetch models from another URL
 by adding it to your `endpoints.yml`. The server will then
 reguarly query this URL for zipped models.
 
-```yaml
+```yaml-rasa
 models:
   url: http://my-server.com/models/default@latest
   wait_time_between_pulls: 10   # In seconds, optional, default: 100

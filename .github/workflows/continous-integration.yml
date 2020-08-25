@@ -101,10 +101,8 @@ jobs:
       # trying to run the `rasa` command once before the docs build.
       run: poetry run rasa --help
 
-    - name: Test Docs 📃
-      run: |
-        poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
-        make docs
+    - name: Test Docs 🕸
+      run: make test-docs
 
   test:
     name: Run Tests

@@ -18,7 +18,7 @@ Alternatively, you can also build your own chat widget.
 The SocketIO channel uses websockets and is real-time. You need to supply
 a `credentials.yml` with the following content:
 
-```yaml
+```yaml-rasa
 socketio:
   user_message_evt: user_uttered
   bot_message_evt: bot_uttered
@@ -57,7 +57,7 @@ rasa run
 
 you need to ensure your `credentials.yml` has the following content:
 
-```yaml
+```yaml-rasa
 rest:
   # you don't need to provide anything here - this channel doesn't
   # require any credentials
@@ -97,7 +97,7 @@ rasa run
 
 you need to supply a `credentials.yml` with the following content:
 
-```yaml
+```yaml-rasa
 callback:
   # URL to which Core will send the bot responses
   url: "http://localhost:5034/bot"
