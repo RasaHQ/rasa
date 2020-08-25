@@ -351,14 +351,12 @@ class ResponseSelector(DIETClassifier):
             the text but also buttons, images, ...
         """
         for key, responses in self.responses.items():
-            ## TODO: This can be simplified, do we need this distinction here?
             if self.train_on_text:
                 for response in responses:
                     if hash(response.get(TEXT, "")) == label.get("id"):
                         return key, responses
             else:
                 if hash(key) == label.get("id"):
-                    # return the first response
                     return key, responses
 
         # If none of the responses match, then go to default response where response key
@@ -370,10 +368,6 @@ class ResponseSelector(DIETClassifier):
 
         out = self._predict(message)
         label, label_ranking = self._predict_label(out)
-
-        # print(message.as_dict())
-        # print(self.responses)
-        # print(label)
 
         label_retrieval_intent, label_responses = self._full_response(label)
 
