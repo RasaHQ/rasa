@@ -17,7 +17,7 @@ from rasa.core.constants import (
 from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
-from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot, UnfeaturizedSlot
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,

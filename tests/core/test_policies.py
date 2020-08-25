@@ -25,12 +25,10 @@ from rasa.nlu.constants import INTENT, ACTION_NAME
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, ConversationPaused
-from rasa.core.featurizers import (
-    BinarySingleStateFeaturizer,
-    LabelTokenizerSingleStateFeaturizer,
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
-    E2ESingleStateFeaturizer,
 )
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.policies.form_policy import FormPolicy
@@ -89,7 +87,7 @@ class PolicyTestCollection:
     @pytest.fixture(scope="module")
     def featurizer(self):
         featurizer = MaxHistoryTrackerFeaturizer(
-            E2ESingleStateFeaturizer(), max_history=self.max_history
+            SingleStateFeaturizer(), max_history=self.max_history
         )
         return featurizer
 
@@ -117,13 +115,13 @@ class PolicyTestCollection:
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
-            trained_policy.featurizer.state_featurizer, E2ESingleStateFeaturizer
+            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
         )
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
-        assert isinstance(loaded.featurizer.state_featurizer, E2ESingleStateFeaturizer)
+        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
     async def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
         trained_policy.persist(tmpdir.strpath)
@@ -484,12 +482,12 @@ class TestTEDPolicyWithFullDialogue(TestTEDPolicy):
     def test_featurizer(self, trained_policy, tmpdir):
         assert isinstance(trained_policy.featurizer, FullDialogueTrackerFeaturizer)
         assert isinstance(
-            trained_policy.featurizer.state_featurizer, E2ESingleStateFeaturizer,
+            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
         )
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
         assert isinstance(loaded.featurizer, FullDialogueTrackerFeaturizer)
-        assert isinstance(loaded.featurizer.state_featurizer, E2ESingleStateFeaturizer)
+        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
 
 class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
@@ -504,7 +502,7 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
-            trained_policy.featurizer.state_featurizer, E2ESingleStateFeaturizer,
+            trained_policy.featurizer.state_featurizer, E2ESingleStateFeaturizer
         )
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)

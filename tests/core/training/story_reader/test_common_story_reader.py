@@ -10,10 +10,10 @@ import pytest
 from rasa.core import training
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, SessionStarted
-from rasa.core.featurizers import (
-    MaxHistoryTrackerFeaturizer,
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer,
     BinarySingleStateFeaturizer,
-    E2ESingleStateFeaturizer,
 )
 
 from rasa.core.interpreter import RegexInterpreter
@@ -106,7 +106,7 @@ async def test_read_story_file_with_cycles(stories_file: Text, default_domain: D
 async def test_generate_training_data_with_cycles(
     stories_file: Text, default_domain: Domain
 ):
-    featurizer = MaxHistoryTrackerFeaturizer(E2ESingleStateFeaturizer(), max_history=4)
+    featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
     training_trackers = await training.load_data(
         stories_file, default_domain, augmentation_factor=0
     )
@@ -214,7 +214,7 @@ async def test_load_multi_file_training_data(
 ):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
-    featurizer = MaxHistoryTrackerFeaturizer(E2ESingleStateFeaturizer(), max_history=2)
+    featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
     trackers = await training.load_data(
         stories_resources[0], default_domain, augmentation_factor=0
     )
@@ -230,9 +230,7 @@ async def test_load_multi_file_training_data(
         trackers, default_domain, interpreter=RegexInterpreter()
     )
 
-    featurizer_mul = MaxHistoryTrackerFeaturizer(
-        E2ESingleStateFeaturizer(), max_history=2
-    )
+    featurizer_mul = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
     trackers_mul = await training.load_data(
         stories_resources[1], default_domain, augmentation_factor=0
     )
