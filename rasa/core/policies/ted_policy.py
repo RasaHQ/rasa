@@ -26,7 +26,6 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE, FORM, SLOTS
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature, Data
 from rasa.utils.tensorflow.constants import (
@@ -212,6 +211,7 @@ class TEDPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
+        zero_features: Optional[Dict[Text, List["Features"]]] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
@@ -228,6 +228,8 @@ class TEDPolicy(Policy):
         self._load_params(**kwargs)
 
         self.model = model
+
+        self.zero_features = zero_features or defaultdict(list)
 
         self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
@@ -285,23 +287,23 @@ class TEDPolicy(Policy):
 
     @staticmethod
     def _create_zero_features(
-        list_of_all_features: List[List[List["Features"]]]
+        features: List[List[List["Features"]]]
     ) -> List["Features"]:
         # all features should have the same types
         """
         Computes default feature values for an attribute;
         Args:
-            list_of_all_features: list containing all feature values encountered 
+            features: list containing all feature values encountered
             in the dataset for an attribute;
         """
 
         example_features = next(
             iter(
                 [
-                    _example_features
-                    for all_features in list_of_all_features
-                    for _example_features in all_features
-                    if _example_features is not None
+                    features_in_dialogue
+                    for features_in_tracker in features
+                    for features_in_dialogue in features_in_tracker
+                    if features_in_dialogue is not None
                 ]
             )
         )
@@ -325,6 +327,7 @@ class TEDPolicy(Policy):
         features: Union[
             List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
         ],
+        training: bool = True,
     ) -> Data:
         """Converts the input into "Data" format.
 
@@ -346,13 +349,28 @@ class TEDPolicy(Policy):
         features = self._surface_attributes(features)
 
         attribute_data = {}
-        for attribute, features_in_tracker in features.items():
+
+        # During prediction we need to iterate over the zero features attributes to
+        # have all keys in the resulting model data
+        if training:
+            attributes = list(features.keys())
+        else:
+            attributes = list(self.zero_features.keys())
+
+        for attribute in attributes:
+            features_in_tracker = (
+                features[attribute] if attribute in features else [[None]]
+            )
+
             # in case some features for a specific attribute and dialogue turn are
             # missing, replace them with a feature vector of zeros
-            zero_features = self._create_zero_features(features_in_tracker)
+            if training:
+                self.zero_features[attribute] = self._create_zero_features(
+                    features_in_tracker
+                )
 
             attribute_masks, _dense_features, _sparse_features = self._map_tracker_features(
-                features_in_tracker, zero_features
+                features_in_tracker, self.zero_features[attribute]
             )
 
             sparse_features = defaultdict(list)
@@ -494,6 +512,7 @@ class TEDPolicy(Policy):
         X: List[List[Dict[Text, List["Features"]]]],
         label_ids: Optional[List[List[int]]] = None,
         all_labels: Optional[List[Dict[Text, List["Features"]]]] = None,
+        training: bool = True,
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData.
 
@@ -521,7 +540,7 @@ class TEDPolicy(Policy):
                         f"{LABEL_KEY}_{attribute}", subkey, features
                     )
 
-        attribute_data = self._convert_to_data_format(X)
+        attribute_data = self._convert_to_data_format(X, training)
         model_data.add_data(attribute_data)
         # TODO add dialogue and text lengths
         model_data.add_lengths(
@@ -589,7 +608,7 @@ class TEDPolicy(Policy):
 
         # create model data from tracker
         data_X = self.featurizer.create_X([tracker], domain, interpreter)
-        model_data = self._create_model_data(data_X)
+        model_data = self._create_model_data(data_X, training=False)
 
         output = self.model.predict(model_data)
 
@@ -632,6 +651,9 @@ class TEDPolicy(Policy):
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
         )
         io_utils.pickle_dump(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_features.pkl", self.zero_features
+        )
+        io_utils.pickle_dump(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
             dict(self._label_data.data),
         )
@@ -662,6 +684,9 @@ class TEDPolicy(Policy):
         label_data = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
         )
+        zero_features = io_utils.pickle_load(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_features.pkl"
+        )
         label_data = RasaModelData(data=label_data)
         meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
         priority = io_utils.json_unpickle(
@@ -691,12 +716,19 @@ class TEDPolicy(Policy):
             data={
                 feature_name: features
                 for feature_name, features in model_data_example.items()
-                if feature_name in STATE_LEVEL_FEATURES + FEATURES_TO_ENCODE
+                if feature_name
+                in STATE_LEVEL_FEATURES + FEATURES_TO_ENCODE + [DIALOGUE]
             },
         )
         model.build_for_predict(predict_data_example)
 
-        return cls(featurizer=featurizer, priority=priority, model=model, **meta)
+        return cls(
+            featurizer=featurizer,
+            priority=priority,
+            model=model,
+            zero_features=zero_features,
+            **meta,
+        )
 
 
 # accessing _tf_layers with any key results in key-error, disable it
@@ -718,7 +750,7 @@ class TED(TransformerRasaModel):
         self.predict_data_signature = {
             feature_name: features
             for feature_name, features in data_signature.items()
-            if DIALOGUE in feature_name
+            if feature_name in STATE_LEVEL_FEATURES + FEATURES_TO_ENCODE + [DIALOGUE]
         }
 
         # optimizer
@@ -915,6 +947,7 @@ class TED(TransformerRasaModel):
             batch_user = batch_encoded.pop(INTENT)
 
         batch_features = [batch_user, batch_action]
+
         for key in batch_encoded.keys():
             batch_features.append(batch_encoded.get(key))
             # # ignore features which are essntially empty
@@ -979,8 +1012,9 @@ class TED(TransformerRasaModel):
         batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
 
         dialogue_in = self._preprocess_batch(batch)
-        sequence_lengths = tf.expand_dims(tf.shape(dialogue_in)[1], axis=0)
-
+        sequence_lengths = tf.cast(
+            tf.squeeze(batch[DIALOGUE][LENGTH], axis=0), tf.int32
+        )
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
 
