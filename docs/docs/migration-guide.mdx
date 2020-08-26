@@ -341,6 +341,12 @@ Please see [Forms](./forms.mdx) if you have further customizations in your
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-8"></a>
 
+### Response Selectors
+
+Response Selectors are now trained on retrieval intent labels by default instead of the actual response text. For most models, this should improve training time and accuracy of the `ResponseSelector`.
+
+If you want to revert to the pre-2.0 default behavior, add the `train_on_text: true` parameter to your `ResponseSelector` component.
+
 ## Rasa 1.7 to Rasa 1.8
 
 :::caution
