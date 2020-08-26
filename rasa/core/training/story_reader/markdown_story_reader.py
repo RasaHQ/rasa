@@ -1,12 +1,10 @@
-import asyncio
 import json
 import logging
 import os
 import re
-from pathlib import PurePath, Path
-from typing import Dict, Optional, Text, List, Any, Union
+from pathlib import Path
+from typing import Dict, Text, List, Any, Union
 
-from rasa import data
 import rasa.data
 from rasa.nlu.training_data import Message
 import rasa.utils.io as io_utils
@@ -23,7 +21,6 @@ from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
-from rasa.data import MARKDOWN_FILE_EXTENSIONS
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning
 
@@ -209,11 +206,10 @@ class MarkdownStoryReader(StoryReader):
 
     @staticmethod
     def parse_e2e_message(line: Text) -> "Message":
-        f"""Parses an md list item line based on the current section type.
+        """Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>`. For the
-        syntax of `<example>` see the Rasa docs on NLU training data:
-        {DOCS_BASE_URL}/training-data-format/#markdown-format"""
+        syntax of `<example>` see the Rasa docs on NLU training data."""
 
         # Match three groups:
         # 1) Potential "form" annotation
@@ -273,7 +269,7 @@ class MarkdownStoryReader(StoryReader):
             `True` in case the file is a Core Markdown training data or rule data file,
             `False` otherwise.
         """
-        if not data.is_likely_markdown_file(file_path) or rasa.data.is_nlu_file(
+        if not rasa.data.is_likely_markdown_file(file_path) or rasa.data.is_nlu_file(
             file_path
         ):
             return False
@@ -306,7 +302,7 @@ class MarkdownStoryReader(StoryReader):
         Returns:
             `True` if it's a file containing test stories, otherwise `False`.
         """
-        if not data.is_likely_markdown_file(file_path):
+        if not rasa.data.is_likely_markdown_file(file_path):
             return False
 
         dirname = os.path.dirname(file_path)

@@ -2,26 +2,21 @@ from collections import OrderedDict
 from pathlib import Path
 
 from ruamel import yaml
-import ruamel.yaml as ruamel_yaml
 from typing import Any, Dict, List, Text, Union, Optional
 
 from ruamel.yaml.comments import CommentedMap
-
-from rasa import data
-from rasa.utils.common import raise_warning
 from ruamel.yaml.scalarstring import (
     DoubleQuotedScalarString,
     LiteralScalarString,
-    PlainScalarString,
-    ScalarString,
 )
+
+from rasa.utils.common import raise_warning
 
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, DOCS_URL_STORIES
 from rasa.core.events import UserUttered, ActionExecuted, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.yaml_story_reader import (
     KEY_STORIES,
     KEY_STORY_NAME,
-    KEY_TEST_CONVERSATIONS,
     KEY_USER_INTENT,
     KEY_ENTITIES,
     KEY_ACTION,
@@ -48,14 +43,12 @@ class YAMLStoryWriter:
         Returns:
             String with story steps in the YAML format.
         """
-        stream = ruamel_yaml.StringIO()
+        stream = yaml.StringIO()
         self.dump(stream, story_steps)
         return stream.getvalue()
 
     def dump(
-        self,
-        target: Union[Text, Path, ruamel_yaml.StringIO],
-        story_steps: List[StoryStep],
+        self, target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep],
     ) -> None:
         """Writes Story steps into a target file/stream.
 

@@ -52,7 +52,8 @@ def is_likely_markdown_file(file_path: Text) -> bool:
             file_path: path to the file
 
         Returns:
-            `True` if the file likely contains data in markdown format, `False` otherwise.
+            `True` if the file likely contains data in markdown format,
+            `False` otherwise.
         """
     return Path(file_path).suffix in MARKDOWN_FILE_EXTENSIONS
 

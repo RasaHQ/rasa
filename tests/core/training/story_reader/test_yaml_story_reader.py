@@ -12,7 +12,6 @@ from rasa.core.training import loading
 from rasa.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 from rasa.core.training.structures import StoryStep
-from rasa.utils import io as io_utils
 
 
 @pytest.fixture()
@@ -258,7 +257,7 @@ async def test_warning_if_intent_not_in_domain(default_domain: Domain):
     """
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = io_utils.read_yaml(stories)
+    yaml_content = rasa.utils.io.read_yaml(stories)
 
     with pytest.warns(UserWarning) as record:
         reader.read_from_parsed_yaml(yaml_content)
@@ -277,7 +276,7 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
     )
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = io_utils.read_yaml(stories)
+    yaml_content = rasa.utils.io.read_yaml(stories)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)

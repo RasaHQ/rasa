@@ -85,7 +85,6 @@ def test_common_action_prefix_unequal():
 async def test_graph_persistence(stories_file: Text, default_domain: Domain, tmpdir):
     from os.path import isfile
     from networkx.drawing import nx_pydot
-    from rasa.core.interpreter import RegexInterpreter
     import rasa.core.training.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
@@ -116,7 +115,6 @@ async def test_graph_persistence(stories_file: Text, default_domain: Domain, tmp
 )
 async def test_merge_nodes(stories_file: Text, default_domain: Domain, tmpdir):
     from os.path import isfile
-    from rasa.core.interpreter import RegexInterpreter
     import rasa.core.training.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(

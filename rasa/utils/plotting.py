@@ -20,8 +20,8 @@ def _fix_matplotlib_backend() -> None:
         try:
             # on OSX sometimes the tkinter package is broken and can't be imported.
             # we'll try to import it and if it fails we will use a different backend
-            import tkinter
-        except ImportError or ModuleNotFoundError:
+            import tkinter  # skipcq: PYL-W0611
+        except (ImportError, ModuleNotFoundError):
             logger.debug("Setting matplotlib backend to 'agg'")
             matplotlib.use("agg")
 
@@ -29,11 +29,11 @@ def _fix_matplotlib_backend() -> None:
     elif matplotlib.get_backend() is None:  # pragma: no cover
         try:
             # If the `tkinter` package is available, we can use the `TkAgg` backend
-            import tkinter
+            import tkinter  # skipcq: PYL-W0611
 
             logger.debug("Setting matplotlib backend to 'TkAgg'")
             matplotlib.use("TkAgg")
-        except ImportError or ModuleNotFoundError:
+        except (ImportError, ModuleNotFoundError):
             logger.debug("Setting matplotlib backend to 'agg'")
             matplotlib.use("agg")
 
@@ -68,7 +68,7 @@ def plot_confusion_matrix(
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
 
-    zmax = confusion_matrix.max() if len(confusion_matrix) else 1
+    zmax = confusion_matrix.max() if confusion_matrix else 1
     plt.clf()
     if not color_map:
         color_map = plt.cm.Blues

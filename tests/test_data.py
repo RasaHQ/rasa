@@ -120,5 +120,5 @@ def test_is_md_file(path, is_md):
         ("my_file.md", False),
     ],
 )
-def test_is_md_file(path, is_json):
+def test_is_json_file(path, is_json):
     assert data.is_likely_json_file(path) == is_json

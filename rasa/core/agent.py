@@ -7,6 +7,7 @@ from asyncio import CancelledError
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
+from aiohttp import ClientError
 
 import rasa
 import rasa.utils.io
@@ -134,7 +135,8 @@ def _load_and_set_updated_model(
         )
 
         logger.debug("Finished updating agent to new model.")
-    except Exception as e:
+    except Exception as e:  # skipcq: PYL-W0703
+        # TODO: this exception shouldn't be that broad, we need to be more specific
         logger.exception(
             f"Failed to update model. The previous model will stay loaded instead. "
             f"Error: {e}"
@@ -235,7 +237,7 @@ async def _run_model_pulling_worker(
         await _update_model_from_server(model_server, agent)
     except CancelledError:
         logger.warning("Stopping model pulling (cancelled).")
-    except Exception:
+    except ClientError:
         logger.exception(
             "An exception was raised while fetching a model. Continuing anyways..."
         )
@@ -400,9 +402,9 @@ class Agent:
         try:
             if not model_path:
                 raise ModelNotFound("No path specified.")
-            elif not os.path.exists(model_path):
+            if not os.path.exists(model_path):
                 raise ModelNotFound(f"No file or directory at '{model_path}'.")
-            elif os.path.isfile(model_path):
+            if os.path.isfile(model_path):
                 model_path = get_model(model_path)
         except ModelNotFound:
             raise ValueError(
@@ -501,9 +503,8 @@ class Agent:
                 "not supported anymore. Rather use `agent.handle_text(...)`."
             )
 
-        def noop(_):
+        def noop(_: Any) -> None:
             logger.info("Ignoring message as there is no agent to handle it.")
-            return None
 
         if not self.is_ready():
             return noop(message)
@@ -615,7 +616,7 @@ class Agent:
 
         for p in self.policy_ensemble.policies:
             # explicitly ignore inheritance (e.g. augmented memoization policy)
-            if type(p) == MemoizationPolicy:
+            if type(p) is MemoizationPolicy:
                 p.toggle(activate)
 
     def _max_history(self) -> int:

@@ -1,3 +1,5 @@
+from json import JSONDecodeError
+
 import aiohttp
 
 import json
@@ -86,11 +88,11 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             if isinstance(parsed_entities, dict):
                 return RegexInterpreter._create_entities(parsed_entities, sidx, eidx)
             else:
-                raise Exception(
+                raise ValueError(
                     f"Parsed value isn't a json object "
                     f"(instead parser found '{type(parsed_entities)}')"
                 )
-        except Exception as e:
+        except (JSONDecodeError, ValueError) as e:
             raise_warning(
                 f"Failed to parse arguments in line "
                 f"'{user_input}'. Failed to decode parameters "
@@ -108,7 +110,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
         try:
             return float(confidence_str.strip()[1:])
-        except Exception as e:
+        except ValueError as e:
             raise_warning(
                 f"Invalid to parse confidence value in line "
                 f"'{confidence_str}'. Make sure the intent confidence is an "
@@ -241,7 +243,9 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
                             f"http. Error: {response_text}"
                         )
                         return None
-        except Exception:
+        except Exception:  # skipcq: YL-W0703
+            # need to catch all possible exceptions when doing http requests
+            # (timeouts, value errors, parser errors, ...)
             logger.exception(f"Failed to parse text '{text}' using rasa NLU over http.")
             return None
 

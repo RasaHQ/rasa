@@ -475,7 +475,7 @@ def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
         if a["policy"] and not SimplePolicyEnsemble.is_not_memo_policy(a["policy"])
     ]
 
-    return len(in_training_data) / len(action_list) if len(action_list) else 0
+    return len(in_training_data) / len(action_list) if action_list else 0
 
 
 async def _collect_story_predictions(

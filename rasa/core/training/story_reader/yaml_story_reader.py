@@ -9,11 +9,9 @@ from ruamel.yaml.parser import ParserError
 import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
 from rasa.constants import (
-    DEFAULT_E2E_TESTS_PATH,
     DEFAULT_TEST_STORIES_FILE_PREFIX,
     DOCS_URL_STORIES,
     DOCS_URL_RULES,
-    DOCS_URL_TEST_CONVERSATIONS,
 )
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
@@ -66,7 +64,7 @@ class YAMLStoryReader(StoryReader):
         return cls(
             reader.domain,
             reader.template_variables,
-            reader.use_e2e,  # TODO: I don't think we actually need this
+            reader.use_e2e,
             reader.source_name,
             reader.unfold_or_utterances,
         )

@@ -4,7 +4,6 @@ from typing import Text, Optional, List, Dict
 import logging
 
 from rasa.core.domain import Domain
-from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
 from rasa.nlu.training_data import TrainingData
 import rasa.utils.io as io_utils
@@ -20,7 +19,7 @@ class TrainingDataImporter:
         """Retrieves the domain of the bot.
 
         Returns:
-            Loaded ``Domain``.
+            Loaded `Domain`.
         """
         raise NotImplementedError()
 
@@ -39,7 +38,7 @@ class TrainingDataImporter:
             exclusion_percentage: Amount of training data that should be excluded.
 
         Returns:
-            ``StoryGraph`` containing all loaded stories.
+            `StoryGraph` containing all loaded stories.
         """
 
         raise NotImplementedError()
@@ -60,7 +59,7 @@ class TrainingDataImporter:
             language: Can be used to only load training data for a certain language.
 
         Returns:
-            Loaded NLU ``TrainingData``.
+            Loaded NLU `TrainingData`.
         """
 
         raise NotImplementedError()
@@ -71,7 +70,7 @@ class TrainingDataImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingDataImporter":
-        """Loads a ``TrainingDataImporter`` instance from a configuration file."""
+        """Loads a `TrainingDataImporter` instance from a configuration file."""
 
         config = io_utils.read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
@@ -84,7 +83,7 @@ class TrainingDataImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingDataImporter":
-        """Loads a ``TrainingDataImporter`` instance from a configuration file that
+        """Loads a `TrainingDataImporter` instance from a configuration file that
            only reads Core training data.
         """
 
@@ -100,7 +99,7 @@ class TrainingDataImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingDataImporter":
-        """Loads a ``TrainingDataImporter`` instance from a configuration file that
+        """Loads a `TrainingDataImporter` instance from a configuration file that
            only reads NLU training data.
         """
 
@@ -117,7 +116,7 @@ class TrainingDataImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingDataImporter":
-        """Loads a ``TrainingDataImporter`` instance from a dictionary."""
+        """Loads a `TrainingDataImporter` instance from a dictionary."""
 
         from rasa.importers.rasa import RasaFileImporter
 
@@ -219,8 +218,8 @@ class CoreDataImporter(TrainingDataImporter):
 
 
 class CombinedDataImporter(TrainingDataImporter):
-    """A ``TrainingDataImporter`` that supports using multiple ``TrainingDataImporter``s as
-        if they were a single instance.
+    """A `TrainingDataImporter` that supports using
+        multiple `TrainingDataImporter` instances as if they were a single instance.
     """
 
     def __init__(self, importers: List[TrainingDataImporter]):

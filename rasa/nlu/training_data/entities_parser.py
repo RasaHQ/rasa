@@ -170,7 +170,6 @@ def replace_entities(training_example: Text) -> Text:
 
 def parse_training_example(example: Text, intent: Optional[Text]) -> "Message":
     """Extract entities and synonyms, and convert to plain text."""
-    from rasa.nlu.training_data import Message
 
     entities = find_entities_in_training_example(example)
     plain_text = replace_entities(example)

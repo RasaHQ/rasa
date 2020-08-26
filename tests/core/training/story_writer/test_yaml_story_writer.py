@@ -6,7 +6,6 @@ import pytest
 
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, UserUttered
-from rasa.core.interpreter import RegexInterpreter
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader

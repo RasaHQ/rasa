@@ -6,7 +6,6 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
-from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
 
 import numpy as np

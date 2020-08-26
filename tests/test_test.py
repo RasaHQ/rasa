@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 import textwrap
 from typing import Text
-from unittest.mock import Mock
 
 import pytest
 from _pytest.capture import CaptureFixture
@@ -11,7 +10,7 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.utils.io
 from rasa.core.actions.action import ActionListen
-from rasa.core.events import ActionExecuted, UserUttered
+from rasa.core.events import UserUttered
 from rasa.core.test import (
     EvaluationStore,
     WronglyClassifiedUserUtterance,
@@ -21,8 +20,6 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 import rasa.model
 import rasa.cli.utils
-from rasa.core.agent import Agent
-from rasa.core.interpreter import RasaNLUInterpreter, RegexInterpreter
 from rasa.nlu.test import NO_ENTITY
 import rasa.core
 
