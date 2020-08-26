@@ -118,7 +118,7 @@ class SingleStateFeaturizer:
         )
         return {attribute: [features]}
 
-    def _extract_features(
+    def _extract_state_features(
         self,
         sub_state: SubState,
         state_type: Text,
@@ -169,26 +169,26 @@ class SingleStateFeaturizer:
         self, state: State, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
 
-        featurized_state = {}
+        state_features = {}
         for state_type, sub_state in state.items():
             if state_type in {USER, PREVIOUS_ACTION}:
-                featurized_state.update(
-                    self._extract_features(
+                state_features.update(
+                    self._extract_state_features(
                         sub_state, state_type, interpreter, sparse=True
                     )
                 )
             if state_type == USER:
                 if sub_state.get(ENTITIES):
-                    featurized_state.update(
+                    state_features.update(
                         self._create_features(sub_state, ENTITIES, sparse=True)
                     )
             if state_type in {SLOTS, ACTIVE_LOOP}:
                 if sub_state.get(state_type):
-                    featurized_state.update(
+                    state_features.update(
                         self._create_features(sub_state, state_type, sparse=True)
                     )
 
-        return featurized_state
+        return state_features
 
     def _encode_action(
         self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
@@ -199,7 +199,7 @@ class SingleStateFeaturizer:
         else:
             action_as_sub_state = {ACTION_NAME: action}
 
-        return self._extract_features(action_as_sub_state, ACTION, interpreter)
+        return self._extract_state_features(action_as_sub_state, ACTION, interpreter)
 
     def create_encoded_all_actions(
         self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]

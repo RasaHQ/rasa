@@ -289,7 +289,7 @@ class TEDPolicy(Policy):
 
     @staticmethod
     def _create_zero_features(
-        features: List[List[List["Features"]]],
+        tracker_features: List[List[List["Features"]]],
     ) -> List["Features"]:
         """
         Computes default feature values for an attribute.
@@ -305,10 +305,10 @@ class TEDPolicy(Policy):
         example_features = next(
             iter(
                 [
-                    features_in_dialogue
-                    for features_in_tracker in features
-                    for features_in_dialogue in features_in_tracker
-                    if features_in_dialogue is not None
+                    list_of_features
+                    for turn_features in tracker_features
+                    for list_of_features in turn_features
+                    if list_of_features is not None
                 ]
             )
         )
@@ -329,7 +329,7 @@ class TEDPolicy(Policy):
 
     def _convert_to_data_format(
         self,
-        features: Union[
+        tracker_state_features: Union[
             List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
         ],
         training: bool = True,
@@ -337,7 +337,7 @@ class TEDPolicy(Policy):
         """Converts the input into "Data" format.
 
         Args:
-            features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
+            tracker_state_features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
                 ACTION_TEXT, ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all
                 dialogue turns in all training trackers
 
@@ -348,38 +348,40 @@ class TEDPolicy(Policy):
         remove_sequence_dimension = False
         # unify format of incoming features
         # (for label data we just have a list of dicts)
-        if isinstance(features[0], Dict):
-            features = [[dicts] for dicts in features]
+        if isinstance(tracker_state_features[0], Dict):
+            tracker_state_features = [[dicts] for dicts in tracker_state_features]
             remove_sequence_dimension = True
 
-        features = self._surface_attributes(features)
+        state_to_tracker_features = self._surface_attributes(tracker_state_features)
 
         attribute_data = {}
 
         # During prediction we need to iterate over the zero features attributes to
         # have all keys in the resulting model data
         if training:
-            attributes = list(features.keys())
+            attributes = list(state_to_tracker_features.keys())
         else:
             attributes = list(self.zero_features.keys())
 
         # In case an attribute is not present during prediction, replace it with
         # None values that will then be replaced by zero features
         dialogue_length = 1
-        for key, values in features.items():
-            dialogue_length = max(dialogue_length, len(values[0]))
+        for tracker_features in state_to_tracker_features.values():
+            dialogue_length = max(dialogue_length, len(tracker_features[0]))
         empty_features = [[None] * dialogue_length]
 
         for attribute in attributes:
-            features_in_tracker = (
-                features[attribute] if attribute in features else empty_features
+            tracker_features = (
+                state_to_tracker_features[attribute]
+                if attribute in state_to_tracker_features
+                else empty_features
             )
 
             # in case some features for a specific attribute and dialogue turn are
             # missing, replace them with a feature vector of zeros
             if training:
                 self.zero_features[attribute] = self._create_zero_features(
-                    features_in_tracker
+                    tracker_features
                 )
 
             (
@@ -387,7 +389,7 @@ class TEDPolicy(Policy):
                 _dense_features,
                 _sparse_features,
             ) = self._map_tracker_features(
-                features_in_tracker, self.zero_features[attribute]
+                tracker_features, self.zero_features[attribute]
             )
 
             sparse_features = defaultdict(list)
@@ -435,8 +437,7 @@ class TEDPolicy(Policy):
 
     @staticmethod
     def _map_tracker_features(
-        features_in_tracker: List[List[List["Features"]]],
-        zero_features: List["Features"],
+        tracker_features: List[List[List["Features"]]], zero_features: List["Features"]
     ) -> Tuple[
         List[np.ndarray],
         Dict[Text, List[List["Features"]]],
@@ -446,7 +447,7 @@ class TEDPolicy(Policy):
         into sparse and dense features.
 
         Args:
-            features_in_tracker: all features
+            tracker_features: all features in the tracker for a specific state
             zero_features: list of zero features
 
         Returns:
@@ -458,28 +459,28 @@ class TEDPolicy(Policy):
         dense_features = defaultdict(list)
         attribute_masks = []
 
-        for features_in_dialogue in features_in_tracker:
+        for turn_features in tracker_features:
             dialogue_sparse_features = defaultdict(list)
             dialogue_dense_features = defaultdict(list)
 
             # create a mask for every state
             # to capture which turn has which input
-            attribute_mask = np.expand_dims(
-                np.ones(len(features_in_dialogue), np.float32), -1
-            )
+            attribute_mask = np.expand_dims(np.ones(len(turn_features), np.float32), -1)
 
-            for i, features in enumerate(features_in_dialogue):
-                if features is None:
+            for i, list_of_features in enumerate(turn_features):
+                if list_of_features is None:
                     # use zero features and set mask to zero
                     attribute_mask[i] = 0
-                    features = zero_features
+                    list_of_features = zero_features
 
-                for f in features:
+                for features in list_of_features:
                     # all features should have the same types
-                    if f.is_sparse():
-                        dialogue_sparse_features[f.type].append(f.features)
+                    if features.is_sparse():
+                        dialogue_sparse_features[features.type].append(
+                            features.features
+                        )
                     else:
-                        dialogue_dense_features[f.type].append(f.features)
+                        dialogue_dense_features[features.type].append(features.features)
 
             for key, value in dialogue_sparse_features.items():
                 sparse_features[key].append(value)
@@ -520,7 +521,7 @@ class TEDPolicy(Policy):
 
     def _create_model_data(
         self,
-        X: List[List[Dict[Text, List["Features"]]]],
+        tracker_state_features: List[List[Dict[Text, List["Features"]]]],
         label_ids: Optional[List[List[int]]] = None,
         all_labels: Optional[List[Dict[Text, List["Features"]]]] = None,
         training: bool = True,
@@ -528,7 +529,7 @@ class TEDPolicy(Policy):
         """Combine all model related data into RasaModelData.
 
         Args:
-            X: a dictionary of attributes (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+            tracker_state_features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
                 ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
                 turns in all training trackers
             label_ids: the label ids (e.g. action ids) for every dialogue turn in all
@@ -544,7 +545,7 @@ class TEDPolicy(Policy):
             attribute_data = self._get_label_features(label_ids, all_labels)
             model_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
 
-        attribute_data = self._convert_to_data_format(X, training)
+        attribute_data = self._convert_to_data_format(tracker_state_features, training)
         # ensure that all attributes are in the same order
         attribute_data = collections.OrderedDict(sorted(attribute_data.items()))
         model_data.add_data(attribute_data)
@@ -564,13 +565,15 @@ class TEDPolicy(Policy):
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        state_features, label_ids = self.featurize_for_training(
+        tracker_state_features, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
         self._label_data, all_labels = self._create_label_data(domain, interpreter)
 
         # extract actual training data to feed to model
-        model_data = self._create_model_data(state_features, label_ids, all_labels)
+        model_data = self._create_model_data(
+            tracker_state_features, label_ids, all_labels
+        )
         if model_data.is_empty():
             logger.error(
                 f"Can not train '{self.__class__.__name__}'. No data was provided. "
