@@ -84,6 +84,7 @@ from rasa.nlu.constants import (
     INTENT,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     TEXT,
+    INTENT_NAME_KEY,
 )
 
 from rasa.utils.tensorflow.model_data import RasaModelData
@@ -230,7 +231,6 @@ class ResponseSelector(DIETClassifier):
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
-        retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
 
@@ -358,6 +358,7 @@ class ResponseSelector(DIETClassifier):
 
         for label in label_ranking:
             label[INTENT_RESPONSE_KEY] = self._resolve_intent_response_key(label)
+            label.pop(INTENT_NAME_KEY)
 
         selector_key = (
             self.retrieval_intent

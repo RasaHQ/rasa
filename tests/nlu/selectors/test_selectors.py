@@ -17,7 +17,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_RANKING_KEY,
     INTENT_RESPONSE_KEY,
-    INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.nlu.selectors.response_selector import ResponseSelector
@@ -85,7 +84,6 @@ def test_train_selector(pipeline, component_builder, tmpdir):
     assert ranking is not None
 
     for rank in ranking:
-        assert rank.get(INTENT_NAME_KEY) is not None
         assert rank.get(PREDICTED_CONFIDENCE_KEY) is not None
         assert rank.get(INTENT_RESPONSE_KEY) is not None
 
