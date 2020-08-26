@@ -42,6 +42,7 @@ module.exports = {
       logo: {
         alt: 'Rasa Logo',
         src: `/img/rasa-logo.svg`,
+        href: SITE_URL,
       },
       items: [
         {
