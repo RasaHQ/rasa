@@ -473,8 +473,8 @@ def evaluate_response_selections(
         plot_attribute_confidences(
             response_selection_results,
             histogram_filename,
-            "intent_target",
-            "response_prediction",
+            "intent_response_key_target",
+            "intent_response_prediction",
             title="Response Selection Prediction Confidence Distribution",
         )
 
@@ -483,7 +483,7 @@ def evaluate_response_selections(
             "text": res.message,
             "intent_response_key_target": res.intent_response_key_target,
             "response_target": res.response_target,
-            "intent_response_key_predicted": res.intent_response_key_prediction,
+            "intent_response_key_prediction": res.intent_response_key_prediction,
             "confidence": res.confidence,
         }
         for res in response_selection_results

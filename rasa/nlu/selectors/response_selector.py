@@ -325,7 +325,7 @@ class ResponseSelector(DIETClassifier):
         return model_data
 
     def _resolve_intent_response_key(self, label: Dict[Text, Optional[Text]]) -> Text:
-        """Given a label, return the response key based on the labels id
+        """Given a label, return the response key based on the label id.
 
         Args:
             label: predicted label by the selector
@@ -338,7 +338,7 @@ class ResponseSelector(DIETClassifier):
 
         for key, responses in self.responses.items():
 
-            # First check if the label predicted was the key itself
+            # First check if the predicted label was the key itself
             if hash(key) == label.get("id"):
                 return key
 
@@ -348,7 +348,7 @@ class ResponseSelector(DIETClassifier):
                     return key
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Return the most likely response, the associate intent_response_key and its similarity to the input."""
+        """Return the most likely response, the associated intent_response_key and its similarity to the input."""
 
         out = self._predict(message)
         label, label_ranking = self._predict_label(out)
