@@ -17,6 +17,8 @@ from rasa.core.constants import (
     IS_EXTERNAL,
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+    VALIDATE,
+    NAME,
 )
 
 
@@ -1176,7 +1178,7 @@ class ActiveLoop(Event):
             return self.name == other.name
 
     def as_story_string(self) -> Text:
-        props = json.dumps({"name": self.name})
+        props = json.dumps({NAME: self.name})
         return f"{ActiveLoop.type_name}{props}"
 
     @classmethod
@@ -1184,7 +1186,7 @@ class ActiveLoop(Event):
         """Called to convert a parsed story line into an event."""
         return [
             ActiveLoop(
-                parameters.get("name"),
+                parameters.get(NAME),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
             )
@@ -1192,7 +1194,7 @@ class ActiveLoop(Event):
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        d.update({"name": self.name})
+        d.update({NAME: self.name})
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
@@ -1246,14 +1248,14 @@ class FormValidation(Event):
     @classmethod
     def _from_parameters(cls, parameters) -> "FormValidation":
         return FormValidation(
-            parameters.get("validate"),
+            parameters.get(VALIDATE),
             parameters.get("timestamp"),
             parameters.get("metadata"),
         )
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        d.update({"validate": self.validate})
+        d.update({VALIDATE: self.validate})
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:

@@ -85,6 +85,11 @@ POSTGRESQL_MAX_OVERFLOW = "SQL_MAX_OVERFLOW"
 
 USER = "user"
 PREVIOUS_ACTION = "prev_action"
-FORM = "form"
+ACTIVE_LOOP = "active_loop"
 SLOTS = "slots"
 ACTION = "action"
+
+NAME = "name"
+VALIDATE = "validate"
+REJECTED = "rejected"
+TRIGGER_MESSAGE = "trigger_message"

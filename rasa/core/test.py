@@ -18,7 +18,6 @@ from rasa.nlu.constants import (
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
-from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
 from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.utils.io import DEFAULT_ENCODING
@@ -290,7 +289,7 @@ def _collect_user_uttered_predictions(
 def _emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
     from rasa.core.events import ActionExecutionRejected
 
-    rejected_action_name: Text = partial_tracker.active_loop["name"]
+    rejected_action_name: Text = partial_tracker.active_loop_name
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
@@ -367,7 +366,7 @@ def _form_might_have_been_rejected(
     domain: Domain, tracker: DialogueStateTracker, predicted_action_name: Text
 ) -> bool:
     return (
-        tracker.active_loop.get("name") == predicted_action_name
+        tracker.active_loop_name == predicted_action_name
         and predicted_action_name in domain.form_names
     )
 
