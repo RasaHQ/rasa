@@ -47,9 +47,8 @@ mapping:
           type: "str"
         examples: *examples_anchor
   responses:
-    type: "map"
-    allowempty: True
-    required: False
+    # see rasa/utils/schemas.yml
+    include: responses
   stories:
     type: "any"
     required: False
