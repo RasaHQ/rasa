@@ -103,50 +103,105 @@ class EvaluationStore:
             or self.action_predictions != self.action_targets
         )
 
-    def find_predicted_entity_from_target(
-        self, target_entity: Dict[Text, Any]
-    ) -> Union[Dict[Text, Any], None]:
-        """
-        Return the predicted entity associated with the target one if the entity was predicted correctly, None otherwise.
-        """
-        predicted_entities = list(
-            filter(
-                lambda predicted_entity: target_entity.get("text")
-                == predicted_entity.get("text")
-                and target_entity.get("start") == predicted_entity.get("start")
-                and target_entity.get("end") == predicted_entity.get("end"),
-                self.entity_predictions,
-            )
-        )
-        return predicted_entities[0] if len(predicted_entities) > 0 else None
-
     def serialise(self) -> Tuple[List[Text], List[Text]]:
         """Turn targets and predictions to lists of equal size for sklearn."""
+        # sklearn does not cope with lists of unequal size, nor None values
 
-        targets = (
-            self.action_targets
-            + self.intent_targets
-            + [
-                TrainingDataWriter.generate_entity(gold.get("text"), gold)
-                for gold in self.entity_targets
-            ]
+        texts = sorted(
+            list(
+                set(
+                    [e.get("text") for e in self.entity_targets]
+                    + [e.get("text") for e in self.entity_predictions]
+                )
+            )
         )
 
-        predicted_entities = []
-        for gold in self.entity_targets:
-            predicted = self.find_predicted_entity_from_target(gold)
-            predicted_entities.append(
-                TrainingDataWriter.generate_entity(predicted.get("text"), predicted)
-                if predicted
-                else "None"
+        entity_targets_fixed = []
+        entity_predictions_fixed = []
+
+        for text in texts:
+            # sort the entities of this sentence to compare them directly
+            entity_targets = sorted(
+                filter(lambda x: x.get("text") == text, self.entity_targets),
+                key=lambda x: x.get("start"),
+            )
+            entity_predictions = sorted(
+                filter(lambda x: x.get("text") == text, self.entity_predictions),
+                key=lambda x: x.get("start"),
             )
 
+            i_pred = 0
+            i_target = 0
+
+            def compare_entities():
+                """
+                Compare the current predicted and target entities and decide which one comes first.
+                if predicted entity comes first returns -1 while returns 1 if target entity comes first.
+                if target and predicted are aligned it returns 0
+                """
+                pred = None
+                target = None
+                if i_pred < len(entity_predictions):
+                    pred = entity_predictions[i_pred]
+                if i_target < len(entity_targets):
+                    target = entity_targets[i_target]
+                if target and pred:
+                    if pred.get("start") < target.get("start"):
+                        return -1
+                    elif target.get("start") < pred.get("start"):
+                        return 1
+                    else:
+                        if pred.get("end") < target.get("end"):
+                            return -1
+                        elif target.get("end") < pred.get("end"):
+                            return 1
+                        else:
+                            return 0
+                return 1 if target else -1
+
+            while i_pred < len(entity_predictions) or i_target < len(entity_targets):
+                cmp = compare_entities()
+                if cmp == -1:  # predicted comes first
+                    entity_predictions_fixed.append(
+                        TrainingDataWriter.generate_entity(
+                            entity_predictions[i_pred].get("text"),
+                            entity_predictions[i_pred],
+                        )
+                    )
+                    entity_targets_fixed.append("None")
+                    i_pred += 1
+                elif cmp == 1:  # target entity comes first
+                    entity_targets_fixed.append(
+                        TrainingDataWriter.generate_entity(
+                            entity_targets[i_target].get("text"),
+                            entity_targets[i_target],
+                        )
+                    )
+                    entity_predictions_fixed.append("None")
+                    i_target += 1
+                else:  # target and predicted entity are aligned
+                    entity_predictions_fixed.append(
+                        TrainingDataWriter.generate_entity(
+                            entity_predictions[i_pred].get("text"),
+                            entity_predictions[i_pred],
+                        )
+                    )
+                    entity_targets_fixed.append(
+                        TrainingDataWriter.generate_entity(
+                            entity_targets[i_target].get("text"),
+                            entity_targets[i_target],
+                        )
+                    )
+                    i_pred += 1
+                    i_target += 1
+
+        targets = self.action_targets + self.intent_targets + entity_targets_fixed
+
         predictions = (
-            self.action_predictions + self.intent_predictions + predicted_entities
+            self.action_predictions + self.intent_predictions + entity_predictions_fixed
         )
 
-        # sklearn does not cope with lists of unequal size, nor None values
-        return pad_lists_to_size(targets, predictions, padding_value="None")
+        return targets, predictions
 
 
 class WronglyPredictedAction(ActionExecuted):
