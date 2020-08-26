@@ -49,8 +49,6 @@ class MarkdownReader(TrainingDataReader):
         self.regex_features = []
         self.lookup_tables = []
 
-        self._deprecated_synonym_format_was_used = False
-
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
         from rasa.nlu.training_data import TrainingData
@@ -64,19 +62,6 @@ class MarkdownReader(TrainingDataReader):
             else:
                 self._parse_item(line)
                 self._load_files(line)
-
-        if self._deprecated_synonym_format_was_used:
-            raise_warning(
-                "You are using the deprecated training data format to declare synonyms."
-                " Please use the following format: \n"
-                '[<entity-text>]{"entity": "<entity-type>", "value": '
-                '"<entity-synonym>"}.'
-                "\nYou can use the following command to update your training data file:"
-                "\nsed -i -E 's/\\[([^)]+)\\]\\(([^)]+):([^)]+)\\)/[\\1]{"
-                '"entity": "\\2", "value": "\\3"}/g\' nlu.md',
-                category=FutureWarning,
-                docs=DOCS_URL_TRAINING_DATA_NLU,
-            )
 
         return TrainingData(
             self.training_examples,

@@ -288,7 +288,6 @@ def test_nlg_reads_any_multimedia():
         chitchat/ask_weather:
         - text: Where do you want to check the weather?
           image: https://example.com/weather.jpg
-          temperature: 25°C
     """
     )
 
@@ -300,7 +299,6 @@ def test_nlg_reads_any_multimedia():
             {
                 "text": "Where do you want to check the weather?",
                 "image": "https://example.com/weather.jpg",
-                "temperature": "25°C",
             }
         ]
     }
@@ -329,7 +327,7 @@ def test_nlg_fails_on_empty_response():
 
     reader = RasaYAMLReader()
 
-    with pytest.raises(InvalidDomain):
+    with pytest.raises(ValueError):
         reader.reads(responses_yml)
 
 
@@ -340,7 +338,6 @@ def test_nlg_multimedia_load_dump_roundtrip():
         chitchat/ask_weather:
         - text: Where do you want to check the weather?
           image: https://example.com/weather.jpg
-          temperature: 25°C
 
         chitchat/ask_name:
         - text: My name is Sara.
