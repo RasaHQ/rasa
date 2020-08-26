@@ -1861,7 +1861,7 @@ class DIET(RasaModel):
 
         return loss
 
-    def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor):
+    def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor) -> None:
 
         self.intent_loss.update_state(loss)
         self.response_acc.update_state(acc)

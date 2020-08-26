@@ -459,7 +459,7 @@ class DIET2BOW(DIET):
             name = f"{metric_name[parts[0]]} {parts[1]}"
             logger.debug(f"  {metric} ({name})")
 
-    def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor):
+    def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor) -> None:
 
         self.response_loss.update_state(loss)
         self.response_acc.update_state(acc)
