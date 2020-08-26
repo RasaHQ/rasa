@@ -101,12 +101,10 @@ class RasaModelData:
 
     def first_data_example(self) -> Data:
         out_data = {}
-        for feature_name, values in self.data.items():
-            out_data[feature_name] = {}
-            for feature_sub_name, features in values.items():
-                out_data[feature_name][feature_sub_name] = [
-                    feature[:1] for feature in features
-                ]
+        for key, attribute_data in self.data.items():
+            out_data[key] = {}
+            for sub_key, features in attribute_data.items():
+                out_data[key][sub_key] = [feature[:1] for feature in features]
         return out_data
 
     def feature_not_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
@@ -139,8 +137,8 @@ class RasaModelData:
 
         example_lengths = [
             f.shape[0]
-            for values in data.values()
-            for features in values.values()
+            for attribute_data in data.values()
+            for features in attribute_data.values()
             for f in features
         ]
 
@@ -171,8 +169,8 @@ class RasaModelData:
 
     def add_data(self, data: Data) -> None:
         """Add incoming data to data."""
-        for key, values in data.items():
-            for sub_key, features in values.items():
+        for key, attribute_data in data.items():
+            for sub_key, features in attribute_data.items():
                 self.add_features(key, sub_key, features)
 
     def add_features(
@@ -182,8 +180,8 @@ class RasaModelData:
 
         Should update number of examples.
         """
-        # if key in self.data and sub_key in self.data[key]:
-        #    raise ValueError(f"Key '{key}.{sub_key}' already exists in RasaModelData.")
+        if key in self.data and sub_key in self.data[key]:
+            raise ValueError(f"Key '{key}.{sub_key}' already exists in RasaModelData.")
 
         if features is None:
             return
@@ -224,14 +222,14 @@ class RasaModelData:
             # randomly split data as no label key is split
             multi_values = [
                 v
-                for values in self.data.values()
-                for data in values.values()
+                for attribute_data in self.data.values()
+                for data in attribute_data.values()
                 for v in data
             ]
             solo_values = [
                 []
-                for values in self.data.values()
-                for data in values.values()
+                for attribute_data in self.data.values()
+                for data in attribute_data.values()
                 for _ in data
             ]
             stratify = None
@@ -250,17 +248,17 @@ class RasaModelData:
             # this operation can be performed only for labels
             # that contain several data points
             multi_values = [
-                v[counts > 1]
-                for values in self.data.values()
-                for data in values.values()
-                for v in data
+                f[counts > 1]
+                for attribute_data in self.data.values()
+                for features in attribute_data.values()
+                for f in features
             ]
             # collect data points that are unique for their label
             solo_values = [
-                v[counts == 1]
-                for values in self.data.values()
-                for data in values.values()
-                for v in data
+                f[counts == 1]
+                for attribute_data in self.data.values()
+                for features in attribute_data.values()
+                for f in features
             ]
 
             stratify = label_ids[counts > 1]
@@ -284,14 +282,14 @@ class RasaModelData:
             key: {
                 sub_key: [
                     FeatureSignature(
-                        True if isinstance(v[0], scipy.sparse.spmatrix) else False,
-                        v[0].shape[-1] if v[0].shape else None,
+                        True if isinstance(f[0], scipy.sparse.spmatrix) else False,
+                        f[0].shape[-1] if f[0].shape else None,
                     )
-                    for v in data
+                    for f in features
                 ]
-                for sub_key, data in values.items()
+                for sub_key, features in attribute_data.items()
             }
-            for key, values in self.data.items()
+            for key, attribute_data in self.data.items()
         }
 
     def as_tf_dataset(
@@ -322,8 +320,8 @@ class RasaModelData:
 
         batch_data = []
 
-        for key, values in data.items():
-            for sub_key, f_data in values.items():
+        for key, attribute_data in data.items():
+            for sub_key, f_data in attribute_data.items():
                 # add None for not present values during processing
                 if not f_data:
                     if tuple_sizes:
@@ -378,11 +376,11 @@ class RasaModelData:
             else:
                 types.append(tf.float32)
 
-        for values in self.data.values():
-            for data in values.values():
-                for v in data:
-                    append_shape(v)
-                    append_type(v)
+        for attribute_data in self.data.values():
+            for features in attribute_data.values():
+                for f in features:
+                    append_shape(f)
+                    append_type(f)
 
         return tuple(shapes), tuple(types)
 
@@ -446,13 +444,13 @@ class RasaModelData:
                     int(counts_label_ids[index] / self.num_examples * batch_size) + 1
                 )
 
-                for key, values in data_by_label[index].items():
-                    for sub_key, data in values.items():
-                        for i, v in enumerate(data):
+                for key, attribute_data in data_by_label[index].items():
+                    for sub_key, features in attribute_data.items():
+                        for i, f in enumerate(features):
                             if len(new_data[key][sub_key]) < i + 1:
                                 new_data[key][sub_key].append([])
                             new_data[key][sub_key][i].append(
-                                v[data_idx[index] : data_idx[index] + index_batch_size]
+                                f[data_idx[index] : data_idx[index] + index_batch_size]
                             )
 
                 data_idx[index] += index_batch_size
@@ -464,10 +462,10 @@ class RasaModelData:
                     break
 
         final_data = defaultdict(lambda: defaultdict(list))
-        for key, values in new_data.items():
-            for sub_key, data in values.items():
-                for v in data:
-                    final_data[key][sub_key].append(np.concatenate(np.array(v)))
+        for key, attribute_data in new_data.items():
+            for sub_key, features in attribute_data.items():
+                for f in features:
+                    final_data[key][sub_key].append(np.concatenate(np.array(f)))
 
         return final_data
 
@@ -521,10 +519,10 @@ class RasaModelData:
         if data is None:
             return new_data
 
-        for key, values in data.items():
-            for sub_key, data in values.items():
-                for v in data:
-                    new_data[key][sub_key].append(v[ids])
+        for key, attribute_data in data.items():
+            for sub_key, features in attribute_data.items():
+                for f in features:
+                    new_data[key][sub_key].append(f[ids])
         return new_data
 
     def _split_by_label_ids(
@@ -571,9 +569,9 @@ class RasaModelData:
 
         # train datasets have an even index
         index = 0
-        for key, values in self.data.items():
-            for sub_key, data in values.items():
-                for _ in data:
+        for key, attribute_data in self.data.items():
+            for sub_key, features in attribute_data.items():
+                for _ in features:
                     data_train[key][sub_key].append(
                         self._combine_features(
                             output_values[index * 2], solo_values[index]
@@ -583,9 +581,9 @@ class RasaModelData:
 
         # val datasets have an odd index
         index = 0
-        for key, values in self.data.items():
-            for sub_key, data in values.items():
-                for _ in range(len(data)):
+        for key, attribute_data in self.data.items():
+            for sub_key, features in attribute_data.items():
+                for _ in features:
                     data_val[key][sub_key].append(output_values[(index * 2) + 1])
                     index += 1
 

@@ -83,14 +83,14 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
+    SEQUENCE,
+    SENTENCE,
 )
 
 
 logger = logging.getLogger(__name__)
 
 
-SENTENCE = "sentence"
-SEQUENCE = "sequence"
 SPARSE = "sparse"
 DENSE = "dense"
 SEQUENCE_LENGTH = f"{SEQUENCE}_lengths"
