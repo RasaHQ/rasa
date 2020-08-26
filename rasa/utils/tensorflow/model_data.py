@@ -67,12 +67,6 @@ class RasaModelData:
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
 
-    def get_only(self, key: Text, sub_key: Text) -> Optional[np.ndarray]:
-        if key in self.data and sub_key in self.data[key]:
-            return self.data[key][sub_key][0]
-        else:
-            return None
-
     def get(
         self, key: Text, sub_key: Optional[Text] = None
     ) -> Union[Dict[Text, List[np.ndarray]], List[np.ndarray]]:
