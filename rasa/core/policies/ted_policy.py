@@ -929,7 +929,7 @@ class TED(TransformerRasaModel):
         batch_encoded = {
             key: self._encode_features_per_attribute(batch, key)
             for key in batch.keys()
-            if not LABEL_KEY in key and not DIALOGUE in key
+            if LABEL_KEY not in key and DIALOGUE not in key
         }
 
         if (
