@@ -642,12 +642,12 @@ async def test(
             out_directory,
         )
 
-    if errors:
+    if errors and out_directory:
         _log_stories(
             story_evaluation.failed_stories,
             os.path.join(out_directory, FAILED_STORIES_FILE),
         )
-    if successes:
+    if successes and out_directory:
         _log_stories(
             story_evaluation.successful_stories,
             os.path.join(out_directory, SUCCESSFUL_STORIES_FILE),
