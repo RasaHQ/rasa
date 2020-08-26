@@ -48,6 +48,13 @@ from rasa.core.constants import USER_INTENT_SESSION_START
 from rasa.core.trackers import DialogueStateTracker, ACTIVE_LOOP_KEY
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
+from rasa.nlu.constants import (
+    RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_RESPONSES_KEY,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+    INTENT_RESPONSE_KEY,
+)
 
 
 @pytest.fixture(scope="module")
@@ -363,11 +370,11 @@ async def test_action_utter_retrieved_response(
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
-            "response_selector": {
+            RESPONSE_SELECTOR_PROPERTY_NAME: {
                 "chitchat": {
-                    "response": {
-                        "full_retrieval_intent": "chitchat/ask_name",
-                        "name": [{"text": "I am a bot."}],
+                    RESPONSE_SELECTOR_PREDICTION_KEY: {
+                        INTENT_RESPONSE_KEY: "chitchat/ask_name",
+                        RESPONSE_SELECTOR_RESPONSES_KEY: [{"text": "I am a bot."}],
                     }
                 }
             }
@@ -394,11 +401,11 @@ async def test_action_utter_default_retrieved_response(
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
-            "response_selector": {
-                "default": {
-                    "response": {
-                        "full_retrieval_intent": "chitchat/ask_name",
-                        "name": [{"text": "I am a bot."}],
+            RESPONSE_SELECTOR_PROPERTY_NAME: {
+                RESPONSE_SELECTOR_DEFAULT_INTENT: {
+                    RESPONSE_SELECTOR_PREDICTION_KEY: {
+                        INTENT_RESPONSE_KEY: "chitchat/ask_name",
+                        RESPONSE_SELECTOR_RESPONSES_KEY: [{"text": "I am a bot."}],
                     }
                 }
             }

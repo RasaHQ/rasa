@@ -243,16 +243,16 @@ class TrainingData:
                 continue
 
             # look for corresponding bot utterance
-            story_lookup_intent = example.get_combined_intent_response_key()
+            story_lookup_intent = example.get_full_intent()
             assistant_utterances = self.responses.get(story_lookup_intent, [])
             if assistant_utterances:
 
                 # Use the first response text as training label if needed downstream
                 for assistant_utterance in assistant_utterances:
-                    if assistant_utterance.get(TEXT) is not None:
-                        example.set(RESPONSE, assistant_utterance.get(TEXT))
+                    if assistant_utterance.get(TEXT):
+                        example.set(RESPONSE, assistant_utterance[TEXT])
 
-                # If none of the response templates have a text attribute, then use the key as the training label
+                # If no text attribute was found use the key for training
                 if not example.get(RESPONSE):
                     example.set(RESPONSE, story_lookup_intent)
 
@@ -427,7 +427,7 @@ class TrainingData:
             if example.get(RESPONSE_KEY) and example.get(RESPONSE) is None:
                 raise_warning(
                     f"Your training data contains an example '{example.text[:20]}...' "
-                    f"for the {example.get_combined_intent_response_key()} intent. "
+                    f"for the {example.get_full_intent()} intent. "
                     f"You either need to add a response phrase or correct the "
                     f"intent for this example in your training data."
                 )
@@ -478,7 +478,7 @@ class TrainingData:
         responses = {}
         for ex in examples:
             if ex.get(RESPONSE_KEY) and ex.get(RESPONSE):
-                key = ex.get_combined_intent_response_key()
+                key = ex.get_full_intent()
                 responses[key] = self.responses[key]
         return responses
 

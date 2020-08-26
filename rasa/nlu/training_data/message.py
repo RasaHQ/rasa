@@ -17,6 +17,7 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.utils import ordered
+from rasa.utils import common as common_utils
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.featurizers.featurizer import Features
@@ -66,7 +67,7 @@ class Message:
 
         d = self.as_dict()
         if d.get(INTENT, None):
-            d[INTENT] = self.get_combined_intent_response_key()
+            d[INTENT] = self.get_full_intent()
         d.pop(RESPONSE_KEY, None)
         d.pop(RESPONSE, None)
         return d
@@ -119,15 +120,24 @@ class Message:
             data[ENTITIES] = entities
         return cls(text, data, **kwargs)
 
+    def get_full_intent(self):
+        """Get intent as it appears in training data"""
+
+        if self.get(INTENT_RESPONSE_KEY):
+            return self.get(INTENT_RESPONSE_KEY)
+        else:
+            return self.get(INTENT)
+
     def get_combined_intent_response_key(self) -> Text:
         """Get intent as it appears in training data"""
 
-        intent = self.get(INTENT)
-        response_key = self.get(RESPONSE_KEY)
-        response_key_suffix = (
-            f"{RESPONSE_IDENTIFIER_DELIMITER}{response_key}" if response_key else ""
+        common_utils.raise_warning(
+            "`get_combined_intent_response_key` is deprecated and "
+            "will be removed in future versions. "
+            "Please use `get_full_intent` instead.",
+            category=DeprecationWarning,
         )
-        return f"{intent}{response_key_suffix}"
+        return self.get_full_intent()
 
     @staticmethod
     def separate_intent_response_key(
