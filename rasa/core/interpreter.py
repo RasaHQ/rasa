@@ -243,7 +243,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
                             f"http. Error: {response_text}"
                         )
                         return None
-        except Exception:  # skipcq: YL-W0703
+        except Exception:  # skipcq: PYL-W0703
             # need to catch all possible exceptions when doing http requests
             # (timeouts, value errors, parser errors, ...)
             logger.exception(f"Failed to parse text '{text}' using rasa NLU over http.")

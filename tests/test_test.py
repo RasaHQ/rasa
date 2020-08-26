@@ -9,7 +9,6 @@ from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.utils.io
-from rasa.core.actions.action import ActionListen
 from rasa.core.events import UserUttered
 from rasa.core.test import (
     EvaluationStore,

@@ -22,7 +22,6 @@ import questionary
 import rasa.cli.utils
 from questionary import Choice, Form, Question
 
-from rasa.cli import utils as cli_utils
 from rasa.core import constants, run, train, utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa.core.channels.channel import UserMessage
@@ -258,7 +257,7 @@ def format_bot_output(message: BotUttered) -> Text:
 
     if data.get("buttons"):
         output += "\nButtons:"
-        choices = cli_utils.button_choices_from_message_data(
+        choices = rasa.cli.utils.button_choices_from_message_data(
             data, allow_free_text_input=True
         )
         for choice in choices:
@@ -267,13 +266,13 @@ def format_bot_output(message: BotUttered) -> Text:
     if data.get("elements"):
         output += "\nElements:"
         for idx, element in enumerate(data.get("elements")):
-            element_str = cli_utils.element_to_string(element, idx)
+            element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
 
     if data.get("quick_replies"):
         output += "\nQuick replies:"
         for idx, element in enumerate(data.get("quick_replies")):
-            element_str = cli_utils.element_to_string(element, idx)
+            element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
     return output
 
@@ -569,7 +568,7 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
 
     slot_strings = []
     for k, s in tracker_dump.get("slots", {}).items():
-        colored_value = cli_utils.wrap_with_color(
+        colored_value = rasa.cli.utils.wrap_with_color(
             str(s), color=rasa.cli.utils.bcolors.WARNING
         )
         slot_strings.append(f"{k}: {colored_value}")
@@ -950,7 +949,7 @@ async def _predict_till_next_listen(
             "buttons", None
         ):
             response = _get_button_choice(last_event)
-            if response != cli_utils.FREE_TEXT_INPUT_PROMPT:
+            if response != rasa.cli.utils.FREE_TEXT_INPUT_PROMPT:
                 await send_message(endpoint, conversation_id, response)
 
 
@@ -958,11 +957,11 @@ def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
     data = last_event["data"]
     message = last_event.get("text", "")
 
-    choices = cli_utils.button_choices_from_message_data(
+    choices = rasa.cli.utils.button_choices_from_message_data(
         data, allow_free_text_input=True
     )
     question = questionary.select(message, choices)
-    response = cli_utils.payload_from_button_question(question)
+    response = rasa.cli.utils.payload_from_button_question(question)
     return response
 
 

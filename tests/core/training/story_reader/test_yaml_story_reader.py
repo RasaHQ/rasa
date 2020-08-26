@@ -295,7 +295,7 @@ async def test_active_loop_is_parsed(default_domain: Domain):
     )
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = io_utils.read_yaml(stories)
+    yaml_content = rasa.utils.io.read_yaml(stories)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)

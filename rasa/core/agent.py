@@ -1,50 +1,47 @@
+from asyncio import CancelledError
 import logging
 import os
 import shutil
 import tempfile
-import uuid
-from asyncio import CancelledError
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
+import uuid
 
 import aiohttp
 from aiohttp import ClientError
 
 import rasa
-import rasa.utils.io
-import rasa.core.utils
-from rasa.constants import (
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_CORE_SUBDIRECTORY_NAME,
-)
-from rasa.core import constants, jobs, training
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
+from rasa.core import jobs, training
+from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.lock_store import LockStore, InMemoryLockStore
+from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
+    FailSafeTrackerStore,
     InMemoryTrackerStore,
     TrackerStore,
-    FailSafeTrackerStore,
 )
 from rasa.core.trackers import DialogueStateTracker
+import rasa.core.utils
 from rasa.exceptions import ModelNotFound
 from rasa.importers.importer import TrainingDataImporter
 from rasa.model import (
-    get_model_subdirectories,
     get_latest_model,
-    unpack_model,
     get_model,
+    get_model_subdirectories,
+    unpack_model,
 )
 from rasa.nlu.utils import is_url
 from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
+import rasa.utils.io
 
 logger = logging.getLogger(__name__)
 

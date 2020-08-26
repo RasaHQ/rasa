@@ -50,8 +50,6 @@ def add_subparser(
 def _add_data_convert_parsers(
     data_subparsers, parents: List[argparse.ArgumentParser]
 ) -> None:
-    from rasa.nlu import convert
-
     convert_parser = data_subparsers.add_parser(
         "convert",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

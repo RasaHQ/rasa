@@ -77,8 +77,8 @@ def test_get_core_nlu_directories(project):
 def test_get_core_nlu_directories_with_none():
     directories = data.get_core_nlu_directories(None)
 
-    assert all([directory for directory in directories])
-    assert all([not os.listdir(directory) for directory in directories])
+    assert all(directories)
+    assert all(not os.listdir(directory) for directory in directories)
 
 
 def test_same_file_names_get_resolved(tmpdir):
@@ -102,12 +102,12 @@ def test_same_file_names_get_resolved(tmpdir):
     nlu_files = os.listdir(nlu_directory)
 
     assert len(nlu_files) == 2
-    assert all([f.endswith("nlu.yml") for f in nlu_files])
+    assert all(f.endswith("nlu.yml") for f in nlu_files)
 
     stories = os.listdir(core_directory)
 
     assert len(stories) == 2
-    assert all([f.endswith("stories.md") for f in stories])
+    assert all(f.endswith("stories.md") for f in stories)
 
 
 @pytest.mark.parametrize(

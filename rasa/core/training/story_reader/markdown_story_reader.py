@@ -10,7 +10,6 @@ from rasa.nlu.training_data import Message
 import rasa.utils.io as io_utils
 from rasa.constants import (
     DEFAULT_E2E_TESTS_PATH,
-    DOCS_BASE_URL,
     DOCS_URL_DOMAINS,
     DOCS_URL_STORIES,
     LEGACY_DOCS_BASE_URL,
@@ -205,7 +204,7 @@ class MarkdownStoryReader(StoryReader):
         self.current_step_builder.add_user_messages(parsed_messages)
 
     @staticmethod
-    def parse_e2e_message(line: Text) -> "Message":
+    def parse_e2e_message(line: Text) -> Message:
         """Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>`. For the
