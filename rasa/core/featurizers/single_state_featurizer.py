@@ -8,7 +8,7 @@ from rasa.utils import common as common_utils
 from rasa.core.domain import Domain, State, SubState
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
-from rasa.core.constants import USER, PREVIOUS_ACTION, FORM, SLOTS, ACTION
+from rasa.core.constants import USER, PREVIOUS_ACTION, SLOTS, ACTION, ACTIVE_LOOP
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.constants import (
     TEXT,
@@ -48,7 +48,9 @@ class SingleStateFeaturizer:
         if not domain.slot_states == []:
             self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
         if not domain.form_names == []:
-            self._default_feature_states[FORM] = convert_to_dict(domain.form_names)
+            self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(
+                domain.form_names
+            )
         self.e2e_action_texts = domain.e2e_action_texts
 
     @staticmethod
@@ -79,12 +81,12 @@ class SingleStateFeaturizer:
 
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False
-    ) -> Dict[Text, List["Features"]]:
+    ) -> Optional[Dict[Text, List["Features"]]]:
         if attribute in {INTENT, ACTION_NAME}:
             state_features = {sub_state[attribute]: 1}
         elif attribute == ENTITIES:
             state_features = {entity: 1 for entity in sub_state.get(ENTITIES, [])}
-        elif attribute == FORM:
+        elif attribute == ACTIVE_LOOP:
             state_features = {sub_state["name"]: 1}
         elif attribute == SLOTS:
             state_features = {
@@ -99,7 +101,7 @@ class SingleStateFeaturizer:
             )
 
         if attribute not in self._default_feature_states:
-            return
+            return None
 
         features = np.zeros(len(self._default_feature_states[attribute]), np.float32)
         for state_feature, value in state_features.items():
@@ -180,7 +182,7 @@ class SingleStateFeaturizer:
                     featurized_state.update(
                         self._create_features(sub_state, ENTITIES, sparse=True)
                     )
-            if state_type in {SLOTS, FORM}:
+            if state_type in {SLOTS, ACTIVE_LOOP}:
                 if sub_state.get(state_type):
                     featurized_state.update(
                         self._create_features(sub_state, state_type, sparse=True)

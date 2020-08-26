@@ -208,7 +208,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
-        X = self.featurizer.create_X([tracker], domain, interpreter)
+        X = self.featurizer.create_state_features([tracker], domain, interpreter)
         Xt = self._preprocess_data(X)
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)

@@ -89,8 +89,8 @@ class TrackerFeaturizer:
 
         Returns:
             - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
-              ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
-              all training trackers
+              ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
+              turns in all training trackers
             - the label ids (e.g. action ids) for every dialuge turn in all training
               trackers
         """
@@ -107,10 +107,10 @@ class TrackerFeaturizer:
         )
 
         # noinspection PyPep8Naming
-        X = self._featurize_states(trackers_as_states, interpreter)
+        state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
 
-        return X, label_ids
+        return state_features, label_ids
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -122,7 +122,7 @@ class TrackerFeaturizer:
         )
 
     # noinspection PyPep8Naming
-    def create_X(
+    def create_state_features(
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,

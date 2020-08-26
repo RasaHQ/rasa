@@ -146,21 +146,20 @@ class Policy:
               trackers
         """
 
-        X, label_ids = self.featurizer.featurize_trackers(
+        state_features, label_ids = self.featurizer.featurize_trackers(
             training_trackers, domain, interpreter
         )
 
-        # TODO: does this still fit?
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
             logger.debug(
                 "Limit training data to {} training samples."
                 "".format(max_training_samples)
             )
-            X = X[:max_training_samples]
+            state_features = state_features[:max_training_samples]
             label_ids = label_ids[:max_training_samples]
 
-        return X, label_ids
+        return state_features, label_ids
 
     def train(
         self,

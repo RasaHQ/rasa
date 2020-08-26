@@ -23,7 +23,7 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.nlu.constants import ACTION_NAME, INTENT, ACTION_TEXT, TEXT, ENTITIES
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE, FORM, SLOTS
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE, ACTIVE_LOOP, SLOTS
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.utils import train_utils
@@ -84,7 +84,7 @@ LABEL_SUB_KEY = "ids"
 LENGTH = "length"
 POSSIBLE_FEATURE_TYPES = [SEQUENCE, SENTENCE]
 FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
-STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, FORM]
+STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
 
@@ -338,7 +338,7 @@ class TEDPolicy(Policy):
 
         Args:
             features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
-                ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all
+                ACTION_TEXT, ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all
                 dialogue turns in all training trackers
 
         Returns:
@@ -529,8 +529,8 @@ class TEDPolicy(Policy):
 
         Args:
             X: a dictionary of attributes (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
-                ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
-                all training trackers
+                ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
+                turns in all training trackers
             label_ids: the label ids (e.g. action ids) for every dialogue turn in all
                 training trackers
 
@@ -564,13 +564,13 @@ class TEDPolicy(Policy):
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        X, label_ids = self.featurize_for_training(
+        state_features, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
         self._label_data, all_labels = self._create_label_data(domain, interpreter)
 
         # extract actual training data to feed to model
-        model_data = self._create_model_data(X, label_ids, all_labels)
+        model_data = self._create_model_data(state_features, label_ids, all_labels)
         if model_data.is_empty():
             logger.error(
                 f"Can not train '{self.__class__.__name__}'. No data was provided. "
@@ -612,7 +612,7 @@ class TEDPolicy(Policy):
             return self._default_predictions(domain)
 
         # create model data from tracker
-        data_X = self.featurizer.create_X([tracker], domain, interpreter)
+        data_X = self.featurizer.create_state_features([tracker], domain, interpreter)
         model_data = self._create_model_data(data_X, training=False)
 
         output = self.model.predict(model_data)
@@ -819,6 +819,7 @@ class TED(TransformerRasaModel):
                 name not in self.data_signature
                 or feature_type not in self.data_signature[name]
             ):
+                # features for feature type are not present
                 continue
 
             self._prepare_sparse_dense_dropout_layers(
@@ -862,6 +863,8 @@ class TED(TransformerRasaModel):
 
             for sub_key in self.tf_label_data[key].keys():
                 if sub_key not in [SEQUENCE, SENTENCE]:
+                    # we only have sparse and dense features for sentence and
+                    # sequence features
                     continue
 
                 label_features = self._combine_sparse_dense_features(
@@ -973,6 +976,8 @@ class TED(TransformerRasaModel):
 
             for sub_key in batch[key]:
                 if sub_key not in [SEQUENCE, SENTENCE]:
+                    # we only have sparse and dense features for sequence and
+                    # sentence features
                     continue
 
                 label_features = self._combine_sparse_dense_features(
