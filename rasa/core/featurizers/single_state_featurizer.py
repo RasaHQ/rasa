@@ -170,8 +170,6 @@ class SingleStateFeaturizer:
     def encode_state(
         self, state: State, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
-        print("---")
-        print(state)
         state_features = {}
         for state_type, sub_state in state.items():
             if state_type == PREVIOUS_ACTION:
@@ -197,7 +195,7 @@ class SingleStateFeaturizer:
                     state_features.update(
                         self._create_features(sub_state, state_type, sparse=True)
                     )
-        print(state_features)
+
         return state_features
 
     def _encode_action(
