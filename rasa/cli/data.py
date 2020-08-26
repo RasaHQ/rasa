@@ -187,7 +187,7 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
 
 
 def validate_stories(args: argparse.Namespace) -> None:
-    """Validate that training data file content conforms to training data spec.
+    """Validates that training data file content conforms to training data spec.
 
     Args:
         args: Commandline arguments
