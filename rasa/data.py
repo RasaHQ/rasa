@@ -120,13 +120,13 @@ def get_core_nlu_directories(
 
 
 def get_data_files(
-    paths: Optional[Union[Text, List[Text]]], filter_property: Callable[[Text], bool]
+    paths: Optional[Union[Text, List[Text]]], filter_predicate: Callable[[Text], bool]
 ) -> List[Text]:
     """Recursively collects all training files from a list of paths.
 
     Args:
         paths: List of paths to training files or folders containing them.
-        filter_property: property to use when filtering the paths, e.g. `is_nlu_file`.
+        filter_predicate: property to use when filtering the paths, e.g. `is_nlu_file`.
 
     Returns:
         paths of training data files.
@@ -144,10 +144,10 @@ def get_data_files(
             continue
 
         if _is_valid_filetype(path):
-            if filter_property(path):
+            if filter_predicate(path):
                 data_files.add(os.path.abspath(path))
         else:
-            new_data_files = _find_data_files_in_directory(path, filter_property)
+            new_data_files = _find_data_files_in_directory(path, filter_predicate)
             data_files.update(new_data_files)
 
     return sorted(data_files)

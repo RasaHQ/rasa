@@ -9,7 +9,7 @@ from ruamel.yaml.parser import ParserError
 import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
 from rasa.constants import (
-    DEFAULT_TEST_STORIES_FILE_PREFIX,
+    TEST_STORIES_FILE_PREFIX,
     DOCS_URL_STORIES,
     DOCS_URL_RULES,
 )
@@ -169,7 +169,7 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `True` if the filename starts with the prefix, `False` otherwise.
         """
-        return Path(file_path).name.startswith(DEFAULT_TEST_STORIES_FILE_PREFIX)
+        return Path(file_path).name.startswith(TEST_STORIES_FILE_PREFIX)
 
     @classmethod
     def is_yaml_test_stories_file(cls, file_path: Union[Text, Path]) -> bool:

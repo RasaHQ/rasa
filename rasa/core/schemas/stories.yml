@@ -28,7 +28,6 @@ mapping:
                 allowempty: False
               user:
                 type: "str"
-                required: False
                 allowempty: False
               entities:
                 type: "seq"
