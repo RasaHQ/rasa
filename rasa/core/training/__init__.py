@@ -73,6 +73,7 @@ async def load_data(
             generate debug plots during loading
         exclusion_percentage:
             how much data to exclude
+
     Returns:
         list of loaded trackers
     """

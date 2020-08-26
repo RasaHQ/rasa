@@ -8,7 +8,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 Rasa Open Source lets you test dialogues end-to-end by running through
-test stories. The test make sure that user messages are processed correctly
+test stories. The test makes sure that user messages are processed correctly
 and the dialogue predictions are correct. In addition to end-to-end tests, you can
 also test the dialogue handling (core) and the message processing (nlu)
 separately.
@@ -135,14 +135,14 @@ You can test your assistant against them by running:
 rasa test
 ```
 
-The command will always load all stories from any story files, where there file
+The command will always load all stories from any story files, where the file
 name starts with `test_`, e.g. `test_conversations.yml`. Your story test
 file names should always start with `test_` for this detection to work.
 
 :::info Custom Actions
 [Custom Actions](./custom-actions.mdx) are **not executed as part of end-to-end tests.** If your custom
 actions append any events to the conversation, this has to be reflected in your end-to-end
-tests (e.g. by adding `slot` events to your end-to-end story).
+tests (e.g. by adding `slot_was_set` events to your end-to-end story).
 
 If you want to test the code of your custom actions, you should write unit tests
 for them and include these tests in your CI/CD pipeline.
