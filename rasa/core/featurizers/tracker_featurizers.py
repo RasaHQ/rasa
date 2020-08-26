@@ -107,10 +107,10 @@ class TrackerFeaturizer:
         )
 
         # noinspection PyPep8Naming
-        state_features = self._featurize_states(trackers_as_states, interpreter)
+        tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
 
-        return state_features, label_ids
+        return tracker_state_features, label_ids
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain

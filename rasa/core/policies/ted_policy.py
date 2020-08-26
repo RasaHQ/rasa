@@ -213,7 +213,7 @@ class TEDPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
-        zero_features: Optional[Dict[Text, List["Features"]]] = None,
+        zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
@@ -231,7 +231,7 @@ class TEDPolicy(Policy):
 
         self.model = model
 
-        self.zero_features = zero_features or defaultdict(list)
+        self.zero_state_features = zero_state_features or defaultdict(list)
 
         self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
@@ -361,7 +361,7 @@ class TEDPolicy(Policy):
         if training:
             attributes = list(state_to_tracker_features.keys())
         else:
-            attributes = list(self.zero_features.keys())
+            attributes = list(self.zero_state_features.keys())
 
         # In case an attribute is not present during prediction, replace it with
         # None values that will then be replaced by zero features
@@ -380,7 +380,7 @@ class TEDPolicy(Policy):
             # in case some features for a specific attribute and dialogue turn are
             # missing, replace them with a feature vector of zeros
             if training:
-                self.zero_features[attribute] = self._create_zero_features(
+                self.zero_state_features[attribute] = self._create_zero_features(
                     tracker_features
                 )
 
@@ -389,7 +389,7 @@ class TEDPolicy(Policy):
                 _dense_features,
                 _sparse_features,
             ) = self._map_tracker_features(
-                tracker_features, self.zero_features[attribute]
+                tracker_features, self.zero_state_features[attribute]
             )
 
             sparse_features = defaultdict(list)
@@ -659,7 +659,8 @@ class TEDPolicy(Policy):
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_features.pkl", self.zero_features
+            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_state_features.pkl",
+            self.zero_state_features,
         )
         io_utils.pickle_dump(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
@@ -692,8 +693,8 @@ class TEDPolicy(Policy):
         label_data = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
         )
-        zero_features = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_features.pkl"
+        zero_state_features = io_utils.pickle_load(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_state_features.pkl"
         )
         label_data = RasaModelData(data=label_data)
         meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
@@ -734,7 +735,7 @@ class TEDPolicy(Policy):
             featurizer=featurizer,
             priority=priority,
             model=model,
-            zero_features=zero_features,
+            zero_state_features=zero_state_features,
             **meta,
         )
 
