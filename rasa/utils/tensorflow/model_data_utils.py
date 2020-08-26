@@ -6,7 +6,9 @@ import scipy.sparse
 
 from rasa.utils.tensorflow.model_data import Data
 from rasa.utils.tensorflow.constants import SEQUENCE
+
 MASK = "mask"
+
 
 def surface_attributes(
     features: List[List[Dict[Text, List["Features"]]]]
@@ -47,9 +49,8 @@ def surface_attributes(
 
     return attribute_to_features
 
-def create_zero_features(
-    features: List[List[List["Features"]]],
-) -> List["Features"]:
+
+def create_zero_features(features: List[List[List["Features"]]],) -> List["Features"]:
     # all features should have the same types
     """
     Computes default feature values for an attribute;
@@ -82,6 +83,7 @@ def create_zero_features(
         zero_features.append(new_features)
 
     return zero_features
+
 
 def convert_to_data_format(
     features: Union[
@@ -135,15 +137,9 @@ def convert_to_data_format(
         # in case some features for a specific attribute and dialogue turn are
         # missing, replace them with a feature vector of zeros
         if training:
-            zero_features[attribute] = create_zero_features(
-                features_in_tracker
-            )
+            zero_features[attribute] = create_zero_features(features_in_tracker)
 
-        (
-            attribute_masks,
-            _dense_features,
-            _sparse_features,
-        ) = map_tracker_features(
+        (attribute_masks, _dense_features, _sparse_features,) = map_tracker_features(
             features_in_tracker, zero_features[attribute]
         )
 
@@ -158,9 +154,7 @@ def convert_to_data_format(
                 dense_features[key] = [value[0] for value in values]
         else:
             for key, values in _sparse_features.items():
-                sparse_features[key] = [
-                    scipy.sparse.vstack(value) for value in values
-                ]
+                sparse_features[key] = [scipy.sparse.vstack(value) for value in values]
             for key, values in _dense_features.items():
                 dense_features[key] = [np.vstack(value) for value in values]
 
@@ -188,12 +182,12 @@ def convert_to_data_format(
                 )
 
         attribute_data[attribute] = attribute_features
-        
+
     return attribute_data, zero_features
 
+
 def map_tracker_features(
-    features_in_tracker: List[List[List["Features"]]],
-    zero_features: List["Features"],
+    features_in_tracker: List[List[List["Features"]]], zero_features: List["Features"],
 ) -> Tuple[
     List[np.ndarray],
     Dict[Text, List[List["Features"]]],
@@ -235,9 +229,7 @@ def map_tracker_features(
             for features in turn_features:
                 # all features should have the same types
                 if features.is_sparse():
-                    dialogue_sparse_features[features.type].append(
-                        features.features
-                    )
+                    dialogue_sparse_features[features.type].append(features.features)
                 else:
                     dialogue_dense_features[features.type].append(features.features)
 

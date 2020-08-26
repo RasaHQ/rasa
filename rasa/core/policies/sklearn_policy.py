@@ -111,25 +111,41 @@ class SklearnPolicy(Policy):
         lengths = [row.shape[0] for row in features]
         return max(lengths)
 
-    def _fill_in_features_to_max_length(self, features: List[np.ndarray], max_history: int) -> List[np.ndarray]:
+    def _fill_in_features_to_max_length(
+        self, features: List[np.ndarray], max_history: int
+    ) -> List[np.ndarray]:
         feature_shape = features[0].shape[-1]
-        features = [feature if feature.shape[0] == max_history else np.vstack([np.zeros((max_history - feature.shape[0], feature_shape)), feature]) for feature in features]
+        features = [
+            feature
+            if feature.shape[0] == max_history
+            else np.vstack(
+                [np.zeros((max_history - feature.shape[0], feature_shape)), feature]
+            )
+            for feature in features
+        ]
         return features
 
     def _get_features_for_attribute(self, features, attribute):
         sentence_features = features[SENTENCE][0]
         if isinstance(sentence_features[0], scipy.sparse.coo_matrix):
             sentence_features = [feature.toarray() for feature in sentence_features]
-        max_history = self.featurizer.max_history or self._get_max_dialogue_length(sentence_features)
+        max_history = self.featurizer.max_history or self._get_max_dialogue_length(
+            sentence_features
+        )
         features = self._fill_in_features_to_max_length(sentence_features, max_history)
         features = [feature.reshape((1, -1)) for feature in features]
         return np.vstack(features)
 
     def _preprocess_data(self, X: Data) -> np.ndarray:
         if TEXT in X or ACTION_TEXT in X:
-            raise Exception(f"{self.__name__} cannot be applied to text data. Try to use TEDPolicy instead. ")
+            raise Exception(
+                f"{self.__name__} cannot be applied to text data. Try to use TEDPolicy instead. "
+            )
 
-        attribute_data = {attribute: self._get_features_for_attribute(X[attribute], attribute) for attribute in X}
+        attribute_data = {
+            attribute: self._get_features_for_attribute(X[attribute], attribute)
+            for attribute in X
+        }
         attribute_data = [features for key, features in attribute_data.items()]
         return np.concatenate(attribute_data, axis=-1)
 
@@ -199,7 +215,9 @@ class SklearnPolicy(Policy):
         **kwargs: Any,
     ) -> List[float]:
         X = self.featurizer.create_state_features([tracker], domain, interpreter)
-        training_data, _ = convert_to_data_format(X, zero_features = self.zero_state_features, training = False)
+        training_data, _ = convert_to_data_format(
+            X, zero_features=self.zero_state_features, training=False
+        )
         Xt = self._preprocess_data(training_data)
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)
@@ -217,7 +235,9 @@ class SklearnPolicy(Policy):
             filename = os.path.join(path, "sklearn_model.pkl")
             rasa.utils.io.pickle_dump(filename, self._state)
             zero_features_filename = os.path.join(path, "zero_state_features.pkl")
-            rasa.utils.io.pickle_dump(zero_features_filename, self.zero_state_features,)
+            rasa.utils.io.pickle_dump(
+                zero_features_filename, self.zero_state_features,
+            )
         else:
             raise_warning(
                 "Persist called without a trained model present. "
@@ -244,7 +264,11 @@ class SklearnPolicy(Policy):
         meta = json.loads(rasa.utils.io.read_file(meta_file))
         zero_state_features = rasa.utils.io.pickle_load(zero_features_filename)
 
-        policy = cls(featurizer=featurizer, priority=meta["priority"], zero_state_features = zero_state_features)
+        policy = cls(
+            featurizer=featurizer,
+            priority=meta["priority"],
+            zero_state_features=zero_state_features,
+        )
 
         state = rasa.utils.io.pickle_load(filename)
 

@@ -301,11 +301,14 @@ class TEDPolicy(Policy):
             model_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
 
         if training:
-            attribute_data, zero_state_features = convert_to_data_format(tracker_state_features, training = training)
+            attribute_data, zero_state_features = convert_to_data_format(
+                tracker_state_features, training=training
+            )
             self.zero_state_features = zero_state_features
         else:
-            attribute_data, _ = convert_to_data_format(tracker_state_features, self.zero_state_features, training = training)
-
+            attribute_data, _ = convert_to_data_format(
+                tracker_state_features, self.zero_state_features, training=training
+            )
 
         # ensure that all attributes are in the same order
         attribute_data = collections.OrderedDict(sorted(attribute_data.items()))
