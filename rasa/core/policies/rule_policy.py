@@ -9,14 +9,17 @@ from rasa.core.domain import Domain, InvalidDomain, State
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
-from rasa.core.trackers import DialogueStateTracker
+from rasa.core.trackers import (
+    DialogueStateTracker,
+    get_active_loop_name,
+    prev_action_listen_in_state,
+)
 from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import (
     FORM_POLICY_PRIORITY,
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
-    ACTIVE_LOOP,
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
     NAME,
@@ -143,21 +146,6 @@ class RulePolicy(MemoizationPolicy):
         return json.dumps(new_states, sort_keys=True)
 
     @staticmethod
-    def _get_active_loop_name(state: State) -> Optional[Text]:
-        if (
-            not state.get(ACTIVE_LOOP)
-            or state[ACTIVE_LOOP].get(NAME) == SHOULD_NOT_BE_SET
-        ):
-            return
-
-        return state[ACTIVE_LOOP].get(NAME)
-
-    @staticmethod
-    def _prev_action_listen_in_state(state: State) -> bool:
-        prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
-        return prev_action_name == ACTION_LISTEN_NAME
-
-    @staticmethod
     def _states_for_unhappy_loop_predictions(states: List[State]) -> List[State]:
         """Modifies the states to create feature keys for loop unhappy path conditions.
 
@@ -208,7 +196,7 @@ class RulePolicy(MemoizationPolicy):
         lookup = {}
         for states, actions in zip(trackers_as_states, trackers_as_actions):
             action = actions[0]
-            active_loop = self._get_active_loop_name(states[-1])
+            active_loop = get_active_loop_name(states[-1])
             # even if there are two identical feature keys
             # their loop will be the same
             if active_loop:
@@ -224,7 +212,7 @@ class RulePolicy(MemoizationPolicy):
                 if (
                     # loop is predicted after action_listen in unhappy path,
                     # therefore no validation is needed
-                    self._prev_action_listen_in_state(states[-1])
+                    prev_action_listen_in_state(states[-1])
                     and action == active_loop
                 ):
                     lookup[feature_key] = DO_NOT_VALIDATE_LOOP
@@ -232,7 +220,7 @@ class RulePolicy(MemoizationPolicy):
                     # some action other than action_listen and active_loop
                     # is predicted in unhappy path,
                     # therefore active_loop shouldn't be predicted by the rule
-                    not self._prev_action_listen_in_state(states[-1])
+                    not prev_action_listen_in_state(states[-1])
                     and action not in {ACTION_LISTEN_NAME, active_loop}
                 ):
                     lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
@@ -436,9 +424,7 @@ class RulePolicy(MemoizationPolicy):
             # Hence, we have to take care of that.
             predicted_listen_from_general_rule = (
                 predicted_action_name == ACTION_LISTEN_NAME
-                and not self._get_active_loop_name(
-                    self._rule_key_to_state(best_rule_key)[-1]
-                )
+                and not get_active_loop_name(self._rule_key_to_state(best_rule_key)[-1])
             )
             if predicted_listen_from_general_rule:
                 if DO_NOT_PREDICT_LOOP_ACTION not in unhappy_path_conditions:

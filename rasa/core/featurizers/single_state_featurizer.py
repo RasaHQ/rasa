@@ -18,7 +18,9 @@ from rasa.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
 )
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.nlu.training_data.message import Message
+from rasa.core.trackers import prev_action_listen_in_state
 
 logger = logging.getLogger(__name__)
 
@@ -168,16 +170,24 @@ class SingleStateFeaturizer:
     def encode_state(
         self, state: State, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
-
+        print("---")
+        print(state)
         state_features = {}
         for state_type, sub_state in state.items():
-            if state_type in {USER, PREVIOUS_ACTION}:
+            if state_type == PREVIOUS_ACTION:
                 state_features.update(
                     self._extract_state_features(
                         sub_state, state_type, interpreter, sparse=True
                     )
                 )
-            if state_type == USER:
+            # featurize user only if it is "real" user input,
+            # i.e. input from a turn after action_listen
+            if state_type == USER and prev_action_listen_in_state(state):
+                state_features.update(
+                    self._extract_state_features(
+                        sub_state, state_type, interpreter, sparse=True
+                    )
+                )
                 if sub_state.get(ENTITIES):
                     state_features.update(
                         self._create_features(sub_state, ENTITIES, sparse=True)
@@ -187,7 +197,7 @@ class SingleStateFeaturizer:
                     state_features.update(
                         self._create_features(sub_state, state_type, sparse=True)
                     )
-
+        print(state_features)
         return state_features
 
     def _encode_action(
