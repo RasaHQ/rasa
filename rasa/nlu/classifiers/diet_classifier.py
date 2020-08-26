@@ -438,23 +438,21 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         dense_sequence_features, dense_sentence_features = message.get_dense_features(
             attribute, self.component_config[FEATURIZERS]
         )
-        if sparse_sequence_features is not None:
-            sparse_sequence_features = sparse_sequence_features.features
-        if sparse_sentence_features is not None:
-            sparse_sentence_features = sparse_sentence_features.features
-        if dense_sequence_features is not None:
-            dense_sequence_features = dense_sequence_features.features
-        if dense_sentence_features is not None:
-            dense_sentence_features = dense_sentence_features.features
 
         if dense_sequence_features is not None and sparse_sequence_features is not None:
-            if dense_sequence_features.shape[0] != sparse_sequence_features.shape[0]:
+            if (
+                dense_sequence_features.features.shape[0]
+                != sparse_sequence_features.features.shape[0]
+            ):
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense sequence features "
                     f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
                 )
         if dense_sentence_features is not None and sparse_sentence_features is not None:
-            if dense_sentence_features.shape[0] != sparse_sentence_features.shape[0]:
+            if (
+                dense_sentence_features.features.shape[0]
+                != sparse_sentence_features.features.shape[0]
+            ):
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense sentence features "
                     f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
@@ -475,13 +473,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         out = {}
 
         if sparse_sentence_features is not None:
-            out[f"{SPARSE}_{SENTENCE}"] = sparse_sentence_features
+            out[f"{SPARSE}_{SENTENCE}"] = sparse_sentence_features.features
         if sparse_sequence_features is not None:
-            out[f"{SPARSE}_{SEQUENCE}"] = sparse_sequence_features
+            out[f"{SPARSE}_{SEQUENCE}"] = sparse_sequence_features.features
         if dense_sentence_features is not None:
-            out[f"{DENSE}_{SENTENCE}"] = dense_sentence_features
+            out[f"{DENSE}_{SENTENCE}"] = dense_sentence_features.features
         if dense_sequence_features is not None:
-            out[f"{DENSE}_{SEQUENCE}"] = dense_sequence_features
+            out[f"{DENSE}_{SEQUENCE}"] = dense_sequence_features.features
 
         return out
 
