@@ -8,7 +8,7 @@ from rasa.core.events import (
     Event,
     ActionExecutionRejected,
     ActionExecuted,
-    Form,
+    ActiveLoop,
     SlotSet,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -35,17 +35,17 @@ async def test_whole_loop():
 
         async def do(self, *args: Any) -> List[Event]:
             events_so_far = args[-1]
-            assert events_so_far == [Form(form_name), *expected_activation_events]
+            assert events_so_far == [ActiveLoop(form_name), *expected_activation_events]
 
             return expected_do_events
 
         async def deactivate(self, *args) -> List[Event]:
             events_so_far = args[-1]
             assert events_so_far == [
-                Form(form_name),
+                ActiveLoop(form_name),
                 *expected_activation_events,
                 *expected_do_events,
-                Form(None),
+                ActiveLoop(None),
             ]
 
             return expected_deactivation_events
@@ -53,7 +53,7 @@ async def test_whole_loop():
         async def is_done(self, *args) -> bool:
             events_so_far = args[-1]
             return events_so_far == [
-                Form(form_name),
+                ActiveLoop(form_name),
                 *expected_activation_events,
                 *expected_do_events,
             ]
@@ -70,10 +70,10 @@ async def test_whole_loop():
     )
 
     assert actual == [
-        Form(form_name),
+        ActiveLoop(form_name),
         *expected_activation_events,
         *expected_do_events,
-        Form(None),
+        ActiveLoop(None),
         *expected_deactivation_events,
     ]
 
@@ -114,7 +114,11 @@ async def test_loop_without_deactivate():
         domain,
     )
 
-    assert actual == [Form(form_name), *expected_activation_events, *expected_do_events]
+    assert actual == [
+        ActiveLoop(form_name),
+        *expected_activation_events,
+        *expected_do_events,
+    ]
 
 
 async def test_loop_without_activate_and_without_deactivate():

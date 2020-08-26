@@ -1,5 +1,6 @@
 import os
 from multiprocessing.managers import DictProxy
+from pathlib import Path
 from unittest.mock import Mock, ANY
 
 import requests
@@ -153,7 +154,6 @@ def background_server(
     shared_statuses: DictProxy, tmpdir: pathlib.Path
 ) -> Generator[Process, None, None]:
     # Create a fake model archive which the mocked train function can return
-    from pathlib import Path
 
     fake_model = Path(tmpdir) / "fake_model.tar.gz"
     fake_model.touch()
@@ -190,22 +190,22 @@ def background_server(
 @pytest.fixture()
 def training_request(shared_statuses: DictProxy) -> Generator[Process, None, None]:
     def send_request() -> None:
-
-        with ExitStack() as stack:
-            formbot_data = dict(
-                domain="examples/formbot/domain.yml",
-                config="examples/formbot/config.yml",
-                stories="examples/formbot/data/stories.md",
-                nlu="examples/formbot/data/nlu.md",
-            )
-            payload = {
-                key: stack.enter_context(open(path)).read()
-                for key, path in formbot_data.items()
-            }
+        payload = ""
+        project_path = Path("examples") / "formbot"
+        for file in [
+            "domain.yml",
+            "config.yml",
+            Path("data") / "rules.yml",
+            Path("data") / "stories.yml",
+            Path("data") / "nlu.yml",
+        ]:
+            full_path = project_path / file
+            payload += full_path.read_text()
 
         response = requests.post(
             "http://localhost:5005/model/train",
-            json=payload,
+            data=payload,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
             params={"force_training": True},
         )
         shared_statuses["training_result"] = response.status_code
@@ -234,8 +234,11 @@ def test_train_status_is_not_blocked_by_training(
             return False
 
     # wait until server is up before sending train request and status test loop
-    while not is_server_ready():
+    start = time.time()
+    while not is_server_ready() and time.time() - start < 60:
         time.sleep(1)
+
+    assert is_server_ready()
 
     training_request.start()
 
@@ -251,8 +254,10 @@ def test_train_status_is_not_blocked_by_training(
     # Tell the blocking training function to stop
     shared_statuses["stop_training"] = True
 
-    while shared_statuses.get("training_result") is None:
+    start = time.time()
+    while shared_statuses.get("training_result") is None and time.time() - start < 60:
         time.sleep(1)
+    assert shared_statuses.get("training_result")
 
     # Check that the training worked correctly
     assert shared_statuses["training_result"] == 200
@@ -884,6 +889,29 @@ def test_push_multiple_events(rasa_app: SanicTestClient):
     assert tracker.get("events") == events
 
 
+def test_post_conversation_id_with_slash(rasa_app: SanicTestClient):
+    conversation_id = str(uuid.uuid1())
+    id_len = len(conversation_id) // 2
+    conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
+    conversation = f"/conversations/{conversation_id}"
+
+    events = [e.as_dict() for e in test_events]
+    _, response = rasa_app.post(
+        f"{conversation}/tracker/events",
+        json=events,
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.json is not None
+    assert response.status == 200
+
+    _, tracker_response = rasa_app.get(f"/conversations/{conversation_id}/tracker")
+    tracker = tracker_response.json
+    assert tracker is not None
+
+    # there is also an `ACTION_LISTEN` event at the start
+    assert tracker.get("events") == events
+
+
 def test_put_tracker(rasa_app: SanicTestClient):
     data = [event.as_dict() for event in test_events]
     _, response = rasa_app.put(
@@ -963,9 +991,7 @@ def test_get_tracker_with_jwt(rasa_secured_app: SanicTestClient):
 
 
 def test_list_routes(default_agent: Agent):
-    from rasa import server
-
-    app = server.create_app(default_agent, auth_token=None)
+    app = rasa.server.create_app(default_agent, auth_token=None)
 
     routes = utils.list_routes(app)
     assert set(routes.keys()) == {

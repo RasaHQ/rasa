@@ -31,7 +31,7 @@ from rasa.core.events import (
     Event,
     BotUttered,
     SlotSet,
-    Form,
+    ActiveLoop,
     Restarted,
     SessionStarted,
 )
@@ -441,7 +441,7 @@ class ActionDeactivateForm(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        return [Form(None), SlotSet(REQUESTED_SLOT, None)]
+        return [ActiveLoop(None), SlotSet(REQUESTED_SLOT, None)]
 
 
 class RemoteAction(Action):

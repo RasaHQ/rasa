@@ -12,7 +12,7 @@ From a dialogue perspective, these single-turn exchanges can all be treated equa
 
 Instead of having a lot of stories like:
 
-```yaml
+```yaml-rasa
 stories:
 - story: weather
   steps:
@@ -30,7 +30,7 @@ stories:
 You can cover all of these with a single story where the above intents are grouped
 under a common `chitchat` intent:
 
-```yaml
+```yaml-rasa
 stories:
 - story: chitchat
   steps:
@@ -55,7 +55,7 @@ Like the name suggests, retrieval actions learn to select the correct response f
 As with other message data, you need to include examples of what your users will say in
 your training data file:
 
-```yaml title="data/nlu.yml"
+```yaml-rasa title="data/nlu.yml"
 nlu:
 - intent: chitchat/ask_name
   examples: |
@@ -77,7 +77,7 @@ the intent name by a `/` delimiter.
 
 Next, include response texts for all retrieval intents in a training data file:
 
-```yaml title="data/responses.yml"
+```yaml-rasa title="data/responses.yml"
 responses:
   chitchat/ask_name:
   - text: "my name is Sara, Rasa's documentation bot!"
@@ -114,7 +114,7 @@ intent classifier to operate on the user message before it can predict a respons
 and hence these components should be placed before `ResponseSelector` in the
 NLU configuration. An example:
 
-```yaml title="config.yml" {8}
+```yaml-rasa title="config.yml" {8}
 language: "en"
 
 pipeline:
@@ -134,7 +134,7 @@ The prefix `respond_` is mandatory to identify it as a retrieval action.
 Another example - correct action name for `faq/ask_policy` would be `respond_faq`
 To include this in your domain, add it to the list of actions:
 
-```yaml title="domain.yml"
+```yaml-rasa title="domain.yml"
 actions:
   # ...
   - respond_chitchat
@@ -146,7 +146,7 @@ intent is to use [Rules](./rules.mdx).
 However, you can also include this action in your stories.
 For example, if you want to repeat a question after handling chitchat:
 
-```yaml title="data/stories.yml" {6-8}
+```yaml-rasa title="data/stories.yml" {6-8}
 stories:
 - story: interruption
   steps:
@@ -168,7 +168,7 @@ Rasa supports adding multiple `RetrievalActions` like `respond_chitchat` and
 This works out of the box. Both actions can share the same retrieval model,
 you only need to specify a single `ResponseSelector` component in your configuration:
 
-```yaml title="config.yml" {8}
+```yaml-rasa title="config.yml" {8}
 language: "en"
 
 pipeline:
