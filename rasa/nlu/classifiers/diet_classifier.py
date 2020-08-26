@@ -1393,10 +1393,10 @@ class DIET(RasaModel):
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
 
-    def _prepare_sequence_layers(self, name: Text, dense_input: Text = True) -> None:
+    def _prepare_sequence_layers(self, name: Text) -> None:
         self._prepare_input_layers(name)
 
-        if self.config[NUM_TRANSFORMER_LAYERS] > 0 and dense_input:
+        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
             self._tf_layers[f"{name}_transformer"] = TransformerEncoder(
                 self.config[NUM_TRANSFORMER_LAYERS],
                 self.config[TRANSFORMER_SIZE],
@@ -1857,10 +1857,14 @@ class DIET(RasaModel):
 
         loss, acc = self._calculate_label_loss(sentence_vector, label, label_ids)
 
-        self.intent_loss.update_state(loss)
-        self.response_acc.update_state(acc)
+        self._update_label_metrics(loss, acc)
 
         return loss
+
+    def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor):
+
+        self.intent_loss.update_state(loss)
+        self.response_acc.update_state(acc)
 
     def _batch_loss_entities(
         self,

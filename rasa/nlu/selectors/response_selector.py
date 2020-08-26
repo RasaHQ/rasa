@@ -254,9 +254,11 @@ class ResponseSelector(DIETClassifier):
     def label_key(self) -> Text:
         return LABEL_IDS
 
-    @staticmethod
-    def model_class() -> Type[RasaModel]:
-        return DIET2DIET
+    def model_class(self) -> Type[RasaModel]:
+        if self.use_text_as_label:
+            return DIET2DIET
+        else:
+            return DIET2BOW
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
         self.retrieval_intent = config[RETRIEVAL_INTENT]
@@ -425,6 +427,44 @@ class ResponseSelector(DIETClassifier):
         return model  # pytype: disable=bad-return-type
 
 
+class DIET2BOW(DIET):
+    def _create_metrics(self) -> None:
+        # self.metrics preserve order
+        # output losses first
+        self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
+        self.response_loss = tf.keras.metrics.Mean(name="r_loss")
+        # output accuracies second
+        self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
+        self.response_acc = tf.keras.metrics.Mean(name="r_acc")
+
+    def _update_metrics_to_log(self) -> None:
+        debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
+
+        if self.config[MASKED_LM]:
+            self.metrics_to_log.append("m_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("m_loss")
+
+        self.metrics_to_log.append("r_acc")
+        if debug_log_level:
+            self.metrics_to_log.append("r_loss")
+
+        self._log_metric_info()
+
+    def _log_metric_info(self) -> None:
+        metric_name = {"t": "total", "m": "mask", "r": "response"}
+        logger.debug("Following metrics will be logged during training: ")
+        for metric in self.metrics_to_log:
+            parts = metric.split("_")
+            name = f"{metric_name[parts[0]]} {parts[1]}"
+            logger.debug(f"  {metric} ({name})")
+
+    def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor):
+
+        self.response_loss.update_state(loss)
+        self.response_acc.update_state(acc)
+
+
 class DIET2DIET(DIET):
     def _check_data(self) -> None:
         if TEXT_SENTENCE_FEATURES not in self.data_signature:
@@ -484,10 +524,7 @@ class DIET2DIET(DIET):
 
         self._prepare_sequence_layers(self.text_name)
 
-        # When training on labels, don't create transformer layers for the label
-        self._prepare_sequence_layers(
-            self.label_name, dense_input=self.config[USE_TEXT_AS_LABEL]
-        )
+        self._prepare_sequence_layers(self.label_name)
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_layers(self.text_name)
         self._prepare_label_classification_layers()

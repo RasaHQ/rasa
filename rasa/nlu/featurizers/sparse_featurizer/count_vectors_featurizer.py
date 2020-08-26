@@ -425,7 +425,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             sequence_features.append(seq_vec.tocoo())
 
-            if attribute in [TEXT, RESPONSE, INTENT_RESPONSE_KEY]:
+            if attribute in [TEXT, RESPONSE]:
                 tokens_text = [" ".join(tokens)]
                 sentence_vec = self.vectorizers[attribute].transform(tokens_text)
                 sentence_vec.sort_indices()
