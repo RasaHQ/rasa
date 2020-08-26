@@ -203,7 +203,9 @@ class Trainer:
         working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
-            if isinstance(component, (extractors.extractor.EntityExtractor, IntentClassifier)):
+            if isinstance(
+                component, (extractors.extractor.EntityExtractor, IntentClassifier)
+            ):
                 working_data = working_data.without_empty_e2e_examples()
 
             logger.info(f"Starting to train component {component.name}")
@@ -417,6 +419,8 @@ class Interpreter:
         """
 
         for component in self.pipeline:
-            if not isinstance(component, (extractors.extractor.EntityExtractor, IntentClassifier)):
+            if not isinstance(
+                component, (extractors.extractor.EntityExtractor, IntentClassifier)
+            ):
                 component.process(message, attribute, **self.context)
         return message
