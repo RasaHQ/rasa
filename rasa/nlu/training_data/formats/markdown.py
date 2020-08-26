@@ -3,15 +3,17 @@ import re
 import typing
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import Any, Text, Optional, Tuple, Dict, Match
+from pathlib import Path
+from typing import Any, Text, Optional, Tuple, Dict, Union
 
+import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
 from rasa.utils.common import raise_warning
-from rasa.utils.io import encode_string
+from rasa.utils.io import encode_string, decode_string
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -28,7 +30,7 @@ LOOKUP = "lookup"
 AVAILABLE_SECTIONS = [INTENT, SYNONYM, REGEX, LOOKUP]
 MARKDOWN_SECTION_MARKERS = [f"## {s}:" for s in AVAILABLE_SECTIONS]
 
-item_regex = re.compile(r"\s*[-*+]\s*(.+)")
+item_regex = re.compile(r"\s*[-*+]\s*((?:.+\s*)*)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
 
@@ -55,7 +57,7 @@ class MarkdownReader(TrainingDataReader):
 
         s = self._strip_comments(s)
         for line in s.splitlines():
-            line = line.strip()
+            line = decode_string(line.strip())
             header = self._find_section_header(line)
             if header:
                 self._set_current_section(header[0], header[1])
@@ -213,6 +215,11 @@ class MarkdownReader(TrainingDataReader):
 
         self.current_section = section
         self.current_title = title
+
+    @staticmethod
+    def is_markdown_nlu_file(filename: Union[Text, Path]) -> bool:
+        content = io_utils.read_file(filename)
+        return any(marker in content for marker in MARKDOWN_SECTION_MARKERS)
 
 
 class MarkdownWriter(TrainingDataWriter):

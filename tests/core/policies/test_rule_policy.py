@@ -24,7 +24,7 @@ from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
     UserUttered,
-    Form,
+    ActiveLoop,
     SlotSet,
     ActionExecutionRejected,
     FormValidation,
@@ -59,12 +59,12 @@ def _form_submit_rule(
         domain=domain,
         slots=domain.slots,
         evts=[
-            Form(form_name),
+            ActiveLoop(form_name),
             # Any events in between
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             # Form runs and deactivates itself
             ActionExecuted(form_name),
-            Form(None),
+            ActiveLoop(None),
             SlotSet(REQUESTED_SLOT, None),
             ActionExecuted(submit_action_name),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -86,7 +86,7 @@ def _form_activation_rule(
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered("haha", {"name": activation_intent_name}),
             ActionExecuted(form_name),
-            Form(form_name),
+            ActiveLoop(form_name),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
         is_rule_tracker=True,
@@ -161,7 +161,7 @@ async def test_predict_form_action_if_in_form():
         evts=[
             # We are in an activate form
             ActionExecuted(form_name),
-            Form(form_name),
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User sends message as response to a requested slot
@@ -204,7 +204,7 @@ async def test_predict_form_action_if_multiple_turns():
         evts=[
             # We are in an active form
             ActionExecuted(form_name),
-            Form(form_name),
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             # User responds to slot request
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -252,7 +252,7 @@ async def test_predict_action_listen_after_form():
         evts=[
             # We are in an activate form
             ActionExecuted(form_name),
-            Form(form_name),
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User sends message as response to a requested slot
@@ -296,14 +296,14 @@ async def test_dont_predict_form_if_already_finished():
         evts=[
             # We are in an activate form
             ActionExecuted(form_name),
-            Form(form_name),
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User sends message as response to a requested slot
             UserUttered("haha", {"name": GREET_INTENT_NAME}),
             # Form is happy and deactivates itself
             ActionExecuted(form_name),
-            Form(None),
+            ActiveLoop(None),
             SlotSet(REQUESTED_SLOT, None),
             # User sends another message. Form is already done. Shouldn't get triggered
             # again
@@ -346,7 +346,7 @@ async def test_form_unhappy_path():
         evts=[
             # We are in an active form
             ActionExecuted(form_name),
-            Form(form_name),
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             # User responds to slot request
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -390,7 +390,7 @@ async def test_form_unhappy_path_from_general_rule():
     # Check that RulePolicy predicts action to handle unhappy path
     conversation_events = [
         ActionExecuted(form_name),
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(REQUESTED_SLOT, "some value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": GREET_INTENT_NAME}),
@@ -444,7 +444,7 @@ async def test_form_unhappy_path_from_in_form_rule():
         slots=domain.slots,
         evts=[
             # We are in an active form
-            Form(form_name),
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "bla"),
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -465,7 +465,7 @@ async def test_form_unhappy_path_from_in_form_rule():
     # Check that RulePolicy predicts action to handle unhappy path
     conversation_events = [
         ActionExecuted(form_name),
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(REQUESTED_SLOT, "some value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": GREET_INTENT_NAME}),
@@ -518,7 +518,7 @@ async def test_form_unhappy_path_from_story():
         evts=[
             # We are in an active form
             ActionExecuted(form_name),
-            Form(form_name),
+            ActiveLoop(form_name),
             UserUttered("haha", {"name": GREET_INTENT_NAME}),
             ActionExecuted(UTTER_GREET_ACTION),
             # After our bot says "hi", we want to run a specific action
@@ -534,7 +534,7 @@ async def test_form_unhappy_path_from_story():
     # Check that RulePolicy predicts action to handle unhappy path
     conversation_events = [
         ActionExecuted(form_name),
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(REQUESTED_SLOT, "some value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": GREET_INTENT_NAME}),
@@ -587,7 +587,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
         slots=domain.slots,
         evts=[
             # We are in an active form
-            Form(form_name),
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "bla"),
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -612,7 +612,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
     # Check that RulePolicy predicts action to handle unhappy path
     conversation_events = [
         ActionExecuted(form_name),
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(REQUESTED_SLOT, "some value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": GREET_INTENT_NAME}),
@@ -675,7 +675,7 @@ async def test_form_unhappy_path_no_validation_from_story():
         evts=[
             # We are in an active form
             ActionExecuted(form_name),
-            Form(form_name),
+            ActiveLoop(form_name),
             # When a user says "hi", and the form is unhappy,
             # we want to run a specific action
             UserUttered("haha", {"name": GREET_INTENT_NAME}),
@@ -695,7 +695,7 @@ async def test_form_unhappy_path_no_validation_from_story():
     # Check that RulePolicy predicts no validation to handle unhappy path
     conversation_events = [
         ActionExecuted(form_name),
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(REQUESTED_SLOT, "some value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": GREET_INTENT_NAME}),
@@ -739,11 +739,11 @@ async def test_form_unhappy_path_without_rule():
 
     conversation_events = [
         ActionExecuted(form_name),
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(REQUESTED_SLOT, "some value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": other_intent}),
-        Form(form_name),
+        ActiveLoop(form_name),
         ActionExecutionRejected(form_name),
     ]
 
@@ -866,14 +866,14 @@ def test_form_submit_rule():
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered("haha", {"name": GREET_INTENT_NAME}),
             ActionExecuted(form_name),
-            Form(form_name),
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some value"),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User responds and fills requested slot
             UserUttered("haha", {"name": GREET_INTENT_NAME}),
             ActionExecuted(form_name),
             # Form get's deactivated
-            Form(None),
+            ActiveLoop(None),
             SlotSet(REQUESTED_SLOT, None),
         ],
         slots=domain.slots,
@@ -933,7 +933,7 @@ def test_immediate_submit():
             SlotSet(slot, "Bruce"),
             ActionExecuted(form_name),
             SlotSet("bla", "bla"),
-            Form(None),
+            ActiveLoop(None),
             SlotSet(REQUESTED_SLOT, None),
         ],
         slots=domain.slots,
@@ -973,13 +973,13 @@ async def test_rule_policy_slot_filling_from_text(
             # User responds and fills requested slot
             UserUttered("/activate_q_form", {"name": "activate_q_form"}),
             ActionExecuted("loop_q_form"),
-            Form("loop_q_form"),
+            ActiveLoop("loop_q_form"),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered("/bla", {"name": GREET_INTENT_NAME}),
             ActionExecuted("loop_q_form"),
             SlotSet("some_slot", "/bla"),
-            Form(None),
+            ActiveLoop(None),
             SlotSet(REQUESTED_SLOT, None),
         ],
         slots=trained_rule_policy_domain.slots,

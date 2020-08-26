@@ -3,19 +3,18 @@ import json
 import logging
 import os
 import re
-from pathlib import PurePath
-from typing import Dict, Text, List, Any, Tuple
+from pathlib import PurePath, Path
+from typing import Dict, Text, List, Any, Union, Tuple
 
 import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_STORIES
-from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import UserUttered
 from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.dsl import EndToEndReader
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
-from rasa.data import MARKDOWN_FILE_EXTENSION
+from rasa.data import MARKDOWN_FILE_EXTENSIONS
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning
 from rasa.nlu.constants import TEXT
@@ -28,7 +27,7 @@ class MarkdownStoryReader(StoryReader):
 
     """
 
-    async def read_from_file(self, filename: Text) -> List[StoryStep]:
+    async def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
 
         try:
@@ -258,12 +257,12 @@ class MarkdownStoryReader(StoryReader):
         message_processed = MarkdownReader().parse_training_example(text)
 
         utterance = UserUttered(
-            message_processed.get(TEXT), None, message_processed.get("entities"),
+            message_processed.get(TEXT), None, message_processed.get("entities")
         )
         return utterance
 
     @staticmethod
-    def is_markdown_story_file(file_path: Text) -> bool:
+    def is_markdown_story_file(file_path: Union[Text, Path]) -> bool:
         """Check if file contains Core training data or rule data in Markdown format.
 
         Args:
@@ -275,7 +274,7 @@ class MarkdownStoryReader(StoryReader):
         """
         suffix = PurePath(file_path).suffix
 
-        if suffix and suffix != MARKDOWN_FILE_EXTENSION:
+        if suffix not in MARKDOWN_FILE_EXTENSIONS:
             return False
 
         try:

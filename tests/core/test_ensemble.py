@@ -16,8 +16,9 @@ from rasa.core.policies.ensemble import (
 from rasa.core.domain import Domain
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
+
 from rasa.core.training.generator import TrackerWithCachedStates
-from rasa.core.events import UserUttered, Form, Event
+from rasa.core.events import UserUttered, ActiveLoop, Event
 
 from tests.core import utilities
 from rasa.core.actions.action import (
@@ -162,7 +163,7 @@ def test_fallback_mapping_restart():
     "events",
     [
         [
-            Form("test-form"),
+            ActiveLoop("test-form"),
             ActionExecuted(ACTION_LISTEN_NAME),
             utilities.user_uttered(USER_INTENT_RESTART, 1),
         ],
@@ -222,7 +223,7 @@ def test_form_wins_over_everything_else(ensemble: SimplePolicyEnsemble):
     domain = Domain.from_yaml(domain)
 
     events = [
-        Form("test-form"),
+        ActiveLoop("test-form"),
         ActionExecuted(ACTION_LISTEN_NAME),
         utilities.user_uttered("test", 1),
     ]

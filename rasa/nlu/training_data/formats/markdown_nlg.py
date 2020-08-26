@@ -2,6 +2,7 @@ import logging
 import typing
 from typing import Any, Dict, List, Text
 
+from rasa.nlu.constants import TEXT
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
@@ -17,7 +18,7 @@ class NLGMarkdownReader(TrainingDataReader):
     """Reads markdown training data containing NLG stories and creates a TrainingData object."""
 
     def __init__(self) -> None:
-        self.stories = {}
+        self.responses = {}
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
@@ -25,13 +26,13 @@ class NLGMarkdownReader(TrainingDataReader):
 
         self.__init__()
         lines = s.splitlines()
-        self.stories = self.process_lines(lines)
-        return TrainingData(nlg_stories=self.stories)
+        self.responses = self.process_lines(lines)
+        return TrainingData(responses=self.responses)
 
     @staticmethod
-    def process_lines(lines: List[Text]) -> Dict[Text, List[Text]]:
+    def process_lines(lines: List[Text]) -> Dict[Text, List[Dict[Text, Text]]]:
 
-        stories = {}
+        responses = {}
         story_intent = None
         story_bot_utterances = []  # Keeping it a list for future additions
 
@@ -45,7 +46,7 @@ class NLGMarkdownReader(TrainingDataReader):
                 elif line.startswith("#"):
                     # reached a new story block
                     if story_intent:
-                        stories[story_intent] = story_bot_utterances
+                        responses[story_intent] = story_bot_utterances
                         story_bot_utterances = []
                         story_intent = None
 
@@ -56,7 +57,7 @@ class NLGMarkdownReader(TrainingDataReader):
                     utterance = "-".join(line.split("- ")[1:])
                     # utterance might contain escaped newlines that we want to unescape
                     utterance = utterance.replace("\\n", "\n")
-                    story_bot_utterances.append(utterance)
+                    story_bot_utterances.append({TEXT: utterance})
 
                 elif line.startswith("*"):
                     # reached a user intent
@@ -76,27 +77,20 @@ class NLGMarkdownReader(TrainingDataReader):
 
         # add last story
         if story_intent:
-            stories[story_intent] = story_bot_utterances
+            responses[story_intent] = story_bot_utterances
 
-        return stories
+        return responses
 
 
 class NLGMarkdownWriter(TrainingDataWriter):
     def dumps(self, training_data: "TrainingData") -> Text:
         """Transforms the NlG part of TrainingData object into a markdown string."""
-        md = ""
-        md += self._generate_nlg_stories(training_data)
-
-        return md
-
-    @staticmethod
-    def _generate_nlg_stories(training_data: "TrainingData"):
 
         md = ""
-        for intent, utterances in training_data.nlg_stories.items():
+        for intent, utterances in training_data.responses.items():
             md += "## \n"
             md += f"* {intent}\n"
             for utterance in utterances:
-                md += f"- {utterance}\n"
+                md += f"- {utterance.get('text')}\n"
             md += "\n"
         return md

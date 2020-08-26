@@ -40,6 +40,11 @@ from rasa.nlu.training_data.formats import MarkdownReader, MarkdownWriter
             '"from", "value": "Los Angeles"}',
             2,
         ),
+        (
+            'I want to travel to [Cairo]{"entity": "city"} \\n'
+            'Also, do you have flights to [Alexandria]{"entity": "city"}?',
+            2,
+        ),
     ],
 )
 def test_markdown_entity_regex(example: Text, expected_num_entities: int):
@@ -95,6 +100,22 @@ def test_markdown_order():
 
     training_data = r.reads(md)
     assert training_data.nlu_as_markdown() == md
+
+
+def test_markdown_unespace_tokens():
+    r = MarkdownReader()
+
+    md = """## intent:test-intent
+- Hi \\t Can you help me?\\n I want to go to [Alexandria]{"entity": "city"}
+"""
+    expected_num_entities = 1
+
+    training_data = r.reads(md)
+    assert len(training_data.training_examples) == 1
+
+    actual_example = training_data.training_examples[0]
+    assert actual_example.data["intent"] == "test-intent"
+    assert len(actual_example.data.get("entities", [])) == expected_num_entities
 
 
 def test_dump_nlu_with_responses():

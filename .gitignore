@@ -37,6 +37,7 @@ lastmile_ai/learn/plots/
 .coverage
 .coveralls.yml
 .idea/
+.venv/
 *.iml
 out/
 .vscode/
@@ -83,6 +84,7 @@ env
 docs/.docusaurus
 docs/docs/variables.json
 docs/docs/sources/
+docs/docs/reference/
 docs/docs/changelog.mdx
 
 # Local Netlify folder

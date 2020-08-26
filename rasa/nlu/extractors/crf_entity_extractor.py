@@ -286,7 +286,6 @@ class CRFEntityExtractor(EntityExtractor):
 
             if self.component_config[BILOU_FLAG]:
                 _tags = bilou_utils.ensure_consistent_bilou_tagging(_tags)
-                _tags = bilou_utils.remove_bilou_prefixes(_tags)
 
             confidences[tag_name] = _confidences
             tags[tag_name] = _tags
