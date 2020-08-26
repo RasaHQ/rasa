@@ -3,7 +3,6 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
-from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.training_data import Message, TrainingData
@@ -121,32 +120,6 @@ def _required_component_in_pipeline(
     return False
 
 
-def _check_deprecated_attributes(component: "Component") -> None:
-    """Checks that the component doesn't have deprecated attributes.
-
-    Args:
-        component: The :class:`rasa.nlu.components.Component`.
-    """
-
-    if hasattr(component, "provides"):
-        raise_warning(
-            f"'{component.name}' contains property 'provides', "
-            f"which is deprecated. There is no need to specify "
-            f"the list of attributes that a component provides.",
-            category=FutureWarning,
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-    if hasattr(component, "requires"):
-        raise_warning(
-            f"'{component.name}' contains property 'requires', "
-            f"which is deprecated. Use 'required_components()' method "
-            f"to specify which components are required to be present "
-            f"in the pipeline by this component.",
-            category=FutureWarning,
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-
-
 def validate_required_components(pipeline: List["Component"]) -> None:
     """Validates that all required components are present in the pipeline.
 
@@ -155,7 +128,6 @@ def validate_required_components(pipeline: List["Component"]) -> None:
     """
 
     for i, component in enumerate(pipeline):
-        _check_deprecated_attributes(component)
 
         missing_components = []
         for required_component in component.required_components():
