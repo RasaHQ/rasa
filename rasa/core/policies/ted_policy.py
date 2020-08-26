@@ -964,10 +964,6 @@ class TED(TransformerRasaModel):
 
         for key in batch_encoded.keys():
             batch_features.append(batch_encoded.get(key))
-            # # ignore features which are essentially empty
-            # # (where there is nothing in the domain);
-            # if not batch_encoded.get(key).shape[-1] == 0:
-            #     batch_features.append(batch_encoded.get(key))
 
         batch_features = tf.concat(batch_features, axis=-1)
 
