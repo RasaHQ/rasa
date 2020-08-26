@@ -1332,8 +1332,6 @@ def get_eval_data(
                 response_prediction_key, {}
             ).get(OPEN_UTTERANCE_PREDICTION_KEY, {})
 
-            # print(response_prediction)
-
             response_target = example.get(RESPONSE, "")
 
             complete_intent = example.get(INTENT_RESPONSE_KEY)

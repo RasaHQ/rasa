@@ -249,7 +249,7 @@ class TrainingData:
 
                 # Use the first response text as training label if needed downstream
                 for assistant_utterance in assistant_utterances:
-                    if assistant_utterance.get(TEXT, None):
+                    if assistant_utterance.get(TEXT) is not None:
                         example.set(RESPONSE, assistant_utterance.get(TEXT))
 
                 # If none of the response templates have a text attribute, then use the key as the training label
@@ -424,7 +424,7 @@ class TrainingData:
 
         # emit warnings for response intents without a response template
         for example in self.training_examples:
-            if example.get(RESPONSE_KEY) and example.get(RESPONSE, None) is None:
+            if example.get(RESPONSE_KEY) and example.get(RESPONSE) is None:
                 raise_warning(
                     f"Your training data contains an example '{example.text[:20]}...' "
                     f"for the {example.get_combined_intent_response_key()} intent. "

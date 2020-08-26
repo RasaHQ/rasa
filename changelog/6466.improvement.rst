@@ -1,6 +1,7 @@
 [Response selector](retrieval-actions.mdx) is now trained on retrieval intent labels by default instead of actual response text.
 
-If you want to use the actual response text for training, then use ``train_on_text=True`` in the configuration of ``ResponseSelector``
-You can also now have multiple response templates for a single sub-intent of a retrieval intent. The first response template
+If you want to use the actual response text for training, then use ``train_on_text=True`` in the configuration of ``ResponseSelector``.
+You can now also have multiple response templates for a single sub-intent of a retrieval intent. The first response template
 containing the text attribute is picked for training(if ``train_on_text=True``) and a random template is picked for bot's utterance just as how other ``utter_`` templates are picked.
 All response selector related evaluation artifacts - ``report.json, successess.json, errors.json, confusion_matrix.png`` now use the sub-intent of the retrieval intent instead of the actual response text.
+An example containing how to work with

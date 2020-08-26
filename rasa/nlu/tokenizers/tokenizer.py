@@ -107,7 +107,7 @@ class Tokenizer(Component):
         tokens = self.tokenize(message, TEXT)
         message.set(TOKENS_NAMES[TEXT], tokens)
 
-    def _tokenize_on_split_symbol(self, text: TEXT) -> List[TEXT]:
+    def _tokenize_on_split_symbol(self, text: Text) -> List[Text]:
 
         words = (
             text.split(self.intent_split_symbol)
