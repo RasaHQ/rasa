@@ -22,7 +22,7 @@ from rasa.core.interpreter import (
     RegexInterpreter,
     RasaNLUInterpreter,
 )
-from rasa.core.constants import USER, PREVIOUS_ACTION, FORM, SLOTS
+from rasa.core.constants import USER, PREVIOUS_ACTION, ACTIVE_LOOP, SLOTS
 from rasa.nlu.constants import (
     TEXT,
     INTENT,
@@ -360,7 +360,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         slot_values = np.hstack(slot_values)
         binary_features[: len(self.slot_states)] = slot_values
         # featurize forms
-        form = state.get(FORM, {})
+        form = state.get(ACTIVE_LOOP, {})
         form_values = np.zeros((len(self.form_states)))
         form_values[self.form_states.index(form.get("name"))] += 1
         binary_features[

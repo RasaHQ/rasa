@@ -5,7 +5,7 @@ import logging
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.core.constants import REQUESTED_SLOT, UTTER_PREFIX
+from rasa.core.constants import REQUESTED_SLOT, UTTER_PREFIX, NAME, VALIDATE
 from rasa.core.domain import Domain
 
 from rasa.core.actions.action import (
@@ -114,7 +114,7 @@ class FormAction(LoopAction):
         mapping_intents = requested_slot_mapping.get("intent", [])
         mapping_not_intents = requested_slot_mapping.get("not_intent", [])
 
-        intent = tracker.latest_message.intent.get("name")
+        intent = tracker.latest_message.intent.get(NAME)
 
         intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
 
@@ -224,7 +224,7 @@ class FormAction(LoopAction):
                     # check whether the slot should be
                     # filled from trigger intent mapping
                     should_fill_trigger_slot = (
-                        tracker.active_loop.get("name") != self.name()
+                        tracker.active_loop.get(NAME) != self.name()
                         and other_slot_mapping["type"]
                         == str(SlotMapping.FROM_TRIGGER_INTENT)
                         and self.intent_is_desired(other_slot_mapping, tracker)
@@ -517,7 +517,7 @@ class FormAction(LoopAction):
         # no active_loop means that it is called during activation
         need_validation = not tracker.active_loop or (
             tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
-            and tracker.active_loop.get("validate", True)
+            and tracker.active_loop.get(VALIDATE, True)
         )
         if need_validation:
             logger.debug(f"Validating user input '{tracker.latest_message}'.")

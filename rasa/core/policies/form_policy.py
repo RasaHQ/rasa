@@ -9,7 +9,13 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import FORM_POLICY_PRIORITY, PREVIOUS_ACTION, FORM
+from rasa.core.constants import (
+    FORM_POLICY_PRIORITY,
+    PREVIOUS_ACTION,
+    ACTIVE_LOOP,
+    REJECTED,
+    NAME,
+)
 from rasa.nlu.constants import ACTION_NAME
 
 from rasa.utils import common as common_utils
@@ -45,7 +51,7 @@ class FormPolicy(MemoizationPolicy):
 
     @staticmethod
     def _get_active_form_name(state: State) -> Optional[Text]:
-        return state.get(FORM, {}).get("name")
+        return state.get(ACTIVE_LOOP, {}).get(NAME)
 
     @staticmethod
     def _prev_action_listen_in_state(state: State) -> bool:
@@ -105,8 +111,7 @@ class FormPolicy(MemoizationPolicy):
         memorized_form = self.recall(states, tracker, domain)
 
         state_is_unhappy = (
-            memorized_form is not None
-            and memorized_form == tracker.active_loop.get("name")
+            memorized_form is not None and memorized_form == tracker.active_loop_name
         )
 
         if state_is_unhappy:
@@ -128,25 +133,23 @@ class FormPolicy(MemoizationPolicy):
         """Predicts the corresponding form action if there is an active form"""
         result = self._default_predictions(domain)
 
-        if tracker.active_loop.get("name"):
+        if tracker.active_loop_name:
             logger.debug(
-                "There is an active form '{}'".format(tracker.active_loop["name"])
+                "There is an active form '{}'".format(tracker.active_loop_name)
             )
-            if tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME:
+            if tracker.latest_action_name == ACTION_LISTEN_NAME:
                 # predict form action after user utterance
 
-                if tracker.active_loop.get("rejected"):
+                if tracker.active_loop.get(REJECTED):
                     if self.state_is_unhappy(tracker, domain):
                         tracker.update(FormValidation(False))
                         return result
 
                 result = self._prediction_result(
-                    tracker.active_loop["name"], tracker, domain
+                    tracker.active_loop_name, tracker, domain
                 )
 
-            elif tracker.latest_action.get(ACTION_NAME) == tracker.active_loop.get(
-                "name"
-            ):
+            elif tracker.latest_action_name == tracker.active_loop_name:
                 # predict action_listen after form action
                 result = self._prediction_result(ACTION_LISTEN_NAME, tracker, domain)
 

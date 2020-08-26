@@ -35,10 +35,11 @@ from rasa.core.constants import (
     SLOT_LISTED_ITEMS,
     USER,
     PREVIOUS_ACTION,
-    FORM,
+    ACTIVE_LOOP,
     SLOTS,
     SHOULD_NOT_BE_SET,
     DEFAULT_INTENTS,
+    NAME,
 )
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
@@ -49,7 +50,6 @@ from rasa.nlu.constants import ENTITIES
 logger = logging.getLogger(__name__)
 
 PREV_PREFIX = "prev_"
-ACTIVE_FORM_PREFIX = "active_form_"
 
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
 SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
@@ -755,13 +755,16 @@ class Domain:
             return {}
 
     @staticmethod
-    def _get_active_form(
+    def _get_active_loop_states(
         tracker: "DialogueStateTracker",
     ) -> Dict[Text, Dict[Text, Text]]:
-        """Turn tracker's active form into a state name."""
-        form = tracker.active_loop.get("name")
-        if form is not None:
-            return {FORM: {"name": form}}
+        """Turn tracker's active loop into a state name."""
+
+        # we don't use tracker.active_loop_name
+        # because we need to keep should_not_be_set
+        active_loop = tracker.active_loop.get(NAME)
+        if active_loop is not None:
+            return {ACTIVE_LOOP: {NAME: active_loop}}
         else:
             return {}
 
@@ -770,7 +773,7 @@ class Domain:
         state_dict = self._get_user_states(tracker)
         state_dict.update(self._get_slots_states(tracker))
         state_dict.update(self._get_prev_action_states(tracker))
-        state_dict.update(self._get_active_form(tracker))
+        state_dict.update(self._get_active_loop_states(tracker))
         return state_dict
 
     def states_for_tracker_history(

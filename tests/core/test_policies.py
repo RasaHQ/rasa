@@ -17,7 +17,6 @@ from rasa.core.actions.action import (
 from rasa.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
-    FORM,
     PREVIOUS_ACTION,
     USER,
 )

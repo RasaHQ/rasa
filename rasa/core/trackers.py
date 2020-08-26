@@ -14,7 +14,6 @@ from typing import (
     Deque,
     Iterable,
     Union,
-    Tuple,
 )
 
 from rasa.nlu.constants import (
@@ -24,7 +23,14 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ACTION_NAME,
 )
-from rasa.core.constants import SHOULD_NOT_BE_SET
+from rasa.core.constants import (
+    SHOULD_NOT_BE_SET,
+    ACTIVE_LOOP,
+    NAME,
+    VALIDATE,
+    REJECTED,
+    TRIGGER_MESSAGE,
+)
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
 from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
@@ -46,9 +52,6 @@ from rasa.core.slots import Slot
 from rasa.utils import common as common_utils
 
 logger = logging.getLogger(__name__)
-
-
-ACTIVE_LOOP_KEY = "active_loop"
 
 
 class EventVerbosity(Enum):
@@ -190,7 +193,7 @@ class DialogueStateTracker:
             "paused": self.is_paused(),
             "events": _events,
             "latest_input_channel": self.get_latest_input_channel(),
-            ACTIVE_LOOP_KEY: self.active_loop,
+            ACTIVE_LOOP: self.active_loop,
             "latest_action": self.latest_action,
         }
 
@@ -232,10 +235,10 @@ class DialogueStateTracker:
         """
         if loop_name is not None:
             self.active_loop = {
-                "name": loop_name,
-                "validate": True,
-                "rejected": False,
-                "trigger_message": self.latest_message.parse_data,
+                NAME: loop_name,
+                VALIDATE: True,
+                REJECTED: False,
+                TRIGGER_MESSAGE: self.latest_message.parse_data,
             }
         else:
             self.active_loop = {}
@@ -251,25 +254,25 @@ class DialogueStateTracker:
 
     def set_form_validation(self, validate: bool) -> None:
         """Toggle form validation"""
-        self.active_loop["validate"] = validate
+        self.active_loop[VALIDATE] = validate
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active loop that it was rejected"""
-        if action_name == self.active_loop.get("name"):
-            self.active_loop["rejected"] = True
+        if action_name == self.active_loop_name:
+            self.active_loop[REJECTED] = True
 
     def set_latest_action(self, action: Dict[Text, Text]) -> None:
         """Set latest action name
             and reset form validation and rejection parameters
         """
         self.latest_action = action
-        if self.active_loop.get("name"):
+        if self.active_loop_name:
             # reset form validation if some loop is active
-            self.active_loop["validate"] = True
+            self.active_loop[VALIDATE] = True
 
-        if action.get(ACTION_NAME) == self.active_loop.get("name"):
+        if action.get(ACTION_NAME) == self.active_loop_name:
             # reset loop rejection if it was predicted again
-            self.active_loop["rejected"] = False
+            self.active_loop[REJECTED] = False
 
     def current_slot_values(self) -> Dict[Text, Any]:
         """Return the currently set values of the slots"""
@@ -694,15 +697,16 @@ class DialogueStateTracker:
         ]
         return new_slots
 
+    @property
     def active_loop_name(self) -> Optional[Text]:
         """Get the name of the currently active loop.
 
         Returns: `None` if no active loop or the name of the currently active loop.
         """
-        if not self.active_loop or self.active_loop.get("name") == SHOULD_NOT_BE_SET:
-            return None
+        if not self.active_loop or self.active_loop.get(NAME) == SHOULD_NOT_BE_SET:
+            return
 
-        return self.active_loop.get("name")
+        return self.active_loop.get(NAME)
 
     @property
     def latest_action_name(self) -> Optional[Text]:

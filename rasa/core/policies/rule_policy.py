@@ -20,9 +20,11 @@ from rasa.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
-    FORM,
+    ACTIVE_LOOP,
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
+    NAME,
+    REJECTED,
 )
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -146,7 +148,13 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _get_active_loop_name(state: State) -> Optional[Text]:
-        return state.get(FORM, {}).get("name")
+        if (
+            not state.get(ACTIVE_LOOP)
+            or state[ACTIVE_LOOP].get(NAME) == SHOULD_NOT_BE_SET
+        ):
+            return
+
+        return state[ACTIVE_LOOP].get(NAME)
 
     @staticmethod
     def _prev_action_listen_in_state(state: State) -> bool:
@@ -207,7 +215,7 @@ class RulePolicy(MemoizationPolicy):
             active_loop = self._get_active_loop_name(states[-1])
             # even if there are two identical feature keys
             # their loop will be the same
-            if active_loop and active_loop != SHOULD_NOT_BE_SET:
+            if active_loop:
                 states = self._states_for_unhappy_loop_predictions(states)
                 feature_key = self._create_feature_key(states)
                 if not feature_key:
@@ -359,7 +367,7 @@ class RulePolicy(MemoizationPolicy):
             return None
 
         default_action_name = DEFAULT_ACTION_MAPPINGS.get(
-            tracker.latest_message.intent.get("name")
+            tracker.latest_message.intent.get(NAME)
         )
 
         if default_action_name:
@@ -372,8 +380,8 @@ class RulePolicy(MemoizationPolicy):
         tracker: DialogueStateTracker,
     ) -> Optional[Text]:
 
-        active_loop_name = tracker.active_loop_name()
-        active_loop_rejected = tracker.active_loop.get("rejected")
+        active_loop_name = tracker.active_loop_name
+        active_loop_rejected = tracker.active_loop.get(REJECTED)
         should_predict_loop = (
             active_loop_name
             and not active_loop_rejected
@@ -414,7 +422,7 @@ class RulePolicy(MemoizationPolicy):
             best_rule_key = max(rule_keys, key=len)
             predicted_action_name = self.lookup[RULES].get(best_rule_key)
 
-        active_loop_name = tracker.active_loop_name()
+        active_loop_name = tracker.active_loop_name
         if active_loop_name:
             # find rules for unhappy path of the loop
             loop_unhappy_keys = self._get_possible_keys(
