@@ -81,23 +81,23 @@ def test_get_core_nlu_directories_with_none():
     assert all(not os.listdir(directory) for directory in directories)
 
 
-def test_same_file_names_get_resolved(tmpdir):
+def test_same_file_names_get_resolved(tmp_path):
     # makes sure the resolution properly handles if there are two files with
     # with the same name in different directories
 
-    tmpdir.join("one").mkdir()
-    tmpdir.join("two").mkdir()
-    data_dir_one = os.path.join(tmpdir.join("one").join("stories.md").strpath)
-    data_dir_two = os.path.join(tmpdir.join("two").join("stories.md").strpath)
+    (tmp_path / "one").mkdir()
+    (tmp_path / "two").mkdir()
+    data_dir_one = str(tmp_path / "one" / "stories.md")
+    data_dir_two = str(tmp_path / "two" / "stories.md")
     shutil.copy2(DEFAULT_STORIES_FILE, data_dir_one)
     shutil.copy2(DEFAULT_STORIES_FILE, data_dir_two)
 
-    nlu_dir_one = os.path.join(tmpdir.join("one").join("nlu.yml").strpath)
-    nlu_dir_two = os.path.join(tmpdir.join("two").join("nlu.yml").strpath)
+    nlu_dir_one = str(tmp_path / "one" / "nlu.yml")
+    nlu_dir_two = str(tmp_path / "two" / "nlu.yml")
     shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_one)
     shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_two)
 
-    core_directory, nlu_directory = data.get_core_nlu_directories([tmpdir.strpath])
+    core_directory, nlu_directory = data.get_core_nlu_directories([str(tmp_path)])
 
     nlu_files = os.listdir(nlu_directory)
 

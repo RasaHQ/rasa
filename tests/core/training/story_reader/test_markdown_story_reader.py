@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Dict, Text
 
 import pytest
@@ -20,15 +21,17 @@ from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryR
 from rasa.core.training.structures import Story
 
 
-async def test_persist_and_read_test_story_graph(tmpdir, default_domain: Domain):
+async def test_persist_and_read_test_story_graph(
+    tmp_path: Path, default_domain: Domain
+):
     graph = await training.extract_story_graph(
         "data/test_stories/stories.md", default_domain
     )
-    out_path = tmpdir.join("persisted_story.md")
-    rasa.utils.io.write_text_file(graph.as_story_string(), out_path.strpath)
+    out_path = tmp_path / "persisted_story.md"
+    rasa.utils.io.write_text_file(graph.as_story_string(), str(out_path))
 
     recovered_trackers = await training.load_data(
-        out_path.strpath,
+        str(out_path),
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
@@ -49,15 +52,15 @@ async def test_persist_and_read_test_story_graph(tmpdir, default_domain: Domain)
         existing_stories.discard(story_str)
 
 
-async def test_persist_and_read_test_story(tmpdir, default_domain: Domain):
+async def test_persist_and_read_test_story(tmp_path: Path, default_domain: Domain):
     graph = await training.extract_story_graph(
         "data/test_stories/stories.md", default_domain
     )
-    out_path = tmpdir.join("persisted_story.md")
-    Story(graph.story_steps).dump_to_file(out_path.strpath)
+    out_path = tmp_path / "persisted_story.md"
+    Story(graph.story_steps).dump_to_file(str(out_path))
 
     recovered_trackers = await training.load_data(
-        out_path.strpath,
+        str(out_path),
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,

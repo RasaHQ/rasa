@@ -827,7 +827,9 @@ def create_app(
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = await test(test_data, app.agent, e2e=use_e2e)
+            evaluation = await test(
+                test_data, app.agent, e2e=use_e2e, disable_plotting=True
+            )
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -869,7 +871,7 @@ def create_app(
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
         try:
-            evaluation = run_evaluation(data_path, nlu_model)
+            evaluation = run_evaluation(data_path, nlu_model, disable_plotting=True)
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())

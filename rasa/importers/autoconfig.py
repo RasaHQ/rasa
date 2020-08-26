@@ -127,11 +127,6 @@ def _dump_config(
                               needs to be added to the config file.
     """
 
-    if (
-        os.path.abspath(config_file_path)
-        == "/Users/tmbo/lastmile/bot-ai/rasa/rasa/cli/initial_project/config.yml"
-    ):
-        raise Exception("NOOOOOOO!")
     config_as_expected = _is_config_file_as_expected(
         config_file_path, missing_keys, auto_configured_keys
     )

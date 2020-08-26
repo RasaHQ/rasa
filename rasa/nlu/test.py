@@ -608,17 +608,13 @@ def evaluate_intents(
         if isinstance(report, str):
             log_evaluation_table(report, precision, f1, accuracy)
 
-    if successes:
-        successes_filename = "intent_successes.json"
-        if output_directory:
-            successes_filename = os.path.join(output_directory, successes_filename)
+    if successes and output_directory:
+        successes_filename = os.path.join(output_directory, "intent_successes.json")
         # save classified samples to file for debugging
         write_intent_successes(intent_results, successes_filename)
 
-    if errors:
-        errors_filename = "intent_errors.json"
-        if output_directory:
-            errors_filename = os.path.join(output_directory, errors_filename)
+    if errors and output_directory:
+        errors_filename = os.path.join(output_directory, "intent_errors.json")
         # log and save misclassified samples to file for debugging
         write_intent_errors(intent_results, errors_filename)
 

@@ -635,7 +635,7 @@ async def test(
         include_report=False,
     )
 
-    if not disable_plotting:
+    if not disable_plotting and out_directory:
         _plot_story_evaluation(
             evaluation_store.action_targets,
             evaluation_store.action_predictions,
