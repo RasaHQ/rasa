@@ -204,10 +204,9 @@ def test_not_importing_not_relevant_additional_files(tmp_path: Path):
     )
 
     not_relevant_file1 = tmp_path / "data" / "another directory" / "file.yml"
-    not_relevant_file1.parent.mkdir()
+    not_relevant_file1.parent.mkdir(parents=True)
     rasa.utils.io.write_text_file("", not_relevant_file1)
     not_relevant_file2 = tmp_path / "directory" / "another_file.yml"
-    not_relevant_file2.parent.mkdir()
     rasa.utils.io.write_text_file("", not_relevant_file2)
 
     assert not selector.is_imported(str(not_relevant_file1))
@@ -249,7 +248,7 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
     story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.md"
-    story_file.parent.mkdir()
+    story_file.parent.mkdir(parents=True)
     rasa.utils.io.write_text_file(
         """
         ## story
@@ -262,9 +261,8 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     story_test_file = (
         tmp_path / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / test_stories_filename
     )
-    story_test_file.parent.mkdir()
+    story_test_file.parent.mkdir(parents=True)
     rasa.utils.io.write_text_file(test_story, story_test_file)
-    story_test_file.write(test_story, ensure=True)
 
     selector = MultiProjectImporter(config_path)
 
@@ -289,13 +287,13 @@ def test_not_importing_e2e_conversation_tests_in_project(tmp_path: Path,):
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
     story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.md"
-    story_file.parent.mkdir()
+    story_file.parent.mkdir(parents=True)
     rasa.utils.io.write_text_file("""## story""", story_file)
 
     story_test_file = (
         tmp_path / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "test_stories.yml"
     )
-    story_test_file.parent.mkdir()
+    story_test_file.parent.mkdir(parents=True)
     rasa.utils.io.write_text_file("""stories:""", story_test_file)
 
     selector = MultiProjectImporter(config_path)
