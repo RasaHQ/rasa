@@ -17,7 +17,7 @@ from rasa.core.events import (
     Restarted,
     Event,
     SlotSet,
-    Form,
+    ActiveLoop,
 )
 from rasa.core.slots import Slot
 from rasa.core.trackers import DialogueStateTracker
@@ -593,7 +593,7 @@ class TrainingDataGenerator:
                 if step.is_rule:
                     # TODO: this is a hack to make a rule know
                     #  that slot or form should not be set
-                    if isinstance(event, Form) and event.name is None:
+                    if isinstance(event, ActiveLoop) and event.name is None:
                         event.name = "None"
                     if isinstance(event, SlotSet) and event.value is None:
                         event.value = "None"

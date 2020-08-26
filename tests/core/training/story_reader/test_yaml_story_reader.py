@@ -8,7 +8,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.training import loading
-from rasa.core.events import ActionExecuted, UserUttered, SlotSet, Form
+from rasa.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 from rasa.core.training.structures import StoryStep
@@ -126,8 +126,8 @@ async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
             remove_duplicates=False,
         )
 
-    # one for leading slash, one for missing version
-    assert len(record) == 2
+    # one for leading slash
+    assert len(record) == 1
 
     assert tracker[0].latest_message == UserUttered("simple", {"name": "simple"})
 
@@ -196,7 +196,7 @@ def test_rule_with_condition(rule_steps_without_stories: List[StoryStep]):
     rule = rule_steps_without_stories[0]
     assert rule.block_name == "Rule with condition"
     assert rule.events == [
-        Form("loop_q_form"),
+        ActiveLoop("loop_q_form"),
         SlotSet("requested_slot", "some_slot"),
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
         UserUttered(
@@ -216,7 +216,7 @@ def test_rule_without_condition(rule_steps_without_stories: List[StoryStep]):
         UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
         ActionExecuted("utter_explain_some_slot"),
         ActionExecuted("loop_q_form"),
-        Form("loop_q_form"),
+        ActiveLoop("loop_q_form"),
     ]
 
 
@@ -267,8 +267,8 @@ async def test_warning_if_intent_not_in_domain(default_domain: Domain):
     with pytest.warns(UserWarning) as record:
         reader.read_from_parsed_yaml(yaml_content)
 
-    # one for missing intent, one for missing version
-    assert len(record) == 2
+    # one for missing intent
+    assert len(record) == 1
 
 
 async def test_no_warning_if_intent_in_domain(default_domain: Domain):

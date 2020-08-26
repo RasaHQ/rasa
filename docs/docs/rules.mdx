@@ -31,7 +31,7 @@ real user behavior.
 Before you start writing rules, you have to make sure that the
 [Rule Policy](./policies.mdx#rule-policy) is added to your model configuration:
 
-```yaml
+```yaml-rasa
 policies:
 - ... # Other policies
 - name: RulePolicy
@@ -43,7 +43,7 @@ To indicate that a rule can apply at any point in a conversation, start with the
 intent which starts the conversation and then add the actions which your assistant
 should perform in response to that.
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Say `hello` whenever the user sends a message with intent `greet`
   steps:
@@ -59,7 +59,7 @@ to a send a message with an intent `greet` in the middle of an ongoing conversat
 To write a rule which only applies at the beginning of a conversation, add a
 `conversation_start: True` to your rule:
 
-```yaml
+```yaml-rasa
 rules:
 
 - rule: Say `hello` when the user starts a conversation with intent `greet`
@@ -78,7 +78,7 @@ Rules can describe requirements which have to be fulfilled for the rule to be
 applicable. To do so, add any information about the prior conversation, under the
 `condition`:
 
-```yaml
+```yaml-rasa
 rules:
 
 - rule: Only say `hello` when the user provided a name
@@ -94,7 +94,7 @@ rules:
 
 By default, rules will wait for the next user message when finished with the last step:
 
-```yaml
+```yaml-rasa
 rules:
 
 - rule: Rule which will wait for user message when it was applied
@@ -110,7 +110,7 @@ If you want to hand over to another story or rule, add `wait_for_user_input: Fal
 to your rule.intent This indicates that the assistant should execute another action
 before waiting for more user input.
 
-```yaml
+```yaml-rasa
 rules:
 
 - rule: Rule which will not wait for user message once it was applied
@@ -143,7 +143,7 @@ To map an intent to a certain action, you need to define a
 The following example always responds with an action `utter_greet` in case the user
 greets the assistant.
 
-```yaml
+```yaml-rasa
 rules:
 
 - rule: Say `hello` whenever the user sends a message with intent `greet`

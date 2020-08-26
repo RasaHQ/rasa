@@ -48,6 +48,10 @@ DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.yml"
 pytest_plugins = ["pytester"]
 
 
+# these tests are run separately
+collect_ignore_glob = ["docs/*.py"]
+
+
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture

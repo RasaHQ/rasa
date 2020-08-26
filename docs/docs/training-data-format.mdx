@@ -54,7 +54,7 @@ Currently, the latest training data format specification for Rasa 2.x is 2.0.
 
 Here's a short example which keeps all training data in a single file:
 
-```yaml
+```yaml-rasa
 version: "2.0"
 
 stories:
@@ -74,24 +74,26 @@ rules:
 nlu:
 - intent: greet
   examples: |
-  - Hey
-  - Hi
-  - hey there [Sara](name)
+    - Hey
+    - Hi
+    - hey there [Sara](name)
 
 - intent: faq/language
   examples: |
-  - What language do you speak?
-  - Do you only handle english?
+    - What language do you speak?
+    - Do you only handle english?
 
 e2e_tests:
-- user: |
-    hey
-  intent: greet
-- action: utter_greet
-- user: |
-    what language do you speak
-  intent: faq/language
-- action: respond_faq
+- story: greet and ask language
+- steps: 
+  - user: |
+      hey
+    intent: greet
+  - action: utter_greet
+  - user: |
+      what language do you speak
+    intent: faq/language
+  - action: respond_faq
 ```
 
 
@@ -109,38 +111,42 @@ NLU training data is defined under the `nlu` key. Items that can be added under 
 - [Training examples](#training-examples) grouped by user intent e.g.
   optionally with annotated [entities](#entities)
 
-```yaml
+```yaml-rasa
+nlu:
 - intent: check_balance
   examples: |
-  - What's my [credit](account) balance?
-  - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
+    - What's my [credit](account) balance?
+    - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
 ```
 
 - [Synonyms](#synonyms)
 
-```yaml
+```yaml-rasa
+nlu: 
 - synonym: credit
   examples: |
-  - credit card account
-  - credit account
+    - credit card account
+    - credit account
 ```
 
 - [Regular expressions](#regular-expression-features)
 
-```yaml
+```yaml-rasa
+nlu:
 - regex: account_number
   examples: |
-  - \d{10:12}
+    - \d{10:12}
 ```
 
 - [Lookup tables](#lookup-tables)
 
-```yaml
+```yaml-rasa
+nlu:
 - lookup: banks
   examples: |
-  - JPMC
-  - Comerica
-  - Bank of America
+    - JPMC
+    - Comerica
+    - Bank of America
 ```
 
 ### Training Examples
@@ -148,19 +154,19 @@ NLU training data is defined under the `nlu` key. Items that can be added under 
 Training examples are grouped by [intent](glossary.mdx#intent) and listed under the
 `examples` key. Usually, you'll list one example per line as follows:
 
-```yaml
+```yaml-rasa
 nlu:
 - intent: greet
   examples: |
-  - hey
-  - hi
-  - whats up
+    - hey
+    - hi
+    - whats up
 ```
 
 However, it's also possible to use an extended format if you have a custom NLU component and need metadata for your examples:
 
 
-```yaml
+```yaml-rasa
 nlu:
 - intent: greet
   examples: 
@@ -172,7 +178,7 @@ nlu:
       hey there!
 ```
 
-The `metadata` key can contain arbitrary key-value data that stays with an example and is accessible by the componenets in the NLU pipeline. In the example above, the sentiment of 
+The `metadata` key can contain arbitrary key-value data that stays with an example and is accessible by the components in the NLU pipeline. In the example above, the sentiment of 
 the example could be used by a custom component in the pipeline for sentiment analysis.
 
 ### Entities
@@ -182,9 +188,21 @@ the example could be used by a custom component in the pipeline for sentiment an
 Entities are annotated in training examples with minimally the entity's name. 
 In addition to the entity name, you can annotate an entity with synonyms, roles, or groups.
 
-The syntax for annotating an entity is: 
+In training examples, entity annotation would look like this:
 
-```yaml
+```yaml-rasa
+nlu:
+- intent: check_balance
+  examples: |
+    - how much do I have on my [savings]("account") account
+    - how much money is in my [checking]{"entity": "account"} account
+    - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
+
+```
+
+The full possible syntax for annotating an entity is: 
+
+```text
 [<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}
 ```
 
@@ -193,18 +211,6 @@ The `value` keyword refers to synonyms, which are explained in the
 following section. To understand what the labels `role` and `group` are
 for, see the section on [entity roles and groups](nlu-training-data.mdx#entities-roles-and-groups).
 
-In training examples, entity annotation would look like this:
-
-```yaml
-nlu:
-- intent: check_balance
-  examples: |
-  - how much do I have on my [savings]("account") account
-  - how much money is in my [checking]{"entity": "account"} account
-  - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
-
-```
-
 
 ### Synonyms
 
@@ -212,22 +218,23 @@ Synonyms provide a way to normalize your training data by mapping an
 extracted entity to a value other than the literal text extracted.
 Synonyms can be defined in the format:
 
-```yaml
+```yaml-rasa
+nlu:
 - synonym: credit
   examples: |
-  - credit card account
-  - credit account
+    - credit card account
+    - credit account
 ```
 
 Synonyms can also be defined in-line in your training examples by
 specifying the `value` of the entity:
 
-```yaml
+```yaml-rasa
 nlu:
 - intent: check_balance
   examples: |
-  - how much do I have on my [credit card account]{"entity": "account", "value": "credit"}
-  - how much do I owe on my [credit account]{"entity": "account", "value": "credit"}
+    - how much do I have on my [credit card account]{"entity": "account", "value": "credit"}
+    - how much do I owe on my [credit account]{"entity": "account", "value": "credit"}
 ```
 
 To use the synonyms defined in your training data, you need to make sure the
@@ -268,15 +275,16 @@ Currently, all intent classifiers make use of available regex features.
 
 The name of a regex in this case is a human readable description. It can help you remember what a regex is used for, and it is the title of the corresponding pattern feature. It does not have to match any intent or entity name. A regex for greeting might look like this: 
 
-```yaml
+```yaml-rasa
+nlu:
 - regex: greet
   examples: |
-  - hey[^\\s]*
+    - hey[^\\s]*
 ```
 
 The intent being matched could be `greet`,`say_hi`, `hallo` or anything else.
 
-Try to create your regular epressions in a way that they match as few
+Try to create your regular expressions in a way that they match as few
 words as possible. E.g. using `hey[^\\s]*` instead of `hey.*`, as the
 later one might match the whole message whereas the first one only
 matches a single word.
@@ -305,10 +313,11 @@ If your entity has a deterministic structure (like an account number), you can u
 In both cases, the format for defining the regex is the same.
 For example, a regex for extracting a bank account number that is 10-12 digits long mightlook like this:
 
-```yaml
+```yaml-rasa
+nlu:
 - regex: account_number
   examples: |
-  - \d{10:12}
+    - \d{10:12}
 ```
 
 
@@ -326,11 +335,12 @@ you must provide example inputs that include that regular expression!
 Lookup tables provide a convenient way to supply a list of entity
 examples. The format is as follows:
 
-```yaml
+```yaml-rasa
+nlu:
 - lookup: banks
   examples: |
-  - JPMC
-  - Bank of America
+    - JPMC
+    - Bank of America
 ```
 
 The name of the lookup table is subject to the same constraints as the
@@ -385,7 +395,7 @@ Stories are composed of:
 
 For example:
 
-```yaml
+```yaml-rasa
 stories:
 - story: Greet the user
   metadata:
@@ -420,17 +430,20 @@ messages the users can send to mean the same thing.
 
 User messages follow the format:
 
-```yaml
+```yaml-rasa
+stories: 
+- story: user message structure
   steps:
-    - intent: <intent name>  # Required
-      entities: # Optional
-      - <entity_name>: <entity value> 
+    - intent: intent_name  # Required
+      entities:  # Optional
+      - entity_name: entity_value
 ```
 
 For example, to represent the sentence
 `I want to check my credit balance`, where `credit` is an entity:
 
-```yaml {3-5}
+```yaml-rasa {4-6}
+stories:
 - story: story with entities
   steps:
   - intent: account_balance
@@ -455,7 +468,8 @@ While writing stories, you will encounter three types of actions:
 1. [**Responses**](domain.mdx#responses): start with `utter_` and
    send a specific message to the user. e.g.
 
-```yaml {4}
+```yaml-rasa {5}
+stories:
 - story: story with a response
   steps:
   - intent: greet
@@ -465,7 +479,8 @@ While writing stories, you will encounter three types of actions:
 2. [**Retrieval actions**](retrieval-actions.mdx): start with `respond_`
    and send a message selected by a retrieval model. e.g.
 
-```yaml {4}
+```yaml-rasa {5}
+stories:
 - story: story with a retrieval action
   steps:
   - intent: faq
@@ -475,7 +490,8 @@ While writing stories, you will encounter three types of actions:
 3. [**Custom actions**](custom-actions.mdx): start with `action_`, run
    arbitrary code and send any number of messages (or none).
 
-```yaml {4}
+```yaml-rasa {5}
+stories:
 - story: story with a custom action
   steps:
   - intent: feedback
@@ -495,11 +511,12 @@ generalize to unseen conversation sequences.
 As a step in a story, a form takes the following basic format:
 
 
-```yaml
+```yaml-rasa
+stories:
 - story: story with a form
   steps:
   - intent: find_restaurant
-  - action: restaurant_form         # Activate the form
+  - action: restaurant_form                # Activate the form
   - active_loop: restaurant_form           # This form is currently active
   - active_loop: null                      # Form complete, no form is active
   - action: utter_restaurant_found
@@ -516,8 +533,9 @@ A form can be interrupted and remain active; in this case the interruption shoul
 `action: <form to activate>` step and be followed by the `active_loop: <active form>` step. 
 An interruption of a form could look like this:
 
-```yaml
-- rule: interrupted food
+```yaml-rasa
+stories:
+- story: interrupted food
   steps:
     - intent: request_restaurant
     - action: restaurant_form
@@ -538,7 +556,8 @@ slot name and optionally the slot's value.
 Slots are **set** by entities or by custom actions and **referenced**
 by stories in `slot_was_set` steps. For example:
 
-```yaml {4-5}
+```yaml-rasa {5-6}
+stories:
 - story: story with a slot
   steps:
   - intent: celebrate_bot
@@ -555,7 +574,8 @@ Whether or not you need to include the slot's value depends on the
 influence the dialogue. If the value doesn't matter, list only
 the slot's name:
 
-```yaml {4-5}
+```yaml-rasa {5-6}
+stories:
 - story: story with a slot
   steps:
   - intent: greet
@@ -583,7 +603,8 @@ will be connected to each other story that starts with the checkpoint of the
 same name when the model is trained. Here is an example of a story that ends
 with a checkpoint, and one that starts with the same checkpoint:
 
-```yaml
+```yaml-rasa
+stories:
 - story: story_with_a_checkpoint_1
   steps:
   - intent: greet
@@ -600,7 +621,8 @@ with a checkpoint, and one that starts with the same checkpoint:
 Checkpoints at the beginning of stories can also be conditional on
 slots being set, for example:
 
-```yaml {5-7}
+```yaml-rasa {6-8}
+stories:
 - story: story_with_a_conditional_checkpoint
   steps:
   - checkpoint: greet_checkpoint
@@ -628,7 +650,8 @@ same way. Stories with `or` steps will be converted into multiple
 separate stories at training time. For example, the following story would be converted
 to two stories at training time:
 
-```yaml {5-7}
+```yaml-rasa {6-8}
+stories:
 - story: story with OR
   steps:
   - intent: signup_newsletter
@@ -655,7 +678,7 @@ under which the rule should apply.
 
 A rule that with a condition looks like this:
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Only say `hey` when the user provided a name
   condition:
@@ -684,7 +707,7 @@ text and entity annotation of the user message.
 
 Here's an example of a test conversation:
 
-```yaml
+```yaml-rasa
 e2e_tests:
 - story: A basic end-to-end test
   steps:

@@ -23,7 +23,7 @@ You can configure the HTTP server to fetch models from another URL
 by adding it to your `endpoints.yml`. The server will then
 reguarly query this URL for zipped models.
 
-```yaml
+```yaml-rasa
 models:
   url: http://my-server.com/models/default@latest
   wait_time_between_pulls: 10   # In seconds, optional, default: 100
@@ -122,6 +122,19 @@ Rasa supports using [S3](https://aws.amazon.com/s3/) ,
     * `AZURE_ACCOUNT_KEY`
 
   If there is no container with the name `AZURE_CONTAINER`, Rasa will create it.
+
+* Other Remote Storage
+
+  Support for other remote storages can be achieved by using an external library or implementing
+  a custom module for it by extending the `rasa.nlu.persistor.Persistor` class.
+
+  Start the Rasa server with `remote-storage` option set to the module path of model persistor.
+
+  An example command is:
+
+  ```bash
+  rasa run --remote-storage <your module>.<class name>
+  ```
 
 Models are gzipped before they are saved in the cloud. The gzipped file naming convention
 is `{MODEL_NAME}.tar.gz` and it is stored in the root folder of the storage service.
