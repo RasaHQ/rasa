@@ -324,7 +324,9 @@ class ResponseSelector(DIETClassifier):
 
         return model_data
 
-    def _resolve_intent_response_key(self, label: Dict[Text, Optional[Text]]) -> Text:
+    def _resolve_intent_response_key(
+        self, label: Dict[Text, Optional[Text]]
+    ) -> Optional[Text]:
         """Given a label, return the response key based on the label id.
 
         Args:
@@ -346,6 +348,7 @@ class ResponseSelector(DIETClassifier):
             for response in responses:
                 if hash(response.get(TEXT, "")) == label.get("id"):
                     return key
+        return None
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response, the associated intent_response_key and its similarity to the input."""
@@ -353,11 +356,17 @@ class ResponseSelector(DIETClassifier):
         out = self._predict(message)
         top_label, label_ranking = self._predict_label(out)
 
-        label_intent_response_key = self._resolve_intent_response_key(top_label)
-        label_response_templates = self.responses[label_intent_response_key]
+        label_intent_response_key = (
+            self._resolve_intent_response_key(top_label) or top_label[INTENT_NAME_KEY]
+        )
+        label_response_templates = self.responses.get(
+            label_intent_response_key, None
+        ) or [{TEXT: label_intent_response_key}]
 
         for label in label_ranking:
-            label[INTENT_RESPONSE_KEY] = self._resolve_intent_response_key(label)
+            label[INTENT_RESPONSE_KEY] = (
+                self._resolve_intent_response_key(label) or label[INTENT_NAME_KEY]
+            )
             label.pop(INTENT_NAME_KEY)
 
         selector_key = (
