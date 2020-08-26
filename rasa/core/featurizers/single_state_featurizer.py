@@ -103,7 +103,9 @@ class SingleStateFeaturizer:
 
         features = np.zeros(len(self._default_feature_states[attribute]), np.float32)
         for state_feature, value in state_features.items():
-            features[self._default_feature_states[attribute][state_feature]] = value
+            # check that the value is in default_feature_states to be able to assigh its value
+            if state_feature in self._default_feature_states[attribute]:
+                features[self._default_feature_states[attribute][state_feature]] = value
         features = np.expand_dims(features, 0)
 
         if sparse:
