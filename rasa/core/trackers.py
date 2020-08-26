@@ -550,7 +550,7 @@ class DialogueStateTracker:
     def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
-        Returns: 
+        Returns:
             The dumped tracker as a string.
         """
         # TODO: we need to revisit all usages of this, the caller needs to specify
