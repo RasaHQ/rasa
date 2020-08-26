@@ -24,6 +24,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ACTION_NAME,
 )
+from rasa.core.constants import SHOULD_NOT_BE_SET
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
 from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
@@ -698,7 +699,7 @@ class DialogueStateTracker:
 
         Returns: `None` if no active loop or the name of the currently active loop.
         """
-        if not self.active_loop:
+        if not self.active_loop or self.active_loop.get("name") == SHOULD_NOT_BE_SET:
             return None
 
         return self.active_loop.get("name")

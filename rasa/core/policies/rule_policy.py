@@ -416,7 +416,7 @@ class RulePolicy(MemoizationPolicy):
 
         active_loop_name = tracker.active_loop_name()
         if active_loop_name:
-            # find rules for unhappy path of the form
+            # find rules for unhappy path of the loop
             loop_unhappy_keys = self._get_possible_keys(
                 self.lookup[RULES_FOR_LOOP_UNHAPPY_PATH], states
             )
