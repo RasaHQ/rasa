@@ -1459,25 +1459,6 @@
     fs-extra "^8.1.0"
     sitemap "^3.2.2"
 
-"@docusaurus/theme-classic@^2.0.0-alpha.61":
-  version "2.0.0-alpha.61"
-  resolved "https://registry.yarnpkg.com/@docusaurus/theme-classic/-/theme-classic-2.0.0-alpha.61.tgz#1023603aa729efe4d929b5e2c3268af1b492b891"
-  integrity sha512-LPJwDi8iPzBe36+U65h4w5N5rXSuXuxPXWzBe/eF0/miR7VVCKydGSSubQLSMAXV0QWspGJIRSPnwuNH3DjJZg==
-  dependencies:
-    "@hapi/joi" "^17.1.1"
-    "@mdx-js/mdx" "^1.5.8"
-    "@mdx-js/react" "^1.5.8"
-    clsx "^1.1.1"
-    copy-text-to-clipboard "^2.2.0"
-    infima "0.2.0-alpha.12"
-    lodash "^4.17.19"
-    parse-numeric-range "^0.0.2"
-    prism-react-renderer "^1.1.0"
-    prismjs "^1.20.0"
-    prop-types "^15.7.2"
-    react-router-dom "^5.1.2"
-    react-toggle "^4.1.1"
-
 "@docusaurus/types@^2.0.0-alpha.61":
   version "2.0.0-alpha.61"
   resolved "https://registry.yarnpkg.com/@docusaurus/types/-/types-2.0.0-alpha.61.tgz#b2f5eaa18fb242100c0a8011edefe521b09e8375"
@@ -8122,11 +8103,6 @@ infer-owner@^1.0.3, infer-owner@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/infer-owner/-/infer-owner-1.0.4.tgz#c4cefcaa8e51051c2a40ba2ce8a3d27295af9467"
   integrity sha512-IClj+Xz94+d7irH5qRyfJonOdfTzuDaifE6ZPWfx0N0+/ATZCbuTPq2prFl526urkQd90WyUKIh1DfBQ2hMz9A==
-
-infima@0.2.0-alpha.12:
-  version "0.2.0-alpha.12"
-  resolved "https://registry.yarnpkg.com/infima/-/infima-0.2.0-alpha.12.tgz#6b4a0ba9756262e4f1af2c60feb4bc0ffd9b9e21"
-  integrity sha512-in5n36oE2sdiB/1rzuzdmKyuNRMVUO9P+qUidUG8leHeDU+WMQ7oTP7MXSqtAAxduiPb7HHi0/ptQLLUr/ge4w==
 
 inflight@^1.0.4:
   version "1.0.6"
