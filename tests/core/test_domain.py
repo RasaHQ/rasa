@@ -295,44 +295,6 @@ slots: {{}}"""
     assert actual_yaml.strip() == test_yaml.strip()
 
 
-def test_domain_to_yaml_deprecated_templates():
-    test_yaml = f"""actions:
-- utter_greet
-config:
-  store_entities_as_slots: true
-entities: []
-forms: []
-intents: []
-templates:
-  utter_greet:
-  - text: hey there!
-session_config:
-  carry_over_slots_to_new_session: true
-  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
-slots: {{}}"""
-
-    target_yaml = f"""actions:
-- utter_greet
-config:
-  store_entities_as_slots: true
-entities: []
-forms: []
-intents: []
-responses:
-  utter_greet:
-  - text: hey there!
-session_config:
-  carry_over_slots_to_new_session: true
-  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
-slots: {{}}"""
-
-    domain = Domain.from_yaml(test_yaml)
-    # python 3 and 2 are different here, python 3 will have a leading set
-    # of --- at the beginning of the yml
-    assert domain.as_yaml().strip().endswith(target_yaml.strip())
-    assert Domain.from_yaml(domain.as_yaml()) is not None
-
-
 def test_merge_yaml_domains():
     test_yaml_1 = """config:
   store_entities_as_slots: true
@@ -410,6 +372,58 @@ session_config:
 
     merged = domain1.merge(domain2, override=True)
     assert merged.session_config == SessionConfig(40, True)
+
+
+def test_merge_with_empty_domain():
+    domain = Domain.from_yaml(
+        """config:
+  store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
+entities:
+- cuisine
+intents:
+- greet
+slots:
+  cuisine:
+    type: text
+responses:
+  utter_goodbye:
+  - text: bye!
+  utter_greet:
+  - text: hey you!"""
+    )
+
+    merged = Domain.empty().merge(domain)
+
+    assert merged.as_dict() == domain.as_dict()
+
+
+def test_merge_with_empty_other_domain():
+    domain = Domain.from_yaml(
+        """config:
+  store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
+entities:
+- cuisine
+intents:
+- greet
+slots:
+  cuisine:
+    type: text
+responses:
+  utter_goodbye:
+  - text: bye!
+  utter_greet:
+  - text: hey you!"""
+    )
+
+    merged = domain.merge(Domain.empty(), override=True)
+
+    assert merged.as_dict() == domain.as_dict()
 
 
 def test_merge_domain_with_forms():
@@ -694,7 +708,7 @@ def test_clean_domain_for_file():
             {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
-        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "entities": ["name", "unrelated_recognized_entity", "other"],
         "responses": {
             "utter_greet": [{"text": "hey there!"}],
             "utter_goodbye": [{"text": "goodbye :("}],
@@ -707,35 +721,6 @@ def test_clean_domain_for_file():
     }
 
     assert cleaned == expected
-
-
-def test_clean_domain_deprecated_templates():
-    domain_path = "data/test_domains/default_deprecated_templates.yml"
-    cleaned = Domain.load(domain_path).cleaned_domain()
-
-    expected = {
-        "intents": [
-            {"greet": {USE_ENTITIES_KEY: ["name"]}},
-            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
-            {"goodbye": {USE_ENTITIES_KEY: []}},
-            {"thank": {USE_ENTITIES_KEY: []}},
-            "ask",
-            {"why": {USE_ENTITIES_KEY: []}},
-            "pure_intent",
-        ],
-        "entities": ["name", "other", "unrelated_recognized_entity"],
-        "responses": {
-            "utter_greet": [{"text": "hey there!"}],
-            "utter_goodbye": [{"text": "goodbye :("}],
-            "utter_default": [{"text": "default message"}],
-        },
-        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
-    }
-
-    expected = Domain.from_dict(expected)
-    actual = Domain.from_dict(cleaned)
-
-    assert hash(actual) == hash(expected)
 
 
 def test_add_knowledge_base_slots(default_domain):
@@ -820,42 +805,6 @@ def test_domain_as_dict_with_session_config():
 )
 def test_are_sessions_enabled(session_config: SessionConfig, enabled: bool):
     assert session_config.are_sessions_enabled() == enabled
-
-
-def test_domain_utterance_actions_deprecated_templates():
-    new_yaml = f"""config:
-  store_entities_as_slots: true
-entities: []
-forms: []
-intents: []
-templates:
-  utter_greet:
-  - text: hey there!
-  utter_goodbye:
-  - text: bye!
-session_config:
-  carry_over_slots_to_new_session: true
-  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
-slots: {{}}"""
-
-    old_yaml = f"""config:
-  store_entities_as_slots: true
-entities: []
-forms: []
-intents: []
-responses:
-  utter_greet:
-  - text: hey there!
-  utter_goodbye:
-  - text: bye!
-session_config:
-  carry_over_slots_to_new_session: true
-  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
-slots: {{}}"""
-
-    old_domain = Domain.from_yaml(old_yaml)
-    new_domain = Domain.from_yaml(new_yaml)
-    assert hash(old_domain) == hash(new_domain)
 
 
 def test_domain_from_dict_does_not_change_input():

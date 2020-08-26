@@ -35,7 +35,7 @@ To run your AI assistant in production, don't forget to configure your required
 [Messaging and Voice Channels](../messaging-and-voice-channels.mdx) in `credentials.yml`. For example, to add a
 REST channel, uncomment this section in the `credentials.yml`:
 
-```yaml
+```yaml-rasa
 rest:
   # you don't need to provide anything here - this channel doesn't
   # require any credentials
@@ -97,7 +97,7 @@ services:
 The `expose: 5005` is what allows the `rasa` service to reach the `app` service on that port.
 To instruct the `rasa` service to send its action requests to that endpoint, add it to your `endpoints.yml`:
 
-```yaml
+```yaml-rasa
 action_endpoint:
   url: http://app:5055/webhook
 ```

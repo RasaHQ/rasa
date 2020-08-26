@@ -15,9 +15,8 @@ To use forms with Rasa Open Source you need to make sure that the
 [Rule Policy](./policies.mdx#rule-policy) is added to your policy configuration.
 For example:
 
-```yaml
+```yaml-rasa
 policies:
-- ... # other policies
 - name: RulePolicy
 ```
 
@@ -33,7 +32,7 @@ You can specify one or more slot mappings for each slot to be filled.
 The following example of a form `your_form` will fill only one slot
 `age` from an extracted entity `age`.
 
-```yaml
+```yaml-rasa
 forms:
   your_form:
     age:
@@ -54,7 +53,8 @@ To activate a form you need to add a [Story](./stories.mdx) or [Rule](./rules.md
 which describes when the assistant should run the form. In the case a specific intent
 triggering a form, you can for example use the following rule:
 
-```yaml
+```yaml-rasa
+rules:
 - rule: Activate form
   steps:
   - intent: intent_which_activates_form
@@ -76,7 +76,8 @@ for the next user message after the form is finished.
 The following example runs the utterance `utter_all_slots_filled` as soon as the form
 `your_form` filled all required slots.
 
-```yaml
+```yaml-rasa
+rules:
 - rule: Submit form
   condition:
   # Condition that form is active.
@@ -114,7 +115,7 @@ label of the entity also needs to match the given values. The slot mapping will 
 apply if the intent of the message is `excluded_intent`. Note that you can
 also define lists of intents for the parameters `intent` and `not_intent`.
 
-```yaml
+```yaml-rasa
 forms:
   your_form:
     slot_name:
@@ -135,7 +136,7 @@ Otherwise, the slot will only be filled if the user's intent is `intent_name`.
 The slot mapping will not apply if the intent of the message is `excluded_intent`.
 Note that you can define lists of intents for the parameters `intent` and `not_intent`.
 
-```yaml
+```yaml-rasa
 forms:
   your_form:
     slot_name:
@@ -157,7 +158,7 @@ a slot based on the intent that activated the form, use the `from_trigger_intent
 mapping.
 :::
 
-```yaml
+```yaml-rasa
 forms:
   your_form:
     slot_name:
@@ -175,7 +176,7 @@ The slot mapping will not apply if the intent of the message is
 `excluded_intent`. Note that you can
 also define lists of intents for the parameters `intent` and `not_intent`.
 
-```yaml
+```yaml-rasa
 forms:
   your_form:
     slot_name:
@@ -195,7 +196,8 @@ You need to handle events that might cause `ActionExecutionRejection` errors
 with rules or stories. For example, if you expect your users to chitchat with your bot,
 you could add a story like this:
 
-```yaml
+```yaml-rasa
+rules:
 - rule: Example of an unhappy path
   condition:
   # Condition that form is active.
@@ -216,7 +218,8 @@ gracefully using a default action `action_deactivate_form` which will deactivate
 the form and reset the requested slot. An example story of such conversation could
 look as follows:
 
-```yaml
+```yaml-rasa
+rules:
 - rule: Example of an unhappy path
   condition:
   # Condition that form is active.
@@ -251,9 +254,8 @@ You can implement a [Custom Action](./actions.mdx#custom-actions) `validate_{for
 to validate any extracted slots. Make sure to add this action to the `actions`
 section of your domain:
 
-```yaml
+```yaml-rasa
 actions:
-- ... # other actions
 - validate_your_form
 ```
 
@@ -393,30 +395,33 @@ to one of the bot's questions with another question, like *why do you need to kn
 The response to this `explain` intent depends on where we are in the story.
 In the restaurant case, your stories would look something like this:
 
-```story
-## explain cuisine slot
-* request_restaurant
-    - restaurant_form
-    - active_loop{"name": "restaurant_form"}
-    - slot{"requested_slot": "cuisine"}
-* explain
-    - utter_explain_cuisine
-    - restaurant_form
-    - slot{"cuisine": "greek"}
-    ( ... all other slots the form set ... )
-    - active_loop{"name": null}
+```yaml-rasa
+stories: 
+- story: explain cuisine slot
+  steps:
+  - intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant
+  - slot_was_set:
+    - requested_slot: cuisine
+  - intent: explain 
+  - action: utter_explain_cuisine
+  - action: restaurant_form
+  - active_loop: null
 
-## explain num_people slot
-* request_restaurant
-    - restaurant_form
-    - active_loop{"name": "restaurant_form"}
-    - slot{"requested_slot": "num_people"}
-* explain
-    - utter_explain_num_people
-    - restaurant_form
-    - slot{"cuisine": "greek"}
-    ( ... all other slots the form set ... )
-    - active_loop{"name": null}
+- story: explain num_people slot
+  steps:
+  - intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant
+  - slot_was_set:
+    - requested_slot: cuisine
+  - slot_was_set:
+    - requested_slot: num_people
+  - intent: explain 
+  - action: utter_explain_num_people
+  - action: restaurant_form
+  - active_loop: null
 ```
 
 Again, it is **strongly** recommended that you use 

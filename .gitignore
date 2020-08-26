@@ -37,6 +37,7 @@ lastmile_ai/learn/plots/
 .coverage
 .coveralls.yml
 .idea/
+.venv/
 *.iml
 out/
 .vscode/

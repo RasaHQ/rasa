@@ -97,6 +97,20 @@ test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
 
+generate-pending-changelog:
+	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
+
+cleanup-generated-changelog:
+	# this is a helper to cleanup your git status locally after running "make test-docs"
+	# it's not run on CI at the moment
+	git status --porcelain | sed -n '/^D */s///p' | xargs git reset HEAD
+	git reset HEAD CHANGELOG.mdx
+	git ls-files --deleted | xargs git checkout
+	git checkout CHANGELOG.mdx
+
+test-docs: generate-pending-changelog docs
+	poetry run pytest tests/docs/*
+
 docs:
 	cd docs/ && poetry run yarn pre-build && yarn build
 

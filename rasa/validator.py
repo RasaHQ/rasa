@@ -291,12 +291,13 @@ class Validator:
         version_value = yaml_file_content.get(KEY_TRAINING_DATA_FORMAT_VERSION)
 
         if not version_value:
-            raise_warning(
+            # not raising here since it's not critical
+            logger.warning(
                 f"Training data file {filename} doesn't have a "
                 f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' key. "
                 f"Rasa Open Source will read the file as a "
-                f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file.",
-                docs=DOCS_BASE_URL,
+                f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file. "
+                f"See {DOCS_BASE_URL}."
             )
             return True
 
