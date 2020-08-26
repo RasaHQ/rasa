@@ -88,7 +88,7 @@ def cancel_cause_not_found(
         "The path '{}' does not exist. Please make sure to {}specify it"
         " with '--{}'.".format(current, default_clause, parameter)
     )
-    exit(1)
+    sys.exit(1)
 
 
 def parse_last_positional_argument_as_model_path() -> None:
