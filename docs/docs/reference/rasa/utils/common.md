@@ -192,6 +192,16 @@ raise_warning(message: Text, category: Optional[Type[Warning]] = None, docs: Opt
 
 Emit a `warnings.warn` with sensible defaults and a colored warning msg.
 
+#### raise\_deprecation\_warning
+
+```python
+raise_deprecation_warning(message: Text, warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS, docs: Optional[Text] = None, **kwargs: Any, ,) -> None
+```
+
+Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
+a version until which we&#x27;ll warn, and after which the support for the feature will
+be removed.
+
 ## RepeatedLogFilter Objects
 
 ```python

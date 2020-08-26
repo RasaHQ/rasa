@@ -58,10 +58,9 @@ class FallbackPolicy(Policy):
         self.core_threshold = core_threshold
         self.fallback_action_name = fallback_action_name
 
-        common_utils.raise_warning(
+        common_utils.raise_deprecation_warning(
             f"'{self.__class__.__name__}' is deprecated and will be removed "
             "in the future. It is recommended to use the 'RulePolicy' instead.",
-            category=FutureWarning,
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 

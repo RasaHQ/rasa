@@ -62,15 +62,6 @@ Get intent properties for a domain from what is provided by a domain file.
 
   The intent properties to be stored in the domain.
 
-#### collect\_templates
-
-```python
- | @staticmethod
- | collect_templates(yml_templates: Dict[Text, List[Any]]) -> Dict[Text, List[Dict[Text, Any]]]
-```
-
-Go through the templates and make sure they are all in dict format.
-
 #### user\_actions\_and\_forms
 
 ```python

@@ -26,6 +26,7 @@
           "items": [
             "reference/rasa/utils/io",
             "reference/rasa/utils/plotting",
+            "reference/rasa/utils/pykwalify_extensions",
             "reference/rasa/utils/train_utils",
             "reference/rasa/utils/endpoints",
             "reference/rasa/utils/validation",

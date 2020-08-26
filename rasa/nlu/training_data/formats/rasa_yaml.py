@@ -100,7 +100,7 @@ class RasaYAMLReader(TrainingDataReader):
             if key == KEY_NLU:
                 self._parse_nlu(value)
             elif key == KEY_RESPONSES:
-                self._parse_responses(value)
+                self.responses = value
 
         return TrainingData(
             self.training_examples,
@@ -144,11 +144,6 @@ class RasaYAMLReader(TrainingDataReader):
                     f"This section will be skipped.",
                     docs=DOCS_URL_TRAINING_DATA_NLU,
                 )
-
-    def _parse_responses(self, responses_data: Dict[Text, List[Any]]) -> None:
-        from rasa.core.domain import Domain
-
-        self.responses = Domain.collect_templates(responses_data)
 
     def _parse_intent(self, data: Dict[Text, Any]) -> None:
         from rasa.nlu.training_data import Message
