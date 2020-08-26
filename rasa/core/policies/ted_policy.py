@@ -557,14 +557,14 @@ class TED(TransformerRasaModel):
             )
 
     def _prepare_layers(self) -> None:
-        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
-
         for name in self.data_signature.keys():
-            self._prepare_utterance_level_layers(name)
+            self._prepare_sparse_dense_layer_for(name)
 
         for name in FEATURES_TO_ENCODE:
             self._prepare_encoding_layers(name)
 
+        # create a ffnn layer for the combined dialogue features (used before the
+        # transformer)
         self._prepare_ffnn_layer(
             DIALOGUE,
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
@@ -581,7 +581,16 @@ class TED(TransformerRasaModel):
         self._prepare_embed_layers(DIALOGUE)
         self._prepare_embed_layers(LABEL)
 
-    def _prepare_utterance_level_layers(self, name: Text) -> None:
+        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
+
+    def _prepare_sparse_dense_layer_for(self, name: Text) -> None:
+        """Prepare the sparse dense layer for the given attribute name. It is used to
+        combine the sparse and dense features of the attribute at the beginning of
+        the model.
+
+        Args:
+            name: the attribute name
+        """
         for feature_type in POSSIBLE_FEATURE_TYPES:
             if (
                 name not in self.data_signature
@@ -608,6 +617,12 @@ class TED(TransformerRasaModel):
                 )
 
     def _prepare_encoding_layers(self, name: Text) -> None:
+        """Create ffnn layer for given attribute name. The layer is used just before
+        all dialogue features are combined.
+
+        Args:
+            name: attribute name
+        """
         feature_type = SENTENCE
         if (
             name not in self.data_signature
@@ -679,9 +694,9 @@ class TED(TransformerRasaModel):
         if not batch[attribute]:
             return None
 
-        mask = batch[attribute][MASK][0]
+        attribute_mask = batch[attribute][MASK][0]
         attribute_features = self._combine_sparse_dense_features(
-            batch[attribute][SENTENCE], f"{attribute}_{SENTENCE}", mask=mask
+            batch[attribute][SENTENCE], f"{attribute}_{SENTENCE}", mask=attribute_mask
         )
 
         if attribute in FEATURES_TO_ENCODE:

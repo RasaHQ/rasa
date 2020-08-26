@@ -605,6 +605,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> RasaModelData:
         """Prepare data for training and create a RasaModelData object"""
 
+        # TODO: simplify model data creation
+        #   convert training data into a list of attribute to features and reuse some
+        #   of the methods of TED (they most likely need to change a bit)
+
         features = defaultdict(lambda: defaultdict(list))
         label_ids = []
 
