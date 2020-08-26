@@ -553,6 +553,16 @@ class RasaModel(tf.keras.models.Model):
             "This method should neither be called nor implemented in our code."
         )
 
+    def call(self, *args, **kwargs) -> None:
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )
+
+    def get_config(self) -> None:
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )
+
 
 # noinspection PyMethodOverriding
 class TransformerRasaModel(RasaModel):
