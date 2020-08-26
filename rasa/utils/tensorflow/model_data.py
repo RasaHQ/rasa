@@ -167,11 +167,14 @@ class RasaModelData:
 
         return number_of_features
 
-    def add_data(self, data: Data) -> None:
+    def add_data(self, data: Data, key_prefix: Optional[Text] = None) -> None:
         """Add incoming data to data."""
         for key, attribute_data in data.items():
             for sub_key, features in attribute_data.items():
-                self.add_features(key, sub_key, features)
+                if key_prefix:
+                    self.add_features(f"{key_prefix}{key}", sub_key, features)
+                else:
+                    self.add_features(key, sub_key, features)
 
     def add_features(
         self, key: Text, sub_key: Text, features: Optional[List[np.ndarray]]

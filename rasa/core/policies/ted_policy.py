@@ -291,12 +291,15 @@ class TEDPolicy(Policy):
     def _create_zero_features(
         features: List[List[List["Features"]]],
     ) -> List["Features"]:
-        # all features should have the same types
         """
-        Computes default feature values for an attribute;
+        Computes default feature values for an attribute.
+
         Args:
             features: list containing all feature values encountered
-            in the dataset for an attribute;
+            in the dataset for an attribute
+
+        Returns:
+            List of zero features for an attribute.
         """
 
         example_features = next(
@@ -344,6 +347,7 @@ class TEDPolicy(Policy):
 
         remove_sequence_dimension = False
         # unify format of incoming features
+        # (for label data we just have a list of dicts)
         if isinstance(features[0], Dict):
             features = [[dicts] for dicts in features]
             remove_sequence_dimension = True
@@ -359,10 +363,11 @@ class TEDPolicy(Policy):
         else:
             attributes = list(self.zero_features.keys())
 
+        # In case an attribute is not present during prediction, replace it with
+        # None values that will then be replaced by zero features
         dialogue_length = 1
         for key, values in features.items():
             dialogue_length = max(dialogue_length, len(values[0]))
-
         empty_features = [[None] * dialogue_length]
 
         for attribute in attributes:
@@ -402,7 +407,6 @@ class TEDPolicy(Policy):
                 for key, values in _dense_features.items():
                     dense_features[key] = [np.vstack(value) for value in values]
 
-            # TODO not sure about expand_dims
             attribute_features = {MASK: [np.array(attribute_masks)]}
 
             feature_types = set()
@@ -411,8 +415,8 @@ class TEDPolicy(Policy):
 
             for feature_type in feature_types:
                 if feature_type == SEQUENCE:
-                    # TODO we don't take sequence features because that makes us deal
-                    #  with 4D sparse tensors
+                    # we don't take sequence features because that makes us deal
+                    # with 4D sparse tensors
                     continue
 
                 attribute_features[feature_type] = []
@@ -429,8 +433,8 @@ class TEDPolicy(Policy):
 
         return attribute_data
 
+    @staticmethod
     def _map_tracker_features(
-        self,
         features_in_tracker: List[List[List["Features"]]],
         zero_features: List["Features"],
     ) -> Tuple[
@@ -438,7 +442,7 @@ class TEDPolicy(Policy):
         Dict[Text, List[List["Features"]]],
         Dict[Text, List[List["Features"]]],
     ]:
-        """Create masks for all attributes of the given features and split the features
+        """Create masks for the given features and split the features
         into sparse and dense features.
 
         Args:
@@ -464,21 +468,18 @@ class TEDPolicy(Policy):
                 np.ones(len(features_in_dialogue), np.float32), -1
             )
 
-            for i, turn_features in enumerate(features_in_dialogue):
-
-                if turn_features is None:
+            for i, features in enumerate(features_in_dialogue):
+                if features is None:
                     # use zero features and set mask to zero
                     attribute_mask[i] = 0
-                    turn_features = zero_features
+                    features = zero_features
 
-                for features in turn_features:
+                for f in features:
                     # all features should have the same types
-                    if features.is_sparse():
-                        dialogue_sparse_features[features.type].append(
-                            features.features
-                        )
+                    if f.is_sparse():
+                        dialogue_sparse_features[f.type].append(f.features)
                     else:
-                        dialogue_dense_features[features.type].append(features.features)
+                        dialogue_dense_features[f.type].append(f.features)
 
             for key, value in dialogue_sparse_features.items():
                 sparse_features[key].append(value)
@@ -499,9 +500,7 @@ class TEDPolicy(Policy):
         attribute_data = self._convert_to_data_format(all_labels)
 
         label_data = RasaModelData()
-        for attribute, attribute_features in attribute_data.items():
-            for subkey, features in attribute_features.items():
-                label_data.add_features(f"{LABEL_KEY}_{attribute}", subkey, features)
+        label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
 
         label_ids = np.arange(domain.num_actions)
         label_data.add_features(
@@ -538,19 +537,12 @@ class TEDPolicy(Policy):
         Returns:
             RasaModelData
         """
-
-        # TODO the first turn in the story is `[{}] -> action_listen`,
-        #  since it didn't create any features its attribute_mask will be 0
-
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
+
         if label_ids and all_labels:
             model_data.add_features(LABEL_KEY, LABEL_SUB_KEY, [np.array(label_ids)])
             attribute_data = self._get_label_features(label_ids, all_labels)
-            for attribute, attribute_features in attribute_data.items():
-                for subkey, features in attribute_features.items():
-                    model_data.add_features(
-                        f"{LABEL_KEY}_{attribute}", subkey, features
-                    )
+            model_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
 
         attribute_data = self._convert_to_data_format(X, training)
         # ensure that all attributes are in the same order
@@ -896,8 +888,7 @@ class TED(TransformerRasaModel):
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
         if self.max_history_tracker_featurizer_used:
-            # pick last label if max history featurizer is used
-            # dialogue_transformed = dialogue_transformed[:, -1:, :]
+            # pick last vector if max history featurizer is used
             dialogue_transformed = tf.expand_dims(
                 self._last_token(dialogue_transformed, sequence_lengths), 1
             )
