@@ -585,9 +585,9 @@ def test_response_evaluation_report(tmpdir_factory):
 
     prediction = {
         "text": "What's your name?",
-        "intent_target": "chitchat/ask_name",
+        "intent_response_key_target": "chitchat/ask_name",
         "response_target": "My name is Mr.bot",
-        "response_predicted": "chitchat/ask_name",
+        "intent_response_key_prediction": "chitchat/ask_name",
         "confidence": 0.98765,
     }
 
