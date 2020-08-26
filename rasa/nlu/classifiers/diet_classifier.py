@@ -1068,6 +1068,10 @@ class DIET(TransformerRasaModel):
         entity_tag_specs: Optional[List[EntityTagSpec]],
         config: Dict[Text, Any],
     ) -> None:
+        # create entity tag spec before calling super otherwise building the model
+        # will fail
+        self._entity_tag_specs = self._ordered_tag_specs(entity_tag_specs)
+
         super().__init__("DIET", config, data_signature, label_data)
 
         self.predict_data_signature = {
@@ -1075,8 +1079,6 @@ class DIET(TransformerRasaModel):
             for feature_name, features in data_signature.items()
             if TEXT in feature_name
         }
-
-        self._entity_tag_specs = self._ordered_tag_specs(entity_tag_specs)
 
         # tf training
         self.optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
