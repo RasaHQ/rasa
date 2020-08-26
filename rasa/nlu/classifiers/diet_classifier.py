@@ -820,12 +820,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
-        self.model = self.model_class()(
-            data_signature=model_data.get_signature(),
-            label_data=self._label_data,
-            entity_tag_specs=self._entity_tag_specs,
-            config=self.component_config,
-        )
+        self.model = self._instantiate_model_class(model_data)
 
         self.model.fit(
             model_data,
@@ -1098,13 +1093,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_key = LABEL_IDS if meta[INTENT_CLASSIFICATION] else None
         model_data_example = RasaModelData(label_key=label_key, data=data_example)
 
-        model = cls.model_class().load(
-            tf_model_file,
-            model_data_example,
-            data_signature=model_data_example.get_signature(),
-            label_data=label_data,
-            entity_tag_specs=entity_tag_specs,
-            config=copy.deepcopy(meta),
+        model = cls._load_model_class(
+            tf_model_file, model_data_example, label_data, entity_tag_specs, meta
         )
 
         # build the graph for prediction
@@ -1120,6 +1110,34 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model.build_for_predict(predict_data_example)
 
         return model
+
+    @classmethod
+    def _load_model_class(
+        cls,
+        tf_model_file: Text,
+        model_data_example: RasaModelData,
+        label_data: RasaModelData,
+        entity_tag_specs: List[EntityTagSpec],
+        meta: Dict[Text, Any],
+    ) -> "RasaModel":
+
+        return cls.model_class().load(
+            tf_model_file,
+            model_data_example,
+            data_signature=model_data_example.get_signature(),
+            label_data=label_data,
+            entity_tag_specs=entity_tag_specs,
+            config=copy.deepcopy(meta),
+        )
+
+    def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
+
+        return self.model_class()(
+            data_signature=model_data.get_signature(),
+            label_data=self._label_data,
+            entity_tag_specs=self._entity_tag_specs,
+            config=self.component_config,
+        )
 
 
 # accessing _tf_layers with any key results in key-error, disable it

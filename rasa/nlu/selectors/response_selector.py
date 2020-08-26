@@ -1,3 +1,4 @@
+import copy
 import logging
 
 import numpy as np
@@ -254,8 +255,9 @@ class ResponseSelector(DIETClassifier):
     def label_key(self) -> Text:
         return LABEL_IDS
 
-    def model_class(self) -> Type[RasaModel]:
-        if self.use_text_as_label:
+    @staticmethod
+    def model_class(use_text_as_label: bool) -> Type[RasaModel]:
+        if use_text_as_label:
             return DIET2DIET
         else:
             return DIET2BOW
@@ -369,6 +371,9 @@ class ResponseSelector(DIETClassifier):
             label[INTENT_RESPONSE_KEY] = (
                 self._resolve_intent_response_key(label) or label[INTENT_NAME_KEY]
             )
+            # Remove the "name" key since it is either the same as
+            # "intent_response_key" or it is the response text which
+            # is not needed in the ranking.
             label.pop(INTENT_NAME_KEY)
 
         selector_key = (
@@ -404,6 +409,34 @@ class ResponseSelector(DIETClassifier):
         super().persist(file_name, model_dir)
 
         return {"file": file_name, "responses": self.responses}
+
+    @classmethod
+    def _load_model_class(
+        cls,
+        tf_model_file: Text,
+        model_data_example: RasaModelData,
+        label_data: RasaModelData,
+        entity_tag_specs: List[EntityTagSpec],
+        meta: Dict[Text, Any],
+    ) -> "RasaModel":
+
+        return cls.model_class(meta[USE_TEXT_AS_LABEL]).load(
+            tf_model_file,
+            model_data_example,
+            data_signature=model_data_example.get_signature(),
+            label_data=label_data,
+            entity_tag_specs=entity_tag_specs,
+            config=copy.deepcopy(meta),
+        )
+
+    def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
+
+        return self.model_class(self.use_text_as_label)(
+            data_signature=model_data.get_signature(),
+            label_data=self._label_data,
+            entity_tag_specs=self._entity_tag_specs,
+            config=self.component_config,
+        )
 
     @classmethod
     def load(
