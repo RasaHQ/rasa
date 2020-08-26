@@ -930,9 +930,9 @@ class TED(TransformerRasaModel):
         if not batch[attribute]:
             return None
 
-        mask = batch[attribute][MASK][0]
+        attribute_mask = batch[attribute][MASK][0]
         attribute_features = self._combine_sparse_dense_features(
-            batch[attribute][SENTENCE], f"{attribute}_{SENTENCE}", mask=mask
+            batch[attribute][SENTENCE], f"{attribute}_{SENTENCE}", mask=attribute_mask
         )
 
         if attribute in FEATURES_TO_ENCODE:
