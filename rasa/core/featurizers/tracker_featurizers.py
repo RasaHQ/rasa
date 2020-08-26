@@ -7,7 +7,7 @@ from collections import deque
 
 import rasa.utils.io
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.domain import Domain, STATE
+from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import is_logging_disabled
@@ -28,14 +28,14 @@ class TrackerFeaturizer:
         self.state_featurizer = state_featurizer
 
     @staticmethod
-    def _unfreeze_states(states: deque) -> List[STATE]:
+    def _unfreeze_states(states: deque) -> List[State]:
         return [
             {key: dict(value) for key, value in dict(state).items()} for state in states
         ]
 
     def _create_states(
         self, tracker: DialogueStateTracker, domain: Domain
-    ) -> List[STATE]:
+    ) -> List[State]:
         """Create states: a list of dictionaries."""
 
         states = tracker.past_states(domain)
@@ -44,7 +44,7 @@ class TrackerFeaturizer:
 
     def _featurize_states(
         self,
-        trackers_as_states: List[List[STATE]],
+        trackers_as_states: List[List[State]],
         interpreter: NaturalLanguageInterpreter,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         return [
@@ -66,7 +66,7 @@ class TrackerFeaturizer:
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[STATE]], List[List[Text]]]:
+    ) -> Tuple[List[List[State]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions."""
 
         raise NotImplementedError(
@@ -114,7 +114,7 @@ class TrackerFeaturizer:
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[STATE]]:
+    ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction."""
 
         raise NotImplementedError(
@@ -164,7 +164,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[STATE]], List[List[Text]]]:
+    ) -> Tuple[List[List[State]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions.
 
         Training data is padded up to the length of the longest dialogue with -1.
@@ -212,7 +212,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[STATE]]:
+    ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction."""
 
         trackers_as_states = [
@@ -242,8 +242,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def slice_state_history(
-        states: List[STATE], slice_length: Optional[int]
-    ) -> List[STATE]:
+        states: List[State], slice_length: Optional[int]
+    ) -> List[State]:
         """Slices states from the trackers history.
         If the slice is at the array borders, padding will be added to ensure
         the slice length.
@@ -255,7 +255,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def _hash_example(
-        states: List[STATE], action: Text, tracker: DialogueStateTracker
+        states: List[State], action: Text, tracker: DialogueStateTracker
     ) -> int:
         """Hash states for efficient deduplication."""
         frozen_states = tuple(
@@ -266,7 +266,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[STATE]], List[List[Text]]]:
+    ) -> Tuple[List[List[State]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions.
         Training data is padded up to the max_history with -1.
         """
@@ -328,7 +328,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[STATE]]:
+    ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction."""
 
         trackers_as_states = [

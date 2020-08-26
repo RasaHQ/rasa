@@ -38,28 +38,28 @@ Add examples for your user-goal specific intents in the format shown below.
 You can delete the `subscribe` and `inform` intents if you're not using them;
 you can also add or change examples for any of the other intents.
 
-```yaml live noResult name=nlu
+```yaml-rasa live noResult name=nlu
 nlu:
 - intent: greet
   examples: |
-       Hi
-       Hey!
-       Hallo
-       Good day
-       Good morning
+    - Hi
+    - Hey!
+    - Hallo
+    - Good day
+    - Good morning
 
 - intent: subscribe
   examples: |
-       I want to get the newsletter
-       Can you send me the newsletter?
-       Can you sign me up for the newsletter?
+    - I want to get the newsletter
+    - Can you send me the newsletter?
+    - Can you sign me up for the newsletter?
 
 - intent: inform
   examples: |
-       My email is example@example.com
-       random@example.com
-       Please send it to anything@example.com
-       Email is something@example.com
+    - My email is example@example.com
+    - random@example.com
+    - Please send it to anything@example.com
+    - Email is something@example.com
 ```
 
 [Read about best practices for NLU](./training-data-format.mdx)
@@ -72,7 +72,7 @@ To do so, we define a [form](./glossary.mdx#form). You can change the name of th
 Add to or replace the `email` item in the list below to reflect the information the bot needs
 to collect for your user goal. Leave the `type` field the same for any items you add.
 
-```yaml live noResult name=forms
+```yaml-rasa live noResult name=forms
 forms:
 - newsletter_form:
     email:
@@ -81,15 +81,13 @@ forms:
 
 ## 4. Write a rule
 
-Rules are conversation snippets that should always proceed in exactly the same way. The ellipsis in the
-first step of the rule tells the bot that regardless of what precedes, the next steps should always
-follow one another. Update the rule below for running the form you defined above.
+Rules are conversation snippets that should always proceed in exactly the same way.
+Update the rule below for running the form you defined above.
 
-```yaml live noResult name=rules
+```yaml-rasa live noResult name=rules
 rules:
  - rule: activate subscribe form
    steps:
-   - ...
    - intent: subscribe
    - action: newsletter_form
    - active_loop: newsletter_form
@@ -107,7 +105,7 @@ Give intuitive names to your responses starting with `utter_` for now; you'll de
 Using the general template of the story we have shown you below, write a story or two that serve
 the user goal you have chosen. You can include the steps from your form rule wherever appropriate.
 
-```yaml live noResult name=stories
+```yaml-rasa live noResult name=stories
 stories:
  - story: greet and subscribe
    steps:
@@ -130,7 +128,7 @@ will be chosen at random whenever that response is predicted.
 You can add or change text for any of the responses below. If you're using your own user goal,
 replace the last three responses with the response you used in your stories above.
 
-```yaml live noResult name=responses
+```yaml-rasa live noResult name=responses
 responses:
    utter_greet:
        - text: |
@@ -180,7 +178,10 @@ and your [model configuration](./model-configuration.mdx).
 
 <br/><br/>
 
-*Your prototype was created using a Rasa Open Source alpha release. Please make sure
-you're running* `rasa==2.0.0a1` *to develop your project further.*
+<!-- TODO: REMOVE THIS NOTE FOR THE 2.0 release -->
+
+*Your prototype was created using a Rasa Open Source alpha release.
+Please make sure you've [installed at least Rasa Open Source 2.0.0a2](installation.mdx) to develop
+your project further.*
 
 </Prototyper>

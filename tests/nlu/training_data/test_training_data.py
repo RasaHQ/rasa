@@ -128,12 +128,12 @@ def test_demo_data(files):
     td = training_data_from_paths(files, language="en")
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
+    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
     assert len(td.response_examples) == 4
     assert len(td.entity_examples) == 11
-    assert len(td.nlg_stories) == 2
+    assert len(td.responses) == 2
 
     assert td.entity_synonyms == {
         "Chines": "chinese",
@@ -191,7 +191,7 @@ def test_train_test_split(filepaths):
 
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
+    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
 
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
@@ -516,7 +516,7 @@ def test_training_data_conversion(
     [
         ("data/examples/luis/demo-restaurants_v5.json", JSON),
         ("data/examples", JSON),
-        ("examples/moodbot/data/nlu.md", MARKDOWN),
+        ("data/examples/rasa/demo-rasa.md", MARKDOWN),
         ("data/rasa_yaml_examples", RASA_YAML),
     ],
 )

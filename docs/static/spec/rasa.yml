@@ -1187,7 +1187,7 @@ components:
       properties:
         conversation_id:
           type: string
-          description: Id of the conversation
+          description: ID of the conversation
           example: default
         slots:
           type: array
@@ -1205,7 +1205,7 @@ components:
           description: Deterministic scheduled next action
         paused:
           type: boolean
-          description: Bot is pasued
+          description: Bot is paused
           example: false
         events:
           type: array
@@ -1220,13 +1220,13 @@ components:
           type: string
           description: Name of last bot action
           example: action_listen
-        active_form:
+        active_loop:
           type: object
-          description: Name of the active form
+          description: Name of the active loop
           properties:
             name:
               type: string
-              description: Name of the acive form
+              description: Name of the active loop
               example: restaurant_form
 
     Error:

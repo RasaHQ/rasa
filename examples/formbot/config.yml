@@ -14,5 +14,7 @@ pipeline:
   - name: EntitySynonymMapper
 
 policies:
+  - name: TEDPolicy
+  - name: AugmentedMemoizationPolicy
   - name: RulePolicy
   - name: TEDPolicy

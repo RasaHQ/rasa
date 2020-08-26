@@ -76,8 +76,8 @@ ALL_DOMAIN_KEYS = [
     KEY_E2E_ACTIONS,
 ]
 
-SUB_STATE = Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]
-STATE = Dict[Text, SUB_STATE]
+SubState = Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]
+State = Dict[Text, SubState]
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -235,11 +235,14 @@ class Domain:
         """Merge this domain with another one, combining their attributes.
 
         List attributes like ``intents`` and ``actions`` will be deduped
-        and merged. Single attributes will be taken from ``self`` unless
-        override is `True`, in which case they are taken from ``domain``."""
+        and merged. Single attributes will be taken from `self` unless
+        override is `True`, in which case they are taken from `domain`."""
 
-        if not domain:
+        if not domain or domain.is_empty():
             return self
+
+        if self.is_empty():
+            return domain
 
         domain_dict = domain.as_dict()
         combined = self.as_dict()
@@ -495,6 +498,8 @@ class Domain:
         self.templates = templates
         self.e2e_action_texts = e2e_action_texts or []
         self.session_config = session_config
+
+        self._custom_actions = action_names
 
         # only includes custom actions and utterance actions
         self.user_actions = action.combine_with_templates(action_names, templates)
@@ -755,7 +760,7 @@ class Domain:
         else:
             return {}
 
-    def get_active_states(self, tracker: "DialogueStateTracker") -> STATE:
+    def get_active_states(self, tracker: "DialogueStateTracker") -> State:
         """Return a bag of active states from the tracker state."""
         state_dict = self._get_user_states(tracker)
         state_dict.update(self._get_slots_states(tracker))
@@ -765,7 +770,7 @@ class Domain:
 
     def states_for_tracker_history(
         self, tracker: "DialogueStateTracker"
-    ) -> List[STATE]:
+    ) -> List[State]:
         """Array of states for each state of the trackers history."""
         return [
             self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()
@@ -843,7 +848,7 @@ class Domain:
             KEY_ENTITIES: self.entities,
             KEY_SLOTS: self._slot_definitions(),
             KEY_RESPONSES: self.templates,
-            KEY_ACTIONS: self.user_actions,  # class names of the actions
+            KEY_ACTIONS: self._custom_actions,  # class names of the actions
             KEY_FORMS: self.forms,
             KEY_E2E_ACTIONS: self.e2e_action_texts,
         }

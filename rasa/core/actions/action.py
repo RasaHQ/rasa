@@ -31,7 +31,7 @@ from rasa.core.events import (
     Event,
     BotUttered,
     SlotSet,
-    Form,
+    ActiveLoop,
     Restarted,
     SessionStarted,
 )
@@ -64,6 +64,8 @@ ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
 ACTION_BACK_NAME = "action_back"
 
 RULE_SNIPPET_ACTION_NAME = "..."
+
+FULL_RETRIEVAL_INTENT = "full_retrieval_intent"
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
@@ -106,7 +108,9 @@ def combine_with_templates(
     actions: List[Text], templates: Dict[Text, Any]
 ) -> List[Text]:
     """Combines actions with utter actions listed in responses section."""
-    unique_template_names = [a for a in list(templates.keys()) if a not in actions]
+    unique_template_names = [
+        a for a in sorted(list(templates.keys())) if a not in actions
+    ]
     return actions + unique_template_names
 
 
@@ -244,10 +248,8 @@ class ActionRetrieveResponse(Action):
 
         logger.debug(f"Picking response from selector of type {query_key}")
         selected = response_selector_properties[query_key]
-        message = {
-            "text": selected[OPEN_UTTERANCE_PREDICTION_KEY]["name"],
-            "template_name": selected["full_retrieval_intent"],
-        }
+        message = selected[OPEN_UTTERANCE_PREDICTION_KEY]
+        message["template_name"] = selected[FULL_RETRIEVAL_INTENT]
 
         return [create_bot_utterance(message)]
 
@@ -439,7 +441,7 @@ class ActionDeactivateForm(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        return [Form(None), SlotSet(REQUESTED_SLOT, None)]
+        return [ActiveLoop(None), SlotSet(REQUESTED_SLOT, None)]
 
 
 class RemoteAction(Action):

@@ -2,7 +2,7 @@ from abc import ABC
 from typing import List, TYPE_CHECKING
 
 from rasa.core.actions import Action
-from rasa.core.events import Event, Form
+from rasa.core.events import Event, ActiveLoop
 
 if TYPE_CHECKING:
     from rasa.core.channels import OutputChannel
@@ -47,8 +47,7 @@ class LoopAction(Action, ABC):
 
     # default implementation checks if form active
     def _default_activation_events(self) -> List[Event]:
-        # TODO if this is in the loop action, probably it should not be `Form`
-        return [Form(self.name())]
+        return [ActiveLoop(self.name())]
 
     async def activate(
         self,
@@ -81,7 +80,7 @@ class LoopAction(Action, ABC):
         raise NotImplementedError()
 
     def _default_deactivation_events(self) -> List[Event]:
-        return [Form(None)]
+        return [ActiveLoop(None)]
 
     async def deactivate(
         self,

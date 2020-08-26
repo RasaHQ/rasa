@@ -46,6 +46,10 @@ mapping:
         lookup:
           type: "str"
         examples: *examples_anchor
+  responses:
+    type: "map"
+    allowempty: True
+    required: False
   stories:
     type: "any"
     required: False

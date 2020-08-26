@@ -180,8 +180,8 @@ class RasaModelData:
 
         Should update number of examples.
         """
-        if key in self.data and sub_key in self.data[key]:
-            raise ValueError(f"Key '{key}.{sub_key}' already exists in RasaModelData.")
+        # if key in self.data and sub_key in self.data[key]:
+        #     raise ValueError(f"Key '{key}.{sub_key}' already exists in RasaModelData.")
 
         if features is None:
             return

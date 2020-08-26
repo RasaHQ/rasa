@@ -66,7 +66,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   mean or via max pooling. You can specify the pooling method in your configuration file with the option `pooling`.
   The default pooling method is set to `mean`.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "MitieFeaturizer"
     # Specify what pooling operation should be used to calculate the vector of
@@ -115,7 +115,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   mean or via max pooling. You can specify the pooling method in your configuration file with the option `pooling`.
   The default pooling method is set to `mean`.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "SpacyFeaturizer"
     # Specify what pooling operation should be used to calculate the vector of
@@ -173,7 +173,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Configuration**
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "ConveRTFeaturizer"
   ```
@@ -225,7 +225,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   Include [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) components before this component. Use
   [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "LanguageModelFeaturizer"
   ```
@@ -276,7 +276,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   Make the featurizer case insensitive by adding the `case_sensitive: False` option, the default being
   `case_sensitive: True`.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "RegexFeaturizer"
     # Text will be processed with case sensitive as default
@@ -390,7 +390,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   `use_shared_vocab` to `True`. In that case a common vocabulary set between tokens in intents and user messages
   is build.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "CountVectorsFeaturizer"
     # Analyzer to use, either 'word', 'char', or 'char_wb'
@@ -529,7 +529,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   If you want to define features for the token before, the current token, and the token after,
   your features configuration would look like this:
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: LexicalSyntacticFeaturizer
     "features": [

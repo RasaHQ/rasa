@@ -5,7 +5,7 @@ from typing import Tuple, List, Optional, Dict, Text
 from collections import defaultdict
 
 from rasa.utils import common as common_utils
-from rasa.core.domain import Domain, STATE, SUB_STATE
+from rasa.core.domain import Domain, State, SubState
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER, PREVIOUS_ACTION, FORM, SLOTS, ACTION
@@ -53,7 +53,7 @@ class SingleStateFeaturizer:
 
     @staticmethod
     def _construct_message(
-        sub_state: SUB_STATE, state_type: Text
+        sub_state: SubState, state_type: Text
     ) -> Tuple["Message", Text]:
         if state_type == USER:
             if sub_state.get(INTENT):
@@ -78,7 +78,7 @@ class SingleStateFeaturizer:
         return message, attribute
 
     def _create_features(
-        self, sub_state: SUB_STATE, attribute: Text, sparse: bool = False
+        self, sub_state: SubState, attribute: Text, sparse: bool = False
     ) -> Dict[Text, List["Features"]]:
         if attribute in {INTENT, ACTION_NAME}:
             state_features = {sub_state[attribute]: 1}
@@ -116,7 +116,7 @@ class SingleStateFeaturizer:
 
     def _extract_features(
         self,
-        sub_state: SUB_STATE,
+        sub_state: SubState,
         state_type: Text,
         interpreter: Optional[NaturalLanguageInterpreter],
         sparse: bool = False,
@@ -162,7 +162,7 @@ class SingleStateFeaturizer:
         return output
 
     def encode_state(
-        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
+        self, state: State, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
 
         featurized_state = {}
@@ -218,7 +218,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         )
 
     def encode_state(
-        self, state: STATE, interpreter: Optional[NaturalLanguageInterpreter]
+        self, state: State, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
         # ignore nlu interpreter to create binary features
         return super().encode_state(state, None)
