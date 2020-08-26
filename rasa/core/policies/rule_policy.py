@@ -374,7 +374,7 @@ class RulePolicy(MemoizationPolicy):
 
         active_loop_name = tracker.active_loop_name()
         active_loop_rejected = tracker.active_loop.get("rejected")
-        should_predict_form = (
+        should_predict_loop = (
             active_loop_name
             and not active_loop_rejected
             and tracker.latest_action.get(ACTION_NAME) != active_loop_name
@@ -417,8 +417,8 @@ class RulePolicy(MemoizationPolicy):
         active_loop_name = tracker.active_loop_name()
         if active_loop_name:
             # find rules for unhappy path of the form
-            form_unhappy_keys = self._get_possible_keys(
-                self.lookup[RULES_FOR_FORM_UNHAPPY_PATH], states
+            loop_unhappy_keys = self._get_possible_keys(
+                self.lookup[RULES_FOR_LOOP_UNHAPPY_PATH], states
             )
             # there could be several unhappy path conditions
             unhappy_path_conditions = [
