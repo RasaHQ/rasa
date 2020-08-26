@@ -633,10 +633,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data = RasaModelData(
             label_key=self.label_key, label_sub_key=self.label_sub_key
         )
-        for key, feature_dict in features.items():
-            for sub_key, data in feature_dict.items():
+        for key, attribute_features in features.items():
+            for sub_key, _features in attribute_features.items():
                 sub_key = sub_key.replace(f"{SPARSE}_", "").replace(f"{DENSE}_", "")
-                model_data.add_features(key, sub_key, [np.array(data)])
+                model_data.add_features(key, sub_key, [np.array(_features)])
 
         if (
             label_attribute
@@ -645,7 +645,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ):
             # no label features are present, get default features from _label_data
             model_data.add_features(
-                LABEL, SEQUENCE, self._use_default_label_features(np.array(label_ids))
+                LABEL, SENTENCE, self._use_default_label_features(np.array(label_ids))
             )
 
         # explicitly add last dimension to label_ids

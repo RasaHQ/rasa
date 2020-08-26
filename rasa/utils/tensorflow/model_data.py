@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # Mapping of attribute name and feature name to a list of numpy arrays representing
 # the actual features
 # For example:
-# "text" -> { "sentence_features": [
+# "text" -> { "sentence": [
 #   "numpy array containing dense features for every training example",
 #   "numpy array containing sparse features for every training example"
 # ]}
@@ -183,9 +183,6 @@ class RasaModelData:
 
         Should update number of examples.
         """
-        # if key in self.data and sub_key in self.data[key]:
-        #     raise ValueError(f"Key '{key}.{sub_key}' already exists in RasaModelData.")
-
         if features is None:
             return
 
