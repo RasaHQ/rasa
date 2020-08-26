@@ -182,7 +182,7 @@ the dialogue handling is tested as well as the message handling.
 The initial project already contains test conversations, you can replace
 them with some test conversations for your assistant:
 
-```yaml-rasa title="tests/test_conversations.yml"
+```yaml-rasa title="tests/test_stories.yml"
 stories:
 - story: greet and goodybe
   steps:
@@ -226,7 +226,7 @@ This test file contains three separate test stories. You can
 test your bot on all of them using `rasa test`:
 
 ```bash
-rasa test --stories tests/test_conversations.yml
+rasa test --stories tests/test_stories.yml
 ```
 
 The test command will produce a directory named `results`. It will contain a file
@@ -236,7 +236,7 @@ CI/CD pipeline, the test option `--fail-on-prediction-errors` can be used to thr
 an exception that stops the pipeline:
 
 ```bash
-rasa test --stories tests/test_conversations.yml --fail-on-prediction-errors
+rasa test --stories tests/test_stories.yml --fail-on-prediction-errors
 ```
 
 ## Handling FAQs using a Response Selector
@@ -388,7 +388,7 @@ rasa shell
 
 At this stage it makes sense to add a few test cases for our conversations:
 
-```yaml-rasa title="tests/test_conversations.yml"
+```yaml-rasa title="tests/test_stories.yml"
 stories:
 - story: ask channels
   steps:
@@ -427,4 +427,4 @@ Here's a **minimal checklist of files you need to modify** to build a basic FAQ 
 
 * `data/stories.yml`: Add a simple story for FAQs
 
-* `tests/test_conversations.yml`: Add E2E test stories for your FAQs
+* `tests/test_stories.yml`: Add E2E test stories for your FAQs

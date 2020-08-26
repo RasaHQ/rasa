@@ -215,10 +215,10 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
 
 
 @pytest.mark.parametrize(
-    "e2e_filename,e2e_story_test",
+    "test_stories_filename,test_story",
     [
         (
-            "test_conversations.yml",
+            "test_stories.yml",
             """
         stories:
         - story: story test
@@ -239,7 +239,7 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
     ],
 )
 async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
-    tmpdir_factory: TempdirFactory, e2e_filename: Text, e2e_story_test: Text
+    tmpdir_factory: TempdirFactory, test_stories_filename: Text, test_story: Text
 ):
     from rasa.core.training.structures import StoryGraph
     import rasa.core.training.loading as core_loading
@@ -260,9 +260,9 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     )
 
     e2e_story_test_file = (
-        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / e2e_filename
+        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / test_stories_filename
     )
-    e2e_story_test_file.write(e2e_story_test, ensure=True)
+    e2e_story_test_file.write(test_story, ensure=True)
 
     selector = MultiProjectImporter(config_path)
 
@@ -293,7 +293,7 @@ def test_not_importing_e2e_conversation_tests_in_project(
     story_file.write("""## story""", ensure=True)
 
     e2e_story_test_file = (
-        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "test_conversations.yml"
+        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "test_stories.yml"
     )
     e2e_story_test_file.write("""stories:""", ensure=True)
 

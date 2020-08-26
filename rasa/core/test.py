@@ -33,8 +33,8 @@ if typing.TYPE_CHECKING:
 
 CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
 REPORT_STORIES_FILE = "story_report.json"
-FAILED_STORIES_FILE = "failed_conversations.yml"
-SUCCESSFUL_STORIES_FILE = "successful_conversations.yml"
+FAILED_STORIES_FILE = "failed_test_stories.yml"
+SUCCESSFUL_STORIES_FILE = "successful_test_stories.yml"
 
 
 logger = logging.getLogger(__name__)
@@ -162,7 +162,7 @@ class EndToEndUserUtterance(UserUttered):
     """End-to-end user utterance.
 
     Mostly used to print the full end-to-end user message in the
-    `failed_conversations.yml` output file."""
+    `failed_test_stories.yml` output file."""
 
     def as_story_string(self, e2e: bool = True) -> Text:
         return super().as_story_string(e2e=True)

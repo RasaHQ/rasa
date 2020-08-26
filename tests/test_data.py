@@ -40,7 +40,7 @@ def test_default_conversation_tests_are_conversation_tests_yml(tmpdir: Path):
     parent = tmpdir / DEFAULT_E2E_TESTS_PATH
     Path(parent).mkdir(parents=True)
 
-    e2e_path = parent / "test_conversations.yml"
+    e2e_path = parent / "test_stories.yml"
     e2e_story = """stories:"""
     write_text_file(e2e_story, e2e_path)
 

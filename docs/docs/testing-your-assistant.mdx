@@ -30,7 +30,7 @@ Here are some examples:
 <Tabs values={[{"label": "Basics", "value": "basics"}, {"label": "Custom Actions", "value": "customactions"}, {"label": "Forms Happy Path", "value": "formshappypath"}, {"label": "Forms Unhappy Path", "value": "formsunhappypath"}]} defaultValue="basics">
   <TabItem value="basics">
 
-  ```yaml-rasa title="tests/test_conversations.yml"
+  ```yaml-rasa title="tests/test_stories.yml"
   stories:
   - story: A basic end-to-end test
     steps:
@@ -51,7 +51,7 @@ Here are some examples:
   </TabItem>
   <TabItem value="customactions">
 
-  ```yaml-rasa title="tests/test_conversations.yml"
+  ```yaml-rasa title="tests/test_stories.yml"
   stories:
   - story: A test where a custom action returns events
     steps:
@@ -72,7 +72,7 @@ Here are some examples:
   </TabItem>
   <TabItem value="formshappypath">
 
-  ```yaml-rasa title="tests/test_conversations.yml"
+  ```yaml-rasa title="tests/test_stories.yml"
   stories:
   - story: A test conversation with a form
     steps:
@@ -100,7 +100,7 @@ Here are some examples:
   </TabItem>
   <TabItem value="formsunhappypath">
 
-  ```yaml-rasa title="tests/test_conversations.yml"
+  ```yaml-rasa title="tests/test_stories.yml"
   stories:
   - story: A test conversation with unexpected input during a form
     steps:
@@ -128,7 +128,7 @@ Here are some examples:
   </TabItem>
 </Tabs>
 
-By default Rasa Open Source saves conversation tests to `tests/test_conversations.yml`.
+By default Rasa Open Source saves conversation tests to `tests/test_stories.yml`.
 You can test your assistant against them by running:
 
 ```bash
@@ -136,7 +136,7 @@ rasa test
 ```
 
 The command will always load all stories from any story files, where the file
-name starts with `test_`, e.g. `test_conversations.yml`. Your story test
+name starts with `test_`, e.g. `test_stories.yml`. Your story test
 file names should always start with `test_` for this detection to work.
 
 :::info Custom Actions
@@ -277,10 +277,10 @@ You can evaluate your trained model on a set of test stories
 by using the evaluate script:
 
 ```bash
-rasa test core --stories test_conversations.yml --out results
+rasa test core --stories test_stories.yml --out results
 ```
 
-This will print the failed stories to `results/failed_conversations.yml`.
+This will print the failed stories to `results/failed_test_stories.yml`.
 We count any story as failed if at least one of the actions
 was predicted incorrectly.
 
