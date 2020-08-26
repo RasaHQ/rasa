@@ -68,7 +68,7 @@ def plot_confusion_matrix(
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
 
-    zmax = confusion_matrix.max() if confusion_matrix else 1
+    zmax = confusion_matrix.max() if len(confusion_matrix) > 0 else 1
     plt.clf()
     if not color_map:
         color_map = plt.cm.Blues
