@@ -15,7 +15,7 @@ from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=p
 from rasa.nlu.featurizers.featurizer import Featurizer  # pytype: disable=pyi-error
 from rasa.nlu.tokenizers import tokenizer  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
-
+from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 
 from rasa.nlu.constants import (
     INTENT_NAME_KEY,
@@ -202,10 +202,7 @@ class Trainer:
         working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
-            if isinstance(
-                component,
-                (rasa.nlu.extractors.extractor.EntityExtractor, IntentClassifier),
-            ):
+            if isinstance(component, (EntityExtractor, IntentClassifier),):
                 working_data = working_data.without_empty_e2e_examples()
 
             logger.info(f"Starting to train component {component.name}")
@@ -419,9 +416,6 @@ class Interpreter:
         """
 
         for component in self.pipeline:
-            if not isinstance(
-                component,
-                (rasa.nlu.extractors.extractor.EntityExtractor, IntentClassifier),
-            ):
+            if not isinstance(component, (EntityExtractor, IntentClassifier),):
                 component.process(message, attribute, **self.context)
         return message
