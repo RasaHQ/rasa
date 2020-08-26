@@ -139,6 +139,11 @@ def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def split_nlu_data(args: argparse.Namespace) -> None:
+    """Load data from a file path and split the NLU data into test and train examples.
+
+    Args:
+        args: Commandline arguments
+    """
     from rasa.nlu.training_data.loading import load_data
     from rasa.nlu.training_data.util import get_file_format
 
@@ -155,8 +160,7 @@ def split_nlu_data(args: argparse.Namespace) -> None:
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
-    """
-    Validates either the story structure or the entire project.
+    """Validates either the story structure or the entire project.
 
     Args:
         args: Commandline arguments
@@ -183,6 +187,11 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
 
 
 def validate_stories(args: argparse.Namespace) -> None:
+    """Validate that training data file content conforms to training data spec.
+
+    Args:
+        args: Commandline arguments
+    """
     validate_files(args, stories_only=True)
 
 

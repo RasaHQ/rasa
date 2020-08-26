@@ -51,9 +51,31 @@ async def load_data(
     augmentation_factor: int = 50,
     tracker_limit: Optional[int] = None,
     use_story_concatenation: bool = True,
-    debug_plots=False,
+    debug_plots: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> List["DialogueStateTracker"]:
+    """
+    Load training data from a resource.
+
+    Args:
+        resource_name: resource to load the data from. either a path or an importer
+        domain: domain used for loading
+        remove_duplicates: should duplicated training examples be removed?
+        unique_last_num_states: number of states in a conversation that make the
+            a tracker unique (this is used to identify duplicates)
+        augmentation_factor:
+            by how much should the story training data be augmented
+        tracker_limit:
+            maximum number of trackers to generate during augmentation
+        use_story_concatenation:
+            should stories be concatenated when doing data augmentation
+        debug_plots:
+            generate debug plots during loading
+        exclusion_percentage:
+            how much data to exclude
+    Returns:
+        list of loaded trackers
+    """
     from rasa.core.training.generator import TrainingDataGenerator
     from rasa.importers.importer import TrainingDataImporter
 
