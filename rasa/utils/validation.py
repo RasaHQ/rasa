@@ -6,6 +6,7 @@ from rasa.constants import (
     PACKAGE_NAME,
     DOCS_URL_TRAINING_DATA_NLU,
     SCHEMA_EXTENSIONS_FILE,
+    SCHEMA_UTILS_FILE,
 )
 
 
@@ -57,13 +58,16 @@ def validate_yaml_schema(
 
     try:
         schema_file = pkg_resources.resource_filename(PACKAGE_NAME, schema_path)
+        schema_utils_file = pkg_resources.resource_filename(
+            PACKAGE_NAME, SCHEMA_UTILS_FILE
+        )
         schema_extensions = pkg_resources.resource_filename(
             PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE
         )
 
         c = Core(
             source_data=source_data,
-            schema_files=[schema_file],
+            schema_files=[schema_file, schema_utils_file],
             extensions=[schema_extensions],
         )
         c.validate(raise_exception=True)
