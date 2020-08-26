@@ -28,7 +28,6 @@ from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,
     DEFAULT_SERVER_PORT,
-    DEFAULT_SERVER_URL,
     REQUESTED_SLOT,
     UTTER_PREFIX,
 )
@@ -948,9 +947,9 @@ async def _predict_till_next_listen(
         if last_event.get("event") == BotUttered.type_name and last_event["data"].get(
             "buttons", None
         ):
-            response = _get_button_choice(last_event)
-            if response != rasa.cli.utils.FREE_TEXT_INPUT_PROMPT:
-                await send_message(endpoint, conversation_id, response)
+            user_selection = _get_button_choice(last_event)
+            if user_selection != rasa.cli.utils.FREE_TEXT_INPUT_PROMPT:
+                await send_message(endpoint, conversation_id, user_selection)
 
 
 def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
@@ -961,8 +960,7 @@ def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
         data, allow_free_text_input=True
     )
     question = questionary.select(message, choices)
-    response = rasa.cli.utils.payload_from_button_question(question)
-    return response
+    return rasa.cli.utils.payload_from_button_question(question)
 
 
 async def _correct_wrong_nlu(

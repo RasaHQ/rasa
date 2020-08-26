@@ -174,7 +174,7 @@ def element_to_string(element: Dict[Text, Any], idx: int = 0) -> Text:
 
 def button_choices_from_message_data(
     message: Dict[Text, Any], allow_free_text_input: bool = True
-) -> "Question":
+) -> List[Text]:
     """Return list of choices to present to the user.
 
     If allow_free_text_input is True, an additional option is added

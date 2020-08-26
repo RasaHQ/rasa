@@ -150,13 +150,13 @@ class RasaYAMLReader(TrainingDataReader):
 
         self.responses = Domain.collect_templates(responses_data)
 
-    def _parse_intent(self, data: Dict[Text, Any]) -> None:
+    def _parse_intent(self, intent_data: Dict[Text, Any]) -> None:
         from rasa.nlu.training_data import Message
         import rasa.nlu.training_data.entities_parser as entities_parser
         import rasa.nlu.training_data.synonyms_parser as synonyms_parser
         import rasa.nlu.constants as nlu_constants
 
-        intent = data.get(KEY_INTENT, "")
+        intent = intent_data.get(KEY_INTENT, "")
         if not intent:
             raise_warning(
                 f"Issue found while processing '{self.filename}': "
@@ -167,7 +167,7 @@ class RasaYAMLReader(TrainingDataReader):
             )
             return
 
-        examples = data.get(KEY_INTENT_EXAMPLES, "")
+        examples = intent_data.get(KEY_INTENT_EXAMPLES, "")
         for example, entities in self._parse_training_examples(examples, intent):
 
             plain_text = entities_parser.replace_entities(example)

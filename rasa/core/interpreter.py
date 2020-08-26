@@ -155,14 +155,9 @@ class RegexInterpreter(NaturalLanguageInterpreter):
     ) -> Dict[Text, Any]:
         """Parse a text message."""
 
-        return self.synchronous_parse(text, message_id, tracker)
+        return self.synchronous_parse(text)
 
-    def synchronous_parse(
-        self,
-        text: Text,
-        message_id: Optional[Text] = None,
-        tracker: Optional[DialogueStateTracker] = None,
-    ) -> Dict[Text, Any]:
+    def synchronous_parse(self, text: Text,) -> Dict[Text, Any]:
         """Parse a text message."""
 
         intent, confidence, entities = self.extract_intent_and_entities(text)

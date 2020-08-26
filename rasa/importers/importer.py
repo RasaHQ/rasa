@@ -83,8 +83,9 @@ class TrainingDataImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingDataImporter":
-        """Loads a `TrainingDataImporter` instance from a configuration file that
-           only reads Core training data.
+        """Loads core `TrainingDataImporter` instance.
+
+        Instance loaded from configuration file will only read Core training data.
         """
 
         importer = TrainingDataImporter.load_from_config(
@@ -99,8 +100,9 @@ class TrainingDataImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingDataImporter":
-        """Loads a `TrainingDataImporter` instance from a configuration file that
-           only reads NLU training data.
+        """Loads nlu `TrainingDataImporter` instance.
+
+        Instance loaded from configuration file will only read NLU training data.
         """
 
         importer = TrainingDataImporter.load_from_config(
@@ -218,8 +220,10 @@ class CoreDataImporter(TrainingDataImporter):
 
 
 class CombinedDataImporter(TrainingDataImporter):
-    """A `TrainingDataImporter` that supports using
-        multiple `TrainingDataImporter` instances as if they were a single instance.
+    """A `TrainingDataImporter` that combines multiple importers.
+
+    Uses multiple `TrainingDataImporter` instances
+    to load the data as if they were a single instance.
     """
 
     def __init__(self, importers: List[TrainingDataImporter]):
