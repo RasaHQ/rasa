@@ -1225,7 +1225,7 @@ async def _correct_entities(
     )
 
     annotation = await _ask_questions(question, conversation_id, endpoint)
-    parse_annotated = entities_parser.parse_training_example(annotation, intent=None)
+    parse_annotated = entities_parser.parse_training_example(annotation)
 
     corrected_entities = _merge_annotated_and_original_entities(
         parse_annotated, parse_original

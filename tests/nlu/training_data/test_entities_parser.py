@@ -122,7 +122,7 @@ def test_parse_training_example():
 
 
 def test_parse_empty_example():
-    message = entities_parser.parse_training_example("", intent=None)
+    message = entities_parser.parse_training_example("")
     assert message.get("intent") is None
     assert message.text == ""
 
