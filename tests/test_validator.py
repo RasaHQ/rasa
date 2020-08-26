@@ -117,15 +117,15 @@ async def test_early_exit_on_invalid_domain():
         validator = await Validator.from_importer(importer)
     validator.verify_domain_validity()
 
-    # two for non-unique domains, two for missing version
-    assert len(record) == 4
+    # two for non-unique domains
+    assert len(record) == 2
     assert (
         f"Loading domain from '{domain_path}' failed. Using empty domain. "
         "Error: 'Intents are not unique! Found multiple intents with name(s) "
         "['default', 'goodbye']. Either rename or remove the duplicate ones.'"
-        in record[1].message.args[0]
+        in record[0].message.args[0]
     )
-    assert record[1].message.args[0] == record[3].message.args[0]
+    assert record[0].message.args[0] == record[1].message.args[0]
 
 
 async def test_verify_there_is_not_example_repetition_in_intents():

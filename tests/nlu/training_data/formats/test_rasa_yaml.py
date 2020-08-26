@@ -3,9 +3,9 @@ from typing import Text
 
 import pytest
 
-from rasa.core.domain import InvalidDomain
 import rasa.utils.io as io_utils
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.core.domain import InvalidDomain
 from rasa.nlu.constants import INTENT
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader, RasaYAMLWriter
 
@@ -18,32 +18,22 @@ nlu:
     - how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
 """
 
-MULTILINE_INTENT_EXAMPLE_WITH_SYNONYM = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+MULTILINE_INTENT_EXAMPLE_WITH_SYNONYM = """
 nlu:
 - intent: intent_name
   examples: |
-    - flight from [boston]{{"entity": "city", "role": "from", "value": "bostn"}}?
+    - flight from [boston]{"entity": "city", "role": "from", "value": "bostn"}?
 """
 
-MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL = """
 nlu:
 - intent: intent_name
   examples: |
     how much CO2 will that use?
-    - how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
-"""
-
-EXAMPLE_NO_VERSION_SPECIFIED = """
-nlu:
-- intent: intent_name
-  examples: |
     - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
 """
 
-INTENT_EXAMPLES_WITH_METADATA = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+INTENT_EXAMPLES_WITH_METADATA = """
 nlu:
 - intent: intent_name
   metadata:
@@ -53,11 +43,10 @@ nlu:
     metadata:
       sentiment: positive
   - text: |
-      how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
+      how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
 """
 
-MINIMAL_VALID_EXAMPLE = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+MINIMAL_VALID_EXAMPLE = """
 nlu:\n
 stories:
 """
@@ -148,6 +137,7 @@ def test_multiline_intent_is_parsed(example: Text):
     assert not len(training_data.entity_synonyms)
 
 
+# This test would work only with examples that have a `version` key specified
 @pytest.mark.parametrize(
     "example",
     [MULTILINE_INTENT_EXAMPLES, SYNONYM_EXAMPLE, LOOKUP_EXAMPLE, REGEX_EXAMPLE],
@@ -171,16 +161,6 @@ def test_multiline_intent_example_is_skipped_when_no_leading_symbol():
 
     assert len(training_data.training_examples) == 1
     assert not len(training_data.entity_synonyms)
-
-
-def test_no_version_specified_raises_warning():
-    parser = RasaYAMLReader()
-
-    with pytest.warns(None) as record:
-        parser.reads(EXAMPLE_NO_VERSION_SPECIFIED)
-
-    # warning for the missing version string
-    assert len(record) == 1
 
 
 @pytest.mark.parametrize(
