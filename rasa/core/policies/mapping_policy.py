@@ -52,10 +52,9 @@ class MappingPolicy(Policy):
 
         super().__init__(priority=priority)
 
-        common_utils.raise_warning(
+        common_utils.raise_deprecation_warning(
             f"'{MappingPolicy.__name__}' is deprecated and will be removed in "
             "the future. It is recommended to use the 'RulePolicy' instead.",
-            category=FutureWarning,
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 

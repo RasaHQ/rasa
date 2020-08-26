@@ -26,6 +26,8 @@ PACKAGE_NAME = "rasa"
 
 CONFIG_SCHEMA_FILE = "nlu/schemas/config.yml"
 DOMAIN_SCHEMA_FILE = "core/schemas/domain.yml"
+SCHEMA_UTILS_FILE = "utils/schemas.yml"
+SCHEMA_EXTENSIONS_FILE = "utils/pykwalify_extensions.py"
 YAML_VERSION = (1, 2)
 
 DEFAULT_RASA_X_PORT = 5002
@@ -61,6 +63,8 @@ CONFIG_AUTOCONFIGURABLE_KEYS = ["policies", "pipeline"]
 
 
 MINIMUM_COMPATIBLE_VERSION = "1.11.0a3"
+
+NEXT_MAJOR_VERSION_FOR_DEPRECATIONS = "3.0.0"
 
 LATEST_TRAINING_DATA_FORMAT_VERSION = "2.0"
 
