@@ -16,7 +16,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
-from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
@@ -135,9 +134,10 @@ class EvaluationStore:
 
             def compare_entities():
                 """
-                Compare the current predicted and target entities and decide which one comes first.
-                if predicted entity comes first returns -1 while returns 1 if target entity comes first.
-                if target and predicted are aligned it returns 0
+                Compare the current predicted and target entities and decide which one
+                comes first. If the predicted entity comes first it returns -1,
+                while it returns 1 if the target entity comes first.
+                If target and predicted are aligned it returns 0
                 """
                 pred = None
                 target = None
