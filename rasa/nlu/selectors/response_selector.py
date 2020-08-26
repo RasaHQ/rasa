@@ -351,9 +351,9 @@ class ResponseSelector(DIETClassifier):
         """Return the most likely response, the associated intent_response_key and its similarity to the input."""
 
         out = self._predict(message)
-        label, label_ranking = self._predict_label(out)
+        top_label, label_ranking = self._predict_label(out)
 
-        label_intent_response_key = self._resolve_intent_response_key(label)
+        label_intent_response_key = self._resolve_intent_response_key(top_label)
         label_response_templates = self.responses[label_intent_response_key]
 
         for label in label_ranking:
@@ -372,9 +372,9 @@ class ResponseSelector(DIETClassifier):
 
         prediction_dict = {
             RESPONSE_SELECTOR_PREDICTION_KEY: {
-                "id": label["id"],
+                "id": top_label["id"],
                 RESPONSE_SELECTOR_RESPONSES_KEY: label_response_templates,
-                PREDICTED_CONFIDENCE_KEY: label[PREDICTED_CONFIDENCE_KEY],
+                PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
                 INTENT_RESPONSE_KEY: label_intent_response_key,
             },
             RESPONSE_SELECTOR_RANKING_KEY: label_ranking,

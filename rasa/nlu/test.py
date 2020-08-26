@@ -68,7 +68,7 @@ IntentEvaluationResult = namedtuple(
 
 ResponseSelectionEvaluationResult = namedtuple(
     "ResponseSelectionEvaluationResult",
-    "intent_response_key_target response_target intent_response_key_prediction message confidence",
+    "intent_response_key_target intent_response_key_prediction message confidence",
 )
 
 EntityEvaluationResult = namedtuple(
@@ -131,7 +131,7 @@ def remove_empty_response_examples(
         if r.intent_response_key_prediction is None:
             r = r._replace(intent_response_key_prediction="")
 
-        if r.response_target != "" and r.response_target is not None:
+        if r.intent_response_key_target:
             filtered.append(r)
 
     return filtered
@@ -242,7 +242,6 @@ def write_response_successes(
         {
             "text": r.message,
             "intent_response_key_target": r.intent_response_key_target,
-            "response_target": r.response_target,
             "intent_response_key_prediction": {
                 "name": r.intent_response_key_prediction,
                 "confidence": r.confidence,
@@ -275,7 +274,6 @@ def write_response_errors(
         {
             "text": r.message,
             "intent_response_key_target": r.intent_response_key_target,
-            "response_target": r.response_target,
             "intent_response_key_prediction": {
                 "name": r.intent_response_key_prediction,
                 "confidence": r.confidence,
@@ -474,7 +472,7 @@ def evaluate_response_selections(
             response_selection_results,
             histogram_filename,
             "intent_response_key_target",
-            "intent_response_prediction",
+            "intent_response_key_prediction",
             title="Response Selection Prediction Confidence Distribution",
         )
 
@@ -482,7 +480,6 @@ def evaluate_response_selections(
         {
             "text": res.message,
             "intent_response_key_target": res.intent_response_key_target,
-            "response_target": res.response_target,
             "intent_response_key_prediction": res.intent_response_key_prediction,
             "confidence": res.confidence,
         }
@@ -1336,14 +1333,11 @@ def get_eval_data(
                 response_prediction_key, {}
             ).get(RESPONSE_SELECTOR_PREDICTION_KEY, {})
 
-            response_target = example.get(RESPONSE, "")
-
-            intent_response_key_target = example.get(INTENT_RESPONSE_KEY)
+            intent_response_key_target = example.get(INTENT_RESPONSE_KEY, "")
 
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
                     intent_response_key_target,
-                    response_target,
                     response_prediction.get(INTENT_RESPONSE_KEY),
                     result.get(TEXT, {}),
                     response_prediction.get(PREDICTED_CONFIDENCE_KEY),
@@ -1796,7 +1790,9 @@ def compute_metrics(
     response_selection_metrics = {}
     if response_selection_results:
         response_selection_metrics = _compute_metrics(
-            response_selection_results, "response_target", "response_prediction"
+            response_selection_results,
+            "intent_response_key_target",
+            "intent_response_key_prediction",
         )
 
     return (
