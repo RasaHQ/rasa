@@ -227,13 +227,13 @@ class RedisLockStore(LockStore):
             socket_timeout=socket_timeout,
         )
 
-        if (not prefix is None) and ((isinstance(prefix, str)) and (prefix.isalnum())):
+        if (prefix is None) or (prefix is ""):
+            self.prefix = "lock:"
+        elif (not prefix is None) and ((isinstance(prefix,str)) and (prefix.isalnum())):
             self.prefix = prefix + ":lock:"
         else:
             self.prefix = "lock:"
-            logger.warning(
-                f"Omitting provided non-alphanumeric key prefix: '{prefix}'."
-            )
+            logger.warning(f"Omitting provided non-alphanumeric key prefix: '{prefix}'.")
 
         super().__init__()
 

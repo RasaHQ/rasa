@@ -273,13 +273,13 @@ class RedisTrackerStore(TrackerStore):
         )
         self.record_exp = record_exp
 
-        if (not prefix is None) and ((isinstance(prefix, str)) and (prefix.isalnum())):
+        if (prefix is None) or (prefix is ""):
+            self.prefix = "tracker:"
+        elif (not prefix is None) and ((isinstance(prefix,str)) and (prefix.isalnum())):
             self.prefix = prefix + ":tracker:"
         else:
             self.prefix = "tracker:"
-            logger.warning(
-                f"Omitting provided non-alphanumeric key prefix: '{prefix}'."
-            )
+            logger.warning(f"Omitting provided non-alphanumeric key prefix: '{prefix}'.")
 
         super().__init__(domain, event_broker)
 
