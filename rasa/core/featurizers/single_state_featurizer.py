@@ -132,7 +132,7 @@ class SingleStateFeaturizer:
         message, attribute = self._construct_message(sub_state, state_type)
 
         if interpreter is not None:
-            parsed_message = interpreter.synchronous_parse_message(message, attribute)
+            parsed_message = interpreter.synchronous_parse_message(message)
             all_features = (
                 parsed_message.get_sparse_features(attribute)
                 + parsed_message.get_dense_features(attribute)

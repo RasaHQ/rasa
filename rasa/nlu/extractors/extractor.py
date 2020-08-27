@@ -23,7 +23,7 @@ from rasa.nlu.constants import (
 )
 from rasa.nlu.training_data import Message
 import rasa.utils.common as common_utils
-import rasa.nlu.utils.bilou_utils as bilou_utils
+from rasa.nlu.utils import bilou_utils
 
 
 class EntityExtractor(Component):

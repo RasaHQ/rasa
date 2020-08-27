@@ -15,8 +15,7 @@ from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=p
 from rasa.nlu.featurizers.featurizer import Featurizer  # pytype: disable=pyi-error
 from rasa.nlu.tokenizers import tokenizer  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
-from rasa.nlu import extractors  # pytype: disable=pyi-error
-
+from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 
 from rasa.nlu.constants import (
     INTENT_NAME_KEY,
@@ -203,9 +202,7 @@ class Trainer:
         working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
-            if isinstance(
-                component, (extractors.extractor.EntityExtractor, IntentClassifier)
-            ):
+            if isinstance(component, (EntityExtractor, IntentClassifier),):
                 working_data = working_data.without_empty_e2e_examples()
 
             logger.info(f"Starting to train component {component.name}")
@@ -408,7 +405,7 @@ class Interpreter:
         output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
 
-    def parse_message(self, message: Message, attribute: Text = TEXT) -> Message:
+    def parse_message(self, message: Message) -> Message:
         """
         Tokenizer and featurize the input message by the provided attribute;
         Args:
@@ -419,10 +416,6 @@ class Interpreter:
         """
 
         for component in self.pipeline:
-            if not isinstance(
-                component, (extractors.extractor.EntityExtractor, IntentClassifier)
-            ):
-                self.context["attribute"] = attribute
+            if not isinstance(component, (EntityExtractor, IntentClassifier),):
                 component.process(message, **self.context)
-                self.context["attribute"] = None
         return message
