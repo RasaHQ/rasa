@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 from collections import defaultdict
 
-import scipy.sparse
 import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -704,7 +703,7 @@ class TED(TransformerRasaModel):
                 attribute_features
             )
 
-        return attribute_features
+        return attribute_features * attribute_mask
 
     def _process_batch(
         self, batch: Dict[Text, Dict[Text, List[tf.Tensor]]]
