@@ -433,10 +433,12 @@ async def test_action_utter_retrieved_empty_response(
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
-            "response_selector": {
+            RESPONSE_SELECTOR_PROPERTY_NAME: {
                 "dummy": {
-                    "response": {"text": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    RESPONSE_SELECTOR_PREDICTION_KEY: {
+                        INTENT_RESPONSE_KEY: "chitchat/ask_name",
+                        RESPONSE_SELECTOR_RESPONSES_KEY: [{"text": "I am a bot."}],
+                    }
                 }
             }
         },
