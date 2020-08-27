@@ -7,8 +7,8 @@ The `moodbot` example simulates how you can use your bot on different channels.
 This example contains some training data and the main files needed to build an
 assistant on your local machine. The `moodbot` consists of the following files:
 
-- **data/nlu.md** contains training examples for the NLU model  
-- **data/stories.md** contains training stories for the Core model  
+- **data/nlu.yml** contains training examples for the NLU model  
+- **data/stories.yml** contains training stories for the Core model  
 - **config.yml** contains the model configuration
 - **domain.yml** contains the domain of the assistant  
 - **credentials.yml** contains credentials for the different channels

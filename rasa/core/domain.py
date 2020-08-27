@@ -1126,9 +1126,9 @@ class Domain:
         Returns:
             `True` if it's a domain file, otherwise `False`.
         """
-        from rasa.data import YAML_FILE_EXTENSIONS
+        from rasa.data import is_likely_yaml_file
 
-        if not Path(filename).suffix in YAML_FILE_EXTENSIONS:
+        if not is_likely_yaml_file(filename):
             return False
         try:
             content = rasa.utils.io.read_yaml_file(filename)

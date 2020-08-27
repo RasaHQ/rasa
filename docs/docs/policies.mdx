@@ -384,10 +384,25 @@ a fixed behavior. Please see [Rules](./rules.mdx) for further information.
 
 ## Memoization Policy
 
-The `MemoizationPolicy` just memorizes the conversations in your
-training data. It predicts the next action with confidence `1.0`
-if this exact conversation exists in the training data, otherwise it
-predicts `None` with confidence `0.0`.
+The `MemoizationPolicy` remembers the stories from your
+training data. It checks if the current conversation matches a story
+in the training data. If so, it will predict the next action from the matching
+story of your training data with a confidence of `1.0`. If no matching conversation
+is found, the policy predicts `None` with confidence `0.0`.
+
+When looking for a match in your training data, the policy will take the last
+`max_history` number of turns of the conversation into account.
+One “turn” includes the message sent by the user and any actions the
+assistant performed before waiting for the next message.
+
+You can configure the number of turns the `MemoizationPolicy` should use in your
+configuration:
+```yaml title="config.yml"
+policies:
+  - name: "MemoizationPolicy"
+    max_history: 3
+```
+
 
 ## Augmented Memoization Policy
 

@@ -15,6 +15,7 @@ DEFAULT_NLU_SUBDIRECTORY_NAME = "nlu"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
+TEST_STORIES_FILE_PREFIX = "test_"
 TEST_DATA_FILE = "test.md"
 TRAIN_DATA_FILE = "train.md"
 NLG_DATA_FILE = "responses.md"
@@ -38,6 +39,7 @@ DOCS_URL_POLICIES = DOCS_BASE_URL + "/core/policies/"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/core/domains/"
 DOCS_URL_STORIES = DOCS_BASE_URL + "/core/stories/"
 DOCS_URL_RULES = DOCS_BASE_URL + "/core/rules/"
+DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/core/actions/"
 DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/user-guide/connectors/"
 DOCS_URL_EVENT_BROKERS = DOCS_BASE_URL + "/api/event-brokers/"
@@ -51,7 +53,7 @@ DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide/"
 
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
 
-LEGACY_DOCS_BASE_URL = "http://legacy-docs.rasa.com"
+LEGACY_DOCS_BASE_URL = "https://legacy-docs-v1.rasa.com"
 
 CONFIG_KEYS_CORE = ["policies"]
 CONFIG_KEYS_NLU = ["language", "pipeline"]
