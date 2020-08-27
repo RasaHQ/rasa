@@ -70,7 +70,7 @@ def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path)
         {
             "event_broker": {
                 "type": "sql",
-                "db": SingleQuotedScalarString(str(tmp_path / "rasa.db")),
+                "db": str(tmp_path / "rasa.db").replace("\\", "\\\\"),
             },
             "tracker_store": {"type": "sql"},
         },
