@@ -82,7 +82,7 @@ def test_binary_featurizer_creates_encoded_all_actions():
     assert len(encoded_actions) == len(domain.action_names)
     assert all(
         [
-            ACTION_NAME in encoded_action and not ACTION_TEXT in encoded_action
+            ACTION_NAME in encoded_action and ACTION_TEXT not in encoded_action
             for encoded_action in encoded_actions
         ]
     )

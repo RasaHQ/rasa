@@ -34,7 +34,7 @@ from rasa.nlu.training_data import Message
             ],
             TEXT,
             [],
-            [1, 2, 1, 1, 1, 0],
+            [1, 1, 0, 1, 2, 1],
             [1, 2, 2],
         ),
         (
@@ -63,9 +63,13 @@ def test_get_dense_features(
     actual_seq_features, actual_sen_features = message.get_dense_features(
         attribute, featurizers
     )
+    if actual_seq_features:
+        actual_seq_features = actual_seq_features.features
+    if actual_sen_features:
+        actual_sen_features = actual_sen_features.features
 
-    assert np.all(actual_sen_features.features == expected_sen_features)
-    assert np.all(actual_seq_features.features == expected_seq_features)
+    assert np.all(actual_sen_features == expected_sen_features)
+    assert np.all(actual_seq_features == expected_seq_features)
 
 
 @pytest.mark.parametrize(
@@ -109,7 +113,7 @@ def test_get_dense_features(
             ],
             TEXT,
             [],
-            [1, 2, 1, 1, 1, 0],
+            [1, 1, 0, 1, 2, 1],
             [1, 2, 2],
         ),
         (
@@ -152,18 +156,22 @@ def test_get_sparse_features(
     actual_seq_features, actual_sen_features = message.get_sparse_features(
         attribute, featurizers
     )
+    if actual_seq_features:
+        actual_seq_features = actual_seq_features.features
+    if actual_sen_features:
+        actual_sen_features = actual_sen_features.features
 
     if expected_seq_features is None:
         assert actual_seq_features is None
     else:
         assert actual_seq_features is not None
-        assert np.all(actual_seq_features.features.toarray() == expected_seq_features)
+        assert np.all(actual_seq_features.toarray() == expected_seq_features)
 
     if expected_sen_features is None:
         assert actual_sen_features is None
     else:
         assert actual_sen_features is not None
-        assert np.all(actual_sen_features.features.toarray() == expected_sen_features)
+        assert np.all(actual_sen_features.toarray() == expected_sen_features)
 
 
 @pytest.mark.parametrize(
