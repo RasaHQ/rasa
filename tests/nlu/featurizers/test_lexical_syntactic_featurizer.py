@@ -158,13 +158,11 @@ def test_text_featurizer_using_pos_with_action_text(
     test_message.set(SPACY_DOCS[ACTION_TEXT], spacy_nlp(sentence))
 
     SpacyTokenizer().process(train_message)
-    SpacyTokenizer().process(train_message, attribute=ACTION_TEXT)
     SpacyTokenizer().process(test_message)
-    SpacyTokenizer().process(test_message, attribute=ACTION_TEXT)
 
     featurizer.train(TrainingData([train_message]))
     # Checking that text is processed as expected
-    featurizer.process(test_message, attribute=TEXT)
+    featurizer.process(test_message)
 
     seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
 
@@ -174,7 +172,7 @@ def test_text_featurizer_using_pos_with_action_text(
     assert np.all(seq_vec.toarray() == expected)
 
     # Checking that action_text does not get processed and passing attribute works
-    featurizer.process(test_message, attribute=ACTION_TEXT)
+    featurizer.process(test_message)
 
     seq_vec, sen_vec = test_message.get_sparse_features(ACTION_TEXT, [])
 
