@@ -3,8 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "yarn pre-build && docusaurus start",
     "pre-build": "yarn copy-md-files && yarn variables && yarn program-outputs && yarn included-sources && yarn autodoc",
+    "develop": "docusaurus start --port 3000",
+    "start": "yarn pre-build && yarn develop",
     "build": "docusaurus build",
     "serve": "netlify dev --dir=build",
     "deploy": "netlify deploy --dir=build --alias=staging --open",
@@ -30,6 +31,7 @@
     "@lunelson/sass-lerp": "^1.0.0",
     "@lunelson/sass-maps-next": "^1.0.0",
     "@lunelson/sass-throw": "^2.1.0",
+    "@lunelson/sass-u": "^0.11.0",
     "@philpl/buble": "^0.19.7",
     "@rasahq/docusaurus-theme-tabula": "^0.5.1",
     "classnames": "^2.2.6",
@@ -50,7 +52,8 @@
     "sass-loader": "^9.0.3",
     "styled-components": "^4.2.0",
     "tinycolor2": "^1.4.1",
-    "unist-util-visit-children": "^1.1.3"
+    "unist-util-visit-children": "^1.1.3",
+    "utility-opentype": "^0.1.4"
   },
   "browserslist": {
     "production": [

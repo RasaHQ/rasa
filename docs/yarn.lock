@@ -1775,6 +1775,11 @@
   resolved "https://registry.yarnpkg.com/@lunelson/sass-throw/-/sass-throw-2.1.0.tgz#37c5ba3ae36d454cecfcd53d34651367f48ce964"
   integrity sha512-8ntqqHvSlqCqdR4M5wlMKVMj/lJ+oIN+qi8226F1ald7y16O9IIgPNUKKWSHpvlNwkykiE3MX9V/wgOshSYnyQ==
 
+"@lunelson/sass-u@^0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@lunelson/sass-u/-/sass-u-0.11.0.tgz#6bc30d6ecad00058efecabc3689c11a0b8302eb5"
+  integrity sha512-uEeJ+v6xbQxHvFdF+AaG1zkTwX+Iu1KBDUNgFARmRR5RA1ffdAKWgSAOx0AOmoozeDtOGOQcQjOF9txpz+ob0w==
+
 "@mdx-js/mdx@^1.5.8":
   version "1.6.16"
   resolved "https://registry.yarnpkg.com/@mdx-js/mdx/-/mdx-1.6.16.tgz#f01af0140539c1ce043d246259d8becd2153b2bb"
@@ -15010,6 +15015,11 @@ utila@^0.4.0, utila@~0.4:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/utila/-/utila-0.4.0.tgz#8a16a05d445657a3aea5eecc5b12a4fa5379772c"
   integrity sha1-ihagXURWV6Oupe7MWxKk+lN5dyw=
+
+utility-opentype@^0.1.4:
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/utility-opentype/-/utility-opentype-0.1.4.tgz#076be3eed1a0f5aa6123982ce41c7d055a15c22a"
+  integrity sha1-B2vj7tGg9aphI5gs5Bx9BVoVwio=
 
 utils-merge@1.0.1:
   version "1.0.1"

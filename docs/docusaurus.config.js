@@ -15,13 +15,16 @@ try {
 
 const legacyVersion = {
   label: 'Legacy 1.x',
-  to: 'https://legacy-docs-v1.rasa.com',
+  href: 'https://legacy-docs-v1.rasa.com',
+  target: '_self',
 };
 
 // FIXME: when deploying this for real, change to '/docs/rasa/'
 const BASE_URL = '/docs/rasa/next/';
 const SITE_URL = 'https://rasa.com';
-const RASA_X_URL = isDev ? 'http://localhost:3001' : SITE_URL;
+
+// this allows switching doc sites in development
+const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 
 module.exports = {
   title: 'Rasa Open Source Documentation',
@@ -71,12 +74,12 @@ module.exports = {
           position: 'left',
           items: [
             {
-              href: `${RASA_X_URL}/docs/rasa-x/next/`,
+              href: `${SWAP_URL}/docs/rasa-x/next/`,
               label: 'Usage',
               target: '_self',
             },
             {
-              href: `${RASA_X_URL}/docs/rasa-x/next/api`,
+              href: `${SWAP_URL}/docs/rasa-x/next/api`,
               label: 'API',
               target: '_self',
             },
