@@ -1508,11 +1508,7 @@ class DIET(TransformerRasaModel):
 
         text_embed = self._tf_layers[f"embed.{TEXT}"](text_features)
         label_embed = self._tf_layers[f"embed.{LABEL}"](label_features)
-        print(text_embed.shape)
-        print(label_embed.shape)
-        print(label_ids.shape)
-        print(all_labels_embed.shape)
-        print(all_label_ids.shape)
+
         return self._tf_layers[f"loss.{LABEL}"](
             text_embed, label_embed, label_ids, all_labels_embed, all_label_ids
         )
