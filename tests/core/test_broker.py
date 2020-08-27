@@ -123,8 +123,9 @@ def test_file_broker_from_config(tmp_path: Path):
     endpoint_config = textwrap.dedent(
         f"""
         event_broker:
-          path: "{tmp_path / 'rasa_test_event.log'}"
-          type: "file"
+          # needs to be single quotes to avoid yaml trying to parse escape chars...
+          path: '{tmp_path / 'rasa_test_event.log'}'
+          type: 'file'
     """
     )
     rasa.utils.io.write_text_file(endpoint_config, tmp_path / "endpoint.yml")

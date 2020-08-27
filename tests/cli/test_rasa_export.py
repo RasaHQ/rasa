@@ -6,6 +6,7 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
+from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
 import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
@@ -67,7 +68,10 @@ def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path)
     endpoints_path = write_endpoint_config_to_yaml(
         tmp_path,
         {
-            "event_broker": {"type": "sql", "db": str(tmp_path / "rasa.db")},
+            "event_broker": {
+                "type": "sql",
+                "db": SingleQuotedScalarString(str(tmp_path / "rasa.db")),
+            },
             "tracker_store": {"type": "sql"},
         },
     )
