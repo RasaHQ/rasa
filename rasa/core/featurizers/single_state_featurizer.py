@@ -18,7 +18,6 @@ from rasa.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
 )
-from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.nlu.training_data.message import Message
 from rasa.core.trackers import prev_action_listen_in_state
 

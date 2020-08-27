@@ -235,9 +235,7 @@ class SklearnPolicy(Policy):
         **kwargs: Any,
     ) -> List[float]:
         X = self.featurizer.create_state_features([tracker], domain, interpreter)
-        training_data, _ = convert_to_data_format(
-            X, zero_features=self.zero_state_features, training=False
-        )
+        training_data, _ = convert_to_data_format(X, self.zero_state_features)
         Xt = self._preprocess_data(training_data)
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)

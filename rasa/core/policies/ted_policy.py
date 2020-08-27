@@ -1,4 +1,3 @@
-import collections
 import copy
 import logging
 import os
@@ -250,9 +249,11 @@ class TEDPolicy(Policy):
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        all_labels = state_featurizer.create_encoded_all_actions(domain, interpreter)
+        encoded_all_labels = state_featurizer.create_encoded_all_actions(
+            domain, interpreter
+        )
 
-        attribute_data, _ = convert_to_data_format(all_labels)
+        attribute_data, _ = convert_to_data_format(encoded_all_labels)
 
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
@@ -262,23 +263,27 @@ class TEDPolicy(Policy):
             LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
         )
 
-        return label_data, all_labels
+        return label_data, encoded_all_labels
 
+    @staticmethod
     def _get_label_features(
-        self, label_ids: List[List[int]], all_labels: List[Dict[Text, List["Features"]]]
+        label_ids: np.ndarray, encoded_all_labels: List[Dict[Text, List["Features"]]],
     ) -> Data:
-        label_ids = [label_id[0] for label_id in label_ids]
-        label_data = [all_labels[label_id] for label_id in label_ids]
-        label_attribute_data, _ = convert_to_data_format(label_data)
+        encoded_labels = [
+            [encoded_all_labels[label_id] for label_id in seq_label_id]
+            for seq_label_id in label_ids
+        ]
+
+        # it is easier to convert to data again rather than use _label_data
+        label_attribute_data, _ = convert_to_data_format(encoded_labels)
 
         return label_attribute_data
 
     def _create_model_data(
         self,
         tracker_state_features: List[List[Dict[Text, List["Features"]]]],
-        label_ids: Optional[List[List[int]]] = None,
-        all_labels: Optional[List[Dict[Text, List["Features"]]]] = None,
-        training: bool = True,
+        label_ids: Optional[np.ndarray] = None,
+        encoded_all_labels: Optional[List[Dict[Text, List["Features"]]]] = None,
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData.
 
@@ -288,29 +293,30 @@ class TEDPolicy(Policy):
                 turns in all training trackers
             label_ids: the label ids (e.g. action ids) for every dialogue turn in all
                 training trackers
+            encoded_all_labels: a list of dictionaries containing attribute features for labels ids
 
         Returns:
             RasaModelData
         """
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
-        if label_ids and all_labels:
-            model_data.add_features(LABEL_KEY, LABEL_SUB_KEY, [np.array(label_ids)])
-            attribute_data = self._get_label_features(label_ids, all_labels)
-            model_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
-
-        if training:
-            attribute_data, zero_state_features = convert_to_data_format(
-                tracker_state_features, training=training
+        if label_ids is not None and encoded_all_labels is not None:
+            # method is called during training
+            model_data.add_features(LABEL_KEY, LABEL_SUB_KEY, [label_ids])
+            label_attribute_data = self._get_label_features(
+                label_ids, encoded_all_labels
             )
-            self.zero_state_features = zero_state_features
+            model_data.add_data(label_attribute_data, key_prefix=f"{LABEL_KEY}_")
+
+            attribute_data, self.zero_state_features = convert_to_data_format(
+                tracker_state_features
+            )
         else:
+            # method is called during prediction
             attribute_data, _ = convert_to_data_format(
-                tracker_state_features, self.zero_state_features, training=training
+                tracker_state_features, self.zero_state_features
             )
 
-        # ensure that all attributes are in the same order
-        attribute_data = collections.OrderedDict(sorted(attribute_data.items()))
         model_data.add_data(attribute_data)
         model_data.add_lengths(
             DIALOGUE, LENGTH, next(iter(list(attribute_data.keys()))), MASK
@@ -331,11 +337,14 @@ class TEDPolicy(Policy):
         tracker_state_features, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
-        self._label_data, all_labels = self._create_label_data(domain, interpreter)
+
+        self._label_data, encoded_all_labels = self._create_label_data(
+            domain, interpreter
+        )
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(
-            tracker_state_features, label_ids, all_labels
+            tracker_state_features, label_ids, encoded_all_labels
         )
         if model_data.is_empty():
             logger.error(
@@ -378,8 +387,10 @@ class TEDPolicy(Policy):
             return self._default_predictions(domain)
 
         # create model data from tracker
-        data_X = self.featurizer.create_state_features([tracker], domain, interpreter)
-        model_data = self._create_model_data(data_X, training=False)
+        tracker_state_features = self.featurizer.create_state_features(
+            [tracker], domain, interpreter
+        )
+        model_data = self._create_model_data(tracker_state_features)
 
         output = self.model.predict(model_data)
 

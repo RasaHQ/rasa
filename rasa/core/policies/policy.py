@@ -3,6 +3,7 @@ import logging
 from enum import Enum
 import typing
 from typing import Any, List, Optional, Text, Dict, Callable, Type, Union, Tuple
+import numpy as np
 
 import rasa.utils.common
 from rasa.core.domain import Domain
@@ -126,7 +127,7 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], List[List[int]]]:
+    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
         """Transform training trackers into a vector representation.
 
         The trackers, consisting of multiple turns, will be transformed
