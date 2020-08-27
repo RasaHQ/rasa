@@ -27,8 +27,8 @@ from rasa.core.actions.action import (
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
 from rasa.core.exceptions import UnsupportedDialogueModelError
-from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
@@ -426,7 +426,7 @@ class PolicyEnsemble:
             raise InvalidPolicyConfig("featurizer can have only 1 state featurizer")
         state_featurizer_config = featurizer_config["state_featurizer"][0]
         state_featurizer_name = state_featurizer_config.pop("name")
-        state_featurizer_func = registry.featurizer_from_module_path(
+        state_featurizer_func = registry.state_featurizer_from_module_path(
             state_featurizer_name
         )
 
@@ -613,7 +613,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 "adapt your custom `Policy` implementation.",
                 category=DeprecationWarning,
             )
-            probabilities = policy.predict_action_probabilities(tracker, domain)
+            probabilities = policy.predict_action_probabilities(
+                tracker, domain, RegexInterpreter()
+            )
 
         return Prediction(probabilities, policy.priority)
 

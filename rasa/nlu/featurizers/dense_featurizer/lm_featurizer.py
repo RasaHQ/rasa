@@ -2,7 +2,8 @@ from typing import Any, Optional, Text, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.utils.features import Features
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.training_data import Message, TrainingData

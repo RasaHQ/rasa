@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import scipy.sparse
 
-from rasa.nlu.featurizers.featurizer import Features
+from rasa.utils.features import Features
 from rasa.nlu.constants import (
     TEXT,
     FEATURE_TYPE_SEQUENCE,
@@ -64,8 +64,8 @@ def test_get_dense_features(
         attribute, featurizers
     )
 
-    assert np.all(actual_sen_features == expected_sen_features)
-    assert np.all(actual_seq_features == expected_seq_features)
+    assert np.all(actual_sen_features.features == expected_sen_features)
+    assert np.all(actual_seq_features.features == expected_seq_features)
 
 
 @pytest.mark.parametrize(
@@ -157,13 +157,13 @@ def test_get_sparse_features(
         assert actual_seq_features is None
     else:
         assert actual_seq_features is not None
-        assert np.all(actual_seq_features.toarray() == expected_seq_features)
+        assert np.all(actual_seq_features.features.toarray() == expected_seq_features)
 
     if expected_sen_features is None:
         assert actual_sen_features is None
     else:
         assert actual_sen_features is not None
-        assert np.all(actual_sen_features.toarray() == expected_sen_features)
+        assert np.all(actual_sen_features.features.toarray() == expected_sen_features)
 
 
 @pytest.mark.parametrize(

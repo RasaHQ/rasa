@@ -5,20 +5,33 @@ import scipy.sparse
 import tensorflow as tf
 
 from sklearn.model_selection import train_test_split
-from typing import Optional, Dict, Text, List, Tuple, Any, Union, Generator, NamedTuple
+from typing import (
+    Optional,
+    Dict,
+    Text,
+    List,
+    Tuple,
+    Any,
+    Union,
+    Generator,
+    NamedTuple,
+    ValuesView,
+    ItemsView,
+)
 from collections import defaultdict
 from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 
 logger = logging.getLogger(__name__)
 
 
-# Mapping of feature name to a list of numpy arrays representing the actual features
+# Mapping of attribute name and feature name to a list of numpy arrays representing
+# the actual features
 # For example:
-# "text_features" -> [
+# "text" -> { "sentence": [
 #   "numpy array containing dense features for every training example",
 #   "numpy array containing sparse features for every training example"
-# ]
-Data = Dict[Text, List[np.ndarray]]
+# ]}
+Data = Dict[Text, Dict[Text, List[np.ndarray]]]
 
 
 class FeatureSignature(NamedTuple):
@@ -35,7 +48,10 @@ class RasaModelData:
     """
 
     def __init__(
-        self, label_key: Optional[Text] = None, data: Optional[Data] = None
+        self,
+        label_key: Optional[Text] = None,
+        label_sub_key: Optional[Text] = None,
+        data: Optional[Data] = None,
     ) -> None:
         """
         Initializes the RasaModelData object.
@@ -45,40 +61,55 @@ class RasaModelData:
             data: the data holding the features
         """
 
-        self.data = data or {}
+        self.data = data or defaultdict(lambda: defaultdict(list))
         self.label_key = label_key
+        self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
 
-    def get_only(self, key: Text) -> Optional[np.ndarray]:
-        if key in self.data:
-            return self.data[key][0]
-        else:
-            return None
-
-    def get(self, key: Text) -> List[np.ndarray]:
-        if key in self.data:
+    def get(
+        self, key: Text, sub_key: Optional[Text] = None
+    ) -> Union[Dict[Text, List[np.ndarray]], List[np.ndarray]]:
+        if sub_key is None and key in self.data:
             return self.data[key]
-        else:
-            return []
 
-    def items(self):
+        if sub_key and key in self.data and sub_key in self.data[key]:
+            return self.data[key][sub_key]
+
+        return []
+
+    def items(self) -> ItemsView:
         return self.data.items()
 
-    def values(self):
+    def values(self) -> ValuesView[Dict[Text, List[np.ndarray]]]:
         return self.data.values()
 
-    def keys(self):
-        return self.data.keys()
+    def keys(self, key: Optional[Text] = None) -> List[Text]:
+        if key is None:
+            return list(self.data.keys())
+
+        if key in self.data:
+            return list(self.data[key].keys())
+
+        return []
 
     def first_data_example(self) -> Data:
-        return {
-            feature_name: [feature[:1] for feature in features]
-            for feature_name, features in self.data.items()
-        }
+        out_data = {}
+        for key, attribute_data in self.data.items():
+            out_data[key] = {}
+            for sub_key, features in attribute_data.items():
+                out_data[key][sub_key] = [feature[:1] for feature in features]
+        return out_data
 
-    def feature_not_exist(self, key: Text) -> bool:
+    def feature_not_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
         """Check if feature key is present and features are available."""
+        if sub_key:
+            return (
+                key not in self.data
+                or not self.data[key]
+                or sub_key not in self.data[key]
+                or not self.data[key][sub_key]
+            )
 
         return key not in self.data or not self.data[key]
 
@@ -92,14 +123,21 @@ class RasaModelData:
 
         Raises: A ValueError if number of examples differ for different features.
         """
-
         if not data:
             data = self.data
 
         if not data:
             return 0
 
-        example_lengths = [v.shape[0] for values in data.values() for v in values]
+        example_lengths = [
+            f.shape[0]
+            for attribute_data in data.values()
+            for features in attribute_data.values()
+            for f in features
+        ]
+
+        if not example_lengths:
+            return 0
 
         # check if number of examples is the same for all values
         if not all(length == example_lengths[0] for length in example_lengths):
@@ -110,54 +148,61 @@ class RasaModelData:
 
         return example_lengths[0]
 
-    def feature_dimension(self, key: Text) -> int:
+    def feature_dimension(self, key: Text, sub_key: Text) -> int:
         """Get the feature dimension of the given key."""
 
-        if key not in self.data:
+        if key not in self.data or sub_key not in self.data[key]:
             return 0
 
         number_of_features = 0
-        for data in self.data[key]:
+        for data in self.data[key][sub_key]:
             if data.size > 0:
                 number_of_features += data[0].shape[-1]
 
         return number_of_features
 
-    def add_features(self, key: Text, features: List[np.ndarray]):
+    def add_data(self, data: Data, key_prefix: Optional[Text] = None) -> None:
+        """Add incoming data to data."""
+        for key, attribute_data in data.items():
+            for sub_key, features in attribute_data.items():
+                if key_prefix:
+                    self.add_features(f"{key_prefix}{key}", sub_key, features)
+                else:
+                    self.add_features(key, sub_key, features)
+
+    def add_features(
+        self, key: Text, sub_key: Text, features: Optional[List[np.ndarray]]
+    ) -> None:
         """Add list of features to data under specified key.
 
         Should update number of examples.
         """
-
-        if not features:
+        if features is None:
             return
-
-        if key in self.data:
-            raise ValueError(f"Key '{key}' already exists in RasaModelData.")
-
-        self.data[key] = []
 
         for data in features:
             if data.size > 0:
-                self.data[key].append(data)
+                self.data[key][sub_key].append(data)
 
-        if not self.data[key]:
-            del self.data[key]
+        if not self.data[key][sub_key]:
+            del self.data[key][sub_key]
 
         # update number of examples
         self.num_examples = self.number_of_examples()
 
-    def add_lengths(self, key: Text, from_key: Text) -> None:
+    def add_lengths(
+        self, key: Text, sub_key: Text, from_key: Text, from_sub_key: Text
+    ) -> None:
         """Adds np.array of lengths of sequences to data under given key."""
-        if not self.data.get(from_key):
+        if not self.data.get(from_key) or not self.data.get(from_key, from_sub_key):
             return
 
-        self.data[key] = []
+        self.data[key][sub_key] = []
 
-        for data in self.data[from_key]:
+        for data in self.data[from_key][from_sub_key]:
             if data.size > 0:
                 lengths = np.array([x.shape[0] for x in data])
-                self.data[key].append(lengths)
+                self.data[key][sub_key].extend([lengths])
                 break
 
     def split(
@@ -167,14 +212,26 @@ class RasaModelData:
 
         self._check_label_key()
 
-        if self.label_key is None:
+        if self.label_key is None or self.label_sub_key is None:
             # randomly split data as no label key is split
-            multi_values = [v for values in self.data.values() for v in values]
-            solo_values = [[] for values in self.data.values() for v in values]
+            multi_values = [
+                v
+                for attribute_data in self.data.values()
+                for data in attribute_data.values()
+                for v in data
+            ]
+            solo_values = [
+                []
+                for attribute_data in self.data.values()
+                for data in attribute_data.values()
+                for _ in data
+            ]
             stratify = None
         else:
             # make sure that examples for each label value are in both split sets
-            label_ids = self._create_label_ids(self.data[self.label_key][0])
+            label_ids = self._create_label_ids(
+                self.data[self.label_key][self.label_sub_key][0]
+            )
             label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
 
             self._check_train_test_sizes(number_of_test_examples, label_counts)
@@ -185,11 +242,17 @@ class RasaModelData:
             # this operation can be performed only for labels
             # that contain several data points
             multi_values = [
-                v[counts > 1] for values in self.data.values() for v in values
+                f[counts > 1]
+                for attribute_data in self.data.values()
+                for features in attribute_data.values()
+                for f in features
             ]
             # collect data points that are unique for their label
             solo_values = [
-                v[counts == 1] for values in self.data.values() for v in values
+                f[counts == 1]
+                for attribute_data in self.data.values()
+                for features in attribute_data.values()
+                for f in features
             ]
 
             stratify = label_ids[counts > 1]
@@ -203,21 +266,24 @@ class RasaModelData:
 
         return self._convert_train_test_split(output_values, solo_values)
 
-    def get_signature(self) -> Dict[Text, List[FeatureSignature]]:
+    def get_signature(self) -> Dict[Text, Dict[Text, List[FeatureSignature]]]:
         """Get signature of RasaModelData.
 
         Signature stores the shape and whether features are sparse or not for every key.
         """
 
         return {
-            key: [
-                FeatureSignature(
-                    True if isinstance(v[0], scipy.sparse.spmatrix) else False,
-                    v[0].shape[-1] if v[0].shape else None,
-                )
-                for v in values
-            ]
-            for key, values in self.data.items()
+            key: {
+                sub_key: [
+                    FeatureSignature(
+                        True if isinstance(f[0], scipy.sparse.spmatrix) else False,
+                        f[0].shape[-1] if f[0].shape else None,
+                    )
+                    for f in features
+                ]
+                for sub_key, features in attribute_data.items()
+            }
+            for key, attribute_data in self.data.items()
         }
 
     def as_tf_dataset(
@@ -248,29 +314,30 @@ class RasaModelData:
 
         batch_data = []
 
-        for key, values in data.items():
-            # add None for not present values during processing
-            if not values:
-                if tuple_sizes:
-                    batch_data += [None] * tuple_sizes[key]
-                else:
-                    batch_data.append(None)
-                continue
+        for key, attribute_data in data.items():
+            for sub_key, f_data in attribute_data.items():
+                # add None for not present values during processing
+                if not f_data:
+                    if tuple_sizes:
+                        batch_data += [None] * tuple_sizes[key]
+                    else:
+                        batch_data.append(None)
+                    continue
 
-            for v in values:
-                if start is not None and end is not None:
-                    _data = v[start:end]
-                elif start is not None:
-                    _data = v[start:]
-                elif end is not None:
-                    _data = v[:end]
-                else:
-                    _data = v[:]
+                for v in f_data:
+                    if start is not None and end is not None:
+                        _data = v[start:end]
+                    elif start is not None:
+                        _data = v[start:]
+                    elif end is not None:
+                        _data = v[:end]
+                    else:
+                        _data = v[:]
 
-                if isinstance(_data[0], scipy.sparse.spmatrix):
-                    batch_data.extend(self._scipy_matrix_to_values(_data))
-                else:
-                    batch_data.append(self._pad_dense_data(_data))
+                    if isinstance(_data[0], scipy.sparse.spmatrix):
+                        batch_data.extend(self._scipy_matrix_to_values(_data))
+                    else:
+                        batch_data.append(self._pad_dense_data(_data))
 
         # len of batch_data is equal to the number of keys in model data
         return tuple(batch_data)
@@ -303,10 +370,11 @@ class RasaModelData:
             else:
                 types.append(tf.float32)
 
-        for values in self.data.values():
-            for v in values:
-                append_shape(v)
-                append_type(v)
+        for attribute_data in self.data.values():
+            for features in attribute_data.values():
+                for f in features:
+                    append_shape(f)
+                    append_type(f)
 
         return tuple(shapes), tuple(types)
 
@@ -323,14 +391,17 @@ class RasaModelData:
         by repeating them. Mimics stratified batching, but also takes into account
         that more populated classes should appear more often.
         """
-
         self._check_label_key()
 
         # skip balancing if labels are token based
-        if self.label_key is None or data[self.label_key][0][0].size > 1:
+        if (
+            self.label_key is None
+            or self.label_sub_key is None
+            or data[self.label_key][self.label_sub_key][0][0].size > 1
+        ):
             return data
 
-        label_ids = self._create_label_ids(data[self.label_key][0])
+        label_ids = self._create_label_ids(data[self.label_key][self.label_sub_key][0])
 
         unique_label_ids, counts_label_ids = np.unique(
             label_ids, return_counts=True, axis=0
@@ -348,7 +419,7 @@ class RasaModelData:
         # if a label was skipped in current batch
         skipped = [False] * num_label_ids
 
-        new_data = defaultdict(list)
+        new_data = defaultdict(lambda: defaultdict(list))
 
         while min(num_data_cycles) == 0:
             if shuffle:
@@ -367,13 +438,14 @@ class RasaModelData:
                     int(counts_label_ids[index] / self.num_examples * batch_size) + 1
                 )
 
-                for k, values in data_by_label[index].items():
-                    for i, v in enumerate(values):
-                        if len(new_data[k]) < i + 1:
-                            new_data[k].append([])
-                        new_data[k][i].append(
-                            v[data_idx[index] : data_idx[index] + index_batch_size]
-                        )
+                for key, attribute_data in data_by_label[index].items():
+                    for sub_key, features in attribute_data.items():
+                        for i, f in enumerate(features):
+                            if len(new_data[key][sub_key]) < i + 1:
+                                new_data[key][sub_key].append([])
+                            new_data[key][sub_key][i].append(
+                                f[data_idx[index] : data_idx[index] + index_batch_size]
+                            )
 
                 data_idx[index] += index_batch_size
                 if data_idx[index] >= counts_label_ids[index]:
@@ -383,10 +455,11 @@ class RasaModelData:
                 if min(num_data_cycles) > 0:
                     break
 
-        final_data = defaultdict(list)
-        for k, values in new_data.items():
-            for v in values:
-                final_data[k].append(np.concatenate(v))
+        final_data = defaultdict(lambda: defaultdict(list))
+        for key, attribute_data in new_data.items():
+            for sub_key, features in attribute_data.items():
+                for f in features:
+                    final_data[key][sub_key].append(np.concatenate(np.array(f)))
 
         return final_data
 
@@ -435,14 +508,15 @@ class RasaModelData:
     def _data_for_ids(data: Optional[Data], ids: np.ndarray) -> Data:
         """Filter model data by ids."""
 
-        new_data = defaultdict(list)
+        new_data = defaultdict(lambda: defaultdict(list))
 
         if data is None:
             return new_data
 
-        for k, values in data.items():
-            for v in values:
-                new_data[k].append(v[ids])
+        for key, attribute_data in data.items():
+            for sub_key, features in attribute_data.items():
+                for f in features:
+                    new_data[key][sub_key].append(f[ids])
         return new_data
 
     def _split_by_label_ids(
@@ -454,46 +528,62 @@ class RasaModelData:
         for label_id in unique_label_ids:
             matching_ids = label_ids == label_id
             label_data.append(
-                RasaModelData(self.label_key, self._data_for_ids(data, matching_ids))
+                RasaModelData(
+                    self.label_key,
+                    self.label_sub_key,
+                    self._data_for_ids(data, matching_ids),
+                )
             )
         return label_data
 
     def _check_label_key(self):
-        if self.label_key is not None and (
-            self.label_key not in self.data or len(self.data[self.label_key]) > 1
+        if (
+            self.label_key is not None
+            and self.label_sub_key is not None
+            and (
+                self.label_key not in self.data
+                or self.label_sub_key not in self.data[self.label_key]
+                or len(self.data[self.label_key][self.label_sub_key]) > 1
+            )
         ):
-            raise ValueError(f"Key '{self.label_key}' not in RasaModelData.")
+            raise ValueError(
+                f"Key '{self.label_key}.{self.label_sub_key}' not in RasaModelData."
+            )
 
     def _convert_train_test_split(
         self, output_values: List[Any], solo_values: List[Any]
     ) -> Tuple["RasaModelData", "RasaModelData"]:
         """Converts the output of sklearn's train_test_split into model data."""
 
-        data_train = defaultdict(list)
-        data_val = defaultdict(list)
+        data_train = defaultdict(lambda: defaultdict(list))
+        data_val = defaultdict(lambda: defaultdict(list))
 
         # output_values = x_train, x_val, y_train, y_val, z_train, z_val, etc.
         # order is kept, e.g. same order as model data keys
 
         # train datasets have an even index
         index = 0
-        for key, values in self.data.items():
-            for _ in values:
-                data_train[key].append(
-                    self._combine_features(output_values[index * 2], solo_values[index])
-                )
-                index += 1
+        for key, attribute_data in self.data.items():
+            for sub_key, features in attribute_data.items():
+                for _ in features:
+                    data_train[key][sub_key].append(
+                        self._combine_features(
+                            output_values[index * 2], solo_values[index]
+                        )
+                    )
+                    index += 1
 
         # val datasets have an odd index
         index = 0
-        for key, values in self.data.items():
-            for _ in range(len(values)):
-                data_val[key].append(output_values[(index * 2) + 1])
-                index += 1
+        for key, attribute_data in self.data.items():
+            for sub_key, features in attribute_data.items():
+                for _ in features:
+                    data_val[key][sub_key].append(output_values[(index * 2) + 1])
+                    index += 1
 
         return (
-            RasaModelData(self.label_key, data_train),
-            RasaModelData(self.label_key, data_val),
+            RasaModelData(self.label_key, self.label_sub_key, data_train),
+            RasaModelData(self.label_key, self.label_sub_key, data_val),
         )
 
     @staticmethod

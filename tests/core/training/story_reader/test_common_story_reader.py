@@ -7,17 +7,18 @@ from typing import Text, List
 import numpy as np
 import pytest
 
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core import training
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, SessionStarted
-from rasa.core.featurizers import (
-    MaxHistoryTrackerFeaturizer,
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer,
     BinarySingleStateFeaturizer,
-    E2ESingleStateFeaturizer,
 )
 
 from rasa.core.interpreter import RegexInterpreter
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.nlu.constants import INTENT_NAME_KEY, INTENT, ACTION_NAME, ENTITIES
 
 
 @pytest.mark.parametrize(
@@ -106,15 +107,14 @@ async def test_read_story_file_with_cycles(stories_file: Text, default_domain: D
 async def test_generate_training_data_with_cycles(
     stories_file: Text, default_domain: Domain
 ):
-    featurizer = MaxHistoryTrackerFeaturizer(E2ESingleStateFeaturizer(), max_history=4)
+    featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
     training_trackers = await training.load_data(
         stories_file, default_domain, augmentation_factor=0
     )
 
-    training_data = featurizer.featurize_trackers(
+    training_data, label_ids = featurizer.featurize_trackers(
         training_trackers, default_domain, interpreter=RegexInterpreter()
     )
-    y = training_data.y
 
     # how many there are depends on the graph which is not created in a
     # deterministic way but should always be 3 or 4
@@ -124,7 +124,8 @@ async def test_generate_training_data_with_cycles(
     num_tens = len(training_trackers) - 1
     # if new default actions are added the keys of the actions will be changed
 
-    assert Counter(y) == {0: 6, 12: num_tens, 14: 1, 1: 2, 13: 3}
+    all_label_ids = [id for ids in label_ids for id in ids]
+    assert Counter(all_label_ids) == {0: 6, 12: num_tens, 14: 1, 1: 2, 13: 3}
 
 
 @pytest.mark.parametrize(
@@ -214,7 +215,7 @@ async def test_load_multi_file_training_data(
 ):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
-    featurizer = MaxHistoryTrackerFeaturizer(E2ESingleStateFeaturizer(), max_history=2)
+    featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
     trackers = await training.load_data(
         stories_resources[0], default_domain, augmentation_factor=0
     )
@@ -226,13 +227,11 @@ async def test_load_multi_file_training_data(
         hashed.append(json.dumps(sts + acts, sort_keys=True))
     hashed = sorted(hashed, reverse=True)
 
-    data = featurizer.featurize_trackers(
+    data, label_ids = featurizer.featurize_trackers(
         trackers, default_domain, interpreter=RegexInterpreter()
     )
 
-    featurizer_mul = MaxHistoryTrackerFeaturizer(
-        E2ESingleStateFeaturizer(), max_history=2
-    )
+    featurizer_mul = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
     trackers_mul = await training.load_data(
         stories_resources[1], default_domain, augmentation_factor=0
     )
@@ -244,25 +243,35 @@ async def test_load_multi_file_training_data(
         hashed_mul.append(json.dumps(sts_mul + acts_mul, sort_keys=True))
     hashed_mul = sorted(hashed_mul, reverse=True)
 
-    data_mul = featurizer_mul.featurize_trackers(
+    data_mul, label_ids_mul = featurizer_mul.featurize_trackers(
         trackers_mul, default_domain, interpreter=RegexInterpreter()
     )
 
     assert hashed == hashed_mul
     # we check for intents, action names and entities -- the features which
     # are included in the story files
-    data_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data.X])
-    data_mul_X_intent = np.vstack([np.vstack(row[:, 2]) for row in data_mul.X])
-    data_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data.X])
-    data_mul_X_action_name = np.vstack([np.vstack(row[:, 6]) for row in data_mul.X])
-    data_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data.X])
-    data_mul_X_entities = np.vstack([np.vstack(row[:, 8]) for row in data_mul.X])
-    assert np.all(data_X_intent.sort(axis=0) == data_mul_X_intent.sort(axis=0))
-    assert np.all(
-        data_X_action_name.sort(axis=0) == data_mul_X_action_name.sort(axis=0)
-    )
-    assert np.all(data_X_entities.sort(axis=0) == data_mul_X_entities.sort(axis=0))
-    assert np.all(data.y.sort(axis=0) == data_mul.y.sort(axis=0))
+
+    data = TEDPolicy._surface_attributes(data)
+    data_mul = TEDPolicy._surface_attributes(data_mul)
+
+    for attribute in [INTENT, ACTION_NAME, ENTITIES]:
+        if attribute not in data or attribute not in data_mul:
+            continue
+        assert len(data.get(attribute)) == len(data_mul.get(attribute))
+
+        for idx_tracker in range(len(data.get(attribute))):
+            for idx_dialogue in range(len(data.get(attribute)[idx_tracker])):
+                f1 = data.get(attribute)[idx_tracker][idx_dialogue]
+                f2 = data_mul.get(attribute)[idx_tracker][idx_dialogue]
+                if f1 is None or f2 is None:
+                    assert f1 == f2
+                    continue
+                for idx_turn in range(len(f1)):
+                    f1 = data.get(attribute)[idx_tracker][idx_dialogue][idx_turn]
+                    f2 = data_mul.get(attribute)[idx_tracker][idx_dialogue][idx_turn]
+                    assert np.all((f1 == f2).data)
+
+    assert np.all(label_ids == label_ids_mul)
 
 
 async def test_load_training_data_reader_not_found_throws(

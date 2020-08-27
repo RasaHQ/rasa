@@ -422,5 +422,7 @@ class Interpreter:
             if not isinstance(
                 component, (extractors.extractor.EntityExtractor, IntentClassifier)
             ):
-                component.process(message, attribute, **self.context)
+                self.context["attribute"] = attribute
+                component.process(message, **self.context)
+                self.context["attribute"] = None
         return message

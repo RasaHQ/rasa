@@ -5,7 +5,7 @@ from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain, State
 from rasa.core.events import FormValidation
-from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
@@ -96,7 +96,7 @@ class FormPolicy(MemoizationPolicy):
         return lookup
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
     ) -> Optional[Text]:
         # modify the states
         return self._recall_states(self._modified_states(states))
@@ -127,7 +127,7 @@ class FormPolicy(MemoizationPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         """Predicts the corresponding form action if there is an active form"""

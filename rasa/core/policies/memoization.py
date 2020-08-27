@@ -12,7 +12,10 @@ import rasa.utils.common as common_utils
 
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
-from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
+    TrackerFeaturizer,
+    MaxHistoryTrackerFeaturizer,
+)
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
@@ -187,7 +190,7 @@ class MemoizationPolicy(Policy):
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
     ) -> Optional[Text]:
 
         return self._recall_states(states)
@@ -212,7 +215,7 @@ class MemoizationPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         result = self._default_predictions(domain)
@@ -337,7 +340,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         return None
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
     ) -> Optional[Text]:
 
         predicted_action_name = self._recall_states(states)

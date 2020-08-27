@@ -700,7 +700,10 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
 
 @pytest.mark.parametrize(
     "predict_function",
-    [lambda tracker, domain: [1, 0], lambda tracker, domain, some_bool=True: [1, 0]],
+    [
+        lambda tracker, domain, something_else: [1, 0, 2, 3],
+        lambda tracker, domain, some_bool=True: [1, 0],
+    ],
 )
 def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
     predict_function: Callable,

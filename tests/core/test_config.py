@@ -7,10 +7,8 @@ from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble
-from rasa.core.featurizers import (
-    BinarySingleStateFeaturizer,
-    MaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.single_state_featurizer import BinarySingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 
 
 @pytest.mark.parametrize("filename", glob.glob("data/test_config/example_config.yaml"))

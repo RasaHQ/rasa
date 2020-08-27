@@ -30,6 +30,7 @@ from rasa.core.constants import (
     VALIDATE,
     REJECTED,
     TRIGGER_MESSAGE,
+    PREVIOUS_ACTION,
 )
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
@@ -47,7 +48,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     SessionStarted,
     ActionExecutionRejected,
 )
-from rasa.core.domain import Domain  # pytype: disable=pyi-error
+from rasa.core.domain import Domain, State  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
 from rasa.utils import common as common_utils
 
@@ -715,3 +716,15 @@ class DialogueStateTracker:
         Returns: `None` if the action was e2e action.
         """
         return self.latest_action.get(ACTION_NAME)
+
+
+def get_active_loop_name(state: State) -> Optional[Text]:
+    if not state.get(ACTIVE_LOOP) or state[ACTIVE_LOOP].get(NAME) == SHOULD_NOT_BE_SET:
+        return
+
+    return state[ACTIVE_LOOP].get(NAME)
+
+
+def prev_action_listen_in_state(state: State) -> bool:
+    prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
+    return prev_action_name == ACTION_LISTEN_NAME

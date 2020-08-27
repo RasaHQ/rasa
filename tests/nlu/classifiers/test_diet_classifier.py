@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import Mock
 
 from rasa.nlu.constants import FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
-from rasa.nlu.featurizers.featurizer import Features
+from rasa.utils.features import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig

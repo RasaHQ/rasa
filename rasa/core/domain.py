@@ -64,6 +64,7 @@ KEY_ENTITIES = "entities"
 KEY_RESPONSES = "responses"
 KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
+KEY_E2E_ACTIONS = "e2e_actions"
 
 ALL_DOMAIN_KEYS = [
     KEY_SLOTS,
@@ -72,9 +73,11 @@ ALL_DOMAIN_KEYS = [
     KEY_ENTITIES,
     KEY_INTENTS,
     KEY_RESPONSES,
+    KEY_E2E_ACTIONS,
 ]
 
-State = Dict[Text, Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]]
+SubState = Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]
+State = Dict[Text, SubState]
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -195,6 +198,7 @@ class Domain:
             utter_templates,
             data.get(KEY_ACTIONS, []),
             data.get(KEY_FORMS, []),
+            data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             **additional_arguments,
         )
@@ -288,7 +292,7 @@ class Domain:
             if form in domain_dict[KEY_ACTIONS]:
                 domain_dict[KEY_ACTIONS].remove(form)
 
-        for key in [KEY_ENTITIES, KEY_ACTIONS]:
+        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_RESPONSES, KEY_SLOTS]:
@@ -473,6 +477,7 @@ class Domain:
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         forms: List[Union[Text, Dict]],
+        e2e_action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
@@ -491,6 +496,7 @@ class Domain:
 
         self.slots = slots
         self.templates = templates
+        self.e2e_action_texts = e2e_action_texts or []
         self.session_config = session_config
 
         self._custom_actions = action_names
@@ -502,6 +508,7 @@ class Domain:
         self.action_names = (
             action.combine_user_with_default_actions(self.user_actions)
             + self.form_names
+            + self.e2e_action_texts
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -656,11 +663,6 @@ class Domain:
             for i in range(0, s.feature_dimensionality())
         ]
 
-    def index_of_state(self, state_name: Text) -> Optional[int]:
-        """Provide the index of a state."""
-
-        return self.input_state_map.get(state_name)
-
     @lazy_property
     def input_state_map(self) -> Dict[Text, int]:
         """Provide a mapping from state names to indices."""
@@ -693,9 +695,7 @@ class Domain:
         state_dict[USER] = latest_message.as_dict_core()
 
         # filter entities based on intent config
-        entities = tuple(
-            entity_name for entity_name in self._get_featurized_entities(latest_message)
-        )
+        entities = tuple(self._get_featurized_entities(latest_message))
         if entities:
             state_dict[USER][ENTITIES] = entities
         else:
@@ -737,20 +737,15 @@ class Domain:
 
         return {}
 
+    @staticmethod
     def _get_prev_action_states(
-        self, tracker: "DialogueStateTracker"
+        tracker: "DialogueStateTracker",
     ) -> Dict[Text, Dict[Text, Text]]:
         """Turn the previous taken action into a state name."""
         latest_action = tracker.latest_action
 
         if latest_action:
-            prev_action_name = latest_action.get("action_name") or latest_action.get(
-                "action_text"
-            )
-            if prev_action_name in self.input_state_map:
-                return {PREVIOUS_ACTION: latest_action}
-            else:
-                return {}
+            return {PREVIOUS_ACTION: latest_action}
         else:
             return {}
 
@@ -858,6 +853,7 @@ class Domain:
             KEY_RESPONSES: self.templates,
             KEY_ACTIONS: self._custom_actions,  # class names of the actions
             KEY_FORMS: self.forms,
+            KEY_E2E_ACTIONS: self.e2e_action_texts,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:

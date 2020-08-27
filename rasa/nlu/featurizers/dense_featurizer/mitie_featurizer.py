@@ -4,7 +4,8 @@ from typing import Any, List, Text, Optional, Dict, Type, Tuple
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.utils.features import Features
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.training_data import Message, TrainingData
