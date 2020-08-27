@@ -10,7 +10,7 @@ import scipy.sparse
 import numpy as np
 import rasa.utils.io
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, SubState
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
@@ -107,13 +107,17 @@ class SklearnPolicy(Policy):
         train_params = self._get_valid_params(self.model.__init__, **kwargs)
         return self.model.set_params(**train_params)
 
-    def _get_max_dialogue_length(self, features: List[np.ndarray]) -> int:
-        lengths = [row.shape[0] for row in features]
-        return max(lengths)
-
     def _fill_in_features_to_max_length(
         self, features: List[np.ndarray], max_history: int
     ) -> List[np.ndarray]:
+        """
+        Pad features with zeros to maximum length;
+        Args:
+            features: list of features for each dialog; each feature has shape [dialog_history x shape_attribute]
+            max_history: maximum history of the dialogs
+        Returns:
+            padded features
+        """
         feature_shape = features[0].shape[-1]
         features = [
             feature
@@ -125,18 +129,34 @@ class SklearnPolicy(Policy):
         ]
         return features
 
-    def _get_features_for_attribute(self, features, attribute):
+    def _get_features_for_attribute(self, features: SubState, attribute: Text):
+        """
+        Given a dictionary for one attribute, turn it into a numpy array;
+        shape_attribute = features[SENTENCE][0][0].shape[-1] (Shape of features of one attribute) 
+        Args:
+            features: all features in the attribute stored in a np.array;
+        Output:
+            2D np.ndarray with features for an attribute; shape: [num_dialogs x (max_history * shape_attribute)]
+        """
         sentence_features = features[SENTENCE][0]
         if isinstance(sentence_features[0], scipy.sparse.coo_matrix):
             sentence_features = [feature.toarray() for feature in sentence_features]
-        max_history = self.featurizer.max_history or self._get_max_dialogue_length(
-            sentence_features
-        )
+        # MaxHistoryFeaturizer is always used with SkLearn policy;
+        max_history = self.featurizer.max_history
         features = self._fill_in_features_to_max_length(sentence_features, max_history)
         features = [feature.reshape((1, -1)) for feature in features]
         return np.vstack(features)
 
     def _preprocess_data(self, X: Data) -> np.ndarray:
+        """
+        Turn data into np.ndarray for sklearn training; dialogue history features 
+        are flattened.
+        Args:
+            X: training data containing all the features
+        Returns:
+            Training_data: shape [num_dialogs x (max_history * all_features)]; 
+            all_features - sum of number of features of intent, action_name, entities, forms, slots.  
+        """
         if TEXT in X or ACTION_TEXT in X:
             raise Exception(
                 f"{self.__name__} cannot be applied to text data. Try to use TEDPolicy instead. "
