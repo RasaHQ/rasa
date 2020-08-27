@@ -1,17 +1,24 @@
 import asyncio
 import sys
 from pathlib import Path
+import textwrap
 from typing import Text
-from unittest.mock import Mock
 
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.utils.io
+from rasa.core.events import UserUttered
+from rasa.core.test import (
+    EvaluationStore,
+    WronglyClassifiedUserUtterance,
+    WronglyPredictedAction,
+)
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 import rasa.model
 import rasa.cli.utils
-from rasa.core.agent import Agent
-from rasa.core.interpreter import RasaNLUInterpreter, RegexInterpreter
 from rasa.nlu.test import NO_ENTITY
 import rasa.core
 
@@ -135,27 +142,6 @@ def test_get_label_set(targets, exclude_label, expected):
     assert set(expected) == set(actual)
 
 
-async def test_interpreter_passed_to_agent(
-    monkeypatch: MonkeyPatch, trained_rasa_model: Text
-):
-    from rasa.test import test_core
-
-    # Patching is bit more complicated as we have a module `train` and function
-    # with the same name 😬
-    monkeypatch.setattr(
-        sys.modules["rasa.test"], "_test_core", asyncio.coroutine(lambda *_, **__: True)
-    )
-
-    agent_load = Mock()
-    monkeypatch.setattr(Agent, "load", agent_load)
-
-    test_core(trained_rasa_model)
-
-    agent_load.assert_called_once()
-    _, _, kwargs = agent_load.mock_calls[0]
-    assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
-
-
 async def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
@@ -167,13 +153,51 @@ async def test_e2e_warning_if_no_nlu_model(
         sys.modules["rasa.test"], "_test_core", asyncio.coroutine(lambda *_, **__: True)
     )
 
-    agent_load = Mock()
-    monkeypatch.setattr(Agent, "load", agent_load)
-
     test_core(trained_core_model, additional_arguments={"e2e": True})
 
     assert "No NLU model found. Using default" in capsys.readouterr().out
 
-    agent_load.assert_called_once()
-    _, _, kwargs = agent_load.mock_calls[0]
-    assert isinstance(kwargs["interpreter"], RegexInterpreter)
+
+def test_write_classification_errors():
+    evaluation = EvaluationStore(
+        action_predictions=["utter_goodbye"],
+        action_targets=["utter_greet"],
+        intent_predictions=["goodbye"],
+        intent_targets=["greet"],
+        entity_predictions=None,
+        entity_targets=None,
+    )
+    events = [
+        WronglyClassifiedUserUtterance(
+            UserUttered("Hello", {"name": "goodbye"}), evaluation
+        ),
+        WronglyPredictedAction("utter_greet", "utter_goodbye"),
+    ]
+    tracker = DialogueStateTracker.from_events("default", events)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
+    assert (
+        dump.strip()
+        == textwrap.dedent(
+            """
+        version: "2.0"
+        stories:
+        - story: default
+          steps:
+          - intent: greet  # predicted: goodbye: Hello
+            user: |-
+              Hello
+          - action: utter_greet  # predicted: utter_goodbye
+
+    """
+        ).strip()
+    )
+
+
+def test_log_failed_stories(tmp_path: Path):
+    path = str(tmp_path / "stories.yml")
+    rasa.core.test._log_stories([], path)
+
+    dump = rasa.utils.io.read_file(path)
+
+    assert dump.startswith("#")
+    assert len(dump.split("\n")) == 1

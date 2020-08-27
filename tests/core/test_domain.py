@@ -505,17 +505,16 @@ def test_collect_intent_properties(intents, entities, intent_properties):
     assert Domain.collect_intent_properties(intents, entities) == intent_properties
 
 
-def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
-    root = tmpdir_factory.mktemp("Parent Bot")
+def test_load_domain_from_directory_tree(tmp_path: Path):
     root_domain = {"actions": ["utter_root", "utter_root2"]}
-    utils.dump_obj_as_yaml_to_file(root / "domain_pt1.yml", root_domain)
+    utils.dump_obj_as_yaml_to_file(tmp_path / "domain_pt1.yml", root_domain)
 
-    subdirectory_1 = root / "Skill 1"
+    subdirectory_1 = tmp_path / "Skill 1"
     subdirectory_1.mkdir()
     skill_1_domain = {"actions": ["utter_skill_1"]}
     utils.dump_obj_as_yaml_to_file(subdirectory_1 / "domain_pt2.yml", skill_1_domain)
 
-    subdirectory_2 = root / "Skill 2"
+    subdirectory_2 = tmp_path / "Skill 2"
     subdirectory_2.mkdir()
     skill_2_domain = {"actions": ["utter_skill_2"]}
     utils.dump_obj_as_yaml_to_file(subdirectory_2 / "domain_pt3.yml", skill_2_domain)
@@ -528,7 +527,7 @@ def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
         subsubdirectory / "domain_pt4.yaml", skill_2_1_domain
     )
 
-    actual = Domain.load(str(root))
+    actual = Domain.load(str(tmp_path))
     expected = [
         "utter_root",
         "utter_root2",
