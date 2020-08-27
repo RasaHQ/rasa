@@ -343,11 +343,16 @@ Please see [Forms](./forms.mdx) if you have further customizations in your
 
 ### Response Selectors
 
-* Response Selectors are now trained on retrieval intent labels by default instead of the actual response text. For most models, this should improve training time and accuracy of the `ResponseSelector`.
+* Response Selectors are now trained on retrieval intent labels by default instead
+of the actual response text. For most models, this should improve training time
+and accuracy of the `ResponseSelector`.
 
-* If you want to revert to the pre-2.0 default behavior, add the `use_text_as_label=true` parameter to your `ResponseSelector` component.
+* If you want to revert to the pre-2.0 default behavior, add the `use_text_as_label=true`
+ parameter to your `ResponseSelector` component.
 
-* All response selector related evaluation artifacts - `report.json, successes.json, errors.json, confusion_matrix.png` now use the sub-intent of the retrieval intent as the target and predicted labels instead of the actual response text.
+* All response selector related evaluation artifacts - `report.json, successes.json,
+errors.json, confusion_matrix.png` now use the sub-intent of the retrieval intent as
+ the target and predicted labels instead of the actual response text.
 This means that the output in these files should look like -
 
 `response_selection_successes.json`
@@ -374,9 +379,15 @@ This means that the output in these files should look like -
 }
 ```
 
-* The output schema of `ResponseSelector` has changed - `full_retrieval_intent` and `name` have been deprecated in favour of `intent_response_key` and `response_templates` respectively. An example output looks like this -
+* The output schema of `ResponseSelector` has changed - `full_retrieval_intent` and `name`
+have been deprecated in favour of `intent_response_key` and `response_templates` respectively.
+Additionally a key `all_retrieval_intents` is added to the response selector output which will
+hold a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
+An example output looks like this -
+
 ```json
 "response_selector": {
+    "all_retrieval_intents": ["faq"],
     "default": {
       "response": {
         "id": 1388783286124361986, "confidence": 1.0, "intent_response_key": "faq/is_legit",

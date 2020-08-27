@@ -3,11 +3,9 @@ import logging
 
 import numpy as np
 import tensorflow as tf
-from pathlib import Path
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
-import rasa.utils.io as io_utils
 from rasa.nlu.config import InvalidConfigError
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
@@ -77,6 +75,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.nlu.constants import (
     RESPONSE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     RESPONSE_SELECTOR_RESPONSES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_RANKING_KEY,
@@ -232,6 +231,7 @@ class ResponseSelector(DIETClassifier):
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
+        all_retrieval_intents: Optional[List[Text]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
 
@@ -244,6 +244,7 @@ class ResponseSelector(DIETClassifier):
 
         # Initialize defaults
         self.responses = responses or {}
+        self.all_retrieval_intents = all_retrieval_intents or []
         self.retrieval_intent = None
         self.use_text_as_label = False
 
@@ -270,11 +271,13 @@ class ResponseSelector(DIETClassifier):
         super()._check_config_parameters()
         self._load_selector_params(self.component_config)
 
-    @staticmethod
     def _set_message_property(
-        message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
+        self, message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
     ) -> None:
         message_selector_properties = message.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
+        message_selector_properties[
+            RESPONSE_SELECTOR_RETRIEVAL_INTENTS
+        ] = self.all_retrieval_intents
         message_selector_properties[selector_key] = prediction_dict
         message.set(
             RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -307,6 +310,7 @@ class ResponseSelector(DIETClassifier):
         )
 
         self.responses = training_data.responses
+        self.all_retrieval_intents = list(training_data.retrieval_intents)
 
         if not label_id_index_mapping:
             # no labels are present to train
@@ -410,7 +414,11 @@ class ResponseSelector(DIETClassifier):
 
         super().persist(file_name, model_dir)
 
-        return {"file": file_name, "responses": self.responses}
+        return {
+            "file": file_name,
+            "responses": self.responses,
+            "all_retrieval_intents": self.all_retrieval_intents,
+        }
 
     @classmethod
     def _load_model_class(
@@ -458,6 +466,7 @@ class ResponseSelector(DIETClassifier):
             return model  # pytype: disable=bad-return-type
 
         model.responses = meta.get("responses", {})
+        model.all_retrieval_intents = meta.get("all_retrieval_intents", set())
 
         return model  # pytype: disable=bad-return-type
 
