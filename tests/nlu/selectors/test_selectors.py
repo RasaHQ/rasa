@@ -12,6 +12,7 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_RESPONSES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
@@ -63,6 +64,11 @@ def test_train_selector(pipeline, component_builder, tmpdir):
 
     assert loaded.pipeline
     assert parsed is not None
+    assert (
+        parsed.get(RESPONSE_SELECTOR_PROPERTY_NAME).get(
+            RESPONSE_SELECTOR_RETRIEVAL_INTENTS
+        )
+    ) == ["chitchat"]
     assert (
         parsed.get(RESPONSE_SELECTOR_PROPERTY_NAME)
         .get(RESPONSE_SELECTOR_DEFAULT_INTENT)
