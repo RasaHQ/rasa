@@ -227,12 +227,14 @@ class RedisLockStore(LockStore):
             socket_timeout=socket_timeout,
         )
 
-        if (not prefix is None) and ((isinstance(prefix,str)) and (prefix.isalnum())):
+        if (not prefix is None) and ((isinstance(prefix, str)) and (prefix.isalnum())):
             self.prefix = prefix + ":lock:"
         else:
             self.prefix = "lock:"
-            logger.warning(f"Omitting provided non-alphanumeric key prefix: '{prefix}'.")
-        
+            logger.warning(
+                f"Omitting provided non-alphanumeric key prefix: '{prefix}'."
+            )
+
         super().__init__()
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
