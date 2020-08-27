@@ -126,6 +126,7 @@ def _dump_config(
         auto_configured_keys: Keys for which a commented out auto configuration section
                               needs to be added to the config file.
     """
+
     config_as_expected = _is_config_file_as_expected(
         config_file_path, missing_keys, auto_configured_keys
     )

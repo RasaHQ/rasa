@@ -353,7 +353,7 @@ def plot_entity_confidences(
         for target, prediction, confidence in zip(
             merged_targets, merged_predictions, merged_confidences
         )
-        if prediction != NO_ENTITY and target != prediction
+        if prediction not in (NO_ENTITY, target)
     ]
 
     plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
@@ -608,17 +608,13 @@ def evaluate_intents(
         if isinstance(report, str):
             log_evaluation_table(report, precision, f1, accuracy)
 
-    if successes:
-        successes_filename = "intent_successes.json"
-        if output_directory:
-            successes_filename = os.path.join(output_directory, successes_filename)
+    if successes and output_directory:
+        successes_filename = os.path.join(output_directory, "intent_successes.json")
         # save classified samples to file for debugging
         write_intent_successes(intent_results, successes_filename)
 
-    if errors:
-        errors_filename = "intent_errors.json"
-        if output_directory:
-            errors_filename = os.path.join(output_directory, errors_filename)
+    if errors and output_directory:
+        errors_filename = os.path.join(output_directory, "intent_errors.json")
         # log and save misclassified samples to file for debugging
         write_intent_errors(intent_results, errors_filename)
 
@@ -1505,7 +1501,7 @@ def run_evaluation(
             disable_plotting,
         )
 
-    if entity_results:
+    if any(entity_results):
         logger.info("Entity evaluation results:")
         extractors = get_entity_extractors(interpreter)
         result["entity_evaluation"] = evaluate_entities(
@@ -1618,6 +1614,7 @@ def _contains_entity_labels(entity_results: List[EntityEvaluationResult]) -> boo
     for result in entity_results:
         if result.entity_targets or result.entity_predictions:
             return True
+    return False
 
 
 def cross_validate(
@@ -1645,7 +1642,6 @@ def cross_validate(
               corresponds to the relevant result for one fold
     """
     import rasa.nlu.config
-    from collections import defaultdict
 
     if isinstance(nlu_config, str):
         nlu_config = rasa.nlu.config.load(nlu_config)
@@ -1883,7 +1879,9 @@ def compare_nlu(
                         model_output_path,
                         fixed_model_name=model_name,
                     )
-                except Exception as e:
+                except Exception as e:  # skipcq: PYL-W0703
+                    # general exception catching needed to continue evaluating other
+                    # model configurations
                     logger.warning(f"Training model '{model_name}' failed. Error: {e}")
                     f_score_results[model_name][run].append(0.0)
                     continue

@@ -12,18 +12,34 @@ import rasa.utils.io as io_utils
 logger = logging.getLogger(__name__)
 
 
-# At first, matplotlib will be initialized with default OS-specific available backend
-# if that didn't happen, we'll try to set it up manually
-if matplotlib.get_backend() is not None:
-    pass
-else:  # pragma: no cover
-    try:
-        # If the `tkinter` package is available, we can use the `TkAgg` backend
-        import tkinter
+def _fix_matplotlib_backend() -> None:
+    """Tries to fix a broken matplotlib backend..."""
+    # At first, matplotlib will be initialized with default OS-specific
+    # available backend
+    if matplotlib.get_backend() == "TkAgg":
+        try:
+            # on OSX sometimes the tkinter package is broken and can't be imported.
+            # we'll try to import it and if it fails we will use a different backend
+            import tkinter  # skipcq: PYL-W0611
+        except (ImportError, ModuleNotFoundError):
+            logger.debug("Setting matplotlib backend to 'agg'")
+            matplotlib.use("agg")
 
-        matplotlib.use("TkAgg")
-    except ImportError:
-        matplotlib.use("agg")
+    # if no backend is set by default, we'll try to set it up manually
+    elif matplotlib.get_backend() is None:  # pragma: no cover
+        try:
+            # If the `tkinter` package is available, we can use the `TkAgg` backend
+            import tkinter  # skipcq: PYL-W0611
+
+            logger.debug("Setting matplotlib backend to 'TkAgg'")
+            matplotlib.use("TkAgg")
+        except (ImportError, ModuleNotFoundError):
+            logger.debug("Setting matplotlib backend to 'agg'")
+            matplotlib.use("agg")
+
+
+# we call the fix as soon as this package gets imported
+_fix_matplotlib_backend()
 
 
 def plot_confusion_matrix(
@@ -52,7 +68,7 @@ def plot_confusion_matrix(
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
 
-    zmax = confusion_matrix.max()
+    zmax = confusion_matrix.max() if len(confusion_matrix) > 0 else 1
     plt.clf()
     if not color_map:
         color_map = plt.cm.Blues
@@ -78,7 +94,7 @@ def plot_confusion_matrix(
     else:
         logger.info(f"Confusion matrix, without normalization: \n{confusion_matrix}")
 
-    thresh = confusion_matrix.max() / 2.0
+    thresh = zmax / 2.0
     for i, j in itertools.product(
         range(confusion_matrix.shape[0]), range(confusion_matrix.shape[1])
     ):
