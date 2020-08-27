@@ -28,8 +28,8 @@ def test_convert_featurizer_process(component_builder):
     )
 
     seq_vecs, sent_vecs = message.get_dense_features(TEXT, [])
-    if seq_vec:
-        seq_vec = seq_vec.features
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
     if sent_vecs:
         sent_vecs = sent_vecs.features
 
@@ -62,8 +62,8 @@ def test_convert_featurizer_train(component_builder):
     )
 
     seq_vecs, sent_vecs = message.get_dense_features(TEXT, [])
-    if seq_vec:
-        seq_vec = seq_vec.features
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
     if sent_vecs:
         sent_vecs = sent_vecs.features
 
@@ -72,8 +72,8 @@ def test_convert_featurizer_train(component_builder):
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
     seq_vecs, sent_vecs = message.get_dense_features(RESPONSE, [])
-    if seq_vec:
-        seq_vec = seq_vec.features
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
     if sent_vecs:
         sent_vecs = sent_vecs.features
 
@@ -82,8 +82,8 @@ def test_convert_featurizer_train(component_builder):
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
     seq_vecs, sent_vecs = message.get_dense_features(INTENT, [])
-    if seq_vec:
-        seq_vec = seq_vec.features
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
     if sent_vecs:
         sent_vecs = sent_vecs.features
 
