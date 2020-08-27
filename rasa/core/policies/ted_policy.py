@@ -270,8 +270,8 @@ class TEDPolicy(Policy):
         label_ids: np.ndarray, encoded_all_labels: List[Dict[Text, List["Features"]]],
     ) -> Data:
         encoded_labels = [
-            [encoded_all_labels[label_id] for label_id in seq_label_id]
-            for seq_label_id in label_ids
+            [encoded_all_labels[label_id] for label_id in seq_label_ids]
+            for seq_label_ids in label_ids
         ]
 
         # it is easier to convert to data again rather than use _label_data
@@ -302,11 +302,16 @@ class TEDPolicy(Policy):
 
         if label_ids is not None and encoded_all_labels is not None:
             # method is called during training
-            model_data.add_features(LABEL_KEY, LABEL_SUB_KEY, [label_ids])
+            # add last sequence dim to correctly track dynamic sequencies
             label_attribute_data = self._get_label_features(
                 label_ids, encoded_all_labels
             )
             model_data.add_data(label_attribute_data, key_prefix=f"{LABEL_KEY}_")
+
+            label_ids = np.array(
+                [np.expand_dims(seq_label_ids, -1) for seq_label_ids in label_ids]
+            )
+            model_data.add_features(LABEL_KEY, LABEL_SUB_KEY, [label_ids])
 
             attribute_data, self.zero_state_features = convert_to_data_format(
                 tracker_state_features
@@ -647,28 +652,33 @@ class TED(TransformerRasaModel):
         )
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
-        all_labels = []
+        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        for key in self.tf_label_data.keys():
-            mask = None
-            if MASK in self.tf_label_data[key]:
-                mask = self.tf_label_data[key][MASK][0]
+        all_labels_encoded = {
+            key: self._encode_features_per_attribute(self.tf_label_data, key)
+            for key in self.tf_label_data.keys()
+            if key != LABEL_KEY
+        }
 
-            for sub_key in self.tf_label_data[key].keys():
-                if sub_key not in [SEQUENCE, SENTENCE]:
-                    # we only have sparse and dense features for sentence and
-                    # sequence features
-                    continue
+        if (
+            all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None
+            and all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_NAME}") is not None
+        ):
+            x = all_labels_encoded.pop(
+                f"{LABEL_KEY}_{ACTION_TEXT}"
+            ) + all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
+        elif all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None:
+            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
+        else:
+            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
 
-                label_features = self._combine_sparse_dense_features(
-                    self.tf_label_data[key][sub_key], f"{key}_{sub_key}", mask=mask
-                )
-                all_labels.append(label_features)
+        # additional sequence axis is artifact of our RasaModelData creation
+        # TODO check
+        x = tf.squeeze(x, axis=1)
 
-        all_labels = tf.squeeze(tf.concat(all_labels, axis=-1), axis=1)
-        all_labels_embed = self._embed_label(all_labels)
+        all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
 
-        return all_labels, all_labels_embed
+        return all_label_ids, all_labels_embed
 
     def _emebed_dialogue(
         self, dialogue_in: tf.Tensor, sequence_lengths: tf.Tensor
@@ -688,25 +698,25 @@ class TED(TransformerRasaModel):
             dialogue_transformed = tf.expand_dims(
                 self._last_token(dialogue_transformed, sequence_lengths), 1
             )
-            mask = self._last_token(mask, sequence_lengths)
+            mask = tf.expand_dims(self._last_token(mask, sequence_lengths), 1)
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
         return dialogue_embed, mask
 
-    def _embed_label(self, label_in: Union[tf.Tensor, np.ndarray]) -> tf.Tensor:
-        label = self._tf_layers[f"ffnn.{LABEL}"](label_in, self._training)
-        return self._tf_layers[f"embed.{LABEL}"](label)
-
     def _encode_features_per_attribute(
-        self, batch: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Optional[tf.Tensor]:
-        if not batch[attribute]:
+
+        if not tf_batch_data[attribute]:
             return None
 
-        attribute_mask = batch[attribute][MASK][0]
+        attribute_mask = tf_batch_data[attribute][MASK][0]
+        # TODO transformer has to be used to process sequence features
         attribute_features = self._combine_sparse_dense_features(
-            batch[attribute][SENTENCE], f"{attribute}_{SENTENCE}", mask=attribute_mask
+            tf_batch_data[attribute][SENTENCE],
+            f"{attribute}_{SENTENCE}",
+            mask=attribute_mask,
         )
 
         if attribute in FEATURES_TO_ENCODE:
@@ -716,12 +726,12 @@ class TED(TransformerRasaModel):
 
         return attribute_features * attribute_mask
 
-    def _process_batch(
-        self, batch: Dict[Text, Dict[Text, List[tf.Tensor]]]
+    def _process_batch_data(
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
     ) -> tf.Tensor:
         batch_encoded = {
-            key: self._encode_features_per_attribute(batch, key)
-            for key in batch.keys()
+            key: self._encode_features_per_attribute(tf_batch_data, key)
+            for key in tf_batch_data.keys()
             if LABEL_KEY not in key and DIALOGUE not in key
         }
 
@@ -756,48 +766,43 @@ class TED(TransformerRasaModel):
 
         return batch_features
 
-    def _process_label_features(
-        self, batch: Dict[Text, Dict[Text, List[tf.Tensor]]]
+    @staticmethod
+    def _get_labels_embed(
+        label_ids: tf.Tensor, all_labels_embed: tf.Tensor
     ) -> tf.Tensor:
-        label_in = []
-        label_keys = [key for key in self.tf_label_data.keys() if LABEL in key]
+        # instead of processing labels again, gather embeddings from
+        # all_labels_embed using label ids
 
-        for key in label_keys:
-            mask = None
-            if MASK in batch[key]:
-                mask = tf.expand_dims(batch[key][MASK][0], axis=-2)
+        indices = tf.cast(label_ids[:, :, 0], tf.int32)
+        labels_embed = tf.gather(all_labels_embed, indices)
 
-            for sub_key in batch[key]:
-                if sub_key not in [SEQUENCE, SENTENCE]:
-                    # we only have sparse and dense features for sequence and
-                    # sentence features
-                    continue
-
-                label_features = self._combine_sparse_dense_features(
-                    batch[key][sub_key], f"{key}_{sub_key}"
-                )
-                label_in.append(tf.expand_dims(label_features, axis=-2) * mask)
-
-        return tf.squeeze(tf.concat(label_in, axis=-1), axis=1)
+        return labels_embed
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
-        batch = self.batch_to_model_data_format(batch_in, self.data_signature)
+        tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        sequence_lengths = tf.cast(
-            tf.squeeze(batch[DIALOGUE][LENGTH], axis=0), tf.int32
+        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
+
+        all_label_ids, all_labels_embed = self._create_all_labels_embed()
+
+        label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
+        labels_embed = self._get_labels_embed(label_ids, all_labels_embed)
+
+        dialogue_in = self._process_batch_data(tf_batch_data)
+        dialogue_embed, dialogue_mask = self._emebed_dialogue(
+            dialogue_in, dialogue_lengths
         )
-
-        label_in = self._process_label_features(batch)
-        dialogue_in = self._process_batch(batch)
-        all_labels, all_labels_embed = self._create_all_labels_embed()
-
-        dialogue_embed, mask = self._emebed_dialogue(dialogue_in, sequence_lengths)
-        label_embed = self._embed_label(label_in)
+        dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
         loss, acc = self._tf_layers[f"loss.{LABEL}"](
-            dialogue_embed, label_embed, label_in, all_labels_embed, all_labels, mask
+            dialogue_embed,
+            labels_embed,
+            label_ids,
+            all_labels_embed,
+            all_label_ids,
+            dialogue_mask,
         )
 
         self.action_loss.update_state(loss)
@@ -808,22 +813,25 @@ class TED(TransformerRasaModel):
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
-        batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
-
-        sequence_lengths = tf.cast(
-            tf.squeeze(batch[DIALOGUE][LENGTH], axis=0), tf.int32
+        tf_batch_data = self.batch_to_model_data_format(
+            batch_in, self.predict_data_signature
         )
+
+        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
 
-        dialogue_in = self._process_batch(batch)
-        dialogue_embed, mask = self._emebed_dialogue(dialogue_in, sequence_lengths)
+        dialogue_in = self._process_batch_data(tf_batch_data)
+        dialogue_embed, dialogue_mask = self._emebed_dialogue(
+            dialogue_in, dialogue_lengths
+        )
+        dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
             dialogue_embed[:, :, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
-            mask,
+            dialogue_mask,
         )
 
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(

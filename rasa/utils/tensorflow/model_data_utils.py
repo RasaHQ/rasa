@@ -156,17 +156,12 @@ def convert_to_data_format(
         sparse_features = defaultdict(list)
         dense_features = defaultdict(list)
 
-        if remove_sequence_dimension:
-            # remove added sequence dimension
-            for key, values in _sparse_features.items():
-                sparse_features[key] = [value[0] for value in values]
-            for key, values in _dense_features.items():
-                dense_features[key] = [value[0] for value in values]
-        else:
-            for key, values in _sparse_features.items():
-                sparse_features[key] = [scipy.sparse.vstack(value) for value in values]
-            for key, values in _dense_features.items():
-                dense_features[key] = [np.vstack(value) for value in values]
+        # vstack serves as removing dimension
+        # TODO check vstack for sequence features
+        for key, values in _sparse_features.items():
+            sparse_features[key] = [scipy.sparse.vstack(value) for value in values]
+        for key, values in _dense_features.items():
+            dense_features[key] = [np.vstack(value) for value in values]
 
         attribute_features = {MASK: [np.array(attribute_masks)]}
 
