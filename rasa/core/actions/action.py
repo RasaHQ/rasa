@@ -253,7 +253,9 @@ class ActionRetrieveResponse(Action):
             RESPONSE_SELECTOR_RESPONSES_KEY
         ]
 
-        # Pick a random message from list of candidate messages
+        # Pick a random message from list of candidate messages.
+        # This should ideally be done by the NLG class but that's not
+        # possible until the domain has all the response templates of the response selector.
         picked_message_idx = random.randint(0, len(possible_messages) - 1)
         picked_message = copy.deepcopy(possible_messages[picked_message_idx])
 

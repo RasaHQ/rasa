@@ -120,13 +120,14 @@ class Message:
             data[ENTITIES] = entities
         return cls(text, data, **kwargs)
 
-    def get_full_intent(self):
+    def get_full_intent(self) -> Text:
         """Get intent as it appears in training data"""
 
-        if self.get(INTENT_RESPONSE_KEY):
-            return self.get(INTENT_RESPONSE_KEY)
-        else:
-            return self.get(INTENT)
+        return (
+            self.get(INTENT_RESPONSE_KEY)
+            if self.get(INTENT_RESPONSE_KEY)
+            else self.get(INTENT)
+        )
 
     def get_combined_intent_response_key(self) -> Text:
         """Get intent as it appears in training data"""

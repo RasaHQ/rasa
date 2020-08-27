@@ -339,7 +339,7 @@ class ResponseSelector(DIETClassifier):
         Returns:
             The match for the label that was found in the known responses.
             It is always guaranteed to have a match, otherwise that case should have been caught
-            earlier and an error should have been raised.
+            earlier and a warning should have been raised.
         """
 
         for key, responses in self.responses.items():
@@ -360,6 +360,8 @@ class ResponseSelector(DIETClassifier):
         out = self._predict(message)
         top_label, label_ranking = self._predict_label(out)
 
+        # Get the exact intent_response_key and the associated
+        # response templates for the top predicted label
         label_intent_response_key = (
             self._resolve_intent_response_key(top_label) or top_label[INTENT_NAME_KEY]
         )
@@ -556,7 +558,6 @@ class DIET2DIET(DIET):
         self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
 
         self._prepare_sequence_layers(self.text_name)
-
         self._prepare_sequence_layers(self.label_name)
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_layers(self.text_name)

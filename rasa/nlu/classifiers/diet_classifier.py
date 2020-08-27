@@ -1086,7 +1086,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         meta: Dict[Text, Any],
         data_example: Dict[Text, List[np.ndarray]],
         model_dir: Text,
-    ):
+    ) -> "RasaModel":
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
@@ -1277,7 +1277,7 @@ class DIET(RasaModel):
         self.entity_role_loss = tf.keras.metrics.Mean(name="r_loss")
         # create accuracy metrics second to output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
-        self.response_acc = tf.keras.metrics.Mean(name="i_acc")
+        self.intent_acc = tf.keras.metrics.Mean(name="i_acc")
         self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
         self.entity_group_f1 = tf.keras.metrics.Mean(name="g_f1")
         self.entity_role_f1 = tf.keras.metrics.Mean(name="r_f1")
@@ -1882,7 +1882,7 @@ class DIET(RasaModel):
     def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor) -> None:
 
         self.intent_loss.update_state(loss)
-        self.response_acc.update_state(acc)
+        self.intent_acc.update_state(acc)
 
     def _batch_loss_entities(
         self,
