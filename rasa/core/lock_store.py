@@ -198,6 +198,7 @@ class RedisLockStore(LockStore):
         db: int = 1,
         password: Optional[Text] = None,
         use_ssl: bool = False,
+        prefix: Optional[Text] = None,
         socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
     ) -> None:
         """Create a lock store which uses Redis for persistence.
@@ -210,6 +211,8 @@ class RedisLockStore(LockStore):
             password: The password which should be used for authentication with the
                 Redis database.
             use_ssl: `True` if SSL should be used for the connection to Redis.
+            prefix: prefix to prepend to all keys used by the lockstore. Must be
+                alphanumeric.
             socket_timeout: Timeout in seconds after which an exception will be raised
                 in case Redis doesn't respond within `socket_timeout` seconds.
         """
@@ -223,19 +226,32 @@ class RedisLockStore(LockStore):
             ssl=use_ssl,
             socket_timeout=socket_timeout,
         )
+
+        if (prefix is None) or (prefix == ""):
+            self.prefix = "lock:"
+        elif (prefix is not None) and (
+            (isinstance(prefix, str)) and (prefix.isalnum())
+        ):
+            self.prefix = prefix + ":lock:"
+        else:
+            self.prefix = "lock:"
+            logger.warning(
+                f"Omitting provided non-alphanumeric key prefix: '{prefix}'."
+            )
+
         super().__init__()
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
-        serialised_lock = self.red.get(conversation_id)
+        serialised_lock = self.red.get(self.prefix + conversation_id)
         if serialised_lock:
             return TicketLock.from_dict(json.loads(serialised_lock))
 
     def delete_lock(self, conversation_id: Text) -> None:
-        deletion_successful = self.red.delete(conversation_id)
+        deletion_successful = self.red.delete(self.prefix + conversation_id)
         self._log_deletion(conversation_id, deletion_successful)
 
     def save_lock(self, lock: TicketLock) -> None:
-        self.red.set(lock.conversation_id, lock.dumps())
+        self.red.set(self.prefix + lock.conversation_id, lock.dumps())
 
 
 class InMemoryLockStore(LockStore):

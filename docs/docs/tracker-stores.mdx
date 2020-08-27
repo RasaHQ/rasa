@@ -191,13 +191,14 @@ USER 1001`}</code></pre>
   2. Add required configuration to your `endpoints.yml`:
 
      ```yaml-rasa
-     tracker_store:
-         type: redis
-         url: <url of the redis instance, e.g. localhost>
-         port: <port of your redis instance, usually 6379>
-         db: <number of your database within redis, e.g. 0>
-         password: <password used for authentication>
-         use_ssl: <whether or not the communication is encrypted, default `false`>
+      tracker_store:
+        type: redis
+        url: <url of the redis instance, e.g. localhost>
+        port: <port of your redis instance, usually 6379>
+        db: <number of your database within redis, e.g. 0>
+        prefix: <alphanumeric value to prepend to tracker_store keys>
+        password: <password used for authentication>
+        use_ssl: <whether or not the communication is encrypted, default `false`>
      ```
 
   3. To start the Rasa server using your configured Redis instance,
@@ -219,12 +220,13 @@ USER 1001`}</code></pre>
 
      ```yaml-rasa {3}
       tracker_store:
-          type: redis
-          url: <url of the redis instance, e.g. localhost>
-          port: <port of your redis instance, usually 6379>
-          db: <number of your database within redis, e.g. 0>
-          password: <password used for authentication>
-          use_ssl: <whether or not the communication is encrypted, default `false`>
+        type: redis
+        url: <url of the redis instance, e.g. localhost>
+        port: <port of your redis instance, usually 6379>
+        db: <number of your database within redis, e.g. 0>
+        prefix: <alphanumeric value to prepend to tracker_store keys>
+        password: <password used for authentication>
+        use_ssl: <whether or not the communication is encrypted, default `false`>
      ```
 
 
@@ -236,6 +238,9 @@ USER 1001`}</code></pre>
   * `port` (default: `6379`): The port which redis is running on
 
   * `db` (default: `0`): The number of your redis database
+
+  * `prefix` (default: `None`): The prefix to prepend to lock_store keys. Must
+     be alphanumeric
 
   * `password` (default: `None`): Password used for authentication
     (`None` equals no authentication)

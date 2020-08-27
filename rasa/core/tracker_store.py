@@ -263,6 +263,7 @@ class RedisTrackerStore(TrackerStore):
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
+        prefix: Optional[Text] = None,
         use_ssl: bool = False,
     ):
         import redis
@@ -271,6 +272,19 @@ class RedisTrackerStore(TrackerStore):
             host=host, port=port, db=db, password=password, ssl=use_ssl
         )
         self.record_exp = record_exp
+
+        if (prefix is None) or (prefix == ""):
+            self.prefix = "tracker:"
+        elif (prefix is not None) and (
+            (isinstance(prefix, str)) and (prefix.isalnum())
+        ):
+            self.prefix = prefix + ":tracker:"
+        else:
+            self.prefix = "tracker:"
+            logger.warning(
+                f"Omitting provided non-alphanumeric key prefix: '{prefix}'."
+            )
+
         super().__init__(domain, event_broker)
 
     def save(self, tracker, timeout=None):
@@ -282,7 +296,7 @@ class RedisTrackerStore(TrackerStore):
             timeout = self.record_exp
 
         serialised_tracker = self.serialise_tracker(tracker)
-        self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
+        self.red.set(self.prefix + tracker.sender_id, serialised_tracker, ex=timeout)
 
     def retrieve(self, sender_id):
         """
@@ -292,7 +306,7 @@ class RedisTrackerStore(TrackerStore):
         Returns:
             DialogueStateTracker
         """
-        stored = self.red.get(sender_id)
+        stored = self.red.get(self.prefix + sender_id)
         if stored is not None:
             return self.deserialise_tracker(sender_id, stored)
         else:
@@ -300,7 +314,7 @@ class RedisTrackerStore(TrackerStore):
 
     def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store"""
-        return self.red.keys()
+        return self.red.keys(self.prefix + "*")
 
 
 class DynamoTrackerStore(TrackerStore):

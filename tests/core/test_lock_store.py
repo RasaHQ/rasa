@@ -28,6 +28,9 @@ class FakeRedisLockStore(RedisLockStore):
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
 
+        # Defined in RedisLockStore but needs to be added for the FakedRedisLockStore
+        self.prefix = "lock:"
+
         super(RedisLockStore, self).__init__()
 
 
