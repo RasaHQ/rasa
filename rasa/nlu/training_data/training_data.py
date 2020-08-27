@@ -7,11 +7,7 @@ import copy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
-from rasa.data import (
-    JSON_FILE_EXTENSIONS,
-    MARKDOWN_FILE_EXTENSIONS,
-    YAML_FILE_EXTENSIONS,
-)
+from rasa import data
 import rasa.nlu.utils
 from rasa.utils.common import raise_warning, lazy_property
 from rasa.nlu.constants import (
@@ -312,11 +308,11 @@ class TrainingData:
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
 
-        if Path(filename).suffix in JSON_FILE_EXTENSIONS:
+        if data.is_likely_json_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_json(indent=2))
-        elif Path(filename).suffix in MARKDOWN_FILE_EXTENSIONS:
+        elif data.is_likely_markdown_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_markdown())
-        elif Path(filename).suffix in YAML_FILE_EXTENSIONS:
+        elif data.is_likely_yaml_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_yaml())
         else:
             ValueError(
@@ -325,9 +321,9 @@ class TrainingData:
             )
 
     def persist_nlg(self, filename: Text) -> None:
-        if Path(filename).suffix in YAML_FILE_EXTENSIONS:
+        if data.is_likely_yaml_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlg_as_yaml())
-        elif Path(filename).suffix in MARKDOWN_FILE_EXTENSIONS:
+        elif data.is_likely_markdown_file(filename):
             nlg_serialized_data = self.nlg_as_markdown()
             if nlg_serialized_data:
                 rasa.nlu.utils.write_to_file(filename, nlg_serialized_data)
@@ -341,7 +337,7 @@ class TrainingData:
     def get_nlg_persist_filename(nlu_filename: Text) -> Text:
 
         extension = Path(nlu_filename).suffix
-        if extension in JSON_FILE_EXTENSIONS:
+        if data.is_likely_json_file(nlu_filename):
             # backwards compatibility: previously NLG was always dumped as md. now
             # we are going to dump in the same format as the NLU data. unfortunately
             # there is a special case: NLU is in json format, in this case we use

@@ -13,6 +13,7 @@ from typing import (
     Optional,
 )
 
+from rasa import data
 from rasa.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 
@@ -21,7 +22,6 @@ from rasa.constants import (
     DOCS_URL_TRAINING_DATA_NLU,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
-from rasa.data import YAML_FILE_EXTENSIONS
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
@@ -145,13 +145,13 @@ class RasaYAMLReader(TrainingDataReader):
                     docs=DOCS_URL_TRAINING_DATA_NLU,
                 )
 
-    def _parse_intent(self, data: Dict[Text, Any]) -> None:
+    def _parse_intent(self, intent_data: Dict[Text, Any]) -> None:
         from rasa.nlu.training_data import Message
         import rasa.nlu.training_data.entities_parser as entities_parser
         import rasa.nlu.training_data.synonyms_parser as synonyms_parser
         import rasa.nlu.constants as nlu_constants
 
-        intent = data.get(KEY_INTENT, "")
+        intent = intent_data.get(KEY_INTENT, "")
         if not intent:
             raise_warning(
                 f"Issue found while processing '{self.filename}': "
@@ -162,7 +162,7 @@ class RasaYAMLReader(TrainingDataReader):
             )
             return
 
-        examples = data.get(KEY_INTENT_EXAMPLES, "")
+        examples = intent_data.get(KEY_INTENT_EXAMPLES, "")
         for example, entities in self._parse_training_examples(examples, intent):
 
             plain_text = entities_parser.replace_entities(example)
@@ -349,7 +349,7 @@ class RasaYAMLReader(TrainingDataReader):
             `True` if the `filename` is possibly a valid YAML NLU file,
             `False` otherwise.
         """
-        if Path(filename).suffix not in YAML_FILE_EXTENSIONS:
+        if not data.is_likely_yaml_file(filename):
             return False
 
         try:

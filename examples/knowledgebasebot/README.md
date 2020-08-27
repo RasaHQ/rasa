@@ -7,8 +7,8 @@ This example bot uses a knowledge base to answer user's requests.
 This example contains some training data and the main files needed to build an 
 assistant on your local machine. The `knowledgebasebot` consists of the following files:
 
-- **data/nlu.md** contains training examples for the NLU model  
-- **data/stories.md** contains training stories for the Core model  
+- **data/nlu.yml** contains training examples for the NLU model  
+- **data/stories.yml** contains training stories for the Core model  
 - **actions.py** contains the custom action for querying the knowledge base
 - **config.yml** contains the model configuration
 - **domain.yml** contains the domain of the assistant  

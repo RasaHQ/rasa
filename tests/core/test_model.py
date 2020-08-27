@@ -80,7 +80,7 @@ def test_get_model_exception(model_path):
 
 
 def test_get_model_from_directory_with_subdirectories(
-    trained_rasa_model, tmpdir_factory: TempdirFactory
+    trained_rasa_model: Text, tmp_path: Path
 ):
     unpacked = get_model(trained_rasa_model)
     unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
@@ -88,9 +88,8 @@ def test_get_model_from_directory_with_subdirectories(
     assert unpacked_core
     assert unpacked_nlu
 
-    directory = tmpdir_factory.mktemp("empty_model_dir").strpath
     with pytest.raises(ModelNotFound):
-        get_model_subdirectories(directory)
+        get_model_subdirectories(str(tmp_path))  # temp path should be empty
 
 
 def test_get_model_from_directory_nlu_only(trained_rasa_model):
@@ -235,7 +234,9 @@ async def test_create_fingerprint_from_invalid_paths(project, project_files):
 
 
 @pytest.mark.parametrize("use_fingerprint", [True, False])
-async def test_rasa_packaging(trained_rasa_model, project, use_fingerprint):
+async def test_rasa_packaging(
+    trained_rasa_model: Text, project: Text, use_fingerprint: bool, tmp_path: Path
+):
     unpacked_model_path = get_model(trained_rasa_model)
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
@@ -244,8 +245,7 @@ async def test_rasa_packaging(trained_rasa_model, project, use_fingerprint):
     else:
         fingerprint = None
 
-    tempdir = tempfile.mkdtemp()
-    output_path = os.path.join(tempdir, "test.tar.gz")
+    output_path = str(tmp_path / "test.tar.gz")
 
     create_package_rasa(unpacked_model_path, output_path, fingerprint)
 
@@ -314,23 +314,26 @@ async def test_rasa_packaging(trained_rasa_model, project, use_fingerprint):
         },
     ],
 )
-def test_should_retrain(trained_rasa_model: Text, fingerprint: Fingerprint):
-    old_model = set_fingerprint(trained_rasa_model, fingerprint["old"])
+def test_should_retrain(
+    trained_rasa_model: Text, fingerprint: Fingerprint, tmp_path: Path
+):
+    old_model = set_fingerprint(trained_rasa_model, fingerprint["old"], tmp_path)
 
-    retrain = should_retrain(fingerprint["new"], old_model, tempfile.mkdtemp())
+    retrain = should_retrain(fingerprint["new"], old_model, str(tmp_path))
 
     assert retrain.should_retrain_core() == fingerprint["retrain_core"]
     assert retrain.should_retrain_nlg() == fingerprint["retrain_nlg"]
     assert retrain.should_retrain_nlu() == fingerprint["retrain_nlu"]
 
 
-def set_fingerprint(trained_rasa_model: Text, fingerprint: Fingerprint) -> Text:
+def set_fingerprint(
+    trained_rasa_model: Text, fingerprint: Fingerprint, tmp_path: Path
+) -> Text:
     unpacked_model_path = get_model(trained_rasa_model)
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
 
-    tempdir = tempfile.mkdtemp()
-    output_path = os.path.join(tempdir, "test.tar.gz")
+    output_path = str(tmp_path / "test.tar.gz")
 
     create_package_rasa(unpacked_model_path, output_path, fingerprint)
 

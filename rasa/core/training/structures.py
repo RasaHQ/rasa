@@ -240,7 +240,7 @@ class Story:
     def from_events(events: List[Event], story_name: Optional[Text] = None) -> "Story":
         """Create a story from a list of events."""
 
-        story_step = StoryStep()
+        story_step = StoryStep(story_name)
         for event in events:
             story_step.add_event(event)
         return Story([story_step], story_name)

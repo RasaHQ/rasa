@@ -9,7 +9,6 @@ from rasa import data
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
 from rasa.constants import DEFAULT_DATA_PATH
-from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 from rasa.nlu.convert import convert_training_data
@@ -51,8 +50,6 @@ def add_subparser(
 def _add_data_convert_parsers(
     data_subparsers, parents: List[argparse.ArgumentParser]
 ) -> None:
-    from rasa.nlu import convert
-
     convert_parser = data_subparsers.add_parser(
         "convert",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -142,6 +139,11 @@ def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def split_nlu_data(args: argparse.Namespace) -> None:
+    """Load data from a file path and split the NLU data into test and train examples.
+
+    Args:
+        args: Commandline arguments
+    """
     from rasa.nlu.training_data.loading import load_data
     from rasa.nlu.training_data.util import get_file_format
 
@@ -158,8 +160,7 @@ def split_nlu_data(args: argparse.Namespace) -> None:
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
-    """
-    Validates either the story structure or the entire project.
+    """Validates either the story structure or the entire project.
 
     Args:
         args: Commandline arguments
@@ -186,6 +187,11 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
 
 
 def validate_stories(args: argparse.Namespace) -> None:
+    """Validates that training data file content conforms to training data spec.
+
+    Args:
+        args: Commandline arguments
+    """
     validate_files(args, stories_only=True)
 
 
@@ -281,7 +287,7 @@ def _write_nlu_yaml(
 def _write_core_yaml(
     training_data_path: Path, output_path: Path, source_path: Path
 ) -> None:
-    reader = MarkdownStoryReader(RegexInterpreter())
+    reader = MarkdownStoryReader()
     writer = YAMLStoryWriter()
 
     loop = asyncio.get_event_loop()
