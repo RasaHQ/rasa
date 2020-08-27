@@ -125,7 +125,6 @@ def test_file_broker_from_config(tmp_path: Path):
     endpoint_config = textwrap.dedent(
         f"""
         event_broker:
-          
           path: "{path}"
           type: "file"
     """
