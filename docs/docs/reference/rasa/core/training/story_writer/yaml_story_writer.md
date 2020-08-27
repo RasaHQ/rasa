@@ -22,7 +22,6 @@ Turns Story steps into a string.
 **Arguments**:
 
 - `story_steps` - Original story steps to be converted to the YAML.
-  
 
 **Returns**:
 
@@ -31,7 +30,7 @@ Turns Story steps into a string.
 #### dump
 
 ```python
- | dump(target: Union[Text, Path, ruamel_yaml.StringIO], story_steps: List[StoryStep]) -> None
+ | dump(target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep]) -> None
 ```
 
 Writes Story steps into a target file/stream.
@@ -39,6 +38,18 @@ Writes Story steps into a target file/stream.
 **Arguments**:
 
 - `target` - name of the target file/stream to write the YAML to.
+- `story_steps` - Original story steps to be converted to the YAML.
+
+#### stories\_to\_yaml
+
+```python
+ | stories_to_yaml(story_steps: List[StoryStep]) -> Dict[Text, Any]
+```
+
+Converts a sequence of story steps into yaml format.
+
+**Arguments**:
+
 - `story_steps` - Original story steps to be converted to the YAML.
 
 #### process\_story\_step

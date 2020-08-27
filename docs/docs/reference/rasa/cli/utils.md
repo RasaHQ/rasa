@@ -85,7 +85,7 @@ Create a string representation of an element.
 #### button\_choices\_from\_message\_data
 
 ```python
-button_choices_from_message_data(message: Dict[Text, Any], allow_free_text_input: bool = True) -> "Question"
+button_choices_from_message_data(message: Dict[Text, Any], allow_free_text_input: bool = True) -> List[Text]
 ```
 
 Return list of choices to present to the user.

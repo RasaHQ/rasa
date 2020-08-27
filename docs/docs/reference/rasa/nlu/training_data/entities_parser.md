@@ -109,3 +109,11 @@ training example.
 
   String with removed special symbols.
 
+#### parse\_training\_example
+
+```python
+parse_training_example(example: Text, intent: Optional[Text] = None) -> "Message"
+```
+
+Extract entities and synonyms, and convert to plain text.
+

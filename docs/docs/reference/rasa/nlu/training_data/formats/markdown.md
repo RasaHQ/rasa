@@ -19,14 +19,6 @@ Reads markdown training data and creates a TrainingData object.
 
 Read markdown string and create TrainingData object
 
-#### parse\_training\_example
-
-```python
- | parse_training_example(example: Text) -> "Message"
-```
-
-Extract entities and synonyms, and convert to plain text.
-
 ## MarkdownWriter Objects
 
 ```python

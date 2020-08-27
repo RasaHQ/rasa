@@ -36,7 +36,7 @@ Parse the user input using regexes to extract intent &amp; entities.
 #### parse
 
 ```python
- | async parse(text: Text, message_id: Optional[Text] = None, tracker: DialogueStateTracker = None) -> Dict[Text, Any]
+ | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None) -> Dict[Text, Any]
 ```
 
 Parse a text message.
@@ -44,7 +44,7 @@ Parse a text message.
 #### synchronous\_parse
 
 ```python
- | synchronous_parse(text: Text, message_id: Optional[Text] = None, tracker: DialogueStateTracker = None) -> Dict[Text, Any]
+ | synchronous_parse(text: Text) -> Dict[Text, Any]
 ```
 
 Parse a text message.
@@ -58,7 +58,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter)
 #### parse
 
 ```python
- | async parse(text: Text, message_id: Optional[Text] = None, tracker: DialogueStateTracker = None) -> Dict[Text, Any]
+ | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None) -> Dict[Text, Any]
 ```
 
 Parse a text message.
@@ -74,7 +74,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter)
 #### parse
 
 ```python
- | async parse(text: Text, message_id: Optional[Text] = None, tracker: DialogueStateTracker = None) -> Dict[Text, Any]
+ | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None) -> Dict[Text, Any]
 ```
 
 Parse a text message.

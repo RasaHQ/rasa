@@ -110,6 +110,24 @@ used, e.g., by a reminder or the trigger_intent endpoint).
 - `tracker` - The tracker to which the event should be added.
 - `output_channel` - The output channel.
 
+#### parse\_message
+
+```python
+ | async parse_message(message: UserMessage, tracker: Optional[DialogueStateTracker] = None) -> Dict[Text, Any]
+```
+
+Interprete the passed message using the NLU interpreter.
+
+**Arguments**:
+
+- `message` - Message to handle
+- `tracker` - Dialogue context of the message
+  
+
+**Returns**:
+
+  Parsed data extracted from the message.
+
 #### is\_action\_limit\_reached
 
 ```python

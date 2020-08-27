@@ -3,6 +3,75 @@ sidebar_label: rasa.data
 title: rasa.data
 ---
 
+#### is\_likely\_yaml\_file
+
+```python
+is_likely_yaml_file(file_path: Text) -> bool
+```
+
+Check if a file likely contains yaml.
+
+**Arguments**:
+
+- `file_path` - path to the file
+  
+
+**Returns**:
+
+  `True` if the file likely contains data in yaml format, `False` otherwise.
+
+#### is\_likely\_json\_file
+
+```python
+is_likely_json_file(file_path: Text) -> bool
+```
+
+Check if a file likely contains json.
+
+**Arguments**:
+
+- `file_path` - path to the file
+  
+
+**Returns**:
+
+  `True` if the file likely contains data in json format, `False` otherwise.
+
+#### is\_likely\_markdown\_file
+
+```python
+is_likely_markdown_file(file_path: Text) -> bool
+```
+
+Check if a file likely contains markdown.
+
+**Arguments**:
+
+- `file_path` - path to the file
+  
+
+**Returns**:
+
+  `True` if the file likely contains data in markdown format,
+  `False` otherwise.
+
+#### get\_test\_directory
+
+```python
+get_test_directory(paths: Optional[Union[Text, List[Text]]]) -> Text
+```
+
+Recursively collects all Core training files from a list of paths.
+
+**Arguments**:
+
+- `paths` - List of paths to training files or folders containing them.
+  
+
+**Returns**:
+
+  Path to temporary directory containing all found Core training files.
+
 #### get\_core\_directory
 
 ```python
@@ -55,10 +124,10 @@ Recursively collects all training files from a list of paths.
   Path to directory containing the Core files and path to directory
   containing the NLU training files.
 
-#### get\_core\_nlu\_files
+#### get\_data\_files
 
 ```python
-get_core_nlu_files(paths: Optional[Union[Text, List[Text]]]) -> Tuple[List[Text], List[Text]]
+get_data_files(paths: Optional[Union[Text, List[Text]]], filter_predicate: Callable[[Text], bool]) -> List[Text]
 ```
 
 Recursively collects all training files from a list of paths.
@@ -66,11 +135,12 @@ Recursively collects all training files from a list of paths.
 **Arguments**:
 
 - `paths` - List of paths to training files or folders containing them.
+- `filter_predicate` - property to use when filtering the paths, e.g. `is_nlu_file`.
   
 
 **Returns**:
 
-  Tuple of paths to story and NLU files.
+  paths of training data files.
 
 #### is\_nlu\_file
 
@@ -106,13 +176,13 @@ Checks if a file is a Rasa story file.
 
   `True` if it&#x27;s a story file, otherwise `False`.
 
-#### is\_end\_to\_end\_conversation\_test\_file
+#### is\_test\_stories\_file
 
 ```python
-is_end_to_end_conversation_test_file(file_path: Text) -> bool
+is_test_stories_file(file_path: Text) -> bool
 ```
 
-Checks if a file is an end-to-end conversation test file.
+Checks if a file is a test stories file.
 
 **Arguments**:
 
@@ -121,7 +191,7 @@ Checks if a file is an end-to-end conversation test file.
 
 **Returns**:
 
-  `True` if it&#x27;s a conversation test file, otherwise `False`.
+  `True` if it&#x27;s a story file containing tests, otherwise `False`.
 
 #### is\_config\_file
 

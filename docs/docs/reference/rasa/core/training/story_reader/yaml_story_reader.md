@@ -66,8 +66,8 @@ Read stories from parsed YAML.
 #### is\_yaml\_story\_file
 
 ```python
- | @staticmethod
- | is_yaml_story_file(file_path: Text) -> bool
+ | @classmethod
+ | is_yaml_story_file(cls, file_path: Text) -> bool
 ```
 
 Check if file contains Core training data or rule data in YAML format.
@@ -81,6 +81,42 @@ Check if file contains Core training data or rule data in YAML format.
 
   `True` in case the file is a Core YAML training data or rule data file,
   `False` otherwise.
+
+#### is\_key\_in\_yaml
+
+```python
+ | @classmethod
+ | is_key_in_yaml(cls, file_path: Text, *keys: Text) -> bool
+```
+
+Check if all keys are contained in the parsed dictionary from a yaml file.
+
+**Arguments**:
+
+- `file_path` - path to the yaml file
+- `keys` - keys to look for
+
+**Returns**:
+
+  `True` if all the keys are contained in the file, `False` otherwise.
+
+#### is\_yaml\_test\_stories\_file
+
+```python
+ | @classmethod
+ | is_yaml_test_stories_file(cls, file_path: Union[Text, Path]) -> bool
+```
+
+Checks if a file is a test conversations file.
+
+**Arguments**:
+
+- `file_path` - Path of the file which should be checked.
+  
+
+**Returns**:
+
+  `True` if it&#x27;s a conversation test file, otherwise `False`.
 
 ## StoryParser Objects
 

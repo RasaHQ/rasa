@@ -269,6 +269,16 @@ of this tracker exactly.
 
 Modify the state of the tracker according to an ``Event``.
 
+#### as\_story
+
+```python
+ | as_story(include_source: bool = False) -> "Story"
+```
+
+Dump the tracker as a story in the Rasa Core story format.
+
+Returns the dumped tracker as a string.
+
 #### export\_stories
 
 ```python
@@ -277,7 +287,9 @@ Modify the state of the tracker according to an ``Event``.
 
 Dump the tracker as a story in the Rasa Core story format.
 
-Returns the dumped tracker as a string.
+**Returns**:
+
+  The dumped tracker as a string.
 
 #### export\_stories\_to\_file
 

@@ -14,14 +14,13 @@ Helper class to read a story file.
 #### \_\_init\_\_
 
 ```python
- | __init__(interpreter: NaturalLanguageInterpreter, domain: Optional[Domain] = None, template_vars: Optional[Dict] = None, use_e2e: bool = False, source_name: Text = None, unfold_or_utterances: bool = True) -> None
+ | __init__(domain: Optional[Domain] = None, template_vars: Optional[Dict] = None, use_e2e: bool = False, source_name: Text = None, unfold_or_utterances: bool = True) -> None
 ```
 
 Constructor for the StoryReader.
 
 **Arguments**:
 
-- `interpreter` - Interpreter to be used to parse intents.
 - `domain` - Domain object.
 - `template_vars` - Template variables to be replaced.
 - `use_e2e` - Specifies whether to use the e2e parser or not.

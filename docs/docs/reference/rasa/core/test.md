@@ -14,7 +14,7 @@ Class storing action, intent and entity predictions and targets.
 #### add\_to\_store
 
 ```python
- | add_to_store(action_predictions: Optional[Union[Text, List[Text]]] = None, action_targets: Optional[Union[Text, List[Text]]] = None, intent_predictions: Optional[Union[Text, List[Text]]] = None, intent_targets: Optional[Union[Text, List[Text]]] = None, entity_predictions: Optional[List[Dict[Text, Any]]] = None, entity_targets: Optional[List[Dict[Text, Any]]] = None) -> None
+ | add_to_store(action_predictions: Optional[List[Text]] = None, action_targets: Optional[List[Text]] = None, intent_predictions: Optional[List[Text]] = None, intent_targets: Optional[List[Text]] = None, entity_predictions: Optional[List[Dict[Text, Any]]] = None, entity_targets: Optional[List[Dict[Text, Any]]] = None) -> None
 ```
 
 Add items or lists of items to the store
@@ -46,6 +46,14 @@ The model predicted the wrong action.
 Mostly used to mark wrong predictions and be able to
 dump them as stories.
 
+#### inline\_comment
+
+```python
+ | inline_comment() -> Text
+```
+
+A comment attached to this event. Used during dumping.
+
 ## EndToEndUserUtterance Objects
 
 ```python
@@ -55,7 +63,7 @@ class EndToEndUserUtterance(UserUttered)
 End-to-end user utterance.
 
 Mostly used to print the full end-to-end user message in the
-`failed_stories.md` output file.
+`failed_test_stories.yml` output file.
 
 ## WronglyClassifiedUserUtterance Objects
 
@@ -67,6 +75,14 @@ The NLU model predicted the wrong user utterance.
 
 Mostly used to mark wrong predictions and be able to
 dump them as stories.
+
+#### inline\_comment
+
+```python
+ | inline_comment() -> Text
+```
+
+A comment attached to this event. Used during dumping.
 
 #### test
 

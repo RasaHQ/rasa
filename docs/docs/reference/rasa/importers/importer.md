@@ -21,20 +21,18 @@ Retrieves the domain of the bot.
 
 **Returns**:
 
-  Loaded ``Domain``.
+  Loaded `Domain`.
 
 #### get\_stories
 
 ```python
- | async get_stories(interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(), template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | async get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves the stories that should be used for training.
 
 **Arguments**:
 
-- `interpreter` - Interpreter that should be used to parse end to
-  end learning annotations.
 - `template_variables` - Values of templates that should be replaced while
   reading the story files.
 - `use_e2e` - Specifies whether to parse end to end learning annotations.
@@ -43,7 +41,7 @@ Retrieves the stories that should be used for training.
 
 **Returns**:
 
-  ``StoryGraph`` containing all loaded stories.
+  `StoryGraph` containing all loaded stories.
 
 #### get\_config
 
@@ -72,7 +70,7 @@ Retrieves the NLU training data that should be used for training.
 
 **Returns**:
 
-  Loaded NLU ``TrainingData``.
+  Loaded NLU `TrainingData`.
 
 #### load\_from\_config
 
@@ -81,7 +79,7 @@ Retrieves the NLU training data that should be used for training.
  | load_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
 ```
 
-Loads a ``TrainingDataImporter`` instance from a configuration file.
+Loads a `TrainingDataImporter` instance from a configuration file.
 
 #### load\_core\_importer\_from\_config
 
@@ -90,8 +88,9 @@ Loads a ``TrainingDataImporter`` instance from a configuration file.
  | load_core_importer_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
 ```
 
-Loads a ``TrainingDataImporter`` instance from a configuration file that
-only reads Core training data.
+Loads core `TrainingDataImporter` instance.
+
+Instance loaded from configuration file will only read Core training data.
 
 #### load\_nlu\_importer\_from\_config
 
@@ -100,8 +99,9 @@ only reads Core training data.
  | load_nlu_importer_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
 ```
 
-Loads a ``TrainingDataImporter`` instance from a configuration file that
-only reads NLU training data.
+Loads nlu `TrainingDataImporter` instance.
+
+Instance loaded from configuration file will only read NLU training data.
 
 #### load\_from\_dict
 
@@ -110,7 +110,7 @@ only reads NLU training data.
  | load_from_dict(config: Optional[Dict], config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
 ```
 
-Loads a ``TrainingDataImporter`` instance from a dictionary.
+Loads a `TrainingDataImporter` instance from a dictionary.
 
 ## NluDataImporter Objects
 
@@ -134,6 +134,8 @@ Importer that skips any NLU related file reading.
 class CombinedDataImporter(TrainingDataImporter)
 ```
 
-A ``TrainingDataImporter`` that supports using multiple ``TrainingDataImporter``s as
-if they were a single instance.
+A `TrainingDataImporter` that combines multiple importers.
+
+Uses multiple `TrainingDataImporter` instances
+to load the data as if they were a single instance.
 

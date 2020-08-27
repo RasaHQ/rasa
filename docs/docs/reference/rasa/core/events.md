@@ -14,6 +14,26 @@ Convert a list of dictionaries to a list of corresponding events.
 Example format:
     [{&quot;event&quot;: &quot;slot&quot;, &quot;value&quot;: 5, &quot;name&quot;: &quot;my_slot&quot;}]
 
+#### md\_format\_message
+
+```python
+md_format_message(text: Text, intent: Optional[Text], entities: Union[Text, List[Any]]) -> Text
+```
+
+Uses NLU parser information to generate a message with inline entity annotations.
+
+**Arguments**:
+
+- `text` - text of the message
+- `intent` - intent of the message
+- `entities` - entities of the message
+  
+
+**Returns**:
+
+  Message with entities annotated inline, e.g.
+  `I am from [Berlin]{&quot;entity&quot;: &quot;city&quot;}`.
+
 ## Event Objects
 
 ```python
