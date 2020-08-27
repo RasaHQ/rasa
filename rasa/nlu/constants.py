@@ -2,7 +2,6 @@ TEXT = "text"
 INTENT = "intent"
 RESPONSE = "response"
 
-RESPONSE_KEY = "response_key"
 INTENT_RESPONSE_KEY = "intent_response_key"
 
 ENTITIES = "entities"

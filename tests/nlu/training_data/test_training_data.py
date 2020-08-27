@@ -4,7 +4,7 @@ import pytest
 
 import rasa.utils.io as io_utils
 from rasa.nlu import training_data
-from rasa.nlu.constants import TEXT, RESPONSE_KEY
+from rasa.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -163,12 +163,12 @@ def test_demo_data_filter_out_retrieval_intents(files):
     assert len(training_data.training_examples) == 46
 
     training_data_filtered = training_data.filter_training_examples(
-        lambda ex: ex.get(RESPONSE_KEY) is None
+        lambda ex: ex.get(INTENT_RESPONSE_KEY) is None
     )
     assert len(training_data_filtered.training_examples) == 42
 
     training_data_filtered_2 = training_data.filter_training_examples(
-        lambda ex: ex.get(RESPONSE_KEY) is not None
+        lambda ex: ex.get(INTENT_RESPONSE_KEY) is not None
     )
     assert len(training_data_filtered_2.training_examples) == 4
 

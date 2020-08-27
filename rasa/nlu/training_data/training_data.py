@@ -16,8 +16,8 @@ import rasa.nlu.utils
 from rasa.utils.common import raise_warning, lazy_property
 from rasa.nlu.constants import (
     RESPONSE,
-    RESPONSE_KEY,
     NO_ENTITY_TAG,
+    INTENT_RESPONSE_KEY,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
@@ -236,10 +236,10 @@ class TrainingData:
     def _fill_response_phrases(self) -> None:
         """Set response phrase for all examples by looking up NLG stories"""
         for example in self.training_examples:
-            # if response_key is None, that means the corresponding intent is not a
+            # if intent_response_key is None, that means the corresponding intent is not a
             # retrieval intent and hence no response text needs to be fetched.
-            # If response_key is set, fetch the corresponding response text
-            if example.get(RESPONSE_KEY) is None:
+            # If intent_response_key is set, fetch the corresponding response text
+            if example.get(INTENT_RESPONSE_KEY) is None:
                 continue
 
             # look for corresponding bot utterance
@@ -424,7 +424,7 @@ class TrainingData:
 
         # emit warnings for response intents without a response template
         for example in self.training_examples:
-            if example.get(RESPONSE_KEY) and not example.get(RESPONSE):
+            if example.get(INTENT_RESPONSE_KEY) and not example.get(RESPONSE):
                 raise_warning(
                     f"Your training data contains an example '{example.text[:20]}...' "
                     f"for the {example.get_full_intent()} intent. "
@@ -478,7 +478,7 @@ class TrainingData:
 
         responses = {}
         for ex in examples:
-            if ex.get(RESPONSE_KEY) and ex.get(RESPONSE):
+            if ex.get(INTENT_RESPONSE_KEY) and ex.get(RESPONSE):
                 key = ex.get_full_intent()
                 responses[key] = self.responses[key]
         return responses
