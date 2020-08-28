@@ -781,7 +781,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message], training=False)
-        model_data.data = self._prepare_example_for_prediction(model_data)
 
         return self.model.predict(model_data)
 
@@ -937,17 +936,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return {"file": file_name}
 
     @classmethod
-    def _prepare_example_for_prediction(
-        self, example: RasaModelData
-    ) -> Dict[Text, Dict[Text, Union[scipy.sparse.spmatrix, np.ndarray]]]:
-        data = {}
-        for feature_name, features in example.items():
-            if TEXT in feature_name:
-                new_features = {key: value for key, value in features.items() if value}
-                data[feature_name] = new_features
-        return data
-
-    @classmethod
     def load(
         cls,
         meta: Dict[Text, Any],
@@ -1060,7 +1048,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # build the graph for prediction
         predict_data_example = RasaModelData(
             label_key=label_key,
-            data=cls._prepare_example_for_prediction(model_data_example),
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if TEXT in feature_name
+            },
         )
 
         model.build_for_predict(predict_data_example)
