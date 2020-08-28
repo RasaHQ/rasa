@@ -194,7 +194,9 @@ class RasaModelData:
         self, key: Text, sub_key: Text, from_key: Text, from_sub_key: Text
     ) -> None:
         """Adds np.array of lengths of sequences to data under given key."""
-        if not self.data.get(from_key) or not self.data.get(from_key, from_sub_key):
+        if not self.data.get(from_key) or not self.data.get(from_key, {}).get(
+            from_sub_key
+        ):
             return
 
         self.data[key][sub_key] = []

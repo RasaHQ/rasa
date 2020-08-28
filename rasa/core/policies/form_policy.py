@@ -80,7 +80,7 @@ class FormPolicy(MemoizationPolicy):
         self,
         trackers_as_states: List[List[State]],
         trackers_as_actions: List[List[Text]],
-    ) -> Dict[Text, Text]:
+    ) -> Dict[Any, Text]:
         """Add states to lookup dict"""
         lookup = {}
         for states in trackers_as_states:

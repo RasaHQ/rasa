@@ -50,7 +50,7 @@ class NaturalLanguageInterpreter:
         else:
             return _create_from_endpoint_config(obj)
 
-    def synchronous_parse_message(self, message: Message) -> Message:
+    def synchronous_parse_message(self, message: Message) -> Optional[Message]:
         pass
 
 
@@ -284,9 +284,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         return result
 
-    def synchronous_parse_message(
-        self, message: Message
-    ) -> Optional[Message]:
+    def synchronous_parse_message(self, message: Message) -> Optional[Message]:
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
         result = self.interpreter.parse_message(message)

@@ -25,11 +25,10 @@ from rasa.nlu.constants import (
 import scipy.sparse
 from _pytest.monkeypatch import MonkeyPatch
 from pathlib import Path
-from tests.conftest import DEFAULT_CONFIG_PATH
+from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STORIES_FILE,
-    DEFAULT_NLU_DATA,
 )
 
 
@@ -44,11 +43,18 @@ def test_binary_featurizer_correctly_encodes_state():
     encoded = f.encode_state(
         {"user": {"intent": "a"}, "prev_action": {"action_name": "d"}}, interpreter=None
     )
-    assert all([key in encoded for key in [INTENT, ACTION_NAME]])
-    assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[1, 0]])).nnz == 0
+    # user input is ignored as prev action is not action_listen;
+    assert list(encoded.keys()) == [ACTION_NAME]
     assert (
         encoded[ACTION_NAME][0].features != scipy.sparse.coo_matrix([[0, 1]])
     ).nnz == 0
+
+    encoded = f.encode_state(
+        {"user": {"intent": "a"}, "prev_action": {"action_name": "action_listen"}},
+        interpreter=None,
+    )
+    assert list(encoded.keys()) == [INTENT, ACTION_NAME]
+    assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[1, 0]])).nnz == 0
 
 
 def test_binary_featurizer_correctly_encodes_non_existing_feature():
@@ -56,13 +62,11 @@ def test_binary_featurizer_correctly_encodes_non_existing_feature():
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1}
     encoded = f.encode_state(
-        {"user": {"intent": "e"}, "prev_action": {"action_name": "d"}}, interpreter=None
+        {"user": {"intent": "e"}, "prev_action": {"action_name": "action_listen"}},
+        interpreter=None,
     )
-    assert all([key in encoded for key in [INTENT, ACTION_NAME]])
+    assert list(encoded.keys()) == [INTENT, ACTION_NAME]
     assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[0, 0]])).nnz == 0
-    assert (
-        encoded[ACTION_NAME][0].features != scipy.sparse.coo_matrix([[0, 1]])
-    ).nnz == 0
 
 
 def test_binary_featurizer_creates_encoded_all_actions():
@@ -82,7 +86,7 @@ def test_binary_featurizer_creates_encoded_all_actions():
     assert len(encoded_actions) == len(domain.action_names)
     assert all(
         [
-            ACTION_NAME in encoded_action and not ACTION_TEXT in encoded_action
+            ACTION_NAME in encoded_action and ACTION_TEXT not in encoded_action
             for encoded_action in encoded_actions
         ]
     )
@@ -100,9 +104,7 @@ def test_binary_featurizer_uses_dtype_float():
         },
         interpreter=None,
     )
-    assert encoded[INTENT][0].features.dtype == np.float32
     assert encoded[ACTION_NAME][0].features.dtype == np.float32
-    assert encoded[ENTITIES][0].features.dtype == np.float32
 
 
 def test_single_state_featurizer_correctly_encodes_state(
@@ -140,7 +142,7 @@ def test_single_state_featurizer_correctly_encodes_state(
     encoded = f.encode_state(
         {
             "user": {"text": "a ball", "entities": ["c"]},
-            "prev_action": {"action_name": "d"},
+            "prev_action": {"action_name": "action_listen"},
         },
         interpreter=kwargs["interpreter"],
     )

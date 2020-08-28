@@ -209,6 +209,10 @@ def test_regex_featurizer_train():
     expected_cls = np.array([1, 1, 1])
 
     seq_vecs, sen_vec = message.get_sparse_features(TEXT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert (6, 3) == seq_vecs.shape
     assert (1, 3) == sen_vec.shape
@@ -216,6 +220,10 @@ def test_regex_featurizer_train():
     assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
     seq_vecs, sen_vec = message.get_sparse_features(RESPONSE, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert (6, 3) == seq_vecs.shape
     assert (1, 3) == sen_vec.shape
@@ -223,6 +231,10 @@ def test_regex_featurizer_train():
     assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
     seq_vecs, sen_vec = message.get_sparse_features(INTENT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert seq_vecs is None
     assert sen_vec is None
