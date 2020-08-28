@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import pickle
 import typing
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple
 from collections import defaultdict
@@ -16,7 +15,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
 )
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
@@ -25,10 +24,9 @@ from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
-from rasa.nlu.constants import INTENT, ACTION_NAME, ENTITIES, TEXT, ACTION_TEXT
-from rasa.core.constants import ACTIVE_LOOP, SLOTS
+from rasa.nlu.constants import TEXT, ACTION_TEXT
 from rasa.utils.tensorflow.constants import SENTENCE
-from rasa.utils.tensorflow.model_data_utils import convert_to_data_format, MASK
+from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
 from rasa.utils.tensorflow.model_data import Data
 
 # noinspection PyProtectedMember
@@ -236,9 +234,7 @@ class SklearnPolicy(Policy):
         **kwargs: Any,
     ) -> List[float]:
         X = self.featurizer.create_state_features([tracker], domain, interpreter)
-        training_data, _ = convert_to_data_format(
-            X, zero_features=self.zero_state_features, training=False
-        )
+        training_data, _ = convert_to_data_format(X, self.zero_state_features)
         Xt = self._preprocess_data(training_data)
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)

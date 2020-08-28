@@ -582,12 +582,13 @@ class TransformerRasaModel(RasaModel):
 
         self.config = config
         self.data_signature = data_signature
+        self.label_signature = label_data.get_signature()
 
         self._check_data()
 
         label_batch = label_data.prepare_batch()
         self.tf_label_data = self.batch_to_model_data_format(
-            label_batch, label_data.get_signature()
+            label_batch, self.label_signature
         )
 
         # set up tf layers
@@ -684,6 +685,7 @@ class TransformerRasaModel(RasaModel):
                 sparse = True
             else:
                 dense = True
+                # TODO remove that, but need nlu experiments
                 # if dense features are present
                 # use the feature dimension of the dense features
                 dense_dim = feature_dimension

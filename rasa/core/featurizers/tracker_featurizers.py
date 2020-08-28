@@ -4,6 +4,7 @@ import os
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text
 from collections import deque
+import numpy as np
 
 import rasa.utils.io
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -58,11 +59,16 @@ class TrackerFeaturizer:
     @staticmethod
     def _convert_labels_to_ids(
         trackers_as_actions: List[List[Text]], domain: Domain
-    ) -> List[List[int]]:
-        return [
-            [domain.index_for_action(action) for action in tracker_actions]
-            for tracker_actions in trackers_as_actions
-        ]
+    ) -> np.ndarray:
+        # use numpy arrays since in `Features` there are array
+        return np.array(
+            [
+                np.array(
+                    [domain.index_for_action(action) for action in tracker_actions]
+                )
+                for tracker_actions in trackers_as_actions
+            ]
+        )
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -78,7 +84,7 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], List[List[int]]]:
+    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
         """
         Featurize the training trackers.
 

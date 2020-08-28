@@ -18,7 +18,6 @@ from rasa.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
 )
-from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.nlu.training_data.message import Message
 from rasa.core.trackers import prev_action_listen_in_state
 
@@ -191,10 +190,9 @@ class SingleStateFeaturizer:
                         self._create_features(sub_state, ENTITIES, sparse=True)
                     )
             if state_type in {SLOTS, ACTIVE_LOOP}:
-                if sub_state.get(state_type):
-                    state_features.update(
-                        self._create_features(sub_state, state_type, sparse=True)
-                    )
+                state_features.update(
+                    self._create_features(sub_state, state_type, sparse=True)
+                )
 
         return state_features
 
