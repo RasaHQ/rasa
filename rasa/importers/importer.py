@@ -7,6 +7,7 @@ from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
 from rasa.nlu.training_data import TrainingData
+from rasa.importers.autoconfig import TrainingType
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
 
@@ -73,13 +74,13 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        nlu_or_core: Optional[Text] = "both",
+        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> "TrainingDataImporter":
         """Loads a ``TrainingDataImporter`` instance from a configuration file."""
 
         config = io_utils.read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
-            config, config_path, domain_path, training_data_paths, nlu_or_core
+            config, config_path, domain_path, training_data_paths, training_type
         )
 
     @staticmethod
@@ -93,7 +94,7 @@ class TrainingDataImporter:
         """
 
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths, "core",
+            config_path, domain_path, training_data_paths, TrainingType.CORE,
         )
 
         return CoreDataImporter(importer)
@@ -109,7 +110,7 @@ class TrainingDataImporter:
         """
 
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths, "nlu"
+            config_path, domain_path, training_data_paths, TrainingType.NLU
         )
 
         return NluDataImporter(importer)
@@ -120,7 +121,7 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        nlu_or_core: Optional[Text] = "both",
+        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> "TrainingDataImporter":
         """Loads a ``TrainingDataImporter`` instance from a dictionary."""
 
@@ -130,7 +131,7 @@ class TrainingDataImporter:
         importers = config.get("importers", [])
         importers = [
             TrainingDataImporter._importer_from_dict(
-                importer, config_path, domain_path, training_data_paths, nlu_or_core
+                importer, config_path, domain_path, training_data_paths, training_type
             )
             for importer in importers
         ]
@@ -139,7 +140,7 @@ class TrainingDataImporter:
         if not importers:
             importers = [
                 RasaFileImporter(
-                    config_path, domain_path, training_data_paths, nlu_or_core
+                    config_path, domain_path, training_data_paths, training_type
                 )
             ]
 
@@ -151,7 +152,7 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        nlu_or_core: Optional[Text] = "both",
+        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> Optional["TrainingDataImporter"]:
         from rasa.importers.multi_project import MultiProjectImporter
         from rasa.importers.rasa import RasaFileImporter
@@ -168,7 +169,7 @@ class TrainingDataImporter:
                 logging.warning(f"Importer '{module_path}' not found.")
                 return None
 
-        importer_config["nlu_or_core"] = nlu_or_core
+        importer_config["training_type"] = training_type
 
         constructor_arguments = common_utils.minimal_kwargs(
             importer_config, importer_class

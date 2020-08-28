@@ -7,6 +7,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.training.structures import StoryGraph
 from rasa.importers import utils, autoconfig
 from rasa.importers.importer import TrainingDataImporter
+from rasa.importers.autoconfig import TrainingType
 from rasa.nlu.training_data import TrainingData
 from rasa.utils.common import raise_warning
 
@@ -21,7 +22,7 @@ class RasaFileImporter(TrainingDataImporter):
         config_file: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[Union[List[Text], Text]] = None,
-        nlu_or_core: Optional[Text] = "both",
+        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ):
 
         self._domain_path = domain_path
@@ -30,7 +31,7 @@ class RasaFileImporter(TrainingDataImporter):
             training_data_paths
         )
 
-        self.config = autoconfig.get_configuration(config_file, nlu_or_core)
+        self.config = autoconfig.get_configuration(config_file, training_type)
 
     async def get_config(self) -> Dict:
         return self.config
