@@ -1074,9 +1074,8 @@ class DIET(TransformerRasaModel):
     ) -> None:
         # create entity tag spec before calling super otherwise building the model
         # will fail
-        self._entity_tag_specs = self._ordered_tag_specs(entity_tag_specs)
-
         super().__init__("DIET", config, data_signature, label_data)
+        self._entity_tag_specs = self._ordered_tag_specs(entity_tag_specs)
 
         self.predict_data_signature = {
             feature_name: features
@@ -1090,6 +1089,7 @@ class DIET(TransformerRasaModel):
         self._update_metrics_to_log()
 
         self.all_labels_embed = None  # needed for efficient prediction
+        self._prepare_layers()
 
     @staticmethod
     def _ordered_tag_specs(

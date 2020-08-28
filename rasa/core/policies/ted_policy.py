@@ -533,6 +533,8 @@ class TED(TransformerRasaModel):
 
         self.all_labels_embed = None  # needed for efficient prediction
 
+        self._prepare_layers()
+
     def _check_data(self) -> None:
         if not any(key in [INTENT, TEXT] for key in self.data_signature.keys()):
             raise ValueError(

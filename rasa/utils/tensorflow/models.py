@@ -593,7 +593,6 @@ class TransformerRasaModel(RasaModel):
 
         # set up tf layers
         self._tf_layers: Dict[Text : tf.keras.layers.Layer] = {}
-        self._prepare_layers()
 
     def _check_data(self) -> None:
         raise NotImplementedError

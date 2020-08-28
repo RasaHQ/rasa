@@ -22,7 +22,7 @@
     ]
   },
   "sender_id": "mysender",
-  "latest_action": {"action_name": "action_listen", "action_text": null},
+  "latest_action": {"action_name": "action_listen"},
   "active_loop": {},
   "paused": false,
   "latest_event_time": 1517821726.211042,

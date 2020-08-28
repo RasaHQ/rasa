@@ -9,6 +9,7 @@ import scipy.sparse
 
 import numpy as np
 import rasa.utils.io
+from rasa.utils.features import Features
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.domain import Domain, SubState
 from rasa.core.featurizers.tracker_featurizers import (
@@ -132,7 +133,7 @@ class SklearnPolicy(Policy):
     def _get_features_for_attribute(self, features: SubState, attribute: Text):
         """
         Given a dictionary for one attribute, turn it into a numpy array;
-        shape_attribute = features[SENTENCE][0][0].shape[-1] (Shape of features of one attribute) 
+        shape_attribute = features[SENTENCE][0][0].shape[-1] (Shape of features of one attribute)
         Args:
             features: all features in the attribute stored in a np.array;
         Output:
@@ -149,13 +150,13 @@ class SklearnPolicy(Policy):
 
     def _preprocess_data(self, X: Data) -> np.ndarray:
         """
-        Turn data into np.ndarray for sklearn training; dialogue history features 
+        Turn data into np.ndarray for sklearn training; dialogue history features
         are flattened.
         Args:
             X: training data containing all the features
         Returns:
-            Training_data: shape [num_dialogs x (max_history * all_features)]; 
-            all_features - sum of number of features of intent, action_name, entities, forms, slots.  
+            Training_data: shape [num_dialogs x (max_history * all_features)];
+            all_features - sum of number of features of intent, action_name, entities, forms, slots.
         """
         if TEXT in X or ACTION_TEXT in X:
             raise Exception(

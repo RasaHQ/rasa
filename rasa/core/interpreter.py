@@ -50,7 +50,7 @@ class NaturalLanguageInterpreter:
         else:
             return _create_from_endpoint_config(obj)
 
-    def synchronous_parse_message(self, message: Message) -> Message:
+    def synchronous_parse_message(self, message: Message) -> Optional[Message]:
         pass
 
 
