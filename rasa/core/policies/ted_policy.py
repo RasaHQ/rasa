@@ -581,6 +581,7 @@ class TED(TransformerRasaModel):
 
         Args:
             name: the attribute name
+            signature: data signature
         """
         for feature_type in POSSIBLE_FEATURE_TYPES:
             if name not in signature or feature_type not in signature[name]:
