@@ -64,10 +64,11 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
-    ENCODING_LAYER_SIZE,
+    ENCODING_DIMENSION,
     UNIDIRECTIONAL_ENCODER,
     SEQUENCE,
     SENTENCE,
+    DENSE_DIMENSION,
 )
 
 
@@ -114,8 +115,9 @@ class TEDPolicy(Policy):
         # Hidden layer sizes for layers before the dialogue and label embedding layers.
         # The number of hidden layers is equal to the length of the corresponding
         # list.
-        HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: []},
-        ENCODING_LAYER_SIZE: [50],
+        # TODO add 2 parallel NNs: transformer for text and ffnn for names
+        DENSE_DIMENSION: 20,
+        ENCODING_DIMENSION: 50,
         # Number of units in transformer
         TRANSFORMER_SIZE: 128,
         # Number of transformer layers
@@ -265,20 +267,6 @@ class TEDPolicy(Policy):
 
         return label_data, encoded_all_labels
 
-    @staticmethod
-    def _get_label_features(
-        label_ids: np.ndarray, encoded_all_labels: List[Dict[Text, List["Features"]]],
-    ) -> Data:
-        encoded_labels = [
-            [encoded_all_labels[label_id] for label_id in seq_label_ids]
-            for seq_label_ids in label_ids
-        ]
-
-        # it is easier to convert to data again rather than use _label_data
-        label_attribute_data, _ = convert_to_data_format(encoded_labels)
-
-        return label_attribute_data
-
     def _create_model_data(
         self,
         tracker_state_features: List[List[Dict[Text, List["Features"]]]],
@@ -301,12 +289,6 @@ class TEDPolicy(Policy):
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
         if label_ids is not None and encoded_all_labels is not None:
-            # method is called during training
-            # add last sequence dim to correctly track dynamic sequencies
-            label_attribute_data = self._get_label_features(
-                label_ids, encoded_all_labels
-            )
-            model_data.add_data(label_attribute_data, key_prefix=f"{LABEL_KEY}_")
 
             label_ids = np.array(
                 [np.expand_dims(seq_label_ids, -1) for seq_label_ids in label_ids]
@@ -578,17 +560,6 @@ class TED(TransformerRasaModel):
         for name in FEATURES_TO_ENCODE:
             self._prepare_encoding_layers(name)
 
-        # create a ffnn layer for the combined dialogue features (used before the
-        # transformer)
-        self._prepare_ffnn_layer(
-            DIALOGUE,
-            self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
-            self.config[DROP_RATE_DIALOGUE],
-        )
-        self._prepare_ffnn_layer(
-            LABEL, self.config[HIDDEN_LAYERS_SIZES][LABEL], self.config[DROP_RATE_LABEL]
-        )
-
         self._prepare_transformer_layer(
             DIALOGUE, self.config[DROP_RATE_DIALOGUE], self.config[DROP_RATE_ATTENTION]
         )
@@ -618,18 +589,11 @@ class TED(TransformerRasaModel):
                 f"{name}_{feature_type}", self.config[DROP_RATE]
             )
 
-            if name not in STATE_LEVEL_FEATURES:
-                self._prepare_sparse_dense_layers(
-                    self.data_signature[name][feature_type],
-                    f"{name}_{feature_type}",
-                    10,
-                )
-            else:
-                self._prepare_sparse_dense_layers(
-                    self.data_signature[name][feature_type],
-                    f"{name}_{feature_type}",
-                    self.data_signature[name][feature_type][0][1],
-                )
+            self._prepare_sparse_dense_layers(
+                self.data_signature[name][feature_type],
+                f"{name}_{feature_type}",
+                self.config[DENSE_DIMENSION],
+            )
 
     def _prepare_encoding_layers(self, name: Text) -> None:
         """Create ffnn layer for given attribute name. The layer is used just before
@@ -647,7 +611,7 @@ class TED(TransformerRasaModel):
 
         self._prepare_ffnn_layer(
             f"{name}_{feature_type}",
-            self.config[ENCODING_LAYER_SIZE],
+            [self.config[ENCODING_DIMENSION]],
             self.config[DROP_RATE_DIALOGUE],
         )
 
@@ -673,7 +637,7 @@ class TED(TransformerRasaModel):
             x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
 
         # additional sequence axis is artifact of our RasaModelData creation
-        # TODO check
+        # TODO check whether this should be solved in data creation
         x = tf.squeeze(x, axis=1)
 
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
@@ -687,9 +651,8 @@ class TED(TransformerRasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
-        dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
         dialogue_transformed = self._tf_layers[f"transformer.{DIALOGUE}"](
-            dialogue, 1 - mask, self._training
+            dialogue_in, 1 - mask, self._training
         )
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 

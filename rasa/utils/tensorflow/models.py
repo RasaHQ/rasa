@@ -685,6 +685,7 @@ class TransformerRasaModel(RasaModel):
                 sparse = True
             else:
                 dense = True
+                # TODO remove that, but need nlu experiments
                 # if dense features are present
                 # use the feature dimension of the dense features
                 dense_dim = feature_dimension
