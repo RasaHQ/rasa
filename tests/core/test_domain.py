@@ -244,6 +244,7 @@ def test_domain_to_dict():
         "entities": [],
         "forms": [],
         "intents": [],
+        "e2e_actions": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
         "session_config": {
             "carry_over_slots_to_new_session": True,
