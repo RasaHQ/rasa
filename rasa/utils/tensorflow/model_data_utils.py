@@ -6,6 +6,7 @@ import scipy.sparse
 
 from rasa.utils.tensorflow.model_data import Data
 from rasa.utils.tensorflow.constants import SEQUENCE
+from rasa.utils.features import Features
 
 MASK = "mask"
 

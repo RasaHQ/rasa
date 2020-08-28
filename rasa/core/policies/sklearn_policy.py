@@ -149,7 +149,7 @@ class SklearnPolicy(Policy):
         return np.vstack(features)
 
     def _preprocess_data(self, X: Data) -> np.ndarray:
-        """        
+        """
         Turn data into np.ndarray for sklearn training; dialogue history features
         are flattened.
         Args:
