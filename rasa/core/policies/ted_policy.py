@@ -555,7 +555,10 @@ class TED(TransformerRasaModel):
 
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
-            self._prepare_sparse_dense_layer_for(name)
+            self._prepare_sparse_dense_layer_for(name, self.data_signature)
+
+        for name in self.label_signature.keys():
+            self._prepare_sparse_dense_layer_for(name, self.label_signature)
 
         for name in FEATURES_TO_ENCODE:
             self._prepare_encoding_layers(name)
@@ -569,7 +572,9 @@ class TED(TransformerRasaModel):
 
         self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
-    def _prepare_sparse_dense_layer_for(self, name: Text) -> None:
+    def _prepare_sparse_dense_layer_for(
+        self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
+    ) -> None:
         """Prepare the sparse dense layer for the given attribute name. It is used to
         combine the sparse and dense features of the attribute at the beginning of
         the model.
@@ -578,10 +583,7 @@ class TED(TransformerRasaModel):
             name: the attribute name
         """
         for feature_type in POSSIBLE_FEATURE_TYPES:
-            if (
-                name not in self.data_signature
-                or feature_type not in self.data_signature[name]
-            ):
+            if name not in signature or feature_type not in signature[name]:
                 # features for feature type are not present
                 continue
 
@@ -591,7 +593,7 @@ class TED(TransformerRasaModel):
 
             # use the same configurable dense dimension for all sparse features
             self._prepare_sparse_dense_layers(
-                self.data_signature[name][feature_type],
+                signature[name][feature_type],
                 f"{name}_{feature_type}",
                 self.config[DENSE_DIMENSION],
             )
