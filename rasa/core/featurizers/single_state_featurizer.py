@@ -190,10 +190,9 @@ class SingleStateFeaturizer:
                         self._create_features(sub_state, ENTITIES, sparse=True)
                     )
             if state_type in {SLOTS, ACTIVE_LOOP}:
-                if sub_state.get(state_type):
-                    state_features.update(
-                        self._create_features(sub_state, state_type, sparse=True)
-                    )
+                state_features.update(
+                    self._create_features(sub_state, state_type, sparse=True)
+                )
 
         return state_features
 
